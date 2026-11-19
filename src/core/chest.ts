@@ -19,23 +19,28 @@ export const CHEST_RATE = { wood: 0.03, forgotten: 0.05 };
 interface ChestDef {
   items: number;
   weights: Record<Quality, number>;
-  min: Quality;
+  /** The first item is at least this good. */
+  first: Quality;
   locked: boolean;
+  /** Wood chests also hold gold: this many kills' worth. */
+  goldKills?: number;
 }
 
 const ORDER: Quality[] = ['white', 'green', 'purple', 'orange'];
 
+// Base drop weights are white 70 / green 24 / purple 5 / orange 1 (CONFIG.loot.qualityWeights).
+// 0.3 item counts take the low end of the doc table: wood 1, iron 2, gold 3.
 export const CHESTS: Record<ChestKind, ChestDef> = {
-  wood: { items: 1, weights: { white: 60, green: 32, purple: 7, orange: 1 }, min: 'white', locked: false },
+  wood: { items: 1, weights: { white: 70, green: 24, purple: 5, orange: 1 }, first: 'white', locked: false, goldKills: 5 },
   // 0.3 has no grammar stones or letters yet: one item, purple twice as likely.
-  forgotten: { items: 1, weights: { white: 55, green: 30, purple: 14, orange: 1 }, min: 'white', locked: false },
-  iron: { items: 2, weights: { white: 0, green: 70, purple: 27, orange: 3 }, min: 'green', locked: true },
-  gold: { items: 3, weights: { white: 0, green: 40, purple: 50, orange: 10 }, min: 'green', locked: true },
+  forgotten: { items: 1, weights: { white: 70, green: 24, purple: 10, orange: 1 }, first: 'white', locked: false },
+  iron: { items: 2, weights: { white: 70, green: 24, purple: 10, orange: 1 }, first: 'green', locked: true },
+  gold: { items: 3, weights: { white: 70, green: 24, purple: 5, orange: 3 }, first: 'purple', locked: true },
 };
 
-function rollQ(rng: Rng, def: ChestDef): Quality {
+function rollQ(rng: Rng, def: ChestDef, min: Quality): Quality {
   const q = weighted(rng, def.weights) as Quality;
-  return ORDER.indexOf(q) < ORDER.indexOf(def.min) ? def.min : q;
+  return ORDER.indexOf(q) < ORDER.indexOf(min) ? min : q;
 }
 
 /** The 言灵锁 word: the most overdue word you know, else the one seen longest ago. */
@@ -57,6 +62,7 @@ export function lockWord(s: GameState, fallback: Word): Word {
 
 export interface ChestResult {
   items: Item[];
+  gold: number;
   rerolled: boolean;
   bagFull: number;
 }
@@ -66,9 +72,10 @@ export function openChest(s: GameState, kind: ChestKind, ilvl: number, rng: Rng,
   const items: Item[] = [];
   let bagFull = 0;
   for (let i = 0; i < def.items; i++) {
-    let q = rollQ(rng, def);
+    const min = i === 0 ? def.first : 'white';
+    let q = rollQ(rng, def, min);
     if (def.locked && lockOk) {
-      const q2 = rollQ(rng, def);
+      const q2 = rollQ(rng, def, min);
       if (ORDER.indexOf(q2) > ORDER.indexOf(q)) q = q2;
     }
     const it = makeItem(rng, ilvl, q);
@@ -78,5 +85,7 @@ export function openChest(s: GameState, kind: ChestKind, ilvl: number, rng: Rng,
       items.push(it);
     }
   }
-  return { items, rerolled: def.locked && lockOk, bagFull };
+  const gold = def.goldKills ? def.goldKills * CONFIG.gold.perKill(ilvl) : 0;
+  s.gold += gold;
+  return { items, gold, rerolled: def.locked && lockOk, bagFull };
 }

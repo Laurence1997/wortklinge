@@ -547,7 +547,7 @@ export class Controller {
     }
     const r = openChest(this.state, kind, ilvl, this.rng);
     sfx.loot();
-    banner(CHEST_ZH[kind], r.items.map((it) => it.name).join('、') || '背包满了');
+    banner(CHEST_ZH[kind], [...r.items.map((it) => it.name), r.gold ? `${r.gold} 金币` : ''].filter(Boolean).join('、') || '背包满了');
     if (r.bagFull) toast('背包满了，有东西没装下');
   }
 

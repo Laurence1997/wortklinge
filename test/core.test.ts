@@ -476,7 +476,12 @@ describe('rare monsters and chests', () => {
     const r = chest.openChest(s, 'iron', 12, rng, true);
     expect(r.items.length).toBe(2);
     expect(r.rerolled).toBe(true);
-    expect(r.items.every((it) => it.quality !== 'white')).toBe(true);
+    expect(r.items[0].quality).not.toBe('white');
+    const g = chest.openChest(s, 'gold', 12, rng);
+    expect(['purple', 'orange']).toContain(g.items[0].quality);
+    const gold0 = s.gold;
+    expect(chest.openChest(s, 'wood', 12, rng).gold).toBeGreaterThan(0);
+    expect(s.gold).toBeGreaterThan(gold0);
     expect(chest.lockWord(s, WORDS[0])).toBeTruthy();
   });
 
