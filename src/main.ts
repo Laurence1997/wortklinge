@@ -3,6 +3,9 @@ import './ui/style.css';
 import { load, newGame, save, saveRaw, setSaveHook } from './core/state';
 import { cloud, initCloud, mustChangePassword, push, schedulePush, syncOnBoot } from './net/cloud';
 import { loginView } from './ui/account';
+import { mountChat } from './ui/chat';
+import { $ } from './ui/dom';
+import { joinRegion, leave, update } from './net/online';
 import { h } from './ui/dom';
 import { Controller } from './game/controller';
 import { WorldScene } from './game/WorldScene';
@@ -16,7 +19,19 @@ const dev = new URLSearchParams(location.search).has('dev');
 function boot(state: ReturnType<typeof newGame>) {
   const ctrl = new Controller(state, dev);
   (window as unknown as { wk: Controller }).wk = ctrl; // handy for debugging in the console
-  if (cloud.session && !cloud.profile && !mustChangePassword()) window.setTimeout(() => toast('已登录：在右上角「账号」里起个昵称，就能上排行榜'), 4000);
+  // 联机第一档: about once a second, join the region room and send your position if it changed.
+  const chat = mountChat();
+  window.setInterval(() => {
+    const st = ctrl.state;
+    const ready = !!cloud.session && !!cloud.profile && !mustChangePassword();
+    chat.setVisible(ready && $('title').hidden);
+    if (!ready) return leave();
+    if (!st.look) return;
+    const me = { region: st.region ?? 1, look: st.look, x: st.pos.x, y: st.pos.y, fighting: !!ctrl.battle || !!ctrl.boss };
+    joinRegion(me);
+    update(me);
+  }, 1000);
+  if (cloud.session && !mustChangePassword() && (!cloud.profile || !state.look)) window.setTimeout(() => ctrl.panels.show('account'), 2500);
   new Phaser.Game({
     type: Phaser.AUTO,
     parent: 'game',
@@ -60,8 +75,9 @@ showTitle({
   existing,
   version: VERSION,
   onContinue: () => boot(existing!),
-  onNew: (name, origin) => {
+  onNew: (name, origin, look) => {
     const s = newGame(name, origin);
+    s.look = look;
     save(s);
     boot(s);
   },

@@ -1,3 +1,4 @@
+import type { Look } from './look';
 import { CONFIG, xpToNext } from './config';
 import { hpBonus, type ClassId } from './classes';
 import type { Item, Slot, WordProgress } from './types';
@@ -63,6 +64,8 @@ export interface GameState {
   shop?: import('./shop').ShopState;
   quests?: Partial<Record<import('./quests').QuestId, import('./quests').QuestProgress>>;
   pos: { x: number; y: number };
+  /** 联机外观; old characters pick one the next time they log in. */
+  look?: Look;
   log: Record<string, DayLog>;
   settings: Settings;
   stats: { kills: number; deaths: number; crits: number; maxHit: number };

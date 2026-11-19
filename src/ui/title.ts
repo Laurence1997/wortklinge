@@ -1,3 +1,5 @@
+import { heroFrames } from '../game/sprites';
+import { DEFAULT_LOOK, LOOK_OPTIONS, type Look } from '../core/look';
 import type { GameState } from '../core/state';
 import { $, clear, h } from './dom';
 
@@ -13,13 +15,14 @@ export function showTitle(opts: {
   account?: HTMLElement;
   existing: GameState | null;
   onContinue: () => void;
-  onNew: (name: string, origin: string) => void;
+  onNew: (name: string, origin: string, look: Look) => void;
   onImport: (text: string) => void;
   version: string;
 }): void {
   const el = $('title');
   el.hidden = false;
   const name = h('input', { type: 'text', maxlength: 16, placeholder: '比如 Lucas', autocomplete: 'off' }) as HTMLInputElement;
+  const look = lookPicker();
   const origin = h('select') as HTMLSelectElement;
   for (const [v, zh] of ORIGINS) origin.append(h('option', { value: v }, zh));
   const file = h('input', { type: 'file', accept: '.json,application/json', hidden: true }) as HTMLInputElement;
@@ -31,7 +34,7 @@ export function showTitle(opts: {
     const n = name.value.trim() || 'Lucas';
     if (opts.existing && !confirmOverwrite()) return;
     el.hidden = true;
-    opts.onNew(n, origin.value);
+    opts.onNew(n, origin.value, look.value());
   };
   name.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') start();
@@ -62,6 +65,7 @@ export function showTitle(opts: {
       'div.form.panel',
       h('label', h('span', '名字（首领会问你「Wie heißt du?」）'), name),
       h('label', h('span', '出身（第 2 区起，对应主题的怪伤害 +10%）'), origin),
+      h('label', h('span', '外观（联机时别人看到的样子）'), look.el),
     ),
     h(
       'div.actions',
@@ -79,4 +83,25 @@ export function showTitle(opts: {
 function confirmOverwrite(): boolean {
   // A plain confirm is fine here: it only guards an irreversible overwrite.
   return window.confirm('开始新角色会覆盖现在的存档。确定吗？（可以先在游戏里导出存档）');
+}
+
+/** Four small selects (性别 体型 发型 发色) with a live preview. */
+export function lookPicker(start: Look = DEFAULT_LOOK, onChange?: (l: Look) => void): { el: HTMLElement; value: () => Look } {
+  const cur: Look = { ...start };
+  const preview = h('img', { style: 'width:48px;height:64px;image-rendering:pixelated;vertical-align:middle' }) as HTMLImageElement;
+  const draw = () => (preview.src = heroFrames(cur)[0].toDataURL());
+  const row = h('div.row', { style: 'gap:6px;align-items:center;flex-wrap:wrap' }, preview);
+  (Object.keys(LOOK_OPTIONS) as Array<keyof Look>).forEach((k) => {
+    const sel = h('select', { title: LOOK_OPTIONS[k].zh }) as HTMLSelectElement;
+    LOOK_OPTIONS[k].options.forEach((o, i) => sel.append(h('option', { value: i }, `${LOOK_OPTIONS[k].zh}：${o}`)));
+    sel.value = String(cur[k]);
+    sel.onchange = () => {
+      (cur as unknown as Record<string, number>)[k] = Number(sel.value);
+      draw();
+      onChange?.({ ...cur });
+    };
+    row.append(sel);
+  });
+  draw();
+  return { el: row, value: () => ({ ...cur }) };
 }

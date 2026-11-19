@@ -16,6 +16,7 @@ import { gradeTyped } from '../core/grading';
 import { recordAnswer } from '../core/srs';
 import { cloud, leaderboard, mustChangePassword, push, setNickname, signOut } from '../net/cloud';
 import { loginView } from './account';
+import { lookPicker } from './title';
 import { BARGAIN_LINES, ensureShop, price, refreshCost, sellPrice, SLOT_NOUN } from '../core/shop';
 
 export type PanelName = 'hero' | 'talents' | 'quests' | 'codex' | 'data' | 'account' | 'settings' | 'help' | 'shop' | 'chest' | 'quiz';
@@ -105,6 +106,7 @@ export class Panels {
   private hero(): HTMLElement {
     const s = this.ctrl.state;
     const left = h('div');
+    if (this.ctrl.nearBonfire()) left.append(h('h3', '外观（篝火旁免费改）'), lookPicker(s.look, (l) => this.ctrl.setLook(l)).el);
     const stats: Array<[string, string]> = [
       ['等级', `${s.level}（经验 ${s.xp} / ${xpToNext(s.level)}）`],
       ['生命', `${s.hp} / ${maxHp(s)}`],
@@ -461,6 +463,11 @@ export class Panels {
         void push(s);
         this.render();
       });
+      return wrap;
+    }
+    if (!s.look) {
+      const pick = lookPicker();
+      wrap.append(h('h3', '选一个外观'), h('p.small.muted', '联机时别人看到的样子。之后在篝火旁可以免费改。'), pick.el, h('button.btn.primary', { onclick: () => { this.ctrl.setLook(pick.value()); this.render(); } }, '就这样'));
       return wrap;
     }
     const st = { off: '未同步', syncing: '同步中…', ok: `已同步${cloud.lastSync ? `（${new Date(cloud.lastSync).toLocaleTimeString().slice(0, 5)}）` : ''}`, offline: '连不上服务器，先存在本地，联网后自动同步' }[cloud.status];

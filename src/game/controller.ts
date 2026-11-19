@@ -1,3 +1,4 @@
+import type { Look } from '../core/look';
 // The game controller: owns the save, runs battles and tutorials, and glues the
 // Phaser world to the DOM interface. Game rules live in src/core and stay pure.
 
@@ -123,8 +124,21 @@ export class Controller {
     this.scene.addMonster(WORD_BY_ID['brot'], 'new', 'camp', (b.x + 2) * 16 + 8, (b.y - 1) * 16 + 8);
   }
 
+  /** Standing by the bonfire (looks can be changed there for free). */
+  nearBonfire(): boolean {
+    const b = this.scene?.map?.bonfire;
+    const p = this.scene?.player;
+    return !!b && !!p && Math.hypot(b.x * 16 + 8 - p.x, b.y * 16 + 8 - p.y) < 40;
+  }
+
+  setLook(look: Look): void {
+    this.state.look = look;
+    this.scene?.applyLook();
+    this.persist();
+  }
+
   uiBlocking(): boolean {
-    return !!this.battle || !!this.boss || dialogOpen() || !$('modal').hidden || !$('title').hidden;
+    return !!this.battle || !!this.boss || dialogOpen() || !$('modal').hidden || !$('title').hidden || document.activeElement?.id === 'chat-input';
   }
 
   refresh(): void {

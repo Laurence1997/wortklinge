@@ -1,3 +1,4 @@
+import { HAIR_COLORS, type Look } from '../core/look';
 // All art is drawn in code: 1-bit-style pixel tiles in red and black, no downloaded assets.
 
 import { makeRng } from '../core/rng';
@@ -273,6 +274,29 @@ const SIGN = [
   '.......pp.......',
 ];
 const SIGN_COLORS = { w: '#5a3a2a', b: '#1d1210', p: '#3a2a20' };
+
+/** The hero drawn with a look: hair style and colour, body width, a skirt for 女. */
+export function heroFrames(look: Look): HTMLCanvasElement[] {
+  return [HERO_A, HERO_B].map((base) => {
+    const rows = base.map((r) => [...r]);
+    const set = (y: number, x: number, ch: string) => {
+      if (y >= 0 && y < rows.length && x >= 0 && x < rows[0].length) rows[y][x] = ch;
+    };
+    // Hair.
+    if (look.hair === 1) for (let y = 2; y <= 6; y++) (set(y, 3, 'h'), set(y, 8, 'h'));
+    if (look.hair === 2) {
+      rows[0] = [...'..h.hh.h....'];
+      set(1, 2, 'h'), set(1, 9, 'h');
+    }
+    if (look.hair === 3) for (let y = 1; y <= 5; y++) set(y, 9 + (y > 2 ? 1 : 0), 'h');
+    // Body width: thin drops the outer coat columns, stout widens the coat and legs.
+    if (look.body === 0) for (let y = 7; y <= 11; y++) for (const x of [1, 10]) if ('cs'.includes(rows[y][x])) set(y, x, '.');
+    if (look.body === 2) for (let y = 7; y <= 11; y++) (set(y, 0, rows[y][1] === '.' ? '.' : 'c'), set(y, 11, rows[y][10] === '.' ? '.' : 'c'), set(y, 1, 'c'), set(y, 10, 'c'));
+    // 女: a coat skirt over the upper legs.
+    if (look.gender === 1) (rows[12] = [...'..cccccccc..'], (rows[11] = [...'..cccccccc..']));
+    return bitmap(rows.map((r) => r.join('')), { ...HERO_COLORS, h: HAIR_COLORS[look.color] });
+  });
+}
 
 export interface Textures {
   hero: HTMLCanvasElement[];
