@@ -220,3 +220,27 @@ describe('言灵过载', () => {
     expect(pickSpawns(s, zone, 6, new Set(), rng).some((p) => p.kind === 'new')).toBe(true);
   });
 });
+
+describe('review backlog', () => {
+  it('has no daily cap, spawns in waves and pays more when overdue', () => {
+    const rng = makeRng(3);
+    const s = newGame('T', 'student');
+    s.level = 6;
+    const zone = WORD_BY_ID['tee'].zone;
+    const t = Date.now();
+    // 150 reviews already spawned today and a big backlog: reviews still appear, one slot stays free.
+    s.daily.dueSpawned = 150;
+    for (const w of WORDS.filter((x) => x.zone === zone)) s.words[w.id] = { stage: 1, due: t - 10 * 24 * 3600_000 } as never;
+    const picks = pickSpawns(s, zone, 6, new Set(), rng);
+    expect(picks.filter((p) => p.kind === 'due').length).toBe(5);
+    const b = startBattle(s, WORD_BY_ID['tee'], rng);
+    expect(b.overdue).toBeGreaterThan(0);
+    const late = applyWin(s, b, () => 0.99).xp;
+    const s2 = newGame('T', 'student');
+    s2.level = 6;
+    const b2 = startBattle(s2, WORD_BY_ID['tee'], rng);
+    b2.kind = 'due';
+    b2.lastKillTyped = b.lastKillTyped;
+    expect(late).toBeGreaterThan(applyWin(s2, b2, () => 0.99).xp);
+  });
+});

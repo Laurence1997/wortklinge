@@ -1,5 +1,7 @@
 // Which words become monsters in a field right now.
-// Order: due words (遗忘之物, capped per day) → new words (soft cap per day) → shadows of learned words.
+// Order: due words (遗忘之物, most overdue first) → new words → shadows of learned words.
+// No daily review cap: a returning player meets the backlog in waves, because each field only
+// holds `count` monsters and at least one slot stays for something else.
 
 import { CONFIG } from './config';
 import { shuffle, type Rng } from './rng';
@@ -37,10 +39,10 @@ export function pickSpawns(s: GameState, zone: ZoneId, count: number, alive: Set
     else if (k === 'shadow') shadows.push(w);
   }
   const out: SpawnPick[] = [];
-  // Most overdue first, within today's review budget.
+  // Most overdue first. Leave room for one non-review monster so a big backlog never fills the field.
   due.sort((a, b) => s.words[a.id].due - s.words[b.id].due);
-  const dueBudget = Math.max(0, CONFIG.srs.dailyDueCap - s.daily.dueSpawned);
-  for (const w of due.slice(0, Math.min(dueBudget, count))) out.push({ word: w, kind: 'due' });
+  const dueSlots = count > 1 ? count - 1 : count;
+  for (const w of due.slice(0, dueSlots)) out.push({ word: w, kind: 'due' });
 
   // New words in list order (easiest first). After the daily cap only 1 in 4 slots stays new.
   const newLeft = CONFIG.srs.dailyNewCap - s.daily.newCount - countAliveNew(s, alive);

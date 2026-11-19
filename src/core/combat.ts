@@ -51,6 +51,8 @@ export interface Battle {
   word: Word;
   kind: Kind;
   stage: Stage;
+  /** Intervals overdue when the fight started: fatter monster, bigger reward. */
+  overdue: number;
   isEcho: boolean;
   tutorial: Tutorial;
   monster: MonsterState;
@@ -98,7 +100,8 @@ export function startBattle(
   const stage = stageOf(s, word, t);
   // The word holding your echo waits at your level, so you can win it back.
   const lvl = opts.isEcho ? Math.min(word.lvl, s.level) : word.lvl;
-  const st = monsterStats(lvl, stage, kind, overdueSteps(s, word, t));
+  const overdue = overdueSteps(s, word, t);
+  const st = monsterStats(lvl, stage, kind, overdue);
   const monster: MonsterState = { lvl, hp: st.hp, maxHp: st.hp, dmg: st.dmg, vulnerable: 0, burn: 0, poison: 0, chilled: false };
   const tutorial = opts.tutorial ?? null;
   if (tutorial === 'loss') {
@@ -109,6 +112,7 @@ export function startBattle(
   const b: Battle = {
     word,
     kind,
+    overdue,
     stage,
     isEcho: !!opts.isEcho,
     tutorial,

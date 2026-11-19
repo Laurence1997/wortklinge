@@ -20,7 +20,6 @@ export const CONFIG = {
     /** 言灵过载 starts after this many new words in one day. Not a lock: the player keeps
      *  playing, new monsters just pay less and reviews pay more (see `overload`). */
     dailyNewCap: 30,
-    dailyDueCap: 100,
   },
 
   /** 言灵过载: a learning limit expressed as a game rule, never a hard lock. */
@@ -66,6 +65,8 @@ export const CONFIG = {
     /** HP multiplier by stage: 新怪(无名) / 裂形 / 半名 / shadow. 牙越少，血越薄。 */
     stageHp: { new: 1.0, cracked: 0.85, half: 0.65, shadow: 0.7 },
     overdueHpStep: 0.15,
+    /** Each interval overdue also adds this much XP and gold (up to 4 steps → +60%). */
+    overdueRewardStep: 0.15,
   },
 
   damage: {
