@@ -503,3 +503,19 @@ describe('quests', () => {
     for (const id of Q.KONRAD_WORDS) expect(WORD_BY_ID[id], id).toBeDefined();
   });
 });
+
+describe('Ich nehme (region 2 sentence)', () => {
+  it('accepts number + plural and singular with the accusative', async () => {
+    const { gradeNehme } = await import('../src/core/grading');
+    const known = WORDS.filter((w) => w.moechte);
+    expect(gradeNehme('Ich nehme zwei Äpfel.', known).ok).toBe(true);
+    expect(gradeNehme('ich nehme drei aepfel', known).plural).toBe(true);
+    const sg = gradeNehme('Ich nehme zwei Apfel', known);
+    expect(sg.ok).toBe(false);
+    expect(sg.notes[0]).toContain('Äpfel');
+    expect(gradeNehme('Ich nehme einen Apfel', known).ok).toBe(true);
+    expect(gradeNehme('Ich nehme ein Apfel', known).notes[0]).toContain('einen');
+    expect(gradeNehme('Ich nehmen zwei Äpfel', known).ok).toBe(false);
+    expect(gradeNehme('Ich nehme zwei Kuchen', known).ok).toBe(true);
+  });
+});

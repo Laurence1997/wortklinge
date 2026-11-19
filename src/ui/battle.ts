@@ -1,5 +1,5 @@
 import type { Battle, Question, TurnReport } from '../core/combat';
-import { availableMoves, comboTier } from '../core/combat';
+import { availableMoves, comboTier, nehmeRegion } from '../core/combat';
 import { ELEMENT_ZH, INTENT_ZH } from '../core/intents';
 import { STAGE_ZH } from '../core/srs';
 import { maxHp } from '../core/state';
@@ -269,7 +269,9 @@ export class BattleUI {
             ? `${SKILLS[s.skills[0]].zh}${b.skillCooldown ? ` · 冷却 ${b.skillCooldown}` : ''}`
             : mv === 'cls' && s.cls
               ? `${CLASSES[s.cls].skillZh} · ${CLASSES[s.cls].res} ${b.cfx.res}/${CLASSES[s.cls].skillCost}`
-              : info.sub;
+              : mv === 'sentence' && nehmeRegion(s)
+                ? 'Ich nehme zwei … · 带元素'
+                : info.sub;
         movesEl.append(
           h(
             `button.btn${this.move === mv && this.phase !== 'choose' ? '.sel' : ''}`,
@@ -348,10 +350,10 @@ export class BattleUI {
         autocomplete: 'off',
         autocapitalize: 'off',
         spellcheck: 'false',
-        placeholder: qq.type === 'sentence' ? 'Ich möchte einen …' : qq.withArticle ? 'der / die / das + 名词' : '',
+        placeholder: qq.type === 'sentence' ? (qq.focus.startsWith('Ich nehme') ? 'Ich nehme zwei …' : 'Ich möchte einen …') : qq.withArticle ? 'der / die / das + 名词' : '',
         disabled: this.phase !== 'answer',
       }) as HTMLInputElement;
-      if (qq.type === 'sentence') input.value = 'Ich möchte ';
+      if (qq.type === 'sentence') input.value = qq.focus.startsWith('Ich nehme') ? 'Ich nehme ' : 'Ich möchte ';
       if (this.pending !== undefined) input.value = this.pending;
       if (this.phase === 'result') input.value = this.lastValue;
       input.addEventListener('keydown', (e) => {

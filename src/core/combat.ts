@@ -2,7 +2,7 @@
 // you pick a counter, then answer a question. You act first.
 
 import { CONFIG } from './config';
-import { gradeMoechte, gradeTyped, type Verdict } from './grading';
+import { gradeMoechte, gradeNehme, gradeTyped, type Verdict } from './grading';
 import { COUNTER, ELEMENT_ZH, generateIntent, INTENT_ZH } from './intents';
 import { between, pick, shuffle, type Rng } from './rng';
 import { kindOf, stageOf, overdueSteps, type Kind, type Stage } from './srs';
@@ -209,7 +209,7 @@ function nextIntent(s: GameState, b: Battle, rng: Rng): Intent {
   } else {
     intent = generateIntent(rng, ctx);
   }
-  if (intent.layers.includes('negation') || (tut === 'heal' && intent.kind === 'heal')) b.trapUsed = true;
+  if (intent.layers.includes('negation') || (intent.layers.includes('object') && intent.kind === 'wait') || (tut === 'heal' && intent.kind === 'heal')) b.trapUsed = true;
   if (intent.kind === 'charge') b.turnsSinceCharge = 0;
   else b.turnsSinceCharge += 1;
   return intent;
@@ -245,6 +245,9 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
   const canType = has(s.level, 'typing');
   const promptZh = w.digit ? w.digit : w.zh;
 
+  if (move === 'sentence' && nehmeRegion(s)) {
+    return { type: 'sentence', prompt: '句式攻击：Ich nehme + 数字 + 复数（zwei Äpfel），或 einen / eine / ein + 名词。复数句不吃重复递减', focus: 'Ich nehme …' };
+  }
   if (move === 'sentence') {
     return { type: 'sentence', prompt: '句式攻击：Ich möchte + einen / eine / ein + 你见过的名词', focus: 'Ich möchte …' };
   }
@@ -345,6 +348,11 @@ export function letters(w: Word): number {
   return w.de.replace(/[^A-Za-zÄÖÜäöüß]/g, '').length;
 }
 
+/** Region 2 (Lv11+): the sentence attack is 「Ich nehme …」, with plurals. */
+export function nehmeRegion(s: GameState): boolean {
+  return s.region === 2 && has(s.level, 'plural');
+}
+
 export function knownMoechteNouns(s: GameState): Word[] {
   return WORDS.filter((w) => w.moechte && s.words[w.id]);
 }
@@ -365,7 +373,7 @@ export function gradeQuestion(s: GameState, b: Battle, q: Question, input: strin
     case 'steady':
       return { ok: true, notes: [], correct: q.answer! };
     case 'sentence':
-      return gradeMoechte(input, knownMoechteNouns(s));
+      return nehmeRegion(s) ? gradeNehme(input, knownMoechteNouns(s)) : gradeMoechte(input, knownMoechteNouns(s));
     case 'skill': {
       const sk = SKILLS[q.skillId!];
       const fake: Word = { id: sk.id, de: sk.de, zh: sk.zh, pos: 'phr', family: 'echo', lvl: 1, zone: 'camp' };
@@ -538,7 +546,8 @@ export function resolveTurn(
       }
       else if (q.type === 'sentence') {
         const noun = verdict.word!;
-        const recent = s.recentNouns.slice(-5).filter((id) => id === noun.id).length;
+        // A plural sentence (Ich nehme zwei Äpfel) is always fresh.
+        const recent = (verdict as { plural?: boolean }).plural ? 0 : s.recentNouns.slice(-5).filter((id) => id === noun.id).length;
         mult *= CONFIG.damage.sentence * CONFIG.damage.freshness[Math.min(recent, 3)] * (1 + affixTotal(s, 'sentenceDmg'));
         s.recentNouns.push(noun.id);
         if (s.recentNouns.length > 10) s.recentNouns.shift();
@@ -732,7 +741,8 @@ export function resolveTurn(
         say({ text: '「Ich muss los!」——它抱着箱子钻进人群，跑了。', tone: 'bad' });
         break;
       case 'wait':
-        log.push({ text: blocking ? '它根本没出手——nicht 的意思是「不」。格挡白费了。' : '它说了不打，就真的没打。', tone: 'info' });
+        if (intent.layers.includes('object')) log.push({ text: blocking ? '它说的是 mich——挠的是它自己。格挡白费了。' : '它说的是 mich，对着自己出手，没打你。', tone: 'info' });
+        else log.push({ text: blocking ? '它根本没出手——nicht 的意思是「不」。格挡白费了。' : '它说了不打，就真的没打。', tone: 'info' });
         break;
     }
   }
@@ -742,7 +752,7 @@ export function resolveTurn(
   if (multi) b = target;
   // Misreads for the post-fight recap.
   if (ok && move === 'block' && intent.kind === 'wait')
-    b.recap.push(`第 ${b.turn} 回合：它说「${intent.line}」，有 nicht，其实不打。直接攻击更好。`);
+    b.recap.push(`第 ${b.turn} 回合：它说「${intent.line}」，${intent.layers.includes('object') ? '是 mich（它自己）' : '有 nicht'}，其实不打。直接攻击更好。`);
   if (move === 'block' && intent.kind === 'attack' && intent.hits > 1 && ok)
     b.recap.push(`第 ${b.turn} 回合：「${intent.line}」是连击，格挡只挡第一下。`);
   if (move === 'break' && intent.kind === 'charge')

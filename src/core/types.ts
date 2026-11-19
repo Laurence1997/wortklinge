@@ -50,7 +50,7 @@ export interface Intent {
   line: string;
   zh: string;
   /** Which layers this line uses, for the post-fight recap. */
-  layers: Array<'count' | 'element' | 'negation'>;
+  layers: Array<'count' | 'element' | 'negation' | 'object'>;
 }
 
 /** 0 = never met, 1 = 裂形, 2 = 半名, 3 = 归名. 无名 is "met 0 times". */
