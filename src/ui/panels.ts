@@ -6,6 +6,7 @@ import type { AffixKey, Item, Slot, Word } from '../core/types';
 import { has } from '../core/unlocks';
 import { FAMILIES } from '../data/families';
 import { SKILLS } from '../data/skills';
+import { SAYINGS, SAYING_CFG } from '../data/sayings';
 import { canLearn, CLASSES, learn, rank, spent, talentPoints, TALENT_FROM_LEVEL, TALENTS, TIER_GATE } from '../core/classes';
 import { fullForm, genderOf, hasArticleQuestion, WORDS } from '../data/words';
 import type { Controller } from '../game/controller';
@@ -561,6 +562,16 @@ export class Panels {
     table('常错', '错了两次以上、错的比例超过三分之一，或者归名后又忘过的词。多打几次这些怪。', shaky);
     table('学习中', '还没归名的词，按复习时间排，最该复习的在前。', learning);
     table('熟练', '已经归名的词。', known);
+    if (s.level >= SAYING_CFG.fromLevel) {
+      const got = SAYINGS.filter((x) => s.sayings?.[x.id]);
+      const tb = h('table.log');
+      tb.append(h('tr', h('th', '短句'), h('th', '中文'), h('th', '什么时候说')));
+      for (const x of SAYINGS) {
+        const have = !!s.sayings?.[x.id];
+        tb.append(h('tr', h('td', have ? `${x.a} ${x.b}` : `${x.a} ……`), h('td', have ? x.zh : '？'), h('td', have ? x.when : '在野外遇到喊这句的接句怪，接上下半句就能收下')));
+      }
+      wrap.append(h('h3', `短句卡（${got.length} / ${SAYINGS.length}）`), h('p.small.muted', '接句怪喊上半句，你接下半句就能收下这张卡。卡只用来收集，没有战斗效果。'), tb);
+    }
     if (!Object.keys(s.words).length) wrap.append(h('p', '还没有见过的词。出去打几只怪吧。'));
     return wrap;
   }

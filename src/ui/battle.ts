@@ -1,3 +1,4 @@
+import { SAYING_BY_ID } from '../data/sayings';
 import type { Battle, Question, TurnReport } from '../core/combat';
 import { availableMoves, comboTier, nehmeRegion } from '../core/combat';
 import { ELEMENT_ZH, INTENT_ZH } from '../core/intents';
@@ -83,6 +84,7 @@ export class BattleUI {
     this.question = this.ctrl.askQuestion(move);
     // Listening step: the monster says its own name, the player picks the meaning.
     if (this.question.type === 'pickZh' && this.question.focus) this.ctrl.speak(this.question.focus);
+    if (this.question.type === 'saying') this.ctrl.speak(SAYING_BY_ID[this.question.sayingId!].a);
     this.phase = 'answer';
     this.render();
   }
@@ -215,6 +217,7 @@ export class BattleUI {
         'div',
         b.kind === 'due' ? h('span.tag.due', '遗忘之物') : b.kind === 'new' ? h('span.tag', '新怪') : h('span.tag', '影子'),
         b.isEcho ? h('span.tag.echo', '带着你的回响') : '',
+        b.saying && !b.sayingDone ? h('span.tag.echo', '接句怪') : '',
         b.stage === 2 && b.kind === 'due' ? h('span.tag', '可归名') : '',
       ),
       bar('hp', m.hp, m.maxHp, `${m.hp} / ${m.maxHp}`),

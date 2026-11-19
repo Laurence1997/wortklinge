@@ -55,6 +55,8 @@ export interface GameState {
   flags: Record<string, number | boolean | string>;
   skills: string[];
   skillUses: Record<string, number>;
+  /** 接句怪: short-saying cards collected (id → times). */
+  sayings?: Record<string, number>;
   recentNouns: string[];
   /** Which map you stand on (1 = 余烬营地, 2 = 面包集市). */
   region: 1 | 2;

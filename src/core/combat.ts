@@ -2,7 +2,7 @@
 // you pick a counter, then answer a question. You act first.
 
 import { CONFIG } from './config';
-import { gradeMoechte, gradeNehme, gradeTyped, type Verdict } from './grading';
+import { gradeMoechte, gradeNehme, gradeTyped, normalize, type Verdict } from './grading';
 import { ELEMENT_ZH, generateIntent, INTENT_ZH } from './intents';
 import { between, pick, shuffle, type Rng } from './rng';
 import { kindOf, stageOf, overdueSteps, type Kind, type Stage } from './srs';
@@ -11,12 +11,13 @@ import type { Element, Intent, Move, Word } from './types';
 import { has } from './unlocks';
 import { fullForm, genderOf, hasArticleQuestion, WORDS } from '../data/words';
 import { SKILLS } from '../data/skills';
+import { SAYING_BY_ID, SAYING_CFG, SAYINGS } from '../data/sayings';
 import { CONJ, PERSON_LABEL, type Person } from '../data/verbs';
 import { CLASSES, critRunNeeded, rank, resMax, shieldReflect, wrongHitShare, type ClassId } from './classes';
 
 /** callout = 点名 in packs (shout the target's article); conj = write a verb form (Lv12+); plural = write the plural (Lv11+). */
 /** storm = 书写者「墨水风暴」(type a long word you know); steady = 守护者「稳住」(no question). */
-export type QuestionType = 'article' | 'pickDe' | 'pickZh' | 'typed' | 'sentence' | 'skill' | 'callout' | 'conj' | 'plural' | 'storm' | 'steady';
+export type QuestionType = 'article' | 'pickDe' | 'pickZh' | 'typed' | 'sentence' | 'skill' | 'callout' | 'conj' | 'plural' | 'storm' | 'steady' | 'saying';
 
 export interface Question {
   type: QuestionType;
@@ -35,6 +36,8 @@ export interface Question {
   word?: Word;
   /** conj questions: which person to conjugate for. */
   person?: import('../data/verbs').Person;
+  /** saying questions (接句怪): which saying. */
+  sayingId?: string;
 }
 
 export interface MonsterState {
@@ -113,6 +116,9 @@ export interface Battle {
   skillCooldown: number;
   /** Orange 冠词审判: the next hit after a correct article answer deals double. */
   judgement: boolean;
+  /** 接句怪: the saying it shouts; its first attack question asks for the second half. */
+  saying?: string;
+  sayingDone?: boolean;
   outcome: null | 'win' | 'lose' | 'fled';
   log: LogLine[];
   recap: string[];
@@ -310,6 +316,7 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
   };
   const plural = (): Question => ({ type: 'plural', prompt: '写出复数（带 die）', focus: `${fullForm(w)} → die …`, answer: w.pl! });
 
+  if (move === 'attack' && b.saying && !b.sayingDone && !inPack) return sayingQuestion(s, b.saying, rng);
   if (move === 'attack' && inPack && isNoun && !b.named && b.stage === 0) return callout();
   // 防御 (Lv7+): a written answer breaks the guard. A word not yet at the typing step gets its usual choice question (×0.3).
   if (move === 'attack' && b.intent.kind === 'defend' && canType && (b.tutorial === 'break' || !(b.kind === 'new' && b.stage === 0 && b.step < 2))) {
@@ -349,6 +356,26 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
           : [pickDe, pickZh];
   return ladder[b.step % ladder.length]();
 }
+
+/** 接句怪: the monster shouts the first half, you finish it (pick from three below Lv6, typed from Lv6). */
+export function sayingQuestion(s: GameState, id: string, rng: Rng): Question {
+  const x = SAYING_BY_ID[id];
+  const prompt = '接句怪：它喊出上半句，接上下半句（答对必暴击）';
+  const focus = `「${x.a} …」`;
+  if (s.level >= SAYING_CFG.typedFrom) return { type: 'saying', prompt: prompt + '，打字', focus, answer: x.b, sayingId: id };
+  const others = shuffle(rng, SAYINGS.filter((o) => o.id !== id && normalize(o.b) !== normalize(x.b)).map((o) => o.b)).slice(0, 2);
+  return { type: 'saying', prompt, focus, options: shuffle(rng, [x.b, ...others]), answer: x.b, sayingId: id };
+}
+
+/** Rolls whether a fresh one-on-one monster is a 接句怪 (Lv3+, about 1 in 8). */
+export function rollSaying(s: GameState, rng: Rng): string | undefined {
+  if (s.level < SAYING_CFG.fromLevel || rng() >= SAYING_CFG.chance) return undefined;
+  // Sayings you haven't collected yet come first.
+  const fresh = SAYINGS.filter((x) => !s.sayings?.[x.id]);
+  return pick(rng, fresh.length ? fresh : SAYINGS).id;
+}
+
+const sayKey = (v: string) => normalize(v).replace(/\s+/g, ' ').trim();
 
 /** A long word you have met (longest few of them), for 墨水风暴. Falls back to the target's word. */
 export function stormWord(s: GameState, rng: Rng, fallback: Word): Word {
@@ -396,6 +423,11 @@ export function gradeQuestion(s: GameState, b: Battle, q: Question, input: strin
       return gradeTyped(input, q.word!, !!q.withArticle);
     case 'steady':
       return { ok: true, notes: [], correct: q.answer! };
+    case 'saying': {
+      const x = SAYING_BY_ID[q.sayingId!];
+      const ok = sayKey(input) === sayKey(x.b);
+      return { ok, notes: ok ? [`${x.a} ${x.b} —— ${x.zh}`] : [`正确答案：${x.a} ${x.b}（${x.zh}）`], correct: x.b };
+    }
     case 'sentence':
       return nehmeRegion(s) ? gradeNehme(input, knownMoechteNouns(s)) : gradeMoechte(input, knownMoechteNouns(s));
     case 'skill': {
@@ -528,6 +560,16 @@ export function resolveTurn(
   let blocking = false;
   let interrupted = false;
   b.qIndex += 1;
+  if (q.type === 'saying') {
+    b.sayingDone = true;
+    if (ok) {
+      const id = q.sayingId!;
+      s.sayings ??= {};
+      const first = !s.sayings[id];
+      s.sayings[id] = (s.sayings[id] ?? 0) + 1;
+      log.push({ text: first ? `短句卡「${SAYING_BY_ID[id].a} ${SAYING_BY_ID[id].b}」收进了收集册。` : `又接上了「${SAYING_BY_ID[id].a} ${SAYING_BY_ID[id].b}」。`, tone: 'good' });
+    } else log.push({ text: `它冷笑：「${SAYING_BY_ID[q.sayingId!].a} ${SAYING_BY_ID[q.sayingId!].b}！」这句没接上。`, tone: 'bad' });
+  }
 
   // Class resources: 书写者 earns 墨水 for typed answers, 守护者 earns 沉着 for every answer.
   const cfx = b.cfx;
@@ -554,7 +596,7 @@ export function resolveTurn(
   if (ok) {
     b.wrongStreak = 0;
     if (q.type === 'callout') b.named = true;
-    b.step += 1;
+    if (q.type !== 'saying') b.step += 1;
     s.combo += 1;
     if (readRight && move !== 'skill') s.combo += 1; // 读对意图并出对克制招式，连击额外 +1
     s.bestCombo = Math.max(s.bestCombo, s.combo);
@@ -616,8 +658,10 @@ export function resolveTurn(
       if (g === 'n') mult *= 1 + affixTotal(s, 'vsNeut');
       mult *= comboMult(s.combo);
 
-      // Crits: forced ones first (初识暴击), then the random roll.
-      if (b.stage === 0 && b.kind === 'new' && !b.firstCorrectDone) {
+      // Crits: forced ones first (接句怪, 初识暴击), then the random roll.
+      if (q.type === 'saying') {
+        crit = true;
+      } else if (b.stage === 0 && b.kind === 'new' && !b.firstCorrectDone) {
         crit = true;
         newSpell = true;
       } else if ((s.flags.wortgewalt as number) > 0) {
@@ -629,7 +673,7 @@ export function resolveTurn(
         const chance = critChance(s) + (q.type === 'article' || q.type === 'pickDe' || q.type === 'pickZh' ? affixTotal(s, 'choiceCrit') : 0);
         crit = rng() < chance;
       }
-      b.firstCorrectDone = true;
+      if (q.type !== 'saying') b.firstCorrectDone = true;
       if (crit) mult *= CONFIG.player.critMult;
       if (m.vulnerable > 0) mult *= CONFIG.damage.vulnerable;
       const judged = b.judgement;
@@ -644,6 +688,8 @@ export function resolveTurn(
       mult = Math.min(mult, CONFIG.damage.maxMultiplierOfBase);
       playerDamage = Math.max(1, Math.round(atk * mult));
       if (b.tutorial === 'loss') playerDamage = Math.min(playerDamage, 3);
+      // The saying alone never finishes it: the word itself still has to be answered.
+      if (q.type === 'saying') playerDamage = Math.max(1, Math.min(playerDamage, m.hp - 1));
 
       m.hp -= playerDamage;
       s.stats.maxHit = Math.max(s.stats.maxHit, playerDamage);

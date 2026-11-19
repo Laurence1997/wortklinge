@@ -644,3 +644,32 @@ describe('class resources carry over between fights', () => {
     expect(startBattle(s, apfel, rng).cfx.res).toBe(0);
   });
 });
+
+describe('接句怪', () => {
+  it('a right second half is a sure crit, drops the card, never kills, and keeps the word question for later', () => {
+    const s = newGame('T', 'student', T0);
+    s.level = 4;
+    const w = WORDS.find((x) => x.art && (x.region ?? 1) === 1 && !x.tutorial)!;
+    const b = startBattle(s, w, makeRng(3));
+    b.saying = 'sicher';
+    b.intent = { ...b.intent, kind: 'attack' } as typeof b.intent;
+    const q = makeQuestion(s, b, 'attack', makeRng(4));
+    expect(q.type).toBe('saying');
+    expect(q.options).toContain('sicher');
+    const r = resolveTurn(s, b, 'attack', q, 'Sicher!', makeRng(9));
+    expect(r.correct).toBe(true);
+    expect(r.crit).toBe(true);
+    expect(b.monster.hp).toBeGreaterThan(0);
+    expect(s.sayings?.sicher).toBe(1);
+    expect(b.firstCorrectDone).toBe(false);
+    expect(makeQuestion(s, b, 'attack', makeRng(4)).type).not.toBe('saying');
+  });
+  it('is typed from Lv6', () => {
+    const s = newGame('T', 'student', T0);
+    s.level = 6;
+    const b = startBattle(s, WORDS[0], makeRng(3));
+    b.saying = 'glueck';
+    const q = makeQuestion(s, b, 'attack', makeRng(4));
+    expect(q.options).toBeUndefined();
+  });
+});

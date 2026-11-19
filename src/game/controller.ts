@@ -4,7 +4,7 @@ import type { Look } from '../core/look';
 // Phaser world to the DOM interface. Game rules live in src/core and stay pure.
 
 import { answerBoss, startBoss, type BossFight } from '../core/boss';
-import { makeQuestion, monsterStats, pickHint, resetClassFx, resolveTurn, startBattle, type Battle, type Question, type TurnReport, type Tutorial } from '../core/combat';
+import { makeQuestion, monsterStats, pickHint, resetClassFx, resolveTurn, rollSaying, startBattle, type Battle, type Question, type TurnReport, type Tutorial } from '../core/combat';
 import { CONFIG, xpToNext } from '../core/config';
 import { favour, FAVOUR, KONRAD_WORDS, QUESTS, questEvent, questState, startQuest, type QuestEvent } from '../core/quests';
 import { CHEST_ZH, CHESTS, lockWord, openChest, type ChestKind } from '../core/chest';
@@ -282,6 +282,7 @@ export class Controller {
     } else {
       this.entity = m;
       this.battle = startBattle(s, m.word, this.rng, { isEcho: m.isEcho, tutorial, trial: opts.trial, rare: m.rare });
+      if (!tutorial && !opts.trial) this.battle.saying = rollSaying(s, this.rng);
       if (m.rare && m.word.family !== 'truhe') {
         // Rare monsters: half again as tough. They carry an iron chest and run when hurt.
         const mon = this.battle.monster;
