@@ -1,10 +1,11 @@
 // 联机第一档: see other logged-in players in the same region and chat. Supabase Realtime:
-// one channel per region, presence for who is where (sent about once a second, only while moving),
-// broadcast for chat (nothing is stored). No grouping, no exact movement sync.
+// one channel per region for presence (who is here) and chat, plus small cell channels for walking
+// positions (see update()). Nothing is stored. No grouping, no exact movement sync.
 
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { DEFAULT_LOOK, validLook, type Look } from '../core/look';
 import { cloud, sb } from './cloud';
+import { MAP_H, MAP_W, TILE } from '../game/map';
 
 export interface Peer {
   id: string;
@@ -94,17 +95,13 @@ export function joinRegion(me: Me): void {
       const peer = p.id ? online.peers.get(p.id) : undefined;
       if (peer) (peer.bubble = text), (peer.bubbleUntil = Date.now() + BUBBLE_MS);
     })
-    .on('broadcast', { event: 'pos' }, ({ payload }) => {
-      const p = payload as { id?: string; x?: number; y?: number };
-      const peer = p.id ? online.peers.get(p.id) : undefined;
-      if (peer) (peer.x = Number(p.x) || peer.x), (peer.y = Number(p.y) || peer.y);
-    })
     .subscribe((status) => {
       online.status = status === 'SUBSCRIBED' ? 'ok' : status === 'CLOSED' ? 'off' : 'error';
       online.onChat();
       if (status === 'SUBSCRIBED') {
         sent = '';
         lastTrack = 0;
+        myCell = '';
         update(me);
       }
     });
@@ -113,37 +110,101 @@ export function joinRegion(me: Me): void {
 export function leave(): void {
   if (channel) void sb.removeChannel(channel);
   channel = null;
+  leaveCells();
   online.status = 'off';
   online.region = 0;
   online.peers.clear();
 }
 
-/** Sends where you are, only when something changed (call about once a second). */
-// Presence has a tight per-client rate limit, so it only carries who you are (nick, look, fighting)
-// and a position refreshed at most every 10 s; walking goes out as a broadcast at most every 3 s.
+// Network saving (Lucas, "按12改"): Realtime bills every message once per recipient, so walking
+// positions only go to players nearby. The region is cut into cells of CELL px; you send on your own
+// cell's channel and listen on the 3×3 cells around you, so a step reaches only players within about
+// one cell (more than a screen). Presence (whole region) carries who you are, plus your position when
+// you stand still (at most every 15 s), so far players still show up roughly where they are.
+// Walking: one position every 3 s, or every 5 s once more than 10 players share the region; when you
+// stop, the final position goes out at once.
+export const CELL = 12 * TILE;
+const COLS = Math.ceil((MAP_W * TILE) / CELL);
+const ROWS = Math.ceil((MAP_H * TILE) / CELL);
+const CROWD = 10;
+const cellChannels = new Map<string, RealtimeChannel>();
+let myCell = '';
+
+const cellName = (region: number, cx: number, cy: number) => `wk-r${region}-c${cx}-${cy}`;
+
+function onPos({ payload }: { payload: unknown }) {
+  const p = payload as { id?: string; x?: number; y?: number };
+  const peer = p.id ? online.peers.get(p.id) : undefined;
+  if (peer) (peer.x = Number(p.x) || peer.x), (peer.y = Number(p.y) || peer.y);
+}
+
+/** Listens on the 3×3 cells around (cx, cy) and drops the others. */
+function setCells(region: number, cx: number, cy: number) {
+  const want = new Set<string>();
+  for (let dx = -1; dx <= 1; dx++)
+    for (let dy = -1; dy <= 1; dy++) {
+      const x = cx + dx;
+      const y = cy + dy;
+      if (x >= 0 && y >= 0 && x < COLS && y < ROWS) want.add(cellName(region, x, y));
+    }
+  for (const [name, ch] of cellChannels) if (!want.has(name)) (void sb.removeChannel(ch), cellChannels.delete(name));
+  for (const name of want) {
+    if (cellChannels.has(name)) continue;
+    const ch = sb.channel(name, { config: { broadcast: { self: false } } }).on('broadcast', { event: 'pos' }, onPos);
+    ch.subscribe();
+    cellChannels.set(name, ch);
+  }
+}
+
+function leaveCells() {
+  for (const ch of cellChannels.values()) void sb.removeChannel(ch);
+  cellChannels.clear();
+  myCell = '';
+}
+
 let lastTrack = 0;
-let lastPos = '';
+let trackedPos = '';
+let lastSentPos = '';
+let prevPos = '';
 let lastBroadcast = 0;
-/** Walking position goes out at most every 3 s (Lucas: 没必要那么勤). */
+
+/** Called about once a second: keeps presence and the nearby cells up to date and sends your position. */
 export function update(me: Me): void {
   if (!channel || online.status !== 'ok') return;
   const now = Date.now();
   const x = Math.round(me.x);
   const y = Math.round(me.y);
-  const who = `${me.fighting},${JSON.stringify(me.look)},${myNick()}`;
+  const cx = Math.max(0, Math.min(COLS - 1, Math.floor(x / CELL)));
+  const cy = Math.max(0, Math.min(ROWS - 1, Math.floor(y / CELL)));
+  const cell = cellName(me.region, cx, cy);
+  if (cell !== myCell) {
+    myCell = cell;
+    setCells(me.region, cx, cy);
+  }
   const pos = `${Math.round(x / 4)},${Math.round(y / 4)}`;
-  if (who !== sent || (pos !== lastPos && now - lastTrack > 10_000)) {
-    if (now - lastTrack < 3000) return; // never more than one presence update every 3 s
+  const moving = pos !== prevPos;
+  const stopped = !moving && pos !== lastSentPos; // stood still this tick after walking
+  prevPos = pos;
+
+  // Presence (whole region): who you are, and where you stand when idle (at most every 15 s).
+  const who = `${me.fighting},${JSON.stringify(me.look)},${myNick()}`;
+  if ((who !== sent || (!moving && pos !== trackedPos && now - lastTrack > 15_000)) && now - lastTrack >= 3000) {
     sent = who;
     lastTrack = now;
-    lastPos = pos;
+    trackedPos = pos;
+    lastSentPos = pos;
     void channel.track({ nick: myNick(), look: me.look, x, y, fighting: me.fighting });
     return;
   }
-  if (pos !== lastPos && now - lastBroadcast >= 3000) {
-    lastPos = pos;
+
+  // Walking (nearby only).
+  const gap = online.peers.size + 1 > CROWD ? 5000 : 3000;
+  if ((moving && now - lastBroadcast >= gap) || stopped) {
+    const ch = cellChannels.get(myCell);
+    if (!ch || ch.state !== 'joined') return;
+    lastSentPos = pos;
     lastBroadcast = now;
-    void channel.send({ type: 'broadcast', event: 'pos', payload: { id: myId(), x, y } });
+    void ch.send({ type: 'broadcast', event: 'pos', payload: { id: myId(), x, y } });
   }
 }
 
