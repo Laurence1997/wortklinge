@@ -1,6 +1,7 @@
 // 默写对决 (考官 NPC in each region's town, region 1 from Lv2): a special fight against an examiner.
-// Each question is a word of this region you haven't named yet; write it (nouns with the article).
-// Right: ×4 the normal new-monster XP and the word is named on the spot (it relapses as usual later).
+// Each question is a word of this region you have never met (a test of what you already know);
+// write it (nouns with the article). Words met in the field go through the normal reviews instead.
+// Right: ×2 the normal new-monster XP and the word is named on the spot (it relapses as usual later).
 // Wrong: nothing happens to the word, it stays a new word out in the field. Each word counts once.
 // The examiner hits on a read bar (every 3 answers) and on every wrong answer; when you drop, the duel
 // ends. Words you got right are kept and you can start again at once.
@@ -16,7 +17,7 @@ export const DUEL = {
   fromLevel: 2,
   /** Correct answers to beat the examiner. */
   examinerHp: 12,
-  xpMult: 4,
+  xpMult: 2,
   /** The examiner strikes every this many answers, and on every wrong one. */
   readBar: 3,
   hitShare: 0.12,
@@ -34,9 +35,9 @@ export interface Duel {
   last?: { ok: boolean; verdict: Verdict; word: Word; xp: number; hit: number };
 }
 
-/** Words of this region that can be written and aren't named yet. */
+/** Words of this region that can be written and that you have never met (Lucas 2026-11-19: no skipping reviews). */
 export function duelPool(s: GameState, region: number): Word[] {
-  return WORDS.filter((w) => (w.region ?? 1) === region && w.pos !== 'phr' && !w.digit && !w.tutorial && (s.words[w.id]?.stage ?? 0) < 3);
+  return WORDS.filter((w) => (w.region ?? 1) === region && w.pos !== 'phr' && !w.digit && !w.tutorial && !s.words[w.id]);
 }
 
 export function startDuel(s: GameState, region: number, rng: Rng): Duel {

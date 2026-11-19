@@ -939,9 +939,9 @@ export class Controller {
     const region = s.region ?? 1;
     if (s.level < DUEL.fromLevel) return say([{ who: '考官', text: `「Noch nicht.」还不行。到 ${DUEL.fromLevel} 级再来，我考你默写。` }]);
     const left = duelPool(s, region).length;
-    if (!left) return say([{ who: '考官', text: '「Alles gelernt.」这一区的词你全都归名了。没什么可考的。' }]);
+    if (!left) return say([{ who: '考官', text: '「Kenne ich schon.」这一区你没见过的词已经考完了。见过的词，去野外按时复习吧。' }]);
     say([
-      { who: '考官', text: `「Prüfung?」默写对决：我出这一区你还没归名的词（还剩 ${left} 个），名词要带冠词。` },
+      { who: '考官', text: `「Prüfung?」默写对决：我只考这一区你还没见过的词（还剩 ${left} 个），看你本来就会多少，名词要带冠词。` },
       { who: SYS, text: `写对一个：经验是打怪的 ${DUEL.xpMult} 倍，这个词当场归名。写错：它照样留在野外当新词。考官每 ${DUEL.readBar} 题出手一次，写错也挨打；你倒下就结束，写对的都算数。` },
     ], undefined, [
       { label: '开始对决', act: () => this.panels.showDuel(startDuel(s, region, Math.random)) },
