@@ -34,6 +34,8 @@ export function generateIntent(rng: Rng, ctx: IntentContext): Intent {
   if (!has(ctx.level, 'heal') || ctx.hpRatio > 0.6) delete weights.heal;
   // Two charges at least 3 turns apart; never open a fight with a charge.
   if (ctx.turnsSinceCharge < 3) delete weights.charge;
+  // 1–6 级只有攻击和蓄力（和不打的陷阱）；防御从 7 级起。
+  if (!has(ctx.level, 'blockBreak')) delete weights.defend;
   delete weights.wait;
   delete weights.flee;
   const kind = weighted(rng, weights) as Exclude<IntentKind, 'wait' | 'flee'>;
@@ -148,7 +150,7 @@ const OBJECT_TRAPS: Array<[string, string]> = [
   ['Ich wasche mich.', '我洗洗自己。（不攻击）'],
 ];
 
-/** The move that counters each intent (读对意图并出对克制招式，连击额外 +1). */
+/** Legacy (sims): the move that used to counter each intent. Combat now has one move; the intent decides the question. */
 export const COUNTER: Record<IntentKind, 'attack' | 'block' | 'break'> = {
   attack: 'block',
   defend: 'break',

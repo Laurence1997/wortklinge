@@ -202,9 +202,9 @@ export class Controller {
         );
         break;
       case 7:
-        s.flags.pendingBlock = true;
         s.flags.pendingBreak = true;
-        lines.push({ who: SYS, text: '下面两只怪会教你格挡和破防。看它说什么：要打你就格挡，缩起来就破防。' });
+        lines.push({ who: SYS, text: '从现在起，怪会缩起来防御（Ich verteidige mich.）。这时选择题只能刮掉三成，写对它的名字（带冠词）才能破防：全额伤害，还让它易伤两回合。' });
+        lines.push({ who: SYS, text: '连击怪（Ich beiße zweimal!）也来了：答对的话，它只打得出第一下。下一只举盾的怪会教你破防。' });
         break;
       case 8:
         s.flags.pendingHeal = true;
@@ -246,7 +246,6 @@ export class Controller {
     rollDay(s);
     let tutorial: Tutorial = null;
     if (s.flags.pendingLoss && !m.isEcho) tutorial = 'loss';
-    else if (s.flags.pendingBlock) tutorial = 'block';
     else if (s.flags.pendingBreak) tutorial = 'break';
     else if (s.flags.pendingNegation) tutorial = 'negation';
     else if (s.flags.pendingHeal) tutorial = 'heal';
@@ -386,7 +385,6 @@ export class Controller {
       this.speak(fullForm(b.word));
     }
     // Tutorial bookkeeping.
-    if (b.tutorial === 'block' && r.parried) s.flags.pendingBlock = false;
     if (b.tutorial === 'break' && b.monster.vulnerable > 0) s.flags.pendingBreak = false;
     if (b.tutorial === 'negation' && b.turn > 1) s.flags.pendingNegation = false;
     if (b.tutorial === 'heal' && b.trapUsed) s.flags.pendingHeal = false;

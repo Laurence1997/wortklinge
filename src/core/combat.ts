@@ -3,7 +3,7 @@
 
 import { CONFIG } from './config';
 import { gradeMoechte, gradeNehme, gradeTyped, type Verdict } from './grading';
-import { COUNTER, ELEMENT_ZH, generateIntent, INTENT_ZH } from './intents';
+import { ELEMENT_ZH, generateIntent, INTENT_ZH } from './intents';
 import { between, pick, shuffle, type Rng } from './rng';
 import { kindOf, stageOf, overdueSteps, type Kind, type Stage } from './srs';
 import { affixTotal, attack, critChance, hintsPerFight, maxHp, now, type GameState } from './state';
@@ -69,6 +69,8 @@ export interface ClassFx {
   critReady: boolean;
   /** Talent 冷静: the first typed miss this fight keeps your combo. */
   calmUsed: boolean;
+  /** Talent 以守为攻: after 稳住, the next correct answer adds a plain hit. */
+  yishou?: boolean;
 }
 
 export type Tutorial = 'loss' | 'block' | 'break' | 'negation' | 'heal' | 'packCharge' | null;
@@ -199,8 +201,6 @@ function nextIntent(s: GameState, b: Battle, rng: Rng): Intent {
   let intent: Intent;
   if (tut === 'loss') {
     intent = generateIntent(rng, { ...ctx, force: { kind: 'attack', hits: 3, line: 'Ich beiße dreimal!', zh: '我咬三下！', layers: ['count'] } });
-  } else if (tut === 'block' && b.turn <= 2) {
-    intent = generateIntent(rng, { ...ctx, force: { kind: 'attack', line: 'Ich greife an!', zh: '我要进攻！' } });
   } else if (tut === 'break' && b.turn <= 2) {
     intent = generateIntent(rng, { ...ctx, force: { kind: 'defend', line: 'Ich verteidige mich.', zh: '我要防守。' } });
   } else if (tut === 'negation' && b.turn === 1) {
@@ -242,7 +242,6 @@ function distractors(rng: Rng, w: Word, field: 'de' | 'zh', n: number): string[]
 
 export function availableMoves(s: GameState, b: Battle): Move[] {
   const moves: Move[] = ['attack'];
-  if (has(s.level, 'blockBreak')) moves.push('block', 'break');
   if (has(s.level, 'sentence')) moves.push('sentence');
   if (has(s.level, 'skills') && s.skills.length) moves.push('skill');
   if (s.cls) moves.push('cls');
@@ -312,8 +311,11 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
   const plural = (): Question => ({ type: 'plural', prompt: '写出复数（带 die）', focus: `${fullForm(w)} → die …`, answer: w.pl! });
 
   if (move === 'attack' && inPack && isNoun && !b.named && b.stage === 0) return callout();
-  if (move === 'break') return canType ? typed() : isNoun ? article() : pickDe();
-  if (move === 'block') return isNoun && rng() < 0.5 ? article() : pickDe();
+  // 防御 (Lv7+): a written answer breaks the guard. A word not yet at the typing step gets its usual choice question (×0.3).
+  if (move === 'attack' && b.intent.kind === 'defend' && canType && (b.tutorial === 'break' || !(b.kind === 'new' && b.stage === 0 && b.step < 2))) {
+    if (!isNoun && CONJ[w.de] && has(s.level, 'conjugation')) return conj();
+    return typed();
+  }
 
   // Normal attack.
   // 书写者试炼: everything is typed.
@@ -472,7 +474,7 @@ export function spillStorm(s: GameState, pack: Battle[], from: Battle, overkill:
   return d;
 }
 
-/** Per-monster damage multiplier in a pack, so 2–3 monsters together hit about 1.2–1.35× one monster. */
+/** Per-monster damage multiplier in a pack (2 together ≈ 0.5×, 3 ≈ 0.45× one monster per turn; packs last longer since there is no parry any more). */
 export function packDamageMult(alive: number): number {
   return alive <= 1 ? 1 : alive === 2 ? CONFIG.pack.dmgMult[0] : CONFIG.pack.dmgMult[1];
 }
@@ -520,7 +522,9 @@ export function resolveTurn(
   let crit = false;
   let newSpell = false;
   let element: Element | null = null;
-  const readRight = ok && COUNTER[intent.kind] === (move === 'sentence' ? 'attack' : move);
+  // 读对意图: a correct hit that interrupts (蓄力/回血/逃跑) or a written answer that breaks a guard.
+  const writtenQ = q.type === 'typed' || q.type === 'conj' || q.type === 'plural' || q.type === 'storm' || (q.type === 'callout' && !!q.withArticle);
+  const readRight = ok && move !== 'cls' && (['charge', 'heal', 'flee'].includes(intent.kind) || (intent.kind === 'defend' && writtenQ));
   let blocking = false;
   let interrupted = false;
   b.qIndex += 1;
@@ -581,16 +585,8 @@ export function resolveTurn(
       }
     } else if (move === 'cls' && q.type === 'steady') {
       blocking = true;
+      if (rank(s, 'yishou')) cfx.yishou = true;
       log.push({ text: '「稳住」——你沉下身子，这回合的第一击会被挡下。', tone: 'good' });
-    } else if (move === 'block') {
-      blocking = true;
-      log.push({ text: '你摆好架势，准备格挡。', tone: 'info' });
-      if (s.cls === 'guardian' && rank(s, 'yishou')) {
-        const d = Math.max(1, Math.round(attack(s) * CONFIG.damage.choice * between(rng, CONFIG.damage.roll[0], CONFIG.damage.roll[1])));
-        m.hp -= d;
-        playerDamage = d;
-        log.push({ text: `以守为攻：格挡的同时顺手一击，${d} 点。`, tone: 'good' });
-      }
     } else {
       const atk = attack(s);
       let mult = between(rng, CONFIG.damage.roll[0], CONFIG.damage.roll[1]);
@@ -612,7 +608,8 @@ export function resolveTurn(
         if (recent > 0) log.push({ text: `${noun.de} 用得太勤，威力只剩 ${Math.round(CONFIG.damage.freshness[Math.min(recent, 3)] * 100)}%。换个名词试试。`, tone: 'info' });
       } else mult *= CONFIG.damage.choice;
 
-      if (move === 'break') mult *= CONFIG.damage.breakMult;
+      const breaking = intent.kind === 'defend' && writtenQ;
+      if (breaking) mult *= CONFIG.damage.breakMult;
       const g = genderOf(b.word);
       if (g === 'm') mult *= 1 + affixTotal(s, 'vsMasc');
       if (g === 'f') mult *= 1 + affixTotal(s, 'vsFem');
@@ -643,20 +640,26 @@ export function resolveTurn(
       if (q.type === 'article' && Object.values(s.equipped).some((it) => it?.legendary === 'articleJudgement')) b.judgement = true;
 
       const charging = intent.kind === 'charge';
-      const ignoreDefend = s.cls === 'writer' && typedLike && rank(s, 'tengxie') > 0;
-      if (intent.kind === 'defend' && (move === 'attack' || move === 'sentence' || move === 'cls') && !ignoreDefend) mult *= CONFIG.damage.vsDefend;
-      if (move === 'break' && charging) mult = 0; // 破防对蓄力无效
+      if (intent.kind === 'defend' && !breaking) mult *= CONFIG.damage.vsDefend;
       mult = Math.min(mult, CONFIG.damage.maxMultiplierOfBase);
-      playerDamage = Math.max(move === 'break' && charging ? 0 : 1, Math.round(atk * mult));
+      playerDamage = Math.max(1, Math.round(atk * mult));
       if (b.tutorial === 'loss') playerDamage = Math.min(playerDamage, 3);
 
       m.hp -= playerDamage;
       s.stats.maxHit = Math.max(s.stats.maxHit, playerDamage);
       if (crit) s.stats.crits += 1;
-      if (charging && move !== 'break') interrupted = true;
-      if (move === 'break' && intent.kind === 'defend') {
-        m.vulnerable = CONFIG.status.vulnerableTurns + 1;
-        log.push({ text: '护甲被你撬开了！接下来 2 回合它受到的伤害 +50%。', tone: 'good' });
+      if (charging || intent.kind === 'heal' || intent.kind === 'flee') interrupted = true;
+      if (breaking) {
+        const turns = CONFIG.status.vulnerableTurns + (s.cls === 'writer' && rank(s, 'tengxie') ? 1 : 0);
+        m.vulnerable = turns + 1;
+        log.push({ text: `写对了，护甲被你撬开！接下来 ${turns} 回合它受到的伤害 +50%。`, tone: 'good' });
+      }
+      if (cfx.yishou && move !== 'cls') {
+        cfx.yishou = false;
+        const d = Math.max(1, Math.round(attack(s) * CONFIG.damage.choice * between(rng, CONFIG.damage.roll[0], CONFIG.damage.roll[1])));
+        m.hp -= d;
+        playerDamage += d;
+        log.push({ text: `以守为攻：稳住之后顺势再打一下，${d} 点。`, tone: 'good' });
       }
       if (element === 'ice') m.chilled = true;
       if (element === 'fire') m.burn = CONFIG.status.burnTurns;
@@ -665,9 +668,7 @@ export function resolveTurn(
       const tag = (judged ? '冠词审判！' : '') + (crit ? (newSpell ? '新言灵！暴击 ' : '暴击 ') : '');
       const el = element ? `（${ELEMENT_ZH[element]}）` : '';
       log.push({ text: `${tag}你造成 ${playerDamage} 点伤害${el}。`, tone: crit ? 'crit' : 'good' });
-      if (move === 'break' && charging) log.push({ text: '破防对蓄力没用：它根本没在防守。', tone: 'bad' });
-      if (intent.kind === 'defend' && (move === 'attack' || move === 'sentence'))
-        log.push({ text: '它在防御，伤害只剩三成。读到防御时用破防更好。', tone: 'info' });
+      if (intent.kind === 'defend' && !breaking) log.push({ text: '它在防御，选择题只刮掉三成。等这个词能默写了，写对就能破防。', tone: 'info' });
     }
 
     if (m.hp <= 0) {
@@ -748,7 +749,10 @@ export function resolveTurn(
     switch (intent.kind) {
       case 'attack': {
         let per = m.dmg * dmgMult * chillMult * (monsterCrit ? 1.5 : 1);
-        for (let i = 0; i < intent.hits; i++) {
+        // 多段: a correct answer on this monster stops it after the first hit.
+        const hitsN = ok && b === target && intent.hits > 1 ? 1 : intent.hits;
+        if (hitsN < intent.hits) say({ text: '你打中了它，它的连击只出了第一下。', tone: 'good' });
+        for (let i = 0; i < hitsN; i++) {
           if (i === 0 && blocking) {
             parried = true;
             const counter = Math.max(1, Math.round(attack(s) * CONFIG.player.critMult * (1 + (s.cls === 'guardian' ? 0.2 * rank(s, 'fanji') : 0))));
@@ -759,14 +763,14 @@ export function resolveTurn(
           hitPlayer(per);
         }
         if (monsterDamage > 0) {
-          const hitsTxt = intent.hits > 1 ? `${intent.hits} 下` : '';
+          const hitsTxt = hitsN > 1 ? `${hitsN} 下` : '';
           const el = intent.element !== 'phys' ? `（${ELEMENT_ZH[intent.element]}）` : '';
           say({ text: `${monsterCrit ? '它看准你的破绽，暴击！' : ''}它${hitsTxt}打中你，共 ${monsterDamage} 点${el}。`, tone: 'bad' });
           if (intent.element === 'ice') b.fx.chilled = true;
           if (intent.element === 'fire') b.fx.burn = CONFIG.status.burnTurns;
           if (intent.element === 'poison') b.fx.poison = Math.min(CONFIG.status.poisonMaxStacks, b.fx.poison + 1);
         }
-        if (blocking && intent.hits > 1) say({ text: '格挡只挡得住第一下。', tone: 'info' });
+        if (blocking && hitsN > 1) say({ text: '稳住只挡得住第一下。', tone: 'info' });
         per = 0;
         break;
       }
@@ -810,14 +814,8 @@ export function resolveTurn(
 
   if (multi) b = target;
   // Misreads for the post-fight recap.
-  if (ok && move === 'block' && intent.kind === 'wait')
-    b.recap.push(`第 ${b.turn} 回合：它说「${intent.line}」，${intent.layers.includes('object') ? '是 mich（它自己）' : '有 nicht'}，其实不打。直接攻击更好。`);
-  if (move === 'block' && intent.kind === 'attack' && intent.hits > 1 && ok)
-    b.recap.push(`第 ${b.turn} 回合：「${intent.line}」是连击，格挡只挡第一下。`);
-  if (move === 'break' && intent.kind === 'charge')
-    b.recap.push(`第 ${b.turn} 回合：「${intent.line}」是蓄力，攻击才能打断，破防无效。`);
-  if ((move === 'attack' || move === 'sentence') && intent.kind === 'defend' && has(s.level, 'blockBreak'))
-    b.recap.push(`第 ${b.turn} 回合：「${intent.line}」是防御，破防更好。`);
+  if (!ok && (intent.kind === 'charge' || intent.kind === 'heal'))
+    b.recap.push(`第 ${b.turn} 回合：「${intent.line}」是${intent.kind === 'charge' ? '蓄力' : '回血'}，这题答对就能打断。`);
 
 
   // --- 3. Damage over time and status ticks (every monster still standing; your own statuses once).

@@ -156,7 +156,7 @@ export class BattleUI {
     if (typing) return false;
     const k = e.key.toLowerCase();
     if (this.phase === 'choose' || (this.phase === 'answer' && this.question?.options)) {
-      const map: Record<string, Move> = { a: 'attack', s: 'block', d: 'break', f: 'sentence', r: 'skill', g: 'cls' };
+      const map: Record<string, Move> = { a: 'attack', f: 'sentence', r: 'skill', g: 'cls' };
       if (map[k]) {
         this.choose(map[k]);
         return true;
@@ -292,7 +292,7 @@ export class BattleUI {
     if (this.phase === 'choose') {
       q.append(
         h('div.prompt', h('span', '读懂它要做什么，选一个招式')),
-        h('div.focus', { style: 'font-size:16px;font-family:inherit;font-weight:400;color:var(--muted)' }, has(s.level, 'blockBreak') ? '攻击克蓄力 · 格挡克攻击 · 破防克防御 · 你先出手，打死它，它的打算就作废' : ''),
+        h('div.focus', { style: 'font-size:16px;font-family:inherit;font-weight:400;color:var(--muted)' }, has(s.level, 'blockBreak') ? '看意图：蓄力、回血答对就打断 · 防御要写对才破防 · 连击答对只挨一下 · 打死它，它的打算就作废' : '看意图：蓄力时答对就能打断它的大招'),
       );
     } else if (this.question) {
       q.append(this.renderQuestion(this.question));

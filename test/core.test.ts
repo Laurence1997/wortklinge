@@ -134,18 +134,22 @@ describe('combat', () => {
     expect(b.outcome).toBe('lose');
     expect(b.intent.line).toContain('dreimal');
   });
-  it('blocking an attack parries; breaking a defence makes it vulnerable', () => {
+  it('the intent decides: a correct hit interrupts a charge, a written answer breaks a guard', () => {
     const rng = makeRng(3);
     const s = newGame('T', 'student', Date.now());
     s.level = 7;
     s.hp = 60;
-    const b = startBattle(s, WORD_BY_ID['stuhl'], rng, { tutorial: 'block' });
-    const q = makeQuestion(s, b, 'block', rng);
-    const r = resolveTurn(s, b, 'block', q, q.answer!, rng);
-    expect(r.parried).toBe(true);
+    const b = startBattle(s, WORD_BY_ID['stuhl'], rng);
+    b.intent = { ...b.intent, kind: 'charge', hits: 1 };
+    b.monster.hp = 999;
+    const q = makeQuestion(s, b, 'attack', rng);
+    const r = resolveTurn(s, b, 'attack', q, q.answer!, rng);
+    expect(r.readRight).toBe(true);
+    expect(r.monsterDamage).toBe(0);
     const b2 = startBattle(s, WORD_BY_ID['tisch'], rng, { tutorial: 'break' });
-    const q2 = makeQuestion(s, b2, 'break', rng);
-    resolveTurn(s, b2, 'break', q2, q2.answer!, rng);
+    const q2 = makeQuestion(s, b2, 'attack', rng);
+    expect(q2.type).toBe('typed');
+    resolveTurn(s, b2, 'attack', q2, q2.answer!, rng);
     expect(b2.monster.vulnerable).toBeGreaterThan(0);
   });
 });
