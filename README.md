@@ -52,7 +52,7 @@
 | 8 | 首领「无名的邻居」、句子技能、紫装和传说装备；怪物会回血 |
 | 9 | 意图里的否定：`nicht` |
 
-打败邻居、到 10 级以后，邻居家的门通向第 2 区「面包集市」，11–20 级，约 155 个新词（食物、购物、价格、数字到 1000、购物动词）：
+打败邻居、到 10 级以后，邻居家的门通向第 2 区「面包集市」，11–20 级，约 200 个新词（食物、购物、价格、数字到 1000、购物动词）：
 
 | 等级 | 开放 |
 | --- | --- |
@@ -120,7 +120,7 @@ A browser game that teaches German to Chinese-speaking learners. It isn't flashc
 
 ### Version 0.3
 
-Region 1 (levels 1–10, 202 Goethe A1 words) and Region 2, the Bread Market (levels 11–20, about 155 words on food, shopping and prices). Region 2 adds two classes with trials and talent trees, a shop where you buy by saying `Ich nehme den Mantel.` (and haggle), chests with a word lock, treasure monsters that run off shouting `Ich muss los!`, monster packs you target by calling out their article, plurals (`Ich nehme zwei Äpfel.`), present-tense verb conjugation, `mich`/`dich` in monster intents, a baker's side quest, and a boss who only asks prices and quantities.
+Region 1 (levels 1–10, 202 Goethe A1 words) and Region 2, the Bread Market (levels 11–20, about 200 words on food, shopping and prices). Region 2 adds two classes with trials and talent trees, a shop where you buy by saying `Ich nehme den Mantel.` (and haggle), chests with a word lock, treasure monsters that run off shouting `Ich muss los!`, monster packs you target by calling out their article, plurals (`Ich nehme zwei Äpfel.`), present-tense verb conjugation, `mich`/`dich` in monster intents, a baker's side quest, and a boss who only asks prices and quantities.
 
 ### Tech
 

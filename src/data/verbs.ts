@@ -60,4 +60,9 @@ export const CONJ: Record<string, Conj> = {
   backen: row('backe backst backt backen backt backen'),
   probieren: row('probiere probierst probiert probieren probiert probieren'),
   zählen: row('zähle zählst zählt zählen zählt zählen'),
+  mögen: row('mag magst mag mögen mögt mögen', true),
+  braten: row('brate brätst brät braten bratet braten', true),
+  wiegen: row('wiege wiegst wiegt wiegen wiegt wiegen'),
+  frühstücken: row('frühstücke frühstückst frühstückt frühstücken frühstückt frühstücken'),
+  mischen: row('mische mischst mischt mischen mischt mischen'),
 };
