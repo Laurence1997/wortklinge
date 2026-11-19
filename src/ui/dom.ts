@@ -3,8 +3,10 @@ type Attrs = Record<string, string | number | boolean | ((e: Event) => void) | u
 
 /** Tiny hyperscript: h('button.btn.primary', { onclick }, '确定'). */
 export function h(spec: string, attrs: Attrs | Child = {}, ...children: Child[]): HTMLElement {
-  const [tag, ...classes] = spec.split('.');
+  const [head, ...classes] = spec.split('.');
+  const [tag, id] = head.split('#');
   const el = document.createElement(tag || 'div');
+  if (id) el.id = id;
   if (classes.length) el.className = classes.join(' ');
   let a: Attrs = {};
   if (attrs && typeof attrs === 'object' && !(attrs instanceof Node)) a = attrs as Attrs;
