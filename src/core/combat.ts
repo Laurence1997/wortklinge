@@ -159,7 +159,8 @@ export function startBattle(
     tutorial,
     monster,
     fx: { burn: 0, poison: 0, chilled: false, shield: false },
-    cfx: { res: 0, run: 0, critReady: false, calmUsed: false },
+    // 墨水 / 沉着 and the typed streak carry over between fights (reset at the bonfire): the same object lives on the save.
+    cfx: classFx(s),
     trial: opts.trial ?? null,
     flees: !!opts.rare || word.family === 'truhe',
     intent: null as unknown as Intent,
@@ -363,6 +364,17 @@ export function nehmeRegion(s: GameState): boolean {
   return s.region === 2 && has(s.level, 'plural');
 }
 
+/** The class resource object kept on the save; 冷静 (calmUsed) is per fight. */
+export function classFx(s: GameState): ClassFx {
+  s.cfx ??= { res: 0, run: 0, critReady: false, calmUsed: false };
+  s.cfx.calmUsed = false;
+  return s.cfx;
+}
+
+export function resetClassFx(s: GameState): void {
+  s.cfx = { res: 0, run: 0, critReady: false, calmUsed: false };
+}
+
 export function knownMoechteNouns(s: GameState): Word[] {
   return WORDS.filter((w) => w.moechte && s.words[w.id]);
 }
@@ -508,8 +520,10 @@ export function resolveTurn(
         cfx.run = 0;
         log.push({ text: `连续默写答对 ${critRunNeeded(s)} 题：下一击必定暴击。`, tone: 'good' });
       }
-    } else cfx.run = 0;
+    }
   }
+  // Any wrong answer breaks the writer's streak (it carries across fights otherwise).
+  if (s.cls === 'writer' && !ok) cfx.run = 0;
   if (s.cls === 'guardian' && move !== 'cls') cfx.res += 1 + (!ok && rank(s, 'chenzhuo') ? 1 : 0);
   cfx.res = Math.min(cfx.res, resMax(s));
 

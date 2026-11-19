@@ -2,7 +2,7 @@
 // Phaser world to the DOM interface. Game rules live in src/core and stay pure.
 
 import { answerBoss, startBoss, type BossFight } from '../core/boss';
-import { makeQuestion, monsterStats, pickHint, resolveTurn, startBattle, type Battle, type Question, type TurnReport, type Tutorial } from '../core/combat';
+import { makeQuestion, monsterStats, pickHint, resetClassFx, resolveTurn, startBattle, type Battle, type Question, type TurnReport, type Tutorial } from '../core/combat';
 import { CONFIG, xpToNext } from '../core/config';
 import { favour, FAVOUR, KONRAD_WORDS, QUESTS, questEvent, questState, startQuest, type QuestEvent } from '../core/quests';
 import { CHEST_ZH, CHESTS, lockWord, openChest, type ChestKind } from '../core/chest';
@@ -765,6 +765,7 @@ export class Controller {
     this.trial = { cls: id, left: TRIAL_FIGHTS };
     s.flags.trialPrev = s.cls ?? '';
     s.cls = id;
+    resetClassFx(s);
     say([{ who: GRETA, text: `${CLASSES[id].zh}试炼：${CLASSES[id].trialZh}。${CLASSES[id].blurb.join('')}` }], () => this.trialFight());
   }
 
@@ -786,6 +787,7 @@ export class Controller {
       this.trial = null;
       s.cls = (s.flags.trialPrev as ClassId) || null;
       delete s.flags.trialPrev;
+      resetClassFx(s);
       say([{ who: GRETA, text: '试炼断了。没关系，什么时候准备好了再来。' }]);
       return;
     }
@@ -799,6 +801,7 @@ export class Controller {
     const prev = (s.flags.trialPrev as ClassId) || null;
     delete s.flags.trialPrev;
     s.cls = prev;
+    resetClassFx(s);
     if (!s.classes.includes(t.cls)) s.classes.push(t.cls);
     banner('试炼完成', `${CLASSES[t.cls].zh} 已解锁`);
     const choices = [
@@ -812,6 +815,7 @@ export class Controller {
     const s = this.state;
     const first = !s.cls;
     s.cls = id;
+    resetClassFx(s);
     banner(first ? '职业' : '换职业', CLASSES[id].zh);
     this.renderMenu();
     const lines: Line[] = [{ who: GRETA, text: `从今天起，你是${CLASSES[id].zh}。战斗里按 G 用职业技能「${CLASSES[id].skillZh}」。` }];
@@ -878,6 +882,7 @@ export class Controller {
     rollDay(s);
     s.hp = maxHp(s);
     s.combo = 0;
+    resetClassFx(s);
     this.scene.spawnAll();
     const due = WORDS.filter((w) => kindOf(s, w) === 'due').length;
     banner('篝火', '生命回满，怪物全部刷新');

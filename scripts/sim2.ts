@@ -17,11 +17,18 @@ function gear(s: GameState) {
   s.equipped.coat = makeItem(rng, s.level, 'white', 'coat');
 }
 
-function fight(lvl: number, zone: ZoneId, packSize: number, acc: number, cls: ClassId | null) {
+function player(lvl: number, cls: ClassId | null): GameState {
   const s = newGame('S', 'student', Date.now());
   s.level = lvl;
   s.cls = cls;
   gear(s);
+  // Words met so far (墨水风暴 picks among the longest of them).
+  for (const w of WORDS.filter((x) => x.lvl <= lvl && x.pos === 'n')) s.words[w.id] = { stage: 1, due: 9e15, firstSeen: 0, lastSeen: 0, relapse: 0, correct: 0, wrong: 0 };
+  return s;
+}
+
+// One sample = 6 fights in a row without a bonfire (class resources carry over), HP back to 70% each fight.
+function fight(s: GameState, zone: ZoneId, packSize: number, acc: number, cls: ClassId | null) {
   s.hp = Math.round(maxHp(s) * 0.7);
   const nouns = WORDS.filter((w) => w.zone === zone && w.art && w.family !== 'truhe');
   const pack: Battle[] = [];
@@ -41,7 +48,7 @@ function fight(lvl: number, zone: ZoneId, packSize: number, acc: number, cls: Cl
     const moves = availableMoves(s, target);
     let mv = COUNTER[target.intent.kind] as 'attack' | 'block' | 'break';
     if (!moves.includes(mv)) mv = 'attack';
-    const useCls = cls && target.cfx.res >= 3 && (cls === 'writer' || target.intent.kind === 'charge');
+    const useCls = cls && target.cfx.res >= 3 && (cls === 'writer' || target.intent.kind === 'charge' || target.intent.kind === 'attack');
     const q = makeQuestion(s, target, useCls ? 'cls' : mv, rng, undefined, pack.length > 1);
     let ans = q.answer ?? 'Ich nehme zwei Äpfel.';
     if (q.type === 'sentence') s.words['apfel'] = { stage: 1, due: 0, firstSeen: 0, lastSeen: 0, relapse: 0, correct: 0, wrong: 0 };
@@ -60,8 +67,10 @@ for (const acc of [0.9, 0.75]) {
       if (size === 3 && lvl < 13) { row.push('3: —'); continue; }
       let t = 0, d = 0, h = 0;
       const N = 300;
+      let s = player(lvl, cls);
       for (let i = 0; i < N; i++) {
-        const r = fight(lvl, zone, size, acc, cls);
+        if (i % 6 === 0) s = player(lvl, cls);
+        const r = fight(s, zone, size, acc, cls);
         t += r.turns;
         d += r.lost ? 1 : 0;
         h += r.hpLost;

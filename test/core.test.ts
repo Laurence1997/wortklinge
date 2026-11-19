@@ -564,3 +564,29 @@ describe('backen accepts both present forms', () => {
     expect(resolveTurn(s, b, 'attack', q, 'backst', rng).correct).toBe(true);
   });
 });
+
+describe('class resources carry over between fights', () => {
+  it('ink and the typed streak survive the next fight; a miss breaks the streak', async () => {
+    const { resetClassFx } = await import('../src/core/combat');
+    const rng = makeRng(2);
+    const s = newGame('T', 'student');
+    s.level = 12;
+    s.cls = 'writer';
+    s.hp = 9999;
+    const apfel = WORDS.find((w) => w.de === 'Apfel')!;
+    const typed = { type: 'typed' as const, prompt: '', focus: '', withArticle: true, answer: 'der Apfel' };
+    let b = startBattle(s, apfel, rng);
+    b.monster.hp = 9999;
+    resolveTurn(s, b, 'attack', typed, 'der Apfel', rng);
+    resolveTurn(s, b, 'attack', typed, 'der Apfel', rng);
+    b = startBattle(s, apfel, rng);
+    expect(b.cfx.res).toBe(2);
+    expect(b.cfx.run).toBe(2);
+    b.monster.hp = 9999;
+    const art = { type: 'article' as const, prompt: '', focus: '', options: ['der', 'die', 'das'], answer: 'der' };
+    resolveTurn(s, b, 'attack', art, 'die', rng);
+    expect(b.cfx.run).toBe(0);
+    resetClassFx(s);
+    expect(startBattle(s, apfel, rng).cfx.res).toBe(0);
+  });
+});

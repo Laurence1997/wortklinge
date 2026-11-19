@@ -55,6 +55,8 @@ export interface GameState {
   cls: ClassId | null;
   classes: ClassId[];
   talents: Partial<Record<ClassId, Record<string, number>>>;
+  /** 墨水 / 沉着 and the writer's typed streak, kept between fights until the bonfire. */
+  cfx?: import('./combat').ClassFx;
   /** Mira's shelf (region 2). */
   shop?: import('./shop').ShopState;
   quests?: Partial<Record<import('./quests').QuestId, import('./quests').QuestProgress>>;
