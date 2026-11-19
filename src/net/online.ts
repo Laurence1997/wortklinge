@@ -30,6 +30,8 @@ const BUBBLE_MS = 5000;
 const LOG_MAX = 50;
 
 export interface Me {
+  /** Character name, used until a leaderboard nickname is set. */
+  name: string;
   region: number;
   look: Look;
   x: number;
@@ -49,11 +51,13 @@ let channel: RealtimeChannel | null = null;
 let sent = '';
 
 const myId = () => cloud.session?.user.id ?? '';
-const myNick = () => cloud.profile?.nickname ?? '';
+let fallbackName = '';
+const myNick = () => cloud.profile?.nickname || fallbackName || '旅人';
 
-/** Joins (or switches to) the region's room. Only for logged-in players with a nickname. */
+/** Joins (or switches to) the region's room. Logged-in players only; the nickname falls back to the character name. */
 export function joinRegion(me: Me): void {
-  if (!myId() || !myNick()) return leave();
+  fallbackName = me.name.slice(0, 16);
+  if (!myId()) return leave();
   if (channel && online.region === me.region) return;
   leave();
   online.region = me.region;
@@ -123,7 +127,7 @@ function addLine(l: ChatLine) {
 export function say(text: string): string | null {
   const t = text.trim().slice(0, CHAT_MAX);
   if (!t) return '';
-  if (!channel) return '登录并起好昵称后才能聊天';
+  if (!channel) return '还没连上联机服务器，稍等一下';
   const now = Date.now();
   if (now - online.lastSend < CHAT_GAP_MS) return '说慢一点（2 秒一条）';
   online.lastSend = now;

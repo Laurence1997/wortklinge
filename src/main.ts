@@ -23,11 +23,11 @@ function boot(state: ReturnType<typeof newGame>) {
   const chat = mountChat();
   window.setInterval(() => {
     const st = ctrl.state;
-    const ready = !!cloud.session && !!cloud.profile && !mustChangePassword();
+    const ready = !!cloud.session && !mustChangePassword();
     chat.setVisible(ready && $('title').hidden);
     if (!ready) return leave();
     if (!st.look) return;
-    const me = { region: st.region ?? 1, look: st.look, x: st.pos.x, y: st.pos.y, fighting: !!ctrl.battle || !!ctrl.boss };
+    const me = { name: st.name, region: st.region ?? 1, look: st.look, x: st.pos.x, y: st.pos.y, fighting: !!ctrl.battle || !!ctrl.boss };
     joinRegion(me);
     update(me);
   }, 1000);
