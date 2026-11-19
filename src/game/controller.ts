@@ -1218,6 +1218,7 @@ export class Controller {
     if (this.state.cls || this.state.level >= CONFIG.region2Level) btn('职业', 'T', () => this.panels.toggle('talents'));
     if (this.state.quests) btn('任务', 'J', () => this.panels.toggle('quests'));
     btn('图鉴', 'B', () => this.panels.toggle('codex'));
+    btn('单词本', 'N', () => this.panels.toggle('words'));
     btn('数据', '', () => this.panels.toggle('data'));
     btn('账号', '', () => this.panels.toggle('account'));
     btn('设置', '', () => this.panels.toggle('settings'));
@@ -1261,6 +1262,7 @@ export class Controller {
     const k = e.key.toLowerCase();
     if (k === 'c' || k === 'i') this.panels.toggle('hero');
     else if (k === 'b') this.panels.toggle('codex');
+    else if (k === 'n') this.panels.toggle('words');
     else if (k === 't') this.panels.toggle('talents');
     else if (k === 'j') this.panels.toggle('quests');
     else if (k === 'h') this.panels.toggle('help');

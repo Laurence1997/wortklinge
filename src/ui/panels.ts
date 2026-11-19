@@ -19,7 +19,7 @@ import { loginView } from './account';
 import { lookPicker } from './title';
 import { BARGAIN_LINES, ensureShop, price, refreshCost, sellPrice, SLOT_NOUN } from '../core/shop';
 
-export type PanelName = 'hero' | 'talents' | 'quests' | 'codex' | 'data' | 'account' | 'settings' | 'help' | 'shop' | 'chest' | 'quiz';
+export type PanelName = 'hero' | 'talents' | 'quests' | 'codex' | 'words' | 'data' | 'account' | 'settings' | 'help' | 'shop' | 'chest' | 'quiz';
 
 export class Panels {
   open: PanelName | null = null;
@@ -87,13 +87,13 @@ export class Panels {
       if (this.buying !== null) window.setTimeout(() => (el.querySelector('input.buy-line') as HTMLInputElement | null)?.focus(), 0);
       return;
     }
-    const titles: Record<Exclude<PanelName, 'shop' | 'chest' | 'quiz'>, string> = { hero: '角色与装备', talents: '职业与天赋', quests: '任务', codex: '图鉴', data: '数据与存档', account: '账号与排行', settings: '设置', help: '怎么玩' };
+    const titles: Record<Exclude<PanelName, 'shop' | 'chest' | 'quiz'>, string> = { hero: '角色与装备', talents: '职业与天赋', quests: '任务', codex: '图鉴', words: '单词本', data: '数据与存档', account: '账号与排行', settings: '设置', help: '怎么玩' };
     const tabs = h('div.tabs');
     (Object.keys(titles) as Array<Exclude<PanelName, 'shop' | 'chest' | 'quiz'>>).forEach((k) =>
       tabs.append(h(`button.btn${this.open === k ? '.on' : ''}`, { onclick: () => this.show(k) }, titles[k])),
     );
     panel.append(h('h2', h('span', titles[this.open as Exclude<PanelName, 'shop' | 'chest' | 'quiz'>]), h('button.btn.ghost', { onclick: () => this.close() }, '关闭 Esc')), tabs);
-    const body = { shop: () => h('div'), chest: () => h('div'), quiz: () => h('div'), hero: () => this.hero(), talents: () => this.talents(), quests: () => this.questsBody(), codex: () => this.codex(), data: () => this.data(), account: () => this.account(), settings: () => this.settings(), help: () => this.help() }[this.open]();
+    const body = { shop: () => h('div'), chest: () => h('div'), quiz: () => h('div'), hero: () => this.hero(), talents: () => this.talents(), quests: () => this.questsBody(), codex: () => this.codex(), words: () => this.wordbook(), data: () => this.data(), account: () => this.account(), settings: () => this.settings(), help: () => this.help() }[this.open]();
     panel.append(body);
     clear(el).append(panel);
     el.onclick = (e) => {
@@ -450,6 +450,57 @@ export class Panels {
       );
     }
     wrap.append(grid);
+    return wrap;
+  }
+
+  // ---- 单词本: what you know, what you're learning, what you keep getting wrong ----------------
+
+  private wordbook(): HTMLElement {
+    const s = this.ctrl.state;
+    const t = now(s);
+    const wrap = h('div');
+    type Row = { w: Word; p: (typeof s.words)[string] };
+    const shaky: Row[] = [];
+    const learning: Row[] = [];
+    const known: Row[] = [];
+    for (const w of WORDS) {
+      const p = s.words[w.id];
+      if (!p) continue;
+      const tries = p.correct + p.wrong;
+      const weak = p.wrong >= 2 && p.wrong / Math.max(1, tries) >= 0.34;
+      if (weak || p.relapse > 0) shaky.push({ w, p });
+      else if (p.stage === 3) known.push({ w, p });
+      else learning.push({ w, p });
+    }
+    shaky.sort((a, b) => b.p.wrong - a.p.wrong);
+    learning.sort((a, b) => a.p.due - b.p.due);
+    known.sort((a, b) => a.w.de.localeCompare(b.w.de, 'de'));
+    wrap.append(h('p.small.muted', `见过 ${shaky.length + learning.length + known.length} 个词：熟练 ${known.length} · 学习中 ${learning.length} · 常错 ${shaky.length}。存档同步到云端，换电脑也在。`));
+    const table = (title: string, note: string, rows: Row[]) => {
+      if (!rows.length) return;
+      const tb = h('table.log');
+      tb.append(h('tr', h('th', '德语'), h('th', '中文'), h('th', '复数'), h('th', '对 / 错'), h('th', '状态')));
+      for (const { w, p } of rows) {
+        const g = genderOf(w);
+        const gk = g ? { m: 'der', f: 'die', n: 'das', pl: 'pl' }[g] : null;
+        const due = p.due <= t;
+        tb.append(
+          h(
+            'tr',
+            h('td', h(`span${gk ? '.art-' + gk : ''}`, fullForm(w))),
+            h('td', w.zh),
+            h('td', w.pl && w.pl !== '-' ? `die ${w.pl}` : '—'),
+            h('td', `${p.correct} / ${p.wrong}`),
+            h('td', `${STAGE_ZH[p.stage as 0 | 1 | 2 | 3] ?? ''}${due ? ' · 该复习了' : ''}`),
+          ),
+        );
+      }
+      wrap.append(h('h3', `${title}（${rows.length}）`), h('p.small.muted', note), tb);
+    };
+    table('常错', '错了两次以上、错的比例超过三分之一，或者归名后又忘过的词。多打几次这些怪。', shaky);
+    table('学习中', '还没归名的词，按复习时间排，最该复习的在前。', learning);
+    table('熟练', '已经归名的词。', known);
+    if (!Object.keys(s.words).length) wrap.append(h('p', '还没有见过的词。出去打几只怪吧。'));
     return wrap;
   }
 
