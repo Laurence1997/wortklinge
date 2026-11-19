@@ -231,3 +231,14 @@ label.toggle { display: flex; gap: 8px; align-items: center; padding: 6px 0; }
 #chat .chat-log .me b { color: #ff8a7a; }
 #chat .chat-log b { color: #c8a890; font-weight: 600; }
 #chat input { width: 100%; box-sizing: border-box; margin-top: 4px; background: rgba(0, 0, 0, 0.6); color: #eee; border: 1px solid #5a2a2e; padding: 4px 6px; }
+
+/* 登录卡片：居中、窄一点、上下叠放 */
+#title .login { width: min(380px, 100%); margin: 0 auto; padding: 22px 24px; text-align: center; display: flex; flex-direction: column; gap: 12px; }
+#title .login p { margin: 0; line-height: 1.6; }
+#title .login .row { flex-direction: column; align-items: stretch; gap: 10px; }
+#title .login input { width: 100%; box-sizing: border-box; background: #000; color: var(--ink); border: 1px solid var(--line-hi); padding: 10px 12px; font-size: 15px; text-align: left; }
+#title .login input:focus { outline: none; border-color: var(--red); box-shadow: 0 0 0 1px rgba(255,40,60,.35); }
+#title .login .btn.primary { width: 100%; padding: 10px; font-size: 16px; letter-spacing: 4px; }
+#title .login .btn.ghost { align-self: center; border: none; background: none; color: var(--muted); font-size: 12px; text-decoration: underline; padding: 2px 6px; }
+#title .login .btn.ghost:hover { color: var(--ink); }
+#title .login p.small:empty { display: none; }

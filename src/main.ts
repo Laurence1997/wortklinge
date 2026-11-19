@@ -65,7 +65,7 @@ async function start() {
 function loginOnly() {
   const el = $('title');
   el.hidden = false;
-  const inner = h('div.form.panel');
+  const inner = h('div.panel.login');
   el.replaceChildren(
     h(
       'div.box',
