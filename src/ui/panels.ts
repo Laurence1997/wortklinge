@@ -2,16 +2,17 @@ import { CONFIG, xpToNext } from '../core/config';
 import { AFFIX_ZH, itemScore, mainStatText, QUALITY_ZH, requiredLevel, SLOT_ZH } from '../core/loot';
 import { kindOf, progressSummary, stageOf, STAGE_ZH } from '../core/srs';
 import { attack, critChance, dayKey, hintsPerFight, maxHp, now } from '../core/state';
-import type { Item, Slot } from '../core/types';
+import type { AffixKey, Item, Slot } from '../core/types';
 import { has } from '../core/unlocks';
 import { FAMILIES } from '../data/families';
 import { SKILLS } from '../data/skills';
 import { canLearn, CLASSES, learn, rank, spent, talentPoints, TALENT_FROM_LEVEL, TALENTS, TIER_GATE } from '../core/classes';
 import { fullForm, genderOf, WORDS } from '../data/words';
 import type { Controller } from '../game/controller';
-import { $, clear, h } from './dom';
+import { $, clear, h, umlautButtons } from './dom';
+import { BARGAIN_LINES, ensureShop, price, refreshCost, sellPrice, SLOT_NOUN } from '../core/shop';
 
-export type PanelName = 'hero' | 'talents' | 'codex' | 'data' | 'settings' | 'help';
+export type PanelName = 'hero' | 'talents' | 'codex' | 'data' | 'settings' | 'help' | 'shop';
 
 export class Panels {
   open: PanelName | null = null;
@@ -40,13 +41,22 @@ export class Panels {
     if (!this.open) return;
     const el = $('modal');
     const panel = h('div.panel');
-    const titles: Record<PanelName, string> = { hero: '角色与装备', talents: '职业与天赋', codex: '图鉴', data: '数据与存档', settings: '设置', help: '怎么玩' };
+    if (this.open === 'shop') {
+      panel.append(h('h2', h('span', '商人 Mira 的摊子'), h('button.btn.ghost', { onclick: () => this.close() }, '离开 Esc')), this.shop());
+      clear(el).append(panel);
+      el.onclick = (e) => {
+        if (e.target === el) this.close();
+      };
+      if (this.buying !== null) window.setTimeout(() => (el.querySelector('input.buy-line') as HTMLInputElement | null)?.focus(), 0);
+      return;
+    }
+    const titles: Record<Exclude<PanelName, 'shop'>, string> = { hero: '角色与装备', talents: '职业与天赋', codex: '图鉴', data: '数据与存档', settings: '设置', help: '怎么玩' };
     const tabs = h('div.tabs');
-    (Object.keys(titles) as PanelName[]).forEach((k) =>
+    (Object.keys(titles) as Array<Exclude<PanelName, 'shop'>>).forEach((k) =>
       tabs.append(h(`button.btn${this.open === k ? '.on' : ''}`, { onclick: () => this.show(k) }, titles[k])),
     );
     panel.append(h('h2', h('span', titles[this.open]), h('button.btn.ghost', { onclick: () => this.close() }, '关闭 Esc')), tabs);
-    const body = { hero: () => this.hero(), talents: () => this.talents(), codex: () => this.codex(), data: () => this.data(), settings: () => this.settings(), help: () => this.help() }[this.open]();
+    const body = { shop: () => h('div'), hero: () => this.hero(), talents: () => this.talents(), codex: () => this.codex(), data: () => this.data(), settings: () => this.settings(), help: () => this.help() }[this.open]();
     panel.append(body);
     clear(el).append(panel);
     el.onclick = (e) => {
@@ -116,8 +126,96 @@ export class Panels {
     }
     if (!s.bag.length) bag.append(h('p.muted.small', '空。小怪有 20% 的概率掉装备，用默写和句子打、打到期的怪，好东西更多。'));
     right.append(bag);
-    if (s.bag.length) right.append(h('p.small.muted', '商店和分解成字母在第 2 区开放，现在只能丢弃。'));
+    if (s.bag.length) right.append(h('p.small.muted', has(s.level, 'shop') ? '不要的装备可以拿到面包集市卖给商人 Mira。' : '11 级后可以在面包集市把装备卖给商人，现在只能丢弃。'));
     return h('div.grid2', left, right);
+  }
+
+  // ---- Shop (Mira) ---------------------------------------------------------------
+
+  /** Index of the shelf item being bought (the sentence box is open), or null. */
+  buying: number | null = null;
+  private shopMsg: { text: string; tone: 'ok' | 'no' } | null = null;
+
+  private shop(): HTMLElement {
+    const s = this.ctrl.state;
+    const shop = ensureShop(s);
+    const wrap = h('div');
+    const rc = refreshCost(s);
+    wrap.append(
+      h(
+        'div.hud-row',
+        h('span', `金币 `, h('b', String(s.gold))),
+        h('button.btn.small', { disabled: s.gold < rc, onclick: () => { this.ctrl.shopRefresh(); } }, rc ? `刷新货架（${rc} 金币）` : '刷新货架（这小时免费）'),
+      ),
+    );
+    // Wishlist.
+    const wishSlot = h('select', { onchange: (e: Event) => { shop.wish.slot = ((e.target as HTMLSelectElement).value || undefined) as Slot | undefined; this.ctrl.persist(); } }) as HTMLSelectElement;
+    wishSlot.append(h('option', { value: '' }, '任意部位'));
+    for (const sl of ['pen', 'coat', 'amulet', 'dict'] as Slot[]) wishSlot.append(h('option', { value: sl, selected: shop.wish.slot === sl }, SLOT_ZH[sl]));
+    const wishAffix = h('select', { onchange: (e: Event) => { shop.wish.affix = ((e.target as HTMLSelectElement).value || undefined) as AffixKey | undefined; this.ctrl.persist(); } }) as HTMLSelectElement;
+    wishAffix.append(h('option', { value: '' }, '任意词条'));
+    for (const k of Object.keys(AFFIX_ZH) as AffixKey[]) wishAffix.append(h('option', { value: k, selected: shop.wish.affix === k }, AFFIX_ZH[k](0).replace(/[+\-]?0(\.0)?%?/, '').trim() || k));
+    wrap.append(h('div.hud-row.small', h('span.muted', '心愿单（刷新时出现的概率约 ×3）：'), wishSlot, wishAffix));
+
+    if (this.shopMsg) wrap.append(h(`div.feedback.${this.shopMsg.tone}`, this.shopMsg.text));
+
+    const shelf = h('div.bag');
+    shop.items.forEach((it, i) => {
+      const p = price(s, it);
+      const card = h(
+        `div.item.${it.quality}`,
+        h('div', this.itemBody(it), h('div.small', `价格 ${p} 金币`)),
+        h('div.acts', h('button.btn', { onclick: () => { this.buying = i; this.shopMsg = null; this.render(); } }, '买')),
+      );
+      shelf.append(card);
+      if (this.buying === i) shelf.append(this.buyBox(i));
+    });
+    if (!shop.items.length) shelf.append(h('p.muted.small', '货架空了。刷新一下吧。'));
+    wrap.append(h('h3', '货架'), shelf);
+
+    // Selling.
+    wrap.append(h('h3', `卖掉背包里的东西（卖价是买价的五分之一）`));
+    const bag = h('div.bag');
+    for (const it of s.bag) {
+      bag.append(h(`div.item.${it.quality}`, h('div', this.itemBody(it)), h('div.acts', h('button.btn.ghost', { onclick: () => this.ctrl.shopSell(it.id) }, `卖 ${sellPrice(s, it)}`))));
+    }
+    if (!s.bag.length) bag.append(h('p.muted.small', '背包是空的。'));
+    wrap.append(bag);
+    return wrap;
+  }
+
+  private buyBox(i: number): HTMLElement {
+    const s = this.ctrl.state;
+    const it = ensureShop(s).items[i];
+    const n = SLOT_NOUN[it.slot];
+    const bargain = h('input', { type: 'text', placeholder: `讲价（可选）：${BARGAIN_LINES[0]}`, autocomplete: 'off', spellcheck: 'false' }) as HTMLInputElement;
+    const line = h('input.buy-line', { type: 'text', value: 'Ich nehme ', autocomplete: 'off', spellcheck: 'false' }) as HTMLInputElement;
+    const go = () => {
+      const r = this.ctrl.shopBuy(i, line.value, bargain.value);
+      if (r.ok) {
+        this.buying = null;
+        this.shopMsg = { text: `Mira：「Gern!」${r.bargained ? '讲价成功，打了九折。' : ''}花了 ${r.paid} 金币，${it.name} 放进了背包。`, tone: 'ok' };
+      } else if (r.reason === 'sentence') {
+        this.shopMsg = { text: `Mira 没听懂。正确说法：${r.verdict.correct} ${r.verdict.notes.join(' ')}`, tone: 'no' };
+      } else if (r.reason === 'gold') this.shopMsg = { text: `钱不够：要 ${r.paid} 金币。`, tone: 'no' };
+      else this.shopMsg = { text: '背包满了，先卖掉一些。', tone: 'no' };
+      this.render();
+    };
+    for (const inp of [bargain, line]) {
+      inp.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          e.stopPropagation();
+          go();
+        }
+      });
+    }
+    return h(
+      'div.buybox',
+      h('div.small', `用德语说「我要这个${n.zh}」：Ich nehme + ${n.nom} 的第四格。讲价的话（Geht das billiger? / Das ist zu teuer. / Haben Sie einen Rabatt?），这次打九折。`),
+      h('div.typing', bargain),
+      h('div.typing', line, umlautButtons(line), h('button.btn.primary', { onclick: go }, '成交 ↵')),
+    );
   }
 
   // ---- Class & talents ---------------------------------------------------------

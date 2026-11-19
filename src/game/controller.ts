@@ -4,6 +4,7 @@
 import { answerBoss, startBoss, type BossFight } from '../core/boss';
 import { makeQuestion, monsterStats, pickHint, resolveTurn, startBattle, type Battle, type Question, type TurnReport, type Tutorial } from '../core/combat';
 import { CONFIG, xpToNext } from '../core/config';
+import { buy as buyItem, openShop, refresh as refreshShop, sell as sellItem } from '../core/shop';
 import { CLASSES, respec, respecCost, spent, TALENT_FROM_LEVEL, type ClassId } from '../core/classes';
 import { makeItem } from '../core/loot';
 import { applyLoss, applyWin, postFightHeal } from '../core/outcomes';
@@ -40,6 +41,7 @@ import { $, isTyping } from '../ui/dom';
 const SYS = '系统';
 const HILDE = '守火人 Hilde';
 const GRETA = '导师 Greta';
+const MIRA = '商人 Mira';
 const TRIAL_FIGHTS = 3;
 
 export class Controller {
@@ -502,6 +504,57 @@ export class Controller {
     this.persist();
   }
 
+  // ---- Shop (Mira) ---------------------------------------------------------------------
+
+  private talkMira() {
+    const s = this.state;
+    if (!has(s.level, 'shop')) {
+      say([{ who: MIRA, text: '货还在路上。你再长大一点（11 级）再来。' }]);
+      return;
+    }
+    const open = () => {
+      openShop(s, this.rng, now(s));
+      this.panels.buying = null;
+      this.panels.show('shop');
+    };
+    if (!s.flags.miraMet) {
+      s.flags.miraMet = true;
+      say(
+        [
+          { who: MIRA, text: 'Hallo! 我这儿什么都卖：笔、外套、护符、词典。' },
+          { who: MIRA, text: '不过在集市上，东西是用嘴买的。指着它说「Ich nehme den Stift.」，我就卖给你。' },
+          { who: MIRA, text: '注意：der Stift、der Mantel 在 nehmen 后面要变成 den；das Amulett、das Wörterbuch 不变。嫌贵就说「Geht das billiger?」，我心情好会打九折。' },
+        ],
+        open,
+      );
+      return;
+    }
+    open();
+  }
+
+  shopBuy(i: number, sentence: string, bargain: string) {
+    const r = buyItem(this.state, i, sentence, bargain, CONFIG.loot.bagSize);
+    if (r.ok) sfx.loot();
+    this.refresh();
+    this.persist();
+    return r;
+  }
+
+  shopSell(id: string): void {
+    const g = sellItem(this.state, id);
+    if (g) toast(`卖掉了，+${g} 金币`);
+    this.refresh();
+    this.persist();
+    this.panels.render();
+  }
+
+  shopRefresh(): void {
+    if (!refreshShop(this.state, this.rng)) toast('金币不够');
+    this.refresh();
+    this.persist();
+    this.panels.render();
+  }
+
   // ---- Classes (Greta) ---------------------------------------------------------------------
 
   private talkGreta() {
@@ -679,6 +732,7 @@ export class Controller {
   private talkNpc(id: string) {
     if (id === 'hilde') return this.talkHilde();
     if (id === 'greta') return this.talkGreta();
+    if (id === 'mira') return this.talkMira();
     // Region-2 NPCs: their systems (class, shop, Konrad's quest) open with the region-2 build.
     const lines: Record<string, string> = {
       greta: '导师 Greta：「你就是从营地那边过来的？到 10 级、选职业的时候再来找我。」',

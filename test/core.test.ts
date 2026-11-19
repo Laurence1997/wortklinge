@@ -407,3 +407,42 @@ describe('classes and talents', () => {
     expect(spent(s)).toBe(0);
   });
 });
+
+describe('Mira shop', () => {
+  it('buys with "Ich nehme den …", bargains 10% off, sells for a fifth', async () => {
+    const shop = await import('../src/core/shop');
+    const rng = makeRng(9);
+    const s = newGame('T', 'student');
+    s.level = 12;
+    s.gold = 10000;
+    shop.openShop(s, rng, T0);
+    expect(s.shop!.items.length).toBe(8);
+    expect(s.shop!.items.every((it) => it.quality !== 'orange')).toBe(true);
+    const it = s.shop!.items[0];
+    const n = shop.SLOT_NOUN[it.slot];
+    expect(shop.gradeBuy(`Ich nehme ${n.nom}`, it.slot).ok).toBe(it.slot === 'amulet' || it.slot === 'dict');
+    const p = shop.price(s, it);
+    const r = shop.buy(s, 0, `ich nehme ${n.acc}.`, 'Geht das billiger?', 30);
+    expect(r.ok).toBe(true);
+    expect(r.paid).toBe(Math.round(p * 0.9));
+    expect(s.bag[0].id).toBe(it.id);
+    expect(shop.sell(s, it.id)).toBe(Math.max(1, Math.round(p * 0.2)));
+    expect(shop.gradeBuy('Ich nehme der Stift', 'pen').notes[0]).toContain('den Stift');
+  });
+
+  it('first refresh each hour is free, then doubles', async () => {
+    const shop = await import('../src/core/shop');
+    const rng = makeRng(9);
+    const s = newGame('T', 'student');
+    s.level = 12;
+    s.gold = 10000;
+    shop.openShop(s, rng, T0);
+    expect(shop.refreshCost(s)).toBe(0);
+    shop.refresh(s, rng);
+    const c1 = shop.refreshCost(s);
+    shop.refresh(s, rng);
+    expect(shop.refreshCost(s)).toBe(c1 * 2);
+    shop.openShop(s, rng, T0 + 3600_000);
+    expect(shop.refreshCost(s)).toBe(0);
+  });
+});

@@ -216,3 +216,10 @@ label.toggle { display: flex; gap: 8px; align-items: center; padding: 6px 0; }
 .b-pack .pk .it { font-size: 11px; display: flex; gap: 4px; align-items: center; margin-top: 2px; font-family: var(--mono); }
 .b-pack .pk .it img { width: 14px; height: 14px; image-rendering: pixelated; }
 .b-pack .pk .bar { height: 7px; }
+
+/* Shop (Mira) and talents */
+.buybox { grid-column: 1 / -1; border: 1px solid var(--line, #3a2026); padding: 10px; margin: 4px 0 10px; display: grid; gap: 8px; }
+.buybox input { flex: 1; }
+.panel select { background: #140a0d; color: inherit; border: 1px solid #3a2026; padding: 3px 6px; margin-left: 6px; }
+.talent-row { display: grid; gap: 6px; margin-bottom: 10px; }
+.slot.dim { opacity: 0.75; }
