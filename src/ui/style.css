@@ -242,3 +242,4 @@ label.toggle { display: flex; gap: 8px; align-items: center; padding: 6px 0; }
 #title .login .btn.ghost { align-self: center; border: none; background: none; color: var(--muted); font-size: 12px; text-decoration: underline; padding: 2px 6px; }
 #title .login .btn.ghost:hover { color: var(--ink); }
 #title .login p.small:empty { display: none; }
+#chat .chat-status { font-size: 11px; color: #8a7a70; margin-bottom: 2px; }

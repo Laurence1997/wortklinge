@@ -5,15 +5,18 @@ import { h } from './dom';
 
 export function mountChat(): { setVisible: (v: boolean) => void } {
   const log = h('div.chat-log');
+  const status = h('div.chat-status');
   const input = h('input#chat-input', { maxlength: CHAT_MAX, placeholder: '按 / 聊天（2 秒一条）', autocomplete: 'off' }) as HTMLInputElement;
-  const box = h('div#chat', log, input);
+  const box = h('div#chat', status, log, input);
   box.hidden = true;
   document.getElementById('ui')!.append(box);
   const draw = () => {
+    status.textContent = online.status === 'ok' ? `联机中 · 本区还有 ${online.peers.size} 人` : online.status === 'error' ? '联机断开，正在重连…' : '正在连接联机…';
     log.replaceChildren(...online.chat.map((l) => h(`div${l.me ? '.me' : ''}`, h('b', `${l.nick}：`), l.text)));
     log.scrollTop = log.scrollHeight;
   };
   online.onChat = draw;
+  window.setInterval(draw, 2000);
   input.addEventListener('keydown', (e) => {
     e.stopPropagation();
     if (e.key === 'Enter') {

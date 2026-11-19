@@ -44,6 +44,7 @@ export const online = {
   chat: [] as ChatLine[],
   region: 0,
   onChat: () => {},
+  status: 'off' as 'off' | 'ok' | 'error',
   lastSend: 0,
 };
 
@@ -93,9 +94,17 @@ export function joinRegion(me: Me): void {
       const peer = p.id ? online.peers.get(p.id) : undefined;
       if (peer) (peer.bubble = text), (peer.bubbleUntil = Date.now() + BUBBLE_MS);
     })
+    .on('broadcast', { event: 'pos' }, ({ payload }) => {
+      const p = payload as { id?: string; x?: number; y?: number };
+      const peer = p.id ? online.peers.get(p.id) : undefined;
+      if (peer) (peer.x = Number(p.x) || peer.x), (peer.y = Number(p.y) || peer.y);
+    })
     .subscribe((status) => {
+      online.status = status === 'SUBSCRIBED' ? 'ok' : status === 'CLOSED' ? 'off' : 'error';
+      online.onChat();
       if (status === 'SUBSCRIBED') {
         sent = '';
+        lastTrack = 0;
         update(me);
       }
     });
@@ -104,17 +113,35 @@ export function joinRegion(me: Me): void {
 export function leave(): void {
   if (channel) void sb.removeChannel(channel);
   channel = null;
+  online.status = 'off';
   online.region = 0;
   online.peers.clear();
 }
 
 /** Sends where you are, only when something changed (call about once a second). */
+// Presence has a tight per-client rate limit, so it only carries who you are (nick, look, fighting)
+// and a position refreshed at most every 10 s; walking goes out as a broadcast about once a second.
+let lastTrack = 0;
+let lastPos = '';
 export function update(me: Me): void {
-  if (!channel) return;
-  const key = `${Math.round(me.x / 4)},${Math.round(me.y / 4)},${me.fighting},${JSON.stringify(me.look)},${myNick()}`;
-  if (key === sent) return;
-  sent = key;
-  void channel.track({ nick: myNick(), look: me.look, x: Math.round(me.x), y: Math.round(me.y), fighting: me.fighting });
+  if (!channel || online.status !== 'ok') return;
+  const now = Date.now();
+  const x = Math.round(me.x);
+  const y = Math.round(me.y);
+  const who = `${me.fighting},${JSON.stringify(me.look)},${myNick()}`;
+  const pos = `${Math.round(x / 4)},${Math.round(y / 4)}`;
+  if (who !== sent || (pos !== lastPos && now - lastTrack > 10_000)) {
+    if (now - lastTrack < 3000) return; // never more than one presence update every 3 s
+    sent = who;
+    lastTrack = now;
+    lastPos = pos;
+    void channel.track({ nick: myNick(), look: me.look, x, y, fighting: me.fighting });
+    return;
+  }
+  if (pos !== lastPos) {
+    lastPos = pos;
+    void channel.send({ type: 'broadcast', event: 'pos', payload: { id: myId(), x, y } });
+  }
 }
 
 function addLine(l: ChatLine) {
