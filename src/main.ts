@@ -16,6 +16,7 @@ const dev = new URLSearchParams(location.search).has('dev');
 function boot(state: ReturnType<typeof newGame>) {
   const ctrl = new Controller(state, dev);
   (window as unknown as { wk: Controller }).wk = ctrl; // handy for debugging in the console
+  if (cloud.session && !cloud.profile && !mustChangePassword()) window.setTimeout(() => toast('已登录：在右上角「账号」里起个昵称，就能上排行榜'), 4000);
   new Phaser.Game({
     type: Phaser.AUTO,
     parent: 'game',
