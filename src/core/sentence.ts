@@ -21,6 +21,7 @@ export const PATTERNS: Record<Pattern, { lead: string; art: ArtKind; q?: boolean
   suche: { lead: 'Ich suche', art: 'defAcc', zh: '我在找（第四格）' },
   habe: { lead: 'Ich habe', art: 'indefAcc', zh: '我有一个' },
   mein: { lead: 'Das ist', art: 'possNom', zh: '这是我的' },
+  sind: { lead: 'Das sind meine', art: 'none', zh: '这是我的（复数）' },
 };
 
 const ARTS: Record<ArtKind, Record<'m' | 'f' | 'n', string>> = {

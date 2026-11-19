@@ -4,7 +4,7 @@
 // professions → mein only; abstract words, time words, non-nouns → none (the move greys out).
 // Weak nouns (der Junge, der Student, der Nachbar, der Kunde: einen Jungen …) only get mein (nominative).
 
-export type Pattern = 'moechte' | 'brauche' | 'nehme' | 'moechte0' | 'brauche0' | 'woist' | 'suche' | 'habe' | 'mein';
+export type Pattern = 'moechte' | 'brauche' | 'nehme' | 'moechte0' | 'brauche0' | 'woist' | 'suche' | 'habe' | 'mein' | 'sind';
 
 const groups: Array<[Pattern[], string]> = [
   // ---- Region 1
@@ -14,7 +14,9 @@ const groups: Array<[Pattern[], string]> = [
   [['brauche0'], 'feuer arbeit'],
   [['brauche'], 'adresse telefonnummer'],
   [['woist', 'suche'], 'zimmer haus wohnung strasse schule'],
-  [['woist'], 'tuer schweiz tuerkei'],
+  [['woist'], 'tuer fenster schweiz tuerkei'],
+  [['habe'], 'e-mail'],
+  [['sind'], 'eltern geschwister'],
   [['habe', 'mein'], 'freund freundin mann frau kind familie vater mutter sohn tochter bruder schwester opa oma grossvater grossmutter baby onkel tante maedchen hund katze'],
   [['mein'], 'student studentin lehrer lehrerin arzt aerztin koch koechin ingenieur nachbar nachbarin junge'],
   // ---- Region 2
@@ -31,5 +33,4 @@ const groups: Array<[Pattern[], string]> = [
 export const SENTENCE_TAGS: Record<string, Pattern[]> = {};
 for (const [tags, ids] of groups) for (const id of ids.split(/\s+/)) if (id) SENTENCE_TAGS[id] = tags;
 
-/** Nouns left without a pattern on purpose but worth a second look (sent to the docs thread). */
-export const UNSURE = 'e-mail land stadt name herr eltern geschwister leute kilo gramm pfund liter stueck nudel fenster korn';
+// Decided without a pattern (docs thread 2026-11-19): land stadt name herr leute kilo gramm pfund liter stueck nudel korn.

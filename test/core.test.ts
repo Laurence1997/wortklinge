@@ -723,3 +723,12 @@ describe('认得 / 会写', () => {
     expect(b.writeOk).toBe(1);
   });
 });
+
+describe('句式 sind', () => {
+  it('Das sind meine Eltern', async () => {
+    const { gradeSentence, sentenceTags } = await import('../src/core/sentence');
+    expect(sentenceTags(WORD_BY_ID['eltern'])).toEqual(['sind']);
+    expect(gradeSentence('Das sind meine Eltern.', WORD_BY_ID['eltern'], 'sind').ok).toBe(true);
+    expect(gradeSentence('Ich habe eine E-Mail.', WORD_BY_ID['e-mail'], 'habe').ok).toBe(true);
+  });
+});

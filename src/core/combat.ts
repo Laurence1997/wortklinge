@@ -577,7 +577,7 @@ export function resolveTurn(
   b.qIndex += 1;
   if (q.type === 'sentence') b.sxUsed = (b.sxUsed ?? 0) + 1;
   if (ok) {
-    if (q.type === 'typed' || q.type === 'conj' || q.type === 'plural' || q.type === 'sentence' || (q.type === 'callout' && q.withArticle)) b.writeOk = (b.writeOk ?? 0) + 1;
+    if (q.type === 'typed' || q.type === 'conj' || q.type === 'plural' || q.type === 'sentence') b.writeOk = (b.writeOk ?? 0) + 1;
     else if (q.type === 'article' || q.type === 'pickDe' || q.type === 'pickZh' || q.type === 'callout') b.readOk = (b.readOk ?? 0) + 1;
   }
   if (q.type === 'saying') {
@@ -655,7 +655,8 @@ export function resolveTurn(
       const pen = s.cls === 'writer' ? 0.05 * rank(s, 'bifeng') : 0;
       // 题型决定伤害: the harder the question, the harder the hit.
       const QM = CONFIG.damage.q;
-      if (q.type === 'typed' || q.type === 'plural' || (q.type === 'callout' && q.withArticle)) mult *= QM.typed * (1 + affixTotal(s, 'typedDmg') + pen);
+      if (q.type === 'callout' && q.withArticle) mult *= QM.typedCallout;
+      else if (q.type === 'typed' || q.type === 'plural') mult *= QM.typed * (1 + affixTotal(s, 'typedDmg') + pen);
       else if (q.type === 'conj') mult *= QM.conj * (1 + affixTotal(s, 'typedDmg') + pen);
       else if (q.type === 'storm') {
         const n = letters(q.word!);

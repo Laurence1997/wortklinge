@@ -77,8 +77,8 @@ export const CONFIG = {
   damage: {
     roll: [0.85, 1.15] as [number, number],
     /** 题型决定伤害 (游戏设计 › 招式): choice ×0.5 (点名 too), listen-and-pick ×0.7, conjugation ×1.5,
-     *  full typing ×2, sentence ×2.5. 接句怪: pick ×0.5, typed ×2. */
-    q: { choice: 0.5, listen: 0.7, conj: 1.5, typed: 2, sentence: 2.5 },
+     *  full typing ×2, sentence ×2.5, typed 点名 ×1.2 (only tests the gender, not the spelling). 接句怪: pick ×0.5, typed ×2. */
+    q: { choice: 0.5, listen: 0.7, conj: 1.5, typed: 2, sentence: 2.5, typedCallout: 1.2 },
     breakMult: 0.5,
     vsDefend: 0.3,
     vulnerable: 1.5,
