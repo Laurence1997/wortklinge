@@ -23,7 +23,7 @@ export const SLOT_NOUN: Record<Slot, { nom: string; acc: string; zh: string }> =
   dict: { nom: 'das Wörterbuch', acc: 'das Wörterbuch', zh: '词典' },
 };
 
-export const BARGAIN_LINES = ['Geht das billiger?', 'Das ist zu teuer.', 'Haben Sie einen Rabatt?'];
+export const BARGAIN_LINES = ['Geht das billiger?', 'Das ist zu teuer.', 'Gibt es einen Rabatt?'];
 
 export interface ShopState {
   items: Item[];

@@ -194,7 +194,7 @@ export const REGION2_GROUPS: Group[] = [
       'Ich hätte gern ein Kilo Äpfel. | 我想要一公斤苹果。',
       'Wo ist die Kasse? | 收银台在哪儿？',
       'Kann ich mit Karte zahlen? | 可以刷卡吗？',
-      'Haben Sie einen Rabatt? | 有折扣吗？',
+      'Gibt es einen Rabatt? | 有折扣吗？',
     ],
   },
   {

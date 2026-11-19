@@ -352,7 +352,7 @@ export class Panels {
     }
     return h(
       'div.buybox',
-      h('div.small', `用德语说「我要这个${n.zh}」：Ich nehme + ${n.nom} 的第四格。讲价的话（Geht das billiger? / Das ist zu teuer. / Haben Sie einen Rabatt?），这次打九折。`),
+      h('div.small', `用德语说「我要这个${n.zh}」：Ich nehme + ${n.nom} 的第四格。讲价的话（Geht das billiger? / Das ist zu teuer. / Gibt es einen Rabatt?），这次打九折。`),
       h('div.typing', bargain),
       h('div.typing', line, umlautButtons(line), h('button.btn.primary', { onclick: go }, '成交 ↵')),
     );
