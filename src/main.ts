@@ -49,6 +49,8 @@ function boot(state: ReturnType<typeof newGame>) {
 
 async function start() {
   await initCloud();
+  // Login required: without a (cached) session the title screen only offers the login box.
+  if (!cloud.session || mustChangePassword()) return loginOnly();
   const local = load();
   const existing = await syncOnBoot(local);
   if (existing && existing !== local) saveRaw(existing); // adopt the newer cloud save as-is
@@ -60,16 +62,24 @@ async function start() {
   title(existing);
 }
 
+function loginOnly() {
+  const el = $('title');
+  el.hidden = false;
+  const inner = h('div.form.panel');
+  el.replaceChildren(
+    h(
+      'div.box',
+      h('h1', 'Wortklinge', h('small', '失 语 纪 元')),
+      h('div.lore', '一夜之间，无名之物吃掉了世界的名字。', h('br'), '你在篝火旁醒来。叫对一个名字，它就会变回原样。'),
+      inner,
+      h('div.ver', `v${VERSION} · 请用电脑上的 Chrome 打开，开声音`),
+    ),
+  );
+  loginView(inner, () => location.reload());
+}
+
 function title(existing: ReturnType<typeof load>) {
-// Title-screen account line: log in here, then reload so the cloud save is picked up.
-let account: HTMLElement | undefined;
-if (!cloud.session || mustChangePassword()) {
-  account = h('div.form.panel');
-  const inner = h('div');
-  const open = h('button.btn.ghost', { onclick: () => { open.remove(); loginView(inner, () => location.reload()); } }, '登录账号（云存档、排行榜）');
-  account.append(open, inner);
-  if (cloud.session) open.click();
-} else account = h('p.small.muted', `已登录 ${cloud.profile?.nickname ?? cloud.session.user.email ?? ''} · 云存档${cloud.status === 'offline' ? '暂时连不上，先存本地' : '已同步'}`);
+const account = h('p.small.muted', `已登录 ${cloud.profile?.nickname ?? cloud.session?.user.email ?? ''} · 云存档${cloud.status === 'offline' ? '暂时连不上，先存本地，联网后自动同步' : '已同步'}`);
 showTitle({
   account,
   existing,
@@ -78,6 +88,7 @@ showTitle({
   onNew: (name, origin, look) => {
     const s = newGame(name, origin);
     s.look = look;
+    s.owner = cloud.session?.user.id;
     save(s);
     boot(s);
   },

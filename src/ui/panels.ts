@@ -473,7 +473,7 @@ export class Panels {
     const st = { off: '未同步', syncing: '同步中…', ok: `已同步${cloud.lastSync ? `（${new Date(cloud.lastSync).toLocaleTimeString().slice(0, 5)}）` : ''}`, offline: '连不上服务器，先存在本地，联网后自动同步' }[cloud.status];
     wrap.append(
       h('p.small', `已登录：${cloud.session.user.email ?? ''} · 云存档：${st}`),
-      h('div.row', h('button.btn', { onclick: async () => { this.ctrl.persist(); await push(s); } }, '立即同步'), h('button.btn.ghost', { onclick: () => void signOut() }, '退出登录')),
+      h('div.row', h('button.btn', { onclick: async () => { this.ctrl.persist(); await push(s); } }, '立即同步'), h('button.btn.ghost', { onclick: async () => { this.ctrl.persist(); await push(s); await signOut(); location.reload(); } }, '退出登录')),
     );
     if (!cloud.profile) {
       const nick = h('input', { placeholder: '昵称（1–16 个字）', maxlength: 16, value: s.name }) as HTMLInputElement;
@@ -504,7 +504,7 @@ export class Panels {
   private data(): HTMLElement {
     const s = this.ctrl.state;
     const wrap = h('div');
-    wrap.append(h('p.small.muted', '存档在这个浏览器里；在「账号与排行」登录后会同步到云端，换电脑也能接着玩。没登录的话，换电脑或清理浏览器前请先导出。试玩时请每周把导出的文件发给开发者：里面只有游戏记录（每天玩了多久、学了几个词）和你起的角色名。'));
+    wrap.append(h('p.small.muted', '存档会同步到云端，换电脑登录就能接着玩；断网时先存在这个浏览器里，联网后自动同步。导出的文件可以留作备份。试玩时请每周把导出的文件发给开发者：里面只有游戏记录（每天玩了多久、学了几个词）和你起的角色名。'));
     const table = h('table.log');
     table.append(h('tr', h('th', '日期'), h('th', '分钟'), h('th', '击杀'), h('th', '答对'), h('th', '答错'), h('th', '新词'), h('th', '归名')));
     const days = Object.keys(s.log).sort().reverse();

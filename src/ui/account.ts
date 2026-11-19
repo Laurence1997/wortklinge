@@ -41,7 +41,7 @@ export function loginView(box: HTMLElement, onDone: () => void, mode: Mode = 'lo
     };
     enter([em, pw], go);
     box.append(
-      h('p.small.muted', '账号只能由开发者邀请。收到邀请后用邮箱和初始密码登录，第一次登录要改密码。不登录也能玩，存档只在这个浏览器里。'),
+      h('p.small.muted', '账号只能由开发者邀请。收到邀请后用邮箱和初始密码登录，第一次登录要改密码。存档保存在云端，换电脑也能接着玩。'),
       h('div.row', em, pw, h('button.btn.primary', { onclick: go }, '登录')),
       h('button.btn.ghost.small', { onclick: () => loginView(box, onDone, 'forgot', em.value) }, '忘记密码'),
       msg,

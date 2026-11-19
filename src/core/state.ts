@@ -33,6 +33,8 @@ export interface GameState {
   createdAt: number;
   /** Real time of the last local save (ms); the newer of local and cloud wins. */
   savedAt?: number;
+  /** Account id this save belongs to (set when logged in). */
+  owner?: string;
   name: string;
   origin: string;
   /** Dev time skip, added to Date.now(). */

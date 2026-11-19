@@ -1,4 +1,4 @@
-// Accounts and cloud saves (Supabase). Invite only (email + password); the game runs fully without logging in.
+// Accounts and cloud saves (Supabase). Invite only (email + password); login is required to play; the local save is a cache that also keeps you playing offline.
 // Local save stays the source of play; when logged in it syncs with the cloud and the newer save wins.
 // Only the publishable (anon) key lives here; row-level security limits each player to their own save.
 
@@ -145,12 +145,19 @@ export async function syncOnBoot(local: GameState | null): Promise<GameState | n
     const remote = data ? migrate((data as { data: unknown }).data) : null;
     cloud.status = 'ok';
     cloud.lastSync = Date.now();
-    if (remote && (!local || (remote.savedAt ?? 0) > (local.savedAt ?? 0))) return remote;
-    if (local) void push(local);
-    return local;
+    // A local save from another account on this browser is not yours: ignore it.
+    const mine = local && (!local.owner || local.owner === id) ? local : null;
+    if (remote && (!mine || (remote.savedAt ?? 0) > (mine.savedAt ?? 0))) return { ...remote, owner: id };
+    if (mine) {
+      mine.owner = id;
+      void push(mine);
+    }
+    return mine;
   } catch {
     cloud.status = 'offline';
-    return local;
+    const mine = local && (!local.owner || local.owner === id) ? local : null;
+    if (mine) mine.owner = id;
+    return mine;
   }
 }
 
