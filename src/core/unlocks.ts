@@ -17,6 +17,16 @@ export const UNLOCK = {
   purple: 8,
   layerNegation: 9,
   classes: 10,
+  shop: 11,
+  chests: 11,
+  flee: 11,
+  packs: 11,
+  plural: 11,
+  conjugation: 12,
+  talents: 12,
+  quests: 12,
+  layerObject: 13,
+  boss2: 18,
 } as const;
 
 export type Feature = keyof typeof UNLOCK;
@@ -35,5 +45,9 @@ export const UNLOCK_TEXT: Record<number, string[]> = {
   7: ['格挡和破防：三种招式学全，攻击克蓄力，格挡克攻击，破防克防御'],
   8: ['首领「无名的邻居」：在营地东边的门后等你', '怪物会回血：Ich mache eine Pause.', '紫装：首领必掉'],
   9: ['怪物意图出现否定：nicht、kein，说了动作但不做'],
-  10: ['选职业和大地图在面包集市（第 2 区，下一版开放）'],
+  10: ['浓雾散开：邻居家的门通向面包集市（第 2 区）', '选职业：去集市找导师 Greta，书写者或守护者'],
+  11: ['商店：用德语跟商人 Mira 买东西（Ich nehme den Mantel.），也能讨价还价', '宝箱和宝箱怪：喊着 Ich muss los! 的怪，这回合打不死就跑了', '群怪：附近的怪会一起扑上来，先选中一只，再喊它的冠词（点名）', '复数：Ich nehme zwei Äpfel.，到期复习的名词也开始考复数'],
+  12: ['动词怪要写出现在时变位：du nimmst、er nimmt', '天赋树：每升 1 级得 1 点，去导师 Greta 那里点', '任务：按 J 打开任务面板'],
+  13: ['怪物意图带对象：Ich heile mich. 是治自己，Ich greife dich an. 是打你'],
+  18: ['第 2 区首领「吞秤者」：在粮仓尽头的秤房里，考价格和数量'],
 };

@@ -1,5 +1,6 @@
-// Region 1 map: 最后的营地 — a fog-locked block of a ruined German town.
-// Generated from a fixed seed so every player walks the same streets.
+// Maps. Region 1: 最后的营地 — a fog-locked block of a ruined German town.
+// Region 2: 面包集市 — the market behind the neighbour's door.
+// Generated from fixed seeds so every player walks the same streets. Both maps are 74×48.
 
 import { makeRng } from '../core/rng';
 import type { ZoneId } from '../core/types';
@@ -32,8 +33,12 @@ export interface Rect {
   h: number;
 }
 
+export type RegionId = 1 | 2;
+export type NpcId = 'hilde' | 'greta' | 'mira' | 'konrad';
+
 export interface ZoneDef {
   id: ZoneId;
+  region: RegionId;
   zh: string;
   de: string;
   rect: Rect;
@@ -42,16 +47,27 @@ export interface ZoneDef {
 }
 
 export const ZONES: ZoneDef[] = [
-  { id: 'camp', zh: '余烬营地', de: 'Glutheim', rect: { x: 4, y: 17, w: 15, h: 15 }, levels: '安全区', monsters: 0 },
-  { id: 'echogasse', zh: '回声巷', de: 'Echogasse', rect: { x: 20, y: 10, w: 19, h: 28 }, levels: 'Lv 1–3', monsters: 9 },
-  { id: 'schilderstrasse', zh: '名牌街', de: 'Schilderstraße', rect: { x: 41, y: 3, w: 26, h: 18 }, levels: 'Lv 3–7', monsters: 10 },
-  { id: 'aschehof', zh: '灰烬公寓', de: 'Aschehof', rect: { x: 41, y: 27, w: 26, h: 18 }, levels: 'Lv 6–9', monsters: 10 },
+  { id: 'camp', region: 1, zh: '余烬营地', de: 'Glutheim', rect: { x: 4, y: 17, w: 15, h: 15 }, levels: '安全区', monsters: 0 },
+  { id: 'echogasse', region: 1, zh: '回声巷', de: 'Echogasse', rect: { x: 20, y: 10, w: 19, h: 28 }, levels: 'Lv 1–3', monsters: 9 },
+  { id: 'schilderstrasse', region: 1, zh: '名牌街', de: 'Schilderstraße', rect: { x: 41, y: 3, w: 26, h: 18 }, levels: 'Lv 3–7', monsters: 10 },
+  { id: 'aschehof', region: 1, zh: '灰烬公寓', de: 'Aschehof', rect: { x: 41, y: 27, w: 26, h: 18 }, levels: 'Lv 6–9', monsters: 10 },
+  { id: 'markt', region: 2, zh: '面包集市', de: 'Brotmarkt', rect: { x: 4, y: 13, w: 18, h: 23 }, levels: '主城', monsters: 0 },
+  { id: 'gemuesegasse', region: 2, zh: '菜摊街', de: 'Gemüsegasse', rect: { x: 24, y: 3, w: 26, h: 19 }, levels: 'Lv 11–14', monsters: 10 },
+  { id: 'waagegasse', region: 2, zh: '秤巷', de: 'Waagegasse', rect: { x: 24, y: 27, w: 26, h: 18 }, levels: 'Lv 14–17', monsters: 10 },
+  { id: 'kornspeicher', region: 2, zh: '粮仓', de: 'Kornspeicher', rect: { x: 52, y: 6, w: 17, h: 36 }, levels: 'Lv 17–20', monsters: 10 },
 ];
 
+export function zonesOf(region: RegionId): ZoneDef[] {
+  return ZONES.filter((z) => z.region === region);
+}
+
 export interface MapData {
+  region: RegionId;
   tiles: Uint8Array;
   bonfire: { x: number; y: number };
-  npc: { x: number; y: number };
+  npcs: Array<{ id: NpcId; x: number; y: number }>;
+  /** Walk onto a gate tile and press E to travel to the other region. */
+  gates: Array<{ x: number; y: number; to: RegionId }>;
   sign: { x: number; y: number };
   door: { x: number; y: number };
   start: { x: number; y: number };
@@ -63,7 +79,11 @@ export function idx(x: number, y: number): number {
   return y * MAP_W + x;
 }
 
-export function generateMap(): MapData {
+export function generateMap(region: RegionId = 1): MapData {
+  return region === 2 ? generateRegion2() : generateRegion1();
+}
+
+function generateRegion1(): MapData {
   const rng = makeRng(20261119);
   const tiles = new Uint8Array(MAP_W * MAP_H).fill(T.Ground);
   const set = (x: number, y: number, t: T) => {
@@ -110,7 +130,7 @@ export function generateMap(): MapData {
         else if (rng() < 0.025) set(x, y, T.Crate);
       }
   };
-  for (const z of ZONES) if (z.id !== 'camp') blocks(z.rect);
+  for (const z of zonesOf(1)) if (z.id !== 'camp') blocks(z.rect);
 
   // The camp: an ash clearing around the bonfire.
   const bonfire = { x: 11, y: 24 };
@@ -157,12 +177,153 @@ export function generateMap(): MapData {
   for (const sg of signs) if (BLOCKING.has(get(sg.x, sg.y))) set(sg.x, sg.y, T.Ground);
 
   return {
+    region: 1,
     tiles,
     bonfire,
-    npc: { x: bonfire.x + 2, y: bonfire.y + 1 },
+    npcs: [{ id: 'hilde', x: bonfire.x + 2, y: bonfire.y + 1 }],
+    gates: [],
     sign: { x: bonfire.x, y: bonfire.y - 5 },
     door,
     start: { x: bonfire.x + 1, y: bonfire.y + 2 },
+    lamps,
+    signs,
+  };
+}
+
+function generateRegion2(): MapData {
+  const rng = makeRng(20261120);
+  const tiles = new Uint8Array(MAP_W * MAP_H).fill(T.Ground);
+  const set = (x: number, y: number, t: T) => {
+    if (x >= 0 && y >= 0 && x < MAP_W && y < MAP_H) tiles[idx(x, y)] = t;
+  };
+  const get = (x: number, y: number) => tiles[idx(x, y)];
+
+  for (let y = 0; y < MAP_H; y++)
+    for (let x = 0; x < MAP_W; x++) {
+      const edge = Math.min(x, y, MAP_W - 1 - x, MAP_H - 1 - y);
+      if (edge < 2 || (edge < 3 && rng() < 0.5)) set(x, y, T.Fog);
+    }
+
+  // Market street from the west gate to the granary's scale room, plus two cross streets.
+  for (let x = 2; x < 70; x++) for (let dy = 0; dy < 2; dy++) set(x, 24 + dy, T.Road);
+  for (let y = 4; y < 45; y++) for (let dx = 0; dx < 2; dx++) set(22 + dx, y, T.Road);
+  for (let y = 4; y < 45; y++) for (let dx = 0; dx < 2; dx++) set(50 + dx, y, T.Road);
+
+  // Field blocks: market stalls (crates) in the vegetable lane, shop rows in the scale lane, sheds in the granary.
+  const blocks = (r: Rect, style: 'stalls' | 'shops' | 'sheds') => {
+    const step = style === 'sheds' ? 8 : 7;
+    for (let y = r.y; y < r.y + r.h; y++)
+      for (let x = r.x; x < r.x + r.w; x++) {
+        if (get(x, y) === T.Fog) continue;
+        const lx = x - r.x;
+        const ly = y - r.y;
+        if (lx % step === 0 || ly % step === 0) {
+          set(x, y, T.Road);
+          continue;
+        }
+        const bx = lx % step;
+        const by = ly % step;
+        const inner = bx >= 2 && bx <= step - 2 && by >= 2 && by <= step - 2;
+        if (!inner) {
+          if (rng() < 0.03) set(x, y, T.Tree);
+          else if (rng() < 0.03) set(x, y, T.Crate);
+          continue;
+        }
+        if (style === 'stalls') {
+          // Open stalls: a row of crates with a gap, ground behind.
+          if (by === 2 && bx !== 4) set(x, y, T.Crate);
+          else if (by === 5 && rng() < 0.3) set(x, y, T.Rubble);
+        } else if (style === 'shops') {
+          const edgeB = bx === 2 || bx === step - 2 || by === 2 || by === step - 2;
+          if (edgeB) set(x, y, rng() < 0.1 ? T.Rubble : T.Wall);
+          else set(x, y, T.Roof);
+        } else {
+          const edgeB = bx === 2 || bx === step - 2 || by === 2 || by === step - 2;
+          if (edgeB) set(x, y, by === step - 2 && bx === 4 ? T.Ground : T.Wall);
+          else if (rng() < 0.35) set(x, y, T.Crate);
+        }
+      }
+  };
+  blocks(zonesOf(2)[1].rect, 'stalls');
+  blocks(zonesOf(2)[2].rect, 'shops');
+  blocks(zonesOf(2)[3].rect, 'sheds');
+
+  // The market square: ash and cobbles around the bonfire, the bakery and two tents.
+  const bonfire = { x: 12, y: 24 };
+  for (let y = 14; y < 35; y++)
+    for (let x = 4; x < 22; x++) {
+      if (get(x, y) === T.Fog) continue;
+      const d = Math.hypot(x - bonfire.x, (y - bonfire.y) * 0.9);
+      if (d < 4) set(x, y, T.Ash);
+      else if (get(x, y) !== T.Road) set(x, y, T.Ground);
+    }
+  // Konrad's bakery: a small house south-west of the fire, door facing north.
+  for (let y = 29; y <= 33; y++)
+    for (let x = 5; x <= 11; x++) {
+      const edgeB = x === 5 || x === 11 || y === 29 || y === 33;
+      set(x, y, edgeB ? (y === 29 && x === 8 ? T.Ground : T.Wall) : T.Roof);
+    }
+  // Mira's stall and Greta's tent.
+  for (let x = 14; x <= 19; x++) set(x, 17, T.Crate);
+  set(7, 17, T.Tent);
+  set(6, 19, T.Crate);
+  set(18, 31, T.Tent);
+  for (let x = 4; x < 22; x++) for (let dy = 0; dy < 2; dy++) set(x, 24 + dy, T.Road);
+
+  // The scale room at the east end of the granary: the region boss waits behind it.
+  const door = { x: 70, y: 24 };
+  for (let y = 18; y < 31; y++) {
+    set(71, y, T.Wall);
+    if (y !== 24 && y !== 25) set(70, y, T.Wall);
+  }
+  set(door.x, 24, T.Door);
+  set(door.x, 25, T.Door);
+
+  // West gate back to the camp (the neighbour's door, seen from the other side).
+  const gate = { x: 2, y: 24 };
+  set(1, 24, T.Door);
+  set(1, 25, T.Door);
+  set(2, 24, T.Road);
+  set(2, 25, T.Road);
+
+  const lamps = [
+    { x: 21, y: 23 },
+    { x: 30, y: 26 },
+    { x: 44, y: 23 },
+    { x: 49, y: 26 },
+    { x: 60, y: 23 },
+    { x: 68, y: 26 },
+    { x: 24, y: 12 },
+    { x: 24, y: 36 },
+    { x: 4, y: 23 },
+  ];
+  for (const l of lamps) set(l.x, l.y, T.Lamp);
+
+  const signs = [
+    { x: 23, y: 21, wordId: 'markt' },
+    { x: 25, y: 26, wordId: 'preis' },
+    { x: 52, y: 22, wordId: 'korn' },
+    { x: 11, y: 31, wordId: 'baeckerei' },
+  ];
+  for (const sg of signs) if (BLOCKING.has(get(sg.x, sg.y))) set(sg.x, sg.y, T.Ground);
+
+  const npcs: MapData['npcs'] = [
+    { id: 'hilde', x: 14, y: 26 },
+    { id: 'greta', x: 8, y: 18 },
+    { id: 'mira', x: 16, y: 18 },
+    { id: 'konrad', x: 8, y: 28 },
+  ];
+  for (const n of npcs) set(n.x, n.y, T.Ground);
+
+  return {
+    region: 2,
+    tiles,
+    bonfire,
+    npcs,
+    gates: [{ x: gate.x, y: gate.y, to: 1 }, { x: gate.x, y: gate.y + 1, to: 1 }],
+    sign: { x: bonfire.x, y: bonfire.y - 5 },
+    door,
+    start: { x: 4, y: 24 },
     lamps,
     signs,
   };
@@ -174,10 +335,10 @@ export function isBlocked(m: MapData, tx: number, ty: number): boolean {
   return BLOCKING.has(m.tiles[idx(tx, ty)]);
 }
 
-export function zoneAt(px: number, py: number): ZoneDef | null {
+export function zoneAt(px: number, py: number, region: RegionId = 1): ZoneDef | null {
   const tx = Math.floor(px / TILE);
   const ty = Math.floor(py / TILE);
-  for (const z of ZONES) {
+  for (const z of zonesOf(region)) {
     const r = z.rect;
     if (tx >= r.x && tx < r.x + r.w && ty >= r.y && ty < r.y + r.h) return z;
   }

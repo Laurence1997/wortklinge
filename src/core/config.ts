@@ -38,13 +38,16 @@ export const CONFIG = {
     shadowMonster: 8,
     boss: 300,
     typedKillMult: 1.5,
+    strongVerbMult: 1.3,
   },
 
   /** Minutes for Lv1→2 … Lv5→6 (新手加速), then t(L) = 1.25 × L^0.3 hours. ~1000 XP per active hour. */
   levelMinutes: [10, 20, 30, 45, 60],
   xpPerHour: 1000,
-  /** 0.3 week 1 ships region 1; the level cap keeps players inside released content. */
-  levelCap: 10,
+  /** 0.3 ships regions 1–2; the level cap keeps players inside released content. */
+  levelCap: 20,
+  /** The neighbour's door opens onto region 2 (面包集市) at this level, after the region-1 boss. */
+  region2Level: 10,
 
   player: {
     baseHp: 30,
@@ -106,6 +109,12 @@ export const CONFIG = {
 
   gold: { perKill: (lvl: number) => Math.round(5 * (1 + lvl / 10)) },
 
+  /**
+   * 群怪 (region 2): per-monster damage ×0.5 with 2, ×0.35 with 3 (doc said 0.6 / 0.45; sim 2026-11-19 at
+   * 75% accuracy gave 13–23% deaths per pack fight). Packs of 3 only from Lv13. 点名 on the wrong one deals half.
+   */
+  pack: { dmgMult: [0.5, 0.35] as [number, number], strayMult: 0.5, max: 3, max3From: 13, radiusTiles: 4, fromLevel: 11 },
+
   boss: {
     /** Share of region words that must be at least 半名 before the boss appears. */
     halfNameShare: 0.4,
@@ -115,6 +124,9 @@ export const CONFIG = {
     laterSeconds: 35,
     healAt: 2,
   },
+
+  /** 吞秤者 (region 2, Lv18): prices and quantities. */
+  boss2: { hp: 7, firstTimeSeconds: 45, laterSeconds: 30, xp: 900, gold: 300 },
 };
 
 export function levelHours(level: number): number {

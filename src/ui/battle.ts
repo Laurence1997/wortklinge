@@ -1,5 +1,5 @@
 import type { Battle, Question, TurnReport } from '../core/combat';
-import { availableMoves, comboTier } from '../core/combat';
+import { availableMoves, comboTier, nehmeRegion } from '../core/combat';
 import { ELEMENT_ZH, INTENT_ZH } from '../core/intents';
 import { STAGE_ZH } from '../core/srs';
 import { maxHp } from '../core/state';
@@ -7,6 +7,7 @@ import type { Move } from '../core/types';
 import { has } from '../core/unlocks';
 import { FAMILIES } from '../data/families';
 import { SKILLS } from '../data/skills';
+import { CLASSES, resMax } from '../core/classes';
 import { fullForm, genderOf } from '../data/words';
 import type { Controller } from '../game/controller';
 import { ARTICLE_COLOR, GLITCH, iconUrl } from '../game/sprites';
@@ -20,6 +21,7 @@ const MOVE_INFO: Record<Move, { key: string; zh: string; sub: string }> = {
   break: { key: 'D', zh: '破防', sub: '默写 · 克防御' },
   sentence: { key: 'F', zh: '句式', sub: 'Ich möchte … · 带元素' },
   skill: { key: 'R', zh: '技能', sub: '写对整句' },
+  cls: { key: 'G', zh: '职业技能', sub: '' },
 };
 
 const INTENT_COLOR: Record<string, string> = {
@@ -63,7 +65,7 @@ export class BattleUI {
   private startTurn() {
     this.zhShown = this.ctrl.state.settings.autoZh || this.ctrl.state.level <= 3;
     this.ctrl.speak(this.b.intent.line);
-    const moves = availableMoves(this.ctrl.state, this.b).filter((m) => m !== 'skill' || this.b.skillCooldown === 0);
+    const moves = availableMoves(this.ctrl.state, this.b).filter((m) => (m !== 'skill' || this.b.skillCooldown === 0) && (m !== 'cls' || this.clsReady()));
     if (moves.length === 1) this.choose(moves[0]);
     else {
       this.phase = 'choose';
@@ -76,6 +78,7 @@ export class BattleUI {
     const moves = availableMoves(this.ctrl.state, this.b);
     if (!moves.includes(move)) return;
     if (move === 'skill' && this.b.skillCooldown > 0) return;
+    if (move === 'cls' && !this.clsReady()) return;
     this.move = move;
     this.question = this.ctrl.askQuestion(move);
     // Listening step: the monster says its own name, the player picks the meaning.
@@ -84,13 +87,18 @@ export class BattleUI {
     this.render();
   }
 
+  private clsReady(): boolean {
+    const s = this.ctrl.state;
+    return !!s.cls && this.b.cfx.res >= CLASSES[s.cls].skillCost;
+  }
+
   submit(value: string): void {
     if (this.phase !== 'answer' || !this.question) return;
     this.lastValue = value;
     this.report = this.ctrl.answer(this.move, this.question, value);
     this.phase = 'result';
     this.render();
-    const quick = this.report.correct && !this.report.verdict.notes.length && !this.b.outcome;
+    const quick = this.report.correct && !this.report.verdict.notes.length && !this.ctrl.fightOver() && !this.report.kills.length;
     window.clearTimeout(this.autoTimer);
     if (quick) this.autoTimer = window.setTimeout(() => this.continue(), 900);
   }
@@ -98,11 +106,22 @@ export class BattleUI {
   continue(): void {
     if (this.phase !== 'result') return;
     window.clearTimeout(this.autoTimer);
-    if (this.b.outcome) {
+    if (this.ctrl.fightOver()) {
       this.ctrl.finishBattle();
       return;
     }
     this.startTurn();
+  }
+
+  /** 群怪: change target. Mid-question the question is asked again for the new target. */
+  target(i: number): void {
+    if (this.phase === 'result') return;
+    const before = this.b;
+    this.ctrl.setTarget(i);
+    if (this.b === before) return;
+    if (this.phase === 'answer') this.question = this.ctrl.askQuestion(this.move);
+    this.ctrl.speak(this.b.intent.line);
+    this.render();
   }
 
   /** Keyboard: A/S/D/F/R to pick a move, 1–3 for options, Enter to continue, Esc to change move. */
@@ -119,10 +138,23 @@ export class BattleUI {
       this.render();
       return true;
     }
+    if (e.key === 'Tab' && this.ctrl.pack.length > 1) {
+      e.preventDefault();
+      const n = this.ctrl.pack.length;
+      const cur = this.ctrl.pack.indexOf(this.b);
+      for (let d = 1; d < n; d++) {
+        const i = (cur + d) % n;
+        if (!this.ctrl.pack[i].outcome) {
+          this.target(i);
+          break;
+        }
+      }
+      return true;
+    }
     if (typing) return false;
     const k = e.key.toLowerCase();
     if (this.phase === 'choose' || (this.phase === 'answer' && this.question?.options)) {
-      const map: Record<string, Move> = { a: 'attack', s: 'block', d: 'break', f: 'sentence', r: 'skill' };
+      const map: Record<string, Move> = { a: 'attack', s: 'block', d: 'break', f: 'sentence', r: 'skill', g: 'cls' };
       if (map[k]) {
         this.choose(map[k]);
         return true;
@@ -187,6 +219,9 @@ export class BattleUI {
       h('div.status', st.join(' · ')),
     );
 
+    const pack = this.ctrl.pack;
+    const monEl = pack.length > 1 ? this.renderPack() : mon;
+
     // Intent bubble: the German line is the information; the icon only shows what the verb says.
     const it = b.intent;
     const shownColor = INTENT_COLOR[it.shown] ?? '#ccc';
@@ -196,9 +231,10 @@ export class BattleUI {
       h(
         'div',
         { style: 'flex:1;min-width:0' },
-        h('div.kind', `它说（${s.level <= 30 ? '图标 = ' + INTENT_ZH[it.shown] : ''}）`),
+        h('div.kind', `${pack.length > 1 ? (b.named || b.stage > 0 ? fullForm(w) : w.de) + ' ' : '它'}说（${s.level <= 30 ? '图标 = ' + INTENT_ZH[it.shown] : ''}）`),
         h('div.line', it.line),
         h('div.zh', this.zhShown ? it.zh : ''),
+        b.queued ? h('div.zh', { style: 'color:var(--gold, #ffcf4a)' }, `看穿 · 下回合：${b.queued.line}${this.zhShown ? `（${b.queued.zh}）` : ''}`) : '',
         h(
           'div.ib',
           h('button.btn', { onclick: () => this.ctrl.speak(it.line), title: '再听一遍（V）' }, '🔊 再听'),
@@ -212,6 +248,7 @@ export class BattleUI {
     if (b.fx.burn > 0) fx.push(`灼烧 ${b.fx.burn}`);
     if (b.fx.poison > 0) fx.push(`中毒 ×${b.fx.poison}`);
     if (b.fx.shield) fx.push('护盾');
+    if (s.cls) fx.push(`${CLASSES[s.cls].res} ${b.cfx.res}/${resMax(s)}${b.cfx.critReady ? ' · 必暴击' : ''}`);
     const me = h(
       'div.b-me',
       h('div.fam', h('span', s.name), h('span', `Lv ${s.level}`)),
@@ -227,8 +264,15 @@ export class BattleUI {
     if (moves.length > 1) {
       for (const mv of moves) {
         const info = MOVE_INFO[mv];
-        const disabled = this.phase === 'result' || (mv === 'skill' && b.skillCooldown > 0);
-        const sub = mv === 'skill' && s.skills[0] ? `${SKILLS[s.skills[0]].zh}${b.skillCooldown ? ` · 冷却 ${b.skillCooldown}` : ''}` : info.sub;
+        const disabled = this.phase === 'result' || (mv === 'skill' && b.skillCooldown > 0) || (mv === 'cls' && !this.clsReady());
+        const sub =
+          mv === 'skill' && s.skills[0]
+            ? `${SKILLS[s.skills[0]].zh}${b.skillCooldown ? ` · 冷却 ${b.skillCooldown}` : ''}`
+            : mv === 'cls' && s.cls
+              ? `${CLASSES[s.cls].skillZh} · ${CLASSES[s.cls].res} ${b.cfx.res}/${CLASSES[s.cls].skillCost}`
+              : mv === 'sentence' && nehmeRegion(s)
+                ? 'Ich nehme zwei … · 带元素'
+                : info.sub;
         movesEl.append(
           h(
             `button.btn${this.move === mv && this.phase !== 'choose' ? '.sel' : ''}`,
@@ -255,11 +299,34 @@ export class BattleUI {
     const blog = h('div.blog');
     for (const l of b.log.slice(-3)) blog.append(h(`div.${l.tone}`, l.text));
 
-    clear(el).append(h('div.b-top', mon, intent, me), movesEl, q, blog);
+    clear(el).append(h('div.b-top', monEl, intent, me), movesEl, q, blog);
     if (this.input && this.phase === 'answer') window.setTimeout(() => this.input?.focus(), 0);
   }
 
   private pending: string | undefined;
+
+  /** 群怪 cards: name (article only after 点名), HP and each monster's own intent. */
+  private renderPack(): HTMLElement {
+    const wrap = h('div.b-mon.b-pack');
+    this.ctrl.pack.forEach((pb, i) => {
+      const w = pb.word;
+      const g = genderOf(w);
+      const known = pb.named || pb.stage > 0;
+      const color = known && g ? ARTICLE_COLOR[g] : '#e8dccf';
+      const it = pb.intent;
+      const dead = !!pb.outcome;
+      const card = h(
+        `button.pk${pb === this.b ? '.sel' : ''}${dead ? '.dead' : ''}`,
+        { onclick: () => this.target(i), title: '选中它（Tab 切换）', disabled: dead },
+        h('div.fam', h('span', `${FAMILIES[w.family].zh} · Lv ${pb.monster.lvl}`), h('span', dead ? '已打散' : STAGE_ZH[pb.stage])),
+        h('div.nm', { style: `color:${color}` }, known ? fullForm(w) : `？ ${w.de}`),
+        bar('hp', pb.monster.hp, pb.monster.maxHp, `${pb.monster.hp} / ${pb.monster.maxHp}`),
+        dead ? '' : h('div.it', h('img', { src: iconUrl(it.shown, INTENT_COLOR[it.shown] ?? '#ccc'), alt: '' }), it.line),
+      );
+      wrap.append(card);
+    });
+    return wrap;
+  }
 
   private renderQuestion(qq: Question): HTMLElement {
     this.renderedQ = qq;
@@ -284,10 +351,10 @@ export class BattleUI {
         autocomplete: 'off',
         autocapitalize: 'off',
         spellcheck: 'false',
-        placeholder: qq.type === 'sentence' ? 'Ich möchte einen …' : qq.withArticle ? 'der / die / das + 名词' : '',
+        placeholder: qq.type === 'sentence' ? (qq.focus.startsWith('Ich nehme') ? 'Ich nehme zwei …' : 'Ich möchte einen …') : qq.withArticle ? 'der / die / das + 名词' : '',
         disabled: this.phase !== 'answer',
       }) as HTMLInputElement;
-      if (qq.type === 'sentence') input.value = 'Ich möchte ';
+      if (qq.type === 'sentence') input.value = qq.focus.startsWith('Ich nehme') ? 'Ich nehme ' : 'Ich möchte ';
       if (this.pending !== undefined) input.value = this.pending;
       if (this.phase === 'result') input.value = this.lastValue;
       input.addEventListener('keydown', (e) => {
@@ -310,7 +377,7 @@ export class BattleUI {
       if (r.element) fb.append(h('span', `  元素：${ELEMENT_ZH[r.element]}`));
       for (const n of r.verdict.notes) fb.append(h('span.note', n));
       if (r.readRight) fb.append(h('span.note', '读对了意图：连击额外 +1'));
-      fb.append(h('span.note.muted', this.b.outcome ? '按 Enter 结束战斗' : '按 Enter 继续'));
+      fb.append(h('span.note.muted', this.ctrl.fightOver() ? '按 Enter 结束战斗' : '按 Enter 继续'));
       wrap.append(fb);
     }
     return wrap;

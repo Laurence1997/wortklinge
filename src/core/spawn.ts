@@ -22,6 +22,7 @@ export function zoneWords(zone: ZoneId): Word[] {
 
 /** Words a player can meet at their level: Lv1 fights only nouns (冠词攻击). */
 function eligible(s: GameState, w: Word): boolean {
+  if (w.family === 'truhe') return false; // 宝箱怪 only appears as a rare spawn
   if (!has(s.level, 'typing') && !w.art) return false;
   return true;
 }

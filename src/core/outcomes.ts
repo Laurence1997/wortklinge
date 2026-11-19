@@ -6,6 +6,8 @@ import { recordKill, type KillOutcome } from './srs';
 import { addXp, affixTotal, maxHp, now, overloaded, rollDay, todayLog, type GameState, type LevelUpResult } from './state';
 import type { Item } from './types';
 import { has } from './unlocks';
+import { CONJ } from '../data/verbs';
+import { CHEST_RATE, type ChestKind } from './chest';
 
 export interface WinResult {
   xp: number;
@@ -13,13 +15,14 @@ export interface WinResult {
   kill: KillOutcome;
   levelUp: LevelUpResult;
   drop: Item | null;
+  chest: ChestKind | null;
   bagFull: boolean;
   echoRecovered: { gold: number; xp: number } | null;
   /** This kill happened during 言灵过载 (new = paid less, due = paid more). */
   overload: 'new' | 'due' | null;
 }
 
-export function applyWin(s: GameState, b: Battle, rng: Rng): WinResult {
+export function applyWin(s: GameState, b: Battle, rng: Rng, opts: { heal?: boolean } = {}): WinResult {
   rollDay(s);
   const t = now(s);
   const log = todayLog(s);
@@ -36,6 +39,8 @@ export function applyWin(s: GameState, b: Battle, rng: Rng): WinResult {
   const overdueMult = 1 + CONFIG.monster.overdueRewardStep * b.overdue;
   xp *= overdueMult;
   if (b.lastKillTyped) xp *= CONFIG.xp.typedKillMult;
+  // Strong verbs (nehmen → nimmt) are harder to conjugate: ×1.3 once conjugation is unlocked.
+  if (w.pos === 'v' && CONJ[w.de]?.strong && has(s.level, 'conjugation')) xp *= CONFIG.xp.strongVerbMult;
   const gap = levelGapMult(s.level, b.monster.lvl);
   xp = gap === 0 ? 1 : xp * gap;
   xp *= 1 + Math.min(0.3, affixTotal(s, 'xp'));
@@ -46,6 +51,7 @@ export function applyWin(s: GameState, b: Battle, rng: Rng): WinResult {
   if (overload === 'new') gold = Math.max(1, Math.round(gold * O.newGold));
   if (overload === 'due') gold = Math.round(gold * O.dueGold);
   gold = Math.round(gold * overdueMult);
+  if (b.fx.stimmt) gold *= 2;
   let echoRecovered: WinResult['echoRecovered'] = null;
   if (s.echo && s.echo.wordId === w.id) {
     echoRecovered = { gold: s.echo.gold, xp: s.echo.xp };
@@ -88,9 +94,17 @@ export function applyWin(s: GameState, b: Battle, rng: Rng): WinResult {
     }
   }
 
-  // 战后喘口气
-  s.hp = Math.min(maxHp(s), s.hp + Math.round(maxHp(s) * CONFIG.player.postFightHealPct));
-  return { xp, gold, kill, levelUp, drop, bagFull, echoRecovered, overload };
+  // Chests (Lv11+): rare monsters always carry an iron chest; due kills 5% forgotten chest; others 3% wood.
+  let chest: ChestKind | null = null;
+  if (has(s.level, 'chests') && b.tutorial !== 'loss' && !b.trial) {
+    if (b.flees) chest = 'iron';
+    else if (b.kind === 'due' && rng() < CHEST_RATE.forgotten) chest = 'forgotten';
+    else if (rng() < CHEST_RATE.wood * (overload === 'new' ? O.newDrop : 1)) chest = 'wood';
+  }
+
+  // 战后喘口气 (packs heal once, after the whole fight)
+  if (opts.heal !== false) postFightHeal(s);
+  return { xp, gold, kill, levelUp, drop, bagFull, echoRecovered, overload, chest };
 }
 
 export interface LossResult {
@@ -113,4 +127,8 @@ export function applyLoss(s: GameState, b: Battle, at: { x: number; y: number })
   }
   s.hp = maxHp(s);
   return { lostEcho, newEcho };
+}
+
+export function postFightHeal(s: GameState): void {
+  s.hp = Math.min(maxHp(s), s.hp + Math.round(maxHp(s) * CONFIG.player.postFightHealPct));
 }

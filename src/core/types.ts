@@ -25,15 +25,20 @@ export interface Word {
   digit?: string;
   /** Tutorial words respawn fast. */
   tutorial?: boolean;
+  /** Region the word belongs to (1 = 余烬营地, 2 = 面包集市). */
+  region?: 1 | 2;
   /** Short example sentence shown in the 图鉴 card once 归名. */
   ex?: string;
 }
 
-export type FamilyId = 'zahnding' | 'echo' | 'zahlwurm' | 'sippe' | 'schild';
-export type ZoneId = 'camp' | 'echogasse' | 'schilderstrasse' | 'aschehof';
+export type FamilyId = 'zahnding' | 'echo' | 'zahlwurm' | 'sippe' | 'schild' | 'krume' | 'muenzling' | 'kram' | 'gier' | 'truhe';
+/** Region 1: camp, echogasse, schilderstrasse, aschehof. Region 2 (面包集市): markt (city), gemuesegasse, waagegasse, kornspeicher. */
+export type ZoneId = 'camp' | 'echogasse' | 'schilderstrasse' | 'aschehof' | 'markt' | 'gemuesegasse' | 'waagegasse' | 'kornspeicher';
 
-export type IntentKind = 'attack' | 'defend' | 'charge' | 'heal' | 'wait';
-export type Move = 'attack' | 'block' | 'break' | 'sentence' | 'skill';
+/** flee = 宝箱怪 / rare monster shouting 「Ich muss los!」: kill it this turn or it runs. */
+export type IntentKind = 'attack' | 'defend' | 'charge' | 'heal' | 'wait' | 'flee';
+/** cls = the class skill (书写者 墨水风暴 / 守护者 稳住). */
+export type Move = 'attack' | 'block' | 'break' | 'sentence' | 'skill' | 'cls';
 
 export interface Intent {
   /** What the monster will actually do. */
@@ -45,7 +50,7 @@ export interface Intent {
   line: string;
   zh: string;
   /** Which layers this line uses, for the post-fight recap. */
-  layers: Array<'count' | 'element' | 'negation'>;
+  layers: Array<'count' | 'element' | 'negation' | 'object'>;
 }
 
 /** 0 = never met, 1 = 裂形, 2 = 半名, 3 = 归名. 无名 is "met 0 times". */

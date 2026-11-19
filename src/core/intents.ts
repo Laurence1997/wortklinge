@@ -35,9 +35,15 @@ export function generateIntent(rng: Rng, ctx: IntentContext): Intent {
   // Two charges at least 3 turns apart; never open a fight with a charge.
   if (ctx.turnsSinceCharge < 3) delete weights.charge;
   delete weights.wait;
-  const kind = weighted(rng, weights) as Exclude<IntentKind, 'wait'>;
+  delete weights.flee;
+  const kind = weighted(rng, weights) as Exclude<IntentKind, 'wait' | 'flee'>;
 
   if (kind === 'attack') return attackIntent(rng, ctx, fam.verb);
+  // Lv13: lines with mich (the monster itself).
+  if (has(ctx.level, 'layerObject') && (kind === 'defend' || kind === 'heal') && rng() < 0.4) {
+    const [line, zh] = pick(rng, OBJECT_LINES[kind]);
+    return { kind, shown: kind, hits: 1, element: 'phys', line, zh, layers: ['object'] };
+  }
   const [line, zh] = pick(rng, PHRASES[kind]);
   return { kind, shown: kind, hits: 1, element: 'phys', line, zh, layers: [] };
 }
@@ -54,6 +60,11 @@ function attackIntent(rng: Rng, ctx: IntentContext, verb: { ich: string; zh: str
     return { kind: 'wait', shown: 'attack', hits: 0, element: 'phys', line, zh, layers: ['negation'] };
   }
 
+  // Lv13 object trap: the same verb with mich hits nobody (Ich kratze mich ≠ Ich kratze dich).
+  if (has(ctx.level, 'layerObject') && !ctx.trapUsed && rng() < 0.15) {
+    const [line, zh] = pick(rng, OBJECT_TRAPS);
+    return { kind: 'wait', shown: 'attack', hits: 0, element: 'phys', line, zh, layers: ['object'] };
+  }
   let hits = 1;
   if (has(ctx.level, 'layerCount') && rng() < 0.35) hits = rng() < 0.6 ? 2 : 3;
   const useElement = has(ctx.level, 'layerElement') && rng() < 0.4;
@@ -77,6 +88,10 @@ function attackIntent(rng: Rng, ctx: IntentContext, verb: { ich: string; zh: str
       zh: `我${verb.zh}${COUNT_ZH[hits]}！`,
       layers: ['count'],
     };
+  }
+  if (has(ctx.level, 'layerObject') && rng() < 0.35) {
+    const [line, zh] = pick(rng, OBJECT_LINES.attack);
+    return { kind: 'attack', shown: 'attack', hits: 1, element: 'phys', line, zh, layers: ['object'] };
   }
   if (rng() < 0.55) {
     const [line, zh] = pick(rng, PHRASES.attack);
@@ -108,6 +123,31 @@ function buildForced(ctx: IntentContext, verb: { ich: string; zh: string }): Int
   };
 }
 
+/** Lv13 (意图带对象): dich = you, mich = itself. */
+const OBJECT_LINES: Record<'attack' | 'defend' | 'heal', Array<[string, string]>> = {
+  attack: [
+    ['Ich greife dich an!', '我攻击你！（dich = 你）'],
+    ['Ich schlage dich!', '我打你！'],
+    ['Ich beiße dich!', '我咬你！'],
+    ['Ich kratze dich!', '我挠你！'],
+    ['Ich hole dich!', '我来抓你了！'],
+  ],
+  defend: [
+    ['Ich schütze mich.', '我保护自己。（mich = 我自己 → 防御）'],
+    ['Ich verstecke mich.', '我躲起来。（防御）'],
+  ],
+  heal: [
+    ['Ich heile mich.', '我给自己治疗。（mich → 回血）'],
+    ['Ich pflege mich.', '我照顾一下自己。（回血）'],
+  ],
+};
+
+const OBJECT_TRAPS: Array<[string, string]> = [
+  ['Ich kratze mich.', '我挠挠自己。（mich：它挠的是自己，不打你）'],
+  ['Ich schlage mich.', '我打我自己。（mich：不打你）'],
+  ['Ich wasche mich.', '我洗洗自己。（不攻击）'],
+];
+
 /** The move that counters each intent (读对意图并出对克制招式，连击额外 +1). */
 export const COUNTER: Record<IntentKind, 'attack' | 'block' | 'break'> = {
   attack: 'block',
@@ -115,6 +155,7 @@ export const COUNTER: Record<IntentKind, 'attack' | 'block' | 'break'> = {
   charge: 'attack',
   heal: 'attack',
   wait: 'attack',
+  flee: 'attack',
 };
 
 export const INTENT_ZH: Record<IntentKind, string> = {
@@ -123,4 +164,5 @@ export const INTENT_ZH: Record<IntentKind, string> = {
   charge: '蓄力',
   heal: '治疗',
   wait: '不行动',
+  flee: '逃跑',
 };

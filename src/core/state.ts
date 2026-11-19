@@ -1,4 +1,5 @@
 import { CONFIG, xpToNext } from './config';
+import { hpBonus, type ClassId } from './classes';
 import type { Item, Slot, WordProgress } from './types';
 
 export interface DayLog {
@@ -48,6 +49,15 @@ export interface GameState {
   skills: string[];
   skillUses: Record<string, number>;
   recentNouns: string[];
+  /** Which map you stand on (1 = 余烬营地, 2 = 面包集市). */
+  region: 1 | 2;
+  /** Class picked at Greta (Lv10+, region 2), the classes whose trial you passed, talents per class. */
+  cls: ClassId | null;
+  classes: ClassId[];
+  talents: Partial<Record<ClassId, Record<string, number>>>;
+  /** Mira's shelf (region 2). */
+  shop?: import('./shop').ShopState;
+  quests?: Partial<Record<import('./quests').QuestId, import('./quests').QuestProgress>>;
   pos: { x: number; y: number };
   log: Record<string, DayLog>;
   settings: Settings;
@@ -88,6 +98,10 @@ export function newGame(name: string, origin: string, t = Date.now()): GameState
     skills: [],
     skillUses: {},
     recentNouns: [],
+    region: 1,
+    cls: null,
+    classes: [],
+    talents: {},
     pos: { x: 0, y: 0 },
     log: {},
     settings: { tts: true, music: 0.5, sfx: 0.7, autoZh: false },
@@ -112,7 +126,7 @@ export function todayLog(s: GameState): DayLog {
 
 export function maxHp(s: GameState): number {
   const coat = s.equipped.coat?.main ?? 0;
-  return CONFIG.player.baseHp + CONFIG.player.hpPerLevel * (s.level - 1) + coat;
+  return Math.round((CONFIG.player.baseHp + CONFIG.player.hpPerLevel * (s.level - 1) + coat) * (1 + hpBonus(s)));
 }
 
 export function attack(s: GameState): number {

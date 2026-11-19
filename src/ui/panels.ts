@@ -2,15 +2,21 @@ import { CONFIG, xpToNext } from '../core/config';
 import { AFFIX_ZH, itemScore, mainStatText, QUALITY_ZH, requiredLevel, SLOT_ZH } from '../core/loot';
 import { kindOf, progressSummary, stageOf, STAGE_ZH } from '../core/srs';
 import { attack, critChance, dayKey, hintsPerFight, maxHp, now } from '../core/state';
-import type { Item, Slot } from '../core/types';
+import type { AffixKey, Item, Slot, Word } from '../core/types';
 import { has } from '../core/unlocks';
 import { FAMILIES } from '../data/families';
 import { SKILLS } from '../data/skills';
-import { fullForm, genderOf, WORDS } from '../data/words';
+import { canLearn, CLASSES, learn, rank, spent, talentPoints, TALENT_FROM_LEVEL, TALENTS, TIER_GATE } from '../core/classes';
+import { fullForm, genderOf, hasArticleQuestion, WORDS } from '../data/words';
 import type { Controller } from '../game/controller';
-import { $, clear, h } from './dom';
+import { $, clear, h, umlautButtons } from './dom';
+import { CHEST_ZH, type ChestKind } from '../core/chest';
+import { favour, FAVOUR, QUESTS, type QuestId } from '../core/quests';
+import { gradeTyped } from '../core/grading';
+import { recordAnswer } from '../core/srs';
+import { BARGAIN_LINES, ensureShop, price, refreshCost, sellPrice, SLOT_NOUN } from '../core/shop';
 
-export type PanelName = 'hero' | 'codex' | 'data' | 'settings' | 'help';
+export type PanelName = 'hero' | 'talents' | 'quests' | 'codex' | 'data' | 'settings' | 'help' | 'shop' | 'chest' | 'quiz';
 
 export class Panels {
   open: PanelName | null = null;
@@ -25,9 +31,21 @@ export class Panels {
   }
 
   close(): void {
+    const wasChest = this.open === 'chest';
+    if (this.open === 'quiz' && this.quiz) {
+      const q = this.quiz;
+      this.quiz = null;
+      if (!q.queue.length) window.setTimeout(() => q.onDone(), 0);
+    }
+    if (wasChest && this.chest && !this.chest.result) {
+      // Closing an unopened chest opens it without the lock bonus.
+      this.chest.result = this.ctrl.openLockedChest(this.chest.kind, this.chest.ilvl, this.chest.word, null);
+    }
+    this.chest = null;
     this.open = null;
     $('modal').hidden = true;
     this.ctrl.persist();
+    if (wasChest) this.ctrl.chestClosed();
   }
 
   toggle(name: PanelName): void {
@@ -39,13 +57,36 @@ export class Panels {
     if (!this.open) return;
     const el = $('modal');
     const panel = h('div.panel');
-    const titles: Record<PanelName, string> = { hero: '角色与装备', codex: '图鉴', data: '数据与存档', settings: '设置', help: '怎么玩' };
+    if (this.open === 'chest' && this.chest) {
+      panel.append(h('h2', h('span', CHEST_ZH[this.chest.kind]), h('button.btn.ghost', { onclick: () => this.close() }, this.chest.result ? '收下 Esc' : '直接打开 Esc')), this.chestBody());
+      clear(el).append(panel);
+      el.onclick = null;
+      window.setTimeout(() => (el.querySelector('input.lock') as HTMLInputElement | null)?.focus(), 0);
+      return;
+    }
+    if (this.open === 'quiz' && this.quiz) {
+      panel.append(h('h2', h('span', this.quiz.title), h('button.btn.ghost', { onclick: () => this.close() }, this.quiz.queue.length ? '先不教 Esc' : '完成 Esc')), this.quizBody());
+      clear(el).append(panel);
+      el.onclick = null;
+      window.setTimeout(() => (el.querySelector('input.quiz') as HTMLInputElement | null)?.focus(), 0);
+      return;
+    }
+    if (this.open === 'shop') {
+      panel.append(h('h2', h('span', '商人 Mira 的摊子'), h('button.btn.ghost', { onclick: () => this.close() }, '离开 Esc')), this.shop());
+      clear(el).append(panel);
+      el.onclick = (e) => {
+        if (e.target === el) this.close();
+      };
+      if (this.buying !== null) window.setTimeout(() => (el.querySelector('input.buy-line') as HTMLInputElement | null)?.focus(), 0);
+      return;
+    }
+    const titles: Record<Exclude<PanelName, 'shop' | 'chest' | 'quiz'>, string> = { hero: '角色与装备', talents: '职业与天赋', quests: '任务', codex: '图鉴', data: '数据与存档', settings: '设置', help: '怎么玩' };
     const tabs = h('div.tabs');
-    (Object.keys(titles) as PanelName[]).forEach((k) =>
+    (Object.keys(titles) as Array<Exclude<PanelName, 'shop' | 'chest' | 'quiz'>>).forEach((k) =>
       tabs.append(h(`button.btn${this.open === k ? '.on' : ''}`, { onclick: () => this.show(k) }, titles[k])),
     );
-    panel.append(h('h2', h('span', titles[this.open]), h('button.btn.ghost', { onclick: () => this.close() }, '关闭 Esc')), tabs);
-    const body = { hero: () => this.hero(), codex: () => this.codex(), data: () => this.data(), settings: () => this.settings(), help: () => this.help() }[this.open]();
+    panel.append(h('h2', h('span', titles[this.open as Exclude<PanelName, 'shop' | 'chest' | 'quiz'>]), h('button.btn.ghost', { onclick: () => this.close() }, '关闭 Esc')), tabs);
+    const body = { shop: () => h('div'), chest: () => h('div'), quiz: () => h('div'), hero: () => this.hero(), talents: () => this.talents(), quests: () => this.questsBody(), codex: () => this.codex(), data: () => this.data(), settings: () => this.settings(), help: () => this.help() }[this.open]();
     panel.append(body);
     clear(el).append(panel);
     el.onclick = (e) => {
@@ -115,8 +156,245 @@ export class Panels {
     }
     if (!s.bag.length) bag.append(h('p.muted.small', '空。小怪有 20% 的概率掉装备，用默写和句子打、打到期的怪，好东西更多。'));
     right.append(bag);
-    if (s.bag.length) right.append(h('p.small.muted', '商店和分解成字母在第 2 区开放，现在只能丢弃。'));
+    if (s.bag.length) right.append(h('p.small.muted', has(s.level, 'shop') ? '不要的装备可以拿到面包集市卖给商人 Mira。' : '11 级后可以在面包集市把装备卖给商人，现在只能丢弃。'));
     return h('div.grid2', left, right);
+  }
+
+  // ---- Quests (J) and the small typing quiz (Konrad's lesson) ----------------------------
+
+  private questsBody(): HTMLElement {
+    const s = this.ctrl.state;
+    const wrap = h('div');
+    const ids = Object.keys(s.quests ?? {}) as QuestId[];
+    if (!ids.length) {
+      wrap.append(h('p.muted', '还没有任务。第 2 区（面包集市）开始有任务。'));
+      return wrap;
+    }
+    for (const id of ids) {
+      const def = QUESTS[id];
+      const p = s.quests![id]!;
+      const box = h('div.slot', h('div.k', def.giver), h('div'));
+      const body = box.lastChild as HTMLElement;
+      body.append(h('div', h('b', def.zh), p.done ? h('span.muted', '  已完成') : ''));
+      def.steps.forEach((st, i) => {
+        const mark = i < p.step || p.done ? '✓' : i === p.step ? '▸' : '·';
+        const cnt = i === p.step && !p.done && st.count ? `（${p.count}/${st.count}）` : '';
+        if (i <= p.step || p.done) body.append(h(`div.small${i < p.step || p.done ? '.muted' : ''}`, `${mark} ${st.zh}${cnt}`));
+      });
+      if (id === 'konrad') body.append(h('div.small', `好感：${FAVOUR[favour(s)]}`));
+      wrap.append(box);
+    }
+    return wrap;
+  }
+
+  private quiz: { title: string; intro: string; queue: Word[]; done: Word[]; last?: { ok: boolean; text: string }; onDone: () => void } | null = null;
+
+  /** Type each word (German with article, from the Chinese); a miss goes back into the queue. */
+  showQuiz(title: string, intro: string, words: Word[], onDone: () => void): void {
+    this.quiz = { title, intro, queue: words.slice(), done: [], onDone };
+    this.show('quiz');
+  }
+
+  private quizBody(): HTMLElement {
+    const q = this.quiz!;
+    const wrap = h('div', h('p', q.intro));
+    if (q.last) wrap.append(h(`div.feedback.${q.last.ok ? 'ok' : 'no'}`, q.last.text));
+    if (!q.queue.length) {
+      wrap.append(h('p', '都教会了。'));
+      return wrap;
+    }
+    const w = q.queue[0];
+    const input = h('input.quiz', { type: 'text', autocomplete: 'off', spellcheck: 'false', placeholder: hasArticleQuestion(w) ? 'der / die / das + 名词' : '' }) as HTMLInputElement;
+    const go = () => {
+      const v = gradeTyped(input.value, w, hasArticleQuestion(w));
+      recordAnswer(this.ctrl.state, w, v.ok);
+      q.queue.shift();
+      if (v.ok) q.done.push(w);
+      else q.queue.push(w);
+      q.last = v.ok ? { ok: true, text: `对：${fullForm(w)}` } : { ok: false, text: `不对，是 ${fullForm(w)}。待会儿再问一次。` };
+      this.render();
+    };
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        e.stopPropagation();
+        go();
+      }
+    });
+    wrap.append(
+      h('div.small.muted', `${q.done.length} / ${q.done.length + q.queue.length}`),
+      h('div.focus', { style: 'font-size:28px;margin:10px 0' }, w.zh),
+      h('div.typing', input, umlautButtons(input), h('button.btn.primary', { onclick: go }, '说 ↵')),
+    );
+    return wrap;
+  }
+
+  // ---- Chest (言灵锁) -------------------------------------------------------------
+
+  private chest: { kind: ChestKind; ilvl: number; word: Word; result?: ReturnType<Controller['openLockedChest']> } | null = null;
+
+  showChest(c: { kind: ChestKind; ilvl: number; word: Word }): void {
+    this.chest = c;
+    this.show('chest');
+  }
+
+  private chestBody(): HTMLElement {
+    const c = this.chest!;
+    const wrap = h('div');
+    if (!c.result) {
+      const input = h('input.lock', { type: 'text', autocomplete: 'off', spellcheck: 'false', placeholder: hasArticleQuestion(c.word) ? 'der / die / das + 名词' : '' }) as HTMLInputElement;
+      const go = () => {
+        c.result = this.ctrl.openLockedChest(c.kind, c.ilvl, c.word, input.value);
+        this.render();
+      };
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          e.stopPropagation();
+          go();
+        }
+      });
+      wrap.append(
+        h('p', '箱子上有一道言灵锁，锁上浮着一个你最该复习的词。写对它，每件东西的品质都会再掷一次、取更好的那个；写错了箱子照样打开。'),
+        h('div.focus', { style: 'font-size:28px;margin:10px 0' }, c.word.zh),
+        h('div.typing', input, umlautButtons(input), h('button.btn.primary', { onclick: go }, '开锁 ↵')),
+      );
+      return wrap;
+    }
+    const r = c.result;
+    wrap.append(h(`div.feedback.${r.ok ? 'ok' : 'no'}`, r.ok ? `锁开了：${fullForm(c.word)}。品质各掷了两次。` : `锁没认出来，正确是 ${fullForm(c.word)}。箱子还是开了。`));
+    const bag = h('div.bag');
+    for (const it of r.items) bag.append(h(`div.item.${it.quality}`, h('div', this.itemBody(it))));
+    if (r.bagFull) bag.append(h('p.small.muted', `背包满了，${r.bagFull} 件没装下。`));
+    wrap.append(bag);
+    return wrap;
+  }
+
+  // ---- Shop (Mira) ---------------------------------------------------------------
+
+  /** Index of the shelf item being bought (the sentence box is open), or null. */
+  buying: number | null = null;
+  private shopMsg: { text: string; tone: 'ok' | 'no' } | null = null;
+
+  private shop(): HTMLElement {
+    const s = this.ctrl.state;
+    const shop = ensureShop(s);
+    const wrap = h('div');
+    const rc = refreshCost(s);
+    wrap.append(
+      h(
+        'div.hud-row',
+        h('span', `金币 `, h('b', String(s.gold))),
+        h('button.btn.small', { disabled: s.gold < rc, onclick: () => { this.ctrl.shopRefresh(); } }, rc ? `刷新货架（${rc} 金币）` : '刷新货架（这小时免费）'),
+      ),
+    );
+    // Wishlist.
+    const wishSlot = h('select', { onchange: (e: Event) => { shop.wish.slot = ((e.target as HTMLSelectElement).value || undefined) as Slot | undefined; this.ctrl.persist(); } }) as HTMLSelectElement;
+    wishSlot.append(h('option', { value: '' }, '任意部位'));
+    for (const sl of ['pen', 'coat', 'amulet', 'dict'] as Slot[]) wishSlot.append(h('option', { value: sl, selected: shop.wish.slot === sl }, SLOT_ZH[sl]));
+    const wishAffix = h('select', { onchange: (e: Event) => { shop.wish.affix = ((e.target as HTMLSelectElement).value || undefined) as AffixKey | undefined; this.ctrl.persist(); } }) as HTMLSelectElement;
+    wishAffix.append(h('option', { value: '' }, '任意词条'));
+    for (const k of Object.keys(AFFIX_ZH) as AffixKey[]) wishAffix.append(h('option', { value: k, selected: shop.wish.affix === k }, AFFIX_ZH[k](0).replace(/[+\-]?0(\.0)?%?/, '').trim() || k));
+    wrap.append(h('div.hud-row.small', h('span.muted', '心愿单（刷新时出现的概率约 ×3）：'), wishSlot, wishAffix));
+
+    if (this.shopMsg) wrap.append(h(`div.feedback.${this.shopMsg.tone}`, this.shopMsg.text));
+
+    const shelf = h('div.bag');
+    shop.items.forEach((it, i) => {
+      const p = price(s, it);
+      const card = h(
+        `div.item.${it.quality}`,
+        h('div', this.itemBody(it), h('div.small', `价格 ${p} 金币`)),
+        h('div.acts', h('button.btn', { onclick: () => { this.buying = i; this.shopMsg = null; this.render(); } }, '买')),
+      );
+      shelf.append(card);
+      if (this.buying === i) shelf.append(this.buyBox(i));
+    });
+    if (!shop.items.length) shelf.append(h('p.muted.small', '货架空了。刷新一下吧。'));
+    wrap.append(h('h3', '货架'), shelf);
+
+    // Selling.
+    wrap.append(h('h3', `卖掉背包里的东西（卖价是买价的五分之一）`));
+    const bag = h('div.bag');
+    for (const it of s.bag) {
+      bag.append(h(`div.item.${it.quality}`, h('div', this.itemBody(it)), h('div.acts', h('button.btn.ghost', { onclick: () => this.ctrl.shopSell(it.id) }, `卖 ${sellPrice(s, it)}`))));
+    }
+    if (!s.bag.length) bag.append(h('p.muted.small', '背包是空的。'));
+    wrap.append(bag);
+    return wrap;
+  }
+
+  private buyBox(i: number): HTMLElement {
+    const s = this.ctrl.state;
+    const it = ensureShop(s).items[i];
+    const n = SLOT_NOUN[it.slot];
+    const bargain = h('input', { type: 'text', placeholder: `讲价（可选）：${BARGAIN_LINES[0]}`, autocomplete: 'off', spellcheck: 'false' }) as HTMLInputElement;
+    const line = h('input.buy-line', { type: 'text', value: 'Ich nehme ', autocomplete: 'off', spellcheck: 'false' }) as HTMLInputElement;
+    const go = () => {
+      const r = this.ctrl.shopBuy(i, line.value, bargain.value);
+      if (r.ok) {
+        this.buying = null;
+        this.shopMsg = { text: `Mira：「Gern!」${r.bargained ? '讲价成功，打了九折。' : ''}花了 ${r.paid} 金币，${it.name} 放进了背包。`, tone: 'ok' };
+      } else if (r.reason === 'sentence') {
+        this.shopMsg = { text: `Mira 没听懂。正确说法：${r.verdict.correct} ${r.verdict.notes.join(' ')}`, tone: 'no' };
+      } else if (r.reason === 'gold') this.shopMsg = { text: `钱不够：要 ${r.paid} 金币。`, tone: 'no' };
+      else this.shopMsg = { text: '背包满了，先卖掉一些。', tone: 'no' };
+      this.render();
+    };
+    for (const inp of [bargain, line]) {
+      inp.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          e.stopPropagation();
+          go();
+        }
+      });
+    }
+    return h(
+      'div.buybox',
+      h('div.small', `用德语说「我要这个${n.zh}」：Ich nehme + ${n.nom} 的第四格。讲价的话（Geht das billiger? / Das ist zu teuer. / Haben Sie einen Rabatt?），这次打九折。`),
+      h('div.typing', bargain),
+      h('div.typing', line, umlautButtons(line), h('button.btn.primary', { onclick: go }, '成交 ↵')),
+    );
+  }
+
+  // ---- Class & talents ---------------------------------------------------------
+
+  private talents(): HTMLElement {
+    const s = this.ctrl.state;
+    const wrap = h('div');
+    if (!s.cls) {
+      wrap.append(h('p.muted', s.level < 10 ? '10 级以后，去面包集市找导师 Greta 选职业。' : '去面包集市找导师 Greta：先打一场试炼，再选职业。'));
+      return wrap;
+    }
+    const c = CLASSES[s.cls];
+    wrap.append(h('h3', { style: 'margin-top:0' }, `${c.zh} · 资源「${c.res}」`));
+    for (const line of c.blurb) wrap.append(h('p.small', line));
+    const pts = talentPoints(s);
+    const used = spent(s);
+    wrap.append(h('h3', `天赋（已用 ${used} / ${pts} 点）`));
+    if (s.level < TALENT_FROM_LEVEL) {
+      wrap.append(h('p.muted.small', `${TALENT_FROM_LEVEL} 级起每升一级得 1 点天赋。`));
+      return wrap;
+    }
+    for (const tier of [1, 2, 3] as const) {
+      const row = h('div.talent-row');
+      row.append(h('div.small.muted', tier === 1 ? '第 1 层' : `第 ${tier} 层（先花满 ${TIER_GATE[tier]} 点）`));
+      for (const t of TALENTS[s.cls].filter((x) => x.tier === tier)) {
+        const r = rank(s, t.id);
+        row.append(
+          h(
+            `div.slot${r ? '' : '.dim'}`,
+            h('div.k', `${t.zh} ${r}/${t.max}`),
+            h('div.small', t.desc(Math.max(1, r))),
+            h('button.btn.small', { disabled: !canLearn(s, t), onclick: () => { learn(s, t.id); this.ctrl.persist(); this.render(); } }, '点'),
+          ),
+        );
+      }
+      wrap.append(row);
+    }
+    wrap.append(h('p.small.muted', '洗点：在导师 Greta 那里花一小时的金币。每个职业的天赋分开存。'));
+    return wrap;
   }
 
   private itemBody(it: Item): HTMLElement {
@@ -247,7 +525,7 @@ export class Panels {
     ];
     const wrap = h('div');
     for (const [k, v] of rows) wrap.append(h('div.stat', h('span', { style: 'width:90px;flex:none' }, k), h('span', { style: 'text-align:right' }, v)));
-    wrap.append(h('p.small.muted', `0.3 第一周：第 1 区余烬营地（1–10 级）。当前 ${s.level} 级，等级上限 ${CONFIG.levelCap}。`));
+    wrap.append(h('p.small.muted', `0.3：第 1 区余烬营地（1–10 级）和第 2 区面包集市（11–20 级）。当前 ${s.level} 级，等级上限 ${CONFIG.levelCap}。`));
     return wrap;
   }
 }

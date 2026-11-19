@@ -153,6 +153,46 @@ export function gradeMoechte(input: string, known: Word[]): SentenceVerdict {
   return { ok: true, notes, correct, word: noun };
 }
 
+const NUM_WORDS = ['zwei', 'drei', 'vier', 'fuenf', 'sechs', 'sieben', 'acht', 'neun', 'zehn', 'elf', 'zwoelf'];
+const NUM_DE = ['zwei', 'drei', 'vier', 'fünf', 'sechs', 'sieben', 'acht', 'neun', 'zehn', 'elf', 'zwölf'];
+
+/**
+ * Region 2 sentence: "Ich nehme zwei Äpfel." (number + plural) or "Ich nehme einen Apfel."
+ * A plural sentence counts as fresh (no repeat penalty for the noun).
+ */
+export function gradeNehme(input: string, known: Word[]): SentenceVerdict & { plural?: boolean } {
+  const n = normalize(input)
+    .split(' ')
+    .filter((t) => t !== 'bitte' && t !== 'gern' && t !== 'gerne')
+    .join(' ')
+    .replace(/^(ich nehme )+/, 'ich nehme ');
+  const example = 'Ich nehme zwei Äpfel.';
+  const m = /^ich (nehme|nehmen|nimmt|nimm) (\S+) (.+)$/.exec(n);
+  if (!m) return { ok: false, notes: ['句型是：Ich nehme + 数字 + 复数（zwei Äpfel），或 Ich nehme + einen / eine / ein + 名词'], correct: example };
+  const [, verb, first, nounIn] = m;
+  if (verb !== 'nehme') return { ok: false, notes: [`ich 后面是 nehme（ich nehme, du nimmst, er nimmt）`], correct: example };
+  const numIdx = NUM_WORDS.indexOf(first);
+  if (numIdx >= 0) {
+    const pl = known.find((w) => w.pl && w.pl !== '-' && normalize(w.pl) === nounIn);
+    const sg = known.find((w) => normalize(w.de) === nounIn);
+    if (pl) {
+      const correct = `Ich nehme ${NUM_DE[numIdx]} ${pl.pl}.`;
+      const raw = stripPunct(input);
+      return { ok: true, notes: raw.includes(pl.pl!) ? [] : [`正确拼法：${correct}`], correct, word: pl, plural: true };
+    }
+    if (sg) {
+      const hasPl = sg.pl && sg.pl !== '-';
+      const correct = hasPl ? `Ich nehme ${NUM_DE[numIdx]} ${sg.pl}.` : `Ich nehme ${INDEF[sg.art === 'der' ? 'm' : sg.art === 'die' ? 'f' : 'n']} ${sg.de}.`;
+      if (sg.pl === sg.de) return { ok: true, notes: [], correct, word: sg, plural: true }; // der Kuchen → zwei Kuchen
+      return { ok: false, notes: [hasPl ? `数字后面要用复数：${sg.de} → ${sg.pl}` : `${sg.de} 不可数，没有复数：说 ${correct.replace('Ich nehme ', '').replace('.', '')}`], correct, word: sg };
+    }
+    return { ok: false, notes: [`「${nounIn.split(' ')[0]}」还不是你叫得出的言灵：只能用见过的名词`], correct: example };
+  }
+  // Singular with an indefinite article: same rules as Ich möchte.
+  const v = gradeMoechte(`Ich möchte ${first} ${nounIn}`, known);
+  return { ...v, correct: v.correct.replace('Ich möchte', 'Ich nehme'), notes: v.notes.map((x) => x.replace(/Ich möchte/g, 'Ich nehme')) };
+}
+
 /** Free-form check for boss answers: any of the regexes on the normalized text. */
 export function matchesAny(input: string, patterns: RegExp[]): boolean {
   const n = normalize(input);

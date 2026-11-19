@@ -2,10 +2,11 @@ import Phaser from 'phaser';
 import { stageOf, type Stage } from '../core/srs';
 import { now } from '../core/state';
 import type { Word, ZoneId } from '../core/types';
-import { fullForm, genderOf } from '../data/words';
+import { fullForm, genderOf, WORD_BY_ID } from '../data/words';
+import { has } from '../core/unlocks';
 import { FAMILIES } from '../data/families';
 import type { Controller } from './controller';
-import { generateMap, isBlocked, MAP_H, MAP_W, TILE, walkableTilesIn, ZONES, zoneAt, type MapData } from './map';
+import { generateMap, isBlocked, MAP_H, MAP_W, TILE, walkableTilesIn, zonesOf, zoneAt, type MapData, type NpcId, type RegionId, type ZoneDef } from './map';
 import { ARTICLE_COLOR, GLITCH, makeTextures, renderMapCanvas, PAL } from './sprites';
 import { sfx } from './audio';
 
@@ -15,7 +16,9 @@ export interface MonsterEntity {
   kind: 'new' | 'due' | 'shadow';
   zone: ZoneId;
   isEcho: boolean;
-  scripted?: 'loss';
+  scripted?: 'loss' | 'trial';
+  /** Rare (gold-rimmed) or 宝箱怪: flees at half HP / turn 3, drops an iron chest. */
+  rare?: boolean;
   x: number;
   y: number;
   tx: number;
@@ -48,7 +51,8 @@ export class WorldScene extends Phaser.Scene {
   private stepTimer = 0;
   private jitterTimer = 0;
   private respawnTimers: Partial<Record<ZoneId, number>> = {};
-  private interactable: { kind: 'bonfire' | 'npc' | 'door' | 'sign'; data?: string } | null = null;
+  zones: ZoneDef[] = [];
+  private interactable: { kind: 'bonfire' | 'npc' | 'door' | 'sign' | 'gate'; data?: string } | null = null;
 
   constructor() {
     super('world');
@@ -59,17 +63,27 @@ export class WorldScene extends Phaser.Scene {
   }
 
   create() {
-    this.map = generateMap();
+    const region: RegionId = this.ctrl.state.region ?? 1;
+    this.map = generateMap(region);
+    this.zones = zonesOf(region);
+    this.monsters = [];
+    this.signTexts = [];
+    this.respawnTimers = {};
+    this.interactable = null;
     const tex = makeTextures();
-    this.textures.addCanvas('map', renderMapCanvas(this.map));
-    this.textures.addCanvas('hero0', tex.hero[0]);
-    this.textures.addCanvas('hero1', tex.hero[1]);
-    this.textures.addCanvas('hilde', tex.hilde);
-    this.textures.addCanvas('fire0', tex.fire[0]);
-    this.textures.addCanvas('fire1', tex.fire[1]);
-    this.textures.addCanvas('sign', tex.sign);
-    this.textures.addCanvas('glow', tex.glow);
-    this.textures.addCanvas('dot', tex.dot);
+    const addCanvas = (key: string, cv: HTMLCanvasElement) => {
+      if (this.textures.exists(key)) this.textures.remove(key);
+      this.textures.addCanvas(key, cv);
+    };
+    addCanvas('map', renderMapCanvas(this.map));
+    addCanvas('hero0', tex.hero[0]);
+    addCanvas('hero1', tex.hero[1]);
+    addCanvas('hilde', tex.hilde);
+    addCanvas('fire0', tex.fire[0]);
+    addCanvas('fire1', tex.fire[1]);
+    addCanvas('sign', tex.sign);
+    addCanvas('glow', tex.glow);
+    addCanvas('dot', tex.dot);
 
     this.add.image(0, 0, 'map').setOrigin(0, 0);
     const W = MAP_W * TILE;
@@ -83,7 +97,7 @@ export class WorldScene extends Phaser.Scene {
     const by = b.y * TILE + 8;
     this.add.image(bx, by, 'glow').setScale(2.2).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.9);
     const fire = this.add.sprite(bx, by - 2, 'fire0').setDepth(by);
-    this.anims.create({ key: 'burn', frames: [{ key: 'fire0' }, { key: 'fire1' }], frameRate: 5, repeat: -1 });
+    if (!this.anims.exists('burn')) this.anims.create({ key: 'burn', frames: [{ key: 'fire0' }, { key: 'fire1' }], frameRate: 5, repeat: -1 });
     fire.play('burn');
     this.tweens.add({ targets: fire, scaleX: 1.08, yoyo: true, repeat: -1, duration: 420 });
     for (const l of this.map.lamps) {
@@ -92,9 +106,20 @@ export class WorldScene extends Phaser.Scene {
     const d = this.map.door;
     this.add.image(d.x * TILE + 8, d.y * TILE + 16, 'glow').setScale(1.1).setTint(0xff2040).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.7);
 
-    // NPC and signs.
-    const n = this.map.npc;
-    this.add.sprite(n.x * TILE + 8, n.y * TILE + 6, 'hilde').setDepth(n.y * TILE + 8);
+    // NPCs and signs. Region-2 NPCs reuse Hilde's figure with their own tint until they get sprites.
+    const NPC_TINT: Record<NpcId, number> = { hilde: 0xffffff, greta: 0x9fc4ff, mira: 0xffd27a, konrad: 0xe8b48a };
+    const NPC_LABEL: Record<NpcId, string> = { hilde: 'Hilde', greta: 'Greta', mira: 'Mira', konrad: 'Konrad' };
+    for (const n of this.map.npcs) {
+      this.add.sprite(n.x * TILE + 8, n.y * TILE + 6, 'hilde').setDepth(n.y * TILE + 8).setTint(NPC_TINT[n.id]);
+      if (this.map.region === 2)
+        this.add
+          .text(n.x * TILE + 8, n.y * TILE - 6, NPC_LABEL[n.id], { fontFamily: FONT, fontSize: '6px', color: '#d8c8b8', resolution: 4 })
+          .setOrigin(0.5, 1)
+          .setDepth(n.y * TILE + 9);
+    }
+    for (const g of this.map.gates) {
+      this.add.image(g.x * TILE + 8, g.y * TILE + 8, 'glow').setScale(0.7).setTint(0xffcf4a).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.5);
+    }
     for (const sg of this.map.signs) {
       const sx = sg.x * TILE + 8;
       const sy = sg.y * TILE + 8;
@@ -108,8 +133,8 @@ export class WorldScene extends Phaser.Scene {
     this.refreshSigns();
 
     // Zone names written on the ground, very faint.
-    for (const z of ZONES) {
-      if (z.id === 'camp') continue;
+    for (const z of this.zones) {
+      if (z.id === 'camp' || z.id === 'markt') continue;
       this.add
         .text((z.rect.x + z.rect.w / 2) * TILE, (z.rect.y + 1.2) * TILE, `${z.de} · ${z.zh} · ${z.levels}`, {
           fontFamily: FONT,
@@ -125,7 +150,7 @@ export class WorldScene extends Phaser.Scene {
     const s = this.ctrl.state;
     const start = s.pos.x ? s.pos : { x: this.map.start.x * TILE + 8, y: this.map.start.y * TILE + 8 };
     this.player = this.add.sprite(start.x, start.y, 'hero0').setOrigin(0.5, 0.85);
-    this.anims.create({ key: 'walk', frames: [{ key: 'hero0' }, { key: 'hero1' }], frameRate: 6, repeat: -1 });
+    if (!this.anims.exists('walk')) this.anims.create({ key: 'walk', frames: [{ key: 'hero0' }, { key: 'hero1' }], frameRate: 6, repeat: -1 });
     this.cameras.main.startFollow(this.player, true, 0.15, 0.15);
     this.cameras.main.setZoom(3);
     this.cameras.main.roundPixels = true;
@@ -159,13 +184,14 @@ export class WorldScene extends Phaser.Scene {
   spawnAll() {
     for (const m of this.monsters) m.container.destroy();
     this.monsters = [];
-    for (const z of ZONES) if (z.monsters) this.fillZone(z.id);
+    for (const z of this.zones) if (z.monsters) this.fillZone(z.id);
     this.placeEcho();
     this.ctrl.afterSpawnAll();
   }
 
   fillZone(zone: ZoneId) {
-    const z = ZONES.find((q) => q.id === zone)!;
+    const z = this.zones.find((q) => q.id === zone);
+    if (!z) return;
     const have = this.monsters.filter((m) => m.zone === zone && !m.isEcho).length;
     const need = z.monsters - have;
     if (need <= 0) return;
@@ -184,9 +210,30 @@ export class WorldScene extends Phaser.Scene {
       }
       this.addMonster(p.word, p.kind, zone, spot.x * TILE + 8, spot.y * TILE + 8);
     }
+    this.maybeRare(zone, picks.length, tiles);
   }
 
-  addMonster(word: Word, kind: MonsterEntity['kind'], zone: ZoneId, x: number, y: number, opts: { isEcho?: boolean; scripted?: 'loss' } = {}): MonsterEntity {
+  /** Region 2 (Lv11+): about 1 respawn in 10 brings a 宝箱怪 or turns a new monster rare. */
+  private maybeRare(zone: ZoneId, added: number, tiles: Array<{ x: number; y: number }>) {
+    const s = this.ctrl.state;
+    if (this.map.region !== 2 || !has(s.level, 'flee') || !tiles.length || Math.random() >= 0.1) return;
+    if (this.monsters.some((m) => m.rare && m.zone === zone)) return;
+    const truhe = WORD_BY_ID['truhe'];
+    if (truhe && Math.random() < 0.5) {
+      const c = tiles[Math.floor(Math.random() * tiles.length)];
+      const m = this.addMonster(truhe, 'new', zone, c.x * TILE + 8, c.y * TILE + 8);
+      m.rare = true;
+      this.styleMonster(m);
+    } else if (added > 0) {
+      const m = this.monsters[this.monsters.length - 1];
+      if (m.zone === zone && !m.isEcho) {
+        m.rare = true;
+        this.styleMonster(m);
+      }
+    }
+  }
+
+  addMonster(word: Word, kind: MonsterEntity['kind'], zone: ZoneId, x: number, y: number, opts: { isEcho?: boolean; scripted?: 'loss' | 'trial' } = {}): MonsterEntity {
     const label = this.add.text(0, 0, '', { fontFamily: FONT, fontSize: '9px', fontStyle: 'bold', color: '#fff', resolution: 4 }).setOrigin(0.5, 1);
     const teeth = this.add.text(0, 1, '', { fontFamily: FONT, fontSize: '5px', color: '#ff3040', resolution: 4 }).setOrigin(0.5, 0);
     const marker = this.add.text(0, -12, '', { fontFamily: FONT, fontSize: '8px', fontStyle: 'bold', color: '#ffcf4a', resolution: 4 }).setOrigin(0.5, 1);
@@ -231,7 +278,8 @@ export class WorldScene extends Phaser.Scene {
       }
       return true;
     });
-    const z = zoneAt(e.x, e.y)?.id ?? w.zone;
+    if ((w.region ?? 1) !== this.map.region) return;
+    const z = zoneAt(e.x, e.y, this.map.region)?.id ?? w.zone;
     this.addMonster(w, 'new', z, e.x, e.y, { isEcho: true });
   }
 
@@ -244,8 +292,9 @@ export class WorldScene extends Phaser.Scene {
     m.label.setColor(color);
     m.label.setShadow(0, 0, m.stage === 0 ? '#ff1830' : color, 6, true, true);
     m.teeth.setText('▼'.repeat(m.stage === 0 ? 4 : m.stage === 1 ? 2 : 1));
-    m.marker.setText(m.isEcho ? '回响' : m.kind === 'due' ? '!' : '');
-    m.marker.setColor(m.isEcho ? '#ffcf4a' : '#ff5a5a');
+    m.marker.setText(m.isEcho ? '回响' : m.rare ? '◆' : m.kind === 'due' ? '!' : '');
+    m.marker.setColor(m.isEcho || m.rare ? '#ffcf4a' : '#ff5a5a');
+    if (m.rare) m.label.setShadow(0, 0, '#ffcf4a', 8, true, true);
     this.updateGlyph(m);
     m.container.setScale(m.kind === 'shadow' ? 0.85 : 1);
   }
@@ -293,7 +342,7 @@ export class WorldScene extends Phaser.Scene {
       this.respawnTimers[m.zone] = (this.respawnTimers[m.zone] ?? 0) + 1;
       this.time.delayedCall(9000 + Math.random() * 6000, () => {
         this.respawnTimers[m.zone] = Math.max(0, (this.respawnTimers[m.zone] ?? 1) - 1);
-        this.fillZone(m.zone);
+        if (this.scene.isActive()) this.fillZone(m.zone);
       });
     }
   }
@@ -457,7 +506,8 @@ export class WorldScene extends Phaser.Scene {
       const d = Math.hypot(dx, dy);
       if (d < 1) {
         m.wait = 1.5 + Math.random() * 3;
-        const z = ZONES.find((q) => q.id === m.zone)!;
+        const z = this.zones.find((q) => q.id === m.zone);
+        if (!z) continue;
         const ntx = m.x + (Math.random() - 0.5) * 60;
         const nty = m.y + (Math.random() - 0.5) * 60;
         const r = z.rect;
@@ -496,7 +546,8 @@ export class WorldScene extends Phaser.Scene {
     const near = (tx: number, ty: number, r = 22) => Math.hypot(tx * TILE + 8 - px, ty * TILE + 8 - py) < r;
     let it: WorldScene['interactable'] = null;
     if (near(this.map.bonfire.x, this.map.bonfire.y, 26)) it = { kind: 'bonfire' };
-    else if (near(this.map.npc.x, this.map.npc.y)) it = { kind: 'npc' };
+    else if (this.map.npcs.some((n) => near(n.x, n.y))) it = { kind: 'npc', data: this.map.npcs.find((n) => near(n.x, n.y))!.id };
+    else if (this.map.gates.some((g) => near(g.x, g.y, 20))) it = { kind: 'gate', data: String(this.map.gates[0].to) };
     else if (near(this.map.door.x, this.map.door.y, 30) || near(this.map.door.x, this.map.door.y + 1, 30)) it = { kind: 'door' };
     else for (const sg of this.map.signs) if (near(sg.x, sg.y, 18)) it = { kind: 'sign', data: sg.wordId };
     if (it?.kind !== this.interactable?.kind || it?.data !== this.interactable?.data) {

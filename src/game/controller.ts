@@ -2,16 +2,22 @@
 // Phaser world to the DOM interface. Game rules live in src/core and stay pure.
 
 import { answerBoss, startBoss, type BossFight } from '../core/boss';
-import { makeQuestion, pickHint, resolveTurn, startBattle, type Battle, type Question, type TurnReport, type Tutorial } from '../core/combat';
+import { makeQuestion, monsterStats, pickHint, resolveTurn, startBattle, type Battle, type Question, type TurnReport, type Tutorial } from '../core/combat';
 import { CONFIG, xpToNext } from '../core/config';
+import { favour, FAVOUR, KONRAD_WORDS, QUESTS, questEvent, questState, startQuest, type QuestEvent } from '../core/quests';
+import { CHEST_ZH, CHESTS, lockWord, openChest, type ChestKind } from '../core/chest';
+import { gradeTyped } from '../core/grading';
+import { buy as buyItem, openShop, refresh as refreshShop, sell as sellItem } from '../core/shop';
+import { CLASSES, respec, respecCost, spent, TALENT_FROM_LEVEL, type ClassId } from '../core/classes';
 import { makeItem } from '../core/loot';
-import { applyLoss, applyWin } from '../core/outcomes';
+import { applyLoss, applyWin, postFightHeal } from '../core/outcomes';
 import { defaultRng, type Rng } from '../core/rng';
 import { atLeastHalfShare, instantGuiming, kindOf, recordAnswer, stageOf } from '../core/srs';
 import { pickSpawns, zoneWords } from '../core/spawn';
 import {
   addXp,
   clearSave,
+  dayKey,
   exportJson,
   importJson,
   maxHp,
@@ -25,8 +31,9 @@ import {
 import type { Move, Slot, Word, ZoneId } from '../core/types';
 import { has, UNLOCK_TEXT } from '../core/unlocks';
 import { BOSS } from '../data/boss';
+import { BOSS2 } from '../data/boss2';
 import { SKILLS } from '../data/skills';
-import { fullForm, WORD_BY_ID, WORDS } from '../data/words';
+import { fullForm, hasArticleQuestion, WORD_BY_ID, WORDS } from '../data/words';
 import { initAudio, setBattleMusic, setVolumes, sfx, speak, speechAvailable, hasGermanVoice } from './audio';
 import type { MonsterEntity, WorldScene } from './WorldScene';
 import { BattleUI } from '../ui/battle';
@@ -38,6 +45,9 @@ import { $, isTyping } from '../ui/dom';
 
 const SYS = '系统';
 const HILDE = '守火人 Hilde';
+const GRETA = '导师 Greta';
+const MIRA = '商人 Mira';
+const TRIAL_FIGHTS = 3;
 
 export class Controller {
   state: GameState;
@@ -45,6 +55,12 @@ export class Controller {
   rng: Rng = defaultRng;
   battle: Battle | null = null;
   entity: MonsterEntity | null = null;
+  /** 群怪: every battle in the current fight (just [battle] one-on-one) and its world entity. */
+  pack: Battle[] = [];
+  packEntities: MonsterEntity[] = [];
+  private killer: Battle | null = null;
+  /** Greta's class trial in progress: which class, fights still to win. */
+  private trial: { cls: ClassId; left: number } | null = null;
   boss: BossFight | null = null;
   battleUI = new BattleUI(this);
   bossUI = new BossUI(this);
@@ -55,6 +71,11 @@ export class Controller {
   constructor(state: GameState, dev: boolean) {
     this.state = state;
     this.dev = dev;
+    // A class trial borrows the class for its fights; undo it if the page closed mid-trial.
+    if ('trialPrev' in state.flags) {
+      state.cls = (state.flags.trialPrev as ClassId) || null;
+      delete state.flags.trialPrev;
+    }
     window.addEventListener('keydown', (e) => this.onKey(e));
     for (const ev of ['keydown', 'mousedown', 'mousemove']) window.addEventListener(ev, () => (this.lastInput = Date.now()), { passive: true });
     // Count active minutes for the playtest log (idle > 2 min doesn't count).
@@ -76,6 +97,7 @@ export class Controller {
     this.renderMenu();
     this.refresh();
     if (rollDay(this.state)) this.scene.spawnAll();
+    if (this.state.region === 2 && startQuest(this.state, 'main2')) questEvent(this.state, 'enterMarket');
     if (!this.state.flags.intro) this.intro();
     else this.welcomeBack();
   }
@@ -193,7 +215,23 @@ export class Controller {
         lines.push({ who: SYS, text: '注意 nicht：「Ich greife jetzt nicht an.」说了动词，但它这回合不会动手。' });
         break;
       case 10:
-        lines.push({ who: SYS, text: '浓雾在退。面包集市和选职业在第 2 区，下一版开放。在那之前，把这片街区的名字都叫回来吧。' });
+        lines.push(
+          { who: HILDE, text: s.flags.bossKills ? '邻居家的门开了。门后是面包集市，那边的人比这里多，怪也多。' : '雾在退。等你打败门后的邻居，那扇门就会通向面包集市。' },
+          { who: HILDE, text: '到了集市，先去找导师 Greta 选个职业。' },
+        );
+        break;
+      case 11:
+        lines.push({ who: SYS, text: '集市里的怪会扎堆。离得近、冠词不一样的几只会一起扑上来：先点选一只（Tab 切换），再喊出它的冠词。' });
+        break;
+      case 12:
+        lines.push({ who: SYS, text: '动词怪开始要变位了：题目给出人称，比如「du ___（nehmen）」，写 nimmst。强变化动词（nehmen、essen、sehen……）经验 ×1.3。' });
+        if (s.cls) lines.push({ who: SYS, text: '你有了第一个天赋点：按 T 打开职业与天赋。' });
+        break;
+      case 13:
+        lines.push({ who: SYS, text: '听清 mich 和 dich：「Ich kratze dich!」是挠你，「Ich kratze mich.」是挠它自己，不会打你。' });
+        break;
+      case 18:
+        lines.push({ who: SYS, text: '粮仓尽头的秤房开门了。吞秤者只问价格和数量：价签上的数字，用德语单词说出来。' });
         break;
     }
     if (lines.length) say(lines);
@@ -202,7 +240,7 @@ export class Controller {
 
   // ---- Encounters ----------------------------------------------------------------------
 
-  encounter(m: MonsterEntity): void {
+  encounter(m: MonsterEntity, opts: { trial?: ClassId } = {}): void {
     if (this.battle) return;
     const s = this.state;
     rollDay(s);
@@ -220,20 +258,96 @@ export class Controller {
       this.battle = startBattle(s, dog, this.rng, { tutorial: 'loss' });
     } else {
       this.entity = m;
-      this.battle = startBattle(s, m.word, this.rng, { isEcho: m.isEcho, tutorial });
+      this.battle = startBattle(s, m.word, this.rng, { isEcho: m.isEcho, tutorial, trial: opts.trial, rare: m.rare });
+      if (m.rare && m.word.family !== 'truhe') {
+        // Rare monsters: half again as tough. They carry an iron chest and run when hurt.
+        const mon = this.battle.monster;
+        mon.hp = mon.maxHp = Math.round(mon.maxHp * 1.5);
+      }
+    }
+    if (opts.trial) {
+      // Trial monsters fight at your level, whatever word they carry.
+      const st = monsterStats(s.level, 1, 'new', 0);
+      Object.assign(this.battle.monster, { lvl: s.level, hp: st.hp, maxHp: st.hp, dmg: st.dmg });
+    }
+    if (opts.trial === 'guardian') {
+      // 守护者试炼: review monsters left too long (three intervals overdue): fatter and meaner.
+      const mon = this.battle.monster;
+      mon.hp = mon.maxHp = Math.round(mon.maxHp * (1 + CONFIG.monster.overdueHpStep * 3));
+      mon.dmg = Math.round(mon.dmg * 1.3);
     }
     if (m.word.id === 'brot' && !s.flags.brotDone) {
       this.battle.monster.hp = this.battle.monster.maxHp = 1;
       this.battle.monster.dmg = 1;
     }
+    this.pack = [this.battle];
+    this.packEntities = [m];
+    this.killer = null;
+    if (!tutorial && !opts.trial) this.gatherPack(m);
     this.scene.focusBattle(m);
     setBattleMusic(true);
     setPrompt(null);
     this.battleUI.open();
+    if (this.pack.length > 1 && !s.flags.firstPackDone) {
+      say([
+        { who: HILDE, text: '好几只一起扑上来了！先盯住一只（点它的卡片），再喊出它的冠词，它就会挨打。' },
+        { who: HILDE, text: '喊成别的怪的冠词，就打偏到那只身上，只剩一半伤害。看到「Moment!」的那只了吗？先打它。' },
+      ]);
+    }
+  }
+
+  /** Region 2 (Lv11+): nearby nouns with different articles join the fight (群怪). */
+  private gatherPack(m: MonsterEntity) {
+    const s = this.state;
+    if (!has(s.level, 'packs') || s.region !== 2 || m.isEcho || m.scripted || m.rare || !m.word.art || m.word.family === 'truhe') return;
+    const firstPack = !s.flags.firstPackDone;
+    const max = firstPack || s.level < CONFIG.pack.max3From ? 2 : CONFIG.pack.max;
+    const r = CONFIG.pack.radiusTiles * 16;
+    const used = new Set([m.word.art]);
+    const near = this.scene.monsters
+      .filter((o) => o !== m && !o.isEcho && !o.scripted && !o.rare && o.zone === m.zone && !!o.word.art && o.word.family !== 'truhe' && Math.hypot(o.x - m.x, o.y - m.y) <= r)
+      .sort((a, b) => Math.hypot(a.x - m.x, a.y - m.y) - Math.hypot(b.x - m.x, b.y - m.y));
+    for (const o of near) {
+      if (this.pack.length >= max) break;
+      if (used.has(o.word.art!)) continue;
+      used.add(o.word.art!);
+      const ob = startBattle(s, o.word, this.rng, { tutorial: firstPack ? 'packCharge' : null });
+      this.pack.push(ob);
+      this.packEntities.push(o);
+    }
+    if (this.pack.length === 1) return;
+    // Pack-wide values (player statuses, hints, skill cooldown) are shared.
+    for (const b of this.pack) {
+      b.fx = this.pack[0].fx;
+      b.cfx = this.pack[0].cfx;
+      b.hintsLeft = this.pack[0].hintsLeft;
+    }
+    this.retarget();
+  }
+
+  /** Default target: a monster that is charging, else the first one still standing. */
+  retarget(): void {
+    const alive = this.pack.map((b, i) => ({ b, i })).filter((x) => !x.b.outcome);
+    if (!alive.length) return;
+    const pickOne = alive.find((x) => x.b.intent.kind === 'charge') ?? alive[0];
+    this.setTarget(pickOne.i);
+  }
+
+  setTarget(i: number): void {
+    const b = this.pack[i];
+    if (!b || b.outcome) return;
+    this.battle = b;
+    this.entity = this.packEntities[i];
+  }
+
+  /** The whole fight is over (everyone down, you died, or you fled). */
+  fightOver(): boolean {
+    if (!this.pack.length) return true;
+    return this.pack.every((b) => b.outcome === 'win') || this.pack.some((b) => b.outcome === 'lose' || b.outcome === 'fled');
   }
 
   askQuestion(move: Move): Question {
-    return makeQuestion(this.state, this.battle!, move, this.rng);
+    return makeQuestion(this.state, this.battle!, move, this.rng, undefined, this.pack.length > 1);
   }
 
   useHint(q: Question): string | null {
@@ -243,7 +357,17 @@ export class Controller {
   answer(move: Move, q: Question, input: string): TurnReport {
     const s = this.state;
     const b = this.battle!;
-    const r = resolveTurn(s, b, move, q, input, this.rng);
+    const r = resolveTurn(s, b, move, q, input, this.rng, this.pack);
+    if (r.killer) this.killer = r.killer;
+    if (b.tutorial === 'packCharge' || this.pack.some((x) => x.tutorial === 'packCharge')) s.flags.firstPackDone = true;
+    // Packs settle every kill at once; the fight goes on with the next target.
+    if (this.pack.length > 1) {
+      for (const k of r.kills) {
+        const i = this.pack.indexOf(k);
+        if (!this.fightOver() || r.outcome === 'lose') this.settleKill(k, this.packEntities[i]);
+      }
+      if (!this.fightOver() && b.outcome) this.retarget();
+    }
     recordAnswer(s, b.word, r.correct);
     const log = todayLog(s);
     if (r.correct) log.correct += 1;
@@ -283,18 +407,14 @@ export class Controller {
     this.finishBattle();
   }
 
-  finishBattle(): void {
+  /** Rewards for one dead monster: XP, gold, 归名, drops, lessons. Packs call it per kill. */
+  private settleKill(b: Battle, m: MonsterEntity, inPack = this.pack.length > 1) {
+    if (b.settled) return;
+    b.settled = true;
     const s = this.state;
-    const b = this.battle!;
-    const m = this.entity!;
-    this.battleUI.close();
-    setBattleMusic(false);
-    this.battle = null;
-    this.entity = null;
-
-    if (b.outcome === 'win') {
+    {
       const isBread = b.word.id === 'brot' && !s.flags.brotDone;
-      const res = applyWin(s, b, this.rng);
+      const res = applyWin(s, b, this.rng, { heal: !inPack });
       if (isBread) {
         instantGuiming(s, b.word);
         s.flags.brotDone = true;
@@ -349,18 +469,48 @@ export class Controller {
           }
         }
         if (res.bagFull) toast('背包满了，装备没捡起来：按 C 丢掉一些');
+        if (res.chest) this.gotChest(res.chest, b.monster.lvl);
+        if (b.word.family === 'krume') this.questFire('krumeKill');
         for (const lv of res.levelUp.levels) this.onLevelUp(lv);
         if (res.levelUp.capped && !s.flags.taughtCapLevel) {
           s.flags.taughtCapLevel = true;
-          say([{ who: SYS, text: `你到了这一版的等级上限（${CONFIG.levelCap} 级）。经验会存着，第 2 区开放后接着升。继续打，归名和装备都还在涨。` }]);
+          say([{ who: SYS, text: `你到了这一版的等级上限（${CONFIG.levelCap} 级）。经验会存着，第 3 区开放后接着升。继续打，归名和装备都还在涨。` }]);
         }
       }
+    }
+  }
+
+  finishBattle(): void {
+    const s = this.state;
+    const pack = this.pack;
+    const ents = this.packEntities;
+    const target = this.battle!;
+    const m = this.entity!;
+    this.battleUI.close();
+    setBattleMusic(false);
+    this.battle = null;
+    this.entity = null;
+    this.pack = [];
+    this.packEntities = [];
+    const won = pack.length > 0 && pack.every((x) => x.outcome === 'win');
+    const lost = pack.some((x) => x.outcome === 'lose');
+    const b = lost ? (this.killer ?? target) : target;
+    if (lost) b.outcome = 'lose';
+    else if (won) b.outcome = 'win';
+    else b.outcome = 'fled';
+
+    if (won) {
+      if (pack.length > 1) {
+        pack.forEach((x, i) => { if (!x.settled) this.settleKill(x, ents[i], true); });
+        postFightHeal(s);
+      } else this.settleKill(b, m);
     } else if (b.outcome === 'lose') {
       sfx.death();
-      const at = { x: m.x, y: m.y };
+      const km = ents[pack.indexOf(b)] ?? m;
+      const at = { x: km.x, y: km.y };
       const loss = applyLoss(s, b, at);
       if (b.tutorial === 'loss') s.flags.pendingLoss = false;
-      this.scene.removeMonster(m, 'flee');
+      pack.forEach((x, i) => { if (!x.settled) this.scene.removeMonster(ents[i], 'flee'); });
       this.scene.teleportToBonfire();
       this.scene.spawnAll();
       const lines: Line[] = [{ who: SYS, text: '你死了。你在篝火旁重生。' }];
@@ -373,11 +523,313 @@ export class Controller {
       }
       say(lines);
     } else {
-      this.scene.removeMonster(m, 'flee');
+      pack.forEach((x, i) => { if (!x.settled) this.scene.removeMonster(ents[i], 'flee'); });
       if (!m.isEcho) this.scene.time.delayedCall(10, () => this.scene.fillZone(m.zone));
     }
     this.scene.endFocus();
     this.scene.restyleAll();
+    if (this.trial) this.trialNext(won);
+    if (b.outcome === 'fled' && b.flees && !lost) toast('它带着铁箱跑了。下次在它喊「Ich muss los!」之前打死它。');
+    this.refresh();
+    this.persist();
+    this.nextChest();
+  }
+
+  // ---- Chests -----------------------------------------------------------------------------
+
+  /** Locked chests (iron, gold) wait until the fight is over; the rest open on the spot. */
+  private chestQueue: Array<{ kind: ChestKind; ilvl: number }> = [];
+
+  private gotChest(kind: ChestKind, ilvl: number) {
+    if (CHESTS[kind].locked) {
+      this.chestQueue.push({ kind, ilvl });
+      return;
+    }
+    const r = openChest(this.state, kind, ilvl, this.rng);
+    sfx.loot();
+    banner(CHEST_ZH[kind], r.items.map((it) => it.name).join('、') || '背包满了');
+    if (r.bagFull) toast('背包满了，有东西没装下');
+  }
+
+  private nextChest() {
+    if (this.battle || this.boss) return;
+    const c = this.chestQueue.shift();
+    if (!c) return;
+    const w = lockWord(this.state, WORDS[0]);
+    this.panels.showChest({ kind: c.kind, ilvl: c.ilvl, word: w });
+  }
+
+  /** 言灵锁: right = every item's quality is rolled twice (keep the better). Wrong still opens. */
+  openLockedChest(kind: ChestKind, ilvl: number, word: Word, input: string | null) {
+    const ok = input !== null && gradeTyped(input, word, hasArticleQuestion(word)).ok;
+    if (input !== null) recordAnswer(this.state, word, ok);
+    const r = openChest(this.state, kind, ilvl, this.rng, ok);
+    for (const it of r.items) (it.quality === 'orange' ? sfx.orange : sfx.loot)();
+    this.refresh();
+    this.persist();
+    return { ok, ...r };
+  }
+
+  chestClosed(): void {
+    this.nextChest();
+  }
+
+  // ---- Quests and Konrad -------------------------------------------------------------------
+
+  questFire(ev: QuestEvent): void {
+    this.renderMenu();
+    for (const a of questEvent(this.state, ev)) {
+      const def = QUESTS[a.id];
+      if (a.done) banner('任务完成', def.zh);
+      else toast(`任务：${def.steps[a.finished].zh} ✓  下一步：${def.steps[a.finished + 1].zh}`, 'gold');
+      if (a.id === 'konrad') toast(`Konrad 好感：${FAVOUR[favour(this.state)]}`);
+    }
+  }
+
+  private talkKonrad() {
+    const s = this.state;
+    const K = '面包师傅 Konrad';
+    if (!has(s.level, 'quests')) {
+      say([{ who: K, text: '「Brot……Brot。」他只会说这一个词，手里攥着一张写不出名字的纸条。（12 级后再来）' }]);
+      return;
+    }
+    const p = questState(s, 'konrad');
+    if (!p) {
+      say(
+        [
+          { who: K, text: 'Brot……对，Brot！你能听懂我？' },
+          { who: K, text: '浓雾来的那天，我的面粉袋子长出了嘴，跑到菜摊街去了。没有面粉，我连面包都做不了。' },
+          { who: K, text: '更糟的是，我忘了好多词……连我女儿的名字都想不起来了。帮帮我吧。' },
+        ],
+        () => {
+          startQuest(s, 'konrad');
+          this.renderMenu();
+          toast('新任务：面包师傅的名字（按 J 查看）', 'gold');
+          this.persist();
+        },
+      );
+      return;
+    }
+    if (p.done && s.flags.apronOwed) {
+      this.giveApron();
+      return;
+    }
+    if (p.done) {
+      const last = (s.flags.konradBread as number) ?? 0;
+      if (now(s) - last >= 3600_000) {
+        s.flags.konradBread = now(s);
+        const heal = Math.round(maxHp(s) * 0.5);
+        s.hp = Math.min(maxHp(s), s.hp + heal);
+        say([{ who: K, text: `「Ein Brot für dich!」刚出炉的面包，你回复了 ${heal} 点生命。（每小时一个）` }]);
+        this.refresh();
+      } else say([{ who: K, text: '「Das Brot ist noch nicht fertig.」面包还在炉子里，过一会儿再来。' }]);
+      return;
+    }
+    if (p.step === 0) {
+      say([{ who: K, text: `面粉还在菜摊街那些碎屑兽身上。（${p.count}/5）` }]);
+      return;
+    }
+    if (p.step === 1) {
+      say(
+        [
+          { who: K, text: '面粉回来了，可我还是叫不出店里东西的名字。你教教我：我说中文意思，你告诉我德语，带上冠词。' },
+        ],
+        () => {
+          const words = KONRAD_WORDS.map((id) => WORD_BY_ID[id]).filter(Boolean);
+          this.panels.showQuiz('教 Konrad 说话', 'Konrad 指着店里的东西。用德语说出来（名词带冠词）。', words, () => {
+            this.questFire('taughtKonrad');
+            say([{ who: K, text: 'das Brot、das Brötchen、der Kuchen……都回来了。等等，还有一个名字……再来找我。' }]);
+            this.persist();
+          });
+        },
+      );
+      return;
+    }
+    // Step 2: the story, the apron.
+    say(
+      [
+        { who: K, text: '我想起来了一点。她每天早上都来店里，买两个 Brötchen。' },
+        { who: K, text: '她的名字……是 L 开头的。L……就差一点。' },
+        { who: K, text: '雾是从东边粮仓后面的路上来的。她也是往那边走的。等你能走那条路的时候，替我找找她。' },
+        { who: K, text: '这条围裙给你。从今天起，你就是这家店的朋友，饿了就来拿面包。' },
+      ],
+      () => {
+        this.questFire('heardKonrad');
+        const it = makeItem(this.rng, s.level, 'green', 'coat');
+        it.name = 'Konrads Schürze';
+        this.giveApron();
+        this.refresh();
+        this.persist();
+      },
+    );
+  }
+
+  private giveApron() {
+    const s = this.state;
+    if (s.bag.length >= CONFIG.loot.bagSize) {
+      s.flags.apronOwed = true;
+      toast('背包满了，Konrad 先替你收着围裙。腾出位置再来找他。');
+      return;
+    }
+    const it = makeItem(this.rng, s.level, 'green', 'coat');
+    it.name = 'Konrads Schürze';
+    s.bag.push(it);
+    s.flags.apronOwed = false;
+    banner('获得', 'Konrads Schürze（优秀 · 外套）');
+  }
+
+  // ---- Shop (Mira) ---------------------------------------------------------------------
+
+  private talkMira() {
+    const s = this.state;
+    if (!has(s.level, 'shop')) {
+      say([{ who: MIRA, text: '货还在路上。你再长大一点（11 级）再来。' }]);
+      return;
+    }
+    this.questFire('metMira');
+    const open = () => {
+      openShop(s, this.rng, now(s));
+      this.panels.buying = null;
+      this.panels.show('shop');
+    };
+    if (!s.flags.miraMet) {
+      s.flags.miraMet = true;
+      say(
+        [
+          { who: MIRA, text: 'Hallo! 我这儿什么都卖：笔、外套、护符、词典。' },
+          { who: MIRA, text: '不过在集市上，东西是用嘴买的。指着它说「Ich nehme den Stift.」，我就卖给你。' },
+          { who: MIRA, text: '注意：der Stift、der Mantel 在 nehmen 后面要变成 den；das Amulett、das Wörterbuch 不变。嫌贵就说「Geht das billiger?」，我心情好会打九折。' },
+        ],
+        open,
+      );
+      return;
+    }
+    open();
+  }
+
+  shopBuy(i: number, sentence: string, bargain: string) {
+    const r = buyItem(this.state, i, sentence, bargain, CONFIG.loot.bagSize);
+    if (r.ok) sfx.loot();
+    this.refresh();
+    this.persist();
+    return r;
+  }
+
+  shopSell(id: string): void {
+    const g = sellItem(this.state, id);
+    if (g) toast(`卖掉了，+${g} 金币`);
+    this.refresh();
+    this.persist();
+    this.panels.render();
+  }
+
+  shopRefresh(): void {
+    if (!refreshShop(this.state, this.rng)) toast('金币不够');
+    this.refresh();
+    this.persist();
+    this.panels.render();
+  }
+
+  // ---- Classes (Greta) ---------------------------------------------------------------------
+
+  private talkGreta() {
+    const s = this.state;
+    if (s.level < CONFIG.region2Level) {
+      say([{ who: GRETA, text: `你还太嫩。到 ${CONFIG.region2Level} 级再来找我。` }]);
+      return;
+    }
+    const lines: Line[] = [];
+    if (!s.flags.gretaMet) {
+      s.flags.gretaMet = true;
+      lines.push(
+        { who: GRETA, text: '营地来的？Hilde 跟我提过你。在集市里光会叫名字不够，你得有自己的打法。' },
+        { who: GRETA, text: '书写者靠默写：写得越多，墨水越多，下笔越狠。守护者靠站得住：答错也不容易倒，挡得住，反弹得回去。' },
+        { who: GRETA, text: '先各试一场试炼。打完一次，这个职业就永久归你。第一个职业白送，之后随时来我这儿换。' },
+      );
+    }
+    const choices: Array<{ label: string; act: () => void }> = [];
+    for (const id of ['writer', 'guardian'] as ClassId[]) {
+      const c = CLASSES[id];
+      if (!s.classes.includes(id)) choices.push({ label: `试炼：${c.zh}（${c.trialZh}）`, act: () => this.startTrial(id) });
+      else if (s.cls !== id) choices.push({ label: `${s.cls ? '换成' : '选择'}${c.zh}`, act: () => this.pickClass(id) });
+    }
+    if (s.cls && s.level >= TALENT_FROM_LEVEL) choices.push({ label: '看天赋（T）', act: () => this.panels.show('talents') });
+    if (s.cls && spent(s) > 0) choices.push({ label: `洗点（${respecCost(s)} 金币）`, act: () => this.doRespec() });
+    choices.push({ label: '离开', act: () => undefined });
+    if (!lines.length) lines.push({ who: GRETA, text: s.cls ? `${CLASSES[s.cls].zh}，今天想练什么？` : '想好试哪个了吗？' });
+    say(lines, undefined, choices);
+  }
+
+  private startTrial(id: ClassId) {
+    const s = this.state;
+    this.trial = { cls: id, left: TRIAL_FIGHTS };
+    s.flags.trialPrev = s.cls ?? '';
+    s.cls = id;
+    say([{ who: GRETA, text: `${CLASSES[id].zh}试炼：${CLASSES[id].trialZh}。${CLASSES[id].blurb.join('')}` }], () => this.trialFight());
+  }
+
+  /** Trial fights use words you have already met, so they test the class, not new words. */
+  private trialFight() {
+    const s = this.state;
+    const known = WORDS.filter((w) => s.words[w.id] && w.pos !== 'phr' && w.pos !== 'num' && !w.digit && w.family !== 'truhe');
+    const pool = known.length >= 3 ? known : zoneWords('gemuesegasse');
+    const word = pool[Math.floor(this.rng() * pool.length)];
+    const p = this.scene.player;
+    const m = this.scene.addMonster(word, 'new', 'markt', p.x + 20, p.y, { scripted: 'trial' });
+    this.encounter(m, { trial: this.trial!.cls });
+  }
+
+  private trialNext(won: boolean) {
+    const s = this.state;
+    const t = this.trial!;
+    if (!won) {
+      this.trial = null;
+      s.cls = (s.flags.trialPrev as ClassId) || null;
+      delete s.flags.trialPrev;
+      say([{ who: GRETA, text: '试炼断了。没关系，什么时候准备好了再来。' }]);
+      return;
+    }
+    t.left -= 1;
+    if (t.left > 0) {
+      toast(`试炼：还剩 ${t.left} 场`);
+      this.scene.time.delayedCall(600, () => this.trialFight());
+      return;
+    }
+    this.trial = null;
+    const prev = (s.flags.trialPrev as ClassId) || null;
+    delete s.flags.trialPrev;
+    s.cls = prev;
+    if (!s.classes.includes(t.cls)) s.classes.push(t.cls);
+    banner('试炼完成', `${CLASSES[t.cls].zh} 已解锁`);
+    const choices = [
+      { label: `${prev ? '换成' : '选择'}${CLASSES[t.cls].zh}`, act: () => this.pickClass(t.cls) },
+      { label: prev ? `继续当${CLASSES[prev].zh}` : '再想想', act: () => undefined },
+    ];
+    say([{ who: GRETA, text: `不错。${CLASSES[t.cls].zh}这条路你走得通。要现在就选吗？` }], undefined, choices);
+  }
+
+  private pickClass(id: ClassId) {
+    const s = this.state;
+    const first = !s.cls;
+    s.cls = id;
+    banner(first ? '职业' : '换职业', CLASSES[id].zh);
+    this.renderMenu();
+    const lines: Line[] = [{ who: GRETA, text: `从今天起，你是${CLASSES[id].zh}。战斗里按 G 用职业技能「${CLASSES[id].skillZh}」。` }];
+    if (s.level >= TALENT_FROM_LEVEL) lines.push({ who: SYS, text: '按 T 打开职业与天赋，把天赋点花掉。' });
+    else lines.push({ who: SYS, text: `${TALENT_FROM_LEVEL} 级起每升一级得 1 点天赋（按 T 查看）。` });
+    say(lines);
+    this.refresh();
+    this.persist();
+  }
+
+  private doRespec() {
+    const s = this.state;
+    const cost = respecCost(s);
+    if (!respec(s)) {
+      say([{ who: GRETA, text: `洗点要 ${cost} 金币。你身上不够。` }]);
+      return;
+    }
+    toast(`天赋已重置，花了 ${cost} 金币`);
     this.refresh();
     this.persist();
   }
@@ -389,16 +841,24 @@ export class Controller {
     const text: Record<string, string> = {
       bonfire: '<kbd>E</kbd>在篝火旁休息',
       npc: '<kbd>E</kbd>和守火人 Hilde 说话',
-      door: '<kbd>E</kbd>敲门',
+      door: this.state.region === 2 ? '<kbd>E</kbd>推开秤房的门' : '<kbd>E</kbd>敲门',
       sign: '<kbd>E</kbd>看路牌',
+      gate: '<kbd>E</kbd>回余烬营地',
     };
-    setPrompt(text[it.kind]);
+    const NPC_TEXT: Record<string, string> = {
+      hilde: '<kbd>E</kbd>和守火人 Hilde 说话',
+      greta: '<kbd>E</kbd>和导师 Greta 说话',
+      mira: '<kbd>E</kbd>和商人 Mira 说话',
+      konrad: '<kbd>E</kbd>和面包师傅 Konrad 说话',
+    };
+    setPrompt(it.kind === 'npc' ? NPC_TEXT[it.data ?? 'hilde'] : text[it.kind]);
   }
 
   interact(it: { kind: string; data?: string }): void {
     if (it.kind === 'bonfire') this.rest();
-    else if (it.kind === 'npc') this.talkHilde();
-    else if (it.kind === 'door') this.knock();
+    else if (it.kind === 'npc') this.talkNpc(it.data ?? 'hilde');
+    else if (it.kind === 'door') (this.state.region === 2 ? this.knockRegion2() : this.knock());
+    else if (it.kind === 'gate') this.travel(1);
     else if (it.kind === 'sign') {
       const w = WORD_BY_ID[it.data!];
       const st = stageOf(this.state, w);
@@ -445,11 +905,122 @@ export class Controller {
     say(tips[i]);
   }
 
+  private talkNpc(id: string) {
+    if (id === 'hilde') return this.talkHilde();
+    if (id === 'greta') return this.talkGreta();
+    if (id === 'mira') return this.talkMira();
+    if (id === 'konrad') return this.talkKonrad();
+    // Region-2 NPCs: their systems (class, shop, Konrad's quest) open with the region-2 build.
+    const lines: Record<string, string> = {
+      greta: '导师 Greta：「你就是从营地那边过来的？到 10 级、选职业的时候再来找我。」',
+      mira: '商人 Mira：「货还在路上。等我把摊子摆好，你就能用德语跟我买东西了。」',
+      konrad: '面包师傅 Konrad：「Brot……Brot。」他只会说这一个词，手里攥着一张写不出名字的纸条。',
+    };
+    say([{ who: id === 'greta' ? 'Greta' : id === 'mira' ? 'Mira' : 'Konrad', text: lines[id] ?? '……' }]);
+  }
+
+  /** Walk between regions: the neighbour's door (region 1) and the market's west gate (region 2). */
+  travel(to: 1 | 2): void {
+    const s = this.state;
+    if (s.region === to) return;
+    s.region = to;
+    if (to === 2 && startQuest(s, 'main2')) this.questFire('enterMarket');
+    // Arrive next to the door you came through.
+    s.pos = to === 2 ? { x: 4 * 16 + 8, y: 24 * 16 + 8 } : { x: 67 * 16 + 8, y: 24 * 16 + 12 };
+    this.persist();
+    this.scene.scene.restart({ ctrl: this });
+  }
+
+  private knockRegion2() {
+    const s = this.state;
+    if (!has(s.level, 'boss2')) {
+      say([{ who: '秤房', text: '门后传来秤砣一下一下的撞击声。有什么东西在数……数你身上有多少钱。（第 2 区首领，18 级开放）' }]);
+      return;
+    }
+    const go = () =>
+      say(
+        BOSS2.intro.map((t) => ({ who: BOSS2.name, text: t })),
+        () => {
+          this.boss = startBoss(this.state, this.rng, 2);
+          setBattleMusic(true);
+          setPrompt(null);
+          this.bossUI.open(this.boss);
+        },
+      );
+    if (s.hp < maxHp(s) * 0.5) {
+      say([{ who: SYS, text: '你的生命不到一半。先回篝火休息？' }], undefined, [
+        { label: '直接推门', act: go },
+        { label: '先去休息', act: () => undefined },
+      ]);
+      return;
+    }
+    go();
+  }
+
+  /** 吞秤者 rewards: gold chest on the first kill each day (iron after), orange + title the first time. */
+  private finishBoss2(f: BossFight) {
+    const s = this.state;
+    const first = !s.flags.boss2Kills;
+    s.flags.boss2Kills = ((s.flags.boss2Kills as number) ?? 0) + 1;
+    const today = dayKey(now(s));
+    const dailyFirst = s.flags.boss2Day !== today;
+    s.flags.boss2Day = today;
+    const lv = addXp(s, CONFIG.boss2.xp);
+    s.gold += CONFIG.boss2.gold;
+    this.questFire('boss2');
+    this.chestQueue.push({ kind: dailyFirst ? 'gold' : 'iron', ilvl: s.level });
+    if (first) {
+      const o = makeItem(this.rng, s.level, 'orange');
+      if (s.bag.length < CONFIG.loot.bagSize) s.bag.push(o);
+      s.flags.title = 'Preisbrecher';
+    }
+    sfx.orange();
+    banner('吞秤者倒下了', first ? '首杀：传说装备 + 称号「Preisbrecher」' : dailyFirst ? '金箱' : '铁箱');
+    const lines: Line[] = BOSS2.outro.map((t) => ({ who: SYS, text: t }));
+    lines.push({ who: SYS, text: `获得 ${CONFIG.boss2.xp} 经验、${CONFIG.boss2.gold} 金币和一个${dailyFirst ? '金' : '铁'}箱。` });
+    const after = () => {
+      for (const l of lv.levels) this.onLevelUp(l);
+      this.refresh();
+      this.persist();
+      this.nextChest();
+    };
+    const learnable = Object.values(SKILLS).filter((k) => k.boss === 2 && !s.skills.includes(k.id));
+    if (dailyFirst && learnable.length) {
+      lines.push({ who: SYS, text: '它说过的话，你可以收一句作为句子技能（按 R 释放；最新学的那句排在第一位）。选一句：' });
+      say(
+        lines,
+        undefined,
+        learnable.map((k) => ({
+          label: `${k.de}（${k.zh}：${k.effect}）`,
+          act: () => {
+            s.skills = [k.id, ...s.skills].slice(0, 3);
+            toast(`学会句子技能：${k.de}`, 'gold');
+            after();
+          },
+        })),
+      );
+    } else say(lines, after);
+    void f;
+  }
+
   regionWords(): Word[] {
     return [...zoneWords('echogasse'), ...zoneWords('schilderstrasse'), ...zoneWords('aschehof')];
   }
 
   private knock() {
+    const s = this.state;
+    if (s.flags.bossKills && s.level >= CONFIG.region2Level) {
+      say([{ who: '门', text: '门开着。门后不是邻居的屋子，而是一条飘着面包香的集市街。' }], undefined, [
+        { label: '穿过门去面包集市', act: () => this.travel(2) },
+        { label: '再和无名的邻居打一场', act: () => this.knockBoss() },
+        { label: '先不去', act: () => undefined },
+      ]);
+      return;
+    }
+    this.knockBoss();
+  }
+
+  private knockBoss() {
     const s = this.state;
     if (!has(s.level, 'boss')) {
       say([{ who: '门', text: '门后有什么东西在呼吸。（8 级开放）' }]);
@@ -498,7 +1069,9 @@ export class Controller {
     this.bossUI.close();
     setBattleMusic(false);
     this.boss = null;
-    if (f.outcome === 'win') {
+    if (f.outcome === 'win' && f.which === 2) {
+      this.finishBoss2(f);
+    } else if (f.outcome === 'win') {
       const first = !s.flags.bossKills;
       s.flags.bossKills = ((s.flags.bossKills as number) ?? 0) + 1;
       const today = String(now(s) - (now(s) % 86400000));
@@ -516,7 +1089,7 @@ export class Controller {
       banner('首领被唤醒', first ? '首杀：传说装备 + 称号「被记住的人」' : dailyFirst ? '金箱' : '铁箱');
       const lines: Line[] = BOSS.outro.map((t) => ({ who: SYS, text: t }));
       lines.push({ who: SYS, text: `获得 ${CONFIG.xp.boss} 经验、120 金币和 ${drops.length} 件装备（按 C 查看）。` });
-      const learnable = Object.values(SKILLS).filter((k) => !s.skills.includes(k.id));
+      const learnable = Object.values(SKILLS).filter((k) => k.boss === 1 && !s.skills.includes(k.id));
       const after = () => {
         for (const l of lv.levels) this.onLevelUp(l);
         this.refresh();
@@ -625,6 +1198,8 @@ export class Controller {
       menu.append(b);
     };
     btn('角色', 'C', () => this.panels.toggle('hero'));
+    if (this.state.cls || this.state.level >= CONFIG.region2Level) btn('职业', 'T', () => this.panels.toggle('talents'));
+    if (this.state.quests) btn('任务', 'J', () => this.panels.toggle('quests'));
     btn('图鉴', 'B', () => this.panels.toggle('codex'));
     btn('数据', '', () => this.panels.toggle('data'));
     btn('设置', '', () => this.panels.toggle('settings'));
@@ -668,6 +1243,8 @@ export class Controller {
     const k = e.key.toLowerCase();
     if (k === 'c' || k === 'i') this.panels.toggle('hero');
     else if (k === 'b') this.panels.toggle('codex');
+    else if (k === 't') this.panels.toggle('talents');
+    else if (k === 'j') this.panels.toggle('quests');
     else if (k === 'h') this.panels.toggle('help');
     // First interaction unlocks audio in browsers.
     initAudio(this.state.settings.music, this.state.settings.sfx);
