@@ -303,7 +303,7 @@ function generateRegion2(): MapData {
     { x: 23, y: 21, wordId: 'markt' },
     { x: 25, y: 26, wordId: 'preis' },
     { x: 52, y: 22, wordId: 'korn' },
-    { x: 9, y: 28, wordId: 'baeckerei' },
+    { x: 11, y: 31, wordId: 'baeckerei' },
   ];
   for (const sg of signs) if (BLOCKING.has(get(sg.x, sg.y))) set(sg.x, sg.y, T.Ground);
 
