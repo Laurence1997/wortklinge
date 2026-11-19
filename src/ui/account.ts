@@ -31,7 +31,7 @@ export function loginView(box: HTMLElement, onDone: () => void, mode: Mode = 'lo
   }
 
   if (cloud.session && needsNickname()) {
-    const nick = field('text', '昵称（1–16 个字）');
+    const nick = field('text', '昵称（1–16 个字）', `篝火旅人${100 + Math.floor(Math.random() * 900)}`);
     nick.maxLength = 16;
     const go = async () => {
       msg.textContent = '保存中…';
