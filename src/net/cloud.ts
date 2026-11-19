@@ -148,6 +148,12 @@ export async function syncOnBoot(local: GameState | null): Promise<GameState | n
     const { data, error } = await withTimeout(sb.from('saves').select('data').eq('user_id', id).maybeSingle());
     if (error) throw error;
     const remote = data ? migrate((data as { data: unknown }).data) : null;
+    // A cloud save we can't read must never be overwritten by a fresh game: stop uploading until fixed.
+    if (data && !remote) {
+      cloudLocked = true;
+      cloud.status = 'offline';
+      return local;
+    }
     cloud.status = 'ok';
     cloud.lastSync = Date.now();
     // A local save from another account on this browser is not yours: ignore it.
@@ -167,9 +173,11 @@ export async function syncOnBoot(local: GameState | null): Promise<GameState | n
 }
 
 /** Uploads the save and refreshes the leaderboard row. Failures are silent; the next push retries. */
+let cloudLocked = false;
+
 export async function push(s: GameState): Promise<boolean> {
   const id = uid();
-  if (!id) return false;
+  if (!id || cloudLocked) return false;
   try {
     const at = new Date(s.savedAt ?? Date.now()).toISOString();
     const { error } = await withTimeout(sb.from('saves').upsert({ user_id: id, data: s, version: s.version, updated_at: at }), 10000);

@@ -231,7 +231,10 @@ export function clearSave(): void {
 export function migrate(raw: unknown): GameState | null {
   if (!raw || typeof raw !== 'object') return null;
   const s = raw as GameState;
-  if (s.version !== 1 || typeof s.level !== 'number' || typeof s.words !== 'object') return null;
+  // Saves are never thrown away for a version mismatch: older versions are converted step by step here
+  // (add `if (s.version === N) { ...convert...; s.version = N + 1 }` blocks when the format changes).
+  if (typeof s.level !== 'number' || typeof s.words !== 'object') return null;
+  (s as { version: number }).version = 1;
   const base = newGame(s.name ?? '旅人', s.origin ?? 'student', s.createdAt);
   return { ...base, ...s, settings: { ...base.settings, ...s.settings }, stats: { ...base.stats, ...s.stats } };
 }
