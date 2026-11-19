@@ -301,7 +301,7 @@ export class Controller {
     const s = this.state;
     if (!has(s.level, 'packs') || s.region !== 2 || m.isEcho || m.scripted || m.rare || !m.word.art || m.word.family === 'truhe') return;
     const firstPack = !s.flags.firstPackDone;
-    const max = firstPack ? 2 : CONFIG.pack.max;
+    const max = firstPack || s.level < CONFIG.pack.max3From ? 2 : CONFIG.pack.max;
     const r = CONFIG.pack.radiusTiles * 16;
     const used = new Set([m.word.art]);
     const near = this.scene.monsters

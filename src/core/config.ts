@@ -109,8 +109,11 @@ export const CONFIG = {
 
   gold: { perKill: (lvl: number) => Math.round(5 * (1 + lvl / 10)) },
 
-  /** 群怪 (region 2): per-monster damage ×0.6 with 2, ×0.45 with 3; 点名 that hits the wrong one deals half. */
-  pack: { dmgMult: [0.6, 0.45] as [number, number], strayMult: 0.5, max: 3, radiusTiles: 4, fromLevel: 11 },
+  /**
+   * 群怪 (region 2): per-monster damage ×0.5 with 2, ×0.35 with 3 (doc said 0.6 / 0.45; sim 2026-11-19 at
+   * 75% accuracy gave 13–23% deaths per pack fight). Packs of 3 only from Lv13. 点名 on the wrong one deals half.
+   */
+  pack: { dmgMult: [0.5, 0.35] as [number, number], strayMult: 0.5, max: 3, max3From: 13, radiusTiles: 4, fromLevel: 11 },
 
   boss: {
     /** Share of region words that must be at least 半名 before the boss appears. */

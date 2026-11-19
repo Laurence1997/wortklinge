@@ -36,7 +36,7 @@
 
 ![战斗](docs/battle.png)
 
-### 0.3 第一周：已经能玩的内容
+### 0.3：已经能玩的内容
 
 第 1 区「余烬营地」，1–10 级，202 个 Goethe A1 词（问候、自我介绍、数字、家人、营地物品）：
 
@@ -52,7 +52,15 @@
 | 8 | 首领「无名的邻居」、句子技能、紫装和传说装备；怪物会回血 |
 | 9 | 意图里的否定：`nicht` |
 
-第 2 区（11–20 级：选职业、商店、宝箱、复数、动词变位）是第二周的内容。
+打败邻居、到 10 级以后，邻居家的门通向第 2 区「面包集市」，11–20 级，约 155 个新词（食物、购物、价格、数字到 1000、购物动词）：
+
+| 等级 | 开放 |
+| --- | --- |
+| 10 | 导师 Greta 的职业试炼：书写者（墨水、默写暴击、墨水风暴）或守护者（沉着、答错少挨打、稳住） |
+| 11 | 商人 Mira：买东西要说 `Ich nehme den Mantel.`，还能讲价；宝箱和言灵锁；喊着 `Ich muss los!` 想逃的宝箱怪；群怪「点名」：先选中一只，再喊出它的冠词；`Ich nehme zwei Äpfel.` 复数句式 |
+| 12 | 动词怪要写现在时变位（`du nimmst`、`er nimmt`）；天赋树；任务面板（J）和面包师傅 Konrad 的支线 |
+| 13 | 意图带对象：`Ich kratze dich!` 打你，`Ich kratze mich.` 挠它自己；三只一群的群怪 |
+| 18 | 首领「吞秤者」：看价签和数量，用德语说出价格（`Das Brot kostet zwei Euro fünfzig.`） |
 
 ### 设计原则
 
@@ -110,9 +118,9 @@ A browser game that teaches German to Chinese-speaking learners. It isn't flashc
 - **Souls-like bonfires.** Resting respawns the words that are due. Dying never costs learning progress, but your gold and XP stay on the word that killed you until you win them back.
 - **Bosses are real conversations.** The first boss, *The Nameless Neighbour*, asks who you are and where you're from, on a timer, in randomised phrasings. Answer in full German sentences.
 
-### Version 0.3, week 1
+### Version 0.3
 
-Region 1, levels 1–10, 202 words from the Goethe A1 list. Region 2 (classes, shop, chests, plurals, verb conjugation) is next.
+Region 1 (levels 1–10, 202 Goethe A1 words) and Region 2, the Bread Market (levels 11–20, about 155 words on food, shopping and prices). Region 2 adds two classes with trials and talent trees, a shop where you buy by saying `Ich nehme den Mantel.` (and haggle), chests with a word lock, treasure monsters that run off shouting `Ich muss los!`, monster packs you target by calling out their article, plurals (`Ich nehme zwei Äpfel.`), present-tense verb conjugation, `mich`/`dich` in monster intents, a baker's side quest, and a boss who only asks prices and quantities.
 
 ### Tech
 
