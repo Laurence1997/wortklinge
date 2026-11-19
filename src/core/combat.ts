@@ -453,6 +453,25 @@ export function comboTier(combo: number): string | null {
 
 const ELEMENT_BY_GENDER: Record<'m' | 'f' | 'n' | 'pl', Element> = { m: 'ice', f: 'fire', n: 'poison', pl: 'lightning' };
 
+/**
+ * 墨水风暴 overkill in a pack spills once onto the next monster (charging first, then lowest HP),
+ * under that monster's own intent (defend still cuts it, 誊写 still ignores it). It never kills:
+ * the monster stays at 1 HP at least, so the last hit is still its own word (归名, review, kill count).
+ */
+export function spillStorm(s: GameState, pack: Battle[], from: Battle, overkill: number, typedLike: boolean, log: LogLine[]): number {
+  const rest = pack.filter((x) => x !== from && !x.outcome && x.monster.hp > 1);
+  if (!rest.length) return 0;
+  const next = rest.find((x) => x.intent.kind === 'charge') ?? rest.reduce((a, x) => (x.monster.hp < a.monster.hp ? x : a));
+  const ignoreDefend = s.cls === 'writer' && typedLike && rank(s, 'tengxie') > 0;
+  let d = overkill;
+  if (next.intent.kind === 'defend' && !ignoreDefend) d *= CONFIG.damage.vsDefend;
+  d = Math.min(Math.round(d), next.monster.hp - 1);
+  if (d <= 0) return 0;
+  next.monster.hp -= d;
+  log.push({ text: `墨水溅到${fullForm(next.word)}身上：${d} 点伤害。最后一下还得写它自己的词。`, tone: 'good' });
+  return d;
+}
+
 /** Per-monster damage multiplier in a pack, so 2–3 monsters together hit about 1.2–1.35× one monster. */
 export function packDamageMult(alive: number): number {
   return alive <= 1 ? 1 : alive === 2 ? CONFIG.pack.dmgMult[0] : CONFIG.pack.dmgMult[1];
@@ -652,8 +671,10 @@ export function resolveTurn(
     }
 
     if (m.hp <= 0) {
+      const overkill = -m.hp;
       m.hp = 0;
       b.outcome = 'win';
+      if (q.type === 'storm' && multi && overkill > 0) spillStorm(s, pack, b, overkill, typedLike, log);
       b.lastKillTyped = typedQ && (q.type === 'sentence' ? verdict.word?.id === b.word.id : true);
       if (q.type === 'typed' && !q.withArticle && hasArticleQuestion(b.word)) b.lastKillTyped = false;
       log.push({ text: `${tagOf(b)}被打散了——你先出手，它的打算作废。`, tone: 'sys' });

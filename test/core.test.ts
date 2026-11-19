@@ -5,7 +5,7 @@ import { newGame, addXp, overloaded } from '../src/core/state';
 import { applyWin } from '../src/core/outcomes';
 import { recordKill, kindOf, stageOf } from '../src/core/srs';
 import { CONFIG, xpToNext } from '../src/core/config';
-import { startBattle, makeQuestion, resolveTurn } from '../src/core/combat';
+import { startBattle, makeQuestion, resolveTurn, spillStorm } from '../src/core/combat';
 import { makeRng } from '../src/core/rng';
 import { answerBoss, startBoss } from '../src/core/boss';
 import { BOSS_QUESTIONS } from '../src/data/boss';
@@ -147,6 +147,27 @@ describe('combat', () => {
     const q2 = makeQuestion(s, b2, 'break', rng);
     resolveTurn(s, b2, 'break', q2, q2.answer!, rng);
     expect(b2.monster.vulnerable).toBeGreaterThan(0);
+  });
+});
+
+describe('墨水风暴 overflow', () => {
+  it('spills once onto the charging monster, never below 1 HP, and defence still cuts it', () => {
+    const rng = makeRng(3);
+    const s = newGame('T', 'student', 0);
+    s.level = 13;
+    s.cls = 'writer';
+    const ws = WORDS.filter((w) => w.art).slice(0, 3);
+    const pack = ws.map((w) => startBattle(s, w, rng));
+    const [dead, a, c] = pack;
+    dead.outcome = 'win';
+    a.monster.hp = 20; a.intent = { ...a.intent, kind: 'attack' };
+    c.monster.hp = 30; c.intent = { ...c.intent, kind: 'charge' };
+    const log: { text: string; tone: 'good' }[] = [];
+    expect(spillStorm(s, pack, dead, 999, true, log as never)).toBe(29);
+    expect(c.monster.hp).toBe(1);
+    expect(c.outcome).toBeFalsy();
+    a.intent = { ...a.intent, kind: 'defend' };
+    expect(spillStorm(s, pack, dead, 10, true, log as never)).toBe(Math.round(10 * CONFIG.damage.vsDefend));
   });
 });
 
