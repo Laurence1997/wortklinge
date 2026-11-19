@@ -51,6 +51,12 @@ export interface PlayerFx {
   poison: number;
   chilled: boolean;
   shield: boolean;
+  /** 「Das ist zu teuer!」: this turn's hits on you are halved. */
+  cheap?: boolean;
+  /** 「Wie viel kostet das?」: turns left in which next turn's intent is shown. */
+  peek?: number;
+  /** 「Stimmt so.」: monsters killed this fight drop double gold. */
+  stimmt?: boolean;
 }
 
 /** Class resource for one fight (shared by a whole pack, like PlayerFx). */
@@ -81,6 +87,8 @@ export interface Battle {
   /** Greta's class trial this fight belongs to. */
   trial: ClassId | null;
   intent: Intent;
+  /** 「Wie viel kostet das?」: next turn's intent, already decided. */
+  queued?: Intent;
   turn: number;
   turnsSinceCharge: number;
   trapUsed: boolean;
@@ -517,6 +525,15 @@ export function resolveTurn(
       } else if (sk.id === 'wieBitte') {
         interrupted = true;
         log.push({ text: `「${sk.de}」——它愣住了，这回合的打算作废。`, tone: 'good' });
+      } else if (sk.id === 'zuTeuer') {
+        b.fx.cheap = true;
+        log.push({ text: `「${sk.de}」——它们被你压了价，这回合下手轻了一半。`, tone: 'good' });
+      } else if (sk.id === 'wieViel') {
+        b.fx.peek = 2;
+        log.push({ text: `「${sk.de}」——你看穿了它们接下来的打算。`, tone: 'good' });
+      } else if (sk.id === 'stimmtSo') {
+        b.fx.stimmt = true;
+        log.push({ text: `「${sk.de}」——这场打死的怪，金币翻倍。`, tone: 'good' });
       } else if (sk.id === 'freutMich') {
         const heal = Math.round(maxHp(s) * 0.3);
         s.hp = Math.min(maxHp(s), s.hp + heal);
@@ -668,7 +685,7 @@ export function resolveTurn(
   const chillMult = m.chilled ? CONFIG.status.iceDamageMult : 1;
 
   const hitPlayer = (raw: number) => {
-    let d = Math.max(1, Math.round(raw * (1 - wrongReduce) * (ok ? 1 : wrongHitShare(s))));
+    let d = Math.max(1, Math.round(raw * (1 - wrongReduce) * (ok ? 1 : wrongHitShare(s)) * (b.fx.cheap ? 0.5 : 1)));
     if (b.fx.shield) {
       b.fx.shield = false;
       const back = Math.max(1, Math.round(d * shieldReflect(s)));
@@ -793,6 +810,7 @@ export function resolveTurn(
     log.push({ text: `你中毒了（${b.fx.poison} 层），掉了 ${d} 点。`, tone: 'bad' });
   }
   if (b.skillCooldown > 0) b.skillCooldown -= 1;
+  b.fx.cheap = false;
   if ((s.flags.wortgewalt as number) > 0) s.flags.wortgewalt = (s.flags.wortgewalt as number) - 1;
   if (s.combo >= 50 && !s.flags.wortgewaltUsedAt50) {
     s.flags.wortgewalt = 3;
@@ -819,8 +837,10 @@ export function resolveTurn(
     for (const x of pack) {
       if (x.outcome) continue;
       x.turn += 1;
-      x.intent = nextIntent(s, x, rng);
+      x.intent = x.queued ?? nextIntent(s, x, rng);
+      x.queued = (b.fx.peek ?? 0) > 0 ? nextIntent(s, x, rng) : undefined;
     }
+    if ((b.fx.peek ?? 0) > 0) b.fx.peek! -= 1;
   }
   syncShared(b, pack);
   const outcome: Battle['outcome'] = pack.every((x) => x.outcome === 'win') ? 'win' : s.hp <= 0 ? 'lose' : b.outcome;

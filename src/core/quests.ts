@@ -75,8 +75,17 @@ export function questEvent(s: GameState, ev: QuestEvent): QuestAdvance[] {
   const out: QuestAdvance[] = [];
   for (const [id, p] of Object.entries(s.quests ?? {}) as Array<[QuestId, QuestProgress]>) {
     if (p.done) continue;
-    const step = QUESTS[id].steps[p.step];
-    if (step.event !== ev) continue;
+    const steps = QUESTS[id].steps;
+    // A later one-off step can happen first (beat the boss before visiting Mira): skip ahead.
+    let at = p.step;
+    if (steps[at].event !== ev) {
+      const later = steps.findIndex((st, i) => i > at && st.event === ev && !st.count);
+      if (later < 0) continue;
+      at = later;
+      p.step = later;
+      p.count = 0;
+    }
+    const step = steps[at];
     p.count += 1;
     if (p.count < (step.count ?? 1)) continue;
     const finished = p.step;

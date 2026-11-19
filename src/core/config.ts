@@ -44,8 +44,8 @@ export const CONFIG = {
   /** Minutes for Lv1→2 … Lv5→6 (新手加速), then t(L) = 1.25 × L^0.3 hours. ~1000 XP per active hour. */
   levelMinutes: [10, 20, 30, 45, 60],
   xpPerHour: 1000,
-  /** 0.3 week 1 ships region 1; the level cap keeps players inside released content. */
-  levelCap: 10,
+  /** 0.3 ships regions 1–2; the level cap keeps players inside released content. */
+  levelCap: 20,
   /** The neighbour's door opens onto region 2 (面包集市) at this level, after the region-1 boss. */
   region2Level: 10,
 
@@ -121,6 +121,9 @@ export const CONFIG = {
     laterSeconds: 35,
     healAt: 2,
   },
+
+  /** 吞秤者 (region 2, Lv18): prices and quantities. */
+  boss2: { hp: 7, firstTimeSeconds: 45, laterSeconds: 30, xp: 900, gold: 300 },
 };
 
 export function levelHours(level: number): number {

@@ -1,12 +1,15 @@
 // Boss fight: a timed conversation. Each answer in a full sentence lands a hit.
 
 import { BOSS_QUESTIONS, type BossQuestion } from '../data/boss';
+import { boss2Questions } from '../data/boss2';
 import { CONFIG } from './config';
 import { normalize } from './grading';
 import { pick, shuffle, type Rng } from './rng';
 import { maxHp, type GameState } from './state';
 
 export interface BossFight {
+  /** 1 = 无名的邻居, 2 = 吞秤者. */
+  which: 1 | 2;
   hp: number;
   maxHp: number;
   queue: BossQuestion[];
@@ -20,7 +23,17 @@ export interface BossFight {
   misses: Array<{ asked: string; answer: string; model: string }>;
 }
 
-export function startBoss(s: GameState, rng: Rng): BossFight {
+export function startBoss(s: GameState, rng: Rng, which: 1 | 2 = 1): BossFight {
+  if (which === 2) {
+    const queue = boss2Questions(rng, true);
+    const current = queue.shift()!;
+    const B = CONFIG.boss2;
+    return {
+      which, hp: B.hp, maxHp: B.hp, queue, current, asked: pick(rng, current.ask),
+      seconds: s.flags.boss2Kills ? B.laterSeconds : B.firstTimeSeconds,
+      healing: false, healUsed: false, turn: 1, outcome: null, misses: [],
+    };
+  }
   const first = ['greet', 'name', 'origin'].map((id) => BOSS_QUESTIONS.find((q) => q.id === id)!);
   const rest = shuffle(
     rng,
@@ -29,6 +42,7 @@ export function startBoss(s: GameState, rng: Rng): BossFight {
   const queue = [...first, ...rest];
   const current = queue.shift()!;
   return {
+    which,
     hp: CONFIG.boss.hp,
     maxHp: CONFIG.boss.hp,
     queue,
@@ -85,7 +99,7 @@ export function answerBoss(s: GameState, f: BossFight, input: string, rng: Rng, 
       f.healing = true;
       f.healUsed = true;
     }
-    if (!f.queue.length) f.queue = shuffle(rng, BOSS_QUESTIONS.filter((x) => x.id !== 'greet'));
+    if (!f.queue.length) f.queue = f.which === 2 ? boss2Questions(rng, false) : shuffle(rng, BOSS_QUESTIONS.filter((x) => x.id !== 'greet'));
     f.current = f.queue.shift()!;
     f.asked = pick(rng, f.current.ask);
     f.turn += 1;

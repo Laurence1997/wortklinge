@@ -11,6 +11,8 @@ export interface BossQuestion {
   accept: RegExp[];
   /** Model answer shown after a miss. */
   model: string;
+  /** Region 2: the price tag or count shown on screen. */
+  visual?: string;
   /** Mistakes worth naming: [pattern, note]. */
   traps?: Array<[RegExp, string]>;
 }

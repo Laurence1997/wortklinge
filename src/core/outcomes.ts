@@ -51,6 +51,7 @@ export function applyWin(s: GameState, b: Battle, rng: Rng, opts: { heal?: boole
   if (overload === 'new') gold = Math.max(1, Math.round(gold * O.newGold));
   if (overload === 'due') gold = Math.round(gold * O.dueGold);
   gold = Math.round(gold * overdueMult);
+  if (b.fx.stimmt) gold *= 2;
   let echoRecovered: WinResult['echoRecovered'] = null;
   if (s.echo && s.echo.wordId === w.id) {
     echoRecovered = { gold: s.echo.gold, xp: s.echo.xp };

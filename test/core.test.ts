@@ -519,3 +519,31 @@ describe('Ich nehme (region 2 sentence)', () => {
     expect(gradeNehme('Ich nehme zwei Kuchen', known).ok).toBe(true);
   });
 });
+
+describe('吞秤者 (region 2 boss)', () => {
+  it('reads prices and counts as words', async () => {
+    const B = await import('../src/data/boss2');
+    expect(B.priceDe(250)).toBe('zwei Euro fünfzig');
+    expect(B.priceDe(100)).toBe('ein Euro');
+    expect(B.numDe(21)).toBe('einundzwanzig');
+    const qs = B.boss2Questions(makeRng(3), true);
+    expect(qs[0].id).toBe('name');
+    for (const q of qs.slice(1)) {
+      // The model answer is always accepted.
+      expect(q.accept.some((re) => re.test(normalize(q.model))), q.model).toBe(true);
+      expect(q.visual).toBeTruthy();
+    }
+  });
+
+  it('has 7 HP, 45 s the first time, and accepts "Das Brot kostet zwei Euro fünfzig"', () => {
+    const s = newGame('T', 'student');
+    s.level = 18;
+    const f = startBoss(s, makeRng(1), 2);
+    expect(f.maxHp).toBe(7);
+    expect(f.seconds).toBe(45);
+    answerBoss(s, f, 'Ich heiße Test.', makeRng(1));
+    expect(f.hp).toBe(6);
+    const price = f.current.id.startsWith('price') ? f.current : null;
+    if (price) expect(answerBoss(s, f, price.model, makeRng(1)).ok).toBe(true);
+  });
+});

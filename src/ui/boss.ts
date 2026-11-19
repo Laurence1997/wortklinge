@@ -1,6 +1,7 @@
 import type { BossFight, BossVerdict } from '../core/boss';
 import { maxHp } from '../core/state';
-import { BOSS } from '../data/boss';
+import { BOSS as BOSS1 } from '../data/boss';
+import { BOSS2 } from '../data/boss2';
 import type { Controller } from '../game/controller';
 import { $, bar, clear, h, umlautButtons } from './dom';
 
@@ -31,7 +32,8 @@ export class BossUI {
     const f = this.fight!;
     this.waiting = false;
     this.deadline = Date.now() + f.seconds * 1000;
-    this.ctrl.speak(f.healing ? `${BOSS.healLine} ${f.asked}` : f.asked);
+    const meta = f.which === 2 ? BOSS2 : BOSS1;
+    this.ctrl.speak(f.healing ? `${meta.healLine} ${f.asked}` : f.asked);
     this.render();
     window.clearInterval(this.tick);
     this.tick = window.setInterval(() => this.onTick(), 250);
@@ -81,6 +83,8 @@ export class BossUI {
     const f = this.fight!;
     const s = this.ctrl.state;
     const el = $('boss');
+    const BOSS = f.which === 2 ? BOSS2 : BOSS1;
+    const killed = f.which === 2 ? s.flags.boss2Kills : s.flags.bossKills;
     const pips = h('div.pips');
     for (let i = 0; i < f.maxHp; i++) pips.append(h(`div.pip${i < f.hp ? '' : '.off'}`));
     const letters = Math.round(((f.maxHp - f.hp) / f.maxHp) * s.name.length);
@@ -123,7 +127,8 @@ export class BossUI {
       f.healing && !this.waiting ? h('div', { style: 'color:var(--bad);font-family:var(--mono);font-size:18px' }, `「${BOSS.healLine}」`) : '',
       f.healing && !this.waiting ? h('div.askzh', BOSS.healZh) : '',
       h('div.ask', f.asked),
-      h('div.row', { style: 'justify-content:center' }, h('button.btn.ghost.small', { onclick: () => this.ctrl.speak(f.asked) }, '🔊 再听'), h('span.askzh', s.flags.bossKills ? '' : `（${f.current.zh}）`)),
+      f.current.visual ? h('div.tagplate', { style: 'font-size:22px;margin:6px auto;display:inline-block' }, f.current.visual) : '',
+      h('div.row', { style: 'justify-content:center' }, h('button.btn.ghost.small', { onclick: () => this.ctrl.speak(f.asked) }, '🔊 再听'), h('span.askzh', killed ? '' : `（${f.current.zh}）`)),
       panel,
     );
   }

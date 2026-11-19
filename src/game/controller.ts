@@ -17,6 +17,7 @@ import { pickSpawns, zoneWords } from '../core/spawn';
 import {
   addXp,
   clearSave,
+  dayKey,
   exportJson,
   importJson,
   maxHp,
@@ -30,6 +31,7 @@ import {
 import type { Move, Slot, Word, ZoneId } from '../core/types';
 import { has, UNLOCK_TEXT } from '../core/unlocks';
 import { BOSS } from '../data/boss';
+import { BOSS2 } from '../data/boss2';
 import { SKILLS } from '../data/skills';
 import { fullForm, hasArticleQuestion, WORD_BY_ID, WORDS } from '../data/words';
 import { initAudio, setBattleMusic, setVolumes, sfx, speak, speechAvailable, hasGermanVoice } from './audio';
@@ -213,7 +215,23 @@ export class Controller {
         lines.push({ who: SYS, text: '注意 nicht：「Ich greife jetzt nicht an.」说了动词，但它这回合不会动手。' });
         break;
       case 10:
-        lines.push({ who: SYS, text: '浓雾在退。面包集市和选职业在第 2 区，下一版开放。在那之前，把这片街区的名字都叫回来吧。' });
+        lines.push(
+          { who: HILDE, text: s.flags.bossKills ? '邻居家的门开了。门后是面包集市，那边的人比这里多，怪也多。' : '雾在退。等你打败门后的邻居，那扇门就会通向面包集市。' },
+          { who: HILDE, text: '到了集市，先去找导师 Greta 选个职业。' },
+        );
+        break;
+      case 11:
+        lines.push({ who: SYS, text: '集市里的怪会扎堆。离得近、冠词不一样的几只会一起扑上来：先点选一只（Tab 切换），再喊出它的冠词。' });
+        break;
+      case 12:
+        lines.push({ who: SYS, text: '动词怪开始要变位了：题目给出人称，比如「du ___（nehmen）」，写 nimmst。强变化动词（nehmen、essen、sehen……）经验 ×1.3。' });
+        if (s.cls) lines.push({ who: SYS, text: '你有了第一个天赋点：按 T 打开职业与天赋。' });
+        break;
+      case 13:
+        lines.push({ who: SYS, text: '听清 mich 和 dich：「Ich kratze dich!」是挠你，「Ich kratze mich.」是挠它自己，不会打你。' });
+        break;
+      case 18:
+        lines.push({ who: SYS, text: '粮仓尽头的秤房开门了。吞秤者只问价格和数量：价签上的数字，用德语单词说出来。' });
         break;
     }
     if (lines.length) say(lines);
@@ -456,7 +474,7 @@ export class Controller {
         for (const lv of res.levelUp.levels) this.onLevelUp(lv);
         if (res.levelUp.capped && !s.flags.taughtCapLevel) {
           s.flags.taughtCapLevel = true;
-          say([{ who: SYS, text: `你到了这一版的等级上限（${CONFIG.levelCap} 级）。经验会存着，第 2 区开放后接着升。继续打，归名和装备都还在涨。` }]);
+          say([{ who: SYS, text: `你到了这一版的等级上限（${CONFIG.levelCap} 级）。经验会存着，第 3 区开放后接着升。继续打，归名和装备都还在涨。` }]);
         }
       }
     }
@@ -914,7 +932,75 @@ export class Controller {
   }
 
   private knockRegion2() {
-    say([{ who: '秤房', text: '门后传来秤砣一下一下的撞击声。有什么东西在数……数你身上有多少钱。（第 2 区首领，18 级开放）' }]);
+    const s = this.state;
+    if (!has(s.level, 'boss2')) {
+      say([{ who: '秤房', text: '门后传来秤砣一下一下的撞击声。有什么东西在数……数你身上有多少钱。（第 2 区首领，18 级开放）' }]);
+      return;
+    }
+    const go = () =>
+      say(
+        BOSS2.intro.map((t) => ({ who: BOSS2.name, text: t })),
+        () => {
+          this.boss = startBoss(this.state, this.rng, 2);
+          setBattleMusic(true);
+          setPrompt(null);
+          this.bossUI.open(this.boss);
+        },
+      );
+    if (s.hp < maxHp(s) * 0.5) {
+      say([{ who: SYS, text: '你的生命不到一半。先回篝火休息？' }], undefined, [
+        { label: '直接推门', act: go },
+        { label: '先去休息', act: () => undefined },
+      ]);
+      return;
+    }
+    go();
+  }
+
+  /** 吞秤者 rewards: gold chest on the first kill each day (iron after), orange + title the first time. */
+  private finishBoss2(f: BossFight) {
+    const s = this.state;
+    const first = !s.flags.boss2Kills;
+    s.flags.boss2Kills = ((s.flags.boss2Kills as number) ?? 0) + 1;
+    const today = dayKey(now(s));
+    const dailyFirst = s.flags.boss2Day !== today;
+    s.flags.boss2Day = today;
+    const lv = addXp(s, CONFIG.boss2.xp);
+    s.gold += CONFIG.boss2.gold;
+    this.questFire('boss2');
+    this.chestQueue.push({ kind: dailyFirst ? 'gold' : 'iron', ilvl: s.level });
+    if (first) {
+      const o = makeItem(this.rng, s.level, 'orange');
+      if (s.bag.length < CONFIG.loot.bagSize) s.bag.push(o);
+      s.flags.title = 'Preisbrecher';
+    }
+    sfx.orange();
+    banner('吞秤者倒下了', first ? '首杀：传说装备 + 称号「Preisbrecher」' : dailyFirst ? '金箱' : '铁箱');
+    const lines: Line[] = BOSS2.outro.map((t) => ({ who: SYS, text: t }));
+    lines.push({ who: SYS, text: `获得 ${CONFIG.boss2.xp} 经验、${CONFIG.boss2.gold} 金币和一个${dailyFirst ? '金' : '铁'}箱。` });
+    const after = () => {
+      for (const l of lv.levels) this.onLevelUp(l);
+      this.refresh();
+      this.persist();
+      this.nextChest();
+    };
+    const learnable = Object.values(SKILLS).filter((k) => k.boss === 2 && !s.skills.includes(k.id));
+    if (dailyFirst && learnable.length) {
+      lines.push({ who: SYS, text: '它说过的话，你可以收一句作为句子技能（按 R 释放；最新学的那句排在第一位）。选一句：' });
+      say(
+        lines,
+        undefined,
+        learnable.map((k) => ({
+          label: `${k.de}（${k.zh}：${k.effect}）`,
+          act: () => {
+            s.skills = [k.id, ...s.skills].slice(0, 3);
+            toast(`学会句子技能：${k.de}`, 'gold');
+            after();
+          },
+        })),
+      );
+    } else say(lines, after);
+    void f;
   }
 
   regionWords(): Word[] {
@@ -983,7 +1069,9 @@ export class Controller {
     this.bossUI.close();
     setBattleMusic(false);
     this.boss = null;
-    if (f.outcome === 'win') {
+    if (f.outcome === 'win' && f.which === 2) {
+      this.finishBoss2(f);
+    } else if (f.outcome === 'win') {
       const first = !s.flags.bossKills;
       s.flags.bossKills = ((s.flags.bossKills as number) ?? 0) + 1;
       const today = String(now(s) - (now(s) % 86400000));
@@ -1001,7 +1089,7 @@ export class Controller {
       banner('首领被唤醒', first ? '首杀：传说装备 + 称号「被记住的人」' : dailyFirst ? '金箱' : '铁箱');
       const lines: Line[] = BOSS.outro.map((t) => ({ who: SYS, text: t }));
       lines.push({ who: SYS, text: `获得 ${CONFIG.xp.boss} 经验、120 金币和 ${drops.length} 件装备（按 C 查看）。` });
-      const learnable = Object.values(SKILLS).filter((k) => !s.skills.includes(k.id));
+      const learnable = Object.values(SKILLS).filter((k) => k.boss === 1 && !s.skills.includes(k.id));
       const after = () => {
         for (const l of lv.levels) this.onLevelUp(l);
         this.refresh();

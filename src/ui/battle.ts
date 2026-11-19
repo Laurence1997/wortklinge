@@ -234,6 +234,7 @@ export class BattleUI {
         h('div.kind', `${pack.length > 1 ? (b.named || b.stage > 0 ? fullForm(w) : w.de) + ' ' : '它'}说（${s.level <= 30 ? '图标 = ' + INTENT_ZH[it.shown] : ''}）`),
         h('div.line', it.line),
         h('div.zh', this.zhShown ? it.zh : ''),
+        b.queued ? h('div.zh', { style: 'color:var(--gold, #ffcf4a)' }, `看穿 · 下回合：${b.queued.line}${this.zhShown ? `（${b.queued.zh}）` : ''}`) : '',
         h(
           'div.ib',
           h('button.btn', { onclick: () => this.ctrl.speak(it.line), title: '再听一遍（V）' }, '🔊 再听'),
