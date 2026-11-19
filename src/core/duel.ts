@@ -63,7 +63,7 @@ export function answerDuel(s: GameState, d: Duel, input: string): { levelUp: Lev
       log.newWords += 1;
     }
     xp = Math.round(CONFIG.xp.newMonster * DUEL.xpMult * (overloaded(s) ? CONFIG.overload.newXp : 1));
-    s.words[w.id] = { stage: 3, due: t + CONFIG.srs.relapse[0], firstSeen: old?.firstSeen ?? t, lastSeen: t, relapse: old?.relapse ?? 0, correct: (old?.correct ?? 0) + 1, wrong: old?.wrong ?? 0 };
+    s.words[w.id] = { stage: 3, due: t + CONFIG.srs.relapse[0], firstSeen: old?.firstSeen ?? t, lastSeen: t, relapse: old?.relapse ?? 0, correct: (old?.correct ?? 0) + 1, wrong: old?.wrong ?? 0, read: old?.read ?? 0, write: (old?.write ?? 0) + 1 };
     log.guiming += 1;
     levelUp = addXp(s, xp);
   } else {

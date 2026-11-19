@@ -225,7 +225,7 @@ export class Panels {
     const input = h('input.quiz', { type: 'text', autocomplete: 'off', spellcheck: 'false', placeholder: hasArticleQuestion(w) ? 'der / die / das + 名词' : '' }) as HTMLInputElement;
     const go = () => {
       const v = gradeTyped(input.value, w, hasArticleQuestion(w));
-      recordAnswer(this.ctrl.state, w, v.ok);
+      recordAnswer(this.ctrl.state, w, v.ok, 'write');
       q.queue.shift();
       if (v.ok) q.done.push(w);
       else q.queue.push(w);
@@ -523,7 +523,9 @@ export class Panels {
     const wrap = h('div');
     type Row = { w: Word; p: (typeof s.words)[string] };
     const shaky: Row[] = [];
-    const learning: Row[] = [];
+    const wrote: Row[] = [];
+    const readOnly: Row[] = [];
+    const notYet: Row[] = [];
     const known: Row[] = [];
     for (const w of WORDS) {
       const p = s.words[w.id];
@@ -531,17 +533,20 @@ export class Panels {
       const tries = p.correct + p.wrong;
       const weak = p.wrong >= 2 && p.wrong / Math.max(1, tries) >= 0.34;
       if (weak || p.relapse > 0) shaky.push({ w, p });
-      else if (p.stage === 3) known.push({ w, p });
-      else learning.push({ w, p });
+      else if (p.stage === 3 && p.write) known.push({ w, p });
+      else if (p.write) wrote.push({ w, p });
+      else if (p.read) readOnly.push({ w, p });
+      else notYet.push({ w, p });
     }
     shaky.sort((a, b) => b.p.wrong - a.p.wrong);
-    learning.sort((a, b) => a.p.due - b.p.due);
+    for (const l of [wrote, readOnly, notYet]) l.sort((a, b) => a.p.due - b.p.due);
     known.sort((a, b) => a.w.de.localeCompare(b.w.de, 'de'));
-    wrap.append(h('p.small.muted', `见过 ${shaky.length + learning.length + known.length} 个词：熟练 ${known.length} · 学习中 ${learning.length} · 常错 ${shaky.length}。存档同步到云端，换电脑也在。`));
+    const learningN = wrote.length + readOnly.length + notYet.length;
+    wrap.append(h('p.small.muted', `见过 ${shaky.length + learningN + known.length} 个词：熟练 ${known.length} · 学习中 ${learningN} · 常错 ${shaky.length}。「认得」是选择题答对过，「会写」是默写、变位或句式写对过。存档同步到云端，换电脑也在。`));
     const table = (title: string, note: string, rows: Row[]) => {
       if (!rows.length) return;
       const tb = h('table.log');
-      tb.append(h('tr', h('th', '德语'), h('th', '中文'), h('th', '复数'), h('th', '对 / 错'), h('th', '状态')));
+      tb.append(h('tr', h('th', '德语'), h('th', '中文'), h('th', '复数'), h('th', '认得'), h('th', '会写'), h('th', '对 / 错'), h('th', '状态')));
       for (const { w, p } of rows) {
         const g = genderOf(w);
         const gk = g ? { m: 'der', f: 'die', n: 'das', pl: 'pl' }[g] : null;
@@ -552,6 +557,8 @@ export class Panels {
             h('td', h(`span${gk ? '.art-' + gk : ''}`, fullForm(w))),
             h('td', w.zh),
             h('td', w.pl && w.pl !== '-' ? `die ${w.pl}` : '—'),
+            h('td', p.read ? '✓' : '—'),
+            h('td', p.write ? '✓' : '—'),
             h('td', `${p.correct} / ${p.wrong}`),
             h('td', `${STAGE_ZH[p.stage as 0 | 1 | 2 | 3] ?? ''}${due ? ' · 该复习了' : ''}`),
           ),
@@ -560,8 +567,10 @@ export class Panels {
       wrap.append(h('h3', `${title}（${rows.length}）`), h('p.small.muted', note), tb);
     };
     table('常错', '错了两次以上、错的比例超过三分之一，或者归名后又忘过的词。多打几次这些怪。', shaky);
-    table('学习中', '还没归名的词，按复习时间排，最该复习的在前。', learning);
-    table('熟练', '已经归名的词。', known);
+    table('学习中 · 会写了', '写对过，还没归名。按复习时间排，最该复习的在前。', wrote);
+    table('学习中 · 认得，还不会写', '选择题答得出来，还没默写对过。归名的最后一击要默写。', readOnly);
+    table('学习中 · 还不认得', '见过，但还没答对过。', notYet);
+    table('熟练', '已经归名的词：认得，也会写。', known);
     if (s.level >= SAYING_CFG.fromLevel) {
       const got = SAYINGS.filter((x) => s.sayings?.[x.id]);
       const tb = h('table.log');

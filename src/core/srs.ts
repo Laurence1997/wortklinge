@@ -89,11 +89,22 @@ export function recordKill(s: GameState, w: Word, typedFinal: boolean, slipped: 
   return { kind, from, to: 3, guiming: true, needsTypedFinal: false };
 }
 
-export function recordAnswer(s: GameState, w: Word, ok: boolean): void {
+/** Moves the fight's 认得 / 会写 counts into the word's progress (once the word is in the wordbook). */
+export function flushSkill(s: GameState, w: Word, b: { readOk?: number; writeOk?: number }): void {
+  const p = s.words[w.id];
+  if (!p || (!b.readOk && !b.writeOk)) return;
+  p.read = (p.read ?? 0) + (b.readOk ?? 0);
+  p.write = (p.write ?? 0) + (b.writeOk ?? 0);
+  b.readOk = 0;
+  b.writeOk = 0;
+}
+
+export function recordAnswer(s: GameState, w: Word, ok: boolean, skill?: 'read' | 'write'): void {
   const p = s.words[w.id];
   if (!p) return;
   if (ok) p.correct += 1;
   else p.wrong += 1;
+  if (ok && skill) p[skill] = (p[skill] ?? 0) + 1;
 }
 
 /** Tutorial special: the very first bread is named on the spot (系统借给你的). */
@@ -106,6 +117,8 @@ export function instantGuiming(s: GameState, w: Word, t = now(s)): void {
     relapse: 0,
     correct: 1,
     wrong: 0,
+    read: 1,
+    write: 0, // lent by the system: the only 归名 without writing, until you write it yourself
   };
 }
 

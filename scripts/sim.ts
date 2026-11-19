@@ -1,13 +1,17 @@
 // Balance check: simulate fights at each level with a given accuracy.
 // Run: npx vite-node scripts/sim.ts
 import { makeRng } from '../src/core/rng';
+import { CONFIG } from '../src/core/config';
+// Tuning knobs for trying values without editing config: HPM (monster HP ×), DMGM (monster damage ×).
+if (process.env.HPM) (CONFIG.monster.hpBase *= +process.env.HPM, CONFIG.monster.hpPerLevel *= +process.env.HPM);
+if (process.env.DMGM) (CONFIG.monster.dmgBase *= +process.env.DMGM, CONFIG.monster.dmgPerLevel *= +process.env.DMGM);
 import { newGame, maxHp } from '../src/core/state';
 import { startBattle, makeQuestion, resolveTurn, availableMoves } from '../src/core/combat';
 import { COUNTER } from '../src/core/intents';
 import { WORDS } from '../src/data/words';
 
 const rng = makeRng(42);
-for (const acc of [0.95, 0.8, 0.65]) {
+for (const acc of (process.env.ACC ? [Number(process.env.ACC)] : [0.95, 0.8, 0.75, 0.65])) {
   console.log(`\naccuracy ${acc * 100}%`);
   for (const [lvl, zone] of [[1, 'echogasse'], [3, 'echogasse'], [4, 'schilderstrasse'], [6, 'schilderstrasse'], [7, 'aschehof'], [9, 'aschehof']] as const) {
     const pool = WORDS.filter((w) => w.zone === zone);

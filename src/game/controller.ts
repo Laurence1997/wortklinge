@@ -14,7 +14,7 @@ import { CLASSES, respec, respecCost, spent, TALENT_FROM_LEVEL, type ClassId } f
 import { makeItem } from '../core/loot';
 import { applyLoss, applyWin, postFightHeal } from '../core/outcomes';
 import { defaultRng, type Rng } from '../core/rng';
-import { atLeastHalfShare, instantGuiming, kindOf, recordAnswer, stageOf } from '../core/srs';
+import { atLeastHalfShare, flushSkill, instantGuiming, kindOf, recordAnswer, stageOf } from '../core/srs';
 import { pickSpawns, zoneWords } from '../core/spawn';
 import {
   addXp,
@@ -222,7 +222,7 @@ export class Controller {
         lines.push(
           { who: HILDE, text: '听好了，光叫名字不够。完整的一句话，力量大得多。' },
           { who: HILDE, text: '说「Ich möchte einen Tee.」——我想要一杯茶。der Tee 在这句里变成 einen，die Tasse 变成 eine，das Brot 变成 ein。' },
-          { who: SYS, text: '战斗里按 F 用句式攻击，句子里可以放任何你见过的名词。名词的性决定元素：der 冰（推迟蓄力）、die 火（灼烧）、das 毒（叠层）。' },
+          { who: SYS, text: '战斗里按 F 用句式攻击：用眼前这只怪的名字说一句，句式跟着怪换（吃的喝的用 Ich möchte，地方用 Wo ist，人用 Ich habe……）。只对单词本里有的词亮，每种句式一场只能用一次。它的性决定元素：der 冰（推迟蓄力）、die 火（灼烧）、das 毒（叠层）。' },
         );
         break;
       case 7:
@@ -393,6 +393,7 @@ export class Controller {
       if (!this.fightOver() && b.outcome) this.retarget();
     }
     recordAnswer(s, b.word, r.correct);
+    flushSkill(s, b.word, b);
     const log = todayLog(s);
     if (r.correct) log.correct += 1;
     else log.wrong += 1;
@@ -585,7 +586,7 @@ export class Controller {
   /** 言灵锁: right = every item's quality is rolled twice (keep the better). Wrong still opens. */
   openLockedChest(kind: ChestKind, ilvl: number, word: Word, input: string | null) {
     const ok = input !== null && gradeTyped(input, word, hasArticleQuestion(word)).ok;
-    if (input !== null) recordAnswer(this.state, word, ok);
+    if (input !== null) recordAnswer(this.state, word, ok, 'write');
     const r = openChest(this.state, kind, ilvl, this.rng, ok);
     for (const it of r.items) (it.quality === 'orange' ? sfx.orange : sfx.loot)();
     this.refresh();
@@ -928,7 +929,7 @@ export class Controller {
       const share = Math.round(atLeastHalfShare(s, this.regionWords()) * 100);
       tips.push([{ who: HILDE, text: `东边那扇门……你已经能叫出这片街区 ${share}% 的名字了。到 ${Math.round(CONFIG.boss.halfNameShare * 100)}%，它就会开门。` }]);
     }
-    if (s.level >= 6) tips.push([{ who: HILDE, text: '同一个名词在句子里用太多次就不灵了。换着用：einen Tee、eine Tasse、ein Glas。' }]);
+    if (s.level >= 6) tips.push([{ who: HILDE, text: 'Wo ist 后面是 der、die、das；Ich suche 后面阳性要变成 den。同一个词，换个句子冠词就变。' }]);
     const i = ((s.flags.hildeIdx as number) ?? 0) % tips.length;
     s.flags.hildeIdx = i + 1;
     say(tips[i]);

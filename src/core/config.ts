@@ -62,10 +62,10 @@ export const CONFIG = {
   },
 
   monster: {
-    hpBase: 8,
-    hpPerLevel: 2.2,
-    dmgBase: 1.5,
-    dmgPerLevel: 0.85,
+    hpBase: 6, // 题型决定伤害 (2026-11-19): HP and damage ×0.75 / ×0.8 so fights run ≤ 30% longer at 75% accuracy
+    hpPerLevel: 1.65,
+    dmgBase: 1.2,
+    dmgPerLevel: 0.68,
     chargeMult: 2.5,
     /** HP multiplier by stage: 新怪(无名) / 裂形 / 半名 / shadow. 牙越少，血越薄。 */
     stageHp: { new: 1.0, cracked: 0.85, half: 0.65, shadow: 0.7 },
@@ -76,14 +76,12 @@ export const CONFIG = {
 
   damage: {
     roll: [0.85, 1.15] as [number, number],
-    choice: 1.0,
-    typed: 1.4,
-    sentence: 1.6,
+    /** 题型决定伤害 (游戏设计 › 招式): choice ×0.5 (点名 too), listen-and-pick ×0.7, conjugation ×1.5,
+     *  full typing ×2, sentence ×2.5. 接句怪: pick ×0.5, typed ×2. */
+    q: { choice: 0.5, listen: 0.7, conj: 1.5, typed: 2, sentence: 2.5 },
     breakMult: 0.5,
     vsDefend: 0.3,
     vulnerable: 1.5,
-    /** Same noun reused in recent sentence attacks: 100% / 70% / 50% / 30%. */
-    freshness: [1, 0.7, 0.5, 0.3],
     maxMultiplierOfBase: 6,
   },
 
@@ -115,7 +113,7 @@ export const CONFIG = {
    * 群怪 (region 2): per-monster damage ×0.5 with 2, ×0.35 with 3 (doc said 0.6 / 0.45; sim 2026-11-19 at
    * 75% accuracy gave 13–23% deaths per pack fight). Packs of 3 only from Lv13. 点名 on the wrong one deals half.
    */
-  pack: { dmgMult: [0.25, 0.15] as [number, number], strayMult: 0.5, max: 3, max3From: 13, radiusTiles: 4, fromLevel: 11 },
+  pack: { dmgMult: [0.2, 0.12] as [number, number], strayMult: 0.5, max: 3, max3From: 13, radiusTiles: 4, fromLevel: 11 },
 
   boss: {
     /** Share of region words that must be at least 半名 before the boss appears. */

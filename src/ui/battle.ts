@@ -1,6 +1,7 @@
 import { SAYING_BY_ID } from '../data/sayings';
 import type { Battle, Question, TurnReport } from '../core/combat';
-import { availableMoves, comboTier, nehmeRegion } from '../core/combat';
+import { availableMoves, comboTier, sentencePattern } from '../core/combat';
+import { PATTERNS } from '../core/sentence';
 import { ELEMENT_ZH, INTENT_ZH } from '../core/intents';
 import { STAGE_ZH } from '../core/srs';
 import { maxHp } from '../core/state';
@@ -20,7 +21,7 @@ const MOVE_INFO: Record<Move, { key: string; zh: string; sub: string }> = {
   attack: { key: 'A', zh: '攻击', sub: '普通题 · 克蓄力' },
   block: { key: 'S', zh: '格挡', sub: '选择题 · 克攻击' },
   break: { key: 'D', zh: '破防', sub: '默写 · 克防御' },
-  sentence: { key: 'F', zh: '句式', sub: 'Ich möchte … · 带元素' },
+  sentence: { key: 'F', zh: '句式', sub: '用这只怪说一句 · 带元素' },
   skill: { key: 'R', zh: '技能', sub: '写对整句' },
   cls: { key: 'G', zh: '职业技能', sub: '' },
 };
@@ -80,6 +81,7 @@ export class BattleUI {
     if (!moves.includes(move)) return;
     if (move === 'skill' && this.b.skillCooldown > 0) return;
     if (move === 'cls' && !this.clsReady()) return;
+    if (move === 'sentence' && !sentencePattern(this.ctrl.state, this.b)) return;
     this.move = move;
     this.question = this.ctrl.askQuestion(move);
     // Listening step: the monster says its own name, the player picks the meaning.
@@ -269,14 +271,21 @@ export class BattleUI {
     if (moves.length > 1) {
       for (const mv of moves) {
         const info = MOVE_INFO[mv];
-        const disabled = this.phase === 'result' || (mv === 'skill' && b.skillCooldown > 0) || (mv === 'cls' && !this.clsReady());
+        const pat = mv === 'sentence' ? sentencePattern(s, b) : null;
+        const disabled = this.phase === 'result' || (mv === 'skill' && b.skillCooldown > 0) || (mv === 'cls' && !this.clsReady()) || (mv === 'sentence' && !pat);
         const sub =
           mv === 'skill' && s.skills[0]
             ? `${SKILLS[s.skills[0]].zh}${b.skillCooldown ? ` · 冷却 ${b.skillCooldown}` : ''}`
             : mv === 'cls' && s.cls
               ? `${CLASSES[s.cls].skillZh} · ${CLASSES[s.cls].res} ${b.cfx.res}/${CLASSES[s.cls].skillCost}`
-              : mv === 'sentence' && nehmeRegion(s)
-                ? 'Ich nehme zwei … · 带元素'
+              : mv === 'sentence'
+                ? pat
+                  ? `${PATTERNS[pat].lead} … · 带元素`
+                  : !s.words[b.word.id]
+                    ? '没见过的词不能用'
+                    : (b.sxUsed ?? 0) > 0
+                      ? '这只怪的句式用完了'
+                      : '这个词没有句式'
                 : info.sub;
         movesEl.append(
           h(
@@ -356,10 +365,10 @@ export class BattleUI {
         autocomplete: 'off',
         autocapitalize: 'off',
         spellcheck: 'false',
-        placeholder: qq.type === 'sentence' ? (qq.focus.startsWith('Ich nehme') ? 'Ich nehme zwei …' : 'Ich möchte einen …') : qq.withArticle ? 'der / die / das + 名词' : '',
+        placeholder: qq.type === 'sentence' ? qq.focus : qq.withArticle ? 'der / die / das + 名词' : '',
         disabled: this.phase !== 'answer',
       }) as HTMLInputElement;
-      if (qq.type === 'sentence') input.value = qq.focus.startsWith('Ich nehme') ? 'Ich nehme ' : 'Ich möchte ';
+      if (qq.type === 'sentence' && qq.pattern) input.value = PATTERNS[qq.pattern].lead + ' ';
       if (this.pending !== undefined) input.value = this.pending;
       if (this.phase === 'result') input.value = this.lastValue;
       input.addEventListener('keydown', (e) => {

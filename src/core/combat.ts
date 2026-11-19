@@ -2,7 +2,7 @@
 // you pick a counter, then answer a question. You act first.
 
 import { CONFIG } from './config';
-import { gradeMoechte, gradeNehme, gradeTyped, normalize, type Verdict } from './grading';
+import { gradeTyped, normalize, type Verdict } from './grading';
 import { ELEMENT_ZH, generateIntent, INTENT_ZH } from './intents';
 import { between, pick, shuffle, type Rng } from './rng';
 import { kindOf, stageOf, overdueSteps, type Kind, type Stage } from './srs';
@@ -12,6 +12,7 @@ import { has } from './unlocks';
 import { fullForm, genderOf, hasArticleQuestion, WORDS } from '../data/words';
 import { SKILLS } from '../data/skills';
 import { SAYING_BY_ID, SAYING_CFG, SAYINGS } from '../data/sayings';
+import { expectedSentence, gradeSentence, nextPattern, PATTERNS, type Pattern } from './sentence';
 import { CONJ, PERSON_LABEL, type Person } from '../data/verbs';
 import { CLASSES, critRunNeeded, rank, resMax, shieldReflect, wrongHitShare, type ClassId } from './classes';
 
@@ -38,6 +39,8 @@ export interface Question {
   person?: import('../data/verbs').Person;
   /** saying questions (接句怪): which saying. */
   sayingId?: string;
+  /** sentence questions: which pattern (Ich brauche …, Wo ist …). */
+  pattern?: Pattern;
 }
 
 export interface MonsterState {
@@ -119,6 +122,11 @@ export interface Battle {
   /** 接句怪: the saying it shouts; its first attack question asks for the second half. */
   saying?: string;
   sayingDone?: boolean;
+  /** Sentence attacks used on this monster this fight (each pattern once, in tag order). */
+  sxUsed?: number;
+  /** 认得 / 会写 earned on this word this fight, not yet written to the wordbook (new words join it on the kill). */
+  readOk?: number;
+  writeOk?: number;
   outcome: null | 'win' | 'lose' | 'fled';
   log: LogLine[];
   recap: string[];
@@ -261,12 +269,13 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
   const canType = has(s.level, 'typing');
   const promptZh = w.digit ? w.digit : w.zh;
 
-  if (move === 'sentence' && nehmeRegion(s)) {
-    return { type: 'sentence', prompt: '句式攻击：Ich nehme + 数字 + 复数（zwei Äpfel），或 einen / eine / ein + 名词。复数句不吃重复递减', focus: 'Ich nehme …' };
+  const pat = move === 'sentence' ? sentencePattern(s, b) : null;
+  if (pat) {
+    const P = PATTERNS[pat];
+    const extra = pat === 'nehme' ? '（也可以 zwei + 复数）' : '';
+    return { type: 'sentence', prompt: `句式：用眼前这只怪说一句 · ${P.zh}${extra}`, focus: `${P.lead} …`, pattern: pat, answer: expectedSentence(w, pat) };
   }
-  if (move === 'sentence') {
-    return { type: 'sentence', prompt: '句式攻击：Ich möchte + einen / eine / ein + 你见过的名词', focus: 'Ich möchte …' };
-  }
+  if (move === 'sentence') move = 'attack'; // no pattern left: an ordinary attack
   if (move === 'cls') {
     if (s.cls === 'guardian') return { type: 'steady', prompt: '稳住：花 3 沉着，挡下这回合的第一击', focus: '稳住', options: ['稳住！'], answer: '稳住！' };
     const lw = stormWord(s, rng, w);
@@ -377,6 +386,12 @@ export function rollSaying(s: GameState, rng: Rng): string | undefined {
 
 const sayKey = (v: string) => normalize(v).replace(/\s+/g, ' ').trim();
 
+/** The sentence pattern the next 句式 on this monster uses: only for words in your wordbook, each pattern once per fight. */
+export function sentencePattern(s: GameState, b: Battle): Pattern | null {
+  if (!has(s.level, 'sentence') || !s.words[b.word.id]) return null;
+  return nextPattern(b.word, b.sxUsed ?? 0);
+}
+
 /** A long word you have met (longest few of them), for 墨水风暴. Falls back to the target's word. */
 export function stormWord(s: GameState, rng: Rng, fallback: Word): Word {
   const known = WORDS.filter((x) => s.words[x.id] && x.pos !== 'phr' && x.pos !== 'num' && !x.digit);
@@ -408,7 +423,7 @@ export function knownMoechteNouns(s: GameState): Word[] {
   return WORDS.filter((w) => w.moechte && s.words[w.id]);
 }
 
-export function gradeQuestion(s: GameState, b: Battle, q: Question, input: string): Verdict & { word?: Word } {
+export function gradeQuestion(_s: GameState, b: Battle, q: Question, input: string): Verdict & { word?: Word } {
   switch (q.type) {
     case 'article':
     case 'callout':
@@ -429,7 +444,7 @@ export function gradeQuestion(s: GameState, b: Battle, q: Question, input: strin
       return { ok, notes: ok ? [`${x.a} ${x.b} —— ${x.zh}`] : [`正确答案：${x.a} ${x.b}（${x.zh}）`], correct: x.b };
     }
     case 'sentence':
-      return nehmeRegion(s) ? gradeNehme(input, knownMoechteNouns(s)) : gradeMoechte(input, knownMoechteNouns(s));
+      return gradeSentence(input, b.word, q.pattern!);
     case 'skill': {
       const sk = SKILLS[q.skillId!];
       const fake: Word = { id: sk.id, de: sk.de, zh: sk.zh, pos: 'phr', family: 'echo', lvl: 1, zone: 'camp' };
@@ -560,6 +575,11 @@ export function resolveTurn(
   let blocking = false;
   let interrupted = false;
   b.qIndex += 1;
+  if (q.type === 'sentence') b.sxUsed = (b.sxUsed ?? 0) + 1;
+  if (ok) {
+    if (q.type === 'typed' || q.type === 'conj' || q.type === 'plural' || q.type === 'sentence' || (q.type === 'callout' && q.withArticle)) b.writeOk = (b.writeOk ?? 0) + 1;
+    else if (q.type === 'article' || q.type === 'pickDe' || q.type === 'pickZh' || q.type === 'callout') b.readOk = (b.readOk ?? 0) + 1;
+  }
   if (q.type === 'saying') {
     b.sayingDone = true;
     if (ok) {
@@ -633,22 +653,20 @@ export function resolveTurn(
       const atk = attack(s);
       let mult = between(rng, CONFIG.damage.roll[0], CONFIG.damage.roll[1]);
       const pen = s.cls === 'writer' ? 0.05 * rank(s, 'bifeng') : 0;
-      if (q.type === 'typed' || q.type === 'conj' || q.type === 'plural') mult *= CONFIG.damage.typed * (1 + affixTotal(s, 'typedDmg') + pen);
+      // 题型决定伤害: the harder the question, the harder the hit.
+      const QM = CONFIG.damage.q;
+      if (q.type === 'typed' || q.type === 'plural' || (q.type === 'callout' && q.withArticle)) mult *= QM.typed * (1 + affixTotal(s, 'typedDmg') + pen);
+      else if (q.type === 'conj') mult *= QM.conj * (1 + affixTotal(s, 'typedDmg') + pen);
       else if (q.type === 'storm') {
         const n = letters(q.word!);
-        mult *= (1 + (0.15 + 0.03 * rank(s, 'changci')) * n) * (1 + pen);
+        mult *= (QM.typed / 1.4) * (1 + (0.15 + 0.03 * rank(s, 'changci')) * n) * (1 + pen); // same ratio to typing as before
         log.push({ text: `墨水风暴：${fullForm(q.word!)}，${n} 个字母。`, tone: 'good' });
-      }
-      else if (q.type === 'sentence') {
-        const noun = verdict.word!;
-        // A plural sentence (Ich nehme zwei Äpfel) is always fresh.
-        const recent = (verdict as { plural?: boolean }).plural ? 0 : s.recentNouns.slice(-5).filter((id) => id === noun.id).length;
-        mult *= CONFIG.damage.sentence * CONFIG.damage.freshness[Math.min(recent, 3)] * (1 + affixTotal(s, 'sentenceDmg'));
-        s.recentNouns.push(noun.id);
-        if (s.recentNouns.length > 10) s.recentNouns.shift();
-        if (has(s.level, 'layerElement')) element = ELEMENT_BY_GENDER[genderOf(noun) ?? 'n'];
-        if (recent > 0) log.push({ text: `${noun.de} 用得太勤，威力只剩 ${Math.round(CONFIG.damage.freshness[Math.min(recent, 3)] * 100)}%。换个名词试试。`, tone: 'info' });
-      } else mult *= CONFIG.damage.choice;
+      } else if (q.type === 'sentence') {
+        mult *= QM.sentence * (1 + affixTotal(s, 'sentenceDmg'));
+        if (has(s.level, 'layerElement')) element = ELEMENT_BY_GENDER[genderOf(b.word) ?? 'n'];
+      } else if (q.type === 'saying') mult *= q.options ? QM.choice : QM.typed;
+      else if (q.type === 'pickZh') mult *= QM.listen;
+      else mult *= QM.choice;
 
       const breaking = intent.kind === 'defend' && writtenQ;
       if (breaking) mult *= CONFIG.damage.breakMult;
@@ -702,7 +720,7 @@ export function resolveTurn(
       }
       if (cfx.yishou && move !== 'cls') {
         cfx.yishou = false;
-        const d = Math.max(1, Math.round(attack(s) * CONFIG.damage.choice * between(rng, CONFIG.damage.roll[0], CONFIG.damage.roll[1])));
+        const d = Math.max(1, Math.round(attack(s) * CONFIG.damage.q.choice * between(rng, CONFIG.damage.roll[0], CONFIG.damage.roll[1])));
         m.hp -= d;
         playerDamage += d;
         log.push({ text: `以守为攻：稳住之后顺势再打一下，${d} 点。`, tone: 'good' });
@@ -738,7 +756,7 @@ export function resolveTurn(
       log.push({ text: '答错了，它长回一颗牙（退回裂形）。', tone: 'bad' });
     }
     if (stray) {
-      const d = Math.max(1, Math.round(attack(s) * CONFIG.damage.choice * CONFIG.pack.strayMult * between(rng, CONFIG.damage.roll[0], CONFIG.damage.roll[1])));
+      const d = Math.max(1, Math.round(attack(s) * CONFIG.damage.q.choice * CONFIG.pack.strayMult * between(rng, CONFIG.damage.roll[0], CONFIG.damage.roll[1])));
       stray.monster.hp = Math.max(0, stray.monster.hp - d);
       log.push({ text: `你喊的是 ${input}，打中的却是 ${fullForm(stray.word)}：只有 ${d} 点伤害。`, tone: 'bad' });
       if (stray.monster.hp <= 0) {

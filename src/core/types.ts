@@ -62,6 +62,10 @@ export interface WordProgress {
   relapse: number;
   correct: number;
   wrong: number;
+  /** 认得: right answers on recognition questions (pick the article / meaning / German word). */
+  read?: number;
+  /** 会写: right answers that wrote it out (默写, 变位, 复数, 句式). 归名 always needs one. */
+  write?: number;
 }
 
 export type Quality = 'white' | 'green' | 'purple' | 'orange';

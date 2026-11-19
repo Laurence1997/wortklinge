@@ -2,7 +2,7 @@ import type { Battle } from './combat';
 import { CONFIG, levelGapMult } from './config';
 import { makeItem, rollQuality } from './loot';
 import type { Rng } from './rng';
-import { recordKill, type KillOutcome } from './srs';
+import { flushSkill, recordKill, type KillOutcome } from './srs';
 import { addXp, affixTotal, maxHp, now, overloaded, rollDay, todayLog, type GameState, type LevelUpResult } from './state';
 import type { Item } from './types';
 import { has } from './unlocks';
@@ -32,6 +32,7 @@ export function applyWin(s: GameState, b: Battle, rng: Rng, opts: { heal?: boole
   const overload: WinResult['overload'] = ov && wasNew ? 'new' : ov && b.kind === 'due' ? 'due' : null;
   const O = CONFIG.overload;
   const kill = recordKill(s, w, b.lastKillTyped, b.slipped, t);
+  flushSkill(s, w, b);
 
   let xp = b.kind === 'new' ? CONFIG.xp.newMonster : b.kind === 'due' ? CONFIG.xp.dueMonster : CONFIG.xp.shadowMonster;
   if (overload === 'new') xp *= O.newXp;

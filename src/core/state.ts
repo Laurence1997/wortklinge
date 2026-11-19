@@ -29,7 +29,7 @@ export interface Settings {
 }
 
 export interface GameState {
-  version: 1;
+  version: 2;
   createdAt: number;
   /** Real time of the last local save (ms); the newer of local and cloud wins. */
   savedAt?: number;
@@ -91,7 +91,7 @@ export function dayKey(t: number): string {
 
 export function newGame(name: string, origin: string, t = Date.now()): GameState {
   return {
-    version: 1,
+    version: 2,
     createdAt: t,
     name,
     origin,
@@ -239,7 +239,16 @@ export function migrate(raw: unknown): GameState | null {
   // Saves are never thrown away for a version mismatch: older versions are converted step by step here
   // (add `if (s.version === N) { ...convert...; s.version = N + 1 }` blocks when the format changes).
   if (typeof s.level !== 'number' || typeof s.words !== 'object') return null;
-  (s as { version: number }).version = 1;
+  const v = (s as { version?: number }).version ?? 1;
+  // v1 → v2: words get 认得 / 会写 counts. Old saves only knew right/wrong totals: right answers count
+  // as 认得, and a 归名 word must have been written once (the 归名 blow is typed).
+  if (v < 2) {
+    for (const p of Object.values(s.words)) {
+      p.read ??= p.correct > 0 ? p.correct : p.stage >= 2 ? 1 : 0;
+      p.write ??= p.stage === 3 ? 1 : 0;
+    }
+  }
+  (s as { version: number }).version = 2;
   // 提速 (curve 2): recompute the level from total XP; only ever up, never down.
   if ((s.xpCurve ?? 1) < XP_CURVE) {
     let total = s.xp;

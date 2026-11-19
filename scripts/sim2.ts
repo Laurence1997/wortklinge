@@ -2,6 +2,10 @@
 // Run: npx vite-node scripts/sim2.ts
 // Gear: a white pen and coat of the player's level (what a player who sells and buys at Mira has).
 import { makeRng } from '../src/core/rng';
+import { CONFIG } from '../src/core/config';
+// Tuning knobs for trying values without editing config: HPM (monster HP ×), DMGM (monster damage ×).
+if (process.env.HPM) (CONFIG.monster.hpBase *= +process.env.HPM, CONFIG.monster.hpPerLevel *= +process.env.HPM);
+if (process.env.DMGM) (CONFIG.monster.dmgBase *= +process.env.DMGM, CONFIG.monster.dmgPerLevel *= +process.env.DMGM);
 import { newGame, maxHp, type GameState } from '../src/core/state';
 import { startBattle, makeQuestion, resolveTurn, availableMoves, type Battle } from '../src/core/combat';
 import { COUNTER } from '../src/core/intents';

@@ -120,14 +120,14 @@ describe('levels', () => {
 });
 
 describe('combat', () => {
-  it('a level-1 player beats a new noun monster by answering articles', () => {
+  it('a level-1 player beats a new noun monster by answering right (article first)', () => {
     const rng = makeRng(1);
     const s = newGame('T', 'student', Date.now());
     const b = startBattle(s, WORD_BY_ID['tee'], rng);
     let guard = 0;
     while (!b.outcome && guard++ < 20) {
       const q = makeQuestion(s, b, 'attack', rng);
-      expect(q.type).toBe('article');
+      if (guard === 1) expect(q.type).toBe('article');
       resolveTurn(s, b, 'attack', q, q.answer!, rng);
     }
     expect(b.outcome).toBe('win');
@@ -671,5 +671,55 @@ describe('接句怪', () => {
     b.saying = 'glueck';
     const q = makeQuestion(s, b, 'attack', makeRng(4));
     expect(q.options).toBeUndefined();
+  });
+});
+
+describe('句式说的是眼前这只怪', () => {
+  it('uses the target noun with the case its pattern needs, each pattern once', async () => {
+    const { gradeSentence, sentenceTags } = await import('../src/core/sentence');
+    const { sentencePattern } = await import('../src/core/combat');
+    expect(gradeSentence('Ich möchte einen Tee.', WORD_BY_ID['tee'], 'moechte').ok).toBe(true);
+    expect(gradeSentence('Ich möchte ein Tee.', WORD_BY_ID['tee'], 'moechte').ok).toBe(false);
+    expect(gradeSentence('Ich möchte einen Kaffee.', WORD_BY_ID['tee'], 'moechte').ok).toBe(false);
+    expect(gradeSentence('Wo ist der Supermarkt?', WORD_BY_ID['supermarkt'], 'woist').ok).toBe(true);
+    expect(gradeSentence('Ich suche den Supermarkt', WORD_BY_ID['supermarkt'], 'suche').ok).toBe(true);
+    expect(gradeSentence('Ich suche der Supermarkt', WORD_BY_ID['supermarkt'], 'suche').ok).toBe(false);
+    expect(gradeSentence('Das ist meine Mutter.', WORD_BY_ID['mutter'], 'mein').ok).toBe(true);
+    expect(gradeSentence('Ich möchte Milch.', WORD_BY_ID['milch'], 'moechte0').ok).toBe(true);
+    expect(gradeSentence('Ich nehme zwei Äpfel.', WORD_BY_ID['apfel'], 'nehme').ok).toBe(true);
+    expect(sentenceTags(WORD_BY_ID['woche'])).toEqual([]);
+
+    const s = newGame('T', 'student', T0);
+    s.level = 9;
+    const b = startBattle(s, WORD_BY_ID['tee'], makeRng(1));
+    expect(sentencePattern(s, b)).toBe(null); // not in the wordbook yet
+    s.words['tee'] = { stage: 1, due: 9e15, firstSeen: 0, lastSeen: 0, relapse: 0, correct: 0, wrong: 0 };
+    const q1 = makeQuestion(s, b, 'sentence', makeRng(1));
+    expect(q1.pattern).toBe('moechte');
+    resolveTurn(s, b, 'sentence', q1, 'Ich möchte einen Tee.', makeRng(1));
+    if (!b.outcome) {
+      expect(makeQuestion(s, b, 'sentence', makeRng(1)).pattern).toBe('brauche');
+      b.sxUsed = 2;
+      expect(sentencePattern(s, b)).toBe(null);
+    }
+  });
+});
+
+describe('认得 / 会写', () => {
+  it('migrates old saves and records writing apart from recognition', () => {
+    const old = { ...newGame('T', 'student', T0), version: 1 } as unknown as Record<string, unknown>;
+    old.words = { tee: { stage: 3, due: 0, firstSeen: 0, lastSeen: 0, relapse: 0, correct: 4, wrong: 0 }, brot: { stage: 1, due: 0, firstSeen: 0, lastSeen: 0, relapse: 0, correct: 0, wrong: 1 } };
+    const m = migrate(old)!;
+    expect(m.version).toBe(2);
+    expect(m.words.tee).toMatchObject({ read: 4, write: 1 });
+    expect(m.words.brot).toMatchObject({ read: 0, write: 0 });
+
+    const s = newGame('T', 'student', T0);
+    s.level = 5;
+    s.words['tee'] = { stage: 1, due: 9e15, firstSeen: 0, lastSeen: 0, relapse: 0, correct: 0, wrong: 0, read: 0, write: 0 };
+    const b = startBattle(s, WORD_BY_ID['tee'], makeRng(2));
+    const q = { type: 'typed' as const, prompt: '', focus: '', withArticle: true, answer: 'der Tee' };
+    resolveTurn(s, b, 'attack', q, 'der Tee', makeRng(2));
+    expect(b.writeOk).toBe(1);
   });
 });
