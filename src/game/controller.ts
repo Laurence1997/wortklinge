@@ -72,6 +72,15 @@ export class Controller {
   constructor(state: GameState, dev: boolean) {
     this.state = state;
     this.dev = dev;
+    // Levels gained when an old save was re-levelled on the faster curve: play their lessons once.
+    const catchUp = String(state.flags.catchUpLevels ?? '');
+    if (catchUp) {
+      delete state.flags.catchUpLevels;
+      window.setTimeout(() => {
+        for (const l of catchUp.split(',').map(Number).filter(Boolean)) this.onLevelUp(l);
+        this.refresh();
+      }, 2500);
+    }
     // A class trial borrows the class for its fights; undo it if the page closed mid-trial.
     if ('trialPrev' in state.flags) {
       state.cls = (state.flags.trialPrev as ClassId) || null;

@@ -1,5 +1,5 @@
 import type { Look } from './look';
-import { CONFIG, xpToNext } from './config';
+import { CONFIG, XP_CURVE, xpToNext } from './config';
 import { hpBonus, type ClassId } from './classes';
 import type { Item, Slot, WordProgress } from './types';
 
@@ -35,6 +35,8 @@ export interface GameState {
   savedAt?: number;
   /** Account id this save belongs to (set when logged in). */
   owner?: string;
+  /** XP curve the level was computed with (2 = 0.3 提速). Older saves are re-levelled from total XP. */
+  xpCurve?: number;
   name: string;
   origin: string;
   /** Dev time skip, added to Date.now(). */
@@ -104,6 +106,7 @@ export function newGame(name: string, origin: string, t = Date.now()): GameState
     bag: [],
     echo: null,
     flags: {},
+    xpCurve: XP_CURVE,
     skills: [],
     skillUses: {},
     recentNouns: [],
@@ -235,6 +238,21 @@ export function migrate(raw: unknown): GameState | null {
   // (add `if (s.version === N) { ...convert...; s.version = N + 1 }` blocks when the format changes).
   if (typeof s.level !== 'number' || typeof s.words !== 'object') return null;
   (s as { version: number }).version = 1;
+  // 提速 (curve 2): recompute the level from total XP; only ever up, never down.
+  if ((s.xpCurve ?? 1) < XP_CURVE) {
+    let total = s.xp;
+    for (let l = 1; l < s.level; l++) total += xpToNext(l, s.xpCurve ?? 1);
+    let lvl = 1;
+    while (lvl < CONFIG.levelCap && total >= xpToNext(lvl)) total -= xpToNext(lvl++);
+    if (lvl > s.level) {
+      const gained: number[] = [];
+      for (let l = s.level + 1; l <= lvl; l++) gained.push(l);
+      s.flags = { ...(s.flags ?? {}), catchUpLevels: gained.join(',') };
+      s.level = lvl;
+      s.xp = Math.min(total, xpToNext(lvl) - 1);
+    }
+    s.xpCurve = XP_CURVE;
+  }
   const base = newGame(s.name ?? '旅人', s.origin ?? 'student', s.createdAt);
   return { ...base, ...s, settings: { ...base.settings, ...s.settings }, stats: { ...base.stats, ...s.stats } };
 }

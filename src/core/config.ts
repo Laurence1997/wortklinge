@@ -43,6 +43,8 @@ export const CONFIG = {
 
   /** Minutes for Lv1→2 … Lv5→6 (新手加速), then t(L) = 1.25 × L^0.3 hours. ~1000 XP per active hour. */
   levelMinutes: [10, 20, 30, 45, 60],
+  /** 0.3 提速 (curve 2): Lv1–5 need ×0.25, Lv6–10 ×0.4 of the base curve; Lv11+ unchanged. */
+  earlyXpMult: (level: number) => (level <= 5 ? 0.25 : level <= 10 ? 0.4 : 1),
   xpPerHour: 1000,
   /** 0.3 ships regions 1–2; the level cap keeps players inside released content. */
   levelCap: 20,
@@ -135,8 +137,9 @@ export function levelHours(level: number): number {
 }
 
 /** XP needed to go from `level` to `level + 1`. */
-export function xpToNext(level: number): number {
-  return Math.round(levelHours(level) * CONFIG.xpPerHour);
+export const XP_CURVE = 2;
+export function xpToNext(level: number, curve = XP_CURVE): number {
+  return Math.round(levelHours(level) * CONFIG.xpPerHour * (curve >= 2 ? CONFIG.earlyXpMult(level) : 1));
 }
 
 /** Level-gap decay: monsters far below you give almost nothing. */

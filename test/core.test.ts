@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { gradeMoechte, gradeTyped, normalize } from '../src/core/grading';
 import { WORD_BY_ID, WORDS } from '../src/data/words';
-import { newGame, addXp, overloaded } from '../src/core/state';
+import { newGame, addXp, overloaded, migrate } from '../src/core/state';
 import { applyWin } from '../src/core/outcomes';
 import { recordKill, kindOf, stageOf } from '../src/core/srs';
 import { CONFIG, xpToNext } from '../src/core/config';
@@ -98,12 +98,23 @@ describe('归名 (spaced repetition)', () => {
 
 describe('levels', () => {
   it('follows the design curve and stops at the version cap', () => {
-    expect(xpToNext(1)).toBe(167);
-    expect(xpToNext(5)).toBe(1000);
-    expect(xpToNext(10)).toBeGreaterThan(2400);
+    // 0.3 提速: Lv1–5 ×0.25, Lv6–10 ×0.4, Lv11+ unchanged.
+    expect(xpToNext(1)).toBe(42);
+    expect(xpToNext(5)).toBe(250);
+    expect(xpToNext(10)).toBeGreaterThan(950);
+    expect(xpToNext(11)).toBeGreaterThan(2400);
+    expect(xpToNext(1, 1)).toBe(167);
     const s = newGame('T', 'student', T0);
     addXp(s, 1_000_000);
     expect(s.level).toBe(CONFIG.levelCap);
+  });
+
+  it('re-levels an old save from its total XP, only upwards', () => {
+    const old = { ...newGame('T', 'student', T0), level: 5, xp: 500, xpCurve: 1 };
+    const m = migrate(JSON.parse(JSON.stringify(old)))!;
+    expect(m.level).toBeGreaterThan(5);
+    expect(m.xpCurve).toBe(2);
+    expect(String(m.flags.catchUpLevels)).toContain('6');
   });
 });
 
