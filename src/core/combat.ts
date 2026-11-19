@@ -64,6 +64,8 @@ export interface Battle {
   wrongStreak: number;
   slipped: boolean;
   qIndex: number;
+  /** Correct answers so far: the question ladder moves on only when you get one right. */
+  step: number;
   hintsLeft: number;
   firstCorrectDone: boolean;
   lastKillTyped: boolean;
@@ -125,6 +127,7 @@ export function startBattle(
     wrongStreak: 0,
     slipped: false,
     qIndex: 0,
+    step: 0,
     hintsLeft: hintsPerFight(s),
     firstCorrectDone: false,
     lastKillTyped: false,
@@ -237,13 +240,24 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
 
   // Normal attack.
   if (b.tutorial === 'loss') return isNoun ? article() : pickZh();
-  if (b.stage === 0) return isNoun ? article() : pickZh();
-  if (!canType) return isNoun ? article() : pickDe();
   // 半名 and due: the killing blow must be typed, so offer typing.
-  if (b.stage === 2 && b.kind === 'due') return typed();
-  const cycle: Array<() => Question> = isNoun ? [article, typed, pickDe] : [pickDe, typed];
-  const q = cycle[b.qIndex % cycle.length]();
-  return q;
+  if (b.stage === 2 && b.kind === 'due' && canType) return typed();
+  // Question ladder: each correct hit asks about another side of the word, never the same
+  // question twice in a row (Lucas, playtest 2026-11-19: three der clicks in a row is boring).
+  // New words: article → hear it and pick the meaning → type it (once typing is unlocked).
+  const ladder: Array<() => Question> =
+    b.stage === 0
+      ? isNoun
+        ? [article, pickZh, ...(canType ? [typed] : []), pickDe]
+        : [pickZh, pickDe, ...(canType ? [typed] : [])]
+      : isNoun
+        ? canType
+          ? [article, typed, pickDe]
+          : [article, pickDe, pickZh]
+        : canType
+          ? [pickDe, typed, pickZh]
+          : [pickDe, pickZh];
+  return ladder[b.step % ladder.length]();
 }
 
 export function knownMoechteNouns(s: GameState): Word[] {
@@ -324,6 +338,7 @@ export function resolveTurn(
   // --- 1. You act first.
   if (ok) {
     b.wrongStreak = 0;
+    b.step += 1;
     s.combo += 1;
     if (readRight && move !== 'skill') s.combo += 1; // 读对意图并出对克制招式，连击额外 +1
     s.bestCombo = Math.max(s.bestCombo, s.combo);

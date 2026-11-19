@@ -244,3 +244,22 @@ describe('review backlog', () => {
     expect(late).toBeGreaterThan(applyWin(s2, b2, () => 0.99).xp);
   });
 });
+
+describe('question ladder', () => {
+  it('never asks the same question twice in a row on a new word', () => {
+    const rng = makeRng(5);
+    for (const level of [1, 3]) {
+      const s = newGame('T', 'student');
+      s.level = level;
+      const b = startBattle(s, WORD_BY_ID['tee'], rng);
+      const types: string[] = [];
+      for (let i = 0; i < 3; i++) {
+        types.push(makeQuestion(s, b, 'attack', rng).type);
+        b.step += 1;
+      }
+      expect(types[0]).toBe('article');
+      expect(types[1]).toBe('pickZh');
+      expect(types[2]).toBe(level >= 3 ? 'typed' : 'pickDe');
+    }
+  });
+});

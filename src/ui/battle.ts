@@ -78,6 +78,8 @@ export class BattleUI {
     if (move === 'skill' && this.b.skillCooldown > 0) return;
     this.move = move;
     this.question = this.ctrl.askQuestion(move);
+    // Listening step: the monster says its own name, the player picks the meaning.
+    if (this.question.type === 'pickZh' && this.question.focus) this.ctrl.speak(this.question.focus);
     this.phase = 'answer';
     this.render();
   }
