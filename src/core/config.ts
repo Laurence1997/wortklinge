@@ -43,8 +43,8 @@ export const CONFIG = {
 
   /** Minutes for Lv1→2 … Lv5→6 (新手加速), then t(L) = 1.25 × L^0.3 hours. ~1000 XP per active hour. */
   levelMinutes: [10, 20, 30, 45, 60],
-  /** 0.3 提速 (curve 2): Lv1–5 need ×0.25, Lv6–10 ×0.4 of the base curve; Lv11+ unchanged. */
-  earlyXpMult: (level: number) => (level <= 5 ? 0.25 : level <= 10 ? 0.4 : 1),
+  /** 0.3 提速 (curve 2): Lv1–5 need ×0.7 (was 0.25: sim put Lv5 at ~5 min), Lv6–10 ×0.4 of the base curve; Lv11+ unchanged. */
+  earlyXpMult: (level: number) => (level <= 5 ? 0.7 : level <= 10 ? 0.4 : 1),
   xpPerHour: 1000,
   /** 0.3 ships regions 1–2; the level cap keeps players inside released content. */
   levelCap: 20,

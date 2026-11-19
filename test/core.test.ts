@@ -99,9 +99,9 @@ describe('归名 (spaced repetition)', () => {
 
 describe('levels', () => {
   it('follows the design curve and stops at the version cap', () => {
-    // 0.3 提速: Lv1–5 ×0.25, Lv6–10 ×0.4, Lv11+ unchanged.
-    expect(xpToNext(1)).toBe(42);
-    expect(xpToNext(5)).toBe(250);
+    // 0.3 提速: Lv1–5 ×0.7, Lv6–10 ×0.4, Lv11+ unchanged.
+    expect(xpToNext(1)).toBe(117);
+    expect(xpToNext(5)).toBe(700);
     expect(xpToNext(10)).toBeGreaterThan(950);
     expect(xpToNext(11)).toBeGreaterThan(2400);
     expect(xpToNext(1, 1)).toBe(167);
