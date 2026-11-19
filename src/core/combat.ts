@@ -101,6 +101,8 @@ export interface Battle {
   step: number;
   /** Pack fights: its article was called right (点名), so its card shows the article colour. */
   named: boolean;
+  /** EXPERIMENT: skips its next action (ink spill). */
+  stunned?: boolean;
   /** Lv11+: about 1 in 3 due nouns ask for the plural. */
   pluralDue: boolean;
   /** Rewards already paid (packs settle each kill at once). */
@@ -295,7 +297,13 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
   });
 
   // 点名 (packs): an attack on a monster whose article you haven't called yet = shout its article.
-  const callout = (): Question => ({
+  const callout = (): Question => EXP.typedCallout && s.cls === 'writer' ? ({
+    type: 'callout',
+    prompt: '点名：默写你盯住的那只怪的全名（带冠词）',
+    focus: w.zh,
+    withArticle: true,
+    answer: fullForm(w),
+  }) : ({
     type: 'callout',
     prompt: '点名：喊出你盯住的那只怪的冠词',
     focus: w.de,
@@ -381,8 +389,10 @@ export function knownMoechteNouns(s: GameState): Word[] {
 
 export function gradeQuestion(s: GameState, b: Battle, q: Question, input: string): Verdict & { word?: Word } {
   switch (q.type) {
-    case 'article':
     case 'callout':
+      if (q.withArticle) return gradeTyped(input, b.word, true);
+      return { ok: input === q.answer, notes: input === q.answer ? [] : [`正确答案：${q.answer}`], correct: q.answer! };
+    case 'article':
     case 'pickDe':
     case 'pickZh': {
       const ok = input === q.answer;
@@ -458,19 +468,31 @@ const ELEMENT_BY_GENDER: Record<'m' | 'f' | 'n' | 'pl', Element> = { m: 'ice', f
  * under that monster's own intent (defend still cuts it, 誊写 still ignores it). It never kills:
  * the monster stays at 1 HP at least, so the last hit is still its own word (归名, review, kill count).
  */
-export function spillStorm(s: GameState, pack: Battle[], from: Battle, overkill: number, typedLike: boolean, log: LogLine[]): number {
-  const rest = pack.filter((x) => x !== from && !x.outcome && x.monster.hp > 1);
+export function spillStorm(s: GameState, pack: Battle[], from: Battle, overkill: number, typedLike: boolean, log: LogLine[], kills: Battle[] = []): number {
+  const floorOf = (x: Battle) => (EXP.noFloorNew && x.kind === 'new' ? 0 : 1);
+  const rest = pack.filter((x) => x !== from && !x.outcome && x.monster.hp > floorOf(x));
+  if (EXP.stunAll) for (const x of pack) if (x !== from && !x.outcome) x.stunned = true;
   if (!rest.length) return 0;
   const next = rest.find((x) => x.intent.kind === 'charge') ?? rest.reduce((a, x) => (x.monster.hp < a.monster.hp ? x : a));
   const ignoreDefend = s.cls === 'writer' && typedLike && rank(s, 'tengxie') > 0;
   let d = overkill;
   if (next.intent.kind === 'defend' && !ignoreDefend) d *= CONFIG.damage.vsDefend;
-  d = Math.min(Math.round(d), next.monster.hp - 1);
+  d = Math.min(Math.round(d), next.monster.hp - floorOf(next));
   if (d <= 0) return 0;
   next.monster.hp -= d;
+  if (EXP.spillSkip) next.stunned = true;
+  else if (EXP.spillInterrupt && next.intent.kind === 'charge') next.stunned = true;
+  if (next.monster.hp <= 0) {
+    next.outcome = 'win';
+    next.lastKillTyped = false;
+    kills.push(next);
+  }
   log.push({ text: `墨水溅到${fullForm(next.word)}身上：${d} 点伤害。最后一下还得写它自己的词。`, tone: 'good' });
   return d;
 }
+
+/** EXPERIMENT (writer-exp branch only): toggles for sim2 variants. */
+export const EXP = { veil: false, stunAll: false, spillSkip: false, spillInterrupt: false, noFloorNew: false, typedCallout: false };
 
 /** Per-monster damage multiplier in a pack, so 2–3 monsters together hit about 1.2–1.35× one monster. */
 export function packDamageMult(alive: number): number {
@@ -528,7 +550,7 @@ export function resolveTurn(
   // Class resources: 书写者 earns 墨水 for typed answers, 守护者 earns 沉着 for every answer.
   const cfx = b.cfx;
   const critWasReady = cfx.critReady; // earned this turn = the *next* hit crits
-  const typedLike = q.type === 'typed' || q.type === 'conj' || q.type === 'plural' || q.type === 'storm';
+  const typedLike = q.type === 'typed' || q.type === 'conj' || q.type === 'plural' || q.type === 'storm' || (q.type === 'callout' && !!q.withArticle);
   if (move === 'cls' && s.cls) cfx.res = Math.max(0, cfx.res - CLASSES[s.cls].skillCost);
   if (s.cls === 'writer' && typedLike && q.type !== 'storm') {
     if (ok) {
@@ -541,6 +563,7 @@ export function resolveTurn(
       }
     }
   }
+  const veil = EXP.veil && s.cls === 'writer' && typedLike && q.type !== 'storm' && ok;
   // Any wrong answer breaks the writer's streak (it carries across fights otherwise).
   if (s.cls === 'writer' && !ok) cfx.run = 0;
   if (s.cls === 'guardian' && move !== 'cls') cfx.res += 1 + (!ok && rank(s, 'chenzhuo') ? 1 : 0);
@@ -674,7 +697,7 @@ export function resolveTurn(
       const overkill = -m.hp;
       m.hp = 0;
       b.outcome = 'win';
-      if (q.type === 'storm' && multi && overkill > 0) spillStorm(s, pack, b, overkill, typedLike, log);
+      if (q.type === 'storm' && multi && overkill > 0) spillStorm(s, pack, b, overkill, typedLike, log, kills);
       b.lastKillTyped = typedQ && (q.type === 'sentence' ? verdict.word?.id === b.word.id : true);
       if (q.type === 'typed' && !q.withArticle && hasArticleQuestion(b.word)) b.lastKillTyped = false;
       log.push({ text: `${tagOf(b)}被打散了——你先出手，它的打算作废。`, tone: 'sys' });
@@ -727,7 +750,7 @@ export function resolveTurn(
   const chillMult = m.chilled ? CONFIG.status.iceDamageMult : 1;
 
   const hitPlayer = (raw: number) => {
-    let d = Math.max(1, Math.round(raw * (1 - wrongReduce) * (ok ? 1 : wrongHitShare(s)) * (b.fx.cheap ? 0.5 : 1)));
+    let d = Math.max(1, Math.round(raw * (1 - wrongReduce) * (ok ? 1 : wrongHitShare(s)) * (b.fx.cheap ? 0.5 : 1) * (veil ? 0.7 : 1)));
     if (b.fx.shield) {
       b.fx.shield = false;
       const back = Math.max(1, Math.round(d * shieldReflect(s)));
@@ -740,7 +763,10 @@ export function resolveTurn(
     if (d > 0) lastHitter = b;
   };
 
-  if (interrupted && intent.kind === 'charge' && b === target) {
+  if (b.stunned) {
+    b.stunned = false;
+    say({ text: '墨水糊住了它，这回合没能出手。', tone: 'good' });
+  } else if (interrupted && intent.kind === 'charge' && b === target) {
     say({ text: '你打断了它的蓄力！', tone: 'good' });
   } else if (interrupted && b === target) {
     /* 「Wie bitte?」cancelled the intent */
