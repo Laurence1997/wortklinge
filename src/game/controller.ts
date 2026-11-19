@@ -1207,6 +1207,7 @@ export class Controller {
     if (this.state.quests) btn('任务', 'J', () => this.panels.toggle('quests'));
     btn('图鉴', 'B', () => this.panels.toggle('codex'));
     btn('数据', '', () => this.panels.toggle('data'));
+    btn('账号', '', () => this.panels.toggle('account'));
     btn('设置', '', () => this.panels.toggle('settings'));
     btn('帮助', 'H', () => this.panels.toggle('help'));
     if (this.dev) {

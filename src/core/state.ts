@@ -30,6 +30,8 @@ export interface Settings {
 export interface GameState {
   version: 1;
   createdAt: number;
+  /** Real time of the last local save (ms); the newer of local and cloud wins. */
+  savedAt?: number;
   name: string;
   origin: string;
   /** Dev time skip, added to Date.now(). */
@@ -178,12 +180,29 @@ export function addXp(s: GameState, amount: number): LevelUpResult {
 
 const KEY = 'wortklinge.save.v1';
 
+/** Stores a save without restamping savedAt (used when adopting the cloud copy). */
+export function saveRaw(s: GameState): void {
+  try {
+    localStorage.setItem(KEY, JSON.stringify(s));
+  } catch {
+    /* ignore */
+  }
+}
+
+let afterSave: ((s: GameState) => void) | null = null;
+/** Lets the cloud layer hear about saves without core depending on it. */
+export function setSaveHook(fn: (s: GameState) => void): void {
+  afterSave = fn;
+}
+
 export function save(s: GameState): void {
+  s.savedAt = Date.now();
   try {
     localStorage.setItem(KEY, JSON.stringify(s));
   } catch {
     /* private mode or full storage: the game still runs, export still works */
   }
+  afterSave?.(s);
 }
 
 export function load(): GameState | null {

@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import './ui/style.css';
-import { load, newGame, save } from './core/state';
+import { load, newGame, save, saveRaw, setSaveHook } from './core/state';
+import { initCloud, push, schedulePush, syncOnBoot } from './net/cloud';
 import { Controller } from './game/controller';
 import { WorldScene } from './game/WorldScene';
 import { showTitle } from './ui/title';
@@ -28,7 +29,20 @@ function boot(state: ReturnType<typeof newGame>) {
   });
 }
 
-const existing = load();
+async function start() {
+  await initCloud();
+  const local = load();
+  const existing = await syncOnBoot(local);
+  if (existing && existing !== local) saveRaw(existing); // adopt the newer cloud save as-is
+  setSaveHook(schedulePush);
+  document.addEventListener('visibilitychange', () => {
+    const wk = (window as unknown as { wk?: Controller }).wk;
+    if (document.visibilityState === 'hidden' && wk) void push(wk.state);
+  });
+  title(existing);
+}
+
+function title(existing: ReturnType<typeof load>) {
 showTitle({
   existing,
   version: VERSION,
@@ -45,3 +59,6 @@ showTitle({
     location.reload();
   },
 });
+}
+
+void start();

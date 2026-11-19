@@ -14,15 +14,20 @@ import { CHEST_ZH, type ChestKind } from '../core/chest';
 import { favour, FAVOUR, QUESTS, type QuestId } from '../core/quests';
 import { gradeTyped } from '../core/grading';
 import { recordAnswer } from '../core/srs';
+import { cloud, leaderboard, push, sendLoginLink, setNickname, signOut } from '../net/cloud';
 import { BARGAIN_LINES, ensureShop, price, refreshCost, sellPrice, SLOT_NOUN } from '../core/shop';
 
-export type PanelName = 'hero' | 'talents' | 'quests' | 'codex' | 'data' | 'settings' | 'help' | 'shop' | 'chest' | 'quiz';
+export type PanelName = 'hero' | 'talents' | 'quests' | 'codex' | 'data' | 'account' | 'settings' | 'help' | 'shop' | 'chest' | 'quiz';
 
 export class Panels {
   open: PanelName | null = null;
   private codexFilter: string = 'all';
 
-  constructor(private ctrl: Controller) {}
+  constructor(private ctrl: Controller) {
+    cloud.onChange = () => {
+      if (this.open === 'account') this.render();
+    };
+  }
 
   show(name: PanelName): void {
     this.open = name;
@@ -80,13 +85,13 @@ export class Panels {
       if (this.buying !== null) window.setTimeout(() => (el.querySelector('input.buy-line') as HTMLInputElement | null)?.focus(), 0);
       return;
     }
-    const titles: Record<Exclude<PanelName, 'shop' | 'chest' | 'quiz'>, string> = { hero: '角色与装备', talents: '职业与天赋', quests: '任务', codex: '图鉴', data: '数据与存档', settings: '设置', help: '怎么玩' };
+    const titles: Record<Exclude<PanelName, 'shop' | 'chest' | 'quiz'>, string> = { hero: '角色与装备', talents: '职业与天赋', quests: '任务', codex: '图鉴', data: '数据与存档', account: '账号与排行', settings: '设置', help: '怎么玩' };
     const tabs = h('div.tabs');
     (Object.keys(titles) as Array<Exclude<PanelName, 'shop' | 'chest' | 'quiz'>>).forEach((k) =>
       tabs.append(h(`button.btn${this.open === k ? '.on' : ''}`, { onclick: () => this.show(k) }, titles[k])),
     );
     panel.append(h('h2', h('span', titles[this.open as Exclude<PanelName, 'shop' | 'chest' | 'quiz'>]), h('button.btn.ghost', { onclick: () => this.close() }, '关闭 Esc')), tabs);
-    const body = { shop: () => h('div'), chest: () => h('div'), quiz: () => h('div'), hero: () => this.hero(), talents: () => this.talents(), quests: () => this.questsBody(), codex: () => this.codex(), data: () => this.data(), settings: () => this.settings(), help: () => this.help() }[this.open]();
+    const body = { shop: () => h('div'), chest: () => h('div'), quiz: () => h('div'), hero: () => this.hero(), talents: () => this.talents(), quests: () => this.questsBody(), codex: () => this.codex(), data: () => this.data(), account: () => this.account(), settings: () => this.settings(), help: () => this.help() }[this.open]();
     panel.append(body);
     clear(el).append(panel);
     el.onclick = (e) => {
@@ -447,10 +452,58 @@ export class Panels {
 
   // ---- Data & saves --------------------------------------------------------------
 
+  private account(): HTMLElement {
+    const s = this.ctrl.state;
+    const wrap = h('div');
+    if (!cloud.session) {
+      wrap.append(h('p.small.muted', '不登录也能玩，存档只在这个浏览器里。登录后存档会同步到云端，换电脑接着玩，还能上排行榜。只用邮箱，不用密码：我们给你发一封登录邮件，点里面的链接就登录了。'));
+      const email = h('input', { type: 'email', placeholder: '你的邮箱', autocomplete: 'email' }) as HTMLInputElement;
+      const msg = h('p.small');
+      const send = async () => {
+        if (!/^\S+@\S+\.\S+$/.test(email.value.trim())) return void (msg.textContent = '邮箱格式不对');
+        msg.textContent = '发送中…';
+        const err = await sendLoginLink(email.value.trim());
+        msg.textContent = err ? `没发出去：${err}` : '邮件已发出。去邮箱点链接，会在新标签页打开并登录（这一页可以关掉）。';
+      };
+      email.addEventListener('keydown', (e) => (e as KeyboardEvent).key === 'Enter' && void send());
+      wrap.append(h('div.row', email, h('button.btn.primary', { onclick: () => void send() }, '发送登录邮件')), msg);
+      return wrap;
+    }
+    const st = { off: '未同步', syncing: '同步中…', ok: `已同步${cloud.lastSync ? `（${new Date(cloud.lastSync).toLocaleTimeString().slice(0, 5)}）` : ''}`, offline: '连不上服务器，先存在本地，联网后自动同步' }[cloud.status];
+    wrap.append(
+      h('p.small', `已登录：${cloud.session.user.email ?? ''} · 云存档：${st}`),
+      h('div.row', h('button.btn', { onclick: async () => { this.ctrl.persist(); await push(s); } }, '立即同步'), h('button.btn.ghost', { onclick: () => void signOut() }, '退出登录')),
+    );
+    if (!cloud.profile) {
+      const nick = h('input', { placeholder: '昵称（1–16 个字）', maxlength: 16, value: s.name }) as HTMLInputElement;
+      const msg = h('p.small');
+      const saveNick = async () => {
+        const err = await setNickname(s, nick.value);
+        msg.textContent = err ?? '';
+      };
+      wrap.append(h('h3', '起个昵称'), h('p.small.muted', '排行榜只显示昵称、等级和职业，不显示邮箱。'), h('div.row', nick, h('button.btn.primary', { onclick: () => void saveNick() }, '保存')), msg);
+      return wrap;
+    }
+    wrap.append(h('h3', `排行榜 · 你是 ${cloud.profile.nickname}`));
+    const table = h('table.log');
+    table.append(h('tr', h('td', { colspan: 5 }, '加载中…')));
+    wrap.append(table, h('p.small.muted', '按等级排，同级比已归名的词数。数据在你同步存档时更新。'));
+    leaderboard()
+      .then((rows) => {
+        clear(table).append(h('tr', h('th', '#'), h('th', '昵称'), h('th', '等级'), h('th', '职业'), h('th', '已归名')));
+        rows.forEach((r, i) => {
+          const me = r.nickname === cloud.profile?.nickname;
+          table.append(h(`tr${me ? '.me' : ''}`, h('td', i + 1), h('td', me ? `${r.nickname}（你）` : r.nickname), h('td', r.level), h('td', r.cls ? CLASSES[r.cls as keyof typeof CLASSES]?.zh ?? '—' : '—'), h('td', r.named)));
+        });
+      })
+      .catch(() => clear(table).append(h('tr', h('td', { colspan: 5 }, '排行榜加载失败，可能是断网了。'))));
+    return wrap;
+  }
+
   private data(): HTMLElement {
     const s = this.ctrl.state;
     const wrap = h('div');
-    wrap.append(h('p.small.muted', '0.3 没有服务器：存档只在这个浏览器里。换电脑或清理浏览器前请先导出。试玩时请每周把导出的文件发给开发者：里面只有游戏记录（每天玩了多久、学了几个词）和你起的角色名。'));
+    wrap.append(h('p.small.muted', '存档在这个浏览器里；在「账号与排行」登录后会同步到云端，换电脑也能接着玩。没登录的话，换电脑或清理浏览器前请先导出。试玩时请每周把导出的文件发给开发者：里面只有游戏记录（每天玩了多久、学了几个词）和你起的角色名。'));
     const table = h('table.log');
     table.append(h('tr', h('th', '日期'), h('th', '分钟'), h('th', '击杀'), h('th', '答对'), h('th', '答错'), h('th', '新词'), h('th', '归名')));
     const days = Object.keys(s.log).sort().reverse();
