@@ -98,9 +98,11 @@ export class BattleUI {
     this.report = this.ctrl.answer(this.move, this.question, value);
     this.phase = 'result';
     this.render();
-    const quick = this.report.correct && !this.report.verdict.notes.length && !this.ctrl.fightOver() && !this.report.kills.length;
+    // Auto-advance: about a second for a clean hit, longer when there is a correction to read.
+    const clean = this.report.correct && !this.report.verdict.notes.length;
+    const delay = this.ctrl.fightOver() ? 1600 : clean ? 1000 : 2600;
     window.clearTimeout(this.autoTimer);
-    if (quick) this.autoTimer = window.setTimeout(() => this.continue(), 900);
+    this.autoTimer = window.setTimeout(() => this.continue(), delay);
   }
 
   continue(): void {
@@ -377,7 +379,7 @@ export class BattleUI {
       if (r.element) fb.append(h('span', `  元素：${ELEMENT_ZH[r.element]}`));
       for (const n of r.verdict.notes) fb.append(h('span.note', n));
       if (r.readRight) fb.append(h('span.note', '读对了意图：连击额外 +1'));
-      fb.append(h('span.note.muted', this.ctrl.fightOver() ? '按 Enter 结束战斗' : '按 Enter 继续'));
+      fb.append(h('span.note.muted', this.ctrl.fightOver() ? '马上结算（Enter 跳过等待）' : '马上进入下一题（Enter 跳过等待）'));
       wrap.append(fb);
     }
     return wrap;
