@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import './ui/style.css';
 import { load, newGame, save, saveRaw, setSaveHook } from './core/state';
-import { cloud, initCloud, mustChangePassword, push, schedulePush, syncOnBoot } from './net/cloud';
+import { cloud, initCloud, mustChangePassword, needsNickname, push, schedulePush, syncOnBoot } from './net/cloud';
 import { loginView } from './ui/account';
 import { mountChat } from './ui/chat';
 import { $ } from './ui/dom';
@@ -50,7 +50,7 @@ function boot(state: ReturnType<typeof newGame>) {
 async function start() {
   await initCloud();
   // Login required: without a (cached) session the title screen only offers the login box.
-  if (!cloud.session || mustChangePassword()) return loginOnly();
+  if (!cloud.session || mustChangePassword() || needsNickname()) return loginOnly();
   const local = load();
   const existing = await syncOnBoot(local);
   if (existing && existing !== local) saveRaw(existing); // adopt the newer cloud save as-is

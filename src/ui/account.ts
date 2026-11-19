@@ -1,7 +1,7 @@
 // Login box (invite only): email + password. First login forces a new password;
 // "forgot password" mails a 6-digit code (no one-time links that mail scanners burn).
 
-import { changePassword, cloud, mustChangePassword, resetWithCode, sendResetCode, signIn } from '../net/cloud';
+import { changePassword, cloud, mustChangePassword, needsNickname, setNickname, resetWithCode, sendResetCode, signIn } from '../net/cloud';
 import { h } from './dom';
 
 type Mode = 'login' | 'forgot' | 'code';
@@ -22,10 +22,25 @@ export function loginView(box: HTMLElement, onDone: () => void, mode: Mode = 'lo
       msg.textContent = '保存中…';
       const err = await changePassword(p1.value);
       if (err) msg.textContent = err;
+      else if (needsNickname()) loginView(box, onDone);
       else onDone();
     };
     enter([p1, p2], go);
     box.append(h('p.small', '第一次登录：请把初始密码改成你自己的。'), h('div.row', p1, p2, h('button.btn.primary', { onclick: go }, '保存新密码')), msg);
+    return;
+  }
+
+  if (cloud.session && needsNickname()) {
+    const nick = field('text', '昵称（1–16 个字）');
+    nick.maxLength = 16;
+    const go = async () => {
+      msg.textContent = '保存中…';
+      const err = await setNickname(null, nick.value);
+      if (err) msg.textContent = err;
+      else onDone();
+    };
+    enter([nick], go);
+    box.append(h('p.small', '最后一步：起个昵称。别的玩家和排行榜上看到的都是它，不显示邮箱。'), h('div.row', nick, h('button.btn.primary', { onclick: go }, '进入游戏')), msg);
     return;
   }
 
@@ -36,7 +51,7 @@ export function loginView(box: HTMLElement, onDone: () => void, mode: Mode = 'lo
       msg.textContent = '登录中…';
       const err = await signIn(em.value.trim(), pw.value);
       if (err) return void (msg.textContent = err);
-      if (mustChangePassword()) loginView(box, onDone);
+      if (mustChangePassword() || needsNickname()) loginView(box, onDone);
       else onDone();
     };
     enter([em, pw], go);

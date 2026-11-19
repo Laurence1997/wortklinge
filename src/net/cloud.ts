@@ -74,6 +74,11 @@ export async function signIn(email: string, password: string): Promise<string | 
 }
 
 /** Invited accounts start with a fixed password; until it is changed the game asks for a new one. */
+/** Login isn't finished until the player has a nickname (skipped when offline: profile unknown). */
+export function needsNickname(): boolean {
+  return !!cloud.session && !cloud.profile && cloud.status !== 'offline';
+}
+
 export function mustChangePassword(): boolean {
   return !!cloud.session && !cloud.session.user.user_metadata?.pw_changed;
 }
@@ -118,12 +123,12 @@ async function loadProfile(): Promise<void> {
 }
 
 /** Sets the nickname (shown on the leaderboard instead of the email). Returns an error in Chinese or null. */
-export async function setNickname(s: GameState, nickname: string): Promise<string | null> {
+export async function setNickname(s: GameState | null, nickname: string): Promise<string | null> {
   const id = uid();
   const name = nickname.trim();
   if (!id) return '请先登录';
   if (!name || name.length > 16) return '昵称要 1–16 个字';
-  const row = { id, nickname: name, level: s.level, cls: s.cls, named: namedCount(s), updated_at: new Date().toISOString() };
+  const row = { id, nickname: name, level: s?.level ?? 1, cls: s?.cls ?? null, named: s ? namedCount(s) : 0, updated_at: new Date().toISOString() };
   const { error } = await sb.from('profiles').upsert(row);
   if (error) return error.code === '23505' ? '这个昵称已经有人用了' : `保存失败：${error.message}`;
   cloud.profile = { nickname: name, level: row.level, cls: row.cls, named: row.named };
