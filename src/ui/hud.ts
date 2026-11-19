@@ -10,7 +10,7 @@ export function renderHud(s: GameState): void {
   const el = $('hud');
   el.className = 'panel';
   const p = progressSummary(s, WORDS);
-  const zone = zoneAt(s.pos.x, s.pos.y);
+  const zone = zoneAt(s.pos.x, s.pos.y, s.region ?? 1);
   const tier = comboTier(s.combo);
   const capped = s.level >= CONFIG.levelCap && s.xp >= xpToNext(s.level);
   clear(el).append(

@@ -389,16 +389,24 @@ export class Controller {
     const text: Record<string, string> = {
       bonfire: '<kbd>E</kbd>在篝火旁休息',
       npc: '<kbd>E</kbd>和守火人 Hilde 说话',
-      door: '<kbd>E</kbd>敲门',
+      door: this.state.region === 2 ? '<kbd>E</kbd>推开秤房的门' : '<kbd>E</kbd>敲门',
       sign: '<kbd>E</kbd>看路牌',
+      gate: '<kbd>E</kbd>回余烬营地',
     };
-    setPrompt(text[it.kind]);
+    const NPC_TEXT: Record<string, string> = {
+      hilde: '<kbd>E</kbd>和守火人 Hilde 说话',
+      greta: '<kbd>E</kbd>和导师 Greta 说话',
+      mira: '<kbd>E</kbd>和商人 Mira 说话',
+      konrad: '<kbd>E</kbd>和面包师傅 Konrad 说话',
+    };
+    setPrompt(it.kind === 'npc' ? NPC_TEXT[it.data ?? 'hilde'] : text[it.kind]);
   }
 
   interact(it: { kind: string; data?: string }): void {
     if (it.kind === 'bonfire') this.rest();
-    else if (it.kind === 'npc') this.talkHilde();
-    else if (it.kind === 'door') this.knock();
+    else if (it.kind === 'npc') this.talkNpc(it.data ?? 'hilde');
+    else if (it.kind === 'door') (this.state.region === 2 ? this.knockRegion2() : this.knock());
+    else if (it.kind === 'gate') this.travel(1);
     else if (it.kind === 'sign') {
       const w = WORD_BY_ID[it.data!];
       const st = stageOf(this.state, w);
@@ -445,11 +453,50 @@ export class Controller {
     say(tips[i]);
   }
 
+  private talkNpc(id: string) {
+    if (id === 'hilde') return this.talkHilde();
+    // Region-2 NPCs: their systems (class, shop, Konrad's quest) open with the region-2 build.
+    const lines: Record<string, string> = {
+      greta: '导师 Greta：「你就是从营地那边过来的？到 10 级、选职业的时候再来找我。」',
+      mira: '商人 Mira：「货还在路上。等我把摊子摆好，你就能用德语跟我买东西了。」',
+      konrad: '面包师傅 Konrad：「Brot……Brot。」他只会说这一个词，手里攥着一张写不出名字的纸条。',
+    };
+    say([{ who: id === 'greta' ? 'Greta' : id === 'mira' ? 'Mira' : 'Konrad', text: lines[id] ?? '……' }]);
+  }
+
+  /** Walk between regions: the neighbour's door (region 1) and the market's west gate (region 2). */
+  travel(to: 1 | 2): void {
+    const s = this.state;
+    if (s.region === to) return;
+    s.region = to;
+    // Arrive next to the door you came through.
+    s.pos = to === 2 ? { x: 4 * 16 + 8, y: 24 * 16 + 8 } : { x: 67 * 16 + 8, y: 24 * 16 + 12 };
+    this.persist();
+    this.scene.scene.restart({ ctrl: this });
+  }
+
+  private knockRegion2() {
+    say([{ who: '秤房', text: '门后传来秤砣一下一下的撞击声。有什么东西在数……数你身上有多少钱。（第 2 区首领，18 级开放）' }]);
+  }
+
   regionWords(): Word[] {
     return [...zoneWords('echogasse'), ...zoneWords('schilderstrasse'), ...zoneWords('aschehof')];
   }
 
   private knock() {
+    const s = this.state;
+    if (s.flags.bossKills && s.level >= CONFIG.region2Level) {
+      say([{ who: '门', text: '门开着。门后不是邻居的屋子，而是一条飘着面包香的集市街。' }], undefined, [
+        { label: '穿过门去面包集市', act: () => this.travel(2) },
+        { label: '再和无名的邻居打一场', act: () => this.knockBoss() },
+        { label: '先不去', act: () => undefined },
+      ]);
+      return;
+    }
+    this.knockBoss();
+  }
+
+  private knockBoss() {
     const s = this.state;
     if (!has(s.level, 'boss')) {
       say([{ who: '门', text: '门后有什么东西在呼吸。（8 级开放）' }]);

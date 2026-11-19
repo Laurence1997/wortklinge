@@ -45,6 +45,8 @@ export const CONFIG = {
   xpPerHour: 1000,
   /** 0.3 week 1 ships region 1; the level cap keeps players inside released content. */
   levelCap: 10,
+  /** The neighbour's door opens onto region 2 (面包集市) at this level, after the region-1 boss. */
+  region2Level: 10,
 
   player: {
     baseHp: 30,

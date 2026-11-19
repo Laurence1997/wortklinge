@@ -25,12 +25,15 @@ export interface Word {
   digit?: string;
   /** Tutorial words respawn fast. */
   tutorial?: boolean;
+  /** Region the word belongs to (1 = 余烬营地, 2 = 面包集市). */
+  region?: 1 | 2;
   /** Short example sentence shown in the 图鉴 card once 归名. */
   ex?: string;
 }
 
-export type FamilyId = 'zahnding' | 'echo' | 'zahlwurm' | 'sippe' | 'schild';
-export type ZoneId = 'camp' | 'echogasse' | 'schilderstrasse' | 'aschehof';
+export type FamilyId = 'zahnding' | 'echo' | 'zahlwurm' | 'sippe' | 'schild' | 'krume' | 'muenzling' | 'kram' | 'gier' | 'truhe';
+/** Region 1: camp, echogasse, schilderstrasse, aschehof. Region 2 (面包集市): markt (city), gemuesegasse, waagegasse, kornspeicher. */
+export type ZoneId = 'camp' | 'echogasse' | 'schilderstrasse' | 'aschehof' | 'markt' | 'gemuesegasse' | 'waagegasse' | 'kornspeicher';
 
 export type IntentKind = 'attack' | 'defend' | 'charge' | 'heal' | 'wait';
 export type Move = 'attack' | 'block' | 'break' | 'sentence' | 'skill';

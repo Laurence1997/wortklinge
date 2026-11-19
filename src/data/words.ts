@@ -7,6 +7,7 @@
 // Other rows: 'de | 中文'
 
 import type { Article, FamilyId, Pos, Word, ZoneId } from '../core/types';
+import { REGION2_GROUPS } from './words2';
 
 interface Group {
   family: FamilyId;
@@ -314,7 +315,8 @@ function slug(s: string): string {
 function build(): Word[] {
   const out: Word[] = [];
   const seen = new Set<string>();
-  for (const g of groups) {
+  const all = [...groups.map((g) => ({ g, region: 1 as const })), ...REGION2_GROUPS.map((g) => ({ g, region: 2 as const }))];
+  for (const { g, region } of all) {
     g.rows.forEach((row, i) => {
       const parts = row.split('|').map((p) => p.trim());
       const t = g.rows.length > 1 ? i / (g.rows.length - 1) : 0;
@@ -362,6 +364,7 @@ function build(): Word[] {
         };
       }
       // "morgen" (tomorrow) vs "Guten Morgen" and similar: ids must stay unique.
+      w.region = region;
       while (seen.has(w.id)) w.id += '-2';
       seen.add(w.id);
       out.push(w);

@@ -48,6 +48,8 @@ export interface GameState {
   skills: string[];
   skillUses: Record<string, number>;
   recentNouns: string[];
+  /** Which map you stand on (1 = 余烬营地, 2 = 面包集市). */
+  region: 1 | 2;
   pos: { x: number; y: number };
   log: Record<string, DayLog>;
   settings: Settings;
@@ -88,6 +90,7 @@ export function newGame(name: string, origin: string, t = Date.now()): GameState
     skills: [],
     skillUses: {},
     recentNouns: [],
+    region: 1,
     pos: { x: 0, y: 0 },
     log: {},
     settings: { tts: true, music: 0.5, sfx: 0.7, autoZh: false },
