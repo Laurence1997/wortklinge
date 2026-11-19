@@ -2,17 +2,18 @@ import { CONFIG, xpToNext } from '../core/config';
 import { AFFIX_ZH, itemScore, mainStatText, QUALITY_ZH, requiredLevel, SLOT_ZH } from '../core/loot';
 import { kindOf, progressSummary, stageOf, STAGE_ZH } from '../core/srs';
 import { attack, critChance, dayKey, hintsPerFight, maxHp, now } from '../core/state';
-import type { AffixKey, Item, Slot } from '../core/types';
+import type { AffixKey, Item, Slot, Word } from '../core/types';
 import { has } from '../core/unlocks';
 import { FAMILIES } from '../data/families';
 import { SKILLS } from '../data/skills';
 import { canLearn, CLASSES, learn, rank, spent, talentPoints, TALENT_FROM_LEVEL, TALENTS, TIER_GATE } from '../core/classes';
-import { fullForm, genderOf, WORDS } from '../data/words';
+import { fullForm, genderOf, hasArticleQuestion, WORDS } from '../data/words';
 import type { Controller } from '../game/controller';
 import { $, clear, h, umlautButtons } from './dom';
+import { CHEST_ZH, type ChestKind } from '../core/chest';
 import { BARGAIN_LINES, ensureShop, price, refreshCost, sellPrice, SLOT_NOUN } from '../core/shop';
 
-export type PanelName = 'hero' | 'talents' | 'codex' | 'data' | 'settings' | 'help' | 'shop';
+export type PanelName = 'hero' | 'talents' | 'codex' | 'data' | 'settings' | 'help' | 'shop' | 'chest';
 
 export class Panels {
   open: PanelName | null = null;
@@ -27,9 +28,16 @@ export class Panels {
   }
 
   close(): void {
+    const wasChest = this.open === 'chest';
+    if (wasChest && this.chest && !this.chest.result) {
+      // Closing an unopened chest opens it without the lock bonus.
+      this.chest.result = this.ctrl.openLockedChest(this.chest.kind, this.chest.ilvl, this.chest.word, null);
+    }
+    this.chest = null;
     this.open = null;
     $('modal').hidden = true;
     this.ctrl.persist();
+    if (wasChest) this.ctrl.chestClosed();
   }
 
   toggle(name: PanelName): void {
@@ -41,6 +49,13 @@ export class Panels {
     if (!this.open) return;
     const el = $('modal');
     const panel = h('div.panel');
+    if (this.open === 'chest' && this.chest) {
+      panel.append(h('h2', h('span', CHEST_ZH[this.chest.kind]), h('button.btn.ghost', { onclick: () => this.close() }, this.chest.result ? '收下 Esc' : '直接打开 Esc')), this.chestBody());
+      clear(el).append(panel);
+      el.onclick = null;
+      window.setTimeout(() => (el.querySelector('input.lock') as HTMLInputElement | null)?.focus(), 0);
+      return;
+    }
     if (this.open === 'shop') {
       panel.append(h('h2', h('span', '商人 Mira 的摊子'), h('button.btn.ghost', { onclick: () => this.close() }, '离开 Esc')), this.shop());
       clear(el).append(panel);
@@ -50,13 +65,13 @@ export class Panels {
       if (this.buying !== null) window.setTimeout(() => (el.querySelector('input.buy-line') as HTMLInputElement | null)?.focus(), 0);
       return;
     }
-    const titles: Record<Exclude<PanelName, 'shop'>, string> = { hero: '角色与装备', talents: '职业与天赋', codex: '图鉴', data: '数据与存档', settings: '设置', help: '怎么玩' };
+    const titles: Record<Exclude<PanelName, 'shop' | 'chest'>, string> = { hero: '角色与装备', talents: '职业与天赋', codex: '图鉴', data: '数据与存档', settings: '设置', help: '怎么玩' };
     const tabs = h('div.tabs');
-    (Object.keys(titles) as Array<Exclude<PanelName, 'shop'>>).forEach((k) =>
+    (Object.keys(titles) as Array<Exclude<PanelName, 'shop' | 'chest'>>).forEach((k) =>
       tabs.append(h(`button.btn${this.open === k ? '.on' : ''}`, { onclick: () => this.show(k) }, titles[k])),
     );
-    panel.append(h('h2', h('span', titles[this.open]), h('button.btn.ghost', { onclick: () => this.close() }, '关闭 Esc')), tabs);
-    const body = { shop: () => h('div'), hero: () => this.hero(), talents: () => this.talents(), codex: () => this.codex(), data: () => this.data(), settings: () => this.settings(), help: () => this.help() }[this.open]();
+    panel.append(h('h2', h('span', titles[this.open as Exclude<PanelName, 'shop' | 'chest'>]), h('button.btn.ghost', { onclick: () => this.close() }, '关闭 Esc')), tabs);
+    const body = { shop: () => h('div'), chest: () => h('div'), hero: () => this.hero(), talents: () => this.talents(), codex: () => this.codex(), data: () => this.data(), settings: () => this.settings(), help: () => this.help() }[this.open]();
     panel.append(body);
     clear(el).append(panel);
     el.onclick = (e) => {
@@ -128,6 +143,47 @@ export class Panels {
     right.append(bag);
     if (s.bag.length) right.append(h('p.small.muted', has(s.level, 'shop') ? '不要的装备可以拿到面包集市卖给商人 Mira。' : '11 级后可以在面包集市把装备卖给商人，现在只能丢弃。'));
     return h('div.grid2', left, right);
+  }
+
+  // ---- Chest (言灵锁) -------------------------------------------------------------
+
+  private chest: { kind: ChestKind; ilvl: number; word: Word; result?: ReturnType<Controller['openLockedChest']> } | null = null;
+
+  showChest(c: { kind: ChestKind; ilvl: number; word: Word }): void {
+    this.chest = c;
+    this.show('chest');
+  }
+
+  private chestBody(): HTMLElement {
+    const c = this.chest!;
+    const wrap = h('div');
+    if (!c.result) {
+      const input = h('input.lock', { type: 'text', autocomplete: 'off', spellcheck: 'false', placeholder: hasArticleQuestion(c.word) ? 'der / die / das + 名词' : '' }) as HTMLInputElement;
+      const go = () => {
+        c.result = this.ctrl.openLockedChest(c.kind, c.ilvl, c.word, input.value);
+        this.render();
+      };
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          e.stopPropagation();
+          go();
+        }
+      });
+      wrap.append(
+        h('p', '箱子上有一道言灵锁，锁上浮着一个你最该复习的词。写对它，每件东西的品质都会再掷一次、取更好的那个；写错了箱子照样打开。'),
+        h('div.focus', { style: 'font-size:28px;margin:10px 0' }, c.word.zh),
+        h('div.typing', input, umlautButtons(input), h('button.btn.primary', { onclick: go }, '开锁 ↵')),
+      );
+      return wrap;
+    }
+    const r = c.result;
+    wrap.append(h(`div.feedback.${r.ok ? 'ok' : 'no'}`, r.ok ? `锁开了：${fullForm(c.word)}。品质各掷了两次。` : `锁没认出来，正确是 ${fullForm(c.word)}。箱子还是开了。`));
+    const bag = h('div.bag');
+    for (const it of r.items) bag.append(h(`div.item.${it.quality}`, h('div', this.itemBody(it))));
+    if (r.bagFull) bag.append(h('p.small.muted', `背包满了，${r.bagFull} 件没装下。`));
+    wrap.append(bag);
+    return wrap;
   }
 
   // ---- Shop (Mira) ---------------------------------------------------------------

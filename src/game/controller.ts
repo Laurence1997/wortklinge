@@ -4,6 +4,8 @@
 import { answerBoss, startBoss, type BossFight } from '../core/boss';
 import { makeQuestion, monsterStats, pickHint, resolveTurn, startBattle, type Battle, type Question, type TurnReport, type Tutorial } from '../core/combat';
 import { CONFIG, xpToNext } from '../core/config';
+import { CHEST_ZH, CHESTS, lockWord, openChest, type ChestKind } from '../core/chest';
+import { gradeTyped } from '../core/grading';
 import { buy as buyItem, openShop, refresh as refreshShop, sell as sellItem } from '../core/shop';
 import { CLASSES, respec, respecCost, spent, TALENT_FROM_LEVEL, type ClassId } from '../core/classes';
 import { makeItem } from '../core/loot';
@@ -28,7 +30,7 @@ import type { Move, Slot, Word, ZoneId } from '../core/types';
 import { has, UNLOCK_TEXT } from '../core/unlocks';
 import { BOSS } from '../data/boss';
 import { SKILLS } from '../data/skills';
-import { fullForm, WORD_BY_ID, WORDS } from '../data/words';
+import { fullForm, hasArticleQuestion, WORD_BY_ID, WORDS } from '../data/words';
 import { initAudio, setBattleMusic, setVolumes, sfx, speak, speechAvailable, hasGermanVoice } from './audio';
 import type { MonsterEntity, WorldScene } from './WorldScene';
 import { BattleUI } from '../ui/battle';
@@ -236,7 +238,12 @@ export class Controller {
       this.battle = startBattle(s, dog, this.rng, { tutorial: 'loss' });
     } else {
       this.entity = m;
-      this.battle = startBattle(s, m.word, this.rng, { isEcho: m.isEcho, tutorial, trial: opts.trial });
+      this.battle = startBattle(s, m.word, this.rng, { isEcho: m.isEcho, tutorial, trial: opts.trial, rare: m.rare });
+      if (m.rare && m.word.family !== 'truhe') {
+        // Rare monsters: half again as tough. They carry an iron chest and run when hurt.
+        const mon = this.battle.monster;
+        mon.hp = mon.maxHp = Math.round(mon.maxHp * 1.5);
+      }
     }
     if (opts.trial) {
       // Trial monsters fight at your level, whatever word they carry.
@@ -272,13 +279,13 @@ export class Controller {
   /** Region 2 (Lv11+): nearby nouns with different articles join the fight (群怪). */
   private gatherPack(m: MonsterEntity) {
     const s = this.state;
-    if (!has(s.level, 'packs') || s.region !== 2 || m.isEcho || m.scripted || !m.word.art || m.word.family === 'truhe') return;
+    if (!has(s.level, 'packs') || s.region !== 2 || m.isEcho || m.scripted || m.rare || !m.word.art || m.word.family === 'truhe') return;
     const firstPack = !s.flags.firstPackDone;
     const max = firstPack ? 2 : CONFIG.pack.max;
     const r = CONFIG.pack.radiusTiles * 16;
     const used = new Set([m.word.art]);
     const near = this.scene.monsters
-      .filter((o) => o !== m && !o.isEcho && !o.scripted && o.zone === m.zone && !!o.word.art && o.word.family !== 'truhe' && Math.hypot(o.x - m.x, o.y - m.y) <= r)
+      .filter((o) => o !== m && !o.isEcho && !o.scripted && !o.rare && o.zone === m.zone && !!o.word.art && o.word.family !== 'truhe' && Math.hypot(o.x - m.x, o.y - m.y) <= r)
       .sort((a, b) => Math.hypot(a.x - m.x, a.y - m.y) - Math.hypot(b.x - m.x, b.y - m.y));
     for (const o of near) {
       if (this.pack.length >= max) break;
@@ -442,6 +449,7 @@ export class Controller {
           }
         }
         if (res.bagFull) toast('背包满了，装备没捡起来：按 C 丢掉一些');
+        if (res.chest) this.gotChest(res.chest, b.monster.lvl);
         for (const lv of res.levelUp.levels) this.onLevelUp(lv);
         if (res.levelUp.capped && !s.flags.taughtCapLevel) {
           s.flags.taughtCapLevel = true;
@@ -500,8 +508,49 @@ export class Controller {
     this.scene.endFocus();
     this.scene.restyleAll();
     if (this.trial) this.trialNext(won);
+    if (b.outcome === 'fled' && b.flees && !lost) toast('它带着铁箱跑了。下次在它喊「Ich muss los!」之前打死它。');
     this.refresh();
     this.persist();
+    this.nextChest();
+  }
+
+  // ---- Chests -----------------------------------------------------------------------------
+
+  /** Locked chests (iron, gold) wait until the fight is over; the rest open on the spot. */
+  private chestQueue: Array<{ kind: ChestKind; ilvl: number }> = [];
+
+  private gotChest(kind: ChestKind, ilvl: number) {
+    if (CHESTS[kind].locked) {
+      this.chestQueue.push({ kind, ilvl });
+      return;
+    }
+    const r = openChest(this.state, kind, ilvl, this.rng);
+    sfx.loot();
+    banner(CHEST_ZH[kind], r.items.map((it) => it.name).join('、') || '背包满了');
+    if (r.bagFull) toast('背包满了，有东西没装下');
+  }
+
+  private nextChest() {
+    if (this.battle || this.boss) return;
+    const c = this.chestQueue.shift();
+    if (!c) return;
+    const w = lockWord(this.state, WORDS[0]);
+    this.panels.showChest({ kind: c.kind, ilvl: c.ilvl, word: w });
+  }
+
+  /** 言灵锁: right = every item's quality is rolled twice (keep the better). Wrong still opens. */
+  openLockedChest(kind: ChestKind, ilvl: number, word: Word, input: string | null) {
+    const ok = input !== null && gradeTyped(input, word, hasArticleQuestion(word)).ok;
+    if (input !== null) recordAnswer(this.state, word, ok);
+    const r = openChest(this.state, kind, ilvl, this.rng, ok);
+    for (const it of r.items) (it.quality === 'orange' ? sfx.orange : sfx.loot)();
+    this.refresh();
+    this.persist();
+    return { ok, ...r };
+  }
+
+  chestClosed(): void {
+    this.nextChest();
   }
 
   // ---- Shop (Mira) ---------------------------------------------------------------------

@@ -35,7 +35,8 @@ export function generateIntent(rng: Rng, ctx: IntentContext): Intent {
   // Two charges at least 3 turns apart; never open a fight with a charge.
   if (ctx.turnsSinceCharge < 3) delete weights.charge;
   delete weights.wait;
-  const kind = weighted(rng, weights) as Exclude<IntentKind, 'wait'>;
+  delete weights.flee;
+  const kind = weighted(rng, weights) as Exclude<IntentKind, 'wait' | 'flee'>;
 
   if (kind === 'attack') return attackIntent(rng, ctx, fam.verb);
   const [line, zh] = pick(rng, PHRASES[kind]);
@@ -115,6 +116,7 @@ export const COUNTER: Record<IntentKind, 'attack' | 'block' | 'break'> = {
   charge: 'attack',
   heal: 'attack',
   wait: 'attack',
+  flee: 'attack',
 };
 
 export const INTENT_ZH: Record<IntentKind, string> = {
@@ -123,4 +125,5 @@ export const INTENT_ZH: Record<IntentKind, string> = {
   charge: '蓄力',
   heal: '治疗',
   wait: '不行动',
+  flee: '逃跑',
 };

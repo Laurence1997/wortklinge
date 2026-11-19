@@ -76,6 +76,8 @@ export interface Battle {
   monster: MonsterState;
   fx: PlayerFx;
   cfx: ClassFx;
+  /** 宝箱怪 and rare monsters run away (「Ich muss los!」) and drop an iron chest. */
+  flees: boolean;
   /** Greta's class trial this fight belongs to. */
   trial: ClassId | null;
   intent: Intent;
@@ -122,7 +124,7 @@ export function startBattle(
   s: GameState,
   word: Word,
   rng: Rng,
-  opts: { isEcho?: boolean; tutorial?: Tutorial; trial?: ClassId } = {},
+  opts: { isEcho?: boolean; tutorial?: Tutorial; trial?: ClassId; rare?: boolean } = {},
 ): Battle {
   const t = now(s);
   const kind = kindOf(s, word, t);
@@ -149,6 +151,7 @@ export function startBattle(
     fx: { burn: 0, poison: 0, chilled: false, shield: false },
     cfx: { res: 0, run: 0, critReady: false, calmUsed: false },
     trial: opts.trial ?? null,
+    flees: !!opts.rare || word.family === 'truhe',
     intent: null as unknown as Intent,
     turn: 1,
     turnsSinceCharge: 0,
@@ -194,6 +197,8 @@ function nextIntent(s: GameState, b: Battle, rng: Rng): Intent {
       ...ctx,
       force: { kind: 'wait', shown: 'attack', hits: 0, line: 'Ich greife jetzt nicht an.', zh: '我现在不进攻。（这回合不攻击）', layers: ['negation'] },
     });
+  } else if (b.flees && b.turn >= 2 && (ctx.hpRatio < 0.5 || b.turn >= 3)) {
+    intent = generateIntent(rng, { ...ctx, force: { kind: 'flee', line: 'Ich muss los!', zh: '我得走了！（这回合打不死它，它就跑了）' } });
   } else if (tut === 'packCharge' && b.turn === 1) {
     intent = generateIntent(rng, { ...ctx, force: { kind: 'charge', line: 'Moment!', zh: '等一下！（在蓄力）' } });
   } else if (tut === 'heal' && ctx.hpRatio <= 0.5 && !b.trapUsed) {
@@ -722,6 +727,10 @@ export function resolveTurn(
         say({ text: `它回复了 ${heal} 点生命。${m.vulnerable > 0 ? '易伤还在。' : ''}`, tone: 'bad' });
         break;
       }
+      case 'flee':
+        b.outcome = 'fled';
+        say({ text: '「Ich muss los!」——它抱着箱子钻进人群，跑了。', tone: 'bad' });
+        break;
       case 'wait':
         log.push({ text: blocking ? '它根本没出手——nicht 的意思是「不」。格挡白费了。' : '它说了不打，就真的没打。', tone: 'info' });
         break;

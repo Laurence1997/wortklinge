@@ -2,7 +2,8 @@ import Phaser from 'phaser';
 import { stageOf, type Stage } from '../core/srs';
 import { now } from '../core/state';
 import type { Word, ZoneId } from '../core/types';
-import { fullForm, genderOf } from '../data/words';
+import { fullForm, genderOf, WORD_BY_ID } from '../data/words';
+import { has } from '../core/unlocks';
 import { FAMILIES } from '../data/families';
 import type { Controller } from './controller';
 import { generateMap, isBlocked, MAP_H, MAP_W, TILE, walkableTilesIn, zonesOf, zoneAt, type MapData, type NpcId, type RegionId, type ZoneDef } from './map';
@@ -16,6 +17,8 @@ export interface MonsterEntity {
   zone: ZoneId;
   isEcho: boolean;
   scripted?: 'loss' | 'trial';
+  /** Rare (gold-rimmed) or 宝箱怪: flees at half HP / turn 3, drops an iron chest. */
+  rare?: boolean;
   x: number;
   y: number;
   tx: number;
@@ -207,6 +210,27 @@ export class WorldScene extends Phaser.Scene {
       }
       this.addMonster(p.word, p.kind, zone, spot.x * TILE + 8, spot.y * TILE + 8);
     }
+    this.maybeRare(zone, picks.length, tiles);
+  }
+
+  /** Region 2 (Lv11+): about 1 respawn in 10 brings a 宝箱怪 or turns a new monster rare. */
+  private maybeRare(zone: ZoneId, added: number, tiles: Array<{ x: number; y: number }>) {
+    const s = this.ctrl.state;
+    if (this.map.region !== 2 || !has(s.level, 'flee') || !tiles.length || Math.random() >= 0.1) return;
+    if (this.monsters.some((m) => m.rare && m.zone === zone)) return;
+    const truhe = WORD_BY_ID['truhe'];
+    if (truhe && Math.random() < 0.5) {
+      const c = tiles[Math.floor(Math.random() * tiles.length)];
+      const m = this.addMonster(truhe, 'new', zone, c.x * TILE + 8, c.y * TILE + 8);
+      m.rare = true;
+      this.styleMonster(m);
+    } else if (added > 0) {
+      const m = this.monsters[this.monsters.length - 1];
+      if (m.zone === zone && !m.isEcho) {
+        m.rare = true;
+        this.styleMonster(m);
+      }
+    }
   }
 
   addMonster(word: Word, kind: MonsterEntity['kind'], zone: ZoneId, x: number, y: number, opts: { isEcho?: boolean; scripted?: 'loss' | 'trial' } = {}): MonsterEntity {
@@ -268,8 +292,9 @@ export class WorldScene extends Phaser.Scene {
     m.label.setColor(color);
     m.label.setShadow(0, 0, m.stage === 0 ? '#ff1830' : color, 6, true, true);
     m.teeth.setText('▼'.repeat(m.stage === 0 ? 4 : m.stage === 1 ? 2 : 1));
-    m.marker.setText(m.isEcho ? '回响' : m.kind === 'due' ? '!' : '');
-    m.marker.setColor(m.isEcho ? '#ffcf4a' : '#ff5a5a');
+    m.marker.setText(m.isEcho ? '回响' : m.rare ? '◆' : m.kind === 'due' ? '!' : '');
+    m.marker.setColor(m.isEcho || m.rare ? '#ffcf4a' : '#ff5a5a');
+    if (m.rare) m.label.setShadow(0, 0, '#ffcf4a', 8, true, true);
     this.updateGlyph(m);
     m.container.setScale(m.kind === 'shadow' ? 0.85 : 1);
   }

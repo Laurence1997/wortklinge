@@ -446,3 +446,44 @@ describe('Mira shop', () => {
     expect(shop.refreshCost(s)).toBe(0);
   });
 });
+
+describe('rare monsters and chests', () => {
+  it('a rare monster shouts Ich muss los! by turn 3 and runs if it survives', () => {
+    const rng = makeRng(21);
+    const s = newGame('T', 'student');
+    s.level = 12;
+    s.hp = 9999;
+    const b = startBattle(s, WORDS.find((w) => w.de === 'Apfel')!, rng, { rare: true });
+    b.monster.hp = b.monster.maxHp = 9999;
+    const miss = { type: 'article' as const, prompt: '', focus: '', options: ['der', 'die', 'das'], answer: 'der' };
+    let fled = false;
+    for (let i = 0; i < 4 && !fled; i++) {
+      if (b.intent.kind === 'flee') expect(b.intent.line).toBe('Ich muss los!');
+      const r = resolveTurn(s, b, 'attack', miss, 'die', rng);
+      fled = r.outcome === 'fled';
+    }
+    expect(fled).toBe(true);
+  });
+
+  it('rare kills drop an iron chest; the 言灵锁 rerolls quality', async () => {
+    const chest = await import('../src/core/chest');
+    const rng = makeRng(5);
+    const s = newGame('T', 'student');
+    s.level = 12;
+    const b = startBattle(s, WORDS.find((w) => w.de === 'Apfel')!, rng, { rare: true });
+    b.outcome = 'win';
+    expect(applyWin(s, b, rng).chest).toBe('iron');
+    const r = chest.openChest(s, 'iron', 12, rng, true);
+    expect(r.items.length).toBe(2);
+    expect(r.rerolled).toBe(true);
+    expect(r.items.every((it) => it.quality !== 'white')).toBe(true);
+    expect(chest.lockWord(s, WORDS[0])).toBeTruthy();
+  });
+
+  it('宝箱怪 never spawns as a normal monster', () => {
+    const s = newGame('T', 'student');
+    s.level = 15;
+    const picks = pickSpawns(s, 'waagegasse', 40, new Set(), makeRng(1));
+    expect(picks.some((p) => p.word.family === 'truhe')).toBe(false);
+  });
+});

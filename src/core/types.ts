@@ -35,7 +35,8 @@ export type FamilyId = 'zahnding' | 'echo' | 'zahlwurm' | 'sippe' | 'schild' | '
 /** Region 1: camp, echogasse, schilderstrasse, aschehof. Region 2 (面包集市): markt (city), gemuesegasse, waagegasse, kornspeicher. */
 export type ZoneId = 'camp' | 'echogasse' | 'schilderstrasse' | 'aschehof' | 'markt' | 'gemuesegasse' | 'waagegasse' | 'kornspeicher';
 
-export type IntentKind = 'attack' | 'defend' | 'charge' | 'heal' | 'wait';
+/** flee = 宝箱怪 / rare monster shouting 「Ich muss los!」: kill it this turn or it runs. */
+export type IntentKind = 'attack' | 'defend' | 'charge' | 'heal' | 'wait' | 'flee';
 /** cls = the class skill (书写者 墨水风暴 / 守护者 稳住). */
 export type Move = 'attack' | 'block' | 'break' | 'sentence' | 'skill' | 'cls';
 

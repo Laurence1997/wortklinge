@@ -7,6 +7,7 @@ import { addXp, affixTotal, maxHp, now, overloaded, rollDay, todayLog, type Game
 import type { Item } from './types';
 import { has } from './unlocks';
 import { CONJ } from '../data/verbs';
+import { CHEST_RATE, type ChestKind } from './chest';
 
 export interface WinResult {
   xp: number;
@@ -14,6 +15,7 @@ export interface WinResult {
   kill: KillOutcome;
   levelUp: LevelUpResult;
   drop: Item | null;
+  chest: ChestKind | null;
   bagFull: boolean;
   echoRecovered: { gold: number; xp: number } | null;
   /** This kill happened during 言灵过载 (new = paid less, due = paid more). */
@@ -91,9 +93,17 @@ export function applyWin(s: GameState, b: Battle, rng: Rng, opts: { heal?: boole
     }
   }
 
+  // Chests (Lv11+): rare monsters always carry an iron chest; due kills 5% forgotten chest; others 3% wood.
+  let chest: ChestKind | null = null;
+  if (has(s.level, 'chests') && b.tutorial !== 'loss' && !b.trial) {
+    if (b.flees) chest = 'iron';
+    else if (b.kind === 'due' && rng() < CHEST_RATE.forgotten) chest = 'forgotten';
+    else if (rng() < CHEST_RATE.wood * (overload === 'new' ? O.newDrop : 1)) chest = 'wood';
+  }
+
   // 战后喘口气 (packs heal once, after the whole fight)
   if (opts.heal !== false) postFightHeal(s);
-  return { xp, gold, kill, levelUp, drop, bagFull, echoRecovered, overload };
+  return { xp, gold, kill, levelUp, drop, bagFull, echoRecovered, overload, chest };
 }
 
 export interface LossResult {
