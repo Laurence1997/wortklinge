@@ -30,7 +30,7 @@ export const CONFIG = {
     newDrop: 0.5,
     dueXp: 1.5,
     dueGold: 1.5,
-    dueDrop: 1.25,
+    dueDrop: 1, // due monsters already have the review drop bonus (×1.5)
   },
 
   xp: {

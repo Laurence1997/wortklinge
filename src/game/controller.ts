@@ -333,7 +333,7 @@ export class Controller {
             const O = CONFIG.overload;
             say([
               { who: SYS, text: `今天你已经叫出了 ${CONFIG.srs.dailyNewCap} 个新名字。言灵过载：脑子里的名字太多，新叫出的名字站不稳。` },
-              { who: SYS, text: `你可以接着打。只是今天剩下的时间里，新怪的经验、金币和掉率减半；到期复习的怪经验和金币 ×${O.dueXp}，掉率 ×${O.dueDrop}。明早 4 点过载消退。` },
+              { who: SYS, text: `你可以接着打。只是今天剩下的时间里，新怪的经验、金币和掉率减半；到期复习的怪经验和金币 ×${O.dueXp}。明早 4 点过载消退。` },
             ]);
           } else banner('言灵过载', '新怪收益减半 · 复习收益提高');
         }
