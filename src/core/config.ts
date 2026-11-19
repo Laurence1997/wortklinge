@@ -108,6 +108,9 @@ export const CONFIG = {
 
   gold: { perKill: (lvl: number) => Math.round(5 * (1 + lvl / 10)) },
 
+  /** 群怪 (region 2): per-monster damage ×0.6 with 2, ×0.45 with 3; 点名 that hits the wrong one deals half. */
+  pack: { dmgMult: [0.6, 0.45] as [number, number], strayMult: 0.5, max: 3, radiusTiles: 4, fromLevel: 11 },
+
   boss: {
     /** Share of region words that must be at least 半名 before the boss appears. */
     halfNameShare: 0.4,

@@ -5,7 +5,7 @@ import { answerBoss, startBoss, type BossFight } from '../core/boss';
 import { makeQuestion, pickHint, resolveTurn, startBattle, type Battle, type Question, type TurnReport, type Tutorial } from '../core/combat';
 import { CONFIG, xpToNext } from '../core/config';
 import { makeItem } from '../core/loot';
-import { applyLoss, applyWin } from '../core/outcomes';
+import { applyLoss, applyWin, postFightHeal } from '../core/outcomes';
 import { defaultRng, type Rng } from '../core/rng';
 import { atLeastHalfShare, instantGuiming, kindOf, recordAnswer, stageOf } from '../core/srs';
 import { pickSpawns, zoneWords } from '../core/spawn';
@@ -45,6 +45,10 @@ export class Controller {
   rng: Rng = defaultRng;
   battle: Battle | null = null;
   entity: MonsterEntity | null = null;
+  /** 群怪: every battle in the current fight (just [battle] one-on-one) and its world entity. */
+  pack: Battle[] = [];
+  packEntities: MonsterEntity[] = [];
+  private killer: Battle | null = null;
   boss: BossFight | null = null;
   battleUI = new BattleUI(this);
   bossUI = new BossUI(this);
@@ -226,14 +230,73 @@ export class Controller {
       this.battle.monster.hp = this.battle.monster.maxHp = 1;
       this.battle.monster.dmg = 1;
     }
+    this.pack = [this.battle];
+    this.packEntities = [m];
+    this.killer = null;
+    if (!tutorial) this.gatherPack(m);
     this.scene.focusBattle(m);
     setBattleMusic(true);
     setPrompt(null);
     this.battleUI.open();
+    if (this.pack.length > 1 && !s.flags.firstPackDone) {
+      say([
+        { who: HILDE, text: '好几只一起扑上来了！先盯住一只（点它的卡片），再喊出它的冠词，它就会挨打。' },
+        { who: HILDE, text: '喊成别的怪的冠词，就打偏到那只身上，只剩一半伤害。看到「Moment!」的那只了吗？先打它。' },
+      ]);
+    }
+  }
+
+  /** Region 2 (Lv11+): nearby nouns with different articles join the fight (群怪). */
+  private gatherPack(m: MonsterEntity) {
+    const s = this.state;
+    if (!has(s.level, 'packs') || s.region !== 2 || m.isEcho || m.scripted || !m.word.art || m.word.family === 'truhe') return;
+    const firstPack = !s.flags.firstPackDone;
+    const max = firstPack ? 2 : CONFIG.pack.max;
+    const r = CONFIG.pack.radiusTiles * 16;
+    const used = new Set([m.word.art]);
+    const near = this.scene.monsters
+      .filter((o) => o !== m && !o.isEcho && !o.scripted && o.zone === m.zone && !!o.word.art && o.word.family !== 'truhe' && Math.hypot(o.x - m.x, o.y - m.y) <= r)
+      .sort((a, b) => Math.hypot(a.x - m.x, a.y - m.y) - Math.hypot(b.x - m.x, b.y - m.y));
+    for (const o of near) {
+      if (this.pack.length >= max) break;
+      if (used.has(o.word.art!)) continue;
+      used.add(o.word.art!);
+      const ob = startBattle(s, o.word, this.rng, { tutorial: firstPack ? 'packCharge' : null });
+      this.pack.push(ob);
+      this.packEntities.push(o);
+    }
+    if (this.pack.length === 1) return;
+    // Pack-wide values (player statuses, hints, skill cooldown) are shared.
+    for (const b of this.pack) {
+      b.fx = this.pack[0].fx;
+      b.hintsLeft = this.pack[0].hintsLeft;
+    }
+    this.retarget();
+  }
+
+  /** Default target: a monster that is charging, else the first one still standing. */
+  retarget(): void {
+    const alive = this.pack.map((b, i) => ({ b, i })).filter((x) => !x.b.outcome);
+    if (!alive.length) return;
+    const pickOne = alive.find((x) => x.b.intent.kind === 'charge') ?? alive[0];
+    this.setTarget(pickOne.i);
+  }
+
+  setTarget(i: number): void {
+    const b = this.pack[i];
+    if (!b || b.outcome) return;
+    this.battle = b;
+    this.entity = this.packEntities[i];
+  }
+
+  /** The whole fight is over (everyone down, you died, or you fled). */
+  fightOver(): boolean {
+    if (!this.pack.length) return true;
+    return this.pack.every((b) => b.outcome === 'win') || this.pack.some((b) => b.outcome === 'lose' || b.outcome === 'fled');
   }
 
   askQuestion(move: Move): Question {
-    return makeQuestion(this.state, this.battle!, move, this.rng);
+    return makeQuestion(this.state, this.battle!, move, this.rng, undefined, this.pack.length > 1);
   }
 
   useHint(q: Question): string | null {
@@ -243,7 +306,17 @@ export class Controller {
   answer(move: Move, q: Question, input: string): TurnReport {
     const s = this.state;
     const b = this.battle!;
-    const r = resolveTurn(s, b, move, q, input, this.rng);
+    const r = resolveTurn(s, b, move, q, input, this.rng, this.pack);
+    if (r.killer) this.killer = r.killer;
+    if (b.tutorial === 'packCharge' || this.pack.some((x) => x.tutorial === 'packCharge')) s.flags.firstPackDone = true;
+    // Packs settle every kill at once; the fight goes on with the next target.
+    if (this.pack.length > 1) {
+      for (const k of r.kills) {
+        const i = this.pack.indexOf(k);
+        if (!this.fightOver() || r.outcome === 'lose') this.settleKill(k, this.packEntities[i]);
+      }
+      if (!this.fightOver() && b.outcome) this.retarget();
+    }
     recordAnswer(s, b.word, r.correct);
     const log = todayLog(s);
     if (r.correct) log.correct += 1;
@@ -283,18 +356,14 @@ export class Controller {
     this.finishBattle();
   }
 
-  finishBattle(): void {
+  /** Rewards for one dead monster: XP, gold, 归名, drops, lessons. Packs call it per kill. */
+  private settleKill(b: Battle, m: MonsterEntity, inPack = this.pack.length > 1) {
+    if (b.settled) return;
+    b.settled = true;
     const s = this.state;
-    const b = this.battle!;
-    const m = this.entity!;
-    this.battleUI.close();
-    setBattleMusic(false);
-    this.battle = null;
-    this.entity = null;
-
-    if (b.outcome === 'win') {
+    {
       const isBread = b.word.id === 'brot' && !s.flags.brotDone;
-      const res = applyWin(s, b, this.rng);
+      const res = applyWin(s, b, this.rng, { heal: !inPack });
       if (isBread) {
         instantGuiming(s, b.word);
         s.flags.brotDone = true;
@@ -355,12 +424,40 @@ export class Controller {
           say([{ who: SYS, text: `你到了这一版的等级上限（${CONFIG.levelCap} 级）。经验会存着，第 2 区开放后接着升。继续打，归名和装备都还在涨。` }]);
         }
       }
+    }
+  }
+
+  finishBattle(): void {
+    const s = this.state;
+    const pack = this.pack;
+    const ents = this.packEntities;
+    const target = this.battle!;
+    const m = this.entity!;
+    this.battleUI.close();
+    setBattleMusic(false);
+    this.battle = null;
+    this.entity = null;
+    this.pack = [];
+    this.packEntities = [];
+    const won = pack.length > 0 && pack.every((x) => x.outcome === 'win');
+    const lost = pack.some((x) => x.outcome === 'lose');
+    const b = lost ? (this.killer ?? target) : target;
+    if (lost) b.outcome = 'lose';
+    else if (won) b.outcome = 'win';
+    else b.outcome = 'fled';
+
+    if (won) {
+      if (pack.length > 1) {
+        pack.forEach((x, i) => { if (!x.settled) this.settleKill(x, ents[i], true); });
+        postFightHeal(s);
+      } else this.settleKill(b, m);
     } else if (b.outcome === 'lose') {
       sfx.death();
-      const at = { x: m.x, y: m.y };
+      const km = ents[pack.indexOf(b)] ?? m;
+      const at = { x: km.x, y: km.y };
       const loss = applyLoss(s, b, at);
       if (b.tutorial === 'loss') s.flags.pendingLoss = false;
-      this.scene.removeMonster(m, 'flee');
+      pack.forEach((x, i) => { if (!x.settled) this.scene.removeMonster(ents[i], 'flee'); });
       this.scene.teleportToBonfire();
       this.scene.spawnAll();
       const lines: Line[] = [{ who: SYS, text: '你死了。你在篝火旁重生。' }];
@@ -373,7 +470,7 @@ export class Controller {
       }
       say(lines);
     } else {
-      this.scene.removeMonster(m, 'flee');
+      pack.forEach((x, i) => { if (!x.settled) this.scene.removeMonster(ents[i], 'flee'); });
       if (!m.isEcho) this.scene.time.delayedCall(10, () => this.scene.fillZone(m.zone));
     }
     this.scene.endFocus();

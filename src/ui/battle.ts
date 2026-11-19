@@ -90,7 +90,7 @@ export class BattleUI {
     this.report = this.ctrl.answer(this.move, this.question, value);
     this.phase = 'result';
     this.render();
-    const quick = this.report.correct && !this.report.verdict.notes.length && !this.b.outcome;
+    const quick = this.report.correct && !this.report.verdict.notes.length && !this.ctrl.fightOver() && !this.report.kills.length;
     window.clearTimeout(this.autoTimer);
     if (quick) this.autoTimer = window.setTimeout(() => this.continue(), 900);
   }
@@ -98,11 +98,22 @@ export class BattleUI {
   continue(): void {
     if (this.phase !== 'result') return;
     window.clearTimeout(this.autoTimer);
-    if (this.b.outcome) {
+    if (this.ctrl.fightOver()) {
       this.ctrl.finishBattle();
       return;
     }
     this.startTurn();
+  }
+
+  /** 群怪: change target. Mid-question the question is asked again for the new target. */
+  target(i: number): void {
+    if (this.phase === 'result') return;
+    const before = this.b;
+    this.ctrl.setTarget(i);
+    if (this.b === before) return;
+    if (this.phase === 'answer') this.question = this.ctrl.askQuestion(this.move);
+    this.ctrl.speak(this.b.intent.line);
+    this.render();
   }
 
   /** Keyboard: A/S/D/F/R to pick a move, 1–3 for options, Enter to continue, Esc to change move. */
@@ -117,6 +128,19 @@ export class BattleUI {
     if (this.phase === 'answer' && e.key === 'Escape' && availableMoves(this.ctrl.state, this.b).length > 1) {
       this.phase = 'choose';
       this.render();
+      return true;
+    }
+    if (e.key === 'Tab' && this.ctrl.pack.length > 1) {
+      e.preventDefault();
+      const n = this.ctrl.pack.length;
+      const cur = this.ctrl.pack.indexOf(this.b);
+      for (let d = 1; d < n; d++) {
+        const i = (cur + d) % n;
+        if (!this.ctrl.pack[i].outcome) {
+          this.target(i);
+          break;
+        }
+      }
       return true;
     }
     if (typing) return false;
@@ -187,6 +211,9 @@ export class BattleUI {
       h('div.status', st.join(' · ')),
     );
 
+    const pack = this.ctrl.pack;
+    const monEl = pack.length > 1 ? this.renderPack() : mon;
+
     // Intent bubble: the German line is the information; the icon only shows what the verb says.
     const it = b.intent;
     const shownColor = INTENT_COLOR[it.shown] ?? '#ccc';
@@ -196,7 +223,7 @@ export class BattleUI {
       h(
         'div',
         { style: 'flex:1;min-width:0' },
-        h('div.kind', `它说（${s.level <= 30 ? '图标 = ' + INTENT_ZH[it.shown] : ''}）`),
+        h('div.kind', `${pack.length > 1 ? (b.named || b.stage > 0 ? fullForm(w) : w.de) + ' ' : '它'}说（${s.level <= 30 ? '图标 = ' + INTENT_ZH[it.shown] : ''}）`),
         h('div.line', it.line),
         h('div.zh', this.zhShown ? it.zh : ''),
         h(
@@ -255,11 +282,34 @@ export class BattleUI {
     const blog = h('div.blog');
     for (const l of b.log.slice(-3)) blog.append(h(`div.${l.tone}`, l.text));
 
-    clear(el).append(h('div.b-top', mon, intent, me), movesEl, q, blog);
+    clear(el).append(h('div.b-top', monEl, intent, me), movesEl, q, blog);
     if (this.input && this.phase === 'answer') window.setTimeout(() => this.input?.focus(), 0);
   }
 
   private pending: string | undefined;
+
+  /** 群怪 cards: name (article only after 点名), HP and each monster's own intent. */
+  private renderPack(): HTMLElement {
+    const wrap = h('div.b-mon.b-pack');
+    this.ctrl.pack.forEach((pb, i) => {
+      const w = pb.word;
+      const g = genderOf(w);
+      const known = pb.named || pb.stage > 0;
+      const color = known && g ? ARTICLE_COLOR[g] : '#e8dccf';
+      const it = pb.intent;
+      const dead = !!pb.outcome;
+      const card = h(
+        `button.pk${pb === this.b ? '.sel' : ''}${dead ? '.dead' : ''}`,
+        { onclick: () => this.target(i), title: '选中它（Tab 切换）', disabled: dead },
+        h('div.fam', h('span', `${FAMILIES[w.family].zh} · Lv ${pb.monster.lvl}`), h('span', dead ? '已打散' : STAGE_ZH[pb.stage])),
+        h('div.nm', { style: `color:${color}` }, known ? fullForm(w) : `？ ${w.de}`),
+        bar('hp', pb.monster.hp, pb.monster.maxHp, `${pb.monster.hp} / ${pb.monster.maxHp}`),
+        dead ? '' : h('div.it', h('img', { src: iconUrl(it.shown, INTENT_COLOR[it.shown] ?? '#ccc'), alt: '' }), it.line),
+      );
+      wrap.append(card);
+    });
+    return wrap;
+  }
 
   private renderQuestion(qq: Question): HTMLElement {
     this.renderedQ = qq;
@@ -310,7 +360,7 @@ export class BattleUI {
       if (r.element) fb.append(h('span', `  元素：${ELEMENT_ZH[r.element]}`));
       for (const n of r.verdict.notes) fb.append(h('span.note', n));
       if (r.readRight) fb.append(h('span.note', '读对了意图：连击额外 +1'));
-      fb.append(h('span.note.muted', this.b.outcome ? '按 Enter 结束战斗' : '按 Enter 继续'));
+      fb.append(h('span.note.muted', this.ctrl.fightOver() ? '按 Enter 结束战斗' : '按 Enter 继续'));
       wrap.append(fb);
     }
     return wrap;

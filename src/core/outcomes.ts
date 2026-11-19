@@ -19,7 +19,7 @@ export interface WinResult {
   overload: 'new' | 'due' | null;
 }
 
-export function applyWin(s: GameState, b: Battle, rng: Rng): WinResult {
+export function applyWin(s: GameState, b: Battle, rng: Rng, opts: { heal?: boolean } = {}): WinResult {
   rollDay(s);
   const t = now(s);
   const log = todayLog(s);
@@ -88,8 +88,8 @@ export function applyWin(s: GameState, b: Battle, rng: Rng): WinResult {
     }
   }
 
-  // 战后喘口气
-  s.hp = Math.min(maxHp(s), s.hp + Math.round(maxHp(s) * CONFIG.player.postFightHealPct));
+  // 战后喘口气 (packs heal once, after the whole fight)
+  if (opts.heal !== false) postFightHeal(s);
   return { xp, gold, kill, levelUp, drop, bagFull, echoRecovered, overload };
 }
 
@@ -113,4 +113,8 @@ export function applyLoss(s: GameState, b: Battle, at: { x: number; y: number })
   }
   s.hp = maxHp(s);
   return { lostEcho, newEcho };
+}
+
+export function postFightHeal(s: GameState): void {
+  s.hp = Math.min(maxHp(s), s.hp + Math.round(maxHp(s) * CONFIG.player.postFightHealPct));
 }

@@ -10,6 +10,7 @@ import { makeRng } from '../src/core/rng';
 import { answerBoss, startBoss } from '../src/core/boss';
 import { BOSS_QUESTIONS } from '../src/data/boss';
 import { pickSpawns } from '../src/core/spawn';
+import { CONJ } from '../src/data/verbs';
 
 const T0 = new Date('2026-11-20T10:00:00').getTime();
 
@@ -261,5 +262,79 @@ describe('question ladder', () => {
       expect(types[1]).toBe('pickZh');
       expect(types[2]).toBe(level >= 3 ? 'typed' : 'pickDe');
     }
+  });
+});
+
+describe('region 2: packs, conjugation, plurals', () => {
+  const nounOf = (art: string) => WORDS.find((w) => w.region === 2 && w.pos === 'n' && w.art === art && w.family === 'krume')!;
+
+  it('asks 点名 first in a pack, and a wrong article that matches another monster strays', () => {
+    const rng = makeRng(7);
+    const s = newGame('T', 'student');
+    s.level = 11;
+    const a = startBattle(s, nounOf('der'), rng);
+    const c = startBattle(s, nounOf('die'), rng);
+    const q = makeQuestion(s, a, 'attack', rng, undefined, true);
+    expect(q.type).toBe('callout');
+    const hpC = c.monster.hp;
+    const r = resolveTurn(s, a, 'attack', q, 'die', rng, [a, c]);
+    expect(r.correct).toBe(false);
+    expect(a.named).toBe(false);
+    expect(c.monster.hp).toBeLessThan(hpC);
+    // Right article: named, and the next attack is a normal ladder question.
+    const q2 = makeQuestion(s, a, 'attack', rng, undefined, true);
+    resolveTurn(s, a, 'attack', q2, 'der', rng, [a, c]);
+    expect(a.named).toBe(true);
+    expect(makeQuestion(s, a, 'attack', rng, undefined, true).type).not.toBe('callout');
+  });
+
+  it('every pack member acts, with less damage each', () => {
+    const rng = makeRng(3);
+    const s = newGame('T', 'student');
+    s.level = 11;
+    s.hp = 9999;
+    const solo = startBattle(s, nounOf('der'), rng);
+    const pack = [startBattle(s, nounOf('der'), rng), startBattle(s, nounOf('die'), rng)];
+    const r = resolveTurn(s, pack[0], 'attack', makeQuestion(s, pack[0], 'attack', rng, undefined, true), 'das', rng, pack);
+    expect(r.correct).toBe(false);
+    expect(r.kills.length).toBe(0);
+    // Both monsters attacked (or prepared), so the log names both, and you lost HP.
+    expect(s.hp).toBeLessThan(9999);
+    expect(solo.monster.dmg).toBeGreaterThan(0);
+  });
+
+  it('grades conjugation with or without the pronoun', () => {
+    const rng = makeRng(1);
+    const s = newGame('T', 'student');
+    s.level = 12;
+    const b = startBattle(s, WORDS.find((w) => w.de === 'nehmen')!, rng);
+    let q = makeQuestion(s, b, 'attack', rng);
+    while (q.type !== 'conj') {
+      b.step += 1;
+      q = makeQuestion(s, b, 'attack', rng);
+    }
+    const form = q.answer!;
+    const r1 = resolveTurn(s, b, 'attack', q, form, rng);
+    expect(r1.correct).toBe(true);
+    const q3 = { ...q, person: 'du' as const, answer: 'nimmst' };
+    expect(resolveTurn(s, b, 'attack', q3, 'du nimmst', rng).correct).toBe(true);
+    expect(resolveTurn(s, b, 'attack', q3, 'nehmst', rng).correct).toBe(false);
+  });
+
+  it('asks the plural on some due nouns and accepts "die Äpfel" or "Aepfel"', () => {
+    const rng = makeRng(2);
+    const s = newGame('T', 'student');
+    s.level = 11;
+    const apfel = WORDS.find((w) => w.de === 'Apfel')!;
+    const b = startBattle(s, apfel, rng);
+    b.pluralDue = true;
+    const q = makeQuestion(s, b, 'attack', rng);
+    expect(q.type).toBe('plural');
+    expect(resolveTurn(s, b, 'attack', q, 'die Aepfel', rng).correct).toBe(true);
+    expect(resolveTurn(s, b, 'attack', { ...q }, 'Apfel', rng).correct).toBe(false);
+  });
+
+  it('has conjugation rows for every region verb', () => {
+    for (const w of WORDS.filter((x) => x.pos === 'v' && x.region === 2)) expect(CONJ[w.de], w.de).toBeDefined();
   });
 });
