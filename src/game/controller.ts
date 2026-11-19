@@ -1,3 +1,4 @@
+import { answerDuel, DUEL, duelPool, startDuel, type Duel } from '../core/duel';
 import type { Look } from '../core/look';
 // The game controller: owns the save, runs battles and tutorials, and glues the
 // Phaser world to the DOM interface. Game rules live in src/core and stay pure.
@@ -875,6 +876,7 @@ export class Controller {
       greta: '<kbd>E</kbd>和导师 Greta 说话',
       mira: '<kbd>E</kbd>和商人 Mira 说话',
       konrad: '<kbd>E</kbd>和面包师傅 Konrad 说话',
+      examiner: '<kbd>E</kbd>找考官默写对决',
     };
     setPrompt(it.kind === 'npc' ? NPC_TEXT[it.data ?? 'hilde'] : text[it.kind]);
   }
@@ -931,11 +933,35 @@ export class Controller {
     say(tips[i]);
   }
 
+  private talkExaminer() {
+    const s = this.state;
+    const region = s.region ?? 1;
+    if (s.level < DUEL.fromLevel) return say([{ who: '考官', text: `「Noch nicht.」还不行。到 ${DUEL.fromLevel} 级再来，我考你默写。` }]);
+    const left = duelPool(s, region).length;
+    if (!left) return say([{ who: '考官', text: '「Alles gelernt.」这一区的词你全都归名了。没什么可考的。' }]);
+    say([
+      { who: '考官', text: `「Prüfung?」默写对决：我出这一区你还没归名的词（还剩 ${left} 个），名词要带冠词。` },
+      { who: SYS, text: `写对一个：经验是打怪的 ${DUEL.xpMult} 倍，这个词当场归名。写错：它照样留在野外当新词。考官每 ${DUEL.readBar} 题出手一次，写错也挨打；你倒下就结束，写对的都算数。` },
+    ], undefined, [
+      { label: '开始对决', act: () => this.panels.showDuel(startDuel(s, region, Math.random)) },
+      { label: '先不了', act: () => {} },
+    ]);
+  }
+
+  /** Called by the duel panel after each answer. */
+  duelAnswer(d: Duel, input: string): void {
+    const r = answerDuel(this.state, d, input);
+    for (const l of r.levelUp?.levels ?? []) this.onLevelUp(l);
+    this.refresh();
+    this.persist();
+  }
+
   private talkNpc(id: string) {
     if (id === 'hilde') return this.talkHilde();
     if (id === 'greta') return this.talkGreta();
     if (id === 'mira') return this.talkMira();
     if (id === 'konrad') return this.talkKonrad();
+    if (id === 'examiner') return this.talkExaminer();
     // Region-2 NPCs: their systems (class, shop, Konrad's quest) open with the region-2 build.
     const lines: Record<string, string> = {
       greta: '导师 Greta：「你就是从营地那边过来的？到 10 级、选职业的时候再来找我。」',

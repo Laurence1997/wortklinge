@@ -9,7 +9,8 @@ import { SKILLS } from '../data/skills';
 import { canLearn, CLASSES, learn, rank, spent, talentPoints, TALENT_FROM_LEVEL, TALENTS, TIER_GATE } from '../core/classes';
 import { fullForm, genderOf, hasArticleQuestion, WORDS } from '../data/words';
 import type { Controller } from '../game/controller';
-import { $, clear, h, umlautButtons } from './dom';
+import { $, bar, clear, h, umlautButtons } from './dom';
+import { DUEL, duelPool, startDuel, type Duel } from '../core/duel';
 import { CHEST_ZH, type ChestKind } from '../core/chest';
 import { favour, FAVOUR, QUESTS, type QuestId } from '../core/quests';
 import { gradeTyped } from '../core/grading';
@@ -19,7 +20,7 @@ import { loginView } from './account';
 import { lookPicker } from './title';
 import { BARGAIN_LINES, ensureShop, price, refreshCost, sellPrice, SLOT_NOUN } from '../core/shop';
 
-export type PanelName = 'hero' | 'talents' | 'quests' | 'codex' | 'words' | 'data' | 'account' | 'settings' | 'help' | 'shop' | 'chest' | 'quiz';
+export type PanelName = 'hero' | 'talents' | 'quests' | 'codex' | 'words' | 'data' | 'account' | 'settings' | 'help' | 'shop' | 'chest' | 'quiz' | 'duel';
 
 export class Panels {
   open: PanelName | null = null;
@@ -39,6 +40,7 @@ export class Panels {
 
   close(): void {
     const wasChest = this.open === 'chest';
+    this.duel = null;
     if (this.open === 'quiz' && this.quiz) {
       const q = this.quiz;
       this.quiz = null;
@@ -71,6 +73,13 @@ export class Panels {
       window.setTimeout(() => (el.querySelector('input.lock') as HTMLInputElement | null)?.focus(), 0);
       return;
     }
+    if (this.open === 'duel' && this.duel) {
+      panel.append(h('h2', h('span', '默写对决 · 考官'), h('button.btn.ghost', { onclick: () => this.close() }, this.duel.over ? '离开 Esc' : '认输离开 Esc')), this.duelBody());
+      clear(el).append(panel);
+      el.onclick = null;
+      window.setTimeout(() => (el.querySelector('input.duel') as HTMLInputElement | null)?.focus(), 0);
+      return;
+    }
     if (this.open === 'quiz' && this.quiz) {
       panel.append(h('h2', h('span', this.quiz.title), h('button.btn.ghost', { onclick: () => this.close() }, this.quiz.queue.length ? '先不教 Esc' : '完成 Esc')), this.quizBody());
       clear(el).append(panel);
@@ -87,13 +96,13 @@ export class Panels {
       if (this.buying !== null) window.setTimeout(() => (el.querySelector('input.buy-line') as HTMLInputElement | null)?.focus(), 0);
       return;
     }
-    const titles: Record<Exclude<PanelName, 'shop' | 'chest' | 'quiz'>, string> = { hero: '角色与装备', talents: '职业与天赋', quests: '任务', codex: '图鉴', words: '单词本', data: '数据与存档', account: '账号与排行', settings: '设置', help: '怎么玩' };
+    const titles: Record<Exclude<PanelName, 'shop' | 'chest' | 'quiz' | 'duel'>, string> = { hero: '角色与装备', talents: '职业与天赋', quests: '任务', codex: '图鉴', words: '单词本', data: '数据与存档', account: '账号与排行', settings: '设置', help: '怎么玩' };
     const tabs = h('div.tabs');
-    (Object.keys(titles) as Array<Exclude<PanelName, 'shop' | 'chest' | 'quiz'>>).forEach((k) =>
+    (Object.keys(titles) as Array<Exclude<PanelName, 'shop' | 'chest' | 'quiz' | 'duel'>>).forEach((k) =>
       tabs.append(h(`button.btn${this.open === k ? '.on' : ''}`, { onclick: () => this.show(k) }, titles[k])),
     );
-    panel.append(h('h2', h('span', titles[this.open as Exclude<PanelName, 'shop' | 'chest' | 'quiz'>]), h('button.btn.ghost', { onclick: () => this.close() }, '关闭 Esc')), tabs);
-    const body = { shop: () => h('div'), chest: () => h('div'), quiz: () => h('div'), hero: () => this.hero(), talents: () => this.talents(), quests: () => this.questsBody(), codex: () => this.codex(), words: () => this.wordbook(), data: () => this.data(), account: () => this.account(), settings: () => this.settings(), help: () => this.help() }[this.open]();
+    panel.append(h('h2', h('span', titles[this.open as Exclude<PanelName, 'shop' | 'chest' | 'quiz' | 'duel'>]), h('button.btn.ghost', { onclick: () => this.close() }, '关闭 Esc')), tabs);
+    const body = { shop: () => h('div'), chest: () => h('div'), quiz: () => h('div'), duel: () => h('div'), hero: () => this.hero(), talents: () => this.talents(), quests: () => this.questsBody(), codex: () => this.codex(), words: () => this.wordbook(), data: () => this.data(), account: () => this.account(), settings: () => this.settings(), help: () => this.help() }[this.open]();
     panel.append(body);
     clear(el).append(panel);
     el.onclick = (e) => {
@@ -234,6 +243,58 @@ export class Panels {
       h('div.focus', { style: 'font-size:28px;margin:10px 0' }, w.zh),
       h('div.typing', input, umlautButtons(input), h('button.btn.primary', { onclick: go }, '说 ↵')),
     );
+    return wrap;
+  }
+
+  // ---- 默写对决 ---------------------------------------------------------------------
+
+  private duel: Duel | null = null;
+
+  showDuel(d: Duel): void {
+    this.duel = d;
+    this.show('duel');
+  }
+
+  private duelBody(): HTMLElement {
+    const d = this.duel!;
+    const s = this.ctrl.state;
+    const wrap = h('div');
+    wrap.append(
+      bar('hp', s.hp, maxHp(s), `你的生命 ${s.hp} / ${maxHp(s)}`),
+      bar('xp', d.hp, DUEL.examinerHp, `考官 ${d.hp} / ${DUEL.examinerHp}`),
+      h('p.small.muted', `考官读条：${'■'.repeat(d.bar)}${'□'.repeat(DUEL.readBar - d.bar)}（满了就出手）· 写对 ${d.right} · 写错 ${d.wrong} · 剩 ${d.queue.length} 个词`),
+    );
+    if (d.last) {
+      const l = d.last;
+      const fb = h(`div.feedback.${l.ok ? 'ok' : 'no'}`, h('b', l.ok ? `对：${fullForm(l.word)}` : `不对，是 ${fullForm(l.word)}`), h('span', `  ${l.word.zh}`));
+      if (l.ok) fb.append(h('span.note', `当场归名！+${l.xp} 经验`));
+      for (const n of l.verdict.notes) fb.append(h('span.note', n));
+      if (l.hit) fb.append(h('span.note', `考官出手：你受到 ${l.hit} 点伤害`));
+      wrap.append(fb);
+    }
+    if (d.over) {
+      wrap.append(
+        h('h3', d.over === 'win' ? (d.hp <= 0 ? '你赢了考官。' : '这一区没有词可考了。') : '你撑不住了，对决结束。'),
+        h('p', `这一场写对 ${d.right} 个词，都已经归名。`),
+        h('div.row', h('button.btn.primary', { onclick: () => { const r = s.region ?? 1; if (duelPool(s, r).length) this.showDuel(startDuel(s, r, Math.random)); else this.close(); } }, '再来一场'), h('button.btn', { onclick: () => this.close() }, '离开')),
+      );
+      return wrap;
+    }
+    const w = d.queue[0];
+    const input = h('input.duel', { type: 'text', autocomplete: 'off', spellcheck: 'false', placeholder: hasArticleQuestion(w) ? 'der / die / das + 名词' : '写出德语' }) as HTMLInputElement;
+    const go = () => {
+      if (!input.value.trim()) return;
+      this.ctrl.duelAnswer(d, input.value);
+      this.render();
+    };
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        e.stopPropagation();
+        go();
+      }
+    });
+    wrap.append(h('div.focus', { style: 'font-size:28px;margin:10px 0' }, w.zh), h('div.typing', input, umlautButtons(input), h('button.btn.primary', { onclick: go }, '写 ↵')));
     return wrap;
   }
 

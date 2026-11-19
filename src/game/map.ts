@@ -34,7 +34,7 @@ export interface Rect {
 }
 
 export type RegionId = 1 | 2;
-export type NpcId = 'hilde' | 'greta' | 'mira' | 'konrad';
+export type NpcId = 'hilde' | 'greta' | 'mira' | 'konrad' | 'examiner';
 
 export interface ZoneDef {
   id: ZoneId;
@@ -175,12 +175,13 @@ function generateRegion1(): MapData {
     { x: 15, y: 27, wordId: 'feuer' },
   ];
   for (const sg of signs) if (BLOCKING.has(get(sg.x, sg.y))) set(sg.x, sg.y, T.Ground);
+  set(bonfire.x - 2, bonfire.y + 1, T.Ground); // 考官
 
   return {
     region: 1,
     tiles,
     bonfire,
-    npcs: [{ id: 'hilde', x: bonfire.x + 2, y: bonfire.y + 1 }],
+    npcs: [{ id: 'hilde', x: bonfire.x + 2, y: bonfire.y + 1 }, { id: 'examiner', x: bonfire.x - 2, y: bonfire.y + 1 }],
     gates: [],
     sign: { x: bonfire.x, y: bonfire.y - 5 },
     door,
@@ -312,6 +313,7 @@ function generateRegion2(): MapData {
     { id: 'greta', x: 8, y: 18 },
     { id: 'mira', x: 16, y: 18 },
     { id: 'konrad', x: 8, y: 28 },
+    { id: 'examiner', x: 12, y: 22 },
   ];
   for (const n of npcs) set(n.x, n.y, T.Ground);
 

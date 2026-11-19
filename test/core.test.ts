@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { gradeMoechte, gradeTyped, normalize } from '../src/core/grading';
-import { WORD_BY_ID, WORDS } from '../src/data/words';
+import { fullForm, WORD_BY_ID, WORDS } from '../src/data/words';
 import { newGame, addXp, overloaded, migrate } from '../src/core/state';
 import { applyWin } from '../src/core/outcomes';
 import { recordKill, kindOf, stageOf } from '../src/core/srs';
@@ -11,6 +11,7 @@ import { answerBoss, startBoss } from '../src/core/boss';
 import { BOSS_QUESTIONS } from '../src/data/boss';
 import { pickSpawns } from '../src/core/spawn';
 import { CONJ } from '../src/data/verbs';
+import { answerDuel, duelPool, startDuel } from '../src/core/duel';
 
 const T0 = new Date('2026-11-20T10:00:00').getTime();
 
@@ -183,6 +184,23 @@ describe('墨水风暴 overflow', () => {
     expect(c.outcome).toBeFalsy();
     a.intent = { ...a.intent, kind: 'defend' };
     expect(spillStorm(s, pack, dead, 10, true, log as never)).toBe(Math.round(10 * CONFIG.damage.vsDefend));
+  });
+});
+
+describe('默写对决', () => {
+  it('a right answer names the word on the spot with ×4 XP; a wrong one leaves it alone', () => {
+    const s = newGame('T', 'student', T0);
+    s.level = 3;
+    const d = startDuel(s, 1, makeRng(5));
+    const w1 = d.queue[0];
+    const xp0 = s.xp + s.level * 100000;
+    answerDuel(s, d, fullForm(w1));
+    expect(s.words[w1.id].stage).toBe(3);
+    expect(s.xp + s.level * 100000).toBeGreaterThan(xp0);
+    const w2 = d.queue[0];
+    answerDuel(s, d, 'zzz');
+    expect(s.words[w2.id]).toBeUndefined();
+    expect(duelPool(s, 1).some((w) => w.id === w1.id)).toBe(false);
   });
 });
 

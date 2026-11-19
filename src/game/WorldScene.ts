@@ -113,11 +113,11 @@ export class WorldScene extends Phaser.Scene {
     this.add.image(d.x * TILE + 8, d.y * TILE + 16, 'glow').setScale(1.1).setTint(0xff2040).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.7);
 
     // NPCs and signs. Region-2 NPCs reuse Hilde's figure with their own tint until they get sprites.
-    const NPC_TINT: Record<NpcId, number> = { hilde: 0xffffff, greta: 0x9fc4ff, mira: 0xffd27a, konrad: 0xe8b48a };
-    const NPC_LABEL: Record<NpcId, string> = { hilde: 'Hilde', greta: 'Greta', mira: 'Mira', konrad: 'Konrad' };
+    const NPC_TINT: Record<NpcId, number> = { hilde: 0xffffff, greta: 0x9fc4ff, mira: 0xffd27a, konrad: 0xe8b48a, examiner: 0xc08cff };
+    const NPC_LABEL: Record<NpcId, string> = { hilde: 'Hilde', greta: 'Greta', mira: 'Mira', konrad: 'Konrad', examiner: '考官 Prüfer' };
     for (const n of this.map.npcs) {
       this.add.sprite(n.x * TILE + 8, n.y * TILE + 6, 'hilde').setDepth(n.y * TILE + 8).setTint(NPC_TINT[n.id]);
-      if (this.map.region === 2)
+      if (this.map.region === 2 || n.id === 'examiner')
         this.add
           .text(n.x * TILE + 8, n.y * TILE - 6, NPC_LABEL[n.id], { fontFamily: FONT, fontSize: '6px', color: '#d8c8b8', resolution: 4 })
           .setOrigin(0.5, 1)
