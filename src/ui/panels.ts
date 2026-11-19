@@ -11,9 +11,12 @@ import { fullForm, genderOf, hasArticleQuestion, WORDS } from '../data/words';
 import type { Controller } from '../game/controller';
 import { $, clear, h, umlautButtons } from './dom';
 import { CHEST_ZH, type ChestKind } from '../core/chest';
+import { favour, FAVOUR, QUESTS, type QuestId } from '../core/quests';
+import { gradeTyped } from '../core/grading';
+import { recordAnswer } from '../core/srs';
 import { BARGAIN_LINES, ensureShop, price, refreshCost, sellPrice, SLOT_NOUN } from '../core/shop';
 
-export type PanelName = 'hero' | 'talents' | 'codex' | 'data' | 'settings' | 'help' | 'shop' | 'chest';
+export type PanelName = 'hero' | 'talents' | 'quests' | 'codex' | 'data' | 'settings' | 'help' | 'shop' | 'chest' | 'quiz';
 
 export class Panels {
   open: PanelName | null = null;
@@ -29,6 +32,11 @@ export class Panels {
 
   close(): void {
     const wasChest = this.open === 'chest';
+    if (this.open === 'quiz' && this.quiz) {
+      const q = this.quiz;
+      this.quiz = null;
+      if (!q.queue.length) window.setTimeout(() => q.onDone(), 0);
+    }
     if (wasChest && this.chest && !this.chest.result) {
       // Closing an unopened chest opens it without the lock bonus.
       this.chest.result = this.ctrl.openLockedChest(this.chest.kind, this.chest.ilvl, this.chest.word, null);
@@ -56,6 +64,13 @@ export class Panels {
       window.setTimeout(() => (el.querySelector('input.lock') as HTMLInputElement | null)?.focus(), 0);
       return;
     }
+    if (this.open === 'quiz' && this.quiz) {
+      panel.append(h('h2', h('span', this.quiz.title), h('button.btn.ghost', { onclick: () => this.close() }, this.quiz.queue.length ? '先不教 Esc' : '完成 Esc')), this.quizBody());
+      clear(el).append(panel);
+      el.onclick = null;
+      window.setTimeout(() => (el.querySelector('input.quiz') as HTMLInputElement | null)?.focus(), 0);
+      return;
+    }
     if (this.open === 'shop') {
       panel.append(h('h2', h('span', '商人 Mira 的摊子'), h('button.btn.ghost', { onclick: () => this.close() }, '离开 Esc')), this.shop());
       clear(el).append(panel);
@@ -65,13 +80,13 @@ export class Panels {
       if (this.buying !== null) window.setTimeout(() => (el.querySelector('input.buy-line') as HTMLInputElement | null)?.focus(), 0);
       return;
     }
-    const titles: Record<Exclude<PanelName, 'shop' | 'chest'>, string> = { hero: '角色与装备', talents: '职业与天赋', codex: '图鉴', data: '数据与存档', settings: '设置', help: '怎么玩' };
+    const titles: Record<Exclude<PanelName, 'shop' | 'chest' | 'quiz'>, string> = { hero: '角色与装备', talents: '职业与天赋', quests: '任务', codex: '图鉴', data: '数据与存档', settings: '设置', help: '怎么玩' };
     const tabs = h('div.tabs');
-    (Object.keys(titles) as Array<Exclude<PanelName, 'shop' | 'chest'>>).forEach((k) =>
+    (Object.keys(titles) as Array<Exclude<PanelName, 'shop' | 'chest' | 'quiz'>>).forEach((k) =>
       tabs.append(h(`button.btn${this.open === k ? '.on' : ''}`, { onclick: () => this.show(k) }, titles[k])),
     );
-    panel.append(h('h2', h('span', titles[this.open as Exclude<PanelName, 'shop' | 'chest'>]), h('button.btn.ghost', { onclick: () => this.close() }, '关闭 Esc')), tabs);
-    const body = { shop: () => h('div'), chest: () => h('div'), hero: () => this.hero(), talents: () => this.talents(), codex: () => this.codex(), data: () => this.data(), settings: () => this.settings(), help: () => this.help() }[this.open]();
+    panel.append(h('h2', h('span', titles[this.open as Exclude<PanelName, 'shop' | 'chest' | 'quiz'>]), h('button.btn.ghost', { onclick: () => this.close() }, '关闭 Esc')), tabs);
+    const body = { shop: () => h('div'), chest: () => h('div'), quiz: () => h('div'), hero: () => this.hero(), talents: () => this.talents(), quests: () => this.questsBody(), codex: () => this.codex(), data: () => this.data(), settings: () => this.settings(), help: () => this.help() }[this.open]();
     panel.append(body);
     clear(el).append(panel);
     el.onclick = (e) => {
@@ -143,6 +158,75 @@ export class Panels {
     right.append(bag);
     if (s.bag.length) right.append(h('p.small.muted', has(s.level, 'shop') ? '不要的装备可以拿到面包集市卖给商人 Mira。' : '11 级后可以在面包集市把装备卖给商人，现在只能丢弃。'));
     return h('div.grid2', left, right);
+  }
+
+  // ---- Quests (J) and the small typing quiz (Konrad's lesson) ----------------------------
+
+  private questsBody(): HTMLElement {
+    const s = this.ctrl.state;
+    const wrap = h('div');
+    const ids = Object.keys(s.quests ?? {}) as QuestId[];
+    if (!ids.length) {
+      wrap.append(h('p.muted', '还没有任务。第 2 区（面包集市）开始有任务。'));
+      return wrap;
+    }
+    for (const id of ids) {
+      const def = QUESTS[id];
+      const p = s.quests![id]!;
+      const box = h('div.slot', h('div.k', def.giver), h('div'));
+      const body = box.lastChild as HTMLElement;
+      body.append(h('div', h('b', def.zh), p.done ? h('span.muted', '  已完成') : ''));
+      def.steps.forEach((st, i) => {
+        const mark = i < p.step || p.done ? '✓' : i === p.step ? '▸' : '·';
+        const cnt = i === p.step && !p.done && st.count ? `（${p.count}/${st.count}）` : '';
+        if (i <= p.step || p.done) body.append(h(`div.small${i < p.step || p.done ? '.muted' : ''}`, `${mark} ${st.zh}${cnt}`));
+      });
+      if (id === 'konrad') body.append(h('div.small', `好感：${FAVOUR[favour(s)]}`));
+      wrap.append(box);
+    }
+    return wrap;
+  }
+
+  private quiz: { title: string; intro: string; queue: Word[]; done: Word[]; last?: { ok: boolean; text: string }; onDone: () => void } | null = null;
+
+  /** Type each word (German with article, from the Chinese); a miss goes back into the queue. */
+  showQuiz(title: string, intro: string, words: Word[], onDone: () => void): void {
+    this.quiz = { title, intro, queue: words.slice(), done: [], onDone };
+    this.show('quiz');
+  }
+
+  private quizBody(): HTMLElement {
+    const q = this.quiz!;
+    const wrap = h('div', h('p', q.intro));
+    if (q.last) wrap.append(h(`div.feedback.${q.last.ok ? 'ok' : 'no'}`, q.last.text));
+    if (!q.queue.length) {
+      wrap.append(h('p', '都教会了。'));
+      return wrap;
+    }
+    const w = q.queue[0];
+    const input = h('input.quiz', { type: 'text', autocomplete: 'off', spellcheck: 'false', placeholder: hasArticleQuestion(w) ? 'der / die / das + 名词' : '' }) as HTMLInputElement;
+    const go = () => {
+      const v = gradeTyped(input.value, w, hasArticleQuestion(w));
+      recordAnswer(this.ctrl.state, w, v.ok);
+      q.queue.shift();
+      if (v.ok) q.done.push(w);
+      else q.queue.push(w);
+      q.last = v.ok ? { ok: true, text: `对：${fullForm(w)}` } : { ok: false, text: `不对，是 ${fullForm(w)}。待会儿再问一次。` };
+      this.render();
+    };
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        e.stopPropagation();
+        go();
+      }
+    });
+    wrap.append(
+      h('div.small.muted', `${q.done.length} / ${q.done.length + q.queue.length}`),
+      h('div.focus', { style: 'font-size:28px;margin:10px 0' }, w.zh),
+      h('div.typing', input, umlautButtons(input), h('button.btn.primary', { onclick: go }, '说 ↵')),
+    );
+    return wrap;
   }
 
   // ---- Chest (言灵锁) -------------------------------------------------------------

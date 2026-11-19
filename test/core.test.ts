@@ -487,3 +487,19 @@ describe('rare monsters and chests', () => {
     expect(picks.some((p) => p.word.family === 'truhe')).toBe(false);
   });
 });
+
+describe('quests', () => {
+  it('Konrad: 5 crumb kills, the lesson, the story; favour climbs to 朋友', async () => {
+    const Q = await import('../src/core/quests');
+    const s = newGame('T', 'student');
+    Q.startQuest(s, 'konrad');
+    for (let i = 0; i < 4; i++) expect(Q.questEvent(s, 'krumeKill')).toEqual([]);
+    expect(Q.questEvent(s, 'krumeKill')[0].finished).toBe(0);
+    expect(Q.FAVOUR[Q.favour(s)]).toBe('认识');
+    Q.questEvent(s, 'taughtKonrad');
+    const last = Q.questEvent(s, 'heardKonrad');
+    expect(last[0].done).toBe(true);
+    expect(Q.FAVOUR[Q.favour(s)]).toBe('朋友');
+    for (const id of Q.KONRAD_WORDS) expect(WORD_BY_ID[id], id).toBeDefined();
+  });
+});

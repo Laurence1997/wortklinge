@@ -57,6 +57,7 @@ export interface GameState {
   talents: Partial<Record<ClassId, Record<string, number>>>;
   /** Mira's shelf (region 2). */
   shop?: import('./shop').ShopState;
+  quests?: Partial<Record<import('./quests').QuestId, import('./quests').QuestProgress>>;
   pos: { x: number; y: number };
   log: Record<string, DayLog>;
   settings: Settings;

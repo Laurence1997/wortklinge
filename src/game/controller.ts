@@ -4,6 +4,7 @@
 import { answerBoss, startBoss, type BossFight } from '../core/boss';
 import { makeQuestion, monsterStats, pickHint, resolveTurn, startBattle, type Battle, type Question, type TurnReport, type Tutorial } from '../core/combat';
 import { CONFIG, xpToNext } from '../core/config';
+import { favour, FAVOUR, KONRAD_WORDS, QUESTS, questEvent, questState, startQuest, type QuestEvent } from '../core/quests';
 import { CHEST_ZH, CHESTS, lockWord, openChest, type ChestKind } from '../core/chest';
 import { gradeTyped } from '../core/grading';
 import { buy as buyItem, openShop, refresh as refreshShop, sell as sellItem } from '../core/shop';
@@ -94,6 +95,7 @@ export class Controller {
     this.renderMenu();
     this.refresh();
     if (rollDay(this.state)) this.scene.spawnAll();
+    if (this.state.region === 2 && startQuest(this.state, 'main2')) questEvent(this.state, 'enterMarket');
     if (!this.state.flags.intro) this.intro();
     else this.welcomeBack();
   }
@@ -450,6 +452,7 @@ export class Controller {
         }
         if (res.bagFull) toast('背包满了，装备没捡起来：按 C 丢掉一些');
         if (res.chest) this.gotChest(res.chest, b.monster.lvl);
+        if (b.word.family === 'krume') this.questFire('krumeKill');
         for (const lv of res.levelUp.levels) this.onLevelUp(lv);
         if (res.levelUp.capped && !s.flags.taughtCapLevel) {
           s.flags.taughtCapLevel = true;
@@ -553,6 +556,110 @@ export class Controller {
     this.nextChest();
   }
 
+  // ---- Quests and Konrad -------------------------------------------------------------------
+
+  questFire(ev: QuestEvent): void {
+    this.renderMenu();
+    for (const a of questEvent(this.state, ev)) {
+      const def = QUESTS[a.id];
+      if (a.done) banner('任务完成', def.zh);
+      else toast(`任务：${def.steps[a.finished].zh} ✓  下一步：${def.steps[a.finished + 1].zh}`, 'gold');
+      if (a.id === 'konrad') toast(`Konrad 好感：${FAVOUR[favour(this.state)]}`);
+    }
+  }
+
+  private talkKonrad() {
+    const s = this.state;
+    const K = '面包师傅 Konrad';
+    if (!has(s.level, 'quests')) {
+      say([{ who: K, text: '「Brot……Brot。」他只会说这一个词，手里攥着一张写不出名字的纸条。（12 级后再来）' }]);
+      return;
+    }
+    const p = questState(s, 'konrad');
+    if (!p) {
+      say(
+        [
+          { who: K, text: 'Brot……对，Brot！你能听懂我？' },
+          { who: K, text: '浓雾来的那天，我的面粉袋子长出了嘴，跑到菜摊街去了。没有面粉，我连面包都做不了。' },
+          { who: K, text: '更糟的是，我忘了好多词……连我女儿的名字都想不起来了。帮帮我吧。' },
+        ],
+        () => {
+          startQuest(s, 'konrad');
+          this.renderMenu();
+          toast('新任务：面包师傅的名字（按 J 查看）', 'gold');
+          this.persist();
+        },
+      );
+      return;
+    }
+    if (p.done && s.flags.apronOwed) {
+      this.giveApron();
+      return;
+    }
+    if (p.done) {
+      const last = (s.flags.konradBread as number) ?? 0;
+      if (now(s) - last >= 3600_000) {
+        s.flags.konradBread = now(s);
+        const heal = Math.round(maxHp(s) * 0.5);
+        s.hp = Math.min(maxHp(s), s.hp + heal);
+        say([{ who: K, text: `「Ein Brot für dich!」刚出炉的面包，你回复了 ${heal} 点生命。（每小时一个）` }]);
+        this.refresh();
+      } else say([{ who: K, text: '「Das Brot ist noch nicht fertig.」面包还在炉子里，过一会儿再来。' }]);
+      return;
+    }
+    if (p.step === 0) {
+      say([{ who: K, text: `面粉还在菜摊街那些碎屑兽身上。（${p.count}/5）` }]);
+      return;
+    }
+    if (p.step === 1) {
+      say(
+        [
+          { who: K, text: '面粉回来了，可我还是叫不出店里东西的名字。你教教我：我说中文意思，你告诉我德语，带上冠词。' },
+        ],
+        () => {
+          const words = KONRAD_WORDS.map((id) => WORD_BY_ID[id]).filter(Boolean);
+          this.panels.showQuiz('教 Konrad 说话', 'Konrad 指着店里的东西。用德语说出来（名词带冠词）。', words, () => {
+            this.questFire('taughtKonrad');
+            say([{ who: K, text: 'das Brot、das Brötchen、der Kuchen……都回来了。等等，还有一个名字……再来找我。' }]);
+            this.persist();
+          });
+        },
+      );
+      return;
+    }
+    // Step 2: the story, the apron.
+    say(
+      [
+        { who: K, text: '我想起来了一点。她每天早上都来店里，买两个 Brötchen。' },
+        { who: K, text: '她的名字……是 L 开头的。L……就差一点。' },
+        { who: K, text: '雾是从东边粮仓后面的路上来的。她也是往那边走的。等你能走那条路的时候，替我找找她。' },
+        { who: K, text: '这条围裙给你。从今天起，你就是这家店的朋友，饿了就来拿面包。' },
+      ],
+      () => {
+        this.questFire('heardKonrad');
+        const it = makeItem(this.rng, s.level, 'green', 'coat');
+        it.name = 'Konrads Schürze';
+        this.giveApron();
+        this.refresh();
+        this.persist();
+      },
+    );
+  }
+
+  private giveApron() {
+    const s = this.state;
+    if (s.bag.length >= CONFIG.loot.bagSize) {
+      s.flags.apronOwed = true;
+      toast('背包满了，Konrad 先替你收着围裙。腾出位置再来找他。');
+      return;
+    }
+    const it = makeItem(this.rng, s.level, 'green', 'coat');
+    it.name = 'Konrads Schürze';
+    s.bag.push(it);
+    s.flags.apronOwed = false;
+    banner('获得', 'Konrads Schürze（优秀 · 外套）');
+  }
+
   // ---- Shop (Mira) ---------------------------------------------------------------------
 
   private talkMira() {
@@ -561,6 +668,7 @@ export class Controller {
       say([{ who: MIRA, text: '货还在路上。你再长大一点（11 级）再来。' }]);
       return;
     }
+    this.questFire('metMira');
     const open = () => {
       openShop(s, this.rng, now(s));
       this.panels.buying = null;
@@ -687,6 +795,7 @@ export class Controller {
     const first = !s.cls;
     s.cls = id;
     banner(first ? '职业' : '换职业', CLASSES[id].zh);
+    this.renderMenu();
     const lines: Line[] = [{ who: GRETA, text: `从今天起，你是${CLASSES[id].zh}。战斗里按 G 用职业技能「${CLASSES[id].skillZh}」。` }];
     if (s.level >= TALENT_FROM_LEVEL) lines.push({ who: SYS, text: '按 T 打开职业与天赋，把天赋点花掉。' });
     else lines.push({ who: SYS, text: `${TALENT_FROM_LEVEL} 级起每升一级得 1 点天赋（按 T 查看）。` });
@@ -782,6 +891,7 @@ export class Controller {
     if (id === 'hilde') return this.talkHilde();
     if (id === 'greta') return this.talkGreta();
     if (id === 'mira') return this.talkMira();
+    if (id === 'konrad') return this.talkKonrad();
     // Region-2 NPCs: their systems (class, shop, Konrad's quest) open with the region-2 build.
     const lines: Record<string, string> = {
       greta: '导师 Greta：「你就是从营地那边过来的？到 10 级、选职业的时候再来找我。」',
@@ -796,6 +906,7 @@ export class Controller {
     const s = this.state;
     if (s.region === to) return;
     s.region = to;
+    if (to === 2 && startQuest(s, 'main2')) this.questFire('enterMarket');
     // Arrive next to the door you came through.
     s.pos = to === 2 ? { x: 4 * 16 + 8, y: 24 * 16 + 8 } : { x: 67 * 16 + 8, y: 24 * 16 + 12 };
     this.persist();
@@ -999,6 +1110,8 @@ export class Controller {
       menu.append(b);
     };
     btn('角色', 'C', () => this.panels.toggle('hero'));
+    if (this.state.cls || this.state.level >= CONFIG.region2Level) btn('职业', 'T', () => this.panels.toggle('talents'));
+    if (this.state.quests) btn('任务', 'J', () => this.panels.toggle('quests'));
     btn('图鉴', 'B', () => this.panels.toggle('codex'));
     btn('数据', '', () => this.panels.toggle('data'));
     btn('设置', '', () => this.panels.toggle('settings'));
@@ -1043,6 +1156,7 @@ export class Controller {
     if (k === 'c' || k === 'i') this.panels.toggle('hero');
     else if (k === 'b') this.panels.toggle('codex');
     else if (k === 't') this.panels.toggle('talents');
+    else if (k === 'j') this.panels.toggle('quests');
     else if (k === 'h') this.panels.toggle('help');
     // First interaction unlocks audio in browsers.
     initAudio(this.state.settings.music, this.state.settings.sfx);
