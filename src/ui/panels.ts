@@ -14,7 +14,8 @@ import { CHEST_ZH, type ChestKind } from '../core/chest';
 import { favour, FAVOUR, QUESTS, type QuestId } from '../core/quests';
 import { gradeTyped } from '../core/grading';
 import { recordAnswer } from '../core/srs';
-import { cloud, leaderboard, push, sendLoginLink, setNickname, signOut } from '../net/cloud';
+import { cloud, leaderboard, mustChangePassword, push, setNickname, signOut } from '../net/cloud';
+import { loginView } from './account';
 import { BARGAIN_LINES, ensureShop, price, refreshCost, sellPrice, SLOT_NOUN } from '../core/shop';
 
 export type PanelName = 'hero' | 'talents' | 'quests' | 'codex' | 'data' | 'account' | 'settings' | 'help' | 'shop' | 'chest' | 'quiz';
@@ -455,18 +456,11 @@ export class Panels {
   private account(): HTMLElement {
     const s = this.ctrl.state;
     const wrap = h('div');
-    if (!cloud.session) {
-      wrap.append(h('p.small.muted', '不登录也能玩，存档只在这个浏览器里。登录后存档会同步到云端，换电脑接着玩，还能上排行榜。只用邮箱，不用密码：我们给你发一封登录邮件，点里面的链接就登录了。'));
-      const email = h('input', { type: 'email', placeholder: '你的邮箱', autocomplete: 'email' }) as HTMLInputElement;
-      const msg = h('p.small');
-      const send = async () => {
-        if (!/^\S+@\S+\.\S+$/.test(email.value.trim())) return void (msg.textContent = '邮箱格式不对');
-        msg.textContent = '发送中…';
-        const err = await sendLoginLink(email.value.trim());
-        msg.textContent = err ? `没发出去：${err}` : '邮件已发出。去邮箱点链接，会在新标签页打开并登录（这一页可以关掉）。';
-      };
-      email.addEventListener('keydown', (e) => (e as KeyboardEvent).key === 'Enter' && void send());
-      wrap.append(h('div.row', email, h('button.btn.primary', { onclick: () => void send() }, '发送登录邮件')), msg);
+    if (!cloud.session || mustChangePassword()) {
+      loginView(wrap, () => {
+        void push(s);
+        this.render();
+      });
       return wrap;
     }
     const st = { off: '未同步', syncing: '同步中…', ok: `已同步${cloud.lastSync ? `（${new Date(cloud.lastSync).toLocaleTimeString().slice(0, 5)}）` : ''}`, offline: '连不上服务器，先存在本地，联网后自动同步' }[cloud.status];

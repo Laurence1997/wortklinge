@@ -1,4 +1,4 @@
-// Accounts and cloud saves (Supabase). Optional: the game runs fully without logging in.
+// Accounts and cloud saves (Supabase). Invite only (email + password); the game runs fully without logging in.
 // Local save stays the source of play; when logged in it syncs with the cloud and the newer save wins.
 // Only the publishable (anon) key lives here; row-level security limits each player to their own save.
 
@@ -10,7 +10,7 @@ export const SUPABASE_URL = 'https://xmttluclhrjhgokemnso.supabase.co';
 export const SUPABASE_KEY = 'sb_publishable_ZP1aefkKlLhCNvaiGG3ZcA_gz46eEON';
 
 export const sb = createClient(SUPABASE_URL, SUPABASE_KEY, {
-  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, flowType: 'implicit' },
+  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false },
 });
 
 export interface Profile {
@@ -46,7 +46,6 @@ export async function initCloud(): Promise<void> {
   try {
     const { data } = await withTimeout(sb.auth.getSession());
     cloud.session = data.session;
-    if (location.hash.includes('access_token')) history.replaceState(null, '', location.pathname + location.search);
     sb.auth.onAuthStateChange((_e, session) => {
       cloud.session = session;
       if (!session) cloud.profile = null;
@@ -58,9 +57,49 @@ export async function initCloud(): Promise<void> {
   }
 }
 
-export async function sendLoginLink(email: string): Promise<string | null> {
-  const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: location.origin + location.pathname } });
-  return error ? error.message : null;
+const ERR_ZH: Record<string, string> = {
+  'Invalid login credentials': '邮箱或密码不对',
+  'Email not confirmed': '这个邮箱还没确认',
+  'Token has expired or is invalid': '验证码不对或已过期',
+};
+const zh = (m: string) => ERR_ZH[m] ?? m;
+
+export async function signIn(email: string, password: string): Promise<string | null> {
+  const { data, error } = await sb.auth.signInWithPassword({ email, password });
+  if (error) return zh(error.message);
+  cloud.session = data.session;
+  await loadProfile();
+  changed();
+  return null;
+}
+
+/** Invited accounts start with a fixed password; until it is changed the game asks for a new one. */
+export function mustChangePassword(): boolean {
+  return !!cloud.session && !cloud.session.user.user_metadata?.pw_changed;
+}
+
+export async function changePassword(password: string): Promise<string | null> {
+  const { data, error } = await sb.auth.updateUser({ password, data: { pw_changed: true } });
+  if (error) return zh(error.message);
+  if (cloud.session && data.user) cloud.session = { ...cloud.session, user: data.user };
+  changed();
+  return null;
+}
+
+/** Forgot password: a 6-digit code by mail (the reset email template shows {{ .Token }}). */
+export async function sendResetCode(email: string): Promise<string | null> {
+  const { error } = await sb.auth.resetPasswordForEmail(email);
+  return error ? zh(error.message) : null;
+}
+
+export async function resetWithCode(email: string, token: string, password: string): Promise<string | null> {
+  const { data, error } = await sb.auth.verifyOtp({ email, token, type: 'recovery' });
+  if (error) return zh(error.message);
+  cloud.session = data.session;
+  const err = await changePassword(password);
+  if (err) return err;
+  await loadProfile();
+  return null;
 }
 
 export async function signOut(): Promise<void> {

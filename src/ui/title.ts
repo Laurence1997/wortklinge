@@ -10,6 +10,7 @@ export const ORIGINS: Array<[string, string]> = [
 ];
 
 export function showTitle(opts: {
+  account?: HTMLElement;
   existing: GameState | null;
   onContinue: () => void;
   onNew: (name: string, origin: string) => void;
@@ -68,6 +69,7 @@ export function showTitle(opts: {
       h('button.btn.ghost', { onclick: () => file.click() }, '导入存档'),
       file,
     ),
+    opts.account ?? '',
     h('div.ver', `v${opts.version} · 第 1 区 · 请用电脑上的 Chrome 打开，开声音`),
   );
   clear(el).append(box);

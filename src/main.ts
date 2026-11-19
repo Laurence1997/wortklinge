@@ -1,7 +1,9 @@
 import Phaser from 'phaser';
 import './ui/style.css';
 import { load, newGame, save, saveRaw, setSaveHook } from './core/state';
-import { initCloud, push, schedulePush, syncOnBoot } from './net/cloud';
+import { cloud, initCloud, mustChangePassword, push, schedulePush, syncOnBoot } from './net/cloud';
+import { loginView } from './ui/account';
+import { h } from './ui/dom';
 import { Controller } from './game/controller';
 import { WorldScene } from './game/WorldScene';
 import { showTitle } from './ui/title';
@@ -43,7 +45,17 @@ async function start() {
 }
 
 function title(existing: ReturnType<typeof load>) {
+// Title-screen account line: log in here, then reload so the cloud save is picked up.
+let account: HTMLElement | undefined;
+if (!cloud.session || mustChangePassword()) {
+  account = h('div.form.panel');
+  const inner = h('div');
+  const open = h('button.btn.ghost', { onclick: () => { open.remove(); loginView(inner, () => location.reload()); } }, '登录账号（云存档、排行榜）');
+  account.append(open, inner);
+  if (cloud.session) open.click();
+} else account = h('p.small.muted', `已登录 ${cloud.profile?.nickname ?? cloud.session.user.email ?? ''} · 云存档${cloud.status === 'offline' ? '暂时连不上，先存本地' : '已同步'}`);
 showTitle({
+  account,
   existing,
   version: VERSION,
   onContinue: () => boot(existing!),
