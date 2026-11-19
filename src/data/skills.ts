@@ -15,7 +15,7 @@ export const SKILLS: Record<string, Skill> = {
     de: 'Ich habe keine Ahnung.',
     zh: '反弹护盾',
     zhLine: '我一点头绪都没有。',
-    effect: '挡下怪物的下一击，并反弹一半伤害',
+    effect: '挡下怪物的下一击，并反弹 20% 伤害（守护者 30%）',
     cooldown: 4,
   },
   wieBitte: {

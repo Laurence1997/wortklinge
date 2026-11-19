@@ -7,6 +7,7 @@ import type { Move } from '../core/types';
 import { has } from '../core/unlocks';
 import { FAMILIES } from '../data/families';
 import { SKILLS } from '../data/skills';
+import { CLASSES, resMax } from '../core/classes';
 import { fullForm, genderOf } from '../data/words';
 import type { Controller } from '../game/controller';
 import { ARTICLE_COLOR, GLITCH, iconUrl } from '../game/sprites';
@@ -20,6 +21,7 @@ const MOVE_INFO: Record<Move, { key: string; zh: string; sub: string }> = {
   break: { key: 'D', zh: '破防', sub: '默写 · 克防御' },
   sentence: { key: 'F', zh: '句式', sub: 'Ich möchte … · 带元素' },
   skill: { key: 'R', zh: '技能', sub: '写对整句' },
+  cls: { key: 'G', zh: '职业技能', sub: '' },
 };
 
 const INTENT_COLOR: Record<string, string> = {
@@ -63,7 +65,7 @@ export class BattleUI {
   private startTurn() {
     this.zhShown = this.ctrl.state.settings.autoZh || this.ctrl.state.level <= 3;
     this.ctrl.speak(this.b.intent.line);
-    const moves = availableMoves(this.ctrl.state, this.b).filter((m) => m !== 'skill' || this.b.skillCooldown === 0);
+    const moves = availableMoves(this.ctrl.state, this.b).filter((m) => (m !== 'skill' || this.b.skillCooldown === 0) && (m !== 'cls' || this.clsReady()));
     if (moves.length === 1) this.choose(moves[0]);
     else {
       this.phase = 'choose';
@@ -76,12 +78,18 @@ export class BattleUI {
     const moves = availableMoves(this.ctrl.state, this.b);
     if (!moves.includes(move)) return;
     if (move === 'skill' && this.b.skillCooldown > 0) return;
+    if (move === 'cls' && !this.clsReady()) return;
     this.move = move;
     this.question = this.ctrl.askQuestion(move);
     // Listening step: the monster says its own name, the player picks the meaning.
     if (this.question.type === 'pickZh' && this.question.focus) this.ctrl.speak(this.question.focus);
     this.phase = 'answer';
     this.render();
+  }
+
+  private clsReady(): boolean {
+    const s = this.ctrl.state;
+    return !!s.cls && this.b.cfx.res >= CLASSES[s.cls].skillCost;
   }
 
   submit(value: string): void {
@@ -146,7 +154,7 @@ export class BattleUI {
     if (typing) return false;
     const k = e.key.toLowerCase();
     if (this.phase === 'choose' || (this.phase === 'answer' && this.question?.options)) {
-      const map: Record<string, Move> = { a: 'attack', s: 'block', d: 'break', f: 'sentence', r: 'skill' };
+      const map: Record<string, Move> = { a: 'attack', s: 'block', d: 'break', f: 'sentence', r: 'skill', g: 'cls' };
       if (map[k]) {
         this.choose(map[k]);
         return true;
@@ -239,6 +247,7 @@ export class BattleUI {
     if (b.fx.burn > 0) fx.push(`灼烧 ${b.fx.burn}`);
     if (b.fx.poison > 0) fx.push(`中毒 ×${b.fx.poison}`);
     if (b.fx.shield) fx.push('护盾');
+    if (s.cls) fx.push(`${CLASSES[s.cls].res} ${b.cfx.res}/${resMax(s)}${b.cfx.critReady ? ' · 必暴击' : ''}`);
     const me = h(
       'div.b-me',
       h('div.fam', h('span', s.name), h('span', `Lv ${s.level}`)),
@@ -254,8 +263,13 @@ export class BattleUI {
     if (moves.length > 1) {
       for (const mv of moves) {
         const info = MOVE_INFO[mv];
-        const disabled = this.phase === 'result' || (mv === 'skill' && b.skillCooldown > 0);
-        const sub = mv === 'skill' && s.skills[0] ? `${SKILLS[s.skills[0]].zh}${b.skillCooldown ? ` · 冷却 ${b.skillCooldown}` : ''}` : info.sub;
+        const disabled = this.phase === 'result' || (mv === 'skill' && b.skillCooldown > 0) || (mv === 'cls' && !this.clsReady());
+        const sub =
+          mv === 'skill' && s.skills[0]
+            ? `${SKILLS[s.skills[0]].zh}${b.skillCooldown ? ` · 冷却 ${b.skillCooldown}` : ''}`
+            : mv === 'cls' && s.cls
+              ? `${CLASSES[s.cls].skillZh} · ${CLASSES[s.cls].res} ${b.cfx.res}/${CLASSES[s.cls].skillCost}`
+              : info.sub;
         movesEl.append(
           h(
             `button.btn${this.move === mv && this.phase !== 'choose' ? '.sel' : ''}`,

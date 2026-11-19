@@ -12,9 +12,11 @@ import { has } from './unlocks';
 import { fullForm, genderOf, hasArticleQuestion, WORDS } from '../data/words';
 import { SKILLS } from '../data/skills';
 import { CONJ, PERSON_LABEL, type Person } from '../data/verbs';
+import { CLASSES, critRunNeeded, rank, resMax, shieldReflect, wrongHitShare, type ClassId } from './classes';
 
 /** callout = 点名 in packs (shout the target's article); conj = write a verb form (Lv12+); plural = write the plural (Lv11+). */
-export type QuestionType = 'article' | 'pickDe' | 'pickZh' | 'typed' | 'sentence' | 'skill' | 'callout' | 'conj' | 'plural';
+/** storm = 书写者「墨水风暴」(type a long word you know); steady = 守护者「稳住」(no question). */
+export type QuestionType = 'article' | 'pickDe' | 'pickZh' | 'typed' | 'sentence' | 'skill' | 'callout' | 'conj' | 'plural' | 'storm' | 'steady';
 
 export interface Question {
   type: QuestionType;
@@ -27,6 +29,8 @@ export interface Question {
   /** Typed questions on nouns need the article. */
   withArticle?: boolean;
   skillId?: string;
+  /** storm questions: the long word to write. */
+  word?: Word;
   /** conj questions: which person to conjugate for. */
   person?: import('../data/verbs').Person;
 }
@@ -49,6 +53,16 @@ export interface PlayerFx {
   shield: boolean;
 }
 
+/** Class resource for one fight (shared by a whole pack, like PlayerFx). */
+export interface ClassFx {
+  res: number;
+  /** Typed answers right in a row (书写者 passive). */
+  run: number;
+  critReady: boolean;
+  /** Talent 冷静: the first typed miss this fight keeps your combo. */
+  calmUsed: boolean;
+}
+
 export type Tutorial = 'loss' | 'block' | 'break' | 'negation' | 'heal' | 'packCharge' | null;
 
 export interface Battle {
@@ -61,6 +75,9 @@ export interface Battle {
   tutorial: Tutorial;
   monster: MonsterState;
   fx: PlayerFx;
+  cfx: ClassFx;
+  /** Greta's class trial this fight belongs to. */
+  trial: ClassId | null;
   intent: Intent;
   turn: number;
   turnsSinceCharge: number;
@@ -105,7 +122,7 @@ export function startBattle(
   s: GameState,
   word: Word,
   rng: Rng,
-  opts: { isEcho?: boolean; tutorial?: Tutorial } = {},
+  opts: { isEcho?: boolean; tutorial?: Tutorial; trial?: ClassId } = {},
 ): Battle {
   const t = now(s);
   const kind = kindOf(s, word, t);
@@ -130,6 +147,8 @@ export function startBattle(
     tutorial,
     monster,
     fx: { burn: 0, poison: 0, chilled: false, shield: false },
+    cfx: { res: 0, run: 0, critReady: false, calmUsed: false },
+    trial: opts.trial ?? null,
     intent: null as unknown as Intent,
     turn: 1,
     turnsSinceCharge: 0,
@@ -210,6 +229,7 @@ export function availableMoves(s: GameState, b: Battle): Move[] {
   if (has(s.level, 'blockBreak')) moves.push('block', 'break');
   if (has(s.level, 'sentence')) moves.push('sentence');
   if (has(s.level, 'skills') && s.skills.length) moves.push('skill');
+  if (s.cls) moves.push('cls');
   if (b.tutorial === 'loss') return ['attack'];
   return moves;
 }
@@ -222,6 +242,11 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
 
   if (move === 'sentence') {
     return { type: 'sentence', prompt: '句式攻击：Ich möchte + einen / eine / ein + 你见过的名词', focus: 'Ich möchte …' };
+  }
+  if (move === 'cls') {
+    if (s.cls === 'guardian') return { type: 'steady', prompt: '稳住：花 3 沉着，挡下这回合的第一击', focus: '稳住', options: ['稳住！'], answer: '稳住！' };
+    const lw = stormWord(s, rng, w);
+    return { type: 'storm', prompt: '墨水风暴：默写这个词（名词带冠词），字母越多伤害越高', focus: lw.zh, withArticle: hasArticleQuestion(lw), answer: fullForm(lw), word: lw };
   }
   if (move === 'skill') {
     const sk = SKILLS[skillId ?? s.skills[0]];
@@ -272,6 +297,8 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
   if (move === 'block') return isNoun && rng() < 0.5 ? article() : pickDe();
 
   // Normal attack.
+  // 书写者试炼: everything is typed.
+  if (b.trial === 'writer' && canType && move === 'attack') return typed();
   if (b.tutorial === 'loss') return isNoun ? article() : pickZh();
   // 半名 and due: the killing blow must be typed, so offer typing.
   if (b.stage === 2 && b.kind === 'due' && canType) return typed();
@@ -302,6 +329,17 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
   return ladder[b.step % ladder.length]();
 }
 
+/** A long word you have met (longest few of them), for 墨水风暴. Falls back to the target's word. */
+export function stormWord(s: GameState, rng: Rng, fallback: Word): Word {
+  const known = WORDS.filter((x) => s.words[x.id] && x.pos !== 'phr' && x.pos !== 'num' && !x.digit);
+  const pool = known.sort((a, b) => letters(b) - letters(a)).slice(0, 12);
+  return pool.length ? pick(rng, pool) : fallback;
+}
+
+export function letters(w: Word): number {
+  return w.de.replace(/[^A-Za-zÄÖÜäöüß]/g, '').length;
+}
+
 export function knownMoechteNouns(s: GameState): Word[] {
   return WORDS.filter((w) => w.moechte && s.words[w.id]);
 }
@@ -317,6 +355,10 @@ export function gradeQuestion(s: GameState, b: Battle, q: Question, input: strin
     }
     case 'typed':
       return gradeTyped(input, b.word, !!q.withArticle);
+    case 'storm':
+      return gradeTyped(input, q.word!, !!q.withArticle);
+    case 'steady':
+      return { ok: true, notes: [], correct: q.answer! };
     case 'sentence':
       return gradeMoechte(input, knownMoechteNouns(s));
     case 'skill': {
@@ -384,6 +426,7 @@ function syncShared(from: Battle, pack: Battle[]) {
     o.hintsLeft = from.hintsLeft;
     o.judgement = from.judgement;
     o.fx = from.fx;
+    o.cfx = from.cfx;
   }
 }
 
@@ -423,6 +466,25 @@ export function resolveTurn(
   let interrupted = false;
   b.qIndex += 1;
 
+  // Class resources: 书写者 earns 墨水 for typed answers, 守护者 earns 沉着 for every answer.
+  const cfx = b.cfx;
+  const critWasReady = cfx.critReady; // earned this turn = the *next* hit crits
+  const typedLike = q.type === 'typed' || q.type === 'conj' || q.type === 'plural' || q.type === 'storm';
+  if (move === 'cls' && s.cls) cfx.res = Math.max(0, cfx.res - CLASSES[s.cls].skillCost);
+  if (s.cls === 'writer' && typedLike && q.type !== 'storm') {
+    if (ok) {
+      cfx.res += 1;
+      cfx.run += 1;
+      if (cfx.run >= critRunNeeded(s) && !cfx.critReady) {
+        cfx.critReady = true;
+        cfx.run = 0;
+        log.push({ text: `连续默写答对 ${critRunNeeded(s)} 题：下一击必定暴击。`, tone: 'good' });
+      }
+    } else cfx.run = 0;
+  }
+  if (s.cls === 'guardian' && move !== 'cls') cfx.res += 1 + (!ok && rank(s, 'chenzhuo') ? 1 : 0);
+  cfx.res = Math.min(cfx.res, resMax(s));
+
   // --- 1. You act first.
   if (ok) {
     b.wrongStreak = 0;
@@ -447,13 +509,28 @@ export function resolveTurn(
         s.hp = Math.min(maxHp(s), s.hp + heal);
         log.push({ text: `「${sk.de}」——你回复了 ${heal} 点生命。`, tone: 'good' });
       }
+    } else if (move === 'cls' && q.type === 'steady') {
+      blocking = true;
+      log.push({ text: '「稳住」——你沉下身子，这回合的第一击会被挡下。', tone: 'good' });
     } else if (move === 'block') {
       blocking = true;
       log.push({ text: '你摆好架势，准备格挡。', tone: 'info' });
+      if (s.cls === 'guardian' && rank(s, 'yishou')) {
+        const d = Math.max(1, Math.round(attack(s) * CONFIG.damage.choice * between(rng, CONFIG.damage.roll[0], CONFIG.damage.roll[1])));
+        m.hp -= d;
+        playerDamage = d;
+        log.push({ text: `以守为攻：格挡的同时顺手一击，${d} 点。`, tone: 'good' });
+      }
     } else {
       const atk = attack(s);
       let mult = between(rng, CONFIG.damage.roll[0], CONFIG.damage.roll[1]);
-      if (q.type === 'typed' || q.type === 'conj' || q.type === 'plural') mult *= CONFIG.damage.typed * (1 + affixTotal(s, 'typedDmg'));
+      const pen = s.cls === 'writer' ? 0.05 * rank(s, 'bifeng') : 0;
+      if (q.type === 'typed' || q.type === 'conj' || q.type === 'plural') mult *= CONFIG.damage.typed * (1 + affixTotal(s, 'typedDmg') + pen);
+      else if (q.type === 'storm') {
+        const n = letters(q.word!);
+        mult *= (1 + (0.15 + 0.03 * rank(s, 'changci')) * n) * (1 + pen);
+        log.push({ text: `墨水风暴：${fullForm(q.word!)}，${n} 个字母。`, tone: 'good' });
+      }
       else if (q.type === 'sentence') {
         const noun = verdict.word!;
         const recent = s.recentNouns.slice(-5).filter((id) => id === noun.id).length;
@@ -477,6 +554,9 @@ export function resolveTurn(
         newSpell = true;
       } else if ((s.flags.wortgewalt as number) > 0) {
         crit = true;
+      } else if (critWasReady) {
+        crit = true;
+        cfx.critReady = false;
       } else {
         const chance = critChance(s) + (q.type === 'article' || q.type === 'pickDe' || q.type === 'pickZh' ? affixTotal(s, 'choiceCrit') : 0);
         crit = rng() < chance;
@@ -492,7 +572,8 @@ export function resolveTurn(
       if (q.type === 'article' && Object.values(s.equipped).some((it) => it?.legendary === 'articleJudgement')) b.judgement = true;
 
       const charging = intent.kind === 'charge';
-      if (intent.kind === 'defend' && (move === 'attack' || move === 'sentence')) mult *= CONFIG.damage.vsDefend;
+      const ignoreDefend = s.cls === 'writer' && typedLike && rank(s, 'tengxie') > 0;
+      if (intent.kind === 'defend' && (move === 'attack' || move === 'sentence' || move === 'cls') && !ignoreDefend) mult *= CONFIG.damage.vsDefend;
       if (move === 'break' && charging) mult = 0; // 破防对蓄力无效
       mult = Math.min(mult, CONFIG.damage.maxMultiplierOfBase);
       playerDamage = Math.max(move === 'break' && charging ? 0 : 1, Math.round(atk * mult));
@@ -527,7 +608,10 @@ export function resolveTurn(
       kills.push(b);
     }
   } else {
-    s.combo = 0;
+    if (s.cls === 'writer' && typedLike && rank(s, 'lengjing') && !cfx.calmUsed) {
+      cfx.calmUsed = true;
+      log.push({ text: '冷静：这次默写错了，连击还在。', tone: 'info' });
+    } else s.combo = 0;
     b.wrongStreak += 1;
     if (b.stage === 2 && !b.slipped && b.kind === 'due') {
       b.slipped = true;
@@ -570,10 +654,10 @@ export function resolveTurn(
   const chillMult = m.chilled ? CONFIG.status.iceDamageMult : 1;
 
   const hitPlayer = (raw: number) => {
-    let d = Math.max(1, Math.round(raw * (1 - wrongReduce)));
+    let d = Math.max(1, Math.round(raw * (1 - wrongReduce) * (ok ? 1 : wrongHitShare(s))));
     if (b.fx.shield) {
       b.fx.shield = false;
-      const back = Math.max(1, Math.round(d * 0.5));
+      const back = Math.max(1, Math.round(d * shieldReflect(s)));
       m.hp = Math.max(0, m.hp - back);
       say({ text: `护盾挡下这一击，反弹 ${back} 点伤害。`, tone: 'good' });
       d = 0;
@@ -594,7 +678,7 @@ export function resolveTurn(
         for (let i = 0; i < intent.hits; i++) {
           if (i === 0 && blocking) {
             parried = true;
-            const counter = Math.max(1, Math.round(attack(s) * CONFIG.player.critMult));
+            const counter = Math.max(1, Math.round(attack(s) * CONFIG.player.critMult * (1 + (s.cls === 'guardian' ? 0.2 * rank(s, 'fanji') : 0))));
             m.hp = Math.max(0, m.hp - counter);
             say({ text: `弹反！挡住第一下并反击 ${counter} 点（算一次暴击）。`, tone: 'crit' });
             continue;

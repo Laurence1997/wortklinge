@@ -15,7 +15,7 @@ export interface MonsterEntity {
   kind: 'new' | 'due' | 'shadow';
   zone: ZoneId;
   isEcho: boolean;
-  scripted?: 'loss';
+  scripted?: 'loss' | 'trial';
   x: number;
   y: number;
   tx: number;
@@ -209,7 +209,7 @@ export class WorldScene extends Phaser.Scene {
     }
   }
 
-  addMonster(word: Word, kind: MonsterEntity['kind'], zone: ZoneId, x: number, y: number, opts: { isEcho?: boolean; scripted?: 'loss' } = {}): MonsterEntity {
+  addMonster(word: Word, kind: MonsterEntity['kind'], zone: ZoneId, x: number, y: number, opts: { isEcho?: boolean; scripted?: 'loss' | 'trial' } = {}): MonsterEntity {
     const label = this.add.text(0, 0, '', { fontFamily: FONT, fontSize: '9px', fontStyle: 'bold', color: '#fff', resolution: 4 }).setOrigin(0.5, 1);
     const teeth = this.add.text(0, 1, '', { fontFamily: FONT, fontSize: '5px', color: '#ff3040', resolution: 4 }).setOrigin(0.5, 0);
     const marker = this.add.text(0, -12, '', { fontFamily: FONT, fontSize: '8px', fontStyle: 'bold', color: '#ffcf4a', resolution: 4 }).setOrigin(0.5, 1);

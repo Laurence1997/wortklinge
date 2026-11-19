@@ -338,3 +338,72 @@ describe('region 2: packs, conjugation, plurals', () => {
     for (const w of WORDS.filter((x) => x.pos === 'v' && x.region === 2)) expect(CONJ[w.de], w.de).toBeDefined();
   });
 });
+
+describe('classes and talents', () => {
+  const noun = () => WORDS.find((w) => w.de === 'Apfel')!;
+
+  it('书写者: typed answers fill ink, 3 in a row make the next hit a crit, 墨水风暴 spends 3', () => {
+    const rng = makeRng(11);
+    const s = newGame('T', 'student');
+    s.level = 12;
+    s.cls = 'writer';
+    s.hp = 9999;
+    s.words['apfel'] = { stage: 1 } as never;
+    const b = startBattle(s, noun(), rng);
+    b.monster.hp = b.monster.maxHp = 9999;
+    const typed = { type: 'typed' as const, prompt: '', focus: '', withArticle: true, answer: 'der Apfel' };
+    for (let i = 0; i < 3; i++) resolveTurn(s, b, 'attack', typed, 'der Apfel', rng);
+    expect(b.cfx.res).toBe(3);
+    expect(b.cfx.critReady).toBe(true);
+    const r = resolveTurn(s, b, 'attack', makeQuestion(s, b, 'attack', rng), 'x', rng);
+    if (r.correct) expect(r.crit).toBe(true);
+    const storm = makeQuestion(s, b, 'cls', rng);
+    expect(storm.type).toBe('storm');
+    const rs = resolveTurn(s, b, 'cls', storm, storm.answer!, rng);
+    expect(rs.correct).toBe(true);
+    expect(b.cfx.res).toBe(0);
+  });
+
+  it('守护者: wrong answers hurt 20% less and 稳住 blocks', () => {
+    const hitTaken = (cls: 'guardian' | null) => {
+      const rng = makeRng(4);
+      const s = newGame('T', 'student');
+      s.level = 12;
+      s.cls = cls;
+      s.hp = 9999;
+      const b = startBattle(s, noun(), rng);
+      b.intent = { ...b.intent, kind: 'attack', hits: 1, element: 'phys' };
+      b.monster.dmg = 50;
+      b.monster.hp = 9999;
+      const q = { type: 'article' as const, prompt: '', focus: '', options: ['der', 'die', 'das'], answer: 'der' };
+      resolveTurn(s, b, 'attack', q, 'die', rng);
+      return { lost: 9999 - s.hp, res: b.cfx.res };
+    };
+    const g = hitTaken('guardian');
+    expect(g.lost).toBeLessThan(hitTaken(null).lost);
+    expect(g.res).toBe(1);
+  });
+
+  it('talent points start at Lv12, tiers gate, respec costs an hour of gold', async () => {
+    const { learn, talentPoints, respec, respecCost, spent } = await import('../src/core/classes');
+    const s = newGame('T', 'student');
+    s.cls = 'writer';
+    s.level = 11;
+    expect(talentPoints(s)).toBe(0);
+    s.level = 20;
+    expect(talentPoints(s)).toBe(9);
+    expect(learn(s, 'tengxie')).toBe(false); // tier 3 needs 6 points first
+    for (let i = 0; i < 3; i++) learn(s, 'bifeng');
+    expect(learn(s, 'bifeng')).toBe(false); // max 3
+    learn(s, 'changci');
+    learn(s, 'changci');
+    learn(s, 'zhanmo');
+    expect(learn(s, 'tengxie')).toBe(true);
+    expect(spent(s)).toBe(7);
+    s.gold = respecCost(s) - 1;
+    expect(respec(s)).toBe(false);
+    s.gold += 1;
+    expect(respec(s)).toBe(true);
+    expect(spent(s)).toBe(0);
+  });
+});

@@ -6,6 +6,7 @@ import { recordKill, type KillOutcome } from './srs';
 import { addXp, affixTotal, maxHp, now, overloaded, rollDay, todayLog, type GameState, type LevelUpResult } from './state';
 import type { Item } from './types';
 import { has } from './unlocks';
+import { CONJ } from '../data/verbs';
 
 export interface WinResult {
   xp: number;
@@ -36,6 +37,8 @@ export function applyWin(s: GameState, b: Battle, rng: Rng, opts: { heal?: boole
   const overdueMult = 1 + CONFIG.monster.overdueRewardStep * b.overdue;
   xp *= overdueMult;
   if (b.lastKillTyped) xp *= CONFIG.xp.typedKillMult;
+  // Strong verbs (nehmen → nimmt) are harder to conjugate: ×1.3 once conjugation is unlocked.
+  if (w.pos === 'v' && CONJ[w.de]?.strong && has(s.level, 'conjugation')) xp *= CONFIG.xp.strongVerbMult;
   const gap = levelGapMult(s.level, b.monster.lvl);
   xp = gap === 0 ? 1 : xp * gap;
   xp *= 1 + Math.min(0.3, affixTotal(s, 'xp'));

@@ -38,6 +38,7 @@ export const CONFIG = {
     shadowMonster: 8,
     boss: 300,
     typedKillMult: 1.5,
+    strongVerbMult: 1.3,
   },
 
   /** Minutes for Lv1→2 … Lv5→6 (新手加速), then t(L) = 1.25 × L^0.3 hours. ~1000 XP per active hour. */

@@ -2,8 +2,9 @@
 // Phaser world to the DOM interface. Game rules live in src/core and stay pure.
 
 import { answerBoss, startBoss, type BossFight } from '../core/boss';
-import { makeQuestion, pickHint, resolveTurn, startBattle, type Battle, type Question, type TurnReport, type Tutorial } from '../core/combat';
+import { makeQuestion, monsterStats, pickHint, resolveTurn, startBattle, type Battle, type Question, type TurnReport, type Tutorial } from '../core/combat';
 import { CONFIG, xpToNext } from '../core/config';
+import { CLASSES, respec, respecCost, spent, TALENT_FROM_LEVEL, type ClassId } from '../core/classes';
 import { makeItem } from '../core/loot';
 import { applyLoss, applyWin, postFightHeal } from '../core/outcomes';
 import { defaultRng, type Rng } from '../core/rng';
@@ -38,6 +39,8 @@ import { $, isTyping } from '../ui/dom';
 
 const SYS = '系统';
 const HILDE = '守火人 Hilde';
+const GRETA = '导师 Greta';
+const TRIAL_FIGHTS = 3;
 
 export class Controller {
   state: GameState;
@@ -49,6 +52,8 @@ export class Controller {
   pack: Battle[] = [];
   packEntities: MonsterEntity[] = [];
   private killer: Battle | null = null;
+  /** Greta's class trial in progress: which class, fights still to win. */
+  private trial: { cls: ClassId; left: number } | null = null;
   boss: BossFight | null = null;
   battleUI = new BattleUI(this);
   bossUI = new BossUI(this);
@@ -59,6 +64,11 @@ export class Controller {
   constructor(state: GameState, dev: boolean) {
     this.state = state;
     this.dev = dev;
+    // A class trial borrows the class for its fights; undo it if the page closed mid-trial.
+    if ('trialPrev' in state.flags) {
+      state.cls = (state.flags.trialPrev as ClassId) || null;
+      delete state.flags.trialPrev;
+    }
     window.addEventListener('keydown', (e) => this.onKey(e));
     for (const ev of ['keydown', 'mousedown', 'mousemove']) window.addEventListener(ev, () => (this.lastInput = Date.now()), { passive: true });
     // Count active minutes for the playtest log (idle > 2 min doesn't count).
@@ -206,7 +216,7 @@ export class Controller {
 
   // ---- Encounters ----------------------------------------------------------------------
 
-  encounter(m: MonsterEntity): void {
+  encounter(m: MonsterEntity, opts: { trial?: ClassId } = {}): void {
     if (this.battle) return;
     const s = this.state;
     rollDay(s);
@@ -224,7 +234,18 @@ export class Controller {
       this.battle = startBattle(s, dog, this.rng, { tutorial: 'loss' });
     } else {
       this.entity = m;
-      this.battle = startBattle(s, m.word, this.rng, { isEcho: m.isEcho, tutorial });
+      this.battle = startBattle(s, m.word, this.rng, { isEcho: m.isEcho, tutorial, trial: opts.trial });
+    }
+    if (opts.trial) {
+      // Trial monsters fight at your level, whatever word they carry.
+      const st = monsterStats(s.level, 1, 'new', 0);
+      Object.assign(this.battle.monster, { lvl: s.level, hp: st.hp, maxHp: st.hp, dmg: st.dmg });
+    }
+    if (opts.trial === 'guardian') {
+      // 守护者试炼: review monsters left too long (three intervals overdue): fatter and meaner.
+      const mon = this.battle.monster;
+      mon.hp = mon.maxHp = Math.round(mon.maxHp * (1 + CONFIG.monster.overdueHpStep * 3));
+      mon.dmg = Math.round(mon.dmg * 1.3);
     }
     if (m.word.id === 'brot' && !s.flags.brotDone) {
       this.battle.monster.hp = this.battle.monster.maxHp = 1;
@@ -233,7 +254,7 @@ export class Controller {
     this.pack = [this.battle];
     this.packEntities = [m];
     this.killer = null;
-    if (!tutorial) this.gatherPack(m);
+    if (!tutorial && !opts.trial) this.gatherPack(m);
     this.scene.focusBattle(m);
     setBattleMusic(true);
     setPrompt(null);
@@ -269,6 +290,7 @@ export class Controller {
     // Pack-wide values (player statuses, hints, skill cooldown) are shared.
     for (const b of this.pack) {
       b.fx = this.pack[0].fx;
+      b.cfx = this.pack[0].cfx;
       b.hintsLeft = this.pack[0].hintsLeft;
     }
     this.retarget();
@@ -475,6 +497,110 @@ export class Controller {
     }
     this.scene.endFocus();
     this.scene.restyleAll();
+    if (this.trial) this.trialNext(won);
+    this.refresh();
+    this.persist();
+  }
+
+  // ---- Classes (Greta) ---------------------------------------------------------------------
+
+  private talkGreta() {
+    const s = this.state;
+    if (s.level < CONFIG.region2Level) {
+      say([{ who: GRETA, text: `你还太嫩。到 ${CONFIG.region2Level} 级再来找我。` }]);
+      return;
+    }
+    const lines: Line[] = [];
+    if (!s.flags.gretaMet) {
+      s.flags.gretaMet = true;
+      lines.push(
+        { who: GRETA, text: '营地来的？Hilde 跟我提过你。在集市里光会叫名字不够，你得有自己的打法。' },
+        { who: GRETA, text: '书写者靠默写：写得越多，墨水越多，下笔越狠。守护者靠站得住：答错也不容易倒，挡得住，反弹得回去。' },
+        { who: GRETA, text: '先各试一场试炼。打完一次，这个职业就永久归你。第一个职业白送，之后随时来我这儿换。' },
+      );
+    }
+    const choices: Array<{ label: string; act: () => void }> = [];
+    for (const id of ['writer', 'guardian'] as ClassId[]) {
+      const c = CLASSES[id];
+      if (!s.classes.includes(id)) choices.push({ label: `试炼：${c.zh}（${c.trialZh}）`, act: () => this.startTrial(id) });
+      else if (s.cls !== id) choices.push({ label: `${s.cls ? '换成' : '选择'}${c.zh}`, act: () => this.pickClass(id) });
+    }
+    if (s.cls && s.level >= TALENT_FROM_LEVEL) choices.push({ label: '看天赋（T）', act: () => this.panels.show('talents') });
+    if (s.cls && spent(s) > 0) choices.push({ label: `洗点（${respecCost(s)} 金币）`, act: () => this.doRespec() });
+    choices.push({ label: '离开', act: () => undefined });
+    if (!lines.length) lines.push({ who: GRETA, text: s.cls ? `${CLASSES[s.cls].zh}，今天想练什么？` : '想好试哪个了吗？' });
+    say(lines, undefined, choices);
+  }
+
+  private startTrial(id: ClassId) {
+    const s = this.state;
+    this.trial = { cls: id, left: TRIAL_FIGHTS };
+    s.flags.trialPrev = s.cls ?? '';
+    s.cls = id;
+    say([{ who: GRETA, text: `${CLASSES[id].zh}试炼：${CLASSES[id].trialZh}。${CLASSES[id].blurb.join('')}` }], () => this.trialFight());
+  }
+
+  /** Trial fights use words you have already met, so they test the class, not new words. */
+  private trialFight() {
+    const s = this.state;
+    const known = WORDS.filter((w) => s.words[w.id] && w.pos !== 'phr' && w.pos !== 'num' && !w.digit && w.family !== 'truhe');
+    const pool = known.length >= 3 ? known : zoneWords('gemuesegasse');
+    const word = pool[Math.floor(this.rng() * pool.length)];
+    const p = this.scene.player;
+    const m = this.scene.addMonster(word, 'new', 'markt', p.x + 20, p.y, { scripted: 'trial' });
+    this.encounter(m, { trial: this.trial!.cls });
+  }
+
+  private trialNext(won: boolean) {
+    const s = this.state;
+    const t = this.trial!;
+    if (!won) {
+      this.trial = null;
+      s.cls = (s.flags.trialPrev as ClassId) || null;
+      delete s.flags.trialPrev;
+      say([{ who: GRETA, text: '试炼断了。没关系，什么时候准备好了再来。' }]);
+      return;
+    }
+    t.left -= 1;
+    if (t.left > 0) {
+      toast(`试炼：还剩 ${t.left} 场`);
+      this.scene.time.delayedCall(600, () => this.trialFight());
+      return;
+    }
+    this.trial = null;
+    const prev = (s.flags.trialPrev as ClassId) || null;
+    delete s.flags.trialPrev;
+    s.cls = prev;
+    if (!s.classes.includes(t.cls)) s.classes.push(t.cls);
+    banner('试炼完成', `${CLASSES[t.cls].zh} 已解锁`);
+    const choices = [
+      { label: `${prev ? '换成' : '选择'}${CLASSES[t.cls].zh}`, act: () => this.pickClass(t.cls) },
+      { label: prev ? `继续当${CLASSES[prev].zh}` : '再想想', act: () => undefined },
+    ];
+    say([{ who: GRETA, text: `不错。${CLASSES[t.cls].zh}这条路你走得通。要现在就选吗？` }], undefined, choices);
+  }
+
+  private pickClass(id: ClassId) {
+    const s = this.state;
+    const first = !s.cls;
+    s.cls = id;
+    banner(first ? '职业' : '换职业', CLASSES[id].zh);
+    const lines: Line[] = [{ who: GRETA, text: `从今天起，你是${CLASSES[id].zh}。战斗里按 G 用职业技能「${CLASSES[id].skillZh}」。` }];
+    if (s.level >= TALENT_FROM_LEVEL) lines.push({ who: SYS, text: '按 T 打开职业与天赋，把天赋点花掉。' });
+    else lines.push({ who: SYS, text: `${TALENT_FROM_LEVEL} 级起每升一级得 1 点天赋（按 T 查看）。` });
+    say(lines);
+    this.refresh();
+    this.persist();
+  }
+
+  private doRespec() {
+    const s = this.state;
+    const cost = respecCost(s);
+    if (!respec(s)) {
+      say([{ who: GRETA, text: `洗点要 ${cost} 金币。你身上不够。` }]);
+      return;
+    }
+    toast(`天赋已重置，花了 ${cost} 金币`);
     this.refresh();
     this.persist();
   }
@@ -552,6 +678,7 @@ export class Controller {
 
   private talkNpc(id: string) {
     if (id === 'hilde') return this.talkHilde();
+    if (id === 'greta') return this.talkGreta();
     // Region-2 NPCs: their systems (class, shop, Konrad's quest) open with the region-2 build.
     const lines: Record<string, string> = {
       greta: '导师 Greta：「你就是从营地那边过来的？到 10 级、选职业的时候再来找我。」',
@@ -812,6 +939,7 @@ export class Controller {
     const k = e.key.toLowerCase();
     if (k === 'c' || k === 'i') this.panels.toggle('hero');
     else if (k === 'b') this.panels.toggle('codex');
+    else if (k === 't') this.panels.toggle('talents');
     else if (k === 'h') this.panels.toggle('help');
     // First interaction unlocks audio in browsers.
     initAudio(this.state.settings.music, this.state.settings.sfx);

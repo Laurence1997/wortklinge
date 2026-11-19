@@ -36,7 +36,8 @@ export type FamilyId = 'zahnding' | 'echo' | 'zahlwurm' | 'sippe' | 'schild' | '
 export type ZoneId = 'camp' | 'echogasse' | 'schilderstrasse' | 'aschehof' | 'markt' | 'gemuesegasse' | 'waagegasse' | 'kornspeicher';
 
 export type IntentKind = 'attack' | 'defend' | 'charge' | 'heal' | 'wait';
-export type Move = 'attack' | 'block' | 'break' | 'sentence' | 'skill';
+/** cls = the class skill (书写者 墨水风暴 / 守护者 稳住). */
+export type Move = 'attack' | 'block' | 'break' | 'sentence' | 'skill' | 'cls';
 
 export interface Intent {
   /** What the monster will actually do. */

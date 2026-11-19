@@ -6,11 +6,12 @@ import type { Item, Slot } from '../core/types';
 import { has } from '../core/unlocks';
 import { FAMILIES } from '../data/families';
 import { SKILLS } from '../data/skills';
+import { canLearn, CLASSES, learn, rank, spent, talentPoints, TALENT_FROM_LEVEL, TALENTS, TIER_GATE } from '../core/classes';
 import { fullForm, genderOf, WORDS } from '../data/words';
 import type { Controller } from '../game/controller';
 import { $, clear, h } from './dom';
 
-export type PanelName = 'hero' | 'codex' | 'data' | 'settings' | 'help';
+export type PanelName = 'hero' | 'talents' | 'codex' | 'data' | 'settings' | 'help';
 
 export class Panels {
   open: PanelName | null = null;
@@ -39,13 +40,13 @@ export class Panels {
     if (!this.open) return;
     const el = $('modal');
     const panel = h('div.panel');
-    const titles: Record<PanelName, string> = { hero: '角色与装备', codex: '图鉴', data: '数据与存档', settings: '设置', help: '怎么玩' };
+    const titles: Record<PanelName, string> = { hero: '角色与装备', talents: '职业与天赋', codex: '图鉴', data: '数据与存档', settings: '设置', help: '怎么玩' };
     const tabs = h('div.tabs');
     (Object.keys(titles) as PanelName[]).forEach((k) =>
       tabs.append(h(`button.btn${this.open === k ? '.on' : ''}`, { onclick: () => this.show(k) }, titles[k])),
     );
     panel.append(h('h2', h('span', titles[this.open]), h('button.btn.ghost', { onclick: () => this.close() }, '关闭 Esc')), tabs);
-    const body = { hero: () => this.hero(), codex: () => this.codex(), data: () => this.data(), settings: () => this.settings(), help: () => this.help() }[this.open]();
+    const body = { hero: () => this.hero(), talents: () => this.talents(), codex: () => this.codex(), data: () => this.data(), settings: () => this.settings(), help: () => this.help() }[this.open]();
     panel.append(body);
     clear(el).append(panel);
     el.onclick = (e) => {
@@ -117,6 +118,45 @@ export class Panels {
     right.append(bag);
     if (s.bag.length) right.append(h('p.small.muted', '商店和分解成字母在第 2 区开放，现在只能丢弃。'));
     return h('div.grid2', left, right);
+  }
+
+  // ---- Class & talents ---------------------------------------------------------
+
+  private talents(): HTMLElement {
+    const s = this.ctrl.state;
+    const wrap = h('div');
+    if (!s.cls) {
+      wrap.append(h('p.muted', s.level < 10 ? '10 级以后，去面包集市找导师 Greta 选职业。' : '去面包集市找导师 Greta：先打一场试炼，再选职业。'));
+      return wrap;
+    }
+    const c = CLASSES[s.cls];
+    wrap.append(h('h3', { style: 'margin-top:0' }, `${c.zh} · 资源「${c.res}」`));
+    for (const line of c.blurb) wrap.append(h('p.small', line));
+    const pts = talentPoints(s);
+    const used = spent(s);
+    wrap.append(h('h3', `天赋（已用 ${used} / ${pts} 点）`));
+    if (s.level < TALENT_FROM_LEVEL) {
+      wrap.append(h('p.muted.small', `${TALENT_FROM_LEVEL} 级起每升一级得 1 点天赋。`));
+      return wrap;
+    }
+    for (const tier of [1, 2, 3] as const) {
+      const row = h('div.talent-row');
+      row.append(h('div.small.muted', tier === 1 ? '第 1 层' : `第 ${tier} 层（先花满 ${TIER_GATE[tier]} 点）`));
+      for (const t of TALENTS[s.cls].filter((x) => x.tier === tier)) {
+        const r = rank(s, t.id);
+        row.append(
+          h(
+            `div.slot${r ? '' : '.dim'}`,
+            h('div.k', `${t.zh} ${r}/${t.max}`),
+            h('div.small', t.desc(Math.max(1, r))),
+            h('button.btn.small', { disabled: !canLearn(s, t), onclick: () => { learn(s, t.id); this.ctrl.persist(); this.render(); } }, '点'),
+          ),
+        );
+      }
+      wrap.append(row);
+    }
+    wrap.append(h('p.small.muted', '洗点：在导师 Greta 那里花一小时的金币。每个职业的天赋分开存。'));
+    return wrap;
   }
 
   private itemBody(it: Item): HTMLElement {
