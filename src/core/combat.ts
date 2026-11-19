@@ -29,6 +29,8 @@ export interface Question {
   /** Typed questions on nouns need the article. */
   withArticle?: boolean;
   skillId?: string;
+  /** conj questions: other accepted forms. */
+  alts?: string[];
   /** storm questions: the long word to write. */
   word?: Word;
   /** conj questions: which person to conjugate for. */
@@ -304,7 +306,7 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
     // Strong verbs: ask the forms that change (du, er) more often.
     const pool: Person[] = c.strong ? ['du', 'du', 'er', 'er', 'ich', 'wir', 'ihr', 'sie'] : ['ich', 'du', 'er', 'wir', 'ihr', 'sie'];
     const person = pick(rng, pool);
-    return { type: 'conj', prompt: `写出变位：${PERSON_LABEL[person]} ___（${w.de}）`, focus: `${person === 'er' ? 'er' : person === 'sie' ? 'sie' : person} … (${w.de})`, answer: c.forms[person], person };
+    return { type: 'conj', prompt: `写出变位：${PERSON_LABEL[person]} ___（${w.de}）`, focus: `${person === 'er' ? 'er' : person === 'sie' ? 'sie' : person} … (${w.de})`, answer: c.forms[person], person, alts: c.alt?.[person] };
   };
   const plural = (): Question => ({ type: 'plural', prompt: '写出复数（带 die）', focus: `${fullForm(w)} → die …`, answer: w.pl! });
 
@@ -396,7 +398,12 @@ export function gradeQuestion(s: GameState, b: Battle, q: Question, input: strin
       if (q.type === 'conj' && q.person === 'er') v = v.replace(/^(er|sie|es) /i, '');
       if (q.type === 'conj' && q.person === 'sie') v = v.replace(/^(sie|Sie) /, '');
       const fake: Word = { id: 'q', de: q.answer!, zh: '', pos: 'phr', family: 'echo', lvl: 1, zone: 'camp' };
-      const r = gradeTyped(v, fake, false);
+      let r = gradeTyped(v, fake, false);
+      for (const a of q.alts ?? []) {
+        if (r.ok) break;
+        const ra = gradeTyped(v, { ...fake, de: a }, false);
+        if (ra.ok) r = { ...ra, notes: [`也对；更常见的是 ${q.answer}`] };
+      }
       return { ...r, correct: q.type === 'conj' ? `${q.person === 'er' ? 'er' : q.person === 'sie' ? 'sie' : q.person} ${q.answer}` : `die ${q.answer}` };
     }
   }

@@ -552,3 +552,15 @@ describe('吞秤者 (region 2 boss)', () => {
     if (price) expect(answerBoss(s, f, price.model, makeRng(1)).ok).toBe(true);
   });
 });
+
+describe('backen accepts both present forms', () => {
+  it('du backst / du bäckst', () => {
+    const rng = makeRng(1);
+    const s = newGame('T', 'student');
+    s.level = 12;
+    const b = startBattle(s, WORDS.find((w) => w.de === 'backen')!, rng);
+    const q = { type: 'conj' as const, prompt: '', focus: '', answer: 'backst', person: 'du' as const, alts: ['bäckst'] };
+    expect(resolveTurn(s, b, 'attack', q, 'du bäckst', rng).correct).toBe(true);
+    expect(resolveTurn(s, b, 'attack', q, 'backst', rng).correct).toBe(true);
+  });
+});

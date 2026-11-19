@@ -15,6 +15,8 @@ export interface Conj {
    * Region 3's Perfekt must not generate "gewiegt" for these. Verbs marked `strong` are strong in the past too.
    */
   pastStrong?: boolean;
+  /** Other accepted forms (backen: du bäckst, er bäckt); the shown answer stays in `forms`. */
+  alt?: Partial<Record<Person, string[]>>;
 }
 
 function row(s: string, strong = false): Conj {
@@ -67,7 +69,7 @@ export const CONJ: Record<string, Conj> = {
   waschen: row('wasche wäschst wäscht waschen wascht waschen', true),
   tragen: row('trage trägst trägt tragen tragt tragen', true),
   vergessen: row('vergesse vergisst vergisst vergessen vergesst vergessen', true),
-  backen: rowPast('backe backst backt backen backt backen'),
+  backen: { ...rowPast('backe backst backt backen backt backen'), alt: { du: ['bäckst'], er: ['bäckt'] } },
   probieren: row('probiere probierst probiert probieren probiert probieren'),
   zählen: row('zähle zählst zählt zählen zählt zählen'),
   mögen: row('mag magst mag mögen mögt mögen', true),
