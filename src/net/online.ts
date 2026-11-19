@@ -120,9 +120,11 @@ export function leave(): void {
 
 /** Sends where you are, only when something changed (call about once a second). */
 // Presence has a tight per-client rate limit, so it only carries who you are (nick, look, fighting)
-// and a position refreshed at most every 10 s; walking goes out as a broadcast about once a second.
+// and a position refreshed at most every 10 s; walking goes out as a broadcast at most every 3 s.
 let lastTrack = 0;
 let lastPos = '';
+let lastBroadcast = 0;
+/** Walking position goes out at most every 3 s (Lucas: 没必要那么勤). */
 export function update(me: Me): void {
   if (!channel || online.status !== 'ok') return;
   const now = Date.now();
@@ -138,8 +140,9 @@ export function update(me: Me): void {
     void channel.track({ nick: myNick(), look: me.look, x, y, fighting: me.fighting });
     return;
   }
-  if (pos !== lastPos) {
+  if (pos !== lastPos && now - lastBroadcast >= 3000) {
     lastPos = pos;
+    lastBroadcast = now;
     void channel.send({ type: 'broadcast', event: 'pos', payload: { id: myId(), x, y } });
   }
 }

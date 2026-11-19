@@ -536,7 +536,7 @@ export class WorldScene extends Phaser.Scene {
       const far = Math.hypot(dx, dy);
       if (far > 200) v.c.setPosition(p.x, p.y);
       else if (far > 1) {
-        const step = Math.min(far, 70 * dt);
+        const step = Math.min(far, Math.max(70, far / 2.5) * dt); // positions come every 3 s: glide there
         v.c.x += (dx / far) * step;
         v.c.y += (dy / far) * step;
         if (Math.abs(dx) > 1) v.spr.setFlipX(dx < 0);
