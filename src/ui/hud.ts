@@ -1,7 +1,7 @@
 import { CONFIG, xpToNext } from '../core/config';
 import { comboTier } from '../core/combat';
 import { progressSummary } from '../core/srs';
-import { maxHp, type GameState } from '../core/state';
+import { maxHp, overloaded, type GameState } from '../core/state';
 import { WORDS } from '../data/words';
 import { zoneAt } from '../game/map';
 import { $, bar, clear, h } from './dom';
@@ -24,7 +24,9 @@ export function renderHud(s: GameState): void {
     ),
     h(
       'div.hud-row',
-      h('span', '今日新词 ', h('b', `${s.daily.newCount}/${CONFIG.srs.dailyNewCap}`)),
+      overloaded(s)
+        ? h('span', { title: '言灵过载：新怪收益减半，复习收益提高。明早 4 点消退。' }, h('b', { style: 'color:var(--bad)' }, '言灵过载'), ` ${s.daily.newCount}`)
+        : h('span', '今日新词 ', h('b', `${s.daily.newCount}/${CONFIG.srs.dailyNewCap}`)),
       h('span', '待复习 ', h('b', String(p.due))),
       h('span', '归名 ', h('b', String(p.guiming))),
     ),

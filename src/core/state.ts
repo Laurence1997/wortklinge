@@ -208,3 +208,8 @@ export function importJson(text: string): GameState | null {
     return null;
   }
 }
+
+/** 言灵过载: today's new words have reached the daily threshold. */
+export function overloaded(s: GameState): boolean {
+  return s.daily.newCount >= CONFIG.srs.dailyNewCap;
+}

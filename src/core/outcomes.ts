@@ -3,7 +3,7 @@ import { CONFIG, levelGapMult } from './config';
 import { makeItem, rollQuality } from './loot';
 import type { Rng } from './rng';
 import { recordKill, type KillOutcome } from './srs';
-import { addXp, affixTotal, maxHp, now, rollDay, todayLog, type GameState, type LevelUpResult } from './state';
+import { addXp, affixTotal, maxHp, now, overloaded, rollDay, todayLog, type GameState, type LevelUpResult } from './state';
 import type { Item } from './types';
 import { has } from './unlocks';
 
@@ -15,7 +15,8 @@ export interface WinResult {
   drop: Item | null;
   bagFull: boolean;
   echoRecovered: { gold: number; xp: number } | null;
-  overCap: boolean;
+  /** This kill happened during 言灵过载 (new = paid less, due = paid more). */
+  overload: 'new' | 'due' | null;
 }
 
 export function applyWin(s: GameState, b: Battle, rng: Rng): WinResult {
@@ -24,11 +25,14 @@ export function applyWin(s: GameState, b: Battle, rng: Rng): WinResult {
   const log = todayLog(s);
   const w = b.word;
   const wasNew = b.kind === 'new';
-  const overCap = wasNew && s.daily.newCount >= CONFIG.srs.dailyNewCap;
+  const ov = overloaded(s);
+  const overload: WinResult['overload'] = ov && wasNew ? 'new' : ov && b.kind === 'due' ? 'due' : null;
+  const O = CONFIG.overload;
   const kill = recordKill(s, w, b.lastKillTyped, b.slipped, t);
 
   let xp = b.kind === 'new' ? CONFIG.xp.newMonster : b.kind === 'due' ? CONFIG.xp.dueMonster : CONFIG.xp.shadowMonster;
-  if (overCap) xp *= CONFIG.xp.overCapNewMult;
+  if (overload === 'new') xp *= O.newXp;
+  if (overload === 'due') xp *= O.dueXp;
   if (b.lastKillTyped) xp *= CONFIG.xp.typedKillMult;
   const gap = levelGapMult(s.level, b.monster.lvl);
   xp = gap === 0 ? 1 : xp * gap;
@@ -37,6 +41,8 @@ export function applyWin(s: GameState, b: Battle, rng: Rng): WinResult {
   xp = Math.round(xp);
 
   let gold = CONFIG.gold.perKill(b.monster.lvl);
+  if (overload === 'new') gold = Math.max(1, Math.round(gold * O.newGold));
+  if (overload === 'due') gold = Math.round(gold * O.dueGold);
   let echoRecovered: WinResult['echoRecovered'] = null;
   if (s.echo && s.echo.wordId === w.id) {
     echoRecovered = { gold: s.echo.gold, xp: s.echo.xp };
@@ -63,6 +69,8 @@ export function applyWin(s: GameState, b: Battle, rng: Rng): WinResult {
     const firstGreen = !s.flags.firstGreen;
     let rate = CONFIG.loot.smallDropRate * (1 + Math.min(1, affixTotal(s, 'dropRate')));
     if (b.kind === 'due') rate *= 1.5;
+    if (overload === 'new') rate *= O.newDrop;
+    if (overload === 'due') rate *= O.dueDrop;
     if (firstGreen || rng() < rate) {
       const maxQ = has(s.level, 'purple') ? 'orange' : 'green';
       // 学习加成: typed kills and due words raise purple/orange odds.
@@ -79,7 +87,7 @@ export function applyWin(s: GameState, b: Battle, rng: Rng): WinResult {
 
   // 战后喘口气
   s.hp = Math.min(maxHp(s), s.hp + Math.round(maxHp(s) * CONFIG.player.postFightHealPct));
-  return { xp, gold, kill, levelUp, drop, bagFull, echoRecovered, overCap };
+  return { xp, gold, kill, levelUp, drop, bagFull, echoRecovered, overload };
 }
 
 export interface LossResult {

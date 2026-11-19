@@ -17,8 +17,20 @@ export const CONFIG = {
     tutorialInterval: 3 * MINUTE,
     /** After 归名 the word relapses after these gaps (about 1 week, 1 month, 3 months, then 6 months). */
     relapse: [7 * DAY, 30 * DAY, 90 * DAY, 180 * DAY],
+    /** 言灵过载 starts after this many new words in one day. Not a lock: the player keeps
+     *  playing, new monsters just pay less and reviews pay more (see `overload`). */
     dailyNewCap: 30,
     dailyDueCap: 100,
+  },
+
+  /** 言灵过载: a learning limit expressed as a game rule, never a hard lock. */
+  overload: {
+    newXp: 0.5,
+    newGold: 0.5,
+    newDrop: 0.5,
+    dueXp: 1.5,
+    dueGold: 1.5,
+    dueDrop: 1.25,
   },
 
   xp: {
@@ -27,7 +39,6 @@ export const CONFIG = {
     shadowMonster: 8,
     boss: 300,
     typedKillMult: 1.5,
-    overCapNewMult: 0.5,
   },
 
   /** Minutes for Lv1→2 … Lv5→6 (新手加速), then t(L) = 1.25 × L^0.3 hours. ~1000 XP per active hour. */

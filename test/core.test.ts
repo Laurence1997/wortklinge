@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { gradeMoechte, gradeTyped, normalize } from '../src/core/grading';
 import { WORD_BY_ID, WORDS } from '../src/data/words';
-import { newGame, addXp } from '../src/core/state';
+import { newGame, addXp, overloaded } from '../src/core/state';
+import { applyWin } from '../src/core/outcomes';
 import { recordKill, kindOf, stageOf } from '../src/core/srs';
 import { CONFIG, xpToNext } from '../src/core/config';
 import { startBattle, makeQuestion, resolveTurn } from '../src/core/combat';
@@ -186,5 +187,36 @@ describe('sentence input', () => {
   it('forgives a doubled "Ich möchte" from the pre-filled box', () => {
     const known = WORDS.filter((w) => w.moechte);
     expect(gradeMoechte('Ich möchte Ich möchte einen Kaffee.', known).ok).toBe(true);
+  });
+});
+
+describe('言灵过载', () => {
+  it('pays less for new words and more for reviews after the daily threshold, without blocking', () => {
+    const rng = makeRng(7);
+    const run = (count: number, kind: 'new' | 'due') => {
+      const s = newGame('T', 'student');
+      s.level = 6;
+      s.daily.newCount = count;
+      const b = startBattle(s, WORD_BY_ID['tee'], rng);
+      b.kind = kind;
+      b.lastKillTyped = false;
+      return { s, res: applyWin(s, b, () => 0.99) };
+    };
+    const fresh = run(0, 'new');
+    const over = run(CONFIG.srs.dailyNewCap, 'new');
+    expect(overloaded(over.s)).toBe(true);
+    expect(over.res.overload).toBe('new');
+    expect(over.res.xp).toBeLessThan(fresh.res.xp);
+    expect(over.res.gold).toBeLessThan(fresh.res.gold);
+    const dueNormal = run(0, 'due');
+    const dueOver = run(CONFIG.srs.dailyNewCap, 'due');
+    expect(dueOver.res.overload).toBe('due');
+    expect(dueOver.res.xp).toBeGreaterThan(dueNormal.res.xp);
+    // Not a lock: new words still spawn.
+    const s = newGame('T', 'student');
+    s.level = 6;
+    s.daily.newCount = CONFIG.srs.dailyNewCap + 5;
+    const zone = WORD_BY_ID['tee'].zone;
+    expect(pickSpawns(s, zone, 6, new Set(), rng).some((p) => p.kind === 'new')).toBe(true);
   });
 });
