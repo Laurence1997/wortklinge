@@ -2,7 +2,7 @@
 // you pick a counter, then answer a question. You act first.
 
 import { CONFIG } from './config';
-import { gradeMoechte, gradeNehme, gradeTyped, type Verdict } from './grading';
+import { gradeMoechte, gradeNehme, gradeTyped, levenshtein, normalize, type Verdict } from './grading';
 import { COUNTER, ELEMENT_ZH, generateIntent, INTENT_ZH } from './intents';
 import { between, pick, shuffle, type Rng } from './rng';
 import { kindOf, stageOf, overdueSteps, type Kind, type Stage } from './srs';
@@ -49,6 +49,8 @@ export interface MonsterState {
 }
 
 export interface PlayerFx {
+  /** EXPERIMENT 涂改 used this fight. */
+  redoUsed?: boolean;
   burn: number;
   poison: number;
   chilled: boolean;
@@ -434,6 +436,8 @@ export function gradeQuestion(s: GameState, b: Battle, q: Question, input: strin
 // ---- Resolution --------------------------------------------------------------
 
 export interface TurnReport {
+  /** EXPERIMENT 涂改: the answer was wrong but may be rewritten; nothing else happened. */
+  redo?: boolean;
   correct: boolean;
   verdict: Verdict;
   playerDamage: number;
@@ -492,7 +496,7 @@ export function spillStorm(s: GameState, pack: Battle[], from: Battle, overkill:
 }
 
 /** EXPERIMENT (writer-exp branch only): toggles for sim2 variants. */
-export const EXP = { veil: false, stunAll: false, spillSkip: false, spillInterrupt: false, noFloorNew: false, typedCallout: false };
+export const EXP = { redo: false, draft: false, veil: false, stunAll: false, spillSkip: false, spillInterrupt: false, noFloorNew: false, typedCallout: false };
 
 /** Per-monster damage multiplier in a pack, so 2–3 monsters together hit about 1.2–1.35× one monster. */
 export function packDamageMult(alive: number): number {
@@ -545,6 +549,14 @@ export function resolveTurn(
   const readRight = ok && COUNTER[intent.kind] === (move === 'sentence' ? 'attack' : move);
   let blocking = false;
   let interrupted = false;
+  {
+    const typedish = q.type === 'typed' || q.type === 'conj' || q.type === 'plural' || (q.type === 'callout' && !!q.withArticle);
+    if (EXP.redo && s.cls === 'writer' && typedish && !ok && !b.fx.redoUsed) {
+      b.fx.redoUsed = true;
+      log.push({ text: '涂改：这次写错了，划掉重写一次。', tone: 'info' });
+      return finish(s, b, { correct: false, verdict, playerDamage: 0, crit: false, newSpell: false, monsterDamage: 0, parried: false, element: null, log, outcome: b.outcome, readRight: false, kills: [], killer: null, redo: true });
+    }
+  }
   b.qIndex += 1;
 
   // Class resources: 书写者 earns 墨水 for typed answers, 守护者 earns 沉着 for every answer.
@@ -709,6 +721,16 @@ export function resolveTurn(
       log.push({ text: '冷静：这次默写错了，连击还在。', tone: 'info' });
     } else s.combo = 0;
     b.wrongStreak += 1;
+    if (EXP.draft && s.cls === 'writer' && typedLike && q.type !== 'storm' && q.answer) {
+      const exp = normalize(q.answer);
+      const ratio = Math.max(0, 1 - levenshtein(normalize(input), exp) / exp.length);
+      const d = Math.min(Math.round(attack(s) * ratio), m.hp - 1);
+      if (d > 0) {
+        m.hp -= d;
+        playerDamage = d;
+        log.push({ text: `草稿：写对了 ${Math.round(ratio * 100)}% 的字母，造成 ${d} 点伤害。`, tone: 'info' });
+      }
+    }
     if (b.stage === 2 && !b.slipped && b.kind === 'due') {
       b.slipped = true;
       log.push({ text: '答错了，它长回一颗牙（退回裂形）。', tone: 'bad' });
