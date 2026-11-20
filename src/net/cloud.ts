@@ -9,8 +9,14 @@ import { migrate, type GameState } from '../core/state';
 export const SUPABASE_URL = 'https://xmttluclhrjhgokemnso.supabase.co';
 export const SUPABASE_KEY = 'sb_publishable_ZP1aefkKlLhCNvaiGG3ZcA_gz46eEON';
 
+// A reset mail may carry a link instead of the 6-digit code (default template). The link logs you in
+// with type=recovery in the URL: read that before the client strips it, then ask for a new password.
+let recovering = typeof location !== 'undefined' && /type=recovery/.test(location.hash + location.search);
+/** Where links in auth mails send people back to (must be in the Supabase Redirect URLs). */
+const SITE = typeof location !== 'undefined' && location.protocol.startsWith('http') ? location.origin + location.pathname : 'https://wortklinge.myreverielab.com/';
+
 export const sb = createClient(SUPABASE_URL, SUPABASE_KEY, {
-  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false },
+  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
 });
 
 export interface Profile {
@@ -46,7 +52,8 @@ export async function initCloud(): Promise<void> {
   try {
     const { data } = await withTimeout(sb.auth.getSession());
     cloud.session = data.session;
-    sb.auth.onAuthStateChange((_e, session) => {
+    sb.auth.onAuthStateChange((e, session) => {
+      if (e === 'PASSWORD_RECOVERY') recovering = true;
       cloud.session = session;
       if (!session) cloud.profile = null;
       changed();
@@ -80,20 +87,27 @@ export function needsNickname(): boolean {
 }
 
 export function mustChangePassword(): boolean {
-  return !!cloud.session && !cloud.session.user.user_metadata?.pw_changed;
+  return !!cloud.session && (recovering || !cloud.session.user.user_metadata?.pw_changed);
+}
+
+/** Came back from a password-reset link: the change-password step should say so. */
+export function isRecovering(): boolean {
+  return recovering && !!cloud.session;
 }
 
 export async function changePassword(password: string): Promise<string | null> {
   const { data, error } = await sb.auth.updateUser({ password, data: { pw_changed: true } });
   if (error) return zh(error.message);
   if (cloud.session && data.user) cloud.session = { ...cloud.session, user: data.user };
+  recovering = false;
+  if (/type=recovery|access_token/.test(location.hash)) history.replaceState(null, '', location.pathname + location.search);
   changed();
   return null;
 }
 
 /** Forgot password: a 6-digit code by mail (the reset email template shows {{ .Token }}). */
 export async function sendResetCode(email: string): Promise<string | null> {
-  const { error } = await sb.auth.resetPasswordForEmail(email);
+  const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: SITE });
   return error ? zh(error.message) : null;
 }
 

@@ -1,7 +1,7 @@
 // Login box (invite only): email + password. First login forces a new password;
 // "forgot password" mails a 6-digit code (no one-time links that mail scanners burn).
 
-import { changePassword, cloud, mustChangePassword, needsNickname, setNickname, resetWithCode, sendResetCode, signIn } from '../net/cloud';
+import { changePassword, cloud, isRecovering, mustChangePassword, needsNickname, setNickname, resetWithCode, sendResetCode, signIn } from '../net/cloud';
 import { h } from './dom';
 
 type Mode = 'login' | 'forgot' | 'code';
@@ -26,7 +26,7 @@ export function loginView(box: HTMLElement, onDone: () => void, mode: Mode = 'lo
       else onDone();
     };
     enter([p1, p2], go);
-    box.append(h('p.small', '第一次登录：请把初始密码改成你自己的。'), h('div.row', p1, p2, h('button.btn.primary', { onclick: go }, '保存新密码')), msg);
+    box.append(h('p.small', isRecovering() ? '重设密码：输入新密码，保存后直接进游戏。' : '第一次登录：请把初始密码改成你自己的。'), h('div.row', p1, p2, h('button.btn.primary', { onclick: go }, '保存新密码')), msg);
     return;
   }
 
