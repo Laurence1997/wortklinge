@@ -841,3 +841,63 @@ describe('0.4 战斗修正版', () => {
     expect(p[0].chorusCd).toBeGreaterThan(0);
   });
 });
+
+describe('0.4 示例战斗 (游戏设计 › 0.4 战斗修正版, acceptance table)', () => {
+  it('Lv8 player, gear 0, vs a Lv9 monster: 4 turns, same numbers as the table (no roll, no crit)', () => {
+    const roll = CONFIG.damage.roll;
+    const crit = CONFIG.player.baseCrit;
+    CONFIG.damage.roll = [1, 1];
+    CONFIG.player.baseCrit = 0;
+    try {
+      const rng = makeRng(9);
+      const s = newGame('T', 'student', T0);
+      s.level = 8;
+      s.words['brot'] = { stage: 1, due: 9e15, firstSeen: 0, lastSeen: 0, relapse: 0, correct: 1, wrong: 0 };
+      const b = startBattle(s, WORD_BY_ID['brot'], rng);
+      // A fresh Lv9 monster (the table writes its HP as 100 and yours as 100).
+      b.monster.lvl = 9;
+      b.monster.hp = b.monster.maxHp = Math.round(monsterHpAt(9)); // 37
+      b.monster.dmg = 7; // 12% of a Lv9 player's 62 HP
+      s.hp = 58; // Lv8 max HP
+      b.cfx.res = 3; // left over from the last fight
+      const pct = (v: number, of: number) => Math.round((100 * v) / of);
+      const atk = { kind: 'attack' as const, shown: 'attack' as const, hits: 1, element: 'phys' as const, line: 'Ich beiße!', zh: '', layers: [] };
+      const turn = (move: 'attack' | 'inscribe' | 'sentence', intent: typeof b.intent, step?: number, right = true) => {
+        b.intent = intent;
+        if (step !== undefined) b.step = step;
+        const q = makeQuestion(s, b, move, rng);
+        const r = resolveTurn(s, b, move, q, right ? q.answer! : 'zzz', rng);
+        return { q, r };
+      };
+      // 1: the ladder's choice question; 铭刻 turns it into typing, ×1.5, half armor → 35 of 100.
+      const t1 = turn('inscribe', atk, 3);
+      expect(qTier(t1.q)).toBe(1);
+      expect(pct(t1.r.playerDamage, 37)).toBe(35);
+      expect(pct(b.monster.hp, 37)).toBe(65);
+      expect(b.cfx.res).toBe(4);
+      expect(b.cfx.inscribeCd).toBe(3); // 4-turn cooldown, one turn already ticked
+      // 2: typed (cloze, dictionary form) → 23 of 100; 言灵 full.
+      const t2 = turn('attack', atk);
+      expect(t2.q.clozeMode).toBe('base');
+      expect(pct(t2.r.playerDamage, 37)).toBe(24); // 9 of 37 after rounding to whole HP (table: 23)
+      expect(b.cfx.res).toBe(5);
+      // 3: choice, wrong → miss; no resource. (Code: the monster still acts this turn, see report.)
+      const t3 = turn('attack', atk, 3, false);
+      expect(t3.r.playerDamage).toBe(0);
+      expect(b.cfx.res).toBe(5);
+      // 4: it charges; F 终结技 instead of the hard question: interrupts, ignores armor, kills, spends all 言灵.
+      const t4 = turn('sentence', { ...atk, kind: 'charge', shown: 'charge', line: 'Moment!' });
+      expect(t4.q.type).toBe('sentence');
+      expect(t4.r.monsterDamage).toBe(0);
+      expect(b.outcome).toBe('win');
+      expect(b.cfx.res).toBe(0);
+      // Monster hits: 7 × 1.08 (you are a level below) = 8 a turn on 58 HP = 14 of 100 (table: 13).
+      expect(pct(t1.r.monsterDamage, 58)).toBe(14);
+      // Big one would be ×2.
+      expect(CONFIG.monster.chargeMult).toBe(2);
+    } finally {
+      CONFIG.damage.roll = roll;
+      CONFIG.player.baseCrit = crit;
+    }
+  });
+});

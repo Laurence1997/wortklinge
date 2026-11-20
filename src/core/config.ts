@@ -68,7 +68,7 @@ export const CONFIG = {
     /** One monster action takes this share of a same-level player's HP. The doc's 15% assumes an action bar of
      *  10–15 s; here the monster acts once per answer (3–10 s), so per action it is lower: about what 0.3 had. */
     dmgPct: (level: number) => (level <= 5 ? 0.06 : 0.12),
-    chargeMult: 2.5,
+    chargeMult: 2, // 0.4 示例战斗: the big one hits ×2
     /** Field monsters are at most this many levels above you (their word may be higher); none above you at Lv1–5. */
     maxAbove: (level: number) => (level <= 5 ? 0 : 1),
     /** HP multiplier by stage: 新怪(无名) / 裂形 / 半名 / shadow. 牙越少，血越薄。 */
