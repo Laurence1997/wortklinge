@@ -1,12 +1,12 @@
 // Turn-based combat as a reading game: the monster says its next move in German,
 // you pick a counter, then answer a question. You act first.
 
-import { CONFIG } from './config';
+import { CONFIG, monsterHpAt, playerBaseHp } from './config';
 import { gradeTyped, normalize, type Verdict } from './grading';
 import { ELEMENT_ZH, generateIntent, INTENT_ZH } from './intents';
 import { between, pick, shuffle, type Rng } from './rng';
 import { kindOf, stageOf, overdueSteps, type Kind, type Stage } from './srs';
-import { affixTotal, attack, critChance, hintsPerFight, maxHp, now, type GameState } from './state';
+import { affixTotal, attack, critChance, gearPen, hintsPerFight, maxHp, now, type GameState } from './state';
 import type { Element, Intent, Move, Word } from './types';
 import { has } from './unlocks';
 import { fullForm, genderOf, hasArticleQuestion, WORDS } from '../data/words';
@@ -15,6 +15,7 @@ import { SAYING_BY_ID, SAYING_CFG, SAYINGS } from '../data/sayings';
 import { expectedSentence, gradeSentence, nextPattern, PATTERNS, type Pattern } from './sentence';
 import { clozeModeFor, clozeOptions, gradeCloze, hasExamples, makeCloze, type ClozeMode } from './cloze';
 import { CONJ, PERSON_LABEL, type Person } from '../data/verbs';
+import { QTYPES, type QKey } from '../data/questionTypes';
 import { CLASSES, critRunNeeded, rank, resMax, shieldReflect, wrongHitShare, type ClassId } from './classes';
 
 /** callout = 点名 in packs (shout the target's article); conj = write a verb form (Lv12+); plural = write the plural (Lv11+). */
@@ -46,6 +47,30 @@ export interface Question {
   clozeMode?: ClozeMode;
   /** cloze questions: the whole sentence, read aloud after answering. */
   full?: string;
+  /** 铭刻: one step harder than usual, ×2 on a hit. */
+  inscribed?: boolean;
+  /** 低语: the first letter (typed) shown as a hint; ×0.5 on a hit. */
+  whisper?: string;
+  whispered?: boolean;
+  /** 齐鸣: a correct answer hits every monster in the pack. */
+  chorus?: boolean;
+}
+
+/** Row of the 题型奖励表 (src/data/questionTypes.ts) this question belongs to. */
+export function qKey(q: Question): QKey {
+  if (q.type === 'cloze') return q.clozeMode === 'form' ? 'clozeForm' : q.clozeMode === 'base' ? 'clozeBase' : 'clozePick';
+  if (q.type === 'saying') return q.options ? 'sayingPick' : 'sayingTyped';
+  return q.type;
+}
+
+/** 0.4 题型档位: 0 = choice (full armor), 1 = typed (half armor), 2 = hard (breaks armor). */
+export function qTier(q: Question): 0 | 1 | 2 {
+  return QTYPES[qKey(q)].tier;
+}
+
+/** Name of the resource: the class's, or 言灵 before you pick one. */
+export function resName(s: GameState): string {
+  return s.cls ? CLASSES[s.cls].res : '言灵';
 }
 
 export interface MonsterState {
@@ -57,6 +82,8 @@ export interface MonsterState {
   burn: number;
   poison: number;
   chilled: boolean;
+  /** 破甲: hits left that ignore armor (a hard question sets it to 3, counting its own hit). */
+  broken: number;
 }
 
 export interface PlayerFx {
@@ -82,6 +109,8 @@ export interface ClassFx {
   calmUsed: boolean;
   /** Talent 以守为攻: after 稳住, the next correct answer adds a plain hit. */
   yishou?: boolean;
+  /** 铭刻 cooldown in turns: carries across fights (the doc's 30 s), cleared at the bonfire. */
+  inscribeCd?: number;
 }
 
 export type Tutorial = 'loss' | 'block' | 'break' | 'negation' | 'heal' | 'packCharge' | null;
@@ -122,6 +151,8 @@ export interface Battle {
   firstCorrectDone: boolean;
   lastKillTyped: boolean;
   skillCooldown: number;
+  /** 齐鸣 cooldown in turns (shared by a pack). 铭刻's lives on cfx and carries across fights. */
+  chorusCd: number;
   /** Orange 冠词审判: the next hit after a correct article answer deals double. */
   judgement: boolean;
   /** 接句怪: the saying it shouts; its first attack question asks for the second half. */
@@ -146,10 +177,9 @@ export function monsterStats(level: number, stage: Stage, kind: Kind, overdue: n
   const m = CONFIG.monster;
   const stageMult =
     kind === 'shadow' ? m.stageHp.shadow : stage === 0 ? m.stageHp.new : stage === 1 ? m.stageHp.cracked : m.stageHp.half;
-  // Region 2 (Lv11+) asks harder questions (form cloze ×2), so its monsters carry more HP.
-  const regionMult = level >= 11 ? m.hpRegion2 : 1;
-  const hp = Math.max(4, Math.round((m.hpBase + m.hpPerLevel * level) * stageMult * regionMult * (1 + m.overdueHpStep * overdue)));
-  const dmg = Math.max(1, Math.round(m.dmgBase + m.dmgPerLevel * level));
+  // 0.4: HP grows ×1.08 per level; one action takes a fixed share of a same-level player's HP.
+  const hp = Math.max(4, Math.round(monsterHpAt(level) * stageMult * (1 + m.overdueHpStep * overdue)));
+  const dmg = Math.max(1, Math.round(m.dmgPct(level) * playerBaseHp(level)));
   return { hp, dmg };
 }
 
@@ -163,10 +193,12 @@ export function startBattle(
   const kind = kindOf(s, word, t);
   const stage = stageOf(s, word, t);
   // The word holding your echo waits at your level, so you can win it back.
-  const lvl = opts.isEcho ? Math.min(word.lvl, s.level) : word.lvl;
+  // 0.4: armor doubles per level above you, and a zone mixes words of several levels (schilderstrasse 3–7,
+  // kornspeicher 12–20), so a field monster stands at most one level above you.
+  const lvl = opts.isEcho ? Math.min(word.lvl, s.level) : Math.min(word.lvl, s.level + CONFIG.monster.maxAbove(s.level));
   const overdue = overdueSteps(s, word, t);
   const st = monsterStats(lvl, stage, kind, overdue);
-  const monster: MonsterState = { lvl, hp: st.hp, maxHp: st.hp, dmg: st.dmg, vulnerable: 0, burn: 0, poison: 0, chilled: false };
+  const monster: MonsterState = { lvl, hp: st.hp, maxHp: st.hp, dmg: st.dmg, vulnerable: 0, burn: 0, poison: 0, chilled: false, broken: 0 };
   const tutorial = opts.tutorial ?? null;
   if (tutorial === 'loss') {
     monster.lvl = s.level + 6;
@@ -200,6 +232,7 @@ export function startBattle(
     firstCorrectDone: false,
     lastKillTyped: false,
     skillCooldown: 0,
+    chorusCd: 0,
     judgement: false,
     outcome: null,
     log: [],
@@ -261,14 +294,54 @@ function distractors(rng: Rng, w: Word, field: 'de' | 'zh', n: number): string[]
   return out;
 }
 
-export function availableMoves(s: GameState, b: Battle): Move[] {
+/** Moves on the bar. 0.4: no sentence button (the whole sentence is the finisher); 铭刻 / 低语 / 齐鸣 change the next question. */
+export function availableMoves(s: GameState, b: Battle, alive = 1): Move[] {
+  if (b.tutorial === 'loss') return ['attack'];
   const moves: Move[] = ['attack'];
+  if (has(s.level, 'inscribe')) moves.push('inscribe');
+  if (has(s.level, 'whisper')) moves.push('whisper');
+  if (has(s.level, 'chorus') && alive > 1) moves.push('chorus');
   if (has(s.level, 'sentence')) moves.push('sentence');
   if (has(s.level, 'skills') && s.skills.length) moves.push('skill');
   if (s.cls) moves.push('cls');
-  if (b.tutorial === 'loss') return ['attack'];
   return moves;
 }
+
+/** Whether a move can be used right now (cooldown, resource). */
+export function moveReady(s: GameState, b: Battle, move: Move): boolean {
+  if (move === 'skill') return b.skillCooldown === 0;
+  if (move === 'cls') return !!s.cls && b.cfx.res >= CLASSES[s.cls].skillCost;
+  if (move === 'inscribe') return !b.cfx.inscribeCd;
+  if (move === 'whisper') return b.cfx.res >= CONFIG.tech.whisperCost || b.hintsLeft > 0;
+  if (move === 'sentence') return resMax(s) > 0 && b.cfx.res >= resMax(s) && !!sentencePattern(s, b);
+  if (move === 'chorus') return b.chorusCd === 0;
+  return true;
+}
+
+/** Share of a hit this monster's armor stops, for the given question tier (0.4 战斗修正版):
+ *  A = 2^(monster level − your level) × (1 − gear penetration), halved for typed questions, 0 for hard ones
+ *  or while broken; the hit is divided by (1 + A), i.e. A / (1 + A) is stopped (at most 90%). */
+export function effArmor(s: GameState, b: Battle, tier: 0 | 1 | 2): number {
+  const C = CONFIG.armor;
+  if (tier === 2 || b.monster.broken > 0) return 0;
+  let a = Math.pow(C.base, b.monster.lvl - s.level) * Math.max(0, 1 - gearPen(s));
+  if (tier === 1) a *= C.typedFactor;
+  return Math.min(C.maxReduction, a / (1 + a));
+}
+
+/** Chinese for a whole-sentence finisher (看中文写整句). */
+const SENTENCE_ZH: Record<Pattern, (zh: string) => string> = {
+  moechte: (z) => `我想要一个${z}。`,
+  brauche: (z) => `我需要一个${z}。`,
+  nehme: (z) => `我要一个${z}。（买东西）`,
+  moechte0: (z) => `我想要${z}。`,
+  brauche0: (z) => `我需要${z}。`,
+  woist: (z) => `${z}在哪儿？`,
+  suche: (z) => `我在找那个${z}。`,
+  habe: (z) => `我有一个${z}。`,
+  mein: (z) => `这是我的${z}。`,
+  sind: (z) => `这是我的${z}。（复数）`,
+};
 
 export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skillId?: string, inPack = false): Question {
   const w = b.word;
@@ -276,13 +349,6 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
   const canType = has(s.level, 'typing');
   const promptZh = w.digit ? w.digit : w.zh;
 
-  const pat = move === 'sentence' ? sentencePattern(s, b) : null;
-  if (pat) {
-    const P = PATTERNS[pat];
-    const extra = pat === 'nehme' ? '（也可以 zwei + 复数）' : '';
-    return { type: 'sentence', prompt: `句式：用眼前这只怪说一句 · ${P.zh}${extra}`, focus: `${P.lead} …`, pattern: pat, answer: expectedSentence(w, pat) };
-  }
-  if (move === 'sentence') move = 'attack'; // no pattern left: an ordinary attack
   if (move === 'cls') {
     if (s.cls === 'guardian') return { type: 'steady', prompt: '稳住：花 3 沉着，挡下这回合的第一击', focus: '稳住', options: ['稳住！'], answer: '稳住！' };
     const lw = stormWord(s, rng, w);
@@ -331,25 +397,66 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
     return { type: 'conj', prompt: `写出变位：${PERSON_LABEL[person]} ___（${w.de}）`, focus: `${person === 'er' ? 'er' : person === 'sie' ? 'sie' : person} … (${w.de})`, answer: c.forms[person], person, alts: c.alt?.[person] };
   };
   const plural = (): Question => ({ type: 'plural', prompt: '写出复数（带 die）', focus: `${fullForm(w)} → die …`, answer: w.pl! });
+  // 终结技 (0.4): read the Chinese, write the whole sentence with this monster's noun.
+  const sentenceQ = (): Question | null => {
+    const pat = sentencePattern(s, b);
+    if (!pat) return null;
+    const extra = pat === 'nehme' ? '（也可以 zwei + 复数）' : '';
+    return { type: 'sentence', prompt: `终结技：看中文，写整句${extra}`, focus: SENTENCE_ZH[pat](w.digit ?? w.zh), pattern: pat, answer: expectedSentence(w, pat) };
+  };
+  const canConj = w.pos === 'v' && has(s.level, 'conjugation') && !!CONJ[w.de];
+  /** One step harder than q, or null when nothing harder fits. */
+  const harder = (q: Question): Question | null => {
+    const t = qTier(q);
+    if (t === 2 || !canType) return null;
+    if (t === 0) {
+      if (q.type === 'cloze') return clozeQ(s, w, rng, s.level >= 11 ? 'form' : 'base') ?? typed();
+      return canConj ? conj() : typed();
+    }
+    const form = s.level >= 11 && hasExamples(w) ? clozeQ(s, w, rng, 'form') : null;
+    return (form && form.clozeMode === 'form' ? form : null) ?? sentenceQ();
+  };
+  const fresh = b.kind === 'new' && b.stage === 0 && b.step < 2;
+  const am: Move = move === 'inscribe' || move === 'whisper' || move === 'chorus' ? 'attack' : move;
 
-  if (move === 'attack' && b.saying && !b.sayingDone && !inPack) return sayingQuestion(s, b.saying, rng);
-  if (move === 'attack' && inPack && isNoun && !b.named && b.stage === 0) return callout();
+  // 终结技 (0.4): spends a full resource bar on the whole sentence.
+  if (move === 'sentence') {
+    const fin = sentenceQ();
+    if (fin) return fin;
+  }
+  let q = ladderQ();
+  // 难题就是预告 (0.4): a charging monster asks the hardest question (Lv11+ form cloze, before that typing);
+  // a multi-hit one asks one step harder. A word you have never answered keeps its usual question.
+  if (am === 'attack' && q.type !== 'saying' && q.type !== 'callout' && !b.tutorial && !fresh && canType) {
+    if (b.intent.kind === 'charge') {
+      const form = s.level >= 11 && hasExamples(w) ? clozeQ(s, w, rng, 'form') : null;
+      const hard = form?.clozeMode === 'form' ? form : qTier(q) === 0 ? (canConj ? conj() : typed()) : q;
+      if (qTier(hard) > qTier(q)) q = hard;
+    } else if (b.intent.kind === 'attack' && b.intent.hits > 1) q = harder(q) ?? q;
+  }
+  if (move === 'inscribe') q = { ...(harder(q) ?? q), inscribed: true };
+  if (move === 'whisper') q = whisperOf(q, w);
+  if (move === 'chorus') q = { ...q, chorus: true };
+  return q;
+
+  function ladderQ(): Question {
+  if (am === 'attack' && b.saying && !b.sayingDone && !inPack) return sayingQuestion(s, b.saying, rng);
+  if (am === 'attack' && inPack && isNoun && !b.named && b.stage === 0) return callout();
   // 防御 (Lv7+): a written answer breaks the guard. A word not yet at the typing step gets its usual choice question (×0.3).
-  if (move === 'attack' && b.intent.kind === 'defend' && canType && (b.tutorial === 'break' || !(b.kind === 'new' && b.stage === 0 && b.step < 2))) {
+  if (am === 'attack' && b.intent.kind === 'defend' && canType && (b.tutorial === 'break' || !(b.kind === 'new' && b.stage === 0 && b.step < 2))) {
     if (!isNoun && CONJ[w.de] && has(s.level, 'conjugation')) return conj();
     return typed();
   }
 
   // Normal attack.
   // 书写者试炼: everything is typed.
-  if (b.trial === 'writer' && canType && move === 'attack') return typed();
+  if (b.trial === 'writer' && canType && am === 'attack') return typed();
   if (b.tutorial === 'loss') return isNoun ? article() : pickZh();
   // 半名 and due: the killing blow must be typed, so offer typing.
   if (b.stage === 2 && b.kind === 'due' && canType) return typed();
   // Question ladder: each correct hit asks about another side of the word, never the same
   // question twice in a row (Lucas, playtest 2026-11-19: three der clicks in a row is boring).
   // New words: article → hear it and pick the meaning → type it (once typing is unlocked).
-  const canConj = w.pos === 'v' && has(s.level, 'conjugation') && !!CONJ[w.de];
   // 完形填空: words with example sentences get the cloze into the ladder (Lucas 2026-11-20).
   const cl = hasExamples(w) ? () => clozeQ(s, w, rng) ?? (isNoun ? article() : pickZh()) : null;
   if (canConj) {
@@ -388,11 +495,25 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
           ? [pickDe, typed, pickZh]
           : [pickDe, pickZh];
   return ladder[b.step % ladder.length]();
+  }
+}
+
+/** 低语: choice questions lose one wrong option, typed ones show the first letter. */
+function whisperOf(q: Question, w: Word): Question {
+  if (q.options && q.options.length > 2) {
+    const wrong = q.options.find((o) => o !== q.answer)!;
+    return { ...q, options: q.options.filter((o) => o !== wrong), whispered: true };
+  }
+  const a = q.answer ?? '';
+  let hint = `${a[0] ?? ''}…`;
+  if (q.type === 'sentence' && q.pattern) hint = `${PATTERNS[q.pattern].lead} …`;
+  else if (q.withArticle && w.art) hint = `${w.art} ${w.de[0]}…`;
+  else if (q.type === 'cloze' && a.includes(' ')) hint = `${a.split(' ')[0]} ${a.split(' ')[1][0]}…`;
+  return { ...q, whisper: hint, whispered: true };
 }
 
 /** 完形填空 for this word at the player's level, or null when no sentence fits. */
-export function clozeQ(s: GameState, w: Word, rng: Rng): Question | null {
-  const mode = clozeModeFor(s.level);
+export function clozeQ(s: GameState, w: Word, rng: Rng, mode: ClozeMode = clozeModeFor(s.level)): Question | null {
   const c = makeCloze(w, mode, rng) ?? (mode === 'base' ? makeCloze(w, 'form', rng) : null);
   if (!c) return null;
   const real: ClozeMode = mode === 'base' && c.answer !== w.de && !c.answer.endsWith(w.de) ? 'form' : mode;
@@ -568,6 +689,17 @@ export function spillStorm(s: GameState, pack: Battle[], from: Battle, overkill:
   return d;
 }
 
+/** Makes separate battles one pack fight: shared statuses, hints and resource; each monster has 0.6× HP (0.4). */
+export function linkPack(pack: Battle[]): void {
+  if (pack.length < 2) return;
+  for (const b of pack) {
+    b.fx = pack[0].fx;
+    b.cfx = pack[0].cfx;
+    b.hintsLeft = pack[0].hintsLeft;
+    b.monster.hp = b.monster.maxHp = Math.max(1, Math.round(b.monster.maxHp * CONFIG.pack.hpMult));
+  }
+}
+
 /** Per-monster damage multiplier in a pack (2 together ≈ 0.5×, 3 ≈ 0.45× one monster per turn; packs last longer since there is no parry any more). */
 export function packDamageMult(alive: number): number {
   return alive <= 1 ? 1 : alive === 2 ? CONFIG.pack.dmgMult[0] : CONFIG.pack.dmgMult[1];
@@ -578,6 +710,7 @@ function syncShared(from: Battle, pack: Battle[]) {
   for (const o of pack) {
     if (o === from) continue;
     o.skillCooldown = from.skillCooldown;
+    o.chorusCd = from.chorusCd;
     o.hintsLeft = from.hintsLeft;
     o.judgement = from.judgement;
     o.fx = from.fx;
@@ -644,9 +777,18 @@ export function resolveTurn(
   const critWasReady = cfx.critReady; // earned this turn = the *next* hit crits
   const typedLike = q.type === 'typed' || q.type === 'conj' || q.type === 'plural' || q.type === 'storm' || clozeTyped;
   if (move === 'cls' && s.cls) cfx.res = Math.max(0, cfx.res - CLASSES[s.cls].skillCost);
+  // 0.4 techniques: 低语 costs 3 class resource (or a dictionary hint without a class); 铭刻 / 齐鸣 go on cooldown.
+  if (move === 'whisper') {
+    if (cfx.res >= CONFIG.tech.whisperCost) cfx.res -= CONFIG.tech.whisperCost;
+    else b.hintsLeft = Math.max(0, b.hintsLeft - 1);
+  }
+  if (move === 'sentence') cfx.res = 0;
+  if (move === 'inscribe') cfx.inscribeCd = CONFIG.tech.inscribeCd;
+  if (move === 'chorus') b.chorusCd = CONFIG.tech.chorusCd;
+  // 题型奖励表: a correct answer earns its row's resource (guardians: +1 for every answer instead, their passive).
+  if (ok && s.cls !== 'guardian' && move !== 'cls') cfx.res += QTYPES[qKey(q)].res;
   if (s.cls === 'writer' && typedLike && q.type !== 'storm') {
     if (ok) {
-      cfx.res += 1;
       cfx.run += 1;
       if (cfx.run >= critRunNeeded(s) && !cfx.critReady) {
         cfx.critReady = true;
@@ -699,27 +841,23 @@ export function resolveTurn(
       log.push({ text: '「稳住」——你沉下身子。第一下，挡得住。', tone: 'good' });
     } else {
       const atk = attack(s);
+      const tier = qTier(q);
       let mult = between(rng, CONFIG.damage.roll[0], CONFIG.damage.roll[1]);
       const pen = s.cls === 'writer' ? 0.05 * rank(s, 'bifeng') : 0;
-      // 题型决定伤害: the harder the question, the harder the hit.
-      const QM = CONFIG.damage.q;
-      if (q.type === 'callout' && q.withArticle) mult *= QM.typedCallout;
-      else if (q.type === 'typed' || q.type === 'plural') mult *= QM.typed * (1 + affixTotal(s, 'typedDmg') + pen);
-      else if (q.type === 'conj') mult *= QM.conj * (1 + affixTotal(s, 'typedDmg') + pen);
-      else if (q.type === 'storm') {
+      // 0.4: the question type no longer multiplies damage (armor does that, below). Gear affixes stay.
+      if (q.type === 'storm') {
         const n = letters(q.word!);
-        mult *= (QM.typed / 1.4) * (1 + (0.15 + 0.03 * rank(s, 'changci')) * n) * (1 + pen); // same ratio to typing as before
+        mult *= ((1 + (0.15 + 0.03 * rank(s, 'changci')) * n) / 1.4) * (1 + pen); // same ratio to typing as before
         log.push({ text: `墨水风暴：${fullForm(q.word!)}，${n} 个字母。`, tone: 'good' });
-      } else if (q.type === 'sentence') {
-        mult *= QM.sentence * (1 + affixTotal(s, 'sentenceDmg'));
+      } else if (typedLike) mult *= 1 + affixTotal(s, 'typedDmg') + pen;
+      if (q.type === 'sentence') {
+        mult *= 1 + affixTotal(s, 'sentenceDmg');
         if (has(s.level, 'layerElement')) element = ELEMENT_BY_GENDER[genderOf(b.word) ?? 'n'];
-      } else if (q.type === 'saying') mult *= q.options ? QM.choice : QM.typed;
-      else if (q.type === 'cloze') mult *= q.clozeMode === 'pick' ? QM.choice : q.clozeMode === 'base' ? QM.clozeBase : QM.clozeForm;
-      else if (q.type === 'pickZh') mult *= QM.listen;
-      else mult *= QM.choice;
+      }
+      if (q.inscribed) mult *= CONFIG.tech.inscribeMult;
+      if (q.whispered) mult *= CONFIG.tech.whisperMult;
 
       const breaking = intent.kind === 'defend' && writtenQ;
-      if (breaking) mult *= CONFIG.damage.breakMult;
       const g = genderOf(b.word);
       if (g === 'm') mult *= 1 + affixTotal(s, 'vsMasc');
       if (g === 'f') mult *= 1 + affixTotal(s, 'vsFem');
@@ -743,7 +881,15 @@ export function resolveTurn(
       }
       if (q.type !== 'saying') b.firstCorrectDone = true;
       if (crit) mult *= CONFIG.player.critMult;
-      if (m.vulnerable > 0) mult *= CONFIG.damage.vulnerable;
+      // 护甲和破甲: a hard question (or writing through a guard) breaks the armor for this hit and the next two.
+      const wasBroken = m.broken > 0;
+      if ((tier === 2 || breaking) && !wasBroken) {
+        m.broken = CONFIG.armor.breakHits + (breaking && s.cls === 'writer' && rank(s, 'tengxie') ? 1 : 0);
+        log.push({ text: breaking ? `写对了。壳裂开了：这一下和之后 ${m.broken - 1} 下无视护甲。` : `难题破甲：这一下和之后 ${m.broken - 1} 下无视护甲。`, tone: 'good' });
+      }
+      const armor = effArmor(s, b, tier);
+      if (m.broken > 0) m.broken -= 1;
+      mult *= 1 - armor;
       const judged = b.judgement;
       if (judged) {
         mult *= 2;
@@ -752,7 +898,7 @@ export function resolveTurn(
       if (q.type === 'article' && Object.values(s.equipped).some((it) => it?.legendary === 'articleJudgement')) b.judgement = true;
 
       const charging = intent.kind === 'charge';
-      if (intent.kind === 'defend' && !breaking) mult *= CONFIG.damage.vsDefend;
+      if (intent.kind === 'defend' && !breaking && !wasBroken) mult *= CONFIG.damage.vsDefend;
       mult = Math.min(mult, CONFIG.damage.maxMultiplierOfBase);
       playerDamage = Math.max(1, Math.round(atk * mult));
       if (b.tutorial === 'loss') playerDamage = Math.min(playerDamage, 3);
@@ -763,14 +909,9 @@ export function resolveTurn(
       s.stats.maxHit = Math.max(s.stats.maxHit, playerDamage);
       if (crit) s.stats.crits += 1;
       if (charging || intent.kind === 'heal' || intent.kind === 'flee') interrupted = true;
-      if (breaking) {
-        const turns = CONFIG.status.vulnerableTurns + (s.cls === 'writer' && rank(s, 'tengxie') ? 1 : 0);
-        m.vulnerable = turns + 1;
-        log.push({ text: `写对了。壳裂开了：${turns} 回合内受伤 +50%。`, tone: 'good' });
-      }
       if (cfx.yishou && move !== 'cls') {
         cfx.yishou = false;
-        const d = Math.max(1, Math.round(attack(s) * CONFIG.damage.q.choice * between(rng, CONFIG.damage.roll[0], CONFIG.damage.roll[1])));
+        const d = Math.max(1, Math.round(attack(s) * (1 - effArmor(s, b, 0)) * between(rng, CONFIG.damage.roll[0], CONFIG.damage.roll[1])));
         m.hp -= d;
         playerDamage += d;
         log.push({ text: `以守为攻：顺势再一下，${d}。`, tone: 'good' });
@@ -779,10 +920,23 @@ export function resolveTurn(
       if (element === 'fire') m.burn = CONFIG.status.burnTurns;
       if (element === 'poison') m.poison = Math.min(CONFIG.status.poisonMaxStacks, m.poison + 1);
 
+      // 齐鸣: the same answer lands on every other monster still standing (each against its own armor).
+      if (q.chorus && multi) {
+        const hitOthers: string[] = [];
+        for (const o of pack) {
+          if (o === b || o.outcome) continue;
+          const d = Math.max(1, Math.round(atk * comboMult(s.combo) * between(rng, CONFIG.damage.roll[0], CONFIG.damage.roll[1]) * (1 - effArmor(s, o, tier))));
+          o.monster.hp = Math.max(0, o.monster.hp - d);
+          if (o.monster.broken > 0) o.monster.broken -= 1;
+          hitOthers.push(`${o.named || o.stage > 0 ? fullForm(o.word) : '另一只'} ${d}`);
+        }
+        if (hitOthers.length) log.push({ text: `齐鸣：${hitOthers.join('，')}。`, tone: 'good' });
+      }
+
       const tag = (judged ? '冠词审判！' : '') + (crit ? (newSpell ? '新言灵！暴击 ' : '暴击 ') : '');
       const el = element ? `（${ELEMENT_ZH[element]}）` : '';
       log.push({ text: `${tag}你造成 ${playerDamage} 点伤害${el}。`, tone: crit ? 'crit' : 'good' });
-      if (intent.kind === 'defend' && !breaking) log.push({ text: '它缩着。选择题只刮三成，默写才撬得开。', tone: 'info' });
+      if (intent.kind === 'defend' && !breaking && !wasBroken) log.push({ text: '它缩着。选择题只刮三成，默写才撬得开。', tone: 'info' });
     }
 
     if (m.hp <= 0) {
@@ -808,7 +962,7 @@ export function resolveTurn(
       log.push({ text: '错了。它长回一颗牙（退回裂形）。', tone: 'bad' });
     }
     if (stray) {
-      const d = Math.max(1, Math.round(attack(s) * CONFIG.damage.q.choice * CONFIG.pack.strayMult * between(rng, CONFIG.damage.roll[0], CONFIG.damage.roll[1])));
+      const d = Math.max(1, Math.round(attack(s) * (1 - effArmor(s, stray, 0)) * CONFIG.pack.strayMult * between(rng, CONFIG.damage.roll[0], CONFIG.damage.roll[1])));
       stray.monster.hp = Math.max(0, stray.monster.hp - d);
       log.push({ text: `你喊 ${input}，应声的是 ${fullForm(stray.word)}：只有 ${d}。`, tone: 'bad' });
       if (stray.monster.hp <= 0) {
@@ -841,7 +995,7 @@ export function resolveTurn(
     const say = (l: LogLine) => log.push(multi ? { ...l, text: `${tagOf(b)}：${l.text}` } : l);
   const monsterCrit = target.wrongStreak >= 2;
   const wrongReduce = ok ? 0 : affixTotal(s, 'wrongDmgReduce');
-  const chillMult = m.chilled ? CONFIG.status.iceDamageMult : 1;
+  const chillMult = (m.chilled ? CONFIG.status.iceDamageMult : 1) * (1 + CONFIG.armor.monsterDmgPerLevelBelow * Math.max(0, m.lvl - s.level));
 
   const hitPlayer = (raw: number) => {
     let d = Math.max(1, Math.round(raw * (1 - wrongReduce) * (ok ? 1 : wrongHitShare(s)) * (b.fx.cheap ? 0.5 : 1)));
@@ -899,7 +1053,7 @@ export function resolveTurn(
           say({ text: '冻住了。大的推迟了。', tone: 'good' });
           break;
         }
-        const heavy = m.dmg * dmgMult * CONFIG.monster.chargeMult * (monsterCrit ? 1.5 : 1);
+        const heavy = m.dmg * dmgMult * chillMult * CONFIG.monster.chargeMult * (monsterCrit ? 1.5 : 1);
         if (blocking) {
           hitPlayer(heavy / 2);
           say({ text: `你挡下一半大招，受到 ${monsterDamage} 点伤害。`, tone: 'bad' });
@@ -912,7 +1066,7 @@ export function resolveTurn(
       case 'heal': {
         const heal = Math.round(m.maxHp * 0.35);
         m.hp = Math.min(m.maxHp, m.hp + heal);
-        say({ text: `它回复了 ${heal} 点生命。${m.vulnerable > 0 ? '易伤还在。' : ''}`, tone: 'bad' });
+        say({ text: `它回复了 ${heal} 点生命。${m.broken > 0 ? '甲还没长回来。' : ''}`, tone: 'bad' });
         break;
       }
       case 'flee':
@@ -966,6 +1120,8 @@ export function resolveTurn(
     log.push({ text: `你中毒了（${b.fx.poison} 层），掉了 ${d} 点。`, tone: 'bad' });
   }
   if (b.skillCooldown > 0) b.skillCooldown -= 1;
+  if ((b.cfx.inscribeCd ?? 0) > 0) b.cfx.inscribeCd! -= 1;
+  if (b.chorusCd > 0) b.chorusCd -= 1;
   b.fx.cheap = false;
   if ((s.flags.wortgewalt as number) > 0) s.flags.wortgewalt = (s.flags.wortgewalt as number) - 1;
   if (s.combo >= 50 && !s.flags.wortgewaltUsedAt50) {

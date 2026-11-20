@@ -1,5 +1,5 @@
 import type { Look } from './look';
-import { CONFIG, XP_CURVE, xpToNext } from './config';
+import { CONFIG, monsterHpAt, playerBaseHp, XP_CURVE, xpToNext } from './config';
 import { hpBonus, type ClassId } from './classes';
 import type { Item, Slot, WordProgress } from './types';
 
@@ -29,7 +29,7 @@ export interface Settings {
 }
 
 export interface GameState {
-  version: 2;
+  version: 3;
   createdAt: number;
   /** Real time of the last local save (ms); the newer of local and cloud wins. */
   savedAt?: number;
@@ -57,6 +57,8 @@ export interface GameState {
   skillUses: Record<string, number>;
   /** 接句怪: short-saying cards collected (id → times). */
   sayings?: Record<string, number>;
+  /** 0.4 装备档位: kills per region ("1", "2"); the tier follows from them. */
+  gearKills?: Record<string, number>;
   recentNouns: string[];
   /** Which map you stand on (1 = 余烬营地, 2 = 面包集市). */
   region: 1 | 2;
@@ -91,7 +93,8 @@ export function dayKey(t: number): string {
 
 export function newGame(name: string, origin: string, t = Date.now()): GameState {
   return {
-    version: 2,
+    version: 3,
+    gearKills: {},
     createdAt: t,
     name,
     origin,
@@ -140,12 +143,48 @@ export function todayLog(s: GameState): DayLog {
 
 export function maxHp(s: GameState): number {
   const coat = s.equipped.coat?.main ?? 0;
-  return Math.round((CONFIG.player.baseHp + CONFIG.player.hpPerLevel * (s.level - 1) + coat) * (1 + hpBonus(s)));
+  // 0.4: the coat's HP counts as a percentage (+0.5% per point); the gear tier does the heavy lifting.
+  return Math.round(playerBaseHp(s.level) * (1 + coat * 0.005) * (1 + hpBonus(s)) * (1 + CONFIG.gear.hp * gearTier(s)));
 }
 
+/** 0.4 伤害: half a same-level monster's HP, × (1 + 0.18 × gear tier); the pen adds +1% per attack point. */
 export function attack(s: GameState): number {
   const pen = s.equipped.pen?.main ?? 0;
-  return CONFIG.player.baseAtk + CONFIG.player.atkPerLevel * s.level + pen;
+  return CONFIG.playerDmgShare * monsterHpAt(s.level) * (1 + CONFIG.gear.dmg * gearTier(s)) * (1 + pen * 0.01);
+}
+
+/** Tier reached in one region: tier n after 40 × n² shards there (1 per kill), at most 8. */
+export function regionTier(s: Pick<GameState, 'gearKills'>, region: number): number {
+  const k = s.gearKills?.[String(region)] ?? 0;
+  return Math.min(CONFIG.gear.tiers, Math.floor(Math.sqrt(k / CONFIG.gear.shardsPerTierSq) + 1e-9));
+}
+
+/** The tier that counts now: this region's, or half the previous region's while you still wear that gear. */
+export function gearTier(s: Pick<GameState, 'gearKills' | 'region'>): number {
+  const r = s.region ?? 1;
+  return Math.max(regionTier(s, r), r > 1 ? Math.floor(regionTier(s, r - 1) / 2) : 0);
+}
+
+/** Kills needed in this region for the next tier (null at the top). */
+export function nextTierKills(s: Pick<GameState, 'gearKills' | 'region'>): number | null {
+  const t = regionTier(s, s.region ?? 1);
+  return t >= CONFIG.gear.tiers ? null : CONFIG.gear.shardsPerTierSq * (t + 1) ** 2;
+}
+
+/** Armor penetration from gear. */
+export function gearPen(s: Pick<GameState, 'gearKills' | 'region'>): number {
+  return CONFIG.gear.pen * gearTier(s);
+}
+
+/** A kill drops one gear shard for the monster's region, and rarely the next tier whole. Returns the new tier when it went up. */
+export function addGearKill(s: GameState, region: number, roll = 1): number | null {
+  s.gearKills ??= {};
+  const before = regionTier(s, region);
+  const key = String(region);
+  s.gearKills[key] = (s.gearKills[key] ?? 0) + 1;
+  if (roll < CONFIG.gear.wholeChance && before < CONFIG.gear.tiers) s.gearKills[key] = Math.max(s.gearKills[key], CONFIG.gear.shardsPerTierSq * (before + 1) ** 2);
+  const after = regionTier(s, region);
+  return after > before ? after : null;
 }
 
 export function critChance(s: GameState): number {
@@ -248,7 +287,13 @@ export function migrate(raw: unknown): GameState | null {
       p.write ??= p.stage === 3 ? 1 : 0;
     }
   }
-  (s as { version: number }).version = 2;
+  // v2 → v3 (0.4): gear tiers come from kills per region. Old saves only kept the total, so it is split:
+  // everything to region 1 below Lv11, otherwise half to region 1 and half to region 2.
+  if (v < 3 && !s.gearKills) {
+    const k = s.stats?.kills ?? 0;
+    s.gearKills = s.level <= 10 ? { '1': k } : { '1': Math.round(k / 2), '2': k - Math.round(k / 2) };
+  }
+  (s as { version: number }).version = 3;
   // 提速 (curve 2): recompute the level from total XP; only ever up, never down.
   if ((s.xpCurve ?? 1) < XP_CURVE) {
     let total = s.xp;

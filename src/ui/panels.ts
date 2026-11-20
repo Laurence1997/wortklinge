@@ -542,7 +542,7 @@ export class Panels {
     for (const l of [wrote, readOnly, notYet]) l.sort((a, b) => a.p.due - b.p.due);
     known.sort((a, b) => a.w.de.localeCompare(b.w.de, 'de'));
     const learningN = wrote.length + readOnly.length + notYet.length;
-    wrap.append(h('p.small.muted', `见过 ${shaky.length + learningN + known.length} 个词：熟练 ${known.length} · 学习中 ${learningN} · 常错 ${shaky.length}。「认得」是选择题答对过，「会写」是默写、变位或句式写对过。存档同步到云端，换电脑也在。`));
+    wrap.append(h('p.small.muted', `见过 ${shaky.length + learningN + known.length} 个词：熟练 ${known.length} · 学习中 ${learningN} · 常错 ${shaky.length}。「认得」是选择题答对过，「会写」是默写、变位或整句写对过。存档同步到云端，换电脑也在。`));
     const table = (title: string, note: string, rows: Row[]) => {
       if (!rows.length) return;
       const tb = h('table.log');
@@ -702,7 +702,7 @@ export class Panels {
       ['移动', 'WASD / 方向键，或者鼠标点地面'],
       ['互动', 'E（篝火、守火人、路牌、门）'],
       ['面板', 'C 角色和装备 · B 图鉴 · Esc 关闭'],
-      ['战斗', 'A 攻击 · F 句式 · R 技能 · G 职业技能；1/2/3 选答案；打字题按 Enter 交卷；结果会自动进下一题（Enter 跳过等待）；Z 看中文；V 再听'],
+      ['战斗', 'A 攻击 · Q 铭刻 · W 低语 · E 齐鸣（群怪）· F 终结技 · R 技能 · G 职业技能；1/2/3 选答案；打字题按 Enter 交卷；结果会自动进下一题（Enter 跳过等待）；Z 看中文；V 再听'],
       ['变音字母', '点 ä ö ü ß 按钮，或者写 ae oe ue ss（算对，但会提示正确拼法）'],
       ['归名', '一个词就是一只怪。打败它 3 次（3 次不同的重生，隔天才会重生），最后一下要默写带冠词的全名，它才变回原样'],
       ['遗忘之物', '头上有「!」的怪是今天到期的词，经验和掉落更多。篝火休息会刷新所有怪'],

@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { gradeMoechte, gradeTyped, normalize } from '../src/core/grading';
 import { fullForm, WORD_BY_ID, WORDS } from '../src/data/words';
-import { newGame, addXp, overloaded, migrate } from '../src/core/state';
+import { newGame, addXp, overloaded, migrate, attack, gearTier, addGearKill } from '../src/core/state';
 import { applyWin } from '../src/core/outcomes';
 import { recordKill, kindOf, stageOf } from '../src/core/srs';
-import { CONFIG, xpToNext } from '../src/core/config';
-import { startBattle, makeQuestion, resolveTurn, spillStorm } from '../src/core/combat';
+import { CONFIG, monsterHpAt, xpToNext } from '../src/core/config';
+import { startBattle, makeQuestion, resolveTurn, spillStorm, effArmor, qTier, linkPack, moveReady } from '../src/core/combat';
 import { makeRng } from '../src/core/rng';
 import { answerBoss, startBoss } from '../src/core/boss';
 import { BOSS_QUESTIONS } from '../src/data/boss';
@@ -162,7 +162,7 @@ describe('combat', () => {
     const q2 = makeQuestion(s, b2, 'attack', rng);
     expect(q2.type).toBe('typed');
     resolveTurn(s, b2, 'attack', q2, q2.answer!, rng);
-    expect(b2.monster.vulnerable).toBeGreaterThan(0);
+    expect(b2.monster.broken).toBe(2); // this hit and the next two ignore armor
   });
 });
 
@@ -694,23 +694,30 @@ describe('句式说的是眼前这只怪', () => {
     const b = startBattle(s, WORD_BY_ID['tee'], makeRng(1));
     expect(sentencePattern(s, b)).toBe(null); // not in the wordbook yet
     s.words['tee'] = { stage: 1, due: 9e15, firstSeen: 0, lastSeen: 0, relapse: 0, correct: 0, wrong: 0 };
+    // 0.4: the whole sentence is the finisher, ready only with a full resource bar (言灵 before a class).
+    b.intent = { ...b.intent, kind: 'wait', hits: 0 };
+    b.monster.hp = b.monster.maxHp = 999;
+    expect(moveReady(s, b, 'sentence')).toBe(false);
+    b.cfx.res = 5;
+    expect(moveReady(s, b, 'sentence')).toBe(true);
     const q1 = makeQuestion(s, b, 'sentence', makeRng(1));
     expect(q1.pattern).toBe('moechte');
+    expect(q1.focus).toBe('我想要一个茶。');
     resolveTurn(s, b, 'sentence', q1, 'Ich möchte einen Tee.', makeRng(1));
-    if (!b.outcome) {
-      expect(makeQuestion(s, b, 'sentence', makeRng(1)).pattern).toBe('brauche');
-      b.sxUsed = 2;
-      expect(sentencePattern(s, b)).toBe(null);
-    }
+    expect(b.monster.broken).toBe(2);
+    expect(b.cfx.res).toBe(0);
+    expect(sentencePattern(s, b)).toBe('brauche');
   });
 });
 
 describe('认得 / 会写', () => {
   it('migrates old saves and records writing apart from recognition', () => {
     const old = { ...newGame('T', 'student', T0), version: 1 } as unknown as Record<string, unknown>;
+    delete old.gearKills;
     old.words = { tee: { stage: 3, due: 0, firstSeen: 0, lastSeen: 0, relapse: 0, correct: 4, wrong: 0 }, brot: { stage: 1, due: 0, firstSeen: 0, lastSeen: 0, relapse: 0, correct: 0, wrong: 1 } };
     const m = migrate(old)!;
-    expect(m.version).toBe(2);
+    expect(m.version).toBe(3);
+    expect(m.gearKills).toEqual({ '1': 0 });
     expect(m.words.tee).toMatchObject({ read: 4, write: 1 });
     expect(m.words.brot).toMatchObject({ read: 0, write: 0 });
 
@@ -768,5 +775,69 @@ describe('完形填空', () => {
     b2.monster.hp = 1;
     resolveTurn(s, b2, 'attack', { ...q, answer: 'einen Tee', clozeMode: 'form' as const }, 'einen Tee', makeRng(3));
     expect(b2.lastKillTyped).toBe(true);
+  });
+});
+
+describe('0.4 战斗修正版', () => {
+  const lvl15 = () => {
+    const s = newGame('T', 'student', T0);
+    s.level = 15;
+    s.region = 2;
+    return s;
+  };
+  it('same-level monster: 4 choice hits, 3 typed, 2 hard (no roll)', () => {
+    const s = lvl15();
+    const b = startBattle(s, WORDS.find((w) => w.lvl === 15)!, makeRng(1));
+    b.monster.lvl = 15;
+    const hits = (tier: 0 | 1 | 2) => Math.ceil(monsterHpAt(15) / (attack(s) * (1 - effArmor(s, b, tier))) - 1e-9);
+    expect([hits(0), hits(1), hits(2)]).toEqual([4, 3, 2]);
+    b.monster.lvl = 18; // 3 levels above you: A = 8
+    expect(effArmor(s, b, 0)).toBeCloseTo(8 / 9);
+    b.monster.lvl = 12;
+    expect(effArmor(s, b, 0)).toBeCloseTo(0.125 / 1.125);
+  });
+  it('gear tiers come from shards: tier n at 40 × n², damage +18% per tier', () => {
+    const s = lvl15();
+    const base = attack(s);
+    s.gearKills = { '2': 159 };
+    expect(gearTier(s)).toBe(1);
+    expect(addGearKill(s, 2)).toBe(2);
+    expect(attack(s) / base).toBeCloseTo(1.36);
+    s.gearKills = { '1': 640 };
+    expect(gearTier(s)).toBe(2); // half of region-1 tier 4 while you still wear it
+    expect(addGearKill(s, 2, 0)).toBe(1); // a whole piece drops
+  });
+  it('techniques change the next question: 铭刻 harder, 低语 gives the first letter', () => {
+    const s = lvl15();
+    s.words['tee'] = { stage: 1, due: 9e15, firstSeen: 0, lastSeen: 0, relapse: 0, correct: 1, wrong: 0 };
+    const b = startBattle(s, WORD_BY_ID['tee'], makeRng(4));
+    b.intent = { ...b.intent, kind: 'wait', hits: 0 };
+    b.step = 3; // ladder at the article question
+    const plain = makeQuestion(s, b, 'attack', makeRng(4));
+    const ins = makeQuestion(s, b, 'inscribe', makeRng(4));
+    expect(ins.inscribed).toBe(true);
+    expect(qTier(ins)).toBe(qTier(plain) + 1);
+    const wh = makeQuestion(s, b, 'whisper', makeRng(4));
+    expect(wh.whispered).toBe(true);
+    if (wh.options) expect(wh.options.length).toBe(2);
+    else expect(wh.whisper).toMatch(/…$/);
+  });
+  it('a charging monster asks the hardest question; packs have 0.6× HP and 齐鸣 hits them all', () => {
+    const s = lvl15();
+    s.words['tee'] = { stage: 1, due: 9e15, firstSeen: 0, lastSeen: 0, relapse: 0, correct: 1, wrong: 0 };
+    const b = startBattle(s, WORD_BY_ID['tee'], makeRng(5));
+    b.intent = { ...b.intent, kind: 'charge', hits: 1 };
+    expect(qTier(makeQuestion(s, b, 'attack', makeRng(5)))).toBe(2);
+    const p = [startBattle(s, WORD_BY_ID['tee'], makeRng(6)), startBattle(s, WORD_BY_ID['brot'], makeRng(7))];
+    const full = p[1].monster.maxHp;
+    linkPack(p);
+    expect(p[1].monster.maxHp).toBe(Math.round(full * 0.6));
+    p[0].intent = { ...p[0].intent, kind: 'wait', hits: 0 };
+    p[0].named = true;
+    const q = makeQuestion(s, p[0], 'chorus', makeRng(8), undefined, true);
+    const before = p[1].monster.hp;
+    resolveTurn(s, p[0], 'chorus', q, q.answer!, makeRng(8), p);
+    expect(p[1].monster.hp).toBeLessThan(before);
+    expect(p[0].chorusCd).toBeGreaterThan(0);
   });
 });

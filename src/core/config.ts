@@ -62,13 +62,15 @@ export const CONFIG = {
   },
 
   monster: {
-    hpBase: 6, // 题型决定伤害 (2026-11-19): HP and damage ×0.75 / ×0.8 so fights run ≤ 30% longer at 75% accuracy
-    hpPerLevel: 1.65,
-    /** Lv11+ monsters: harder questions hit harder, so ×1.8 HP keeps region-2 fights at about 2–3 turns (sim2, 75%). */
-    hpRegion2: 1.8,
-    dmgBase: 1.2,
-    dmgPerLevel: 0.68,
+    /** 0.4: HP at Lv1, growing ×1.08 per level (sim05). */
+    hp1: 20,
+    hpGrow: 1.08,
+    /** One monster action takes this share of a same-level player's HP. The doc's 15% assumes an action bar of
+     *  10–15 s; here the monster acts once per answer (3–10 s), so per action it is lower: about what 0.3 had. */
+    dmgPct: (level: number) => (level <= 5 ? 0.06 : 0.12),
     chargeMult: 2.5,
+    /** Field monsters are at most this many levels above you (their word may be higher); none above you at Lv1–5. */
+    maxAbove: (level: number) => (level <= 5 ? 0 : 1),
     /** HP multiplier by stage: 新怪(无名) / 裂形 / 半名 / shadow. 牙越少，血越薄。 */
     stageHp: { new: 1.0, cracked: 0.85, half: 0.65, shadow: 0.7 },
     overdueHpStep: 0.15,
@@ -78,14 +80,38 @@ export const CONFIG = {
 
   damage: {
     roll: [0.85, 1.15] as [number, number],
-    /** 题型决定伤害 (游戏设计 › 招式): choice ×0.5 (点名 too), listen-and-pick ×0.7, conjugation ×1.5,
-     *  full typing ×2, sentence ×2.5, typed 点名 ×1.2 (only tests the gender, not the spelling). 接句怪: pick ×0.5, typed ×2. */
-    q: { choice: 0.5, listen: 0.7, conj: 1.5, typed: 2, sentence: 2.5, typedCallout: 1.2, clozeBase: 1.5, clozeForm: 2 },
-    breakMult: 0.5,
     vsDefend: 0.3,
-    vulnerable: 1.5,
     maxMultiplierOfBase: 6,
   },
+
+  /** 0.4 战斗修正版: the answer decides hit or miss, level and gear decide damage; question types
+   *  differ through armor. Choice questions hit the armor, typed ones ignore half of it, hard ones
+   *  (form cloze, whole sentence) break it: that hit and the next two ignore it. */
+  armor: {
+    /** Armor A = 2^(monster level − your level) × (1 − 0.04 × gear tier); damage taken = 1 / (1 + A),
+     *  so a same-level monster halves a choice hit and the reduction never reaches 100%. */
+    base: 2,
+    /** Typed questions halve A; hard ones (form cloze, whole sentence) set it to 0 for this hit and the next two. */
+    typedFactor: 0.5,
+    breakHits: 3,
+    /** Hard cap on the reduction A / (1 + A). */
+    maxReduction: 0.9,
+    /** Each level the monster is above you, it also hits 8% harder. */
+    monsterDmgPerLevelBelow: 0.08,
+  },
+
+  /** 0.4 伤害: D = same-level monster HP × 0.5 × (1 + 0.18 × gear tier): a same-level monster takes 4 choice hits,
+   *  3 typed, 2 hard. */
+  playerDmgShare: 0.5,
+
+  /** 0.4 装备档位: 8 tiers per region; tier n needs 40 × n² shards, 1 shard per kill, and a small chance to drop
+   *  the next tier whole. */
+  gear: { tiers: 8, shardsPerTierSq: 40, wholeChance: 0.02, dmg: 0.18, hp: 0.08, pen: 0.04 },
+
+  /** 0.4 技能改的是下一题: 铭刻 raises the next question one step (×1.5 on a hit), 低语 gives the first letter
+   *  (×0.5, costs class resource or a dictionary hint), 齐鸣 lets one answer hit the whole pack. Cooldowns in turns
+   *  (about 6–7 s per question, so 4 turns ≈ the doc's 30 s). */
+  tech: { inscribeCd: 4, inscribeMult: 1.5, whisperCost: 3, whisperMult: 0.5, chorusCd: 4 },
 
   combo: [
     { at: 50, name: '言灵附体 Wortgewalt', dmg: 0.5 },
@@ -115,7 +141,7 @@ export const CONFIG = {
    * 群怪 (region 2): per-monster damage ×0.5 with 2, ×0.35 with 3 (doc said 0.6 / 0.45; sim 2026-11-19 at
    * 75% accuracy gave 13–23% deaths per pack fight). Packs of 3 only from Lv13. 点名 on the wrong one deals half.
    */
-  pack: { dmgMult: [0.2, 0.12] as [number, number], strayMult: 0.5, max: 3, max3From: 13, radiusTiles: 4, fromLevel: 11 },
+  pack: { hpMult: 0.6, dmgMult: [0.2, 0.12] as [number, number], strayMult: 0.5, max: 3, max3From: 13, radiusTiles: 4, fromLevel: 11 },
 
   boss: {
     /** Share of region words that must be at least 半名 before the boss appears. */
@@ -130,6 +156,16 @@ export const CONFIG = {
   /** 吞秤者 (region 2, Lv18): prices and quantities. */
   boss2: { hp: 7, firstTimeSeconds: 45, laterSeconds: 30, xp: 900, gold: 300 },
 };
+
+/** 0.4: a fresh monster's HP at this level (before stage and overdue). */
+export function monsterHpAt(level: number): number {
+  return CONFIG.monster.hp1 * Math.pow(CONFIG.monster.hpGrow, level - 1);
+}
+
+/** A player's HP at this level without gear (monster damage is a share of it). */
+export function playerBaseHp(level: number): number {
+  return CONFIG.player.baseHp + CONFIG.player.hpPerLevel * (level - 1);
+}
 
 export function levelHours(level: number): number {
   if (level <= 5) return CONFIG.levelMinutes[level - 1] / 60;

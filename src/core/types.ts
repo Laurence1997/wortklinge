@@ -38,7 +38,8 @@ export type ZoneId = 'camp' | 'echogasse' | 'schilderstrasse' | 'aschehof' | 'ma
 /** flee = 宝箱怪 / rare monster shouting 「Ich muss los!」: kill it this turn or it runs. */
 export type IntentKind = 'attack' | 'defend' | 'charge' | 'heal' | 'wait' | 'flee';
 /** cls = the class skill (书写者 墨水风暴 / 守护者 稳住). */
-export type Move = 'attack' | 'block' | 'break' | 'sentence' | 'skill' | 'cls';
+/** 0.4: inscribe = 铭刻, whisper = 低语, chorus = 齐鸣 (techniques that change the next question). */
+export type Move = 'attack' | 'block' | 'break' | 'sentence' | 'skill' | 'cls' | 'inscribe' | 'whisper' | 'chorus';
 
 export interface Intent {
   /** What the monster will actually do. */

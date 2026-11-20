@@ -4,10 +4,10 @@
 import { makeRng } from '../src/core/rng';
 import { CONFIG } from '../src/core/config';
 // Tuning knobs for trying values without editing config: HPM (monster HP ×), DMGM (monster damage ×).
-if (process.env.HPM) (CONFIG.monster.hpBase *= +process.env.HPM, CONFIG.monster.hpPerLevel *= +process.env.HPM);
-if (process.env.DMGM) (CONFIG.monster.dmgBase *= +process.env.DMGM, CONFIG.monster.dmgPerLevel *= +process.env.DMGM);
+if (process.env.HPM) CONFIG.monster.hp1 *= +process.env.HPM;
+if (process.env.DMGM) { const f = CONFIG.monster.dmgPct, k = +process.env.DMGM; CONFIG.monster.dmgPct = (l: number) => f(l) * k; }
 import { newGame, maxHp, type GameState } from '../src/core/state';
-import { startBattle, makeQuestion, resolveTurn, availableMoves, type Battle } from '../src/core/combat';
+import { startBattle, makeQuestion, resolveTurn, availableMoves, linkPack, type Battle } from '../src/core/combat';
 import { COUNTER } from '../src/core/intents';
 import { makeItem } from '../src/core/loot';
 import type { ClassId } from '../src/core/classes';
@@ -43,7 +43,7 @@ function fight(s: GameState, zone: ZoneId, packSize: number, acc: number, cls: C
     if (w.art) arts.add(w.art);
     pack.push(startBattle(s, w, rng));
   }
-  for (const b of pack) b.fx = pack[0].fx, (b.cfx = pack[0].cfx);
+  linkPack(pack);
   const hp0 = s.hp;
   let turns = 0;
   const over = () => pack.every((b) => b.outcome === 'win') || pack.some((b) => b.outcome === 'lose' || b.outcome === 'fled');

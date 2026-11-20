@@ -3,7 +3,7 @@ import { CONFIG, levelGapMult } from './config';
 import { makeItem, rollQuality } from './loot';
 import type { Rng } from './rng';
 import { flushSkill, recordKill, type KillOutcome } from './srs';
-import { addXp, affixTotal, maxHp, now, overloaded, rollDay, todayLog, type GameState, type LevelUpResult } from './state';
+import { addGearKill, addXp, affixTotal, maxHp, now, overloaded, rollDay, todayLog, type GameState, type LevelUpResult } from './state';
 import type { Item } from './types';
 import { has } from './unlocks';
 import { CONJ } from '../data/verbs';
@@ -20,6 +20,8 @@ export interface WinResult {
   echoRecovered: { gold: number; xp: number } | null;
   /** This kill happened during 言灵过载 (new = paid less, due = paid more). */
   overload: 'new' | 'due' | null;
+  /** 0.4: the gear tier this kill reached, when it went up. */
+  gearUp: number | null;
 }
 
 export function applyWin(s: GameState, b: Battle, rng: Rng, opts: { heal?: boolean } = {}): WinResult {
@@ -71,6 +73,7 @@ export function applyWin(s: GameState, b: Battle, rng: Rng, opts: { heal?: boole
   if (kill.guiming) log.guiming += 1;
   log.kills += 1;
   s.stats.kills += 1;
+  const gearUp = b.tutorial === 'loss' ? null : addGearKill(s, w.region ?? 1, rng());
 
   // Drops: 20% from small monsters once gear is unlocked; the first one is a guaranteed green (Lv5 lesson).
   let drop: Item | null = null;
@@ -105,7 +108,7 @@ export function applyWin(s: GameState, b: Battle, rng: Rng, opts: { heal?: boole
 
   // 战后喘口气 (packs heal once, after the whole fight)
   if (opts.heal !== false) postFightHeal(s);
-  return { xp, gold, kill, levelUp, drop, bagFull, echoRecovered, overload, chest };
+  return { xp, gold, kill, levelUp, drop, bagFull, echoRecovered, overload, chest, gearUp };
 }
 
 export interface LossResult {

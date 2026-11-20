@@ -4,7 +4,7 @@ import type { Look } from '../core/look';
 // Phaser world to the DOM interface. Game rules live in src/core and stay pure.
 
 import { answerBoss, startBoss, type BossFight } from '../core/boss';
-import { makeQuestion, monsterStats, pickHint, resetClassFx, resolveTurn, rollSaying, startBattle, type Battle, type Question, type TurnReport, type Tutorial } from '../core/combat';
+import { linkPack, makeQuestion, monsterStats, pickHint, resetClassFx, resolveTurn, rollSaying, startBattle, type Battle, type Question, type TurnReport, type Tutorial } from '../core/combat';
 import { CONFIG, xpToNext } from '../core/config';
 import { favour, FAVOUR, KONRAD_WORDS, QUESTS, questEvent, questState, startQuest, type QuestEvent } from '../core/quests';
 import { CHEST_ZH, CHESTS, lockWord, openChest, type ChestKind } from '../core/chest';
@@ -215,19 +215,20 @@ export class Controller {
         s.flags.pendingLoss = true;
         break;
       case 5:
-        lines.push({ who: SYS, text: '【装备】下一只怪会掉东西。C 打开角色，穿上' });
+        lines.push({ who: SYS, text: '【装备】下一只怪会掉东西。C 打开角色，穿上。【低语 W】下一题给首字母，伤害减半，耗 3 言灵或 1 次词典提示' });
         break;
       case 6:
         lines.push(
           { who: HILDE, text: '光叫名字不够。说一整句，它们更怕。' },
           { who: HILDE, text: '「Ich möchte einen Tee.」听见了？der 到了这里变成 einen。die 变 eine，das 变 ein。' },
-          { who: SYS, text: '【句式 F】用眼前这只怪说一句。吃的喝的 Ich möchte，地方 Wo ist，人 Ich habe。见过的词才能用，每种一场一次。der 冰 · die 火 · das 毒' },
+          { who: SYS, text: '【铭刻 Q】下一题难一级，答对伤害 ×1.5。每 4 回合一次' },
+          { who: SYS, text: '【终结技 F】言灵攒满后，对见过的怪看中文写整句：吃的喝的 Ich möchte，地方 Wo ist，人 Ich habe。写对破甲。der 冰 · die 火 · das 毒' },
         );
         break;
       case 7:
         s.flags.pendingBreak = true;
         lines.push({ who: SYS, text: '它们学会缩成一团了，嘴里念着「Ich verteidige mich.」' });
-        lines.push({ who: SYS, text: '【防御】选择题只刮三成。默写全名，破甲，之后两回合受伤 +50%。【连击 Ich beiße zweimal!】答对，它只咬得到一口' });
+        lines.push({ who: SYS, text: '【防御】选择题只刮三成。默写全名，破甲：这一下和之后两下无视护甲。【连击 Ich beiße zweimal!】题会难一级，答对它只咬得到一口' });
         break;
       case 8:
         s.flags.pendingHeal = true;
@@ -340,11 +341,7 @@ export class Controller {
     }
     if (this.pack.length === 1) return;
     // Pack-wide values (player statuses, hints, skill cooldown) are shared.
-    for (const b of this.pack) {
-      b.fx = this.pack[0].fx;
-      b.cfx = this.pack[0].cfx;
-      b.hintsLeft = this.pack[0].hintsLeft;
-    }
+    linkPack(this.pack);
     this.retarget();
   }
 
@@ -410,7 +407,7 @@ export class Controller {
       this.speak(fullForm(b.word));
     }
     // Tutorial bookkeeping.
-    if (b.tutorial === 'break' && b.monster.vulnerable > 0) s.flags.pendingBreak = false;
+    if (b.tutorial === 'break' && b.monster.broken > 0) s.flags.pendingBreak = false;
     if (b.tutorial === 'negation' && b.turn > 1) s.flags.pendingNegation = false;
     if (b.tutorial === 'heal' && b.trapUsed) s.flags.pendingHeal = false;
     // 前 10 级连错 2 次自动给中文提示
@@ -492,6 +489,10 @@ export class Controller {
           }
         }
         if (res.bagFull) toast('背包满了，没捡起来（C 整理）');
+        if (res.gearUp) {
+          sfx.loot();
+          toast(`装备升到第 ${res.gearUp} 档：伤害 +${Math.round(CONFIG.gear.dmg * 100 * res.gearUp)}%，破甲 ${Math.round(CONFIG.gear.pen * 100 * res.gearUp)}%`, 'gold');
+        }
         if (res.chest) this.gotChest(res.chest, b.monster.lvl);
         if (b.word.family === 'krume') this.questFire('krumeKill');
         for (const lv of res.levelUp.levels) this.onLevelUp(lv);

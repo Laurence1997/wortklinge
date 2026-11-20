@@ -3,8 +3,8 @@
 import { makeRng } from '../src/core/rng';
 import { CONFIG } from '../src/core/config';
 // Tuning knobs for trying values without editing config: HPM (monster HP ×), DMGM (monster damage ×).
-if (process.env.HPM) (CONFIG.monster.hpBase *= +process.env.HPM, CONFIG.monster.hpPerLevel *= +process.env.HPM);
-if (process.env.DMGM) (CONFIG.monster.dmgBase *= +process.env.DMGM, CONFIG.monster.dmgPerLevel *= +process.env.DMGM);
+if (process.env.HPM) CONFIG.monster.hp1 *= +process.env.HPM;
+if (process.env.DMGM) { const f = CONFIG.monster.dmgPct, k = +process.env.DMGM; CONFIG.monster.dmgPct = (l: number) => f(l) * k; }
 import { newGame, maxHp } from '../src/core/state';
 import { startBattle, makeQuestion, resolveTurn, availableMoves } from '../src/core/combat';
 import { COUNTER } from '../src/core/intents';
