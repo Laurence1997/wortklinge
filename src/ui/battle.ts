@@ -15,6 +15,11 @@ import { $, bar, clear, h, umlautButtons } from './dom';
 
 type Phase = 'choose' | 'answer' | 'result';
 
+/** 0.4: the Chinese of a monster line without the old intent label in brackets (「别烦我！（要防御）」→「别烦我！」). */
+function plainZh(zh: string): string {
+  return zh.replace(/（[^）]*）/g, '').trim();
+}
+
 const MOVE_INFO: Record<Move, { key: string; zh: string; sub: string }> = {
   attack: { key: 'A', zh: '攻击', sub: '普通题 · 克蓄力' },
   block: { key: 'S', zh: '格挡', sub: '选择题 · 克攻击' },
@@ -231,8 +236,8 @@ export class BattleUI {
         { style: 'flex:1;min-width:0' },
         h('div.kind', `${pack.length > 1 ? (b.named || b.stage > 0 ? fullForm(w) : w.de) + ' ' : '它'}说`),
         h('div.line', it.line),
-        h('div.zh', this.zhShown ? it.zh : ''),
-        b.queued ? h('div.zh', { style: 'color:var(--gold, #ffcf4a)' }, `看穿 · 下回合：${b.queued.line}${this.zhShown ? `（${b.queued.zh}）` : ''}`) : '',
+        h('div.zh', this.zhShown ? plainZh(it.zh) : ''),
+        b.queued ? h('div.zh', { style: 'color:var(--gold, #ffcf4a)' }, `看穿 · 下回合：${b.queued.line}${this.zhShown ? `（${plainZh(b.queued.zh)}）` : ''}`) : '',
         h(
           'div.ib',
           h('button.btn', { onclick: () => this.ctrl.speak(it.line), title: '再听一遍（V）' }, '🔊 再听'),
@@ -341,6 +346,8 @@ export class BattleUI {
     this.renderedQ = qq;
     const wrap = h('div');
     const r = this.report;
+    // 难题就是预告: the only hint left is on the question itself while it charges.
+    if (this.b.intent.kind === 'charge' && this.phase !== 'result') wrap.append(h('div.prompt', { style: 'color:var(--gold, #ffcf4a)' }, h('span', '它在蓄力——答对打断')));
     const tags = [qq.inscribed ? '铭刻 ×2' : '', qq.whispered ? '低语 ×0.5' : '', qq.chorus ? '齐鸣' : ''].filter(Boolean).join(' · ');
     wrap.append(h('div.prompt', h('span', qq.prompt), tags ? h('span.tag', tags) : ''));
     const focusColor = qq.type === 'article' && this.phase === 'result' && this.b.word.art ? ARTICLE_COLOR[genderOf(this.b.word) ?? 'pl'] : '';
