@@ -312,9 +312,9 @@ describe('question ladder', () => {
         types.push(makeQuestion(s, b, 'attack', rng).type);
         b.step += 1;
       }
-      expect(types[0]).toBe('article');
-      expect(types[1]).toBe('pickZh');
-      expect(types[2]).toBe(level >= 3 ? 'typed' : 'pickDe');
+      // 完形填空 ladder (Lv1–5): article → cloze (pick) → listen-and-pick.
+      expect(types).toEqual(['article', 'cloze', 'pickZh']);
+      for (let i = 1; i < types.length; i++) expect(types[i]).not.toBe(types[i - 1]);
     }
   });
 });
@@ -730,5 +730,43 @@ describe('句式 sind', () => {
     expect(sentenceTags(WORD_BY_ID['eltern'])).toEqual(['sind']);
     expect(gradeSentence('Das sind meine Eltern.', WORD_BY_ID['eltern'], 'sind').ok).toBe(true);
     expect(gradeSentence('Ich habe eine E-Mail.', WORD_BY_ID['e-mail'], 'habe').ok).toBe(true);
+  });
+});
+
+describe('完形填空', () => {
+  it('picks at Lv1–5, types the dictionary form at Lv6–10, the needed form from Lv11', async () => {
+    const { makeCloze, gradeCloze, EXAMPLES } = await import('../src/core/cloze');
+    const { clozeQ } = await import('../src/core/combat');
+    const tee = WORD_BY_ID['tee'];
+    const base = makeCloze(tee, 'base', makeRng(1))!;
+    expect(base.answer).toBe('Tee');
+    expect(base.shown).toContain('___');
+    expect(gradeCloze('tee', base.answer)).toBe(true);
+    const form = makeCloze(WORD_BY_ID['apfel'], 'form', makeRng(1))!;
+    expect(form.answer).not.toBe('Apfel');
+    const s = newGame('T', 'student', T0);
+    s.level = 3;
+    expect(clozeQ(s, tee, makeRng(2))!.options).toHaveLength(3);
+    s.level = 7;
+    expect(clozeQ(s, tee, makeRng(2))!.options).toBeUndefined();
+    // Every example has exactly one blank, and every noun has a sentence usable for 填原形.
+    for (const [id, lines] of Object.entries(EXAMPLES)) {
+      expect(WORD_BY_ID[id], id).toBeTruthy();
+      for (const l of lines) expect(l.match(/\{/g)?.length, l).toBe(1);
+      expect(makeCloze(WORD_BY_ID[id], 'base', makeRng(1)) ?? makeCloze(WORD_BY_ID[id], 'form', makeRng(1)), id).toBeTruthy();
+    }
+  });
+  it('a noun is only named by a form cloze that writes the article', () => {
+    const s = newGame('T', 'student', T0);
+    s.level = 12;
+    const b = startBattle(s, WORD_BY_ID['tee'], makeRng(3));
+    b.monster.hp = 1;
+    const q = { type: 'cloze' as const, prompt: '', focus: '', answer: 'Tee', clozeMode: 'base' as const, full: '' };
+    resolveTurn(s, b, 'attack', q, 'Tee', makeRng(3));
+    expect(b.lastKillTyped).toBe(false);
+    const b2 = startBattle(s, WORD_BY_ID['tee'], makeRng(3));
+    b2.monster.hp = 1;
+    resolveTurn(s, b2, 'attack', { ...q, answer: 'einen Tee', clozeMode: 'form' as const }, 'einen Tee', makeRng(3));
+    expect(b2.lastKillTyped).toBe(true);
   });
 });

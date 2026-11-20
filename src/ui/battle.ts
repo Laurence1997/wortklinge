@@ -101,6 +101,8 @@ export class BattleUI {
     this.lastValue = value;
     this.report = this.ctrl.answer(this.move, this.question, value);
     this.phase = 'result';
+    // 完形填空: read the whole sentence once the blank is answered.
+    if (this.question.type === 'cloze' && this.question.full) this.ctrl.speak(this.question.full);
     this.render();
     // Auto-advance: about a second for a clean hit, longer when there is a correction to read.
     const clean = this.report.correct && !this.report.verdict.notes.length;
@@ -348,7 +350,8 @@ export class BattleUI {
     const r = this.report;
     wrap.append(h('div.prompt', h('span', qq.prompt), this.b.hintsLeft > 0 && this.phase === 'answer' && qq.answer ? h('button.btn.ghost.small', { onclick: () => this.hint() }, `提示（剩 ${this.b.hintsLeft}）`) : ''));
     const focusColor = qq.type === 'article' && this.phase === 'result' && this.b.word.art ? ARTICLE_COLOR[genderOf(this.b.word) ?? 'pl'] : '';
-    wrap.append(h('div.focus', { style: focusColor ? `color:${focusColor}` : '' }, qq.focus));
+    const long = qq.type === 'cloze' ? 'font-size:22px;line-height:1.4;' : '';
+    wrap.append(h('div.focus', { style: (focusColor ? `color:${focusColor};` : '') + long }, qq.focus));
     this.input = null;
     if (qq.options) {
       const opts = h('div.opts');

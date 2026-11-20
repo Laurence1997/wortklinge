@@ -13,12 +13,13 @@ import { fullForm, genderOf, hasArticleQuestion, WORDS } from '../data/words';
 import { SKILLS } from '../data/skills';
 import { SAYING_BY_ID, SAYING_CFG, SAYINGS } from '../data/sayings';
 import { expectedSentence, gradeSentence, nextPattern, PATTERNS, type Pattern } from './sentence';
+import { clozeModeFor, clozeOptions, gradeCloze, hasExamples, makeCloze, type ClozeMode } from './cloze';
 import { CONJ, PERSON_LABEL, type Person } from '../data/verbs';
 import { CLASSES, critRunNeeded, rank, resMax, shieldReflect, wrongHitShare, type ClassId } from './classes';
 
 /** callout = 点名 in packs (shout the target's article); conj = write a verb form (Lv12+); plural = write the plural (Lv11+). */
 /** storm = 书写者「墨水风暴」(type a long word you know); steady = 守护者「稳住」(no question). */
-export type QuestionType = 'article' | 'pickDe' | 'pickZh' | 'typed' | 'sentence' | 'skill' | 'callout' | 'conj' | 'plural' | 'storm' | 'steady' | 'saying';
+export type QuestionType = 'article' | 'pickDe' | 'pickZh' | 'typed' | 'sentence' | 'skill' | 'callout' | 'conj' | 'plural' | 'storm' | 'steady' | 'saying' | 'cloze';
 
 export interface Question {
   type: QuestionType;
@@ -41,6 +42,10 @@ export interface Question {
   sayingId?: string;
   /** sentence questions: which pattern (Ich brauche …, Wo ist …). */
   pattern?: Pattern;
+  /** cloze questions: pick / type the dictionary form / type the form the sentence needs. */
+  clozeMode?: ClozeMode;
+  /** cloze questions: the whole sentence, read aloud after answering. */
+  full?: string;
 }
 
 export interface MonsterState {
@@ -141,7 +146,9 @@ export function monsterStats(level: number, stage: Stage, kind: Kind, overdue: n
   const m = CONFIG.monster;
   const stageMult =
     kind === 'shadow' ? m.stageHp.shadow : stage === 0 ? m.stageHp.new : stage === 1 ? m.stageHp.cracked : m.stageHp.half;
-  const hp = Math.max(4, Math.round((m.hpBase + m.hpPerLevel * level) * stageMult * (1 + m.overdueHpStep * overdue)));
+  // Region 2 (Lv11+) asks harder questions (form cloze ×2), so its monsters carry more HP.
+  const regionMult = level >= 11 ? m.hpRegion2 : 1;
+  const hp = Math.max(4, Math.round((m.hpBase + m.hpPerLevel * level) * stageMult * regionMult * (1 + m.overdueHpStep * overdue)));
   const dmg = Math.max(1, Math.round(m.dmgBase + m.dmgPerLevel * level));
   return { hp, dmg };
 }
@@ -343,13 +350,30 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
   // question twice in a row (Lucas, playtest 2026-11-19: three der clicks in a row is boring).
   // New words: article → hear it and pick the meaning → type it (once typing is unlocked).
   const canConj = w.pos === 'v' && has(s.level, 'conjugation') && !!CONJ[w.de];
+  // 完形填空: words with example sentences get the cloze into the ladder (Lucas 2026-11-20).
+  const cl = hasExamples(w) ? () => clozeQ(s, w, rng) ?? (isNoun ? article() : pickZh()) : null;
   if (canConj) {
-    const verbLadder = b.stage === 0 ? [pickZh, conj, pickDe, conj] : [conj, pickDe, conj, pickZh];
+    const verbLadder = b.stage === 0 ? [pickZh, cl ?? conj, conj, pickDe] : [conj, cl ?? pickDe, conj, pickZh];
     return verbLadder[b.step % verbLadder.length]();
   }
   if (b.pluralDue && canType) {
-    const pl = [plural, typed, article];
+    const pl = [plural, cl ?? typed, typed, article];
     return pl[b.step % pl.length]();
+  }
+  if (cl) {
+    // Lv6+: at least half the questions are cloze or typing; a plain choice only opens a new word.
+    const lv6 = s.level >= 6;
+    const ladder2: Array<() => Question> =
+      b.stage === 0
+        ? isNoun
+          ? lv6 ? [article, cl, typed, cl] : [article, cl, pickZh, cl]
+          : lv6 ? [pickZh, cl, typed, cl] : [pickZh, cl, pickDe, cl]
+        : lv6
+          ? [cl, typed, cl, isNoun ? article : pickDe]
+          : canType
+            ? [cl, typed, isNoun ? article : pickDe]
+            : [cl, isNoun ? article : pickDe];
+    return ladder2[b.step % ladder2.length]();
   }
   const ladder: Array<() => Question> =
     b.stage === 0
@@ -364,6 +388,24 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
           ? [pickDe, typed, pickZh]
           : [pickDe, pickZh];
   return ladder[b.step % ladder.length]();
+}
+
+/** 完形填空 for this word at the player's level, or null when no sentence fits. */
+export function clozeQ(s: GameState, w: Word, rng: Rng): Question | null {
+  const mode = clozeModeFor(s.level);
+  const c = makeCloze(w, mode, rng) ?? (mode === 'base' ? makeCloze(w, 'form', rng) : null);
+  if (!c) return null;
+  const real: ClozeMode = mode === 'base' && c.answer !== w.de && !c.answer.endsWith(w.de) ? 'form' : mode;
+  const tip = real === 'pick' ? '选出填进去的词' : real === 'base' ? '打出填进去的词' : '打出这里要的形式（带冠词、变位或复数）';
+  return {
+    type: 'cloze',
+    prompt: `完形填空：${tip} · ${c.zh}`,
+    focus: c.shown,
+    answer: c.answer,
+    options: real === 'pick' ? clozeOptions(w, c.answer, rng) : undefined,
+    clozeMode: real,
+    full: c.full,
+  };
 }
 
 /** 接句怪: the monster shouts the first half, you finish it (pick from three below Lv6, typed from Lv6). */
@@ -438,6 +480,10 @@ export function gradeQuestion(_s: GameState, b: Battle, q: Question, input: stri
       return gradeTyped(input, q.word!, !!q.withArticle);
     case 'steady':
       return { ok: true, notes: [], correct: q.answer! };
+    case 'cloze': {
+      const ok = gradeCloze(input, q.answer!);
+      return { ok, notes: ok ? [q.full!] : [`正确答案：${q.answer}`, q.full!], correct: q.answer! };
+    }
     case 'saying': {
       const x = SAYING_BY_ID[q.sayingId!];
       const ok = sayKey(input) === sayKey(x.b);
@@ -500,6 +546,7 @@ export function comboTier(combo: number): string | null {
   return null;
 }
 
+const ARTICLE_RE = /^(der|die|das|den|dem|des|ein|eine|einen|einem|einer|eines|kein|keine|keinen|mein|meine|meinen|meinem|dein|deine|deinen|ihr|ihre|ihren|ihrem|seine?n?)\s/i;
 const ELEMENT_BY_GENDER: Record<'m' | 'f' | 'n' | 'pl', Element> = { m: 'ice', f: 'fire', n: 'poison', pl: 'lightning' };
 
 /**
@@ -562,7 +609,8 @@ export function resolveTurn(
   const ok = verdict.ok;
   // 点名 that names another monster in the pack hits that one for half damage (and counts as wrong).
   const stray = q.type === 'callout' && !ok ? alive0.find((x) => x !== b && x.word.art === input) ?? null : null;
-  const typedQ = q.type === 'typed' || q.type === 'sentence' || q.type === 'conj' || q.type === 'plural';
+  const clozeTyped = q.type === 'cloze' && q.clozeMode !== 'pick';
+  const typedQ = q.type === 'typed' || q.type === 'sentence' || q.type === 'conj' || q.type === 'plural' || clozeTyped;
   const kills: Battle[] = [];
   let lastHitter: Battle | null = null;
   let playerDamage = 0;
@@ -570,15 +618,15 @@ export function resolveTurn(
   let newSpell = false;
   let element: Element | null = null;
   // 读对意图: a correct hit that interrupts (蓄力/回血/逃跑) or a written answer that breaks a guard.
-  const writtenQ = q.type === 'typed' || q.type === 'conj' || q.type === 'plural' || q.type === 'storm' || (q.type === 'callout' && !!q.withArticle);
+  const writtenQ = q.type === 'typed' || q.type === 'conj' || q.type === 'plural' || q.type === 'storm' || clozeTyped || (q.type === 'callout' && !!q.withArticle);
   const readRight = ok && move !== 'cls' && (['charge', 'heal', 'flee'].includes(intent.kind) || (intent.kind === 'defend' && writtenQ));
   let blocking = false;
   let interrupted = false;
   b.qIndex += 1;
   if (q.type === 'sentence') b.sxUsed = (b.sxUsed ?? 0) + 1;
   if (ok) {
-    if (q.type === 'typed' || q.type === 'conj' || q.type === 'plural' || q.type === 'sentence') b.writeOk = (b.writeOk ?? 0) + 1;
-    else if (q.type === 'article' || q.type === 'pickDe' || q.type === 'pickZh' || q.type === 'callout') b.readOk = (b.readOk ?? 0) + 1;
+    if (q.type === 'typed' || q.type === 'conj' || q.type === 'plural' || q.type === 'sentence' || (q.type === 'cloze' && q.clozeMode !== 'pick')) b.writeOk = (b.writeOk ?? 0) + 1;
+    else if (q.type === 'article' || q.type === 'pickDe' || q.type === 'pickZh' || q.type === 'callout' || q.type === 'cloze') b.readOk = (b.readOk ?? 0) + 1;
   }
   if (q.type === 'saying') {
     b.sayingDone = true;
@@ -594,7 +642,7 @@ export function resolveTurn(
   // Class resources: 书写者 earns 墨水 for typed answers, 守护者 earns 沉着 for every answer.
   const cfx = b.cfx;
   const critWasReady = cfx.critReady; // earned this turn = the *next* hit crits
-  const typedLike = q.type === 'typed' || q.type === 'conj' || q.type === 'plural' || q.type === 'storm';
+  const typedLike = q.type === 'typed' || q.type === 'conj' || q.type === 'plural' || q.type === 'storm' || clozeTyped;
   if (move === 'cls' && s.cls) cfx.res = Math.max(0, cfx.res - CLASSES[s.cls].skillCost);
   if (s.cls === 'writer' && typedLike && q.type !== 'storm') {
     if (ok) {
@@ -666,6 +714,7 @@ export function resolveTurn(
         mult *= QM.sentence * (1 + affixTotal(s, 'sentenceDmg'));
         if (has(s.level, 'layerElement')) element = ELEMENT_BY_GENDER[genderOf(b.word) ?? 'n'];
       } else if (q.type === 'saying') mult *= q.options ? QM.choice : QM.typed;
+      else if (q.type === 'cloze') mult *= q.clozeMode === 'pick' ? QM.choice : q.clozeMode === 'base' ? QM.clozeBase : QM.clozeForm;
       else if (q.type === 'pickZh') mult *= QM.listen;
       else mult *= QM.choice;
 
@@ -743,6 +792,8 @@ export function resolveTurn(
       if (q.type === 'storm' && multi && overkill > 0) spillStorm(s, pack, b, overkill, typedLike, log);
       b.lastKillTyped = typedQ && (q.type === 'sentence' ? verdict.word?.id === b.word.id : true);
       if (q.type === 'typed' && !q.withArticle && hasArticleQuestion(b.word)) b.lastKillTyped = false;
+      // A noun's 归名 blow must write the article: only a form cloze that includes one (den Tee) counts.
+      if (q.type === 'cloze' && hasArticleQuestion(b.word) && !(q.clozeMode === 'form' && ARTICLE_RE.test(q.answer ?? ''))) b.lastKillTyped = false;
       log.push({ text: `${tagOf(b)}散了。`, tone: 'sys' });
       kills.push(b);
     }

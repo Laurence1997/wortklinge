@@ -64,6 +64,8 @@ export const CONFIG = {
   monster: {
     hpBase: 6, // 题型决定伤害 (2026-11-19): HP and damage ×0.75 / ×0.8 so fights run ≤ 30% longer at 75% accuracy
     hpPerLevel: 1.65,
+    /** Lv11+ monsters: harder questions hit harder, so ×1.8 HP keeps region-2 fights at about 2–3 turns (sim2, 75%). */
+    hpRegion2: 1.8,
     dmgBase: 1.2,
     dmgPerLevel: 0.68,
     chargeMult: 2.5,
@@ -78,7 +80,7 @@ export const CONFIG = {
     roll: [0.85, 1.15] as [number, number],
     /** 题型决定伤害 (游戏设计 › 招式): choice ×0.5 (点名 too), listen-and-pick ×0.7, conjugation ×1.5,
      *  full typing ×2, sentence ×2.5, typed 点名 ×1.2 (only tests the gender, not the spelling). 接句怪: pick ×0.5, typed ×2. */
-    q: { choice: 0.5, listen: 0.7, conj: 1.5, typed: 2, sentence: 2.5, typedCallout: 1.2 },
+    q: { choice: 0.5, listen: 0.7, conj: 1.5, typed: 2, sentence: 2.5, typedCallout: 1.2, clozeBase: 1.5, clozeForm: 2 },
     breakMult: 0.5,
     vsDefend: 0.3,
     vulnerable: 1.5,
