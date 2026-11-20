@@ -74,7 +74,7 @@ export function showTitle(opts: {
       file,
     ),
     opts.account ?? '',
-    h('div.ver', `v${opts.version} · 第 1 区 · 请用电脑上的 Chrome 打开，开声音`),
+    h('div.ver', `v${opts.version} · 第 1–2 区 · 请用电脑上的 Chrome 打开，开声音`),
   );
   clear(el).append(box);
   window.setTimeout(() => (opts.existing ? null : name.focus()), 50);

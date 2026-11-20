@@ -711,7 +711,7 @@ export class Panels {
     ];
     const wrap = h('div');
     for (const [k, v] of rows) wrap.append(h('div.stat', h('span', { style: 'width:90px;flex:none' }, k), h('span', { style: 'text-align:right' }, v)));
-    wrap.append(h('p.small.muted', `0.3：第 1 区余烬营地（1–10 级）和第 2 区面包集市（11–20 级）。当前 ${s.level} 级，等级上限 ${CONFIG.levelCap}。`));
+    wrap.append(h('p.small.muted', `0.4：第 1 区余烬营地（1–10 级）和第 2 区面包集市（11–20 级）。当前 ${s.level} 级，等级上限 ${CONFIG.levelCap}。`));
     return wrap;
   }
 }
