@@ -303,8 +303,8 @@ export class BattleUI {
     const q = h('div.q');
     if (this.phase === 'choose') {
       q.append(
-        h('div.prompt', h('span', '读懂它要做什么，选一个招式')),
-        h('div.focus', { style: 'font-size:16px;font-family:inherit;font-weight:400;color:var(--muted)' }, has(s.level, 'blockBreak') ? '看意图：蓄力、回血答对就打断 · 防御要写对才破防 · 连击答对只挨一下 · 打死它，它的打算就作废' : '看意图：蓄力时答对就能打断它的大招'),
+        h('div.prompt', h('span', '听它说什么，再出手')),
+        h('div.focus', { style: 'font-size:16px;font-family:inherit;font-weight:400;color:var(--muted)' }, has(s.level, 'blockBreak') ? '蓄力、回血：答对就打断 · 缩着：默写才撬得开 · 连击：答对只挨一口' : '它喊「Moment!」的时候答对，就能打断'),
       );
     } else if (this.question) {
       q.append(this.renderQuestion(this.question));
@@ -390,8 +390,8 @@ export class BattleUI {
       if (r.correct && this.b.word && (qq.type === 'article' || qq.type === 'typed')) fb.append(h('span', `  ${fullForm(this.b.word)} · ${this.b.word.zh}`));
       if (r.element) fb.append(h('span', `  元素：${ELEMENT_ZH[r.element]}`));
       for (const n of r.verdict.notes) fb.append(h('span.note', n));
-      if (r.readRight) fb.append(h('span.note', '读对了意图：连击额外 +1'));
-      fb.append(h('span.note.muted', this.ctrl.fightOver() ? '马上结算（Enter 跳过等待）' : '马上进入下一题（Enter 跳过等待）'));
+      if (r.readRight) fb.append(h('span.note', '读懂了它：连击 +1'));
+      fb.append(h('span.note.muted', this.ctrl.fightOver() ? '结算（Enter 跳过）' : '下一题（Enter 跳过）'));
       wrap.append(fb);
     }
     return wrap;

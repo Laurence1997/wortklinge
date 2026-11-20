@@ -517,7 +517,7 @@ export function spillStorm(s: GameState, pack: Battle[], from: Battle, overkill:
   d = Math.min(Math.round(d), next.monster.hp - 1);
   if (d <= 0) return 0;
   next.monster.hp -= d;
-  log.push({ text: `墨水溅到${fullForm(next.word)}身上：${d} 点伤害。最后一下还得写它自己的词。`, tone: 'good' });
+  log.push({ text: `墨水溅到 ${fullForm(next.word)} 身上：${d}。最后一下，得写它自己的名字。`, tone: 'good' });
   return d;
 }
 
@@ -588,7 +588,7 @@ export function resolveTurn(
       const first = !s.sayings[id];
       s.sayings[id] = (s.sayings[id] ?? 0) + 1;
       log.push({ text: first ? `短句卡「${SAYING_BY_ID[id].a} ${SAYING_BY_ID[id].b}」收进了收集册。` : `又接上了「${SAYING_BY_ID[id].a} ${SAYING_BY_ID[id].b}」。`, tone: 'good' });
-    } else log.push({ text: `它冷笑：「${SAYING_BY_ID[q.sayingId!].a} ${SAYING_BY_ID[q.sayingId!].b}！」这句没接上。`, tone: 'bad' });
+    } else log.push({ text: `它替你说完：「${SAYING_BY_ID[q.sayingId!].a} ${SAYING_BY_ID[q.sayingId!].b}！」`, tone: 'bad' });
   }
 
   // Class resources: 书写者 earns 墨水 for typed answers, 守护者 earns 沉着 for every answer.
@@ -603,7 +603,7 @@ export function resolveTurn(
       if (cfx.run >= critRunNeeded(s) && !cfx.critReady) {
         cfx.critReady = true;
         cfx.run = 0;
-        log.push({ text: `连续默写答对 ${critRunNeeded(s)} 题：下一击必定暴击。`, tone: 'good' });
+        log.push({ text: `连写对 ${critRunNeeded(s)} 个：下一击必暴。`, tone: 'good' });
       }
     }
   }
@@ -627,28 +627,28 @@ export function resolveTurn(
       s.skillUses[sk.id] = (s.skillUses[sk.id] ?? 0) + 1;
       if (sk.id === 'keineAhnung') {
         b.fx.shield = true;
-        log.push({ text: `「${sk.de}」——言灵护盾挡在你身前。`, tone: 'good' });
+        log.push({ text: `「${sk.de}」——字在你身前立成一面墙。`, tone: 'good' });
       } else if (sk.id === 'wieBitte') {
         interrupted = true;
-        log.push({ text: `「${sk.de}」——它愣住了，这回合的打算作废。`, tone: 'good' });
+        log.push({ text: `「${sk.de}」——它愣住了。`, tone: 'good' });
       } else if (sk.id === 'zuTeuer') {
         b.fx.cheap = true;
-        log.push({ text: `「${sk.de}」——它们被你压了价，这回合下手轻了一半。`, tone: 'good' });
+        log.push({ text: `「${sk.de}」——它们下手轻了一半。`, tone: 'good' });
       } else if (sk.id === 'wieViel') {
         b.fx.peek = 2;
-        log.push({ text: `「${sk.de}」——你看穿了它们接下来的打算。`, tone: 'good' });
+        log.push({ text: `「${sk.de}」——你看见了它们下一步。`, tone: 'good' });
       } else if (sk.id === 'stimmtSo') {
         b.fx.stimmt = true;
-        log.push({ text: `「${sk.de}」——这场打死的怪，金币翻倍。`, tone: 'good' });
+        log.push({ text: `「${sk.de}」——这一场，金币翻倍。`, tone: 'good' });
       } else if (sk.id === 'freutMich') {
         const heal = Math.round(maxHp(s) * 0.3);
         s.hp = Math.min(maxHp(s), s.hp + heal);
-        log.push({ text: `「${sk.de}」——你回复了 ${heal} 点生命。`, tone: 'good' });
+        log.push({ text: `「${sk.de}」——生命 +${heal}。`, tone: 'good' });
       }
     } else if (move === 'cls' && q.type === 'steady') {
       blocking = true;
       if (rank(s, 'yishou')) cfx.yishou = true;
-      log.push({ text: '「稳住」——你沉下身子，这回合的第一击会被挡下。', tone: 'good' });
+      log.push({ text: '「稳住」——你沉下身子。第一下，挡得住。', tone: 'good' });
     } else {
       const atk = attack(s);
       let mult = between(rng, CONFIG.damage.roll[0], CONFIG.damage.roll[1]);
@@ -717,14 +717,14 @@ export function resolveTurn(
       if (breaking) {
         const turns = CONFIG.status.vulnerableTurns + (s.cls === 'writer' && rank(s, 'tengxie') ? 1 : 0);
         m.vulnerable = turns + 1;
-        log.push({ text: `写对了，护甲被你撬开！接下来 ${turns} 回合它受到的伤害 +50%。`, tone: 'good' });
+        log.push({ text: `写对了。壳裂开了：${turns} 回合内受伤 +50%。`, tone: 'good' });
       }
       if (cfx.yishou && move !== 'cls') {
         cfx.yishou = false;
         const d = Math.max(1, Math.round(attack(s) * CONFIG.damage.q.choice * between(rng, CONFIG.damage.roll[0], CONFIG.damage.roll[1])));
         m.hp -= d;
         playerDamage += d;
-        log.push({ text: `以守为攻：稳住之后顺势再打一下，${d} 点。`, tone: 'good' });
+        log.push({ text: `以守为攻：顺势再一下，${d}。`, tone: 'good' });
       }
       if (element === 'ice') m.chilled = true;
       if (element === 'fire') m.burn = CONFIG.status.burnTurns;
@@ -733,7 +733,7 @@ export function resolveTurn(
       const tag = (judged ? '冠词审判！' : '') + (crit ? (newSpell ? '新言灵！暴击 ' : '暴击 ') : '');
       const el = element ? `（${ELEMENT_ZH[element]}）` : '';
       log.push({ text: `${tag}你造成 ${playerDamage} 点伤害${el}。`, tone: crit ? 'crit' : 'good' });
-      if (intent.kind === 'defend' && !breaking) log.push({ text: '它在防御，选择题只刮掉三成。等这个词能默写了，写对就能破防。', tone: 'info' });
+      if (intent.kind === 'defend' && !breaking) log.push({ text: '它缩着。选择题只刮三成，默写才撬得开。', tone: 'info' });
     }
 
     if (m.hp <= 0) {
@@ -743,30 +743,30 @@ export function resolveTurn(
       if (q.type === 'storm' && multi && overkill > 0) spillStorm(s, pack, b, overkill, typedLike, log);
       b.lastKillTyped = typedQ && (q.type === 'sentence' ? verdict.word?.id === b.word.id : true);
       if (q.type === 'typed' && !q.withArticle && hasArticleQuestion(b.word)) b.lastKillTyped = false;
-      log.push({ text: `${tagOf(b)}被打散了——你先出手，它的打算作废。`, tone: 'sys' });
+      log.push({ text: `${tagOf(b)}散了。`, tone: 'sys' });
       kills.push(b);
     }
   } else {
     if (s.cls === 'writer' && typedLike && rank(s, 'lengjing') && !cfx.calmUsed) {
       cfx.calmUsed = true;
-      log.push({ text: '冷静：这次默写错了，连击还在。', tone: 'info' });
+      log.push({ text: '冷静：写错了，连击还在。', tone: 'info' });
     } else s.combo = 0;
     b.wrongStreak += 1;
     if (b.stage === 2 && !b.slipped && b.kind === 'due') {
       b.slipped = true;
-      log.push({ text: '答错了，它长回一颗牙（退回裂形）。', tone: 'bad' });
+      log.push({ text: '错了。它长回一颗牙（退回裂形）。', tone: 'bad' });
     }
     if (stray) {
       const d = Math.max(1, Math.round(attack(s) * CONFIG.damage.q.choice * CONFIG.pack.strayMult * between(rng, CONFIG.damage.roll[0], CONFIG.damage.roll[1])));
       stray.monster.hp = Math.max(0, stray.monster.hp - d);
-      log.push({ text: `你喊的是 ${input}，打中的却是 ${fullForm(stray.word)}：只有 ${d} 点伤害。`, tone: 'bad' });
+      log.push({ text: `你喊 ${input}，应声的是 ${fullForm(stray.word)}：只有 ${d}。`, tone: 'bad' });
       if (stray.monster.hp <= 0) {
         stray.outcome = 'win';
         stray.lastKillTyped = false;
         kills.push(stray);
         log.push({ text: `${fullForm(stray.word)} 被打散了。`, tone: 'sys' });
       }
-    } else log.push({ text: q.type === 'callout' ? `群里没有冠词是 ${input} 的怪：落空了。` : '招式失败：这一回合什么都没做成。', tone: 'bad' });
+    } else log.push({ text: q.type === 'callout' ? `没有谁叫 ${input}。落空。` : '没叫对。它没反应。', tone: 'bad' });
   }
 
 
@@ -798,7 +798,7 @@ export function resolveTurn(
       b.fx.shield = false;
       const back = Math.max(1, Math.round(d * shieldReflect(s)));
       m.hp = Math.max(0, m.hp - back);
-      say({ text: `护盾挡下这一击，反弹 ${back} 点伤害。`, tone: 'good' });
+      say({ text: `墙挡住了，反弹 ${back}。`, tone: 'good' });
       d = 0;
     }
     monsterDamage += d;
@@ -807,7 +807,7 @@ export function resolveTurn(
   };
 
   if (interrupted && intent.kind === 'charge' && b === target) {
-    say({ text: '你打断了它的蓄力！', tone: 'good' });
+    say({ text: '打断了！它憋的那口气散了。', tone: 'good' });
   } else if (interrupted && b === target) {
     /* 「Wie bitte?」cancelled the intent */
   } else {
@@ -816,7 +816,7 @@ export function resolveTurn(
         let per = m.dmg * dmgMult * chillMult * (monsterCrit ? 1.5 : 1);
         // 多段: a correct answer on this monster stops it after the first hit.
         const hitsN = ok && b === target && intent.hits > 1 ? 1 : intent.hits;
-        if (hitsN < intent.hits) say({ text: '你打中了它，它的连击只出了第一下。', tone: 'good' });
+        if (hitsN < intent.hits) say({ text: '它只咬到一口。', tone: 'good' });
         for (let i = 0; i < hitsN; i++) {
           if (i === 0 && blocking) {
             parried = true;
@@ -840,12 +840,12 @@ export function resolveTurn(
         break;
       }
       case 'defend':
-        if (blocking) say({ text: '它在防御，你的格挡白白浪费了一回合。', tone: 'info' });
+        if (blocking) say({ text: '它在缩着。你白挡了一回合。', tone: 'info' });
         else say({ text: '它缩起来防守。', tone: 'info' });
         break;
       case 'charge': {
         if (m.chilled) {
-          say({ text: '冰冻拖住了它，大招推迟了。', tone: 'good' });
+          say({ text: '冻住了。大的推迟了。', tone: 'good' });
           break;
         }
         const heavy = m.dmg * dmgMult * CONFIG.monster.chargeMult * (monsterCrit ? 1.5 : 1);
@@ -854,7 +854,7 @@ export function resolveTurn(
           say({ text: `你挡下一半大招，受到 ${monsterDamage} 点伤害。`, tone: 'bad' });
         } else {
           hitPlayer(heavy);
-          say({ text: `蓄满的大招砸中你：${monsterDamage} 点！`, tone: 'bad' });
+          say({ text: `憋了很久的那一下砸在你身上：${monsterDamage}！`, tone: 'bad' });
         }
         break;
       }
@@ -866,7 +866,7 @@ export function resolveTurn(
       }
       case 'flee':
         b.outcome = 'fled';
-        say({ text: '「Ich muss los!」——它抱着箱子钻进人群，跑了。', tone: 'bad' });
+        say({ text: '「Ich muss los!」——它抱着箱子钻进人堆，没了。', tone: 'bad' });
         break;
       case 'wait':
         if (intent.layers.includes('object')) log.push({ text: blocking ? '它说的是 mich——挠的是它自己。格挡白费了。' : '它说的是 mich，对着自己出手，没打你。', tone: 'info' });

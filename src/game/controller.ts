@@ -177,24 +177,23 @@ export class Controller {
 
   private intro() {
     const lines: Line[] = [
-      { who: SYS, text: '……检测到宿主生命体征。重生完成。' },
-      { who: SYS, text: '欢迎回来。这个世界的名字被吃掉了。没有名字的东西会扭曲、长牙、吃人。' },
-      { who: SYS, text: '你能做的只有一件事：叫出它们的名字。叫对了，它们才会变回原样。' },
-      { who: HILDE, text: '你醒了？别动……篝火边那块面包，它刚才咬了我一口。' },
-      { who: HILDE, text: '你能看见它的名字吗？试试叫它。名词前面要加 der、die 或 das，叫错了它不认。' },
+      { who: SYS, text: '……心跳恢复。' },
+      { who: HILDE, text: '醒了？别动。火边那块面包，刚才咬了我一口。' },
+      { who: HILDE, text: '它怕名字。叫它。' },
+      { who: SYS, text: '【名词带上 der / die / das，错一个字它都不认】' },
     ];
     say(lines, () => {
       this.state.flags.intro = true;
       this.spawnBread();
       this.persist();
-      toast('走过去碰它，开始战斗（WASD 或方向键移动）');
+      toast('走过去碰它（WASD 或方向键移动）');
     });
   }
 
   private welcomeBack() {
     const s = this.state;
     const due = WORDS.filter((w) => kindOf(s, w) === 'due').length;
-    if (due > 0) toast(`${due} 个词到期了：它们在地图上等你（头上有「!」）`, 'gold');
+    if (due > 0) toast(`${due} 个名字又长出了牙（头上有「!」）`, 'gold');
   }
 
   /** Lessons tied to a level (游戏设计 › 新手引导). */
@@ -203,59 +202,59 @@ export class Controller {
     sfx.levelUp();
     banner(`Lv ${level}`, (UNLOCK_TEXT[level] ?? [])[0] ?? '');
     const unlocked = UNLOCK_TEXT[level] ?? [];
-    const lines: Line[] = unlocked.map((t) => ({ who: SYS, text: `新能力：${t}` }));
+    const lines: Line[] = unlocked.map((t) => ({ who: SYS, text: `【新能力】${t}` }));
     switch (level) {
       case 2:
-        lines.push({ who: SYS, text: '从现在起，有些怪要你把名字打出来。名词要带冠词，比如「der Tee」。' });
+        lines.push({ who: SYS, text: '【默写】有些怪要你把名字打出来。名词带冠词：der Tee' });
         break;
       case 3:
-        lines.push({ who: HILDE, text: '累了就回篝火边坐坐（按 E）。打过的东西，到了时候会重新长出来……但牙会少一些。' });
+        lines.push({ who: HILDE, text: '累了就回来坐（E）。打散的东西会再长出来。牙少一点。' });
         s.flags.teachRest = true;
         break;
       case 4:
         s.flags.pendingLoss = true;
         break;
       case 5:
-        lines.push({ who: SYS, text: '下一只被你打散的怪会掉装备。按 C 打开角色面板穿上它。' });
+        lines.push({ who: SYS, text: '【装备】下一只怪会掉东西。C 打开角色，穿上' });
         break;
       case 6:
         lines.push(
-          { who: HILDE, text: '听好了，光叫名字不够。完整的一句话，力量大得多。' },
-          { who: HILDE, text: '说「Ich möchte einen Tee.」——我想要一杯茶。der Tee 在这句里变成 einen，die Tasse 变成 eine，das Brot 变成 ein。' },
-          { who: SYS, text: '战斗里按 F 用句式攻击：用眼前这只怪的名字说一句，句式跟着怪换（吃的喝的用 Ich möchte，地方用 Wo ist，人用 Ich habe……）。只对单词本里有的词亮，每种句式一场只能用一次。它的性决定元素：der 冰（推迟蓄力）、die 火（灼烧）、das 毒（叠层）。' },
+          { who: HILDE, text: '光叫名字不够。说一整句，它们更怕。' },
+          { who: HILDE, text: '「Ich möchte einen Tee.」听见了？der 到了这里变成 einen。die 变 eine，das 变 ein。' },
+          { who: SYS, text: '【句式 F】用眼前这只怪说一句。吃的喝的 Ich möchte，地方 Wo ist，人 Ich habe。见过的词才能用，每种一场一次。der 冰 · die 火 · das 毒' },
         );
         break;
       case 7:
         s.flags.pendingBreak = true;
-        lines.push({ who: SYS, text: '从现在起，怪会缩起来防御（Ich verteidige mich.）。这时选择题只能刮掉三成，写对它的名字（带冠词）才能破防：全额伤害，还让它易伤两回合。' });
-        lines.push({ who: SYS, text: '连击怪（Ich beiße zweimal!）也来了：答对的话，它只打得出第一下。下一只举盾的怪会教你破防。' });
+        lines.push({ who: SYS, text: '它们学会缩成一团了，嘴里念着「Ich verteidige mich.」' });
+        lines.push({ who: SYS, text: '【防御】选择题只刮三成。默写全名，破甲，之后两回合受伤 +50%。【连击 Ich beiße zweimal!】答对，它只咬得到一口' });
         break;
       case 8:
         s.flags.pendingHeal = true;
-        lines.push({ who: HILDE, text: `营地东边的门后住着一个「邻居」。等你叫得出这片街区四成的名字（打到半名），它才会开门。` });
+        lines.push({ who: HILDE, text: `东边那扇门后面，住着个「邻居」。这片街区的名字你叫回四成，它才肯开门。` });
         break;
       case 9:
         s.flags.pendingNegation = true;
-        lines.push({ who: SYS, text: '注意 nicht：「Ich greife jetzt nicht an.」说了动词，但它这回合不会动手。' });
+        lines.push({ who: SYS, text: '【nicht】「Ich greife jetzt nicht an.」动词说了，手没动' });
         break;
       case 10:
         lines.push(
-          { who: HILDE, text: s.flags.bossKills ? '邻居家的门开了。门后是面包集市，那边的人比这里多，怪也多。' : '雾在退。等你打败门后的邻居，那扇门就会通向面包集市。' },
-          { who: HILDE, text: '到了集市，先去找导师 Greta 选个职业。' },
+          { who: HILDE, text: s.flags.bossKills ? '门开了。后面是面包集市。人多，东西也多。' : '雾在退。门后那个邻居倒下，路就通到集市。' },
+          { who: HILDE, text: '到了那边，找 Greta。她会教你怎么打。' },
         );
         break;
       case 11:
-        lines.push({ who: SYS, text: '集市里的怪会扎堆。离得近、冠词不一样的几只会一起扑上来：先点选一只（Tab 切换），再喊出它的冠词。' });
+        lines.push({ who: SYS, text: '【群怪】集市里的东西成群。先盯住一只（Tab），再喊它的冠词' });
         break;
       case 12:
-        lines.push({ who: SYS, text: '动词怪开始要变位了：题目给出人称，比如「du ___（nehmen）」，写 nimmst。强变化动词（nehmen、essen、sehen……）经验 ×1.3。' });
-        if (s.cls) lines.push({ who: SYS, text: '你有了第一个天赋点：按 T 打开职业与天赋。' });
+        lines.push({ who: SYS, text: '【变位】du ___（nehmen）→ nimmst。强变化动词经验 ×1.3' });
+        if (s.cls) lines.push({ who: SYS, text: '【天赋】第一个点到手。按 T' });
         break;
       case 13:
-        lines.push({ who: SYS, text: '听清 mich 和 dich：「Ich kratze dich!」是挠你，「Ich kratze mich.」是挠它自己，不会打你。' });
+        lines.push({ who: SYS, text: '【mich / dich】「Ich kratze dich!」挠你。「Ich kratze mich.」挠它自己' });
         break;
       case 18:
-        lines.push({ who: SYS, text: '粮仓尽头的秤房开门了。吞秤者只问价格和数量：价签上的数字，用德语单词说出来。' });
+        lines.push({ who: SYS, text: '粮仓尽头，秤房的门开了。里面那个东西只认数字：价签上写多少，就用德语说多少。' });
         break;
     }
     if (lines.length) say(lines);
@@ -314,8 +313,8 @@ export class Controller {
     this.battleUI.open();
     if (this.pack.length > 1 && !s.flags.firstPackDone) {
       say([
-        { who: HILDE, text: '好几只一起扑上来了！先盯住一只（点它的卡片），再喊出它的冠词，它就会挨打。' },
-        { who: HILDE, text: '喊成别的怪的冠词，就打偏到那只身上，只剩一半伤害。看到「Moment!」的那只了吗？先打它。' },
+        { who: HILDE, text: '一群！盯住一只，喊它的冠词。' },
+        { who: HILDE, text: '喊错了，打到别的身上，只剩一半。喊「Moment!」那只，先收拾。' },
       ]);
     }
   }
@@ -423,7 +422,7 @@ export class Controller {
   flee(): void {
     if (!this.battle) return;
     if (this.battle.tutorial === 'loss') {
-      toast('这一场逃不掉。');
+      toast('逃不掉。');
       return;
     }
     this.state.combo = 0;
@@ -446,9 +445,9 @@ export class Controller {
         sfx.guiming();
         banner('归名', 'das Brot · 面包');
         say([
-          { who: SYS, text: '面包的牙一颗颗掉下来，变回了一块面包。这叫「归名」。' },
-          { who: SYS, text: '这次是借给你的。从现在起，名字要叫熟了才会回来：同一只怪要在不同的日子打败三次，最后一下还要默写出全名。' },
-          { who: HILDE, text: '……你真的叫回来了。东边的回声巷里，这样的东西到处都是。去吧，我守着火。' },
+          { who: SYS, text: '牙一颗颗掉下来。它又是一块面包了。' },
+          { who: SYS, text: '【归名】这次是借你的。以后要在不同的三天各打败它一次，最后一下默写全名' },
+          { who: HILDE, text: '……真叫回来了。东边回声巷，这种东西到处都是。去吧。火我守着。' },
         ]);
       } else {
         this.scene.removeMonster(m, res.kill.guiming ? 'guiming' : 'scatter');
@@ -464,11 +463,11 @@ export class Controller {
         toast(bits.join(' · '));
         if (res.kill.needsTypedFinal && !s.flags.taughtFinal) {
           s.flags.taughtFinal = true;
-          say([{ who: SYS, text: '它只剩一层了，但选择题叫不回名字。下次遇到它，用默写打出带冠词的全名，给它最后一击。' }]);
+          say([{ who: SYS, text: '【差一步】选择题叫不回名字。下次遇到它，默写全名收尾' }]);
         }
         if (res.kill.kind === 'shadow' && !s.flags.taughtShadow) {
           s.flags.taughtShadow = true;
-          toast('半透明的是影子：还没到复习时间，打它不推进归名');
+          toast('半透明的是影子：还没到时候，打它不算复习');
         }
         if (b.kind === 'new' && s.daily.newCount === CONFIG.srs.dailyNewCap) {
           // Just entered 言灵过载. Explain once, then only a banner on later days.
@@ -476,8 +475,8 @@ export class Controller {
             s.flags.taughtCap = true;
             const O = CONFIG.overload;
             say([
-              { who: SYS, text: `今天你已经叫出了 ${CONFIG.srs.dailyNewCap} 个新名字。言灵过载：脑子里的名字太多，新叫出的名字站不稳。` },
-              { who: SYS, text: `你可以接着打。只是今天剩下的时间里，新怪的经验、金币和掉率减半；到期复习的怪经验和金币 ×${O.dueXp}。明早 4 点过载消退。` },
+              { who: SYS, text: `今天叫出了 ${CONFIG.srs.dailyNewCap} 个新名字。脑子里太挤，新的站不稳。` },
+              { who: SYS, text: `【言灵过载】新怪收益减半，复习收益 ×${O.dueXp}。明早 4 点消退` },
             ]);
           } else banner('言灵过载', '新怪收益减半 · 复习收益提高');
         }
@@ -489,16 +488,16 @@ export class Controller {
           toast(`掉落：${res.drop.name}（${{ white: '普通', green: '优秀', purple: '史诗', orange: '传说' }[res.drop.quality]}）`, res.drop.quality === 'white' ? '' : 'gold');
           if (!s.flags.taughtGear) {
             s.flags.taughtGear = true;
-            say([{ who: SYS, text: '你捡到了一件装备。按 C 打开角色面板，点「穿上」。' }]);
+            say([{ who: SYS, text: '【装备】C 打开角色，点「穿上」' }]);
           }
         }
-        if (res.bagFull) toast('背包满了，装备没捡起来：按 C 丢掉一些');
+        if (res.bagFull) toast('背包满了，没捡起来（C 整理）');
         if (res.chest) this.gotChest(res.chest, b.monster.lvl);
         if (b.word.family === 'krume') this.questFire('krumeKill');
         for (const lv of res.levelUp.levels) this.onLevelUp(lv);
         if (res.levelUp.capped && !s.flags.taughtCapLevel) {
           s.flags.taughtCapLevel = true;
-          say([{ who: SYS, text: `你到了这一版的等级上限（${CONFIG.levelCap} 级）。经验会存着，第 3 区开放后接着升。继续打，归名和装备都还在涨。` }]);
+          say([{ who: SYS, text: `【等级上限 ${CONFIG.levelCap}】经验先存着，第 3 区开了接着升。归名和装备照样涨` }]);
         }
       }
     }
@@ -537,13 +536,13 @@ export class Controller {
       pack.forEach((x, i) => { if (!x.settled) this.scene.removeMonster(ents[i], 'flee'); });
       this.scene.teleportToBonfire();
       this.scene.spawnAll();
-      const lines: Line[] = [{ who: SYS, text: '你死了。你在篝火旁重生。' }];
+      const lines: Line[] = [{ who: SYS, text: '火光。焦味。你又回来了。' }];
       if (has(s.level, 'echo')) {
         lines.push(
-          { who: SYS, text: '学过的东西一个都没丢：死亡永远不会拿走你的学习进度。' },
-          { who: SYS, text: `但你身上的 ${loss.newEcho?.gold ?? 0} 金币和这一级的 ${loss.newEcho?.xp ?? 0} 经验，留在了杀死你的「${fullForm(b.word)}」身上，变成回响。回去打败它，就能捡回来。再死一次之前没捡回，就永远没了。` },
+          { who: SYS, text: '记住的名字还在。这个，它们拿不走。' },
+          { who: SYS, text: `【回响】${loss.newEcho?.gold ?? 0} 金币和 ${loss.newEcho?.xp ?? 0} 经验留在了「${fullForm(b.word)}」身上。打败它就能拿回；再死一次，就没了` },
         );
-        if (loss.lostEcho) lines.push({ who: SYS, text: `上一份回响（${loss.lostEcho.gold} 金币、${loss.lostEcho.xp} 经验）没来得及捡回，消散了。` });
+        if (loss.lostEcho) lines.push({ who: SYS, text: `上一份回响（${loss.lostEcho.gold} 金币、${loss.lostEcho.xp} 经验）散了。` });
       }
       say(lines);
     } else {
@@ -553,7 +552,7 @@ export class Controller {
     this.scene.endFocus();
     this.scene.restyleAll();
     if (this.trial) this.trialNext(won);
-    if (b.outcome === 'fled' && b.flees && !lost) toast('它带着铁箱跑了。下次在它喊「Ich muss los!」之前打死它。');
+    if (b.outcome === 'fled' && b.flees && !lost) toast('它抱着铁箱跑了。下次，在它喊「Ich muss los!」之前。');
     this.refresh();
     this.persist();
     this.nextChest();
@@ -614,16 +613,16 @@ export class Controller {
     const s = this.state;
     const K = '面包师傅 Konrad';
     if (!has(s.level, 'quests')) {
-      say([{ who: K, text: '「Brot……Brot。」他只会说这一个词，手里攥着一张写不出名字的纸条。（12 级后再来）' }]);
+      say([{ who: K, text: '「Brot……Brot。」他只剩这一个词。手里攥着张纸条，上面的字在爬。（12 级）' }]);
       return;
     }
     const p = questState(s, 'konrad');
     if (!p) {
       say(
         [
-          { who: K, text: 'Brot……对，Brot！你能听懂我？' },
-          { who: K, text: '浓雾来的那天，我的面粉袋子长出了嘴，跑到菜摊街去了。没有面粉，我连面包都做不了。' },
-          { who: K, text: '更糟的是，我忘了好多词……连我女儿的名字都想不起来了。帮帮我吧。' },
+          { who: K, text: 'Brot……Brot！你听得懂？' },
+          { who: K, text: '起雾那天，面粉袋长了嘴，自己跑了。跑去菜摊街。没面粉，我什么也烤不出来。' },
+          { who: K, text: '还有我女儿。她叫……' },
         ],
         () => {
           startQuest(s, 'konrad');
@@ -644,25 +643,25 @@ export class Controller {
         s.flags.konradBread = now(s);
         const heal = Math.round(maxHp(s) * 0.5);
         s.hp = Math.min(maxHp(s), s.hp + heal);
-        say([{ who: K, text: `「Ein Brot für dich!」刚出炉的面包，你回复了 ${heal} 点生命。（每小时一个）` }]);
+        say([{ who: K, text: `「Ein Brot für dich!」还烫手。生命 +${heal}。（每小时一个）` }]);
         this.refresh();
-      } else say([{ who: K, text: '「Das Brot ist noch nicht fertig.」面包还在炉子里，过一会儿再来。' }]);
+      } else say([{ who: K, text: '「Das Brot ist noch nicht fertig.」还在炉子里。' }]);
       return;
     }
     if (p.step === 0) {
-      say([{ who: K, text: `面粉还在菜摊街那些碎屑兽身上。（${p.count}/5）` }]);
+      say([{ who: K, text: `面粉还在菜摊街那些碎屑兽肚子里。（${p.count}/5）` }]);
       return;
     }
     if (p.step === 1) {
       say(
         [
-          { who: K, text: '面粉回来了，可我还是叫不出店里东西的名字。你教教我：我说中文意思，你告诉我德语，带上冠词。' },
+          { who: K, text: '面粉回来了。可店里这些东西……我叫不出来。你教我。带冠词。' },
         ],
         () => {
           const words = KONRAD_WORDS.map((id) => WORD_BY_ID[id]).filter(Boolean);
           this.panels.showQuiz('教 Konrad 说话', 'Konrad 指着店里的东西。用德语说出来（名词带冠词）。', words, () => {
             this.questFire('taughtKonrad');
-            say([{ who: K, text: 'das Brot、das Brötchen、der Kuchen……都回来了。等等，还有一个名字……再来找我。' }]);
+            say([{ who: K, text: 'das Brot。das Brötchen。der Kuchen。……还差一个名字。你明天再来。' }]);
             this.persist();
           });
         },
@@ -672,10 +671,10 @@ export class Controller {
     // Step 2: the story, the apron.
     say(
       [
-        { who: K, text: '我想起来了一点。她每天早上都来店里，买两个 Brötchen。' },
-        { who: K, text: '她的名字……是 L 开头的。L……就差一点。' },
-        { who: K, text: '雾是从东边粮仓后面的路上来的。她也是往那边走的。等你能走那条路的时候，替我找找她。' },
-        { who: K, text: '这条围裙给你。从今天起，你就是这家店的朋友，饿了就来拿面包。' },
+        { who: K, text: '她每天早上来。买两个 Brötchen。' },
+        { who: K, text: 'L……是 L 开头的。' },
+        { who: K, text: '雾是从粮仓后面那条路来的。她也往那边去了。你哪天走那条路，替我看一眼。' },
+        { who: K, text: '围裙你拿着。饿了就来。' },
       ],
       () => {
         this.questFire('heardKonrad');
@@ -692,7 +691,7 @@ export class Controller {
     const s = this.state;
     if (s.bag.length >= CONFIG.loot.bagSize) {
       s.flags.apronOwed = true;
-      toast('背包满了，Konrad 先替你收着围裙。腾出位置再来找他。');
+      toast('背包满了。Konrad 先替你收着围裙。');
       return;
     }
     const it = makeItem(this.rng, s.level, 'green', 'coat');
@@ -707,7 +706,7 @@ export class Controller {
   private talkMira() {
     const s = this.state;
     if (!has(s.level, 'shop')) {
-      say([{ who: MIRA, text: '货还在路上。你再长大一点（11 级）再来。' }]);
+      say([{ who: MIRA, text: '货还没到。你也还没长大。（11 级）' }]);
       return;
     }
     this.questFire('metMira');
@@ -720,9 +719,9 @@ export class Controller {
       s.flags.miraMet = true;
       say(
         [
-          { who: MIRA, text: 'Hallo! 我这儿什么都卖：笔、外套、护符、词典。' },
-          { who: MIRA, text: '不过在集市上，东西是用嘴买的。指着它说「Ich nehme den Stift.」，我就卖给你。' },
-          { who: MIRA, text: '注意：der Stift、der Mantel 在 nehmen 后面要变成 den；das Amulett、das Wörterbuch 不变。嫌贵就说「Geht das billiger?」，我心情好会打九折。' },
+          { who: MIRA, text: 'Hallo! 笔、外套、护符、词典。要什么？' },
+          { who: MIRA, text: '在这儿，东西靠嘴买。说「Ich nehme den Stift.」，它就是你的。' },
+          { who: MIRA, text: 'der 跟在 nehme 后面要变 den，das 不变。嫌贵？「Geht das billiger?」看我心情。' },
         ],
         open,
       );
@@ -759,16 +758,16 @@ export class Controller {
   private talkGreta() {
     const s = this.state;
     if (s.level < CONFIG.region2Level) {
-      say([{ who: GRETA, text: `你还太嫩。到 ${CONFIG.region2Level} 级再来找我。` }]);
+      say([{ who: GRETA, text: `太嫩。${CONFIG.region2Level} 级再来。` }]);
       return;
     }
     const lines: Line[] = [];
     if (!s.flags.gretaMet) {
       s.flags.gretaMet = true;
       lines.push(
-        { who: GRETA, text: '营地来的？Hilde 跟我提过你。在集市里光会叫名字不够，你得有自己的打法。' },
-        { who: GRETA, text: '书写者靠默写：写得越多，墨水越多，下笔越狠。守护者靠站得住：答错也不容易倒，挡得住，反弹得回去。' },
-        { who: GRETA, text: '先各试一场试炼。打完一次，这个职业就永久归你。第一个职业白送，之后随时来我这儿换。' },
+        { who: GRETA, text: '营地来的？Hilde 说过你。在这儿光会叫名字，活不久。' },
+        { who: GRETA, text: '书写者，写得越多下手越狠。守护者，挨得住，还打得回去。' },
+        { who: GRETA, text: '各打一场试炼。过了，就是你的。第一个不要钱，以后想换随时来。' },
       );
     }
     const choices: Array<{ label: string; act: () => void }> = [];
@@ -780,7 +779,7 @@ export class Controller {
     if (s.cls && s.level >= TALENT_FROM_LEVEL) choices.push({ label: '看天赋（T）', act: () => this.panels.show('talents') });
     if (s.cls && spent(s) > 0) choices.push({ label: `洗点（${respecCost(s)} 金币）`, act: () => this.doRespec() });
     choices.push({ label: '离开', act: () => undefined });
-    if (!lines.length) lines.push({ who: GRETA, text: s.cls ? `${CLASSES[s.cls].zh}，今天想练什么？` : '想好试哪个了吗？' });
+    if (!lines.length) lines.push({ who: GRETA, text: s.cls ? `${CLASSES[s.cls].zh}，今天想练什么？` : '想好了？' });
     say(lines, undefined, choices);
   }
 
@@ -812,7 +811,7 @@ export class Controller {
       s.cls = (s.flags.trialPrev as ClassId) || null;
       delete s.flags.trialPrev;
       resetClassFx(s);
-      say([{ who: GRETA, text: '试炼断了。没关系，什么时候准备好了再来。' }]);
+      say([{ who: GRETA, text: '倒得挺快。歇够了再来。' }]);
       return;
     }
     t.left -= 1;
@@ -832,7 +831,7 @@ export class Controller {
       { label: `${prev ? '换成' : '选择'}${CLASSES[t.cls].zh}`, act: () => this.pickClass(t.cls) },
       { label: prev ? `继续当${CLASSES[prev].zh}` : '再想想', act: () => undefined },
     ];
-    say([{ who: GRETA, text: `不错。${CLASSES[t.cls].zh}这条路你走得通。要现在就选吗？` }], undefined, choices);
+    say([{ who: GRETA, text: `还行。${CLASSES[t.cls].zh}，你走得通。现在定？` }], undefined, choices);
   }
 
   private pickClass(id: ClassId) {
@@ -842,9 +841,9 @@ export class Controller {
     resetClassFx(s);
     banner(first ? '职业' : '换职业', CLASSES[id].zh);
     this.renderMenu();
-    const lines: Line[] = [{ who: GRETA, text: `从今天起，你是${CLASSES[id].zh}。战斗里按 G 用职业技能「${CLASSES[id].skillZh}」。` }];
-    if (s.level >= TALENT_FROM_LEVEL) lines.push({ who: SYS, text: '按 T 打开职业与天赋，把天赋点花掉。' });
-    else lines.push({ who: SYS, text: `${TALENT_FROM_LEVEL} 级起每升一级得 1 点天赋（按 T 查看）。` });
+    const lines: Line[] = [{ who: GRETA, text: `今天起你是${CLASSES[id].zh}。【G】${CLASSES[id].skillZh}` }];
+    if (s.level >= TALENT_FROM_LEVEL) lines.push({ who: SYS, text: '【天赋】按 T 加点' });
+    else lines.push({ who: SYS, text: `【天赋】${TALENT_FROM_LEVEL} 级起每级 1 点（T）` });
     say(lines);
     this.refresh();
     this.persist();
@@ -854,7 +853,7 @@ export class Controller {
     const s = this.state;
     const cost = respecCost(s);
     if (!respec(s)) {
-      say([{ who: GRETA, text: `洗点要 ${cost} 金币。你身上不够。` }]);
+      say([{ who: GRETA, text: `${cost} 金币。你没有。` }]);
       return;
     }
     toast(`天赋已重置，花了 ${cost} 金币`);
@@ -892,16 +891,16 @@ export class Controller {
       const w = WORD_BY_ID[it.data!];
       const st = stageOf(this.state, w);
       if (st >= 3) {
-        say([{ who: '路牌', text: `「${fullForm(w)}」——${w.zh}。字迹清清楚楚。` }]);
+        say([{ who: '路牌', text: `「${fullForm(w)}」——${w.zh}。字不动了。` }]);
         this.speak(fullForm(w));
-      } else say([{ who: '路牌', text: '字母在木板上扭动，读不出来。这个词归名以后，路牌就会变清楚。' }]);
+      } else say([{ who: '路牌', text: '字母在木板上爬。读不出来。（这个词归名后，字会停下）' }]);
     }
   }
 
   rest(): void {
     const s = this.state;
     if (!has(s.level, 'bonfireRest')) {
-      say([{ who: HILDE, text: '火还太弱。先去把那些东西的名字叫回来，等你到 3 级再来坐。' }]);
+      say([{ who: HILDE, text: '火还弱。先去把名字叫回来。（3 级）' }]);
       return;
     }
     rollDay(s);
@@ -911,7 +910,7 @@ export class Controller {
     this.scene.spawnAll();
     const due = WORDS.filter((w) => kindOf(s, w) === 'due').length;
     banner('篝火', '生命回满，怪物全部刷新');
-    say([{ who: SYS, text: due ? `你在篝火旁坐了一会儿。${due} 个到期的词重新长出了牙，在街上游荡（头上有「!」）。` : '你在篝火旁坐了一会儿。现在没有到期的词：明天再来，昨天打过的词就会重生。' }]);
+    say([{ who: SYS, text: due ? `火噼啪响。外面有 ${due} 个名字又长出了牙（头上有「!」）。` : '火噼啪响。外面很安静。明天，昨天打散的东西会回来。' }]);
     if (s.flags.teachRest) s.flags.teachRest = false;
     this.refresh();
     this.persist();
@@ -920,16 +919,16 @@ export class Controller {
   private talkHilde() {
     const s = this.state;
     const tips: Line[][] = [
-      [{ who: HILDE, text: '名词前面的 der、die、das 是它的一部分。只叫「Tee」，它不认；叫「der Tee」，它才发抖。' }],
-      [{ who: HILDE, text: '头上有感叹号的，是今天该叫的名字。别让它们拖太久，拖久了会变凶。' }],
-      [{ who: HILDE, text: '它说话的时候仔细听。「Moment!」就是在憋大招，这时候打它最好。' }],
-      [{ who: HILDE, text: '一天别学太多新名字。睡一觉，第二天再叫一遍，名字才长得牢。' }],
+      [{ who: HILDE, text: '光叫「Tee」，它不理你。叫「der Tee」，它才抖。' }],
+      [{ who: HILDE, text: '头上带「!」的，今天该叫了。拖久了，会变凶。' }],
+      [{ who: HILDE, text: '听它说什么。喊「Moment!」的，在憋大的。那时候打。' }],
+      [{ who: HILDE, text: '一天别叫太多新名字。睡一觉，明天再叫一遍，才长得牢。' }],
     ];
     if (s.level >= 8) {
       const share = Math.round(atLeastHalfShare(s, this.regionWords()) * 100);
-      tips.push([{ who: HILDE, text: `东边那扇门……你已经能叫出这片街区 ${share}% 的名字了。到 ${Math.round(CONFIG.boss.halfNameShare * 100)}%，它就会开门。` }]);
+      tips.push([{ who: HILDE, text: `东边那扇门……这片街区你叫回了 ${share}%。到 ${Math.round(CONFIG.boss.halfNameShare * 100)}%，它会开。` }]);
     }
-    if (s.level >= 6) tips.push([{ who: HILDE, text: 'Wo ist 后面是 der、die、das；Ich suche 后面阳性要变成 den。同一个词，换个句子冠词就变。' }]);
+    if (s.level >= 6) tips.push([{ who: HILDE, text: 'Wo ist der Tisch。Ich suche den Tisch。同一个词，换句话，冠词就变。' }]);
     const i = ((s.flags.hildeIdx as number) ?? 0) % tips.length;
     s.flags.hildeIdx = i + 1;
     say(tips[i]);
@@ -938,12 +937,12 @@ export class Controller {
   private talkExaminer() {
     const s = this.state;
     const region = s.region ?? 1;
-    if (s.level < DUEL.fromLevel) return say([{ who: '考官', text: `「Noch nicht.」还不行。到 ${DUEL.fromLevel} 级再来，我考你默写。` }]);
+    if (s.level < DUEL.fromLevel) return say([{ who: '考官', text: `「Noch nicht.」${DUEL.fromLevel} 级再来。` }]);
     const left = duelPool(s, region).length;
-    if (!left) return say([{ who: '考官', text: '「Fertig.」这一区你没见过的词已经考完了。见过的词，去野外按时复习吧。' }]);
+    if (!left) return say([{ who: '考官', text: '「Fertig.」没什么可考的了。见过的，去外面复习。' }]);
     say([
-      { who: '考官', text: `「Prüfung?」默写对决：我只考这一区你还没见过的词（还剩 ${left} 个），看你本来就会多少，名词要带冠词。` },
-      { who: SYS, text: `写对一个：经验是打怪的 ${DUEL.xpMult} 倍，这个词当场归名。写错：它照样留在野外当新词。考官每 ${DUEL.readBar} 题出手一次，写错也挨打；你倒下就结束，写对的都算数。` },
+      { who: '考官', text: `「Prüfung?」我只考你没见过的词。看你本来会多少。（还剩 ${left} 个）` },
+      { who: SYS, text: `【默写对决】名词带冠词。写对：经验 ×${DUEL.xpMult}，当场归名。写错：挨打，词留在野外。每 ${DUEL.readBar} 题它出手一次。倒下就结束，写对的都算` },
     ], undefined, [
       { label: '开始对决', act: () => this.panels.showDuel(startDuel(s, region, Math.random)) },
       { label: '先不了', act: () => {} },
@@ -966,9 +965,9 @@ export class Controller {
     if (id === 'examiner') return this.talkExaminer();
     // Region-2 NPCs: their systems (class, shop, Konrad's quest) open with the region-2 build.
     const lines: Record<string, string> = {
-      greta: '导师 Greta：「你就是从营地那边过来的？到 10 级、选职业的时候再来找我。」',
-      mira: '商人 Mira：「货还在路上。等我把摊子摆好，你就能用德语跟我买东西了。」',
-      konrad: '面包师傅 Konrad：「Brot……Brot。」他只会说这一个词，手里攥着一张写不出名字的纸条。',
+      greta: '导师 Greta：「营地来的？10 级再来。」',
+      mira: '商人 Mira：「货还没到。摊子摆好了，你用德语跟我买。」',
+      konrad: '面包师傅 Konrad：「Brot……Brot。」他只剩这一个词。',
     };
     say([{ who: id === 'greta' ? 'Greta' : id === 'mira' ? 'Mira' : 'Konrad', text: lines[id] ?? '……' }]);
   }
@@ -988,7 +987,7 @@ export class Controller {
   private knockRegion2() {
     const s = this.state;
     if (!has(s.level, 'boss2')) {
-      say([{ who: '秤房', text: '门后传来秤砣一下一下的撞击声。有什么东西在数……数你身上有多少钱。（第 2 区首领，18 级开放）' }]);
+      say([{ who: '秤房', text: '门后，秤砣一下一下地响。有什么在数。数你兜里有多少。（18 级）' }]);
       return;
     }
     const go = () =>
@@ -1002,7 +1001,7 @@ export class Controller {
         },
       );
     if (s.hp < maxHp(s) * 0.5) {
-      say([{ who: SYS, text: '你的生命不到一半。先回篝火休息？' }], undefined, [
+      say([{ who: SYS, text: '你身上的血不到一半。先回火边？' }], undefined, [
         { label: '直接推门', act: go },
         { label: '先去休息', act: () => undefined },
       ]);
@@ -1040,7 +1039,7 @@ export class Controller {
     };
     const learnable = Object.values(SKILLS).filter((k) => k.boss === 2 && !s.skills.includes(k.id));
     if (dailyFirst && learnable.length) {
-      lines.push({ who: SYS, text: '它说过的话，你可以收一句作为句子技能（按 R 释放；最新学的那句排在第一位）。选一句：' });
+      lines.push({ who: SYS, text: '它说过的话，你能留下一句。【句子技能 R】选一句：' });
       say(
         lines,
         undefined,
@@ -1064,7 +1063,7 @@ export class Controller {
   private knock() {
     const s = this.state;
     if (s.flags.bossKills && s.level >= CONFIG.region2Level) {
-      say([{ who: '门', text: '门开着。门后不是邻居的屋子，而是一条飘着面包香的集市街。' }], undefined, [
+      say([{ who: '门', text: '门开着。后面不是屋子，是一条集市街。有面包的味道。' }], undefined, [
         { label: '穿过门去面包集市', act: () => this.travel(2) },
         { label: '再和无名的邻居打一场', act: () => this.knockBoss() },
         { label: '先不去', act: () => undefined },
@@ -1077,16 +1076,16 @@ export class Controller {
   private knockBoss() {
     const s = this.state;
     if (!has(s.level, 'boss')) {
-      say([{ who: '门', text: '门后有什么东西在呼吸。（8 级开放）' }]);
+      say([{ who: '门', text: '门后有东西在呼吸。（8 级）' }]);
       return;
     }
     const share = atLeastHalfShare(s, this.regionWords());
     if (share < CONFIG.boss.halfNameShare && !this.dev) {
-      say([{ who: '门', text: `门后的东西还叫不出你的名字。先把这片街区 ${Math.round(CONFIG.boss.halfNameShare * 100)}% 的词打到半名（现在 ${Math.round(share * 100)}%）。` }]);
+      say([{ who: '门', text: `门没动。它还不认得你。（这片街区的词打到半名：${Math.round(share * 100)}% / ${Math.round(CONFIG.boss.halfNameShare * 100)}%）` }]);
       return;
     }
     if (s.hp < maxHp(s) * 0.5) {
-      say([{ who: SYS, text: '你的生命不到一半。先回篝火休息？' }], undefined, [
+      say([{ who: SYS, text: '你身上的血不到一半。先回火边？' }], undefined, [
         { label: '直接敲门', act: () => this.openBoss() },
         { label: '先去休息', act: () => undefined },
       ]);
@@ -1150,7 +1149,7 @@ export class Controller {
         this.persist();
       };
       if (dailyFirst && learnable.length && has(s.level, 'skills')) {
-        lines.push({ who: SYS, text: '它说过的话，你可以收一句作为句子技能（战斗里按 R，写对整句释放）。选一句：' });
+        lines.push({ who: SYS, text: '它说过的话，你能留下一句。【句子技能 R】写对整句释放。选一句：' });
         say(
           lines,
           undefined,
@@ -1170,8 +1169,8 @@ export class Controller {
       sfx.death();
       s.hp = maxHp(s);
       this.scene.teleportToBonfire();
-      const miss = f.misses.slice(-3).map((m) => ({ who: '回顾', text: `它问「${m.asked}」，可以答：${m.model}` }));
-      say([{ who: SYS, text: '它不再听你说话了。你在篝火旁醒来。首领的套路不会变，但问法每次不同：练熟了再来。' }, ...miss]);
+      const miss = f.misses.slice(-3).map((m) => ({ who: '回顾', text: `它问「${m.asked}」——可以答：${m.model}` }));
+      say([{ who: SYS, text: '它不听了。你在火边醒来。它问的事不会变，问法会变。' }, ...miss]);
     }
     this.scene.restyleAll();
     this.refresh();
