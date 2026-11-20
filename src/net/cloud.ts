@@ -65,14 +65,31 @@ export async function initCloud(): Promise<void> {
 }
 
 const ERR_ZH: Record<string, string> = {
-  'Invalid login credentials': '邮箱或密码不对',
+  'Invalid login credentials': '邮箱或密码不对。第一次登录请用邀请里给的初始密码；忘了就点「忘记密码」。',
   'Email not confirmed': '这个邮箱还没确认',
   'Token has expired or is invalid': '验证码不对或已过期',
 };
-const zh = (m: string) => ERR_ZH[m] ?? m;
+const NET_ZH = '连不上登录服务器。请检查网络后再试；在国内的话，可能需要换个网络或开加速器。';
+const zh = (m: string) => ERR_ZH[m] ?? (/fetch|network|timeout|load failed/i.test(m) ? NET_ZH : m);
+
+/** Can this browser reach the login server at all? (Blocked networks never show up in the server logs.) */
+export async function serverReachable(): Promise<boolean> {
+  try {
+    const r = await withTimeout(fetch(`${SUPABASE_URL}/auth/v1/health`, { headers: { apikey: SUPABASE_KEY } }), 6000);
+    return r.ok;
+  } catch {
+    return false;
+  }
+}
 
 export async function signIn(email: string, password: string): Promise<string | null> {
-  const { data, error } = await sb.auth.signInWithPassword({ email, password });
+  let res;
+  try {
+    res = await withTimeout(sb.auth.signInWithPassword({ email: email.trim().toLowerCase(), password }), 12000);
+  } catch {
+    return NET_ZH;
+  }
+  const { data, error } = res;
   if (error) return zh(error.message);
   cloud.session = data.session;
   await loadProfile();

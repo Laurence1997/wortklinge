@@ -1,7 +1,7 @@
 // Login box (invite only): email + password. First login forces a new password;
 // "forgot password" mails a reset link (Supabase default template); coming back through it asks for a new password.
 
-import { changePassword, cloud, isRecovering, mustChangePassword, needsNickname, setNickname, sendResetCode, signIn } from '../net/cloud';
+import { changePassword, cloud, isRecovering, mustChangePassword, needsNickname, serverReachable, setNickname, sendResetCode, signIn } from '../net/cloud';
 import { h } from './dom';
 
 type Mode = 'login' | 'forgot' | 'sent';
@@ -48,6 +48,11 @@ export function loginView(box: HTMLElement, onDone: () => void, mode: Mode = 'lo
   }
 
   if (mode === 'login') {
+    // Check the login server up front: a blocked network otherwise just looks like "nothing happens".
+    const net = h('p.small');
+    void serverReachable().then((ok) => {
+      if (!ok) net.textContent = '⚠ 现在连不上登录服务器，登录不了。请换个网络再试；在国内的话，可能需要开加速器。';
+    });
     const em = field('email', '邮箱', email);
     const pw = field('password', '密码');
     const go = async () => {
@@ -60,6 +65,7 @@ export function loginView(box: HTMLElement, onDone: () => void, mode: Mode = 'lo
     enter([em, pw], go);
     box.append(
       linkExpired ? h('p.small', '这个重设密码的链接已经用过或过期了。点「忘记密码」再发一封。') : '',
+      net,
       h('p.small.muted', '账号只能由开发者邀请。收到邀请后用邮箱和初始密码登录，第一次登录要改密码。存档保存在云端，换电脑也能接着玩。'),
       h('div.row', em, pw, h('button.btn.primary', { onclick: go }, '登录')),
       h('button.btn.ghost.small', { onclick: () => loginView(box, onDone, 'forgot', em.value) }, '忘记密码'),
