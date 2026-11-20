@@ -454,8 +454,7 @@ export class Controller {
           this.speak(fullForm(b.word));
         }
         const bits = [`+${res.xp} 经验`, `+${res.gold} 金币`];
-        if (res.overload === 'due') bits.push('复习加成');
-        if (res.overload === 'new') bits.push('过载');
+        if (res.review) bits.push('复习 +50%');
         if (res.kill.to > res.kill.from && !res.kill.guiming) bits.push(`${b.word.de}：${['无名', '裂形', '半名', '归名'][res.kill.to]}`);
         toast(bits.join(' · '));
         if (res.kill.needsTypedFinal && !s.flags.taughtFinal) {
@@ -465,17 +464,6 @@ export class Controller {
         if (res.kill.kind === 'shadow' && !s.flags.taughtShadow) {
           s.flags.taughtShadow = true;
           toast('半透明的是影子：还没到时候，打它不算复习');
-        }
-        if (b.kind === 'new' && s.daily.newCount === CONFIG.srs.dailyNewCap) {
-          // Just entered 言灵过载. Explain once, then only a banner on later days.
-          if (!s.flags.taughtCap) {
-            s.flags.taughtCap = true;
-            const O = CONFIG.overload;
-            say([
-              { who: SYS, text: `今天叫出了 ${CONFIG.srs.dailyNewCap} 个新名字。脑子里太挤，新的站不稳。` },
-              { who: SYS, text: `【言灵过载】新怪收益减半，复习收益 ×${O.dueXp}。明早 4 点消退` },
-            ]);
-          } else banner('言灵过载', '新怪收益减半 · 复习收益提高');
         }
         if (res.echoRecovered) {
           banner('回响', `取回 ${res.echoRecovered.gold} 金币和 ${res.echoRecovered.xp} 经验`);

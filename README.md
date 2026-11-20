@@ -28,7 +28,7 @@
 
 - **一个词就是一只怪。** 名词要带冠词叫：`der Tee`，不是 `Tee`。
 - **归名。** 同一只怪要在三次不同的重生里打败它（当天、隔天、再过两天），最后一下还要默写出带冠词的全名，它才会褪掉牙、变回原来的东西。这就是间隔重复，但你看到的是怪物一层层变回原样，不是一个百分比。
-- **言灵过载。** 一天叫出 30 个新名字之后进入过载：不会锁住你，可以接着打，只是新怪的经验、金币和掉率减半，复习到期的怪经验和金币 ×1.5，第二天早上 4 点消退。学习上的限制都做成游戏规则，不做成硬锁。
+- **多学不吃亏。** 新词没有每日上限，收益也不打折。今天见过的词会按时以复习怪回来，按时打掉经验 ×1.5，多给一片装备碎片。
 - **读意图就是读德语。** 怪物先用德语说出它下一步要干什么：`Ich beiße dreimal!`（我咬三下）、`Moment!`（在蓄力）、`Ich greife jetzt nicht an.`（这回合不打）。读懂了，才知道该攻击、格挡还是破防。你先出手：这一下打死它，它的打算就作废。
 - **冠词决定元素。** 句式攻击 `Ich möchte einen / eine / ein …` 里用了什么性的名词，这一击就是什么元素：der 冰、die 火、das 毒。想玩火系，就得会一批阴性名词。
 - **魂类篝火。** 篝火旁休息，到期的词重新长出牙。死了不丢学习进度，但金币和经验会留在杀死你的那个词身上，回去打败它才能捡回。
@@ -112,7 +112,7 @@ A browser game that teaches German to Chinese-speaking learners. It isn't flashc
 
 - **Every monster is a word.** Nouns must be called with their article: `der Tee`, not `Tee`.
 - **Naming (归名).** Defeat the same word on three separate respawns (today, tomorrow, two days later), and land the last blow by typing its full name with the article. Only then does it shed its teeth and turn back into a cup or a chair. It's spaced repetition you can *see*.
-- **Word overload (言灵过载).** After 30 new words in a day you're overloaded. Nothing locks: you can keep playing, but new monsters give half XP, gold and drops, while due reviews give ×1.5 XP and gold. It wears off at 4 AM. Learning limits are game rules, never hard locks.
+- **Learning more never pays less.** New words have no daily cap and no reduced rewards. Words you meet come back as review monsters on schedule; beating one when it is due gives ×1.5 XP and an extra gear shard.
 - **Reading intents is reading German.** Monsters announce their next move in German: `Ich beiße dreimal!` (bites three times), `Moment!` (charging), `Ich greife jetzt nicht an.` (not attacking this turn). Read it right to choose attack, block or guard-break. You act first, so a kill cancels its move.
 - **Articles are elements.** In `Ich möchte einen / eine / ein …` sentence attacks, the noun's gender sets the element: masculine = ice, feminine = fire, neuter = poison.
 - **Souls-like bonfires.** Resting respawns the words that are due. Dying never costs learning progress, but your gold and XP stay on the word that killed you until you win them back.

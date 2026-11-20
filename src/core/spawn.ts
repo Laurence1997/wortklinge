@@ -3,7 +3,6 @@
 // No daily review cap: a returning player meets the backlog in waves, because each field only
 // holds `count` monsters and at least one slot stays for something else.
 
-import { CONFIG } from './config';
 import { shuffle, type Rng } from './rng';
 import { kindOf } from './srs';
 import { now, type GameState } from './state';
@@ -45,11 +44,8 @@ export function pickSpawns(s: GameState, zone: ZoneId, count: number, alive: Set
   const dueSlots = count > 1 ? count - 1 : count;
   for (const w of due.slice(0, dueSlots)) out.push({ word: w, kind: 'due' });
 
-  // New words in list order (easiest first). After the daily cap only 1 in 4 slots stays new.
-  const newLeft = CONFIG.srs.dailyNewCap - s.daily.newCount - countAliveNew(s, alive);
-  let newSlots = count - out.length;
-  if (newLeft <= 0) newSlots = Math.min(newSlots, Math.floor(count / 4));
-  else newSlots = Math.min(newSlots, Math.max(1, Math.ceil(count * 0.6)), newLeft);
+  // New words in list order (easiest first). No daily cap (言灵过载 removed 2026-11-20).
+  const newSlots = Math.min(count - out.length, Math.max(1, Math.ceil(count * 0.6)));
   for (const w of fresh.slice(0, newSlots)) out.push({ word: w, kind: 'new' });
 
   for (const w of shuffle(rng, shadows)) {
@@ -64,8 +60,3 @@ export function pickSpawns(s: GameState, zone: ZoneId, count: number, alive: Set
   return out;
 }
 
-function countAliveNew(s: GameState, alive: Set<string>): number {
-  let n = 0;
-  for (const id of alive) if (!s.words[id]) n++;
-  return n;
-}

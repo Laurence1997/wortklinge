@@ -17,19 +17,8 @@ export const CONFIG = {
     tutorialInterval: 3 * MINUTE,
     /** After 归名 the word relapses after these gaps (about 1 week, 1 month, 3 months, then 6 months). */
     relapse: [7 * DAY, 30 * DAY, 90 * DAY, 180 * DAY],
-    /** 言灵过载 starts after this many new words in one day. Not a lock: the player keeps
-     *  playing, new monsters just pay less and reviews pay more (see `overload`). */
-    dailyNewCap: 30,
-  },
-
-  /** 言灵过载: a learning limit expressed as a game rule, never a hard lock. */
-  overload: {
-    newXp: 0.5,
-    newGold: 0.5,
-    newDrop: 0.5,
-    dueXp: 1.5,
-    dueGold: 1.5,
-    dueDrop: 1, // due monsters already have the review drop bonus (×1.5)
+    // 言灵过载 removed (Lucas 2026-11-20): no mechanic may pay less because you learn more. New words have no
+    // daily cap; the ones you meet today come back as review monsters on schedule, and those pay extra (xp.dueBonus).
   },
 
   xp: {
@@ -38,6 +27,9 @@ export const CONFIG = {
     shadowMonster: 8,
     boss: 300,
     typedKillMult: 1.5,
+    /** A review monster beaten when it is due: ×1.5 XP and one extra gear shard. */
+    dueBonus: 1.5,
+    dueShards: 1,
     strongVerbMult: 1.3,
   },
 

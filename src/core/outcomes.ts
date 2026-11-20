@@ -3,7 +3,7 @@ import { CONFIG, levelGapMult } from './config';
 import { makeItem, rollQuality } from './loot';
 import type { Rng } from './rng';
 import { flushSkill, recordKill, type KillOutcome } from './srs';
-import { addGearKill, addXp, affixTotal, maxHp, now, overloaded, rollDay, todayLog, type GameState, type LevelUpResult } from './state';
+import { addGearKill, addXp, affixTotal, maxHp, now, rollDay, todayLog, type GameState, type LevelUpResult } from './state';
 import type { Item } from './types';
 import { has } from './unlocks';
 import { CONJ } from '../data/verbs';
@@ -18,8 +18,8 @@ export interface WinResult {
   chest: ChestKind | null;
   bagFull: boolean;
   echoRecovered: { gold: number; xp: number } | null;
-  /** This kill happened during 言灵过载 (new = paid less, due = paid more). */
-  overload: 'new' | 'due' | null;
+  /** A due review monster: paid ×1.5 XP and an extra shard. */
+  review: boolean;
   /** 0.4: the gear tier this kill reached, when it went up. */
   gearUp: number | null;
 }
@@ -30,15 +30,11 @@ export function applyWin(s: GameState, b: Battle, rng: Rng, opts: { heal?: boole
   const log = todayLog(s);
   const w = b.word;
   const wasNew = b.kind === 'new';
-  const ov = overloaded(s);
-  const overload: WinResult['overload'] = ov && wasNew ? 'new' : ov && b.kind === 'due' ? 'due' : null;
-  const O = CONFIG.overload;
   const kill = recordKill(s, w, b.lastKillTyped, b.slipped, t);
   flushSkill(s, w, b);
 
   let xp = b.kind === 'new' ? CONFIG.xp.newMonster : b.kind === 'due' ? CONFIG.xp.dueMonster : CONFIG.xp.shadowMonster;
-  if (overload === 'new') xp *= O.newXp;
-  if (overload === 'due') xp *= O.dueXp;
+  if (b.kind === 'due') xp *= CONFIG.xp.dueBonus;
   const overdueMult = 1 + CONFIG.monster.overdueRewardStep * b.overdue;
   xp *= overdueMult;
   if (b.lastKillTyped) xp *= CONFIG.xp.typedKillMult;
@@ -51,8 +47,6 @@ export function applyWin(s: GameState, b: Battle, rng: Rng, opts: { heal?: boole
   xp = Math.round(xp);
 
   let gold = CONFIG.gold.perKill(b.monster.lvl);
-  if (overload === 'new') gold = Math.max(1, Math.round(gold * O.newGold));
-  if (overload === 'due') gold = Math.round(gold * O.dueGold);
   gold = Math.round(gold * overdueMult);
   if (b.fx.stimmt) gold *= 2;
   let echoRecovered: WinResult['echoRecovered'] = null;
@@ -73,7 +67,7 @@ export function applyWin(s: GameState, b: Battle, rng: Rng, opts: { heal?: boole
   if (kill.guiming) log.guiming += 1;
   log.kills += 1;
   s.stats.kills += 1;
-  const gearUp = b.tutorial === 'loss' ? null : addGearKill(s, w.region ?? 1, rng());
+  const gearUp = b.tutorial === 'loss' ? null : addGearKill(s, w.region ?? 1, rng(), b.kind === 'due' ? 1 + CONFIG.xp.dueShards : 1);
 
   // Drops: 20% from small monsters once gear is unlocked; the first one is a guaranteed green (Lv5 lesson).
   let drop: Item | null = null;
@@ -82,8 +76,6 @@ export function applyWin(s: GameState, b: Battle, rng: Rng, opts: { heal?: boole
     const firstGreen = !s.flags.firstGreen;
     let rate = CONFIG.loot.smallDropRate * (1 + Math.min(1, affixTotal(s, 'dropRate')));
     if (b.kind === 'due') rate *= 1.5;
-    if (overload === 'new') rate *= O.newDrop;
-    if (overload === 'due') rate *= O.dueDrop;
     if (firstGreen || rng() < rate) {
       const maxQ = has(s.level, 'purple') ? 'orange' : 'green';
       // 学习加成: typed kills and due words raise purple/orange odds.
@@ -103,12 +95,12 @@ export function applyWin(s: GameState, b: Battle, rng: Rng, opts: { heal?: boole
   if (has(s.level, 'chests') && b.tutorial !== 'loss' && !b.trial) {
     if (b.flees) chest = 'iron';
     else if (b.kind === 'due' && rng() < CHEST_RATE.forgotten) chest = 'forgotten';
-    else if (rng() < CHEST_RATE.wood * (overload === 'new' ? O.newDrop : 1)) chest = 'wood';
+    else if (rng() < CHEST_RATE.wood) chest = 'wood';
   }
 
   // 战后喘口气 (packs heal once, after the whole fight)
   if (opts.heal !== false) postFightHeal(s);
-  return { xp, gold, kill, levelUp, drop, bagFull, echoRecovered, overload, chest, gearUp };
+  return { xp, gold, kill, levelUp, drop, bagFull, echoRecovered, review: b.kind === 'due', chest, gearUp };
 }
 
 export interface LossResult {

@@ -9,7 +9,7 @@
 import { CONFIG } from './config';
 import { gradeTyped, type Verdict } from './grading';
 import { shuffle, type Rng } from './rng';
-import { addXp, maxHp, now, overloaded, todayLog, type GameState, type LevelUpResult } from './state';
+import { addXp, maxHp, now, todayLog, type GameState, type LevelUpResult } from './state';
 import type { Word } from './types';
 import { hasArticleQuestion, WORDS } from '../data/words';
 
@@ -62,7 +62,7 @@ export function answerDuel(s: GameState, d: Duel, input: string): { levelUp: Lev
       s.daily.newCount += 1;
       log.newWords += 1;
     }
-    xp = Math.round(CONFIG.xp.newMonster * DUEL.xpMult * (overloaded(s) ? CONFIG.overload.newXp : 1));
+    xp = Math.round(CONFIG.xp.newMonster * DUEL.xpMult);
     s.words[w.id] = { stage: 3, due: t + CONFIG.srs.relapse[0], firstSeen: old?.firstSeen ?? t, lastSeen: t, relapse: old?.relapse ?? 0, correct: (old?.correct ?? 0) + 1, wrong: old?.wrong ?? 0, read: old?.read ?? 0, write: (old?.write ?? 0) + 1 };
     log.guiming += 1;
     levelUp = addXp(s, xp);

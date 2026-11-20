@@ -176,12 +176,12 @@ export function gearPen(s: Pick<GameState, 'gearKills' | 'region'>): number {
   return CONFIG.gear.pen * gearTier(s);
 }
 
-/** A kill drops one gear shard for the monster's region, and rarely the next tier whole. Returns the new tier when it went up. */
-export function addGearKill(s: GameState, region: number, roll = 1): number | null {
+/** A kill drops gear shards (1, or 2 for a due review) for the monster's region, and rarely the next tier whole. Returns the new tier when it went up. */
+export function addGearKill(s: GameState, region: number, roll = 1, shards = 1): number | null {
   s.gearKills ??= {};
   const before = regionTier(s, region);
   const key = String(region);
-  s.gearKills[key] = (s.gearKills[key] ?? 0) + 1;
+  s.gearKills[key] = (s.gearKills[key] ?? 0) + shards;
   if (roll < CONFIG.gear.wholeChance && before < CONFIG.gear.tiers) s.gearKills[key] = Math.max(s.gearKills[key], CONFIG.gear.shardsPerTierSq * (before + 1) ** 2);
   const after = regionTier(s, region);
   return after > before ? after : null;
@@ -326,7 +326,3 @@ export function importJson(text: string): GameState | null {
   }
 }
 
-/** 言灵过载: today's new words have reached the daily threshold. */
-export function overloaded(s: GameState): boolean {
-  return s.daily.newCount >= CONFIG.srs.dailyNewCap;
-}
