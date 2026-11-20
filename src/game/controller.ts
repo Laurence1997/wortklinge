@@ -221,7 +221,7 @@ export class Controller {
         lines.push(
           { who: HILDE, text: '光叫名字不够。说一整句，它们更怕。' },
           { who: HILDE, text: '「Ich möchte einen Tee.」听见了？der 到了这里变成 einen。die 变 eine，das 变 ein。' },
-          { who: SYS, text: '【铭刻 Q】下一题难一级，答对伤害 ×1.5。每 4 回合一次' },
+          { who: SYS, text: '【铭刻 Q】下一题难一级，答对伤害 ×1.5，答错丢 1 点言灵。不限次数' },
           { who: SYS, text: '【终结技 F】言灵攒满后，对见过的怪看中文写整句：吃的喝的 Ich möchte，地方 Wo ist，人 Ich habe。写对破甲。der 冰 · die 火 · das 毒' },
         );
         break;

@@ -71,3 +71,28 @@ export function clozeOptions(w: Word, answer: string, rng: Rng): string[] {
 export function gradeCloze(input: string, answer: string): boolean {
   return key(input) === key(answer);
 }
+
+/** 终结技 fallback for words without a sentence pattern: one of the word's example sentences, or a template
+ *  for phrases, names, question words and numbers. Every word gets one. */
+export function wholeSentence(w: Word, rng: Rng): { zh: string; answer: string } {
+  const parsed = (EXAMPLES[w.id] ?? []).map(parse).filter((x): x is NonNullable<typeof x> => !!x && !!x.zh);
+  if (parsed.length) {
+    const p = pick(rng, parsed);
+    return { zh: p.zh, answer: (p.before + p.blank + p.after).trim() };
+  }
+  if (w.pos === 'phr') return { zh: w.zh, answer: w.de };
+  if (w.pos === 'num') return { zh: `我数到 ${w.digit ?? w.zh}。`, answer: `Ich zähle bis ${w.de}.` };
+  if (w.pos === 'q') return Q_TEMPLATES[w.id] ?? { zh: w.zh, answer: w.de };
+  if (w.pos === 'name') return LANGS.includes(w.id) ? { zh: `我说${w.zh}。`, answer: `Ich spreche ${w.de}.` } : { zh: `我来自${w.zh}。`, answer: `Ich komme aus ${w.de}.` };
+  return { zh: w.zh, answer: w.de };
+}
+
+const LANGS = ['deutsch', 'chinesisch', 'englisch'];
+const Q_TEMPLATES: Record<string, { zh: string; answer: string }> = {
+  wer: { zh: '这是谁？', answer: 'Wer ist das?' },
+  was: { zh: '这是什么？', answer: 'Was ist das?' },
+  wo: { zh: '你在哪儿？', answer: 'Wo bist du?' },
+  woher: { zh: '你从哪里来？', answer: 'Woher kommst du?' },
+  wie: { zh: '你叫什么名字？', answer: 'Wie heißt du?' },
+  'wie-viel': { zh: '这个多少钱？', answer: 'Wie viel kostet das?' },
+};

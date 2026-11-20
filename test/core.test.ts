@@ -872,7 +872,7 @@ describe('0.4 示例战斗 (游戏设计 › 0.4 战斗修正版, acceptance tab
       expect(pct(t1.r.playerDamage, 37)).toBe(35);
       expect(pct(b.monster.hp, 37)).toBe(65);
       expect(b.cfx.res).toBe(4);
-      expect(b.cfx.inscribeCd).toBe(3); // 4-turn cooldown, one turn already ticked
+      expect(b.cfx.inscribeCd ?? 0).toBe(0); // no cooldown since 2026-11-20
       // 2: typed (cloze, dictionary form) → 23 of 100; 言灵 full.
       const t2 = turn('attack', atk);
       expect(t2.q.clozeMode).toBe('base');
@@ -896,5 +896,30 @@ describe('0.4 示例战斗 (游戏设计 › 0.4 战斗修正版, acceptance tab
       CONFIG.damage.roll = roll;
       CONFIG.player.baseCrit = crit;
     }
+  });
+});
+
+describe('终结技 for every monster, 铭刻 without cooldown', () => {
+  it('a word without a sentence pattern gets an example sentence or a template; an inscribed miss costs 1 resource', () => {
+    const s = newGame('T', 'student', T0);
+    s.level = 8;
+    for (const id of ['woche', 'hallo', 'drei-num', 'woher', 'china']) {
+      const b = startBattle(s, WORD_BY_ID[id], makeRng(1));
+      b.cfx.res = 5;
+      expect(moveReady(s, b, 'sentence')).toBe(true);
+      const q = makeQuestion(s, b, 'sentence', makeRng(1));
+      expect(q.type).toBe('sentence');
+      expect(q.focus.length).toBeGreaterThan(1);
+      b.monster.hp = 999;
+      const r = resolveTurn(s, b, 'sentence', q, q.answer!, makeRng(1));
+      expect(r.correct).toBe(true);
+    }
+    const b = startBattle(s, WORD_BY_ID['tee'], makeRng(2));
+    b.cfx.res = 3;
+    b.monster.hp = 999;
+    const q = makeQuestion(s, b, 'inscribe', makeRng(2));
+    resolveTurn(s, b, 'inscribe', q, 'zzz', makeRng(2));
+    expect(b.cfx.res).toBe(2);
+    expect(moveReady(s, b, 'inscribe')).toBe(true);
   });
 });

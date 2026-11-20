@@ -1,6 +1,6 @@
 import { SAYING_BY_ID } from '../data/sayings';
 import type { Battle, Question, TurnReport } from '../core/combat';
-import { availableMoves, comboTier, effArmor, moveReady, resName, sentencePattern } from '../core/combat';
+import { availableMoves, comboTier, effArmor, moveReady, resName } from '../core/combat';
 import { ELEMENT_ZH } from '../core/intents';
 import { STAGE_ZH } from '../core/srs';
 import { maxHp } from '../core/state';
@@ -21,11 +21,11 @@ function plainZh(zh: string): string {
 }
 
 const MOVE_INFO: Record<Move, { key: string; zh: string; sub: string }> = {
-  attack: { key: 'A', zh: '攻击', sub: '普通题 · 克蓄力' },
+  attack: { key: 'A', zh: '攻击', sub: '普通题' },
   block: { key: 'S', zh: '格挡', sub: '选择题 · 克攻击' },
   break: { key: 'D', zh: '破防', sub: '默写 · 克防御' },
   sentence: { key: 'F', zh: '终结技', sub: '看中文写整句 · 破甲' },
-  inscribe: { key: 'Q', zh: '铭刻', sub: '下一题难一级 · 答对 ×2' },
+  inscribe: { key: 'Q', zh: '铭刻', sub: '题难一级 · 答对 ×1.5 · 答错丢 1 资源' },
   whisper: { key: 'W', zh: '低语', sub: '给首字母 · 伤害减半' },
   chorus: { key: 'E', zh: '齐鸣', sub: '这一题打整群' },
   skill: { key: 'R', zh: '技能', sub: '写对整句' },
@@ -282,11 +282,7 @@ export class BattleUI {
                       ? `耗 3 ${resName(s)} · 伤害减半`
                       : `词典提示剩 ${b.hintsLeft} · 伤害减半`
                     : mv === 'sentence'
-                      ? !s.words[b.word.id]
-                        ? '没见过的词不能用'
-                        : !sentencePattern(s, b)
-                          ? '这只怪没有整句'
-                          : `${resName(s)} ${b.cfx.res}/${resMax(s)} 满了才能用`
+                      ? `${resName(s)} ${b.cfx.res}/${resMax(s)}${b.cfx.res >= resMax(s) ? ' · 可以放了' : ' · 满了才能用'}`
                       : info.sub;
         movesEl.append(
           h(

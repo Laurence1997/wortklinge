@@ -13,7 +13,7 @@ import { fullForm, genderOf, hasArticleQuestion, WORDS } from '../data/words';
 import { SKILLS } from '../data/skills';
 import { SAYING_BY_ID, SAYING_CFG, SAYINGS } from '../data/sayings';
 import { expectedSentence, gradeSentence, nextPattern, PATTERNS, type Pattern } from './sentence';
-import { clozeModeFor, clozeOptions, gradeCloze, hasExamples, makeCloze, type ClozeMode } from './cloze';
+import { clozeModeFor, clozeOptions, gradeCloze, hasExamples, makeCloze, wholeSentence, type ClozeMode } from './cloze';
 import { CONJ, PERSON_LABEL, type Person } from '../data/verbs';
 import { QTYPES, type QKey } from '../data/questionTypes';
 import { CLASSES, critRunNeeded, rank, resMax, shieldReflect, wrongHitShare, type ClassId } from './classes';
@@ -313,7 +313,7 @@ export function moveReady(s: GameState, b: Battle, move: Move): boolean {
   if (move === 'cls') return !!s.cls && b.cfx.res >= CLASSES[s.cls].skillCost;
   if (move === 'inscribe') return !b.cfx.inscribeCd;
   if (move === 'whisper') return b.cfx.res >= CONFIG.tech.whisperCost || b.hintsLeft > 0;
-  if (move === 'sentence') return resMax(s) > 0 && b.cfx.res >= resMax(s) && !!sentencePattern(s, b);
+  if (move === 'sentence') return resMax(s) > 0 && b.cfx.res >= resMax(s);
   if (move === 'chorus') return b.chorusCd === 0;
   return true;
 }
@@ -419,10 +419,13 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
   const fresh = b.kind === 'new' && b.stage === 0 && b.step < 2;
   const am: Move = move === 'inscribe' || move === 'whisper' || move === 'chorus' ? 'attack' : move;
 
-  // 终结技 (0.4): spends a full resource bar on the whole sentence.
+  // 终结技 (0.4): spends a full resource bar on the whole sentence. Every monster has one: its sentence pattern
+  // when the word is in your wordbook, otherwise one of its example sentences (or a template).
   if (move === 'sentence') {
     const fin = sentenceQ();
     if (fin) return fin;
+    const ws = wholeSentence(w, rng);
+    return { type: 'sentence', prompt: '终结技：看中文，写整句', focus: ws.zh, answer: ws.answer };
   }
   let q = ladderQ();
   // 难题就是预告 (0.4): a charging monster asks the hardest question (Lv11+ form cloze, before that typing);
@@ -610,8 +613,11 @@ export function gradeQuestion(_s: GameState, b: Battle, q: Question, input: stri
       const ok = sayKey(input) === sayKey(x.b);
       return { ok, notes: ok ? [`${x.a} ${x.b} —— ${x.zh}`] : [`正确答案：${x.a} ${x.b}（${x.zh}）`], correct: x.b };
     }
-    case 'sentence':
-      return gradeSentence(input, b.word, q.pattern!);
+    case 'sentence': {
+      if (q.pattern) return gradeSentence(input, b.word, q.pattern);
+      const ok = sayKey(input) === sayKey(q.answer!);
+      return { ok, notes: ok ? [] : [`正确答案：${q.answer}`], correct: q.answer!, word: ok ? b.word : undefined };
+    }
     case 'skill': {
       const sk = SKILLS[q.skillId!];
       const fake: Word = { id: sk.id, de: sk.de, zh: sk.zh, pos: 'phr', family: 'echo', lvl: 1, zone: 'camp' };
@@ -783,6 +789,8 @@ export function resolveTurn(
     else b.hintsLeft = Math.max(0, b.hintsLeft - 1);
   }
   if (move === 'sentence') cfx.res = 0;
+  // 铭刻 has no cooldown (Lucas 2026-11-20: encourage it); a miss on an inscribed question costs 1 resource.
+  if (q.inscribed && !ok) cfx.res = Math.max(0, cfx.res - CONFIG.tech.inscribeMissCost);
   if (move === 'inscribe') cfx.inscribeCd = CONFIG.tech.inscribeCd;
   if (move === 'chorus') b.chorusCd = CONFIG.tech.chorusCd;
   // 题型奖励表: a correct answer earns its row's resource (guardians: +1 for every answer instead, their passive).
