@@ -12,6 +12,7 @@ import { BOSS_QUESTIONS } from '../src/data/boss';
 import { pickSpawns } from '../src/core/spawn';
 import { CONJ } from '../src/data/verbs';
 import { pronounClozes } from '../src/core/cloze';
+import { UNLOCK } from '../src/core/unlocks';
 import { answerDuel, duelPool, startDuel } from '../src/core/duel';
 
 const T0 = new Date('2026-11-20T10:00:00').getTime();
@@ -1219,5 +1220,18 @@ describe('0.5 ihn/sie: pronoun clozes from accusative example sentences', () => 
     const all = WORDS.flatMap((w) => pronounClozes(w));
     expect(all.length).toBeGreaterThan(20);
     expect(all.every((x) => ['ihn', 'sie', 'es'].includes(x.answer))).toBe(true);
+  });
+});
+
+describe('0.5 跟读: read-along scoring', () => {
+  it('counts the target words heard, umlauts and case folded; the best alternative wins', async () => {
+    const { shadowScore, shadowOk } = await import('../src/core/shadow');
+    expect(shadowScore('Ich finde den Schlüssel nicht.', ['ich finde den schlüssel nicht'])).toBe(1);
+    expect(shadowOk('Ich finde den Schlüssel nicht.', ['ich finde den schlüssel', 'ich'])).toBe(true); // 4/5
+    expect(shadowOk('Ich finde den Schlüssel nicht.', ['ich finde'])).toBe(false);
+    expect(shadowScore('Wo ist die Flasche?', [])).toBe(0);
+  });
+  it('opens at Lv5', () => {
+    expect(UNLOCK.shadowing).toBe(5);
   });
 });

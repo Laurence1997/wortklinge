@@ -160,6 +160,8 @@ export interface Battle {
   pluralDue: boolean;
   /** Rewards already paid (packs settle each kill at once). */
   settled?: boolean;
+  /** 跟读 paid out in this fight (once per fight). */
+  shadowed?: boolean;
   hintsLeft: number;
   /** 低语 used on this word and not yet answered right without a hint. */
   hinted?: boolean;

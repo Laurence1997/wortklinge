@@ -30,6 +30,7 @@ import {
   todayLog,
   type GameState,
 } from '../core/state';
+import { shadowScore } from '../core/shadow';
 import type { Move, Slot, Word, ZoneId } from '../core/types';
 import { has, UNLOCK, UNLOCK_TEXT } from '../core/unlocks';
 import { BOSS } from '../data/boss';
@@ -376,6 +377,24 @@ export class Controller {
   fightOver(): boolean {
     if (!this.pack.length) return true;
     return this.pack.every((b) => b.outcome === 'win') || this.pack.some((b) => b.outcome === 'lose' || b.outcome === 'fled');
+  }
+
+  /** 跟读 (Lv5+): can the player still earn the read-along bonus in this fight? */
+  canShadow(): boolean {
+    return has(this.state.level, 'shadowing') && !!this.battle && !this.pack.some((b) => b.shadowed) && !this.battle.tutorial;
+  }
+
+  /** 跟读 result. Sounding right pays CONFIG.shadow.xp once per fight; a miss costs nothing. */
+  shadowed(target: string, heard: string[]): { ok: boolean; score: number; xp: number } {
+    const score = shadowScore(target, heard);
+    const ok = score >= CONFIG.shadow.match;
+    if (!ok || !this.canShadow()) return { ok, score, xp: 0 };
+    for (const b of this.pack.length ? this.pack : [this.battle!]) b.shadowed = true;
+    const xp = CONFIG.shadow.xp;
+    const lv = addXp(this.state, xp);
+    logLine(`跟读：「${target}」读得像，经验 +${xp}`, 'good');
+    for (const l of lv.levels) this.onLevelUp(l);
+    return { ok, score, xp };
   }
 
   askQuestion(move: Move): Question {

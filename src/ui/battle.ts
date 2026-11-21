@@ -13,6 +13,7 @@ import type { Controller } from '../game/controller';
 import { ARTICLE_COLOR, GLITCH } from '../game/sprites';
 import { $, bar, clear, h, umlautButtons } from './dom';
 import { logLine } from './gamelog';
+import { canListen, listenOnce, listening, stopListening } from './listen';
 
 type Phase = 'choose' | 'answer' | 'result';
 
@@ -43,6 +44,9 @@ export class BattleUI {
   private autoTimer = 0;
   private lastValue = '';
   private voicedFull = '';
+  /** 跟读: the German sentence just read aloud after a right answer, and the last attempt's feedback. */
+  private shadowText = '';
+  private shadowMsg = '';
   private renderedQ: Question | null = null;
   private phaseNag = false;
 
@@ -56,12 +60,15 @@ export class BattleUI {
     this.phase = 'choose';
     this.report = null;
     this.zhShown = false;
+    this.shadowText = '';
+    this.shadowMsg = '';
     $('battle').hidden = false;
     this.startTurn();
   }
 
   close(): void {
     window.clearTimeout(this.autoTimer);
+    stopListening();
     $('battle').hidden = true;
     this.input = null;
   }
@@ -90,6 +97,7 @@ export class BattleUI {
 
   choose(move: Move): void {
     if (!this.moves().includes(move) || !moveReady(this.ctrl.state, this.b, move)) return;
+    stopListening();
     if (needsPhase(this.b) && !this.b.phase && move !== 'skill' && move !== 'cls') {
       this.phaseNag = true;
       this.render();
@@ -123,6 +131,8 @@ export class BattleUI {
     // 归名的奖励: a right answer gives the mumbled sentence back whole, read aloud.
     this.voicedFull = this.report.correct && voiced.full ? `${voiced.full}（${voiced.fullZh}）` : '';
     if (this.voicedFull && this.question.type !== 'cloze') this.ctrl.speak(voiced.full!);
+    this.shadowText = this.report.correct ? (this.question.type === 'cloze' && this.question.full ? this.question.full : voiced.full ?? '') : '';
+    this.shadowMsg = '';
     this.render();
     // Auto-advance: about a second for a clean hit, longer when there is a correction to read.
     const clean = this.report.correct && !this.report.verdict.notes.length;
@@ -145,9 +155,45 @@ export class BattleUI {
     for (const l of b.log.slice(from)) logLine(`  ${l.text}`, l.tone === 'good' ? 'good' : l.tone === 'bad' ? 'bad' : l.tone === 'crit' ? 'gold' : 'info');
   }
 
+  /** 跟读 (Lv5+, optional): read the sentence back, on the result screen or on the next turn before choosing
+   *  (the result screen moves on by itself). Sounding right pays XP once per fight, a miss costs nothing. */
+  private shadowReady(): boolean {
+    return !!this.shadowText && (this.phase === 'result' || this.phase === 'choose') && canListen() && this.ctrl.canShadow();
+  }
+
+  private shadowRow(): HTMLElement | string {
+    if (!this.shadowText || !canListen() || (!this.ctrl.canShadow() && !this.shadowMsg)) return '';
+    return h(
+      'span.note.shadow',
+      this.shadowReady() && !listening()
+        ? h('button.btn', { onclick: () => void this.shadow(), title: '跟读（T）：读得像多给经验，读不好不扣东西' }, this.phase === 'choose' ? '🎤 跟读上一句' : '🎤 跟读')
+        : '',
+      this.shadowMsg ? h('span', ` ${this.shadowMsg}`) : '',
+    );
+  }
+
+  async shadow(): Promise<void> {
+    const text = this.shadowText;
+    const from = this.phase;
+    if (!this.shadowReady() || listening()) return;
+    if (from === 'result') window.clearTimeout(this.autoTimer); // the player is reading: wait for Enter
+    this.shadowMsg = `在听……读出「${text}」`;
+    this.render();
+    const heard = await listenOnce();
+    if (this.phase !== from || this.shadowText !== text) return;
+    if (heard === null) this.shadowMsg = '';
+    else if (!heard.length) this.shadowMsg = '没听清，可以再读一次（不扣任何东西）';
+    else {
+      const r = this.ctrl.shadowed(text, heard);
+      this.shadowMsg = r.ok ? `读得像！经验 +${r.xp}` : `听到的是「${heard[0]}」，差一点，可以再读一次`;
+    }
+    this.render();
+  }
+
   continue(): void {
     if (this.phase !== 'result') return;
     window.clearTimeout(this.autoTimer);
+    stopListening();
     if (this.ctrl.fightOver()) {
       this.ctrl.finishBattle();
       return;
@@ -173,6 +219,10 @@ export class BattleUI {
     if (this.phase === 'result' && (e.key === 'Enter' || e.key === ' ')) {
       e.preventDefault();
       this.continue();
+      return true;
+    }
+    if (!typing && e.key.toLowerCase() === 't' && this.shadowReady()) {
+      void this.shadow();
       return true;
     }
     if (this.phase === 'answer' && e.key === 'Escape' && this.moves().length > 1) {
@@ -296,6 +346,7 @@ export class BattleUI {
           'div.ib',
           h('button.btn', { onclick: () => this.ctrl.speak(it.line), title: '再听一遍（V）' }, '🔊 再听'),
           h('button.btn', { onclick: () => { this.zhShown = !this.zhShown; this.render(); }, title: '中文（Z）' }, this.zhShown ? '隐藏中文' : '看中文'),
+          this.phase === 'choose' ? this.shadowRow() : '',
         ),
       ),
     );
@@ -469,6 +520,7 @@ export class BattleUI {
       for (const n of r.verdict.notes) fb.append(h('span.note', n));
       if (r.readRight) fb.append(h('span.note', '读懂了它：连击 +1'));
       if (this.voicedFull) fb.append(h('span.note', `它刚才念的是：${this.voicedFull}`));
+      fb.append(this.shadowRow());
       fb.append(h('span.note.muted', this.ctrl.fightOver() ? '结算（Enter 跳过）' : '下一题（Enter 跳过）'));
       wrap.append(fb);
     }
