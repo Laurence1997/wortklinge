@@ -1,0 +1,306 @@
+// 0.5 小世界: point-and-click scenes on top of the 0.4 map. The world scene keeps drawing the map, monsters and
+// other players; this class owns where you stand (a scene), moving along the route, where monsters spawn
+// (3 per field scene, never refilling the scene you stand in) and the scene panel on the right.
+import Phaser from 'phaser';
+import { CONFIG } from '../core/config';
+import { stageOf } from '../core/srs';
+import type { ZoneId } from '../core/types';
+import { WORD_BY_ID, fullForm } from '../data/words';
+import { AREAS, AREAS_LATER, SCENE_BY_ID, neighbours, nearestScene, routeTo, scenesOf, type SceneDef } from '../data/world';
+import { online } from '../net/online';
+import { h } from '../ui/dom';
+import { sfx } from './audio';
+import { ZONES, TILE, type NpcId } from './map';
+import type { MonsterEntity, WorldScene } from './WorldScene';
+
+const NPC_ZH: Record<NpcId, string> = { hilde: '守火人 Hilde', greta: '导师 Greta', mira: '商人 Mira', konrad: '面包师傅 Konrad', examiner: '考官' };
+const OFFSETS = [[-18, -4], [18, -4], [0, -16], [-18, 14], [18, 14], [0, -28]];
+
+export const anchorPx = (sc: SceneDef) => ({ x: sc.at.x * TILE + 8, y: sc.at.y * TILE + 8 });
+
+export class NodeNav {
+  here!: SceneDef;
+  hopping = false;
+  private gfx?: Phaser.GameObjects.Graphics;
+  private labels: Phaser.GameObjects.Text[] = [];
+  private panel: HTMLElement;
+  private dirty = true;
+  private timer = 0;
+
+  constructor(private w: WorldScene) {
+    let el = document.getElementById('scene-panel');
+    if (!el) {
+      el = h('div#scene-panel.panel');
+      const modal = document.getElementById('modal');
+      if (modal) modal.before(el);
+      else document.body.append(el);
+    }
+    this.panel = el;
+    this.panel.hidden = false;
+  }
+
+  get s() {
+    return this.w.ctrl.state;
+  }
+
+  /** Hidden routes show once the sign's word can be read. */
+  revealed = (sc: SceneDef): boolean => !sc.hiddenBy || stageOf(this.s, WORD_BY_ID[sc.hiddenBy]) >= 3;
+
+  start(): void {
+    const region = this.w.map.region;
+    const hub = SCENE_BY_ID[AREAS.find((a) => a.region === region)!.hub];
+    // First visit with the scene map: an old save wakes at the area's hub (游戏设计 第 5 块验收).
+    if (!this.s.flags.nodeMap) {
+      this.s.flags.nodeMap = true;
+      this.here = hub;
+    } else this.here = nearestScene(region, this.s.pos.x, this.s.pos.y, this.revealed);
+    this.s.flags[`seenArea${region}`] = true;
+    this.place();
+    this.draw();
+  }
+
+  stop(): void {
+    this.panel.hidden = true;
+  }
+
+  private place(): void {
+    const p = anchorPx(this.here);
+    this.w.player.setPosition(p.x, p.y + 14).setDepth(3002);
+    this.s.pos = { x: p.x, y: p.y };
+    this.w.cameras.main.centerOn(p.x, p.y);
+  }
+
+  goHub(): void {
+    const hub = scenesOf(this.w.map.region).find((x) => x.bonfire)!;
+    this.here = hub;
+    this.place();
+    this.draw();
+  }
+
+  sceneOf(m: MonsterEntity): SceneDef {
+    if (m.node && SCENE_BY_ID[m.node]) return SCENE_BY_ID[m.node];
+    const sc = nearestScene(this.w.map.region, m.x, m.y);
+    m.node = sc.id;
+    return sc;
+  }
+
+  monstersIn(sc: SceneDef): MonsterEntity[] {
+    return this.w.monsters.filter((m) => this.sceneOf(m) === sc);
+  }
+
+  /** Field capacity of a zone in the scene map. */
+  capacity(zone: ZoneId): number {
+    return scenesOf(this.w.map.region)
+      .filter((sc) => sc.zone === zone && this.revealed(sc))
+      .reduce((a, sc) => a + (sc.slots ?? CONFIG.map.slots), 0);
+  }
+
+  /** A free slot in this zone, never in the scene you stand in (so a cleared scene means moving on, as walking did). */
+  spot(zone: ZoneId, extra = false): { x: number; y: number; sc: SceneDef } | null {
+    const cands = scenesOf(this.w.map.region).filter((sc) => sc.zone === zone && this.revealed(sc) && sc !== this.here);
+    let best: SceneDef | null = null;
+    let room = 0;
+    for (const sc of cands) {
+      const free = (sc.slots ?? CONFIG.map.slots) + (extra ? 1 : 0) - this.monstersIn(sc).length;
+      if (free > room || (free === room && free > 0 && Math.random() < 0.5)) (best = sc), (room = free);
+    }
+    if (!best || room <= 0) return null;
+    const used = new Set(this.monstersIn(best).map((m) => `${m.x},${m.y}`));
+    const a = anchorPx(best);
+    for (const [dx, dy] of OFFSETS) if (!used.has(`${a.x + dx},${a.y + dy}`)) return { x: a.x + dx, y: a.y + dy, sc: best };
+    return { x: a.x, y: a.y - 18, sc: best };
+  }
+
+  /** Hidden scenes are lucky: more 残句 in region 1, more rare monsters in region 2. */
+  lucky(sc: SceneDef): boolean {
+    return !!sc.lucky && Math.random() < CONFIG.map.luckyChance;
+  }
+
+  // ---- moving -------------------------------------------------------------------------------------
+
+  click(px: number, py: number): void {
+    if (this.hopping || this.w.ctrl.uiBlocking()) return;
+    const sc = scenesOf(this.w.map.region).find((x) => this.revealed(x) && Math.hypot(anchorPx(x).x - px, anchorPx(x).y - py) < 14);
+    if (sc) this.travel(sc.id);
+  }
+
+  travel(id: string): void {
+    if (this.hopping || this.w.ctrl.uiBlocking() || id === this.here.id) return;
+    const path = routeTo(this.here.id, id, this.revealed);
+    if (!path) return;
+    this.hopping = true;
+    this.dirty = true;
+    const step = () => {
+      const next = SCENE_BY_ID[path.shift()!];
+      // 越区引导: a field above your level asks first (the same question walking in asked).
+      if (!next || (next.zone && next.zone !== this.here.zone && !this.w.ctrl.mayEnterZone(next.zone))) return this.arrive();
+      const p = anchorPx(next);
+      sfx.step();
+      this.w.player.setFlipX(p.x < this.w.player.x);
+      this.w.player.play('walk', true);
+      this.w.tweens.add({
+        targets: this.w.player,
+        x: p.x,
+        y: p.y + 14,
+        duration: CONFIG.map.hopSec * 1000,
+        ease: 'Sine.easeInOut',
+        onComplete: () => {
+          this.here = next;
+          this.s.pos = { x: p.x, y: p.y };
+          if (path.length) step();
+          else this.arrive();
+        },
+      });
+    };
+    step();
+  }
+
+  private arrive(): void {
+    this.hopping = false;
+    this.w.player.anims.stop();
+    this.w.player.setTexture('hero0');
+    // Fields left half-empty while you stood in them refill now that you have moved.
+    for (const z of new Set(scenesOf(this.w.map.region).map((x) => x.zone).filter(Boolean))) this.w.fillZone(z as ZoneId);
+    this.draw();
+  }
+
+  // ---- drawing ------------------------------------------------------------------------------------
+
+  draw(): void {
+    this.gfx?.destroy();
+    for (const t of this.labels) t.destroy();
+    this.labels = [];
+    const g = (this.gfx = this.w.add.graphics().setDepth(3000));
+    const list = scenesOf(this.w.map.region).filter(this.revealed);
+    for (const a of list)
+      for (const id of neighbours(a.id)) {
+        const b = SCENE_BY_ID[id];
+        if (!this.revealed(b) || a.id > b.id) continue;
+        const pa = anchorPx(a);
+        const pb = anchorPx(b);
+        g.lineStyle(2, b.type === 'hidden' || a.type === 'hidden' ? 0xffcf4a : 0x8a2a30, 0.55);
+        g.lineBetween(pa.x, pa.y, pb.x, pb.y);
+      }
+    for (const sc of list) {
+      const p = anchorPx(sc);
+      const color = sc.type === 'camp' ? 0xffb347 : sc.type === 'door' ? 0xff2040 : sc.type === 'hidden' ? 0xffcf4a : sc.type === 'road' ? 0x9a8a80 : 0xc23040;
+      g.fillStyle(0x07040a, 0.85).fillCircle(p.x, p.y, 7);
+      g.lineStyle(sc === this.here ? 2 : 1, sc === this.here ? 0xffffff : color, 1).strokeCircle(p.x, p.y, 7);
+      this.labels.push(
+        this.w.add
+          .text(p.x, p.y, String(sc.no), { fontFamily: '"Courier New", monospace', fontSize: '7px', color: '#e8dccf', resolution: 4 })
+          .setOrigin(0.5)
+          .setDepth(3001),
+      );
+    }
+    this.dirty = true;
+  }
+
+  // ---- the scene panel ----------------------------------------------------------------------------
+
+  tick(dtMs: number): void {
+    this.panel.hidden = !!this.w.ctrl.battle || !!this.w.ctrl.boss;
+    this.timer += dtMs;
+    if (!this.dirty && this.timer < 500) return;
+    this.timer = 0;
+    this.dirty = false;
+    this.render();
+  }
+
+  touch(): void {
+    this.dirty = true;
+  }
+
+  /** Number keys 1–9 fight the n-th monster here. */
+  key(e: KeyboardEvent): boolean {
+    if (this.hopping || this.w.ctrl.uiBlocking()) return false;
+    if (/^[1-9]$/.test(e.key)) {
+      const m = this.monstersIn(this.here)[Number(e.key) - 1];
+      if (m) this.fight(m);
+      return !!m;
+    }
+    if (e.key.toLowerCase() === 'm') {
+      this.bigMap();
+      return true;
+    }
+    return false;
+  }
+
+  private fight(m: MonsterEntity): void {
+    if (this.hopping || this.w.ctrl.uiBlocking() || this.w.frozen) return;
+    this.w.ctrl.encounter(m);
+  }
+
+  private render(): void {
+    const sc = this.here;
+    const busy = this.hopping || this.w.ctrl.uiBlocking();
+    const zone = sc.zone ? ZONES.find((z) => z.id === sc.zone) : null;
+    const mons = this.monstersIn(sc);
+    const tag = (m: MonsterEntity) => (m.isEcho ? '回响' : m.phrase ? '残句' : m.rare ? '◆ 稀有' : m.kind === 'due' ? '! 复习' : m.kind === 'shadow' ? '旧识' : '新');
+    const ia = (kind: string, data?: string) => () => {
+      if (!this.w.ctrl.uiBlocking()) this.w.ctrl.interact({ kind, data });
+    };
+    const things: HTMLElement[] = [];
+    if (sc.bonfire) things.push(h('button.btn', { onclick: ia('bonfire') }, '🔥 篝火休息'));
+    for (const n of sc.npcs ?? []) things.push(h('button.btn', { onclick: ia('npc', n) }, NPC_ZH[n]));
+    if (sc.door) things.push(h('button.btn', { onclick: ia('door') }, this.w.map.region === 2 ? '推开秤房的门' : '敲门'));
+    if (sc.gate) things.push(h('button.btn', { onclick: ia('gate') }, '穿过门回余烬营地'));
+    for (const sg of sc.signs ?? []) things.push(h('button.btn', { onclick: ia('sign', sg) }, stageOf(this.s, WORD_BY_ID[sg]) >= 3 ? `路牌：${fullForm(WORD_BY_ID[sg])}` : '路牌：▒▒▒'));
+    const exits = neighbours(sc.id)
+      .map((id) => SCENE_BY_ID[id])
+      .filter(this.revealed)
+      .map((x) => h('button.btn', { disabled: busy, onclick: () => this.travel(x.id) }, `→ ${x.no} ${x.zh}`));
+    const peers = [...online.peers.values()].filter((p) => nearestScene(this.w.map.region, p.x, p.y).id === sc.id).map((p) => p.nick);
+    this.panel.replaceChildren(
+      h('div.sp-head', h('b', `${sc.no} · ${sc.zh}`), h('span.muted', zone ? ` ${zone.zh} · ${zone.levels}` : sc.type === 'camp' ? ' 安全区' : '')),
+      sc.zone
+        ? h(
+            'div.sp-sec',
+            h('div.muted', mons.length ? '这里的怪（点它或按数字键开打）' : '这里暂时没有怪，去下一个场景'),
+            ...mons.map((m, i) =>
+              h(
+                'button.btn.sp-mon' + (m.phrase || m.rare || m.isEcho ? '.gold' : ''),
+                { disabled: busy, onclick: () => this.fight(m) },
+                h('kbd', String(i + 1)),
+                ` ${m.label.text.replace(/\n/g, ' ')} `,
+                h('span.muted', tag(m)),
+              ),
+            ),
+          )
+        : mons.length
+          ? h('div.sp-sec', ...mons.map((m, i) => h('button.btn.sp-mon', { disabled: busy, onclick: () => this.fight(m) }, h('kbd', String(i + 1)), ` ${m.label.text} `, h('span.muted', tag(m)))))
+          : '',
+      things.length ? h('div.sp-sec', h('div.muted', '这里有'), ...things) : '',
+      h('div.sp-sec', h('div.muted', this.hopping ? '赶路中……' : '出口（也可以点地图上的圆点，远处去过的会自动走过去）'), ...exits),
+      peers.length ? h('div.sp-sec.muted', `同场景：${peers.join('、')}`) : '',
+      h('div.sp-sec', h('button.btn.ghost', { onclick: () => this.bigMap() }, '🗺 大地图（M）')),
+    );
+  }
+
+  /** 大地图: every area; open ones you have visited can be entered (you arrive at their hub). */
+  bigMap(): void {
+    if (this.w.ctrl.uiBlocking() || this.hopping) return;
+    const s = this.s;
+    const open = (r: number) => r <= this.w.map.region || !!s.flags[`seenArea${r}`] || (r === 2 && !!s.flags.bossKills && s.level >= CONFIG.region2Level);
+    this.w.ctrl.panels.showBigMap(
+      h(
+        'div.bigmap',
+        ...AREAS.map((a) =>
+          h(
+            'button.btn' + (a.region === this.w.map.region ? '.primary' : ''),
+            {
+              disabled: !open(a.region),
+              onclick: () => {
+                this.w.ctrl.panels.close();
+                if (a.region === this.w.map.region) this.goHub();
+                else this.w.ctrl.travel(a.region as 1 | 2, anchorPx(SCENE_BY_ID[a.hub]));
+              },
+            },
+            `${a.zh} · ${a.de} · ${a.levels}${a.region === this.w.map.region ? '（你在这里，点一下回主城）' : open(a.region) ? '' : '（还没去过）'}`,
+          ),
+        ),
+        ...AREAS_LATER.map((t) => h('button.btn', { disabled: true }, `${t}（以后开放）`)),
+      ),
+    );
+  }
+}

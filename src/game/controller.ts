@@ -189,7 +189,7 @@ export class Controller {
       this.state.flags.intro = true;
       this.spawnBread();
       this.persist();
-      toast('走过去碰它（WASD 或方向键移动）');
+      toast(this.scene.nodes ? '在右边的场景面板里点它（或按 1）' : '走过去碰它（WASD 或方向键移动）');
     });
   }
 
@@ -1069,13 +1069,13 @@ export class Controller {
   }
 
   /** Walk between regions: the neighbour's door (region 1) and the market's west gate (region 2). */
-  travel(to: 1 | 2): void {
+  travel(to: 1 | 2, arrive?: { x: number; y: number }): void {
     const s = this.state;
     if (s.region === to) return;
     s.region = to;
     if (to === 2 && startQuest(s, 'main2')) this.questFire('enterMarket');
-    // Arrive next to the door you came through.
-    s.pos = to === 2 ? { x: 4 * 16 + 8, y: 24 * 16 + 8 } : { x: 67 * 16 + 8, y: 24 * 16 + 12 };
+    // Arrive next to the door you came through (大地图: at the area's hub).
+    s.pos = arrive ?? (to === 2 ? { x: 4 * 16 + 8, y: 24 * 16 + 8 } : { x: 67 * 16 + 8, y: 24 * 16 + 12 });
     this.persist();
     this.scene.scene.restart({ ctrl: this });
   }

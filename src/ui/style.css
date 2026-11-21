@@ -264,3 +264,14 @@ label.toggle { display: flex; gap: 8px; align-items: center; padding: 6px 0; }
 #battle .stance .btn { padding: 3px 12px; font-family: var(--mono); }
 #battle .stance .btn.sel { outline: 2px solid var(--gold, #ffcf4a); }
 #battle .stance .btn.der { border-color: var(--der); } #battle .stance .btn.die { border-color: var(--die); } #battle .stance .btn.das { border-color: var(--das); }
+
+/* 0.5 小世界: the scene panel */
+#scene-panel { position: absolute; top: 56px; right: 12px; width: 280px; max-height: calc(100vh - 220px); overflow-y: auto; padding: 10px 12px; font-size: 13px; }
+#scene-panel .sp-head { font-family: var(--mono); color: var(--red); margin-bottom: 6px; }
+#scene-panel .sp-sec { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
+#scene-panel .sp-sec .btn { text-align: left; font-size: 12px; padding: 4px 8px; }
+#scene-panel .sp-mon { font-family: var(--mono); }
+#scene-panel .sp-mon.gold { border-color: var(--gold, #ffcf4a); }
+#scene-panel kbd { font-size: 10px; opacity: .7; }
+.bigmap { display: flex; flex-direction: column; gap: 6px; }
+.bigmap .btn { text-align: left; }

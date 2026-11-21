@@ -11,6 +11,7 @@ import { makeItem } from '../src/core/loot';
 import { WORDS } from '../src/data/words';
 import { generateMap, isBlocked, walkableTilesIn, zonesOf, MAP_W, MAP_H, TILE, type RegionId } from '../src/game/map';
 import { postFightHeal } from '../src/core/outcomes';
+import { SCENES, routeTo, neighbours, SCENE_BY_ID } from '../src/data/world';
 import type { Move } from '../src/core/types';
 
 if (process.env.DMG) { const k = +process.env.DMG; const f = CONFIG.monster.dmgPct; CONFIG.monster.dmgPct = (l: number) => f(l) * k; }
@@ -205,8 +206,67 @@ if (process.env.MAP) {
     const perBonfire = rests ? (fights / (rests + deaths)).toFixed(0) : `>${fights}`;
     return `${t.padEnd(7)} L${String(L).padStart(2)} ${z.id.padEnd(15)} ${(fights / (HOUR / 3600)).toFixed(0).padStart(3)} fights/h · walk ${((100 * walk) / clock).toFixed(0)}% (${(walk / fights).toFixed(1)} s/fight) · per bonfire ${perBonfire} · deaths ${deaths} · lvl ${share}`;
   };
-  console.log(`0.4 map baseline (REST ${REST * 100}% HP, ${HOUR / 3600} h per row)`);
-  for (const L of [2, 4, 6, 8, 12, 15, 18]) for (const t of ['grind', 'balance', 'learn'] as T[]) console.log(run(t, L));
+  // NODES=1: the same hour on the 0.5 scene map. Clear the scene you stand in (one click ≈ CLICK s per fight),
+  // then step (CONFIG.map.hopSec) to the neighbouring scene of the field with most monsters; refills never land
+  // in the scene you stand in; the bonfire is a route of hops to the hub.
+  const runNodes = (t: T, L: number) => {
+    cur = t;
+    const CLICK = +(process.env.CLICK ?? 0.5), HOP = CONFIG.map.hopSec;
+    const region: RegionId = L > 10 ? 2 : 1;
+    const fields = zonesOf(region).filter((z) => z.monsters && range(z.levels));
+    const z = fields.filter((f) => range(f.levels)![0] <= L && L <= range(f.levels)![1]).sort((a, b) => range(b.levels)![0] - range(a.levels)![0])[0] ?? fields[0];
+    const words = WORDS.filter((w) => w.zone === z.id && w.family !== 'truhe');
+    const cap = L + CONFIG.monster.maxAbove(L);
+    const pick = () => { const w = words[Math.floor(rng() * words.length)]; return Math.min(w.lvl, cap); };
+    const scenes = SCENES.filter((x) => x.region === region && x.zone === z.id && !x.hiddenBy);
+    const hub = SCENES.find((x) => x.region === region && x.bonfire)!;
+    type Slot = { m: number; at: number; sc: string };
+    const slots: Slot[] = scenes.flatMap((sc) => Array.from({ length: sc.slots ?? CONFIG.map.slots }, () => ({ m: pick(), at: 0, sc: sc.id })));
+    let here = scenes[0].id;
+    const s = player(L, gearAt(L));
+    s.hp = maxHp(s);
+    let clock = 0, walk = 0, fights = 0, rests = 0, sinceRest = 0, deaths = 0;
+    const gaps: number[] = [];
+    const hops = (a: string, b: string) => routeTo(a, b)!.length;
+    clock += hops(hub.id, here) * HOP; walk += hops(hub.id, here) * HOP;
+    while (clock < HOUR) {
+      const ready = slots.filter((o) => o.sc === here && o.at <= clock);
+      if (!ready.length) {
+        // Move to the field scene (adjacent first) with the most monsters standing.
+        const score = (sc: string) => slots.filter((o) => o.sc === sc && o.at <= clock + hops(here, sc) * HOP).length - 0.01 * hops(here, sc);
+        const best = scenes.map((x) => x.id).filter((x) => x !== here).sort((a, b) => score(b) - score(a))[0];
+        if (score(best) < 1) { clock += 1; continue; }
+        const d = hops(here, best) * HOP;
+        clock += d; walk += d; here = best;
+        continue;
+      }
+      const o = ready[0];
+      clock += CLICK; walk += CLICK;
+      const r = fight(t, s, o.m, true);
+      clock += r.sec - WALK;
+      fights++; sinceRest++;
+      gaps.push(o.m - L);
+      // Refill: 9–15 s later into a field scene you are not standing in (re-rolled on arrival if needed).
+      const others = scenes.filter((x) => x.id !== here).map((x) => x.id);
+      Object.assign(o, { m: pick(), at: clock + 9 + rng() * 6, sc: others[Math.floor(rng() * others.length)] });
+      if (!r.won) { deaths++; s.hp = maxHp(s); sinceRest = 0; const d = hops(hub.id, here) * HOP; clock += d; walk += d; continue; }
+      postFightHeal(s);
+      if (s.hp < REST * maxHp(s)) {
+        const d = 2 * hops(here, hub.id) * HOP;
+        clock += d + 3; walk += d; rests++;
+        s.hp = maxHp(s); sinceRest = 0;
+      }
+    }
+    const hist: Record<string, number> = {};
+    for (const g of gaps) hist[g] = (hist[g] ?? 0) + 1;
+    const share = Object.entries(hist).sort((a, b) => +a[0] - +b[0]).map(([k, v]) => `${+k >= 0 ? '+' : ''}${k}:${Math.round((100 * v) / gaps.length)}%`).join(' ');
+    const perBonfire = rests ? (fights / (rests + deaths)).toFixed(0) : `>${fights}`;
+    return `${t.padEnd(7)} L${String(L).padStart(2)} ${z.id.padEnd(15)} ${(fights / (HOUR / 3600)).toFixed(0).padStart(3)} fights/h · move ${((100 * walk) / clock).toFixed(0)}% (${(walk / fights).toFixed(1)} s/fight) · per bonfire ${perBonfire} · deaths ${deaths} · lvl ${share}`;
+  };
+  const nodes = !!process.env.NODES;
+  console.log(`${nodes ? '0.5 scene map' : '0.4 map baseline'} (REST ${REST * 100}% HP, ${HOUR / 3600} h per row)`);
+  const LVS = process.env.LVS ? process.env.LVS.split(',').map(Number) : [2, 4, 6, 8, 12, 15, 18];
+  for (const L of LVS) for (const t of ['grind', 'balance', 'learn'] as T[]) console.log(nodes ? runNodes(t, L) : run(t, L));
   process.exit(0);
 }
 

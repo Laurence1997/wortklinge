@@ -22,7 +22,7 @@ import { loginView } from './account';
 import { lookPicker } from './title';
 import { BARGAIN_LINES, ensureShop, price, refreshCost, sellPrice, SLOT_NOUN } from '../core/shop';
 
-export type PanelName = 'hero' | 'talents' | 'quests' | 'codex' | 'words' | 'data' | 'account' | 'settings' | 'help' | 'shop' | 'chest' | 'quiz' | 'duel';
+export type PanelName = 'hero' | 'talents' | 'quests' | 'codex' | 'words' | 'data' | 'account' | 'settings' | 'help' | 'shop' | 'chest' | 'quiz' | 'duel' | 'bigmap';
 
 export class Panels {
   open: PanelName | null = null;
@@ -32,6 +32,14 @@ export class Panels {
     cloud.onChange = () => {
       if (this.open === 'account') this.render();
     };
+  }
+
+  private bigmap: HTMLElement | null = null;
+
+  /** 大地图 (0.5): the body comes from the scene map. */
+  showBigMap(body: HTMLElement): void {
+    this.bigmap = body;
+    this.show('bigmap');
   }
 
   show(name: PanelName): void {
@@ -89,6 +97,14 @@ export class Panels {
       window.setTimeout(() => (el.querySelector('input.quiz') as HTMLInputElement | null)?.focus(), 0);
       return;
     }
+    if (this.open === 'bigmap' && this.bigmap) {
+      panel.append(h('h2', h('span', '大地图'), h('button.btn.ghost', { onclick: () => this.close() }, '关闭 Esc')), this.bigmap);
+      clear(el).append(panel);
+      el.onclick = (e) => {
+        if (e.target === el) this.close();
+      };
+      return;
+    }
     if (this.open === 'shop') {
       panel.append(h('h2', h('span', '商人 Mira 的摊子'), h('button.btn.ghost', { onclick: () => this.close() }, '离开 Esc')), this.shop());
       clear(el).append(panel);
@@ -98,13 +114,13 @@ export class Panels {
       if (this.buying !== null) window.setTimeout(() => (el.querySelector('input.buy-line') as HTMLInputElement | null)?.focus(), 0);
       return;
     }
-    const titles: Record<Exclude<PanelName, 'shop' | 'chest' | 'quiz' | 'duel'>, string> = { hero: '角色与装备', talents: '职业与天赋', quests: '任务', codex: '图鉴', words: '单词本', data: '数据与存档', account: '账号与排行', settings: '设置', help: '怎么玩' };
+    const titles: Record<Exclude<PanelName, 'shop' | 'chest' | 'quiz' | 'duel' | 'bigmap'>, string> = { hero: '角色与装备', talents: '职业与天赋', quests: '任务', codex: '图鉴', words: '单词本', data: '数据与存档', account: '账号与排行', settings: '设置', help: '怎么玩' };
     const tabs = h('div.tabs');
-    (Object.keys(titles) as Array<Exclude<PanelName, 'shop' | 'chest' | 'quiz' | 'duel'>>).forEach((k) =>
+    (Object.keys(titles) as Array<Exclude<PanelName, 'shop' | 'chest' | 'quiz' | 'duel' | 'bigmap'>>).forEach((k) =>
       tabs.append(h(`button.btn${this.open === k ? '.on' : ''}`, { onclick: () => this.show(k) }, titles[k])),
     );
-    panel.append(h('h2', h('span', titles[this.open as Exclude<PanelName, 'shop' | 'chest' | 'quiz' | 'duel'>]), h('button.btn.ghost', { onclick: () => this.close() }, '关闭 Esc')), tabs);
-    const body = { shop: () => h('div'), chest: () => h('div'), quiz: () => h('div'), duel: () => h('div'), hero: () => this.hero(), talents: () => this.talents(), quests: () => this.questsBody(), codex: () => this.codex(), words: () => this.wordbook(), data: () => this.data(), account: () => this.account(), settings: () => this.settings(), help: () => this.help() }[this.open]();
+    panel.append(h('h2', h('span', titles[this.open as Exclude<PanelName, 'shop' | 'chest' | 'quiz' | 'duel' | 'bigmap'>]), h('button.btn.ghost', { onclick: () => this.close() }, '关闭 Esc')), tabs);
+    const body = { bigmap: () => h('div'), shop: () => h('div'), chest: () => h('div'), quiz: () => h('div'), duel: () => h('div'), hero: () => this.hero(), talents: () => this.talents(), quests: () => this.questsBody(), codex: () => this.codex(), words: () => this.wordbook(), data: () => this.data(), account: () => this.account(), settings: () => this.settings(), help: () => this.help() }[this.open]();
     panel.append(body);
     clear(el).append(panel);
     el.onclick = (e) => {
@@ -731,7 +747,7 @@ export class Panels {
   private help(): HTMLElement {
     const s = this.ctrl.state;
     const rows: Array<[string, string]> = [
-      ['移动', 'WASD / 方向键，或者鼠标点地面'],
+      ['移动', '点地图上的圆点或右边面板里的出口，一站一站走过去（远处去过的会自动走）；M 打开大地图；数字键 1–9 打这个场景里的第几只怪。地址后加 ?oldmap 可以用回 0.4 的自由走动地图'],
       ['互动', 'E（篝火、守火人、路牌、门）'],
       ['面板', 'C 角色和装备 · B 图鉴 · Esc 关闭'],
       ['词性三相', '名词怪出手前先选相：1 der · 2 die · 3 das（对这只怪一直有效，随时可以点按钮换）。选对：护甲降一档、回 1 点资源、附带元素；6 级起选错：护甲翻倍、破甲清零。复数怪一律 die'],

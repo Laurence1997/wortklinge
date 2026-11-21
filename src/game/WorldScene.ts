@@ -13,6 +13,8 @@ import { myBubble, online } from '../net/online';
 import { generateMap, isBlocked, MAP_H, MAP_W, TILE, walkableTilesIn, zonesOf, zoneAt, type MapData, type NpcId, type RegionId, type ZoneDef } from './map';
 import { GLITCH, heroFrames, makeTextures, renderMapCanvas, PAL } from './sprites';
 import { sfx } from './audio';
+import { CONFIG } from '../core/config';
+import { NodeNav } from './nodes';
 
 export interface MonsterEntity {
   uid: number;
@@ -36,6 +38,8 @@ export interface MonsterEntity {
   marker: Phaser.GameObjects.Text;
   reveal: boolean[];
   stage: Stage;
+  /** 小世界 (0.5): the scene this monster stands in. */
+  node?: string;
 }
 
 const SPEED = 72;
@@ -58,6 +62,8 @@ export class WorldScene extends Phaser.Scene {
   private jitterTimer = 0;
   private respawnTimers: Partial<Record<ZoneId, number>> = {};
   zones: ZoneDef[] = [];
+  /** 小世界 (0.5): set when the scene map is on (CONFIG.map.nodes, ?oldmap turns it off). */
+  nodes: NodeNav | null = null;
   private interactable: { kind: 'bonfire' | 'npc' | 'door' | 'sign' | 'gate'; data?: string } | null = null;
 
   constructor() {
@@ -171,10 +177,18 @@ export class WorldScene extends Phaser.Scene {
     this.cursors = kb.createCursorKeys();
     this.keys = kb.addKeys('W,A,S,D,E') as Record<string, Phaser.Input.Keyboard.Key>;
     kb.disableGlobalCapture();
+    this.nodes?.stop();
+    this.nodes = CONFIG.map.nodes && !new URLSearchParams(location.search).has('oldmap') ? new NodeNav(this) : null;
+    this.nodes?.start();
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
       if (this.frozen) return;
-      this.moveTarget = { x: p.worldX, y: p.worldY };
+      if (this.nodes) this.nodes.click(p.worldX, p.worldY);
+      else this.moveTarget = { x: p.worldX, y: p.worldY };
     });
+    kb.on('keydown', (e: KeyboardEvent) => {
+      if (this.nodes?.key(e)) e.preventDefault();
+    });
+    this.events.once('shutdown', () => this.nodes?.stop());
 
     this.spawnAll();
     this.ctrl.onSceneReady(this);
@@ -203,6 +217,7 @@ export class WorldScene extends Phaser.Scene {
     const z = this.zones.find((q) => q.id === zone);
     if (!z) return;
     const have = this.monsters.filter((m) => m.zone === zone && !m.isEcho).length;
+    if (this.nodes) return this.fillScenes(zone, have);
     const need = z.monsters - have;
     if (need <= 0) return;
     const picks = this.ctrl.pickSpawns(zone, need, this.aliveIds());
@@ -224,31 +239,79 @@ export class WorldScene extends Phaser.Scene {
     this.maybePhrase(zone, picks.length, tiles);
   }
 
-  /** 残句 (0.5, Lv3+): about 1 spawn slot in 10 (1 in 30 once every card is in), at most one per field. */
-  private maybePhrase(zone: ZoneId, added: number, tiles: Array<{ x: number; y: number }>) {
+  /** 小世界: fill free slots of this zone's scenes (not the one you stand in). Hidden scenes are lucky. */
+  private fillScenes(zone: ZoneId, have: number) {
+    const nav = this.nodes!;
+    const need = nav.capacity(zone) - have;
+    if (need <= 0) return;
+    const picks = this.ctrl.pickSpawns(zone, need, this.aliveIds());
+    let added = 0;
+    for (const p of picks) {
+      const sp = nav.spot(zone);
+      if (!sp) break;
+      const m = this.addMonster(p.word, p.kind, zone, sp.x, sp.y);
+      m.node = sp.sc.id;
+      added++;
+      if (nav.lucky(sp.sc)) {
+        if (this.map.region === 2 && has(this.ctrl.state.level, 'flee')) {
+          m.rare = true;
+          this.styleMonster(m);
+        } else if (this.map.region === 1 && this.ctrl.state.level >= SAYING_CFG.fromLevel) this.makePhrase(m, zone);
+      }
+    }
+    const spot = () => nav.spot(zone, true);
+    this.maybeRare(zone, added, [], spot);
+    this.maybePhrase(zone, added, [], spot);
+    nav.touch();
+  }
+
+  /** Turn a freshly placed monster into a 残句 carrying a card you don't have yet (or any card). */
+  private makePhrase(m: MonsterEntity, zone: ZoneId) {
     const s = this.ctrl.state;
-    if (s.level < SAYING_CFG.fromLevel || !added || !tiles.length || this.monsters.some((m) => m.phrase && m.zone === zone)) return;
+    if (this.monsters.some((o) => o.phrase && o.zone === zone)) return;
+    const cards = phraseCards();
+    const fresh = cards.filter((x) => !s.sayings?.[x.id]);
+    const pickFrom = fresh.length ? fresh : cards;
+    const x = pickFrom[Math.floor(Math.random() * pickFrom.length)];
+    m.container.destroy();
+    this.monsters = this.monsters.filter((o) => o !== m);
+    const p = this.addMonster(phraseWord(x.id, s.level, zone), 'new', zone, m.x, m.y);
+    p.node = m.node;
+    p.phrase = x.id;
+    this.styleMonster(p);
+  }
+
+  /** 残句 (0.5, Lv3+): about 1 spawn slot in 10 (1 in 30 once every card is in), at most one per field. */
+  private maybePhrase(zone: ZoneId, added: number, tiles: Array<{ x: number; y: number }>, spot?: () => { x: number; y: number; sc: { id: string } } | null) {
+    const s = this.ctrl.state;
+    if (s.level < SAYING_CFG.fromLevel || !added || (!tiles.length && !spot) || this.monsters.some((m) => m.phrase && m.zone === zone)) return;
     const cards = phraseCards();
     const fresh = cards.filter((x) => !s.sayings?.[x.id]);
     const per = fresh.length ? 0.1 : 1 / 30;
     if (Math.random() >= 1 - Math.pow(1 - per, added)) return;
     const pickFrom = fresh.length ? fresh : cards;
     const x = pickFrom[Math.floor(Math.random() * pickFrom.length)];
-    const c = tiles[Math.floor(Math.random() * tiles.length)];
-    const m = this.addMonster(phraseWord(x.id, s.level, zone), 'new', zone, c.x * TILE + 8, c.y * TILE + 8);
+    const sp = spot ? spot() : null;
+    if (spot && !sp) return;
+    const c = tiles.length ? tiles[Math.floor(Math.random() * tiles.length)] : { x: 0, y: 0 };
+    const m = this.addMonster(phraseWord(x.id, s.level, zone), 'new', zone, sp ? sp.x : c.x * TILE + 8, sp ? sp.y : c.y * TILE + 8);
+    if (sp) m.node = sp.sc.id;
     m.phrase = x.id;
     this.styleMonster(m);
   }
 
   /** Region 2 (Lv11+): about 1 respawn in 10 brings a 宝箱怪 or turns a new monster rare. */
-  private maybeRare(zone: ZoneId, added: number, tiles: Array<{ x: number; y: number }>) {
+  private maybeRare(zone: ZoneId, added: number, tiles: Array<{ x: number; y: number }>, spot?: () => { x: number; y: number; sc: { id: string } } | null) {
     const s = this.ctrl.state;
-    if (this.map.region !== 2 || !has(s.level, 'flee') || !tiles.length || Math.random() >= 0.1) return;
+    if (this.map.region !== 2 || !has(s.level, 'flee') || (!tiles.length && !spot) || Math.random() >= 0.1) return;
     if (this.monsters.some((m) => m.rare && m.zone === zone)) return;
     const truhe = WORD_BY_ID['truhe'];
     if (truhe && Math.random() < 0.5) {
-      const c = tiles[Math.floor(Math.random() * tiles.length)];
-      const m = this.addMonster(truhe, 'new', zone, c.x * TILE + 8, c.y * TILE + 8);
+      const sp = spot ? spot() : null;
+      if (spot && !sp) return;
+      const c = tiles.length ? tiles[Math.floor(Math.random() * tiles.length)] : { x: 0, y: 0 };
+      const m = this.addMonster(truhe, 'new', zone, sp ? sp.x : c.x * TILE + 8, sp ? sp.y : c.y * TILE + 8);
+      if (sp) m.node = sp.sc.id;
       m.rare = true;
       this.styleMonster(m);
     } else if (added > 0) {
@@ -288,6 +351,7 @@ export class WorldScene extends Phaser.Scene {
     };
     this.styleMonster(m);
     this.monsters.push(m);
+    this.nodes?.touch();
     container.setAlpha(0);
     this.tweens.add({ targets: container, alpha: m.kind === 'shadow' ? 0.5 : 1, duration: 600 });
     return m;
@@ -369,6 +433,7 @@ export class WorldScene extends Phaser.Scene {
     } else {
       this.tweens.add({ targets: m.container, alpha: 0, duration: 400, onComplete: () => m.container.destroy() });
     }
+    this.nodes?.touch();
     if (!m.isEcho && !m.scripted) {
       this.respawnTimers[m.zone] = (this.respawnTimers[m.zone] ?? 0) + 1;
       this.time.delayedCall(9000 + Math.random() * 6000, () => {
@@ -441,6 +506,7 @@ export class WorldScene extends Phaser.Scene {
   }
 
   teleportToBonfire() {
+    if (this.nodes) return this.nodes.goHub();
     const b = this.map.bonfire;
     this.player.setPosition(b.x * TILE + 8 + 16, b.y * TILE + 8 + 20);
     this.cameras.main.centerOn(this.player.x, this.player.y);
@@ -458,6 +524,10 @@ export class WorldScene extends Phaser.Scene {
         if (m.stage === 0 || m.stage === 1) this.updateGlyph(m);
         if (m.stage === 0) m.label.setPosition((Math.random() - 0.5) * 1.5, (Math.random() - 0.5) * 1.5);
       }
+    }
+    if (this.nodes) {
+      this.nodes.tick(dtMs);
+      return;
     }
     this.updateMonsters(dt);
     if (this.frozen || this.ctrl.uiBlocking()) {

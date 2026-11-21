@@ -134,6 +134,9 @@ export const CONFIG = {
    * 75% accuracy gave 13–23% deaths per pack fight). Packs of 3 only from Lv13. 点名 on the wrong one deals half.
    */
   /** 词性三相 (0.5): right stance = this hit meets armor one tier lower and +1 resource; wrong (Lv6+) = armor ×2, breaks cleared. */
+  /** 大地图 + 小世界 (0.5 block 5). nodes: point-and-click scenes instead of walking (?oldmap = the 0.4 map).
+   *  slots: monsters per field scene; hopSec: one step between neighbouring scenes. Baseline: 游戏设计 第 5 块验收. */
+  map: { nodes: true, slots: 3, hopSec: 2, luckyChance: 0.3 },
   /** 跟读 (0.5, Lv5+, optional): read the line the monster just said back; sounding right pays XP once per fight, never costs anything. */
   shadow: { xp: 10, match: 0.7 },
   phase: { wrongArmor: 2, rightRes: 1, softUntil: 5, accFrom: 7, datFrom: 15, pronounChance: 0.3, pluralChance: 0.2, pluralHp: 1.5 },

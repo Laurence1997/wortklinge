@@ -1235,3 +1235,24 @@ describe('0.5 跟读: read-along scoring', () => {
     expect(UNLOCK.shadowing).toBe(5);
   });
 });
+
+describe('0.5 小世界: scene data', async () => {
+  const { SCENES, LINKS, SCENE_BY_ID, routeTo } = await import('../src/data/world');
+  const { generateMap, isBlocked } = await import('../src/game/map');
+  it('every scene stands on a walkable tile, scenes are ≥6 tiles apart (packs stay inside one scene)', () => {
+    for (const r of [1, 2] as const) {
+      const m = generateMap(r);
+      const ss = SCENES.filter((s) => s.region === r);
+      for (const s of ss) expect(isBlocked(m, s.at.x, s.at.y), s.id).toBe(false);
+      for (const a of ss) for (const b of ss) if (a !== b) expect(Math.hypot(a.at.x - b.at.x, a.at.y - b.at.y), `${a.id}/${b.id}`).toBeGreaterThanOrEqual(6);
+      for (const n of m.npcs) expect(ss.some((s) => s.npcs?.includes(n.id)), n.id).toBe(true);
+      for (const sg of m.signs) expect(ss.some((s) => s.signs?.includes(sg.wordId)), sg.wordId).toBe(true);
+    }
+  });
+  it('links are valid, everything is reachable from the hub, and each area has a side route', () => {
+    for (const [a, b] of LINKS) expect(!!SCENE_BY_ID[a] && !!SCENE_BY_ID[b] && SCENE_BY_ID[a].region === SCENE_BY_ID[b].region).toBe(true);
+    for (const s of SCENES) expect(routeTo(s.region === 1 ? 'r1-camp' : 'r2-feuer', s.id), s.id).not.toBeNull();
+    for (const r of [1, 2]) expect(SCENES.some((s) => s.region === r && s.hiddenBy)).toBe(true);
+    expect(routeTo('r1-camp', 'r1-door')!.length).toBe(5);
+  });
+});
