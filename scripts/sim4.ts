@@ -9,6 +9,8 @@ import { startBattle, makeQuestion, monsterStats, moveReady, needsPhase, phaseOf
 import type { Article } from '../src/core/types';
 import { makeItem } from '../src/core/loot';
 import { WORDS } from '../src/data/words';
+import { generateMap, isBlocked, walkableTilesIn, zonesOf, MAP_W, MAP_H, TILE, type RegionId } from '../src/game/map';
+import { postFightHeal } from '../src/core/outcomes';
 import type { Move } from '../src/core/types';
 
 if (process.env.DMG) { const k = +process.env.DMG; const f = CONFIG.monster.dmgPct; CONFIG.monster.dmgPct = (l: number) => f(l) * k; }
@@ -49,9 +51,9 @@ function player(L: number, G: number): GameState {
 }
 
 /** One fight against a monster of level m. Returns answers, seconds, HP share lost, won. */
-function fight(t: T, s: GameState, m: number) {
+function fight(t: T, s: GameState, m: number, keepHp = false) {
   const P = TYPES[t];
-  s.hp = maxHp(s);
+  if (!keepHp) s.hp = maxHp(s);
   s.combo = 0;
   const pool = WORDS.filter((w) => Math.abs(w.lvl - m) <= 2 && w.family !== 'truhe' && w.pos !== 'phr');
   const w = pool[Math.floor(rng() * pool.length)];
@@ -132,6 +134,81 @@ function cell(t: T, L: number, G: number, m = L) {
 
 // Gear per level roughly as in sim05's balance column (tier resets in region 2).
 const gearAt = (L: number) => (L <= 1 ? 0 : L <= 7 ? 1 + Math.floor((L - 2) / 3) : L <= 10 ? 3 : L <= 12 ? L - 10 : L <= 14 ? 3 : L <= 18 ? 4 + (L >= 18 ? 1 : 0) : 5);
+
+// MAP=1 (0.5 block 5 baseline): an hour of play on the real 0.4 map. The player walks the shortest tile path
+// (SPEED 72 px/s) to the nearest monster in the field for their level; a dead slot refills 9–15 s later at a
+// tile at least 90 px away; after each kill +15% HP (postFightHeal); below REST of max HP they walk to the
+// bonfire, rest 3 s and walk back; a death costs DEATH s and wakes them at the bonfire.
+// Counts: encounters per hour, monster level − player level, fights between bonfire visits, walk share.
+if (process.env.MAP) {
+  const SPEED = 72, REST = +(process.env.REST ?? 0.35), HOUR = +(process.env.HOURS ?? 1) * 3600;
+  const range = (lv: string) => { const m = /(\d+)–(\d+)/.exec(lv); return m ? [+m[1], +m[2]] : null; };
+  const run = (t: T, L: number) => {
+    cur = t;
+    const region: RegionId = L > 10 ? 2 : 1;
+    const map = generateMap(region);
+    const fields = zonesOf(region).filter((z) => z.monsters && range(z.levels));
+    const z = fields.filter((f) => range(f.levels)![0] <= L && L <= range(f.levels)![1]).sort((a, b) => range(b.levels)![0] - range(a.levels)![0])[0] ?? fields[0];
+    const tiles = walkableTilesIn(map, z.rect);
+    const words = WORDS.filter((w) => w.zone === z.id && w.family !== 'truhe');
+    const cap = L + CONFIG.monster.maxAbove(L);
+    const bfs = (sx: number, sy: number) => {
+      const d = new Int32Array(MAP_W * MAP_H).fill(-1);
+      const q = [sx + sy * MAP_W]; d[q[0]] = 0;
+      for (let i = 0; i < q.length; i++) {
+        const c = q[i], x = c % MAP_W, y = (c / MAP_W) | 0;
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+          const nx = x + dx, ny = y + dy, n = nx + ny * MAP_W;
+          if (!isBlocked(map, nx, ny) && d[n] < 0) { d[n] = d[c] + 1; q.push(n); }
+        }
+      }
+      return d;
+    };
+    const bon = (() => { for (const [dx, dy] of [[0, 1], [1, 0], [0, -1], [-1, 0]]) if (!isBlocked(map, map.bonfire.x + dx, map.bonfire.y + dy)) return { x: map.bonfire.x + dx, y: map.bonfire.y + dy }; return map.bonfire; })();
+    const dBon = bfs(bon.x, bon.y);
+    const pick = () => { const w = words[Math.floor(rng() * words.length)]; return Math.min(w.lvl, cap); };
+    const place = (px: number, py: number) => { for (let k = 0; k < 20; k++) { const c = tiles[Math.floor(rng() * tiles.length)]; if (Math.hypot(c.x - px, c.y - py) * TILE > 90 && dBon[c.x + c.y * MAP_W] >= 0) return c; } return tiles[0]; };
+    let me = { ...bon };
+    const mons: Array<{ x: number; y: number; m: number; at: number }> = [];
+    for (let i = 0; i < z.monsters; i++) { const c = place(me.x, me.y); mons.push({ ...c, m: pick(), at: 0 }); }
+    const s = player(L, gearAt(L));
+    s.hp = maxHp(s);
+    let clock = 0, walk = 0, fights = 0, rests = 0, sinceRest = 0, deaths = 0;
+    const gaps: number[] = [], runs: number[] = [];
+    while (clock < HOUR) {
+      const d = bfs(me.x, me.y);
+      const ready = mons.filter((o) => o.at <= clock && d[o.x + o.y * MAP_W] >= 0);
+      if (!ready.length) { const next = Math.min(...mons.map((o) => o.at)); clock = Math.max(clock + 0.5, next); continue; }
+      ready.sort((a, b) => d[a.x + a.y * MAP_W] - d[b.x + b.y * MAP_W]);
+      const o = ready[0];
+      const wsec = Math.max(0, d[o.x + o.y * MAP_W] * TILE - 11) / SPEED;
+      clock += wsec; walk += wsec;
+      const r = fight(t, s, o.m, true);
+      clock += r.sec - WALK;
+      fights++; sinceRest++;
+      gaps.push(o.m - L);
+      const c = place(o.x, o.y);
+      Object.assign(o, c, { m: pick(), at: clock + 9 + rng() * 6 });
+      me = { x: o.x, y: o.y };
+      if (!r.won) { deaths++; s.hp = maxHp(s); runs.push(sinceRest); sinceRest = 0; me = { ...bon }; continue; }
+      postFightHeal(s);
+      if (s.hp < REST * maxHp(s)) {
+        const back = (dBon[me.x + me.y * MAP_W] * TILE) / SPEED;
+        clock += 2 * back + 3; walk += 2 * back; rests++;
+        s.hp = maxHp(s); runs.push(sinceRest); sinceRest = 0;
+      }
+    }
+    if (sinceRest) runs.push(sinceRest);
+    const hist: Record<string, number> = {};
+    for (const g of gaps) hist[g] = (hist[g] ?? 0) + 1;
+    const share = Object.entries(hist).sort((a, b) => +a[0] - +b[0]).map(([k, v]) => `${+k >= 0 ? '+' : ''}${k}:${Math.round((100 * v) / gaps.length)}%`).join(' ');
+    const perBonfire = rests ? (fights / (rests + deaths)).toFixed(0) : `>${fights}`;
+    return `${t.padEnd(7)} L${String(L).padStart(2)} ${z.id.padEnd(15)} ${(fights / (HOUR / 3600)).toFixed(0).padStart(3)} fights/h · walk ${((100 * walk) / clock).toFixed(0)}% (${(walk / fights).toFixed(1)} s/fight) · per bonfire ${perBonfire} · deaths ${deaths} · lvl ${share}`;
+  };
+  console.log(`0.4 map baseline (REST ${REST * 100}% HP, ${HOUR / 3600} h per row)`);
+  for (const L of [2, 4, 6, 8, 12, 15, 18]) for (const t of ['grind', 'balance', 'learn'] as T[]) console.log(run(t, L));
+  process.exit(0);
+}
 
 if (process.env.CMP) {
   for (const L of [8, 13, 18]) {
