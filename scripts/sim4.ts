@@ -248,7 +248,16 @@ if (process.env.MAP) {
       gaps.push(o.m - L);
       // Refill: 9–15 s later into a field scene you are not standing in (re-rolled on arrival if needed).
       const others = scenes.filter((x) => x.id !== here).map((x) => x.id);
-      Object.assign(o, { m: pick(), at: clock + 9 + rng() * 6, sc: others[Math.floor(rng() * others.length)] });
+      // 0.6 场景记忆法: a word only refills into its own scene (not the one you stand in, not a full one).
+      let sc = others[Math.floor(rng() * others.length)];
+      if (CONFIG.map.homeScenes) {
+        const cap = (id: string) => (SCENES.find((x) => x.id === id)!.slots ?? CONFIG.map.slots);
+        const room = others.filter((id) => slots.filter((q) => q !== o && q.sc === id).length < cap(id));
+        const homes = words.map((w) => scenes.find((x) => x.words?.includes(w.id))?.id).filter((id): id is string => !!id && room.includes(id));
+        if (homes.length) sc = homes[Math.floor(rng() * homes.length)];
+        else if (room.length) sc = room[0];
+      }
+      Object.assign(o, { m: pick(), at: clock + 9 + rng() * 6, sc });
       if (!r.won) { deaths++; s.hp = maxHp(s); sinceRest = 0; const d = hops(hub.id, here) * HOP; clock += d; walk += d; continue; }
       postFightHeal(s);
       if (s.hp < REST * maxHp(s)) {

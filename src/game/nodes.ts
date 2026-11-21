@@ -4,9 +4,10 @@
 import Phaser from 'phaser';
 import { CONFIG } from '../core/config';
 import { stageOf } from '../core/srs';
+import { eligible } from '../core/spawn';
 import type { ZoneId } from '../core/types';
 import { WORD_BY_ID, fullForm } from '../data/words';
-import { AREAS, AREAS_LATER, SCENE_BY_ID, neighbours, nearestScene, routeTo, scenesOf, type SceneDef } from '../data/world';
+import { AREAS, AREAS_LATER, SCENE_BY_ID, SCENES, neighbours, nearestScene, routeTo, scenesOf, type SceneDef } from '../data/world';
 import { online } from '../net/online';
 import { h } from '../ui/dom';
 import { sfx } from './audio';
@@ -15,6 +16,9 @@ import type { MonsterEntity, WorldScene } from './WorldScene';
 
 const NPC_ZH: Record<NpcId, string> = { hilde: '守火人 Hilde', greta: '导师 Greta', mira: '商人 Mira', konrad: '面包师傅 Konrad', examiner: '考官' };
 const OFFSETS = [[-28, -6], [28, -6], [0, -24], [-28, 16], [28, 16], [0, -38]];
+
+/** 0.6: each word's home scene (from the scene word groups). */
+const HOME: Record<string, SceneDef> = Object.fromEntries(SCENES.flatMap((sc) => (sc.words ?? []).map((w) => [w, sc] as const)));
 
 export const anchorPx = (sc: SceneDef) => ({ x: sc.at.x * TILE + 8, y: sc.at.y * TILE + 8 });
 
@@ -94,20 +98,40 @@ export class NodeNav {
     return this.w.monsters.filter((m) => this.sceneOf(m) === sc);
   }
 
+  /** A field scene is open when some word of its group can spawn now (greetings, verbs… wait for typing at Lv2). */
+  open(sc: SceneDef): boolean {
+    return !sc.words || sc.words.some((id) => WORD_BY_ID[id] && eligible(this.s, WORD_BY_ID[id]));
+  }
+
+  /** Slots of a scene: the zone keeps about CONFIG.map.zoneSlots monsters spread over its open scenes (at least
+   *  CONFIG.map.slots each), so a zone with few open scenes is as full as one with many. */
+  slotsOf(sc: SceneDef): number {
+    if (sc.slots) return sc.slots;
+    if (!this.open(sc)) return 0;
+    const n = scenesOf(this.w.map.region).filter((x) => x.zone === sc.zone && !x.slots && x.type === 'field' && this.revealed(x) && this.open(x)).length;
+    return Math.max(CONFIG.map.slots, Math.ceil(CONFIG.map.zoneSlots / Math.max(1, n)));
+  }
+
   /** Field capacity of a zone in the scene map. */
   capacity(zone: ZoneId): number {
     return scenesOf(this.w.map.region)
       .filter((sc) => sc.zone === zone && this.revealed(sc))
-      .reduce((a, sc) => a + (sc.slots ?? CONFIG.map.slots), 0);
+      .reduce((a, sc) => a + this.slotsOf(sc), 0);
   }
 
-  /** A free slot in this zone, never in the scene you stand in (so a cleared scene means moving on, as walking did). */
-  spot(zone: ZoneId, extra = false): { x: number; y: number; sc: SceneDef } | null {
-    const cands = scenesOf(this.w.map.region).filter((sc) => sc.zone === zone && this.revealed(sc) && sc !== this.here);
+  /** A free slot in this zone, never in the scene you stand in (so a cleared scene means moving on, as walking did).
+   *  0.6 场景记忆法: a word with a home scene only ever stands there (null when its home is full or is where you are);
+   *  words without one (reviews from other zones, 残句, rare monsters) take any free scene of the zone. */
+  spot(zone: ZoneId, extra = false, wordId?: string): { x: number; y: number; sc: SceneDef } | null {
+    const home = wordId ? HOME[wordId] : undefined;
+    const homeHere = home && home.region === this.w.map.region && home.zone === zone;
+    const cands = homeHere
+      ? [home].filter((sc) => this.revealed(sc) && sc !== this.here)
+      : scenesOf(this.w.map.region).filter((sc) => sc.zone === zone && this.revealed(sc) && sc !== this.here);
     let best: SceneDef | null = null;
     let room = 0;
     for (const sc of cands) {
-      const free = (sc.slots ?? CONFIG.map.slots) + (extra ? 1 : 0) - this.monstersIn(sc).length;
+      const free = this.slotsOf(sc) + (extra ? 1 : 0) - this.monstersIn(sc).length;
       if (free > room || (free === room && free > 0 && Math.random() < 0.5)) (best = sc), (room = free);
     }
     if (!best || room <= 0) return null;

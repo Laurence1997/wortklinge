@@ -247,11 +247,15 @@ export class WorldScene extends Phaser.Scene {
     const nav = this.nodes!;
     const need = nav.capacity(zone) - have;
     if (need <= 0) return;
-    const picks = this.ctrl.pickSpawns(zone, need, this.aliveIds());
+    // Words only stand in their home scene: place the usual picks that fit, then top up from a longer list.
+    const first = this.ctrl.pickSpawns(zone, need, this.aliveIds());
+    const more = this.ctrl.pickSpawns(zone, need * 4, new Set([...this.aliveIds(), ...first.map((p) => p.word.id)]));
     let added = 0;
-    for (const p of picks) {
-      const sp = nav.spot(zone);
-      if (!sp) break;
+    for (const p of [...first, ...more]) {
+      if (added >= need) break;
+      if (this.monsters.some((m) => m.word.id === p.word.id)) continue;
+      const sp = nav.spot(zone, false, p.word.id);
+      if (!sp) continue;
       const m = this.addMonster(p.word, p.kind, zone, sp.x, sp.y);
       m.node = sp.sc.id;
       added++;

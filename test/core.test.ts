@@ -1253,7 +1253,7 @@ describe('0.5 小世界: scene data', async () => {
     for (const [a, b] of LINKS) expect(!!SCENE_BY_ID[a] && !!SCENE_BY_ID[b] && SCENE_BY_ID[a].region === SCENE_BY_ID[b].region).toBe(true);
     for (const s of SCENES) expect(routeTo(s.region === 1 ? 'r1-camp' : 'r2-feuer', s.id), s.id).not.toBeNull();
     for (const r of [1, 2]) expect(SCENES.some((s) => s.region === r && s.hiddenBy)).toBe(true);
-    expect(routeTo('r1-camp', 'r1-door')!.length).toBe(5);
+    expect(routeTo('r1-camp', 'r1-door')!.length).toBe(6);
   });
 });
 
@@ -1325,5 +1325,23 @@ describe('跟读 numbers', () => {
     expect(numberDe(1999)).toBe('eintausendneunhundertneunundneunzig');
     expect(shadowOk('vierzig', ['40'])).toBe(true);
     expect(shadowOk('Ich bin 21 Jahre alt.', ['ich bin einundzwanzig Jahre alt'])).toBe(true);
+  });
+});
+
+describe('0.6 场景记忆法: word groups', () => {
+  it('every word has exactly one home field scene in its own zone, groups of 6–13', async () => {
+    const { SCENES } = await import('../src/data/world');
+    const { WORDS } = await import('../src/data/words');
+    const home = new Map<string, string>();
+    for (const sc of SCENES) for (const id of sc.words ?? []) {
+      expect(home.has(id), id).toBe(false);
+      home.set(id, sc.id);
+      expect(WORDS.find((w) => w.id === id)?.zone, id).toBe(sc.zone);
+    }
+    for (const w of WORDS) expect(home.has(w.id), w.id).toBe(true);
+    for (const sc of SCENES.filter((x) => x.type === 'field')) {
+      expect(sc.words?.length ?? 0, sc.id).toBeGreaterThanOrEqual(6);
+      expect(sc.words!.length, sc.id).toBeLessThanOrEqual(13);
+    }
   });
 });
