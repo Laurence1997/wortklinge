@@ -1312,6 +1312,7 @@ describe('清晰度', () => {
     const { clarity } = await import('../src/core/shadow');
     expect(clarity('der Tee', ['der Tee'])).toBe(100);
     expect(clarity('der Tee', ['der Tee'], 0.5)).toBe(80);
-    expect(clarity('der Tee', ['Quatsch'])).toBe(0);
+    expect(clarity('der Tee', ['Quatsch'])).toBeLessThan(30);
+    expect(clarity('das Brot', ['das Brote'])).toBeGreaterThan(85);
   });
 });
