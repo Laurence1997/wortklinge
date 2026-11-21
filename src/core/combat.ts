@@ -524,7 +524,7 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
     let pq: Question;
     if (st === 0) {
       pq = sayingQuestion(s, { ...x, cardId: undefined }, rng);
-      pq = { ...pq, prompt: pq.prompt.replace('接句怪：', '残句 1/3：') };
+      pq = { ...pq, prompt: pq.prompt.replace('接句怪：', '残句 1/3：').replace('（答对必暴击）', '') };
     }
     else if (st === 1) {
       const others = shuffle(rng, SAYINGS.filter((o) => o.zh !== x.zh).map((o) => o.zh)).slice(0, 2);
