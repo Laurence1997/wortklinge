@@ -80,6 +80,12 @@ function fight(t: T, s: GameState, m: number) {
     sec += PHASE_SEC;
   }
   while (!b.outcome && qs < 60) {
+    // 格位姿态: a line in another case cleared the stance — pick again (fresh, by the player's accuracy).
+    if (PHASE && needsPhase(b) && !b.phase) {
+      tried.length = 0;
+      pickPhase();
+      sec += PHASE_SEC;
+    }
     let move: Move = 'attack';
     let q: Question = makeQuestion(s, b, 'attack', rng);
     if (moveReady(s, b, 'sentence')) {

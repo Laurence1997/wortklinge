@@ -330,7 +330,7 @@ describe('region 2: packs, conjugation, plurals', () => {
     for (const x of [a, c, d]) {
       x.pluralMon = false;
       x.monster.hp = x.monster.maxHp = 500;
-      x.intent = { ...x.intent, kind: 'wait', hits: 0 };
+      x.intent = { ...x.intent, kind: 'wait', hits: 0, caseArt: undefined }; // name-only lines: stance = der/die/das
     }
     expect(makeQuestion(s, a, 'attack', rng, undefined, true).type).not.toBe('callout');
     a.phase = 'der';
@@ -934,7 +934,7 @@ describe('0.5 示例战斗 with 词性三相 (acceptance: right, wrong, soft bef
     const q = makeQuestion(s, b, 'attack', makeRng(2));
     const r = resolveTurn(s, b, 'attack', q, q.answer!, makeRng(3));
     expect(r.phase).toBe('soft');
-    expect(b.log.some((l) => l.text.includes('它是 der 相'))).toBe(true);
+    expect(b.log.some((l) => l.text.includes('这里要 der'))).toBe(true);
 
     s.level = 12;
     const apfel = WORDS.find((w) => w.art === 'der' && w.pl && w.pl !== '-' && !w.plOnly)!;
@@ -1093,5 +1093,80 @@ describe('0.5 解锁提前: regular verbs from Lv6, strong ones from Lv12', () =
     expect(conjOpen(s, nehmen)).toBe(false);
     s.level = 12;
     expect(conjOpen(s, nehmen)).toBe(true);
+  });
+});
+
+describe('0.5 格位姿态: from Lv7 the stance is the declined article the line needs', () => {
+  it('reads the slot of its line (den / einen / dem), keeps only open cases, and asks for a new pick when the case changes', async () => {
+    const { phaseOf, phaseCase, stancesFor } = await import('../src/core/combat');
+    const { caseOf, slotArticle } = await import('../src/core/cloze');
+    expect(caseOf('m', 'den')).toBe('acc');
+    expect(caseOf('f', 'der')).toBe('dat');
+    expect(caseOf('n', 'ein')).toBe('nom');
+    expect(caseOf('m', 'meinen')).toBeNull();
+    expect(slotArticle(WORD_BY_ID['tee'], 0)).toBe('einen');
+    expect(stancesFor(6)).toEqual(['der', 'die', 'das']);
+    expect(stancesFor(7)).toContain('den');
+    expect(stancesFor(7)).not.toContain('dem');
+    expect(stancesFor(15)).toContain('dem');
+
+    const s = newGame('T', 'student', T0);
+    s.level = 8;
+    const seen = new Set<string>();
+    const t = startBattle(s, WORD_BY_ID['tee'], makeRng(3));
+    t.pluralMon = false;
+    t.monster.hp = t.monster.maxHp = 9999;
+    for (let i = 0; i < 6; i++) {
+      seen.add(String(phaseOf(t)));
+      expect(phaseCase(t)).not.toBe('dat'); // Lv8 never reads a dative slot
+      const q = makeQuestion(s, t, 'attack', makeRng(i));
+      resolveTurn(s, t, 'attack', q, 'zzz', makeRng(i));
+      s.hp = 999;
+    }
+    expect(seen.has('einen')).toBe(true);
+
+    // A wrong nominative der where the line needs einen: resisted (Lv8 is past the first accusative level).
+    const b = startBattle(s, WORD_BY_ID['tee'], makeRng(1));
+    b.pluralMon = false;
+    b.monster.hp = b.monster.maxHp = 500;
+    b.intent = { ...b.intent, kind: 'wait', hits: 0, caseArt: 'einen' };
+    b.phase = 'der';
+    let q = makeQuestion(s, b, 'attack', makeRng(2));
+    expect(resolveTurn(s, b, 'attack', q, q.answer!, makeRng(3)).phase).toBe('wrong');
+    b.intent = { ...b.intent, kind: 'wait', hits: 0, caseArt: 'einen' };
+    b.phase = 'einen';
+    q = makeQuestion(s, b, 'attack', makeRng(4));
+    expect(resolveTurn(s, b, 'attack', q, q.answer!, makeRng(5)).phase).toBe('right');
+    // Lv7 (first accusative level): the same mistake is only shown.
+    s.level = 7;
+    b.intent = { ...b.intent, kind: 'wait', hits: 0, caseArt: 'einen' };
+    b.phase = 'der';
+    q = makeQuestion(s, b, 'attack', makeRng(6));
+    expect(resolveTurn(s, b, 'attack', q, q.answer!, makeRng(7)).phase).toBe('soft');
+  });
+});
+
+describe('0.5 und: a Lv13+ finisher in a pack names two monsters and hits both', () => {
+  it('asks Ich möchte einen Tee und eine Tasse and grades each half', () => {
+    const s = newGame('T', 'student', T0);
+    s.level = 13;
+    for (const id of ['tee', 'tasse']) s.words[id] = { stage: 1, due: 9e15, firstSeen: 0, lastSeen: 0, relapse: 0, correct: 1, wrong: 0 };
+    const a = startBattle(s, WORD_BY_ID['tee'], makeRng(1));
+    const c = startBattle(s, WORD_BY_ID['tasse'], makeRng(2));
+    for (const x of [a, c]) {
+      x.pluralMon = false;
+      x.monster.hp = x.monster.maxHp = 500;
+      x.intent = { ...x.intent, kind: 'wait', hits: 0, caseArt: undefined };
+    }
+    a.cfx.res = 5;
+    a.phase = 'der';
+    const q = makeQuestion(s, a, 'sentence', makeRng(3), undefined, true, [a, c]);
+    expect(q.undWord?.id).toBe('tasse');
+    expect(q.answer).toBe('Ich möchte einen Tee und eine Tasse.');
+    const r = resolveTurn(s, a, 'sentence', q, 'Ich möchte einen Tee und eine Tasse', makeRng(4), [a, c]);
+    expect(r.correct).toBe(true);
+    expect(c.monster.hp).toBeLessThan(500);
+    s.level = 12;
+    expect(makeQuestion(s, a, 'sentence', makeRng(3), undefined, true, [a, c]).undWord).toBeUndefined();
   });
 });

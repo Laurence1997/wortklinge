@@ -117,7 +117,7 @@ export class WorldScene extends Phaser.Scene {
     const NPC_LABEL: Record<NpcId, string> = { hilde: 'Hilde', greta: 'Greta', mira: 'Mira', konrad: 'Konrad', examiner: '考官 Prüfer' };
     for (const n of this.map.npcs) {
       this.add.sprite(n.x * TILE + 8, n.y * TILE + 6, 'hilde').setDepth(n.y * TILE + 8).setTint(NPC_TINT[n.id]);
-      if (this.map.region === 2 || n.id === 'examiner')
+      if (this.map.region === 2 || n.id !== 'hilde')
         this.add
           .text(n.x * TILE + 8, n.y * TILE - 6, NPC_LABEL[n.id], { fontFamily: FONT, fontSize: '6px', color: '#d8c8b8', resolution: 4 })
           .setOrigin(0.5, 1)

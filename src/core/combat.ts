@@ -7,13 +7,13 @@ import { ELEMENT_ZH, generateIntent, INTENT_ZH } from './intents';
 import { between, pick, shuffle, type Rng } from './rng';
 import { kindOf, stageOf, overdueSteps, type Kind, type Stage } from './srs';
 import { affixTotal, attack, critChance, gearPen, hintsPerFight, maxHp, now, type GameState } from './state';
-import type { Article, Element, Intent, Move, Word } from './types';
+import type { Element, Intent, Move, Word } from './types';
 import { has } from './unlocks';
 import { fullForm, genderOf, hasArticleQuestion, WORD_BY_ID, WORDS, zhWithPos } from '../data/words';
 import { SKILLS, skillLine, skillLinesOpen } from '../data/skills';
 import { SAYING_CFG, SAYINGS } from '../data/sayings';
-import { expectedSentence, gradeSentence, nextPattern, PATTERNS, type Pattern } from './sentence';
-import { EXAMPLES, clozeModeFor, clozeOptions, exampleSplits, gradeCloze, hasExamples, makeCloze, voiceLine, wholeSentence, type ClozeMode } from './cloze';
+import { expectedSentence, gradeSentence, nextPattern, PATTERNS, sentenceTags, type Pattern } from './sentence';
+import { EXAMPLES, caseOf, slotArticle, type Case, type Stance, clozeModeFor, clozeOptions, exampleSplits, gradeCloze, hasExamples, makeCloze, voiceLine, wholeSentence, type ClozeMode } from './cloze';
 import { CONJ, PERSON_LABEL, type Person } from '../data/verbs';
 import { QTYPES, type QKey } from '../data/questionTypes';
 import { CLASSES, critRunNeeded, rank, resMax, shieldReflect, wrongHitShare, type ClassId } from './classes';
@@ -41,6 +41,8 @@ export interface Question {
   person?: import('../data/verbs').Person;
   /** saying questions (接句怪): what it shouts and what you finish. */
   say?: SayLine;
+  /** und (0.5, Lv13+ packs): the second monster the finisher names (Ich möchte einen Tee und eine Tasse.). */
+  undWord?: Word;
   /** sentence questions: which pattern (Ich brauche …, Wo ist …). */
   pattern?: Pattern;
   /** cloze questions: pick / type the dictionary form / type the form the sentence needs. */
@@ -133,8 +135,9 @@ export interface Battle {
   intent: Intent;
   /** 「Wie viel kostet das?」: next turn's intent, already decided. */
   queued?: Intent;
-  /** 词性三相 (0.5): the stance the player attacks in. Sticky for this monster until changed. */
-  phase?: Article;
+  /** 词性三相 (0.5): the stance the player attacks in. Sticky for this monster until changed.
+   *  From Lv7 (格位姿态) it is the declined article the monster's line needs (den, einem…). */
+  phase?: Stance;
   /** The right stance has landed on it once: its gender shows from then on. */
   phaseHit?: boolean;
   /** 复数怪 (0.5, Lv11+): a whole crowd of this word, die Äpfel. Only the die stance is right. */
@@ -301,8 +304,21 @@ function nextIntent(s: GameState, b: Battle, rng: Rng): Intent {
     // 接句怪: until you finish its line, the line is its half sentence (no mumbled example giving the rest away).
     intent = { ...intent, ...shoutLine(b.saying) };
   } else if (!tut && intent.kind !== 'charge' && intent.kind !== 'flee') {
-    const v = voiceLine(b.word, b.turn);
-    if (v) intent = { ...intent, line: v.line, zh: v.zh, full: v.full, fullZh: v.fullZh };
+    // 格位姿态 (Lv7+): only sentences whose slot is in a case this level reads, and the stance must match the slot.
+    const g = genderOf(b.word);
+    const open = casesOpen(s.level);
+    const caseOk = (i: number) => {
+      const c = caseOf(g, slotArticle(b.word, i));
+      return !!c && open.includes(c);
+    };
+    const reads = !!b.word.art && s.level >= CONFIG.phase.accFrom;
+    const v = voiceLine(b.word, b.turn, reads ? caseOk : undefined);
+    if (v) intent = { ...intent, line: v.line, zh: v.zh, full: v.full, fullZh: v.fullZh, caseArt: reads && caseOk(v.idx) ? slotArticle(b.word, v.idx)! : undefined };
+  }
+  // 格位姿态: the stance stays picked while the case stays the same; a line in another case asks for a new pick.
+  if (b.phase && b.intent) {
+    const caseNow = (it: Intent) => (!it.caseArt || b.pluralMon ? 'nom' : caseOf(genderOf(b.word), it.caseArt) ?? 'nom');
+    if (caseNow(b.intent) !== caseNow(intent)) b.phase = undefined;
   }
   return intent;
 }
@@ -355,9 +371,30 @@ export function moveReady(s: GameState, b: Battle, move: Move): boolean {
  *  A = 2^(monster level − your level) × (1 − gear penetration), halved for typed questions, 0 for hard ones
  *  or while broken; the hit is divided by (1 + A), i.e. A / (1 + A) is stopped (at most 90%). */
 /** 词性三相: the stance that hits this monster's weak point (null for words without an article). */
-export function phaseOf(b: Battle): Article | null {
+export function phaseOf(b: Battle): Stance | null {
   if (!b.word.art) return null;
-  return b.pluralMon ? 'die' : b.word.art;
+  if (b.pluralMon) return 'die';
+  // 格位姿态 (Lv7+): the article its line's slot needs; otherwise (no usable line) the name's own der/die/das.
+  return (b.intent?.caseArt as Stance | undefined) ?? b.word.art;
+}
+
+/** The case the right stance stands for (nom when it comes from the name alone). */
+export function phaseCase(b: Battle): Case {
+  if (!b.intent?.caseArt || b.pluralMon) return 'nom';
+  return caseOf(genderOf(b.word), b.intent.caseArt) ?? 'nom';
+}
+
+/** Which cases this level reads from the line: accusative from Lv7, dative from Lv15. */
+export function casesOpen(level: number): Case[] {
+  return ['nom', ...(level >= CONFIG.phase.accFrom ? (['acc'] as Case[]) : []), ...(level >= CONFIG.phase.datFrom ? (['dat'] as Case[]) : [])];
+}
+
+/** Stance buttons for this level: der/die/das; from Lv7 also den and ein/eine/einen; from Lv15 dem/einem/einer. */
+export function stancesFor(level: number): Stance[] {
+  const out: Stance[] = ['der', 'die', 'das'];
+  if (level >= CONFIG.phase.accFrom) out.push('den', 'ein', 'eine', 'einen');
+  if (level >= CONFIG.phase.datFrom) out.push('dem', 'einem', 'einer');
+  return out;
 }
 
 /** Whether attacks on this monster need a stance (every noun outside the scripted tutorial fights). */
@@ -392,7 +429,7 @@ const SENTENCE_ZH: Record<Pattern, (zh: string) => string> = {
   sind: (z) => `这是我的${z}。（复数）`,
 };
 
-export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skillId?: string, inPack = false): Question {
+export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skillId?: string, inPack = false, mates: Battle[] = []): Question {
   const w = b.word;
   const isNoun = hasArticleQuestion(w);
   const canType = has(s.level, 'typing');
@@ -477,6 +514,22 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
   // when the word is in your wordbook, otherwise one of its example sentences (or a template).
   if (move === 'sentence') {
     const fin = sentenceQ();
+    // und (0.5, Lv13+): in a pack the finisher can name a second monster with und, and hits both.
+    const UND: Pattern[] = ['moechte', 'brauche', 'suche', 'habe', 'nehme'];
+    if (fin && fin.pattern && UND.includes(fin.pattern) && has(s.level, 'und')) {
+      const mate = mates.find((o) => o !== b && !o.outcome && !!o.word.art && o.word.id !== w.id && sentenceTags(o.word).includes(fin.pattern!));
+      if (mate) {
+        const lead = PATTERNS[fin.pattern].lead;
+        const objOf = (x: Word) => expectedSentence(x, fin.pattern!).slice(lead.length + 1).replace(/[.?]$/, '');
+        return {
+          ...fin,
+          prompt: '终结技 · und：看中文，一句话说出两只怪，两只都挨打',
+          focus: SENTENCE_ZH[fin.pattern](w.digit ?? w.zh).replace(/。.*$/, `，还有${fin.pattern === 'suche' ? '那个' : '一个'}${mate.word.zh}。`),
+          answer: `${lead} ${objOf(w)} und ${objOf(mate.word)}.`,
+          undWord: mate.word,
+        };
+      }
+    }
     if (fin) return fin;
     const ws = wholeSentence(w, rng);
     return { type: 'sentence', prompt: '终结技：看中文，写整句', focus: ws.zh, answer: ws.answer };
@@ -711,6 +764,16 @@ export function gradeQuestion(_s: GameState, b: Battle, q: Question, input: stri
       return { ok, notes: ok ? [`${x.a} ${x.b} —— ${x.zh}`] : [`正确答案：${x.a} ${x.b}（${x.zh}）`], correct: x.b };
     }
     case 'sentence': {
+      if (q.pattern && q.undWord) {
+        // Ich möchte einen Tee und eine Tasse: each half graded as its own sentence.
+        const lead = PATTERNS[q.pattern].lead;
+        const [a, c] = input.split(/\s+und\s+/i);
+        if (!c) return { ok: false, notes: [`要用 und 连起两只怪：${q.answer}`], correct: q.answer! };
+        const va = gradeSentence(a.trim() + '.', b.word, q.pattern);
+        const vc = gradeSentence(`${lead} ${c.trim()}`, q.undWord, q.pattern);
+        const ok = va.ok && vc.ok;
+        return { ok, notes: ok ? [] : [...va.notes, ...vc.notes, `正确答案：${q.answer}`], correct: q.answer!, word: ok ? b.word : undefined };
+      }
       if (q.pattern) return gradeSentence(input, b.word, q.pattern);
       const ok = sayKey(input) === sayKey(q.answer!);
       return { ok, notes: ok ? [] : [`正确答案：${q.answer}`], correct: q.answer!, word: ok ? b.word : undefined };
@@ -1002,7 +1065,12 @@ export function resolveTurn(
       if (crit) mult *= CONFIG.player.critMult;
       // 护甲和破甲: a hard question (or writing through a guard) breaks the armor for this hit and the next two.
       const stanceMove = move === 'attack' || move === 'inscribe' || move === 'whisper' || move === 'chorus' || move === 'sentence';
-      if (stanceMove && needsPhase(b)) phaseFx = b.phase === phaseOf(b) ? 'right' : s.level > CONFIG.phase.softUntil ? 'wrong' : 'soft';
+      if (stanceMove && needsPhase(b)) {
+        const pc = phaseCase(b);
+        // Not punished yet: Lv1–5, and the first level of each case (acc at 7, dat at 15).
+        const soft = s.level <= CONFIG.phase.softUntil || (pc === 'acc' && s.level === CONFIG.phase.accFrom) || (pc === 'dat' && s.level === CONFIG.phase.datFrom);
+        phaseFx = b.phase === phaseOf(b) ? 'right' : soft ? 'soft' : 'wrong';
+      }
       if (phaseFx === 'wrong') {
         // Resisted: whatever break it had is gone, and this hit meets doubled armor.
         if (m.broken > 0) log.push({ text: '破甲被抵消了。', tone: 'bad' });
@@ -1025,7 +1093,7 @@ export function resolveTurn(
         if (Object.values(s.equipped).some((it) => it?.legendary === 'articleJudgement')) b.judgement = true;
         log.push({ text: `${b.phase} 相打中弱点：护甲降一档${resMax(s) && move !== 'sentence' ? `，${resName(s)} +${CONFIG.phase.rightRes}` : ''}。`, tone: 'good' });
       } else if (phaseFx === 'wrong') log.push({ text: `${b.phase ?? '无'} 相被抵抗：它不是 ${b.phase ?? '这个'} 相。护甲翻倍。`, tone: 'bad' });
-      else if (phaseFx === 'soft') log.push({ text: `${b.phase ? `${b.phase} 相不对` : '没选相'}：它是 ${ph} 相${b.pluralMon ? '（复数一律 die）' : ''}。6 级前不罚，选对了护甲降一档。`, tone: 'sys' });
+      else if (phaseFx === 'soft') log.push({ text: `${b.phase ? `${b.phase} 相不对` : '没选相'}：这里要 ${ph}${b.pluralMon ? '（复数一律 die）' : phaseCase(b) === 'acc' ? '（第四格）' : phaseCase(b) === 'dat' ? '（第三格）' : ''}。这一级还不罚，选对了护甲降一档。`, tone: 'sys' });
       const judged = b.judgement;
       if (judged) {
         mult *= 2;
@@ -1069,6 +1137,15 @@ export function resolveTurn(
           hitOthers.push(`${o.named || o.stage > 0 ? fullForm(o.word) : '另一只'} ${d}`);
         }
         if (hitOthers.length) log.push({ text: `齐鸣：${hitOthers.join('，')}。`, tone: 'good' });
+      }
+      // und: the second named monster takes the same blow (against its own armor; a finisher breaks it anyway).
+      if (q.undWord && multi) {
+        const o = pack.find((x) => x !== b && !x.outcome && x.word.id === q.undWord!.id);
+        if (o) {
+          const d = Math.max(1, Math.round(playerDamage * (1 - effArmor(s, o, tier))));
+          o.monster.hp = Math.max(0, o.monster.hp - d);
+          log.push({ text: `und：${q.undWord.de} 也挨了 ${d}。`, tone: 'good' });
+        }
       }
 
       const tag = (judged ? '冠词审判！' : '') + (crit ? (newSpell ? '新言灵！暴击 ' : '暴击 ') : '');

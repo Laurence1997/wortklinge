@@ -3,7 +3,7 @@ import { AFFIX_ZH, itemScore, mainStatText, QUALITY_ZH, requiredLevel, SLOT_ZH }
 import { kindOf, progressSummary, stageOf, STAGE_ZH } from '../core/srs';
 import { attack, critChance, dayKey, hintsPerFight, maxHp, now } from '../core/state';
 import type { AffixKey, Item, Slot, Word } from '../core/types';
-import { has } from '../core/unlocks';
+import { has, UNLOCK } from '../core/unlocks';
 import { FAMILIES } from '../data/families';
 import { SKILLS, skillLinesOpen } from '../data/skills';
 import { SAYINGS, SAYING_CFG } from '../data/sayings';
@@ -174,7 +174,7 @@ export class Panels {
     }
     if (!s.bag.length) bag.append(h('p.muted.small', '空。小怪有 20% 的概率掉装备，用默写和句子打、打到期的怪，好东西更多。'));
     right.append(bag);
-    if (s.bag.length) right.append(h('p.small.muted', has(s.level, 'shop') ? '不要的装备可以拿到面包集市卖给商人 Mira。' : '11 级后可以在面包集市把装备卖给商人，现在只能丢弃。'));
+    if (s.bag.length) right.append(h('p.small.muted', has(s.level, 'shop') ? '不要的装备可以卖给商人 Mira（营地篝火边，或面包集市）。' : `${UNLOCK.shop} 级后可以把装备卖给营地的商人 Mira，现在只能丢弃。`));
     return h('div.grid2', left, right);
   }
 

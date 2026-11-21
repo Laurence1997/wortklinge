@@ -105,15 +105,44 @@ const Q_TEMPLATES: Record<string, { zh: string; answer: string }> = {
   'wie-viel': { zh: '这个多少钱？', answer: 'Wie viel kostet das?' },
 };
 
-/** 怪的台词: example sentence n (rotating) with the word swallowed — 「Ich trinke jeden Morgen … mmh …」.
- *  The Chinese is blanked the same way; when the meaning can't be found in it, the Chinese is withheld. */
-export function voiceLine(w: Word, n: number): { line: string; zh: string; full: string; fullZh: string } | null {
+export type Case = 'nom' | 'acc' | 'dat';
+/** 格位姿态: the stances (articles) that can be picked, in key order 1–9, 0. */
+export const STANCES = ['der', 'die', 'das', 'den', 'ein', 'eine', 'einen', 'dem', 'einem', 'einer'] as const;
+export type Stance = (typeof STANCES)[number];
+const CASE_OF: Record<'m' | 'f' | 'n' | 'pl', Partial<Record<Stance, Case>>> = {
+  m: { der: 'nom', ein: 'nom', den: 'acc', einen: 'acc', dem: 'dat', einem: 'dat' },
+  f: { die: 'nom', eine: 'nom', der: 'dat', einer: 'dat' },
+  n: { das: 'nom', ein: 'nom', dem: 'dat', einem: 'dat' },
+  pl: { die: 'nom', den: 'dat' },
+};
+
+/** Which case an article shows for a noun of this gender (die Tasse = nom/acc → nom), or null when it doesn't fit. */
+export function caseOf(g: 'm' | 'f' | 'n' | 'pl' | null, art: string | null): Case | null {
+  if (!g || !art) return null;
+  return CASE_OF[g][art.toLowerCase() as Stance] ?? null;
+}
+
+/** The article at the start of an example's slot ({einen Tee} → einen), or null (meine, zwei, no article). */
+export function slotArticle(w: Word, n: number): string | null {
   const parsed = (EXAMPLES[w.id] ?? []).map(parse).filter((x): x is NonNullable<typeof x> => !!x);
   if (!parsed.length) return null;
-  const p = parsed[n % parsed.length];
+  const first = parsed[n % parsed.length].blank.split(' ')[0].toLowerCase();
+  return (STANCES as readonly string[]).includes(first) ? first : null;
+}
+
+/** 怪的台词: example sentence n (rotating) with the word swallowed — 「Ich trinke jeden Morgen … mmh …」.
+ *  The Chinese is blanked the same way; when the meaning can't be found in it, the Chinese is withheld. */
+export function voiceLine(w: Word, n: number, ok?: (i: number) => boolean): { line: string; zh: string; full: string; fullZh: string; idx: number } | null {
+  const parsed = (EXAMPLES[w.id] ?? []).map(parse).filter((x): x is NonNullable<typeof x> => !!x);
+  if (!parsed.length) return null;
+  // 格位姿态: when a filter is given, rotate only through the sentences it allows (all of them if none fits).
+  const idxs = parsed.map((_, i) => i).filter((i) => !ok || ok(i));
+  const pool = idxs.length ? idxs : parsed.map((_, i) => i);
+  const idx = pool[n % pool.length];
+  const p = parsed[idx];
   const line = `${p.before}… mmh …${p.after}`.replace(/\s+/g, ' ').trim();
   const zhs = w.zh.split(/[；;，,、/（）()]/).map((x) => x.trim()).filter((x) => x.length > 0).sort((a, b) => b.length - a.length);
   const hit = zhs.find((z) => p.zh.includes(z));
   const zh = hit ? p.zh.replace(hit, '……') : '（它含糊地念着什么，听不清。）';
-  return { line, zh, full: (p.before + p.blank + p.after).trim(), fullZh: p.zh };
+  return { line, zh, full: (p.before + p.blank + p.after).trim(), fullZh: p.zh, idx };
 }

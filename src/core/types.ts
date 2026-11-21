@@ -53,6 +53,8 @@ export interface Intent {
   /** 0.4 怪的台词: the example sentence it mumbles with its own name swallowed; `full` is read out after a right answer. */
   full?: string;
   fullZh?: string;
+  /** 格位姿态 (0.5, Lv7+): the article the swallowed slot needs (den, einem…); the stance must match it. */
+  caseArt?: string;
   /** Which layers this line uses, for the post-fight recap. */
   layers: Array<'count' | 'element' | 'negation' | 'object'>;
 }

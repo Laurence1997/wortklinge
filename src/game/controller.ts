@@ -31,7 +31,7 @@ import {
   type GameState,
 } from '../core/state';
 import type { Move, Slot, Word, ZoneId } from '../core/types';
-import { has, UNLOCK_TEXT } from '../core/unlocks';
+import { has, UNLOCK, UNLOCK_TEXT } from '../core/unlocks';
 import { BOSS } from '../data/boss';
 import { BOSS2 } from '../data/boss2';
 import { SKILLS } from '../data/skills';
@@ -374,7 +374,7 @@ export class Controller {
   }
 
   askQuestion(move: Move): Question {
-    return makeQuestion(this.state, this.battle!, move, this.rng, undefined, this.pack.length > 1);
+    return makeQuestion(this.state, this.battle!, move, this.rng, undefined, this.pack.length > 1, this.pack);
   }
 
   useHint(q: Question): string | null {
@@ -703,7 +703,7 @@ export class Controller {
   private talkMira() {
     const s = this.state;
     if (!has(s.level, 'shop')) {
-      say([{ who: MIRA, text: '货还没到。你也还没长大。（11 级）' }]);
+      say([{ who: MIRA, text: `货还没到。你也还没长大。（${UNLOCK.shop} 级）` }]);
       return;
     }
     this.questFire('metMira');
@@ -716,7 +716,7 @@ export class Controller {
       s.flags.miraMet = true;
       say(
         [
-          { who: MIRA, text: 'Hallo! 笔、外套、护符、词典。要什么？' },
+          { who: MIRA, text: (s.region ?? 1) === 1 ? 'Hallo! 集市回不去，我先在火边摆个摊。笔、外套、护符、词典。要什么？' : 'Hallo! 笔、外套、护符、词典。要什么？' },
           { who: MIRA, text: '在这儿，东西靠嘴买。说「Ich nehme den Stift.」，它就是你的。' },
           { who: MIRA, text: 'der 跟在 nehme 后面要变 den，das 不变。嫌贵？「Geht das billiger?」看我心情。' },
         ],

@@ -1,6 +1,6 @@
 import type { Battle, Question, TurnReport } from '../core/combat';
-import { availableMoves, comboTier, effArmor, moveReady, needsPhase, phaseOf, resName, shownDe } from '../core/combat';
-import type { Article } from '../core/types';
+import { availableMoves, comboTier, effArmor, moveReady, needsPhase, phaseOf, resName, shownDe, stancesFor } from '../core/combat';
+import type { Stance } from '../core/cloze';
 import { ELEMENT_ZH } from '../core/intents';
 import { STAGE_ZH } from '../core/srs';
 import { maxHp } from '../core/state';
@@ -80,7 +80,7 @@ export class BattleUI {
   }
 
   /** 词性三相: pick der / die / das (keys 1–3 before choosing a move, or click any time before answering). */
-  setPhase(p: Article): void {
+  setPhase(p: Stance): void {
     if (this.phase === 'result' || !needsPhase(this.b)) return;
     this.b.phase = p;
     const ready = this.moves().filter((m) => moveReady(this.ctrl.state, this.b, m));
@@ -202,9 +202,13 @@ export class BattleUI {
         return true;
       }
     }
-    if (this.phase === 'choose' && needsPhase(this.b) && ['1', '2', '3'].includes(e.key)) {
-      this.setPhase((['der', 'die', 'das'] as Article[])[Number(e.key) - 1]);
-      return true;
+    if (this.phase === 'choose' && needsPhase(this.b) && /^[0-9]$/.test(e.key)) {
+      const list = stancesFor(this.ctrl.state.level);
+      const st = list[(Number(e.key) + 9) % 10];
+      if (st) {
+        this.setPhase(st);
+        return true;
+      }
     }
     if (this.phase === 'answer' && this.question?.options) {
       const n = Number(e.key);
@@ -346,7 +350,7 @@ export class BattleUI {
     const q = h('div.q');
     if (this.phase === 'choose') {
       q.append(
-        h('div.prompt', h('span', needsPhase(b) && !b.phase ? '先选相：按 1 der、2 die、3 das，再出手' : '听它说什么，再出手')),
+        h('div.prompt', h('span', needsPhase(b) && !b.phase ? (s.level >= 7 ? '先选相：按数字键选它这句话需要的冠词，再出手' : '先选相：按 1 der、2 die、3 das，再出手') : '听它说什么，再出手')),
       );
     } else if (this.question) {
       q.append(this.renderQuestion(this.question));
@@ -362,10 +366,19 @@ export class BattleUI {
       stance = h(
         'div.stance',
         h('span.muted', '相：'),
-        ...(['der', 'die', 'das'] as Article[]).map((p, i) =>
-          h(`button.btn.${p}${b.phase === p ? '.sel' : ''}`, { disabled: this.phase === 'result', onclick: () => this.setPhase(p), title: `${p} 相（${i + 1}）` }, h('kbd', String(i + 1)), p),
+        ...stancesFor(s.level).map((p, i) =>
+          h(`button.btn.${p}${b.phase === p ? '.sel' : ''}`, { disabled: this.phase === 'result', onclick: () => this.setPhase(p), title: `${p}（${(i + 1) % 10}）` }, h('kbd', String((i + 1) % 10)), p),
         ),
-        h('span.small.muted', this.phaseNag && !b.phase ? '  先选相：它是 der、die 还是 das？' : b.pluralMon ? '  复数一律 die' : s.level <= 5 ? '  选对护甲降一档；6 级前选错不罚' : '  选对护甲降一档、回资源；选错护甲翻倍'),
+        h(
+          'span.small.muted',
+          this.phaseNag && !b.phase
+            ? s.level >= 7 ? '  先选相：它这句话里缺的那个冠词是什么？' : '  先选相：它是 der、die 还是 das？'
+            : b.pluralMon
+              ? '  复数一律 die'
+              : s.level >= 7
+                ? b.intent.caseArt ? '  按它这句话里缺的位置选冠词（会变格）' : '  这句没有它的名字：按名字选 der/die/das'
+                : s.level <= 5 ? '  选对护甲降一档；6 级前选错不罚' : '  选对护甲降一档、回资源；选错护甲翻倍',
+        ),
       );
     }
 

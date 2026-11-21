@@ -176,12 +176,13 @@ function generateRegion1(): MapData {
   ];
   for (const sg of signs) if (BLOCKING.has(get(sg.x, sg.y))) set(sg.x, sg.y, T.Ground);
   set(bonfire.x - 2, bonfire.y + 1, T.Ground); // 考官
+  set(bonfire.x, bonfire.y + 3, T.Ground); // Mira's camp stall (0.5: the shop opens at Lv7, before region 2)
 
   return {
     region: 1,
     tiles,
     bonfire,
-    npcs: [{ id: 'hilde', x: bonfire.x + 2, y: bonfire.y + 1 }, { id: 'examiner', x: bonfire.x - 2, y: bonfire.y + 1 }],
+    npcs: [{ id: 'hilde', x: bonfire.x + 2, y: bonfire.y + 1 }, { id: 'examiner', x: bonfire.x - 2, y: bonfire.y + 1 }, { id: 'mira', x: bonfire.x, y: bonfire.y + 3 }],
     gates: [],
     sign: { x: bonfire.x, y: bonfire.y - 5 },
     door,
