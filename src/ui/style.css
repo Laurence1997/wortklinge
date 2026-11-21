@@ -258,3 +258,9 @@ label.toggle { display: flex; gap: 8px; align-items: center; padding: 6px 0; }
 #battle:not([hidden]) ~ #chat, #boss:not([hidden]) ~ #chat { display: none; }
 #battle .blog { max-height: 4.6em; overflow-y: auto; }
 #modal:not([hidden]) ~ #chat { display: none; }
+
+/* 词性三相 (0.5) */
+#battle .stance { display: flex; align-items: center; gap: 6px; margin: 8px 0 2px; flex-wrap: wrap; }
+#battle .stance .btn { padding: 3px 12px; font-family: var(--mono); }
+#battle .stance .btn.sel { outline: 2px solid var(--gold, #ffcf4a); }
+#battle .stance .btn.der { border-color: var(--der); } #battle .stance .btn.die { border-color: var(--die); } #battle .stance .btn.das { border-color: var(--das); }

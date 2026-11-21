@@ -5,7 +5,8 @@
 import { makeRng } from '../src/core/rng';
 import { CONFIG } from '../src/core/config';
 import { newGame, maxHp, type GameState } from '../src/core/state';
-import { startBattle, makeQuestion, monsterStats, moveReady, qTier, resolveTurn, type Question } from '../src/core/combat';
+import { startBattle, makeQuestion, monsterStats, moveReady, needsPhase, phaseOf, qTier, resolveTurn, type Question } from '../src/core/combat';
+import type { Article } from '../src/core/types';
 import { makeItem } from '../src/core/loot';
 import { WORDS } from '../src/data/words';
 import type { Move } from '../src/core/types';
@@ -20,11 +21,14 @@ if (process.env.ARM) CONFIG.armor.base = +process.env.ARM;
 const rng = makeRng(11);
 
 type T = 'grind' | 'balance' | 'learn';
-const TYPES: Record<T, { acc: [number, number, number]; tm: [number, number, number]; inscribe: boolean; whisper: boolean }> = {
-  grind: { acc: [0.9, 0.65, 0.4], tm: [1, 1.3, 1.3], inscribe: false, whisper: true },
-  balance: { acc: [0.95, 0.8, 0.65], tm: [1, 1, 1], inscribe: true, whisper: false },
-  learn: { acc: [0.98, 0.93, 0.88], tm: [1, 0.85, 0.85], inscribe: true, whisper: false },
+// pa = chance the first stance on a monster is right (词性三相, 0.5). PHASE=0: no stance picked (counts as wrong).
+const TYPES: Record<T, { acc: [number, number, number]; tm: [number, number, number]; inscribe: boolean; whisper: boolean; pa: number }> = {
+  grind: { acc: [0.9, 0.65, 0.4], tm: [1, 1.3, 1.3], inscribe: false, whisper: true, pa: 0.6 },
+  balance: { acc: [0.95, 0.8, 0.65], tm: [1, 1, 1], inscribe: true, whisper: false, pa: +(process.env.PA ?? 0.85) },
+  learn: { acc: [0.98, 0.93, 0.88], tm: [1, 0.85, 0.85], inscribe: true, whisper: false, pa: 0.97 },
 };
+const PHASE = process.env.PHASE !== '0';
+const PHASE_SEC = 1.2; // picking a stance once per monster
 const QT = [3, 6, 10];
 const RESULT_DELAY = 1;
 const WALK = 8;
@@ -62,6 +66,19 @@ function fight(t: T, s: GameState, m: number) {
   b.monster.dmg = st.dmg;
   let qs = 0;
   let sec = WALK;
+  b.pluralMon = false; // the sim's monster stats are set by hand above
+  const tried: Article[] = [];
+  const pickPhase = () => {
+    const right = phaseOf(b)!;
+    const left = (['der', 'die', 'das'] as Article[]).filter((p) => !tried.includes(p));
+    const p = tried.length === 0 ? (rng() < P.pa ? right : left.filter((x) => x !== right)[Math.floor(rng() * 2)]) : left.includes(right) && rng() < 1 / Math.max(1, left.length) ? right : left[Math.floor(rng() * left.length)];
+    b.phase = p;
+    tried.push(p);
+  };
+  if (PHASE && needsPhase(b)) {
+    pickPhase();
+    sec += PHASE_SEC;
+  }
   while (!b.outcome && qs < 60) {
     let move: Move = 'attack';
     let q: Question = makeQuestion(s, b, 'attack', rng);
@@ -81,8 +98,13 @@ function fight(t: T, s: GameState, m: number) {
     const ans = right ? (q.answer ?? '') : 'zzz';
     // The result screen waits about 1 s after a clean hit and 2.6 s when there is a correction to read (battle.ts).
     sec += QT[tier] * P.tm[tier] + (right ? RESULT_DELAY : 2.6);
-    resolveTurn(s, b, move, q, ans, rng);
+    const r = resolveTurn(s, b, move, q, ans, rng);
     qs++;
+    if (r.phase === 'soft') b.phase = phaseOf(b)!; // Lv1–5: told the right one
+    else if (r.phase === 'wrong') {
+      pickPhase();
+      sec += PHASE_SEC;
+    }
   }
   if (saved) s.words[w.id] = saved;
   const won = b.outcome === 'win';
@@ -105,6 +127,14 @@ function cell(t: T, L: number, G: number, m = L) {
 // Gear per level roughly as in sim05's balance column (tier resets in region 2).
 const gearAt = (L: number) => (L <= 1 ? 0 : L <= 7 ? 1 + Math.floor((L - 2) / 3) : L <= 10 ? 3 : L <= 12 ? L - 10 : L <= 14 ? 3 : L <= 18 ? 4 + (L >= 18 ? 1 : 0) : 5);
 
+if (process.env.CMP) {
+  for (const L of [8, 13, 18]) {
+    const G = gearAt(L);
+    const row = (['grind', 'balance', 'learn'] as T[]).map((t) => { const c = cell(t, L, G); return `${t} ${(60 / c.kpm).toFixed(1)}s`; });
+    console.log(`L${L} sec/kill: ${row.join(' · ')}`);
+  }
+  process.exit(0);
+}
 console.log(`monster dmgPct Lv1 ${CONFIG.monster.dmgPct(1)} / Lv10 ${CONFIG.monster.dmgPct(10)}, N=${N}`);
 console.log(' L  G | grind q/kill hp% win | balance q/kill hp% win | learn q/kill hp% win');
 for (const L of [1, 3, 5, 6, 8, 10, 11, 13, 15, 18, 20]) {

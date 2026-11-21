@@ -1,5 +1,6 @@
 import type { Battle, Question, TurnReport } from '../core/combat';
-import { availableMoves, comboTier, effArmor, moveReady, resName } from '../core/combat';
+import { availableMoves, comboTier, effArmor, moveReady, needsPhase, phaseOf, resName, shownDe } from '../core/combat';
+import type { Article } from '../core/types';
 import { ELEMENT_ZH } from '../core/intents';
 import { STAGE_ZH } from '../core/srs';
 import { maxHp } from '../core/state';
@@ -27,7 +28,7 @@ const MOVE_INFO: Record<Move, { key: string; zh: string; sub: string }> = {
   sentence: { key: 'F', zh: '终结技', sub: '看中文写整句 · 破甲' },
   inscribe: { key: 'Q', zh: '铭刻', sub: '题难一级 · 答对 ×1.5 · 答错丢 1 资源' },
   whisper: { key: 'W', zh: '低语', sub: '给首字母 · 不算会写' },
-  chorus: { key: 'E', zh: '齐鸣', sub: '这一题打整群' },
+  chorus: { key: 'E', zh: '齐鸣', sub: '这一题打同相的整群' },
   skill: { key: 'R', zh: '技能', sub: '写对整句' },
   cls: { key: 'G', zh: '职业技能', sub: '' },
 };
@@ -43,6 +44,7 @@ export class BattleUI {
   private lastValue = '';
   private voicedFull = '';
   private renderedQ: Question | null = null;
+  private phaseNag = false;
 
   constructor(private ctrl: Controller) {}
 
@@ -68,7 +70,8 @@ export class BattleUI {
     this.zhShown = this.ctrl.state.settings.autoZh || this.ctrl.state.level <= 3;
     this.ctrl.speak(this.b.intent.line);
     const moves = this.moves().filter((m) => moveReady(this.ctrl.state, this.b, m));
-    if (moves.length === 1) this.choose(moves[0]);
+    // 词性三相: a noun monster waits for a stance first (it stays picked for this monster).
+    if (moves.length === 1 && !(needsPhase(this.b) && !this.b.phase)) this.choose(moves[0]);
     else {
       this.phase = 'choose';
       this.question = null;
@@ -76,8 +79,23 @@ export class BattleUI {
     }
   }
 
+  /** 词性三相: pick der / die / das (keys 1–3 before choosing a move, or click any time before answering). */
+  setPhase(p: Article): void {
+    if (this.phase === 'result' || !needsPhase(this.b)) return;
+    this.b.phase = p;
+    const ready = this.moves().filter((m) => moveReady(this.ctrl.state, this.b, m));
+    if (this.phase === 'choose' && ready.length === 1) this.choose(ready[0]);
+    else this.render();
+  }
+
   choose(move: Move): void {
     if (!this.moves().includes(move) || !moveReady(this.ctrl.state, this.b, move)) return;
+    if (needsPhase(this.b) && !this.b.phase && move !== 'skill' && move !== 'cls') {
+      this.phaseNag = true;
+      this.render();
+      return;
+    }
+    this.phaseNag = false;
     this.move = move;
     this.question = this.ctrl.askQuestion(move);
     // Listening step: the monster says its own name, the player picks the meaning.
@@ -184,6 +202,10 @@ export class BattleUI {
         return true;
       }
     }
+    if (this.phase === 'choose' && needsPhase(this.b) && ['1', '2', '3'].includes(e.key)) {
+      this.setPhase((['der', 'die', 'das'] as Article[])[Number(e.key) - 1]);
+      return true;
+    }
     if (this.phase === 'answer' && this.question?.options) {
       const n = Number(e.key);
       if (n >= 1 && n <= this.question.options.length) {
@@ -213,15 +235,18 @@ export class BattleUI {
     el.className = 'panel';
     const w = b.word;
     const g = genderOf(w);
-    const color = b.stage === 0 ? '#e8dccf' : g ? ARTICLE_COLOR[g] : '#c3a9ff';
+    // 词性三相: the card never gives the gender away until the right stance has landed once.
+    const showG = !needsPhase(b) || !!b.phaseHit;
+    const color = b.stage === 0 || !showG ? '#e8dccf' : b.pluralMon ? ARTICLE_COLOR.pl : g ? ARTICLE_COLOR[g] : '#c3a9ff';
+    const de = shownDe(b);
 
     // Monster card.
     const glyph =
       b.stage === 0
-        ? Array.from({ length: Math.max(3, Math.min(9, w.de.length)) }, () => GLITCH[Math.floor(Math.random() * GLITCH.length)]).join('')
+        ? Array.from({ length: Math.max(3, Math.min(9, de.length)) }, () => GLITCH[Math.floor(Math.random() * GLITCH.length)]).join('')
         : b.stage === 1
-          ? [...w.de].map((c, i) => (i % 2 === 0 || c === ' ' ? c : '▒')).join('')
-          : (w.art ? w.art + ' ' : '') + w.de.slice(0, Math.ceil(w.de.length / 2)) + '▒▒';
+          ? [...de].map((c, i) => (i % 2 === 0 || c === ' ' ? c : '▒')).join('')
+          : (showG && w.art ? (b.pluralMon ? 'die' : w.art) + ' ' : '') + de.slice(0, Math.ceil(de.length / 2)) + '▒▒';
     const m = b.monster;
     const st: string[] = [];
     if (m.broken > 0) st.push(`破甲 ${m.broken}`);
@@ -239,6 +264,7 @@ export class BattleUI {
         b.kind === 'due' ? h('span.tag.due', '遗忘之物') : b.kind === 'new' ? h('span.tag', '新怪') : h('span.tag', '影子'),
         b.isEcho ? h('span.tag.echo', '带着你的回响') : '',
         b.saying && !b.sayingDone ? h('span.tag.echo', '接句怪') : '',
+        b.pluralMon ? h('span.tag.echo', '复数怪 · 一群') : '',
         b.stage === 2 && b.kind === 'due' ? h('span.tag', '可归名') : '',
       ),
       bar('hp', m.hp, m.maxHp, `${m.hp} / ${m.maxHp}`),
@@ -256,7 +282,7 @@ export class BattleUI {
       h(
         'div',
         { style: 'flex:1;min-width:0' },
-        h('div.kind', `${pack.length > 1 ? (b.named || b.stage > 0 ? fullForm(w) : w.de) + ' ' : '它'}说`),
+        h('div.kind', `${pack.length > 1 ? (b.phaseHit ? fullForm(w) : shownDe(b)) + ' ' : '它'}说`),
         h('div.line', it.line),
         h('div.zh', this.zhShown ? plainZh(it.zh) : ''),
         b.queued ? h('div.zh', { style: 'color:var(--gold, #ffcf4a)' }, `看穿 · 下回合：${b.queued.line}${this.zhShown ? `（${plainZh(b.queued.zh)}）` : ''}`) : '',
@@ -320,7 +346,7 @@ export class BattleUI {
     const q = h('div.q');
     if (this.phase === 'choose') {
       q.append(
-        h('div.prompt', h('span', '听它说什么，再出手')),
+        h('div.prompt', h('span', needsPhase(b) && !b.phase ? '先选相：按 1 der、2 die、3 das，再出手' : '听它说什么，再出手')),
       );
     } else if (this.question) {
       q.append(this.renderQuestion(this.question));
@@ -330,20 +356,33 @@ export class BattleUI {
     const blog = h('div.blog');
     for (const l of b.log) blog.append(h(`div.${l.tone}`, l.text));
 
-    clear(el).append(h('div.b-top', monEl, intent, me), movesEl, q, blog);
+    // 词性三相 row: the stance for this monster.
+    let stance: HTMLElement | string = '';
+    if (needsPhase(b)) {
+      stance = h(
+        'div.stance',
+        h('span.muted', '相：'),
+        ...(['der', 'die', 'das'] as Article[]).map((p, i) =>
+          h(`button.btn.${p}${b.phase === p ? '.sel' : ''}`, { disabled: this.phase === 'result', onclick: () => this.setPhase(p), title: `${p} 相（${i + 1}）` }, h('kbd', String(i + 1)), p),
+        ),
+        h('span.small.muted', this.phaseNag && !b.phase ? '  先选相：它是 der、die 还是 das？' : b.pluralMon ? '  复数一律 die' : s.level <= 5 ? '  选对护甲降一档；6 级前选错不罚' : '  选对护甲降一档、回资源；选错护甲翻倍'),
+      );
+    }
+
+    clear(el).append(h('div.b-top', monEl, intent, me), stance, movesEl, q, blog);
     blog.scrollTop = blog.scrollHeight;
     if (this.input && this.phase === 'answer') window.setTimeout(() => this.input?.focus(), 0);
   }
 
   private pending: string | undefined;
 
-  /** 群怪 cards: name (article only after 点名), HP and each monster's own intent. */
+  /** 群怪 cards: name (article only once the right stance has landed), HP and each monster's own intent. */
   private renderPack(): HTMLElement {
     const wrap = h('div.b-mon.b-pack');
     this.ctrl.pack.forEach((pb, i) => {
       const w = pb.word;
       const g = genderOf(w);
-      const known = pb.named || pb.stage > 0;
+      const known = !needsPhase(pb) || !!pb.phaseHit;
       const color = known && g ? ARTICLE_COLOR[g] : '#e8dccf';
       const it = pb.intent;
       const dead = !!pb.outcome;
@@ -351,7 +390,7 @@ export class BattleUI {
         `button.pk${pb === this.b ? '.sel' : ''}${dead ? '.dead' : ''}`,
         { onclick: () => this.target(i), title: '选中它（Tab 切换）', disabled: dead },
         h('div.fam', h('span', `${FAMILIES[w.family].zh} · Lv ${pb.monster.lvl}`), h('span', dead ? '已打散' : STAGE_ZH[pb.stage])),
-        h('div.nm', { style: `color:${color}` }, known ? fullForm(w) : `？ ${w.de}`),
+        h('div.nm', { style: `color:${color}` }, known && w.art ? `${phaseOf(pb)} ${shownDe(pb)}` : `？ ${shownDe(pb)}`),
         bar('hp', pb.monster.hp, pb.monster.maxHp, `${pb.monster.hp} / ${pb.monster.maxHp}`),
         dead ? '' : h('div.it', it.line),
       );
@@ -409,6 +448,8 @@ export class BattleUI {
       const head = r.correct ? (r.crit ? (r.newSpell ? '新言灵！暴击！' : '暴击！') : r.parried ? '弹反！' : '答对了') : '答错了';
       fb.append(h('b', head));
       if (r.correct && this.b.word && (qq.type === 'article' || qq.type === 'typed')) fb.append(h('span', `  ${fullForm(this.b.word)} · ${this.b.word.zh}`));
+      if (r.phase === 'right') fb.append(h('span', `  ${this.b.phase} 相 · 弱点`));
+      if (r.phase === 'wrong') fb.append(h('span', `  ${this.b.phase} 相被抵抗`));
       if (r.element) fb.append(h('span', `  元素：${ELEMENT_ZH[r.element]}`));
       for (const n of r.verdict.notes) fb.append(h('span.note', n));
       if (r.readRight) fb.append(h('span.note', '读懂了它：连击 +1'));

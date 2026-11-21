@@ -5,7 +5,7 @@ import { newGame, addXp, migrate, attack, gearTier, addGearKill } from '../src/c
 import { applyWin } from '../src/core/outcomes';
 import { recordKill, kindOf, stageOf } from '../src/core/srs';
 import { CONFIG, monsterHpAt, xpToNext } from '../src/core/config';
-import { startBattle, makeQuestion, resolveTurn, spillStorm, effArmor, qTier, linkPack, moveReady } from '../src/core/combat';
+import { startBattle, makeQuestion, resolveTurn, spillStorm, effArmor, qTier, linkPack, moveReady, phaseOf } from '../src/core/combat';
 import { makeRng } from '../src/core/rng';
 import { answerBoss, startBoss } from '../src/core/boss';
 import { BOSS_QUESTIONS } from '../src/data/boss';
@@ -120,14 +120,15 @@ describe('levels', () => {
 });
 
 describe('combat', () => {
-  it('a level-1 player beats a new noun monster by answering right (article first)', () => {
+  it('a level-1 player beats a new noun monster by answering right (the der stance is the article now)', () => {
     const rng = makeRng(1);
     const s = newGame('T', 'student', Date.now());
     const b = startBattle(s, WORD_BY_ID['tee'], rng);
+    b.phase = 'der';
     let guard = 0;
     while (!b.outcome && guard++ < 20) {
       const q = makeQuestion(s, b, 'attack', rng);
-      if (guard === 1) expect(q.type).toBe('article');
+      if (guard === 1) expect(q.type).toBe('pickDe');
       resolveTurn(s, b, 'attack', q, q.answer!, rng);
     }
     expect(b.outcome).toBe('win');
@@ -309,8 +310,8 @@ describe('question ladder', () => {
         types.push(makeQuestion(s, b, 'attack', rng).type);
         b.step += 1;
       }
-      // 完形填空 ladder (Lv1–5): article → cloze (pick) → listen-and-pick.
-      expect(types).toEqual(['article', 'cloze', 'pickZh']);
+      // 完形填空 ladder (Lv1–5): pick the German (the article lives in the stance since 0.5) → cloze → listen-and-pick.
+      expect(types).toEqual(['pickDe', 'cloze', 'pickZh']);
       for (let i = 1; i < types.length; i++) expect(types[i]).not.toBe(types[i - 1]);
     }
   });
@@ -319,24 +320,25 @@ describe('question ladder', () => {
 describe('region 2: packs, conjugation, plurals', () => {
   const nounOf = (art: string) => WORDS.find((w) => w.region === 2 && w.pos === 'n' && w.art === art && w.family === 'krume')!;
 
-  it('asks 点名 first in a pack, and a wrong article that matches another monster strays', () => {
+  it('0.5: no 点名 any more — 齐鸣 rings only on the monsters of your stance', () => {
     const rng = makeRng(7);
     const s = newGame('T', 'student');
     s.level = 11;
     const a = startBattle(s, nounOf('der'), rng);
     const c = startBattle(s, nounOf('die'), rng);
-    const q = makeQuestion(s, a, 'attack', rng, undefined, true);
-    expect(q.type).toBe('callout');
-    const hpC = c.monster.hp;
-    const r = resolveTurn(s, a, 'attack', q, 'die', rng, [a, c]);
-    expect(r.correct).toBe(false);
-    expect(a.named).toBe(false);
-    expect(c.monster.hp).toBeLessThan(hpC);
-    // Right article: named, and the next attack is a normal ladder question.
-    const q2 = makeQuestion(s, a, 'attack', rng, undefined, true);
-    resolveTurn(s, a, 'attack', q2, 'der', rng, [a, c]);
-    expect(a.named).toBe(true);
+    const d = startBattle(s, WORDS.filter((w) => w.region === 2 && w.pos === 'n' && w.art === 'der' && w.pl && w.pl !== '-')[1], rng);
+    for (const x of [a, c, d]) {
+      x.pluralMon = false;
+      x.monster.hp = x.monster.maxHp = 500;
+      x.intent = { ...x.intent, kind: 'wait', hits: 0 };
+    }
     expect(makeQuestion(s, a, 'attack', rng, undefined, true).type).not.toBe('callout');
+    a.phase = 'der';
+    const q = makeQuestion(s, a, 'chorus', rng, undefined, true);
+    const r = resolveTurn(s, a, 'chorus', q, q.answer!, rng, [a, c, d]);
+    expect(r.phase).toBe('right');
+    expect(d.monster.hp).toBeLessThan(500);
+    expect(c.monster.hp).toBe(500);
   });
 
   it('every pack member acts, with less damage each', () => {
@@ -726,6 +728,7 @@ describe('句式说的是眼前这只怪', () => {
     // 0.4: the whole sentence is the finisher, ready only with a full resource bar (言灵 before a class).
     b.intent = { ...b.intent, kind: 'wait', hits: 0 };
     b.monster.hp = b.monster.maxHp = 999;
+    b.phase = 'der';
     expect(moveReady(s, b, 'sentence')).toBe(false);
     b.cfx.res = 5;
     expect(moveReady(s, b, 'sentence')).toBe(true);
@@ -857,7 +860,9 @@ describe('0.4 战斗修正版', () => {
     const b = startBattle(s, WORD_BY_ID['tee'], makeRng(5));
     b.intent = { ...b.intent, kind: 'charge', hits: 1 };
     expect(qTier(makeQuestion(s, b, 'attack', makeRng(5)))).toBe(2);
-    const p = [startBattle(s, WORD_BY_ID['tee'], makeRng(6)), startBattle(s, WORD_BY_ID['brot'], makeRng(7))];
+    const p = [startBattle(s, WORD_BY_ID['tee'], makeRng(6)), startBattle(s, WORD_BY_ID['kaffee'], makeRng(7))];
+    for (const x of p) x.pluralMon = false;
+    p[0].phase = 'der';
     const full = p[1].monster.maxHp;
     linkPack(p);
     expect(p[1].monster.maxHp).toBe(Math.round(full * 0.6));
@@ -871,8 +876,8 @@ describe('0.4 战斗修正版', () => {
   });
 });
 
-describe('0.4 示例战斗 (游戏设计 › 0.4 战斗修正版, acceptance table)', () => {
-  it('Lv8 player, gear 0, vs a Lv9 monster: 4 turns, same numbers as the table (no roll, no crit)', () => {
+describe('0.5 示例战斗 with 词性三相 (acceptance: right, wrong, soft before Lv6, plural only die)', () => {
+  it('Lv8 vs a Lv9 Brot (das): right stance, then a wrong der, then its poison finishes it', () => {
     const roll = CONFIG.damage.roll;
     const crit = CONFIG.player.baseCrit;
     CONFIG.damage.roll = [1, 1];
@@ -883,51 +888,68 @@ describe('0.4 示例战斗 (游戏设计 › 0.4 战斗修正版, acceptance tab
       s.level = 8;
       s.words['brot'] = { stage: 1, due: 9e15, firstSeen: 0, lastSeen: 0, relapse: 0, correct: 1, wrong: 0 };
       const b = startBattle(s, WORD_BY_ID['brot'], rng);
-      // A fresh Lv9 monster (the table writes its HP as 100 and yours as 100).
+      b.pluralMon = false;
       b.monster.lvl = 9;
       b.monster.hp = b.monster.maxHp = Math.round(monsterHpAt(9)); // 37
-      b.monster.dmg = 7; // 12% of a Lv9 player's 62 HP
-      s.hp = 58; // Lv8 max HP
-      b.cfx.res = 3; // left over from the last fight
-      const pct = (v: number, of: number) => Math.round((100 * v) / of);
+      b.monster.dmg = 7;
+      s.hp = 58;
+      b.cfx.res = 3;
       const atk = { kind: 'attack' as const, shown: 'attack' as const, hits: 1, element: 'phys' as const, line: 'Ich beiße!', zh: '', layers: [] };
-      const turn = (move: 'attack' | 'inscribe' | 'sentence', intent: typeof b.intent, step?: number, right = true) => {
-        b.intent = intent;
+      const turn = (move: 'attack' | 'inscribe', step?: number, right = true) => {
+        b.intent = atk;
         if (step !== undefined) b.step = step;
         const q = makeQuestion(s, b, move, rng);
-        const r = resolveTurn(s, b, move, q, right ? q.answer! : 'zzz', rng);
-        return { q, r };
+        return { q, r: resolveTurn(s, b, move, q, right ? q.answer! : 'zzz', rng) };
       };
-      // 1: the ladder's choice question; 铭刻 turns it into typing, ×1.5, half armor → 35 of 100.
-      const t1 = turn('inscribe', atk, 3);
+      // 1: das (right) + 铭刻 typing: armor one tier lower = none → 26 of 37; 言灵 +1 typed +1 stance; das = poison.
+      b.phase = 'das';
+      const t1 = turn('inscribe', 3);
+      expect(t1.r.phase).toBe('right');
       expect(qTier(t1.q)).toBe(1);
-      expect(pct(t1.r.playerDamage, 37)).toBe(35);
-      expect(pct(b.monster.hp, 37)).toBe(65);
-      expect(b.cfx.res).toBe(4);
-      expect(b.cfx.inscribeCd ?? 0).toBe(0); // no cooldown since 2026-11-20
-      // 2: typed (cloze, dictionary form) → 23 of 100; 言灵 full.
-      const t2 = turn('attack', atk);
-      expect(t2.q.clozeMode).toBe('base');
-      expect(pct(t2.r.playerDamage, 37)).toBe(24); // 9 of 37 after rounding to whole HP (table: 23)
+      expect(t1.r.playerDamage).toBe(26);
+      expect(t1.r.element).toBe('poison');
       expect(b.cfx.res).toBe(5);
-      // 3: choice, wrong → miss; no resource. (Code: the monster still acts this turn, see report.)
-      const t3 = turn('attack', atk, 3, false);
-      expect(t3.r.playerDamage).toBe(0);
-      expect(b.cfx.res).toBe(5);
-      // 4: it charges; F 终结技 instead of the hard question: interrupts, ignores armor, kills, spends all 言灵.
-      const t4 = turn('sentence', { ...atk, kind: 'charge', shown: 'charge', line: 'Moment!' });
-      expect(t4.q.type).toBe('sentence');
-      expect(t4.r.monsterDamage).toBe(0);
+      expect(b.phaseHit).toBe(true);
+      // 2: switched to der (wrong): doubled armor on the typed cloze → 6.
+      b.phase = 'der';
+      const t2 = turn('attack');
+      expect(t2.r.phase).toBe('wrong');
+      expect(t2.r.playerDamage).toBe(6);
+      expect(b.monster.broken).toBe(0);
+      // 3: a missed answer still lets the poison tick: it dies on its own weak point.
+      turn('attack', 3, false);
       expect(b.outcome).toBe('win');
-      expect(b.cfx.res).toBe(0);
-      // Monster hits: 7 × 1.08 (you are a level below) = 8 a turn on 58 HP = 14 of 100 (table: 13).
-      expect(pct(t1.r.monsterDamage, 58)).toBe(14);
-      // Big one would be ×2.
-      expect(CONFIG.monster.chargeMult).toBe(2);
     } finally {
       CONFIG.damage.roll = roll;
       CONFIG.player.baseCrit = crit;
     }
+  });
+  it('before Lv6 a wrong stance is only shown, not punished; a plural monster only takes die', () => {
+    const s = newGame('T', 'student', T0);
+    s.level = 4;
+    const b = startBattle(s, WORD_BY_ID['tee'], makeRng(1));
+    b.monster.hp = b.monster.maxHp = 500;
+    b.intent = { ...b.intent, kind: 'wait', hits: 0 };
+    b.phase = 'das';
+    const q = makeQuestion(s, b, 'attack', makeRng(2));
+    const r = resolveTurn(s, b, 'attack', q, q.answer!, makeRng(3));
+    expect(r.phase).toBe('soft');
+    expect(b.log.some((l) => l.text.includes('它是 der 相'))).toBe(true);
+
+    s.level = 12;
+    const apfel = WORDS.find((w) => w.art === 'der' && w.pl && w.pl !== '-' && !w.plOnly)!;
+    let pm = startBattle(s, apfel, makeRng(1));
+    for (let i = 2; !pm.pluralMon && i < 200; i++) pm = startBattle(s, apfel, makeRng(i));
+    expect(pm.pluralMon).toBe(true);
+    expect(phaseOf(pm)).toBe('die');
+    pm.intent = { ...pm.intent, kind: 'wait', hits: 0 };
+    pm.monster.hp = pm.monster.maxHp = 500;
+    pm.phase = 'der';
+    const q2 = makeQuestion(s, pm, 'attack', makeRng(4));
+    expect(resolveTurn(s, pm, 'attack', q2, q2.answer!, makeRng(5)).phase).toBe('wrong');
+    pm.phase = 'die';
+    const q3 = makeQuestion(s, pm, 'attack', makeRng(6));
+    expect(resolveTurn(s, pm, 'attack', q3, q3.answer!, makeRng(7)).phase).toBe('right');
   });
 });
 
@@ -1055,5 +1077,21 @@ describe('句子技能轮换 + 墨水风暴抽词 (2026-11-21)', () => {
     const pickMe = ws.slice(0, 5);
     for (const w of pickMe) s.words[w.id].due = 0;
     for (let i = 0; i < 30; i++) expect(pickMe).toContain(stormWord(s, makeRng(i), WORDS[0]));
+  });
+});
+
+describe('0.5 解锁提前: regular verbs from Lv6, strong ones from Lv12', () => {
+  it('conjugates lernen at 6 but not nehmen until 12', async () => {
+    const { conjOpen } = await import('../src/core/combat');
+    const s = newGame('T', 'student', T0);
+    const lernen = WORDS.find((w) => w.de === 'lernen')!;
+    const nehmen = WORDS.find((w) => w.de === 'nehmen')!;
+    s.level = 5;
+    expect(conjOpen(s, lernen)).toBe(false);
+    s.level = 6;
+    expect(conjOpen(s, lernen)).toBe(true);
+    expect(conjOpen(s, nehmen)).toBe(false);
+    s.level = 12;
+    expect(conjOpen(s, nehmen)).toBe(true);
   });
 });

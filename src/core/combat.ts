@@ -7,7 +7,7 @@ import { ELEMENT_ZH, generateIntent, INTENT_ZH } from './intents';
 import { between, pick, shuffle, type Rng } from './rng';
 import { kindOf, stageOf, overdueSteps, type Kind, type Stage } from './srs';
 import { affixTotal, attack, critChance, gearPen, hintsPerFight, maxHp, now, type GameState } from './state';
-import type { Element, Intent, Move, Word } from './types';
+import type { Article, Element, Intent, Move, Word } from './types';
 import { has } from './unlocks';
 import { fullForm, genderOf, hasArticleQuestion, WORD_BY_ID, WORDS, zhWithPos } from '../data/words';
 import { SKILLS, skillLine, skillLinesOpen } from '../data/skills';
@@ -133,6 +133,12 @@ export interface Battle {
   intent: Intent;
   /** 「Wie viel kostet das?」: next turn's intent, already decided. */
   queued?: Intent;
+  /** 词性三相 (0.5): the stance the player attacks in. Sticky for this monster until changed. */
+  phase?: Article;
+  /** The right stance has landed on it once: its gender shows from then on. */
+  phaseHit?: boolean;
+  /** 复数怪 (0.5, Lv11+): a whole crowd of this word, die Äpfel. Only the die stance is right. */
+  pluralMon?: boolean;
   turn: number;
   turnsSinceCharge: number;
   trapUsed: boolean;
@@ -242,7 +248,15 @@ export function startBattle(
     log: [],
     recap: [],
   };
-  b.pluralDue = kind === 'due' && !!word.art && !!word.pl && word.pl !== '-' && !word.plOnly && has(s.level, 'plural') && rng() < 1 / 3;
+  const canPlural = !!word.art && !!word.pl && word.pl !== '-' && !word.plOnly && has(s.level, 'plural');
+  b.pluralDue = kind === 'due' && canPlural && rng() < 1 / 3;
+  // 复数怪 (0.5): from Lv11 about one noun monster in five is a crowd of it (die Äpfel): only die is right,
+  // its typed questions ask for the plural, and it is half again as tough.
+  if (canPlural && !opts.isEcho && !tutorial && !opts.trial && word.family !== 'truhe' && rng() < CONFIG.phase.pluralChance) {
+    b.pluralMon = true;
+    b.pluralDue = true;
+    monster.hp = monster.maxHp = Math.round(monster.maxHp * CONFIG.phase.pluralHp);
+  }
   b.intent = nextIntent(s, b, rng);
   return b;
 }
@@ -340,10 +354,26 @@ export function moveReady(s: GameState, b: Battle, move: Move): boolean {
 /** Share of a hit this monster's armor stops, for the given question tier (0.4 战斗修正版):
  *  A = 2^(monster level − your level) × (1 − gear penetration), halved for typed questions, 0 for hard ones
  *  or while broken; the hit is divided by (1 + A), i.e. A / (1 + A) is stopped (at most 90%). */
-export function effArmor(s: GameState, b: Battle, tier: 0 | 1 | 2): number {
+/** 词性三相: the stance that hits this monster's weak point (null for words without an article). */
+export function phaseOf(b: Battle): Article | null {
+  if (!b.word.art) return null;
+  return b.pluralMon ? 'die' : b.word.art;
+}
+
+/** Whether attacks on this monster need a stance (every noun outside the scripted tutorial fights). */
+export function needsPhase(b: Battle): boolean {
+  return !!phaseOf(b) && !b.tutorial;
+}
+
+/** What the monster card may show: its plural crowd name or the word, never the article. */
+export function shownDe(b: Battle): string {
+  return b.pluralMon ? b.word.pl! : b.word.de;
+}
+
+export function effArmor(s: GameState, b: Battle, tier: 0 | 1 | 2, factor = 1): number {
   const C = CONFIG.armor;
   if (tier === 2 || b.monster.broken > 0) return 0;
-  let a = Math.pow(C.base, b.monster.lvl - s.level) * Math.max(0, 1 - gearPen(s));
+  let a = Math.pow(C.base, b.monster.lvl - s.level) * Math.max(0, 1 - gearPen(s)) * factor;
   if (tier === 1) a *= C.typedFactor;
   return Math.min(C.maxReduction, a / (1 + a));
 }
@@ -380,13 +410,15 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
     const open = skillLinesOpen(sk, uses);
     return { type: 'skill', prompt: `释放「${sk.zh}」：写对整句${sk.lines.length > 1 ? `（已解锁 ${open} / ${sk.lines.length} 句）` : ''}`, focus: line.zh, answer: line.de, skillId: sk.id };
   }
-  const article = (): Question => ({
+  const articleQ = (): Question => ({
     type: 'article',
     prompt: '选对冠词',
     focus: w.de,
     options: ['der', 'die', 'das'],
     answer: w.art!,
   });
+  // 词性三相 (0.5): the stance is the article question now, so the old one only survives in scripted tutorials.
+  const article = (): Question => (needsPhase(b) ? pickDe() : articleQ());
   const pickDe = (): Question => {
     const opts = shuffle(rng, [w.de, ...distractors(rng, w, 'de', 2)]);
     return { type: 'pickDe', prompt: '选出对应的德语', focus: promptZh, options: opts, answer: w.de };
@@ -426,7 +458,7 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
     const extra = pat === 'nehme' ? '（也可以 zwei + 复数）' : '';
     return { type: 'sentence', prompt: `终结技：看中文，写整句${extra}`, focus: SENTENCE_ZH[pat](w.digit ?? w.zh), pattern: pat, answer: expectedSentence(w, pat) };
   };
-  const canConj = w.pos === 'v' && has(s.level, 'conjugation') && !!CONJ[w.de];
+  const canConj = w.pos === 'v' && conjOpen(s, w);
   /** One step harder than q, or null when nothing harder fits. */
   const harder = (q: Question): Question | null => {
     const t = qTier(q);
@@ -466,10 +498,10 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
 
   function ladderQ(): Question {
   if (am === 'attack' && b.saying && !b.sayingDone && !inPack) return sayingQuestion(s, b.saying, rng);
-  if (am === 'attack' && inPack && isNoun && !b.named && b.stage === 0) return callout();
+  if (am === 'attack' && inPack && isNoun && !b.named && b.stage === 0 && !needsPhase(b)) return callout();
   // 防御 (Lv7+): a written answer breaks the guard. A word not yet at the typing step gets its usual choice question (×0.3).
   if (am === 'attack' && b.intent.kind === 'defend' && canType && (b.tutorial === 'break' || !(b.kind === 'new' && b.stage === 0 && b.step < 2))) {
-    if (!isNoun && CONJ[w.de] && has(s.level, 'conjugation')) return conj();
+    if (!isNoun && conjOpen(s, w)) return conj();
     return typed();
   }
 
@@ -627,6 +659,12 @@ export function letters(w: Word): number {
   return w.de.replace(/[^A-Za-zÄÖÜäöüß]/g, '').length;
 }
 
+/** 0.5: regular verbs are conjugated from Lv6, strong ones (nehmen → nimmt) from Lv12. */
+export function conjOpen(s: GameState, w: Word): boolean {
+  const c = CONJ[w.de];
+  return !!c && has(s.level, 'conjugation') && (!c.strong || has(s.level, 'conjStrong'));
+}
+
 /** Region 2 (Lv11+): the sentence attack is 「Ich nehme …」, with plurals. */
 export function nehmeRegion(s: GameState): boolean {
   return s.region === 2 && has(s.level, 'plural');
@@ -720,6 +758,8 @@ export interface TurnReport {
   kills: Battle[];
   /** On a loss: the monster that dealt the last blow (it keeps your echo). */
   killer: Battle | null;
+  /** 词性三相 result of this hit. */
+  phase?: 'right' | 'wrong' | 'soft' | null;
 }
 
 function comboMult(combo: number): number {
@@ -815,6 +855,8 @@ export function resolveTurn(
   let crit = false;
   let newSpell = false;
   let element: Element | null = null;
+  /** 词性三相 result of this hit: right = weak point, wrong = resisted (Lv6+), soft = wrong but not punished yet. */
+  let phaseFx: TurnReport['phase'] = null;
   // 读对意图: a correct hit that interrupts (蓄力/回血/逃跑) or a written answer that breaks a guard.
   const writtenQ = q.type === 'typed' || q.type === 'conj' || q.type === 'plural' || q.type === 'storm' || clozeTyped || (q.type === 'callout' && !!q.withArticle);
   const readRight = ok && move !== 'cls' && (['charge', 'heal', 'flee'].includes(intent.kind) || (intent.kind === 'defend' && writtenQ));
@@ -959,14 +1001,31 @@ export function resolveTurn(
       if (q.type !== 'saying') b.firstCorrectDone = true;
       if (crit) mult *= CONFIG.player.critMult;
       // 护甲和破甲: a hard question (or writing through a guard) breaks the armor for this hit and the next two.
+      const stanceMove = move === 'attack' || move === 'inscribe' || move === 'whisper' || move === 'chorus' || move === 'sentence';
+      if (stanceMove && needsPhase(b)) phaseFx = b.phase === phaseOf(b) ? 'right' : s.level > CONFIG.phase.softUntil ? 'wrong' : 'soft';
+      if (phaseFx === 'wrong') {
+        // Resisted: whatever break it had is gone, and this hit meets doubled armor.
+        if (m.broken > 0) log.push({ text: '破甲被抵消了。', tone: 'bad' });
+        m.broken = 0;
+      }
       const wasBroken = m.broken > 0;
-      if ((tier === 2 || breaking) && !wasBroken) {
+      if ((tier === 2 || breaking) && !wasBroken && phaseFx !== 'wrong') {
         m.broken = CONFIG.armor.breakHits + (breaking && s.cls === 'writer' && rank(s, 'tengxie') ? 1 : 0);
         log.push({ text: breaking ? `写对了。壳裂开了：这一下和之后 ${m.broken - 1} 下无视护甲。` : `难题破甲：这一下和之后 ${m.broken - 1} 下无视护甲。`, tone: 'good' });
       }
-      const armor = effArmor(s, b, tier);
+      // Right stance = the hit meets armor one tier lower (a choice answer as if typed, a typed one ignores it).
+      const armor = phaseFx === 'right' ? effArmor(s, b, tier === 0 ? 1 : 2) : phaseFx === 'wrong' ? effArmor(s, b, tier === 2 ? 1 : tier, CONFIG.phase.wrongArmor) : effArmor(s, b, tier);
       if (m.broken > 0) m.broken -= 1;
       mult *= 1 - armor;
+      const ph = phaseOf(b);
+      if (phaseFx === 'right') {
+        b.phaseHit = true;
+        if (resMax(s) && move !== 'sentence') cfx.res = Math.min(resMax(s), cfx.res + CONFIG.phase.rightRes);
+        if (has(s.level, 'layerElement')) element = ELEMENT_BY_GENDER[b.pluralMon ? 'pl' : genderOf(b.word) ?? 'n'] ?? element;
+        if (Object.values(s.equipped).some((it) => it?.legendary === 'articleJudgement')) b.judgement = true;
+        log.push({ text: `${b.phase} 相打中弱点：护甲降一档${resMax(s) && move !== 'sentence' ? `，${resName(s)} +${CONFIG.phase.rightRes}` : ''}。`, tone: 'good' });
+      } else if (phaseFx === 'wrong') log.push({ text: `${b.phase ?? '无'} 相被抵抗：它不是 ${b.phase ?? '这个'} 相。护甲翻倍。`, tone: 'bad' });
+      else if (phaseFx === 'soft') log.push({ text: `${b.phase ? `${b.phase} 相不对` : '没选相'}：它是 ${ph} 相${b.pluralMon ? '（复数一律 die）' : ''}。6 级前不罚，选对了护甲降一档。`, tone: 'sys' });
       const judged = b.judgement;
       if (judged) {
         mult *= 2;
@@ -1002,6 +1061,8 @@ export function resolveTurn(
         const hitOthers: string[] = [];
         for (const o of pack) {
           if (o === b || o.outcome) continue;
+          // 词性三相: the chorus only rings on monsters of the stance you are in.
+          if (needsPhase(o) && phaseOf(o) !== b.phase) continue;
           const d = Math.max(1, Math.round(atk * comboMult(s.combo) * between(rng, CONFIG.damage.roll[0], CONFIG.damage.roll[1]) * (1 - effArmor(s, o, tier))));
           o.monster.hp = Math.max(0, o.monster.hp - d);
           if (o.monster.broken > 0) o.monster.broken -= 1;
@@ -1055,7 +1116,7 @@ export function resolveTurn(
   // Target died and nobody else is left: the fight ends before anyone acts.
   if (pack.every((x) => x.outcome === 'win')) {
     syncShared(b, pack);
-    return finish(s, b, { correct: ok, verdict, playerDamage, crit, newSpell, monsterDamage: 0, parried: false, element, log, outcome: 'win', readRight, kills, killer: null });
+    return finish(s, b, { correct: ok, verdict, playerDamage, crit, newSpell, monsterDamage: 0, parried: false, element, log, outcome: 'win', readRight, kills, killer: null, phase: phaseFx });
   }
 
   // --- 2. Every monster still standing acts.
@@ -1233,7 +1294,7 @@ export function resolveTurn(
   }
   syncShared(b, pack);
   const outcome: Battle['outcome'] = pack.every((x) => x.outcome === 'win') ? 'win' : s.hp <= 0 ? 'lose' : b.outcome;
-  return finish(s, b, { correct: ok, verdict, playerDamage, crit, newSpell, monsterDamage, parried, element, log, outcome, readRight, kills, killer });
+  return finish(s, b, { correct: ok, verdict, playerDamage, crit, newSpell, monsterDamage, parried, element, log, outcome, readRight, kills, killer, phase: phaseFx });
 }
 
 function finish(_s: GameState, b: Battle, r: TurnReport): TurnReport {
