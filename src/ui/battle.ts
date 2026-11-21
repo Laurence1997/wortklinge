@@ -1,6 +1,6 @@
 import type { Battle, Question, TurnReport } from '../core/combat';
 import { availableMoves, comboTier, effArmor, moveReady, needsPhase, phaseOf, resName, shownDe, stancesFor, teachPhase, readTarget, readRecall } from '../core/combat';
-import { shadowOk } from '../core/shadow';
+import { clarity, shadowOk } from '../core/shadow';
 import { has } from '../core/unlocks';
 import type { Stance } from '../core/cloze';
 import { ELEMENT_ZH } from '../core/intents';
@@ -15,7 +15,7 @@ import type { Controller } from '../game/controller';
 import { ARTICLE_COLOR, GLITCH } from '../game/sprites';
 import { $, bar, clear, h, umlautButtons } from './dom';
 import { logLine } from './gamelog';
-import { canListen, listenOnce, listening, stopListening } from './listen';
+import { canListen, lastConfidence, listenOnce, listening, stopHold, stopListening } from './listen';
 
 type Phase = 'choose' | 'answer' | 'result';
 
@@ -53,7 +53,25 @@ export class BattleUI {
   private renderedQ: Question | null = null;
   private phaseNag = false;
 
-  constructor(private ctrl: Controller) {}
+  constructor(private ctrl: Controller) {
+    // Push-to-talk: releasing S ends the recording.
+    window.addEventListener('keyup', (e) => {
+      if (e.key.toLowerCase() === 's' && listening()) stopHold();
+    });
+    window.addEventListener('pointerup', () => listening() && stopHold());
+  }
+
+  /** A hold-to-talk button: press starts recording, release (or leaving the button) stops it. */
+  private holdBtn(sel: string, attrs: Record<string, string | boolean>, start: () => void, ...kids: Array<HTMLElement | string>): HTMLElement {
+    const el = h(sel, attrs, ...kids);
+    el.addEventListener('pointerdown', (e) => {
+      if ((el as HTMLButtonElement).disabled || listening()) return;
+      e.preventDefault();
+      start();
+    });
+    for (const ev of ['pointerup', 'pointerleave', 'pointercancel']) el.addEventListener(ev, () => listening() && stopHold());
+    return el;
+  }
 
   get b(): Battle {
     return this.ctrl.battle!;
@@ -173,7 +191,7 @@ export class BattleUI {
     return h(
       'span.note.shadow',
       this.shadowReady() && !listening() && this.phase === 'result'
-        ? h('button.btn', { onclick: () => void this.shadow(), title: '跟读（S）：读得像多给经验，读不好不扣东西' }, h('kbd', 'S'), '跟读这句')
+        ? this.holdBtn('button.btn', { title: '跟读（按住 S 说，松开结束）：读得像多给经验，读不好不扣东西' }, () => void this.shadow(), h('kbd', 'S'), '按住跟读')
         : '',
       this.shadowMsg ? h('span', ` ${this.shadowMsg}`) : '',
     );
@@ -184,15 +202,16 @@ export class BattleUI {
     const from = this.phase;
     if (!this.shadowReady() || listening()) return;
     if (from === 'result') window.clearTimeout(this.autoTimer); // the player is reading: wait for Enter
-    this.shadowMsg = `在听……读出「${text}」`;
+    this.shadowMsg = `录音中……读出「${text}」，松开结束`;
     this.render();
-    const heard = await listenOnce();
+    const heard = await listenOnce({ hold: true });
     if (this.phase !== from || this.shadowText !== text) return;
     if (heard === null) this.shadowMsg = '';
     else if (!heard.length) this.shadowMsg = '没听清，可以再读一次（不扣任何东西）';
     else {
       const r = this.ctrl.shadowed(text, heard);
-      this.shadowMsg = r.ok ? `读得像！经验 +${r.xp}` : `听到的是「${heard[0]}」，差一点，可以再读一次`;
+      const c = clarity(text, heard, lastConfidence);
+      this.shadowMsg = r.ok ? `读得像！清晰度 ${c}${r.xp ? `，经验 +${r.xp}` : ''}` : `听到的是「${heard[0]}」，清晰度 ${c}，差一点，可以再读一次`;
     }
     this.render();
   }
@@ -211,17 +230,18 @@ export class BattleUI {
     }
     const b = this.b;
     const zh = b.word.zh;
-    this.readMsg = fresh ? `在听……读出「${target}」` : `在听……说出「${zh}」的德语${b.word.art ? '（带冠词）' : ''}`;
+    this.readMsg = (fresh ? `录音中……读出「${target}」` : `录音中……说出「${zh}」的德语${b.word.art ? '（带冠词）' : ''}`) + '，松开结束';
     this.render();
-    const heard = await listenOnce();
+    const heard = await listenOnce({ hold: true });
     if (this.phase !== 'choose' || this.b !== b) return;
     const retry = '：再说一次，或者正常出手（不耗回合）';
     if (heard === null) this.readMsg = '';
     else if (!heard.length) this.readMsg = `没听清${retry}`;
-    else if (!shadowOk(target, heard)) this.readMsg = `听到的是「${heard[0]}」${fresh ? '，差一点' : '，不太对'}${retry}`;
+    else if (!shadowOk(target, heard)) this.readMsg = `听到的是「${heard[0]}」，清晰度 ${clarity(target, heard, lastConfidence)}${retry}`;
     else {
       this.readMsg = '';
-      logLine(fresh ? `读音攻击：「${target}」读对了，必中` : `读音攻击：说对了「${target}」，算一次低语（弱一击）`, 'good');
+      const c = clarity(target, heard, lastConfidence);
+      logLine(fresh ? `读音攻击：「${target}」读对了，清晰度 ${c}，必中` : `读音攻击：说对了「${target}」，清晰度 ${c}，算一次低语（弱一击）`, 'good');
       this.choose(fresh ? 'attack' : 'whisper');
       const q = this.question;
       if ((this.phase as Phase) === 'answer' && q) this.submit(q.answer ?? '');
@@ -261,6 +281,7 @@ export class BattleUI {
       this.continue();
       return true;
     }
+    if (!typing && e.key.toLowerCase() === 's' && e.repeat && listening()) return true;
     if (!typing && e.key.toLowerCase() === 's' && this.phase === 'choose' && canListen() && (readTarget(this.ctrl.state, this.b) || readRecall(this.ctrl.state, this.b))) {
       void this.readAttack();
       return true;
@@ -462,11 +483,12 @@ export class BattleUI {
                 ? '新词可读出来攻击；答对后可跟读'
                 : '这场已经读过了';
       movesEl.append(
-        h(
+        this.holdBtn(
           'button.btn',
-          { disabled: !on, onclick: () => void (rt || rr ? this.readAttack() : this.shadow()), title: '读出来（S）：新词读得像就是必中的一击；见过的词凭记忆说出来算一次低语；答对后可以跟读整句多拿经验。读不好不扣任何东西' },
+          { disabled: !on, title: '读出来（按住 S 或按住按钮说，松开结束）：新词读得像就是必中的一击；见过的词凭记忆说出来算一次低语；答对后可以跟读整句多拿经验。读不好不扣任何东西' },
+          () => void (rt || rr ? this.readAttack() : this.shadow()),
           h('kbd', 'S'),
-          '读出来',
+          '按住读',
           h('small', sub),
         ),
       );
@@ -483,10 +505,11 @@ export class BattleUI {
         q.append(
           h(
             'div.note.shadow',
-            h('span.small', { style: 'color:var(--gold, #ffcf4a)' }, this.readMsg || `新词：${rt} · ${w.zh}　按 S（或点「读出来」）把它读出来，读得像就是必中的一击`),
+            h('span.small', { style: 'color:var(--gold, #ffcf4a)' }, this.readMsg || `新词：${rt} · ${w.zh}　按住 S（或按住「按住读」）把它读出来，松开结束，读得像就是必中的一击`),
             h('button.btn.small', { onclick: () => this.ctrl.speak(rt), title: '再听一遍' }, '再听'),
           ),
         );
+      else if (this.readMsg) q.append(h('div.note.shadow', h('span.small', { style: 'color:var(--gold, #ffcf4a)' }, this.readMsg)));
     } else if (this.question) {
       q.append(this.renderQuestion(this.question));
     }

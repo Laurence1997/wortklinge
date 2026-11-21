@@ -1306,3 +1306,12 @@ describe('先教后考 (teach the stance of a never-met noun)', () => {
     expect(b3.phase).toBe('der');
   });
 });
+
+describe('清晰度', () => {
+  it('is the heard share, weighted by confidence when given', async () => {
+    const { clarity } = await import('../src/core/shadow');
+    expect(clarity('der Tee', ['der Tee'])).toBe(100);
+    expect(clarity('der Tee', ['der Tee'], 0.5)).toBe(80);
+    expect(clarity('der Tee', ['Quatsch'])).toBe(0);
+  });
+});

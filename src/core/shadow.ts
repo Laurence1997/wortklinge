@@ -33,3 +33,10 @@ export function shadowScore(target: string, heard: string[]): number {
 export function shadowOk(target: string, heard: string[]): boolean {
   return shadowScore(target, heard) >= CONFIG.shadow.match;
 }
+
+/** 清晰度 0–100 for the player: how much of the target Chrome heard, weighted by its own confidence when it gives one.
+ *  Not a phoneme-level pronunciation grade (Chrome has none); it says how understandable it sounded. */
+export function clarity(target: string, heard: string[], confidence = 0): number {
+  const m = shadowScore(target, heard);
+  return Math.round(100 * m * (confidence > 0 ? 0.6 + 0.4 * confidence : 1));
+}
