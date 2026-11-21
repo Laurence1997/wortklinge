@@ -1,5 +1,6 @@
 import type { Battle, Question, TurnReport } from '../core/combat';
-import { availableMoves, comboTier, effArmor, moveReady, needsPhase, phaseOf, resName, shownDe, stancesFor, teachPhase } from '../core/combat';
+import { availableMoves, comboTier, effArmor, moveReady, needsPhase, phaseOf, resName, shownDe, stancesFor, teachPhase, readTarget } from '../core/combat';
+import { shadowOk } from '../core/shadow';
 import type { Stance } from '../core/cloze';
 import { ELEMENT_ZH } from '../core/intents';
 import { STAGE_ZH } from '../core/srs';
@@ -46,6 +47,7 @@ export class BattleUI {
   private voicedFull = '';
   /** 跟读: the German sentence just read aloud after a right answer, and the last attempt's feedback. */
   private shadowText = '';
+  private readMsg = '';
   private shadowMsg = '';
   private renderedQ: Question | null = null;
   private phaseNag = false;
@@ -79,7 +81,10 @@ export class BattleUI {
     teachPhase(this.b);
     const moves = this.moves().filter((m) => moveReady(this.ctrl.state, this.b, m));
     // 词性三相: a noun monster waits for a stance first (it stays picked for this monster).
-    if (moves.length === 1 && !(needsPhase(this.b) && !this.b.phase)) this.choose(moves[0]);
+    this.readMsg = '';
+    const rt = canListen() ? readTarget(this.ctrl.state, this.b) : null;
+    if (rt) window.setTimeout(() => this.ctrl.speak(rt), 1800);
+    if (moves.length === 1 && !rt && !(needsPhase(this.b) && !this.b.phase)) this.choose(moves[0]);
     else {
       this.phase = 'choose';
       this.question = null;
@@ -164,7 +169,7 @@ export class BattleUI {
 
   private shadowRow(): HTMLElement | string {
     // Before the first right answer of a fight there is nothing to read yet: say where 跟读 will appear.
-    if (!this.shadowText && !this.shadowMsg && this.phase === 'choose' && canListen() && this.ctrl.canShadow())
+    if (!this.shadowText && !this.shadowMsg && this.phase === 'choose' && canListen() && this.ctrl.canShadow() && !readTarget(this.ctrl.state, this.b))
       return h('span.note.shadow.small.muted', '🎤 答对后可以跟读（按 T 或点 🎤）');
     if (!this.shadowText || !canListen() || (!this.ctrl.canShadow() && !this.shadowMsg)) return '';
     return h(
@@ -190,6 +195,35 @@ export class BattleUI {
     else {
       const r = this.ctrl.shadowed(text, heard);
       this.shadowMsg = r.ok ? `读得像！经验 +${r.xp}` : `听到的是「${heard[0]}」，差一点，可以再读一次`;
+    }
+    this.render();
+  }
+
+  /** 读音攻击: read a never-met word aloud. Heard close enough → the turn's attack lands as a right answer;
+   *  otherwise nothing is spent (read again or attack normally). */
+  async readAttack(): Promise<void> {
+    const target = readTarget(this.ctrl.state, this.b);
+    if (!target || this.phase !== 'choose' || listening() || !canListen() || !moveReady(this.ctrl.state, this.b, 'attack')) return;
+    if (needsPhase(this.b) && !this.b.phase) {
+      this.phaseNag = true;
+      this.render();
+      return;
+    }
+    const b = this.b;
+    this.readMsg = `在听……读出「${target}」`;
+    this.render();
+    const heard = await listenOnce();
+    if (this.phase !== 'choose' || this.b !== b) return;
+    if (heard === null) this.readMsg = '';
+    else if (!heard.length) this.readMsg = '没听清，可以再读一次，或者按 A 普通攻击（不耗回合）';
+    else if (!shadowOk(target, heard)) this.readMsg = `听到的是「${heard[0]}」，差一点：再读一次，或者按 A 普通攻击（不耗回合）`;
+    else {
+      this.readMsg = '';
+      logLine(`读音攻击：「${target}」读对了，必中`, 'good');
+      this.choose('attack');
+      const q = this.question;
+      if ((this.phase as Phase) === 'answer' && q) this.submit(q.answer ?? '');
+      return;
     }
     this.render();
   }
@@ -223,6 +257,10 @@ export class BattleUI {
     if (this.phase === 'result' && (e.key === 'Enter' || e.key === ' ')) {
       e.preventDefault();
       this.continue();
+      return true;
+    }
+    if (!typing && e.key.toLowerCase() === 't' && this.phase === 'choose' && canListen() && readTarget(this.ctrl.state, this.b)) {
+      void this.readAttack();
       return true;
     }
     if (!typing && e.key.toLowerCase() === 't' && this.shadowReady()) {
@@ -410,6 +448,18 @@ export class BattleUI {
       q.append(
         h('div.prompt', h('span', needsPhase(b) && !b.phase ? (s.level >= 7 ? '先选相：按数字键选它这句话需要的冠词，再出手' : '先选相：按 1 der、2 die、3 das，再出手') : '听它说什么，再出手')),
       );
+      const rt = canListen() ? readTarget(s, b) : null;
+      if (rt)
+        q.append(
+          h(
+            'div.note.shadow',
+            listening()
+              ? ''
+              : h('button.btn', { onclick: () => void this.readAttack(), title: '读音攻击（T）：读得像就是必中的一击；没读对不耗回合' }, `🎤 读出来攻击：${rt}`),
+            h('span.small', { style: 'color:var(--gold, #ffcf4a)' }, this.readMsg ? `  ${this.readMsg}` : `  新词：${rt} · ${w.zh}（T）`),
+            h('button.btn', { onclick: () => this.ctrl.speak(rt), title: '再听一遍' }, '🔊'),
+          ),
+        );
     } else if (this.question) {
       q.append(this.renderQuestion(this.question));
     }

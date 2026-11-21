@@ -430,6 +430,14 @@ export function teachPhase(b: Battle): boolean {
   return true;
 }
 
+/** 读音攻击 (0.5, Lv5+ with 跟读): a never-met word, before its first right answer, may be read aloud as a sure hit.
+ *  Returns what to read (nouns with their article), or null when not offered. */
+export function readTarget(s: GameState, b: Battle): string | null {
+  if (!has(s.level, 'shadowing') || b.kind !== 'new' || b.stage !== 0 || b.firstCorrectDone || b.step !== 0) return null;
+  if (b.tutorial || b.pluralMon || b.phrase || b.trial) return null;
+  return b.word.art ? fullForm(b.word) : b.word.de;
+}
+
 /** What the monster card may show: its plural crowd name or the word, never the article. */
 export function shownDe(b: Battle): string {
   return b.pluralMon ? b.word.pl! : b.word.de;
