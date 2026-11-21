@@ -1,8 +1,32 @@
 // 跟读 (0.5): compare what Chrome's speech recognition heard with the sentence the monster said.
 import { CONFIG } from './config';
 
+const ONES = ['null', 'eins', 'zwei', 'drei', 'vier', 'fünf', 'sechs', 'sieben', 'acht', 'neun', 'zehn', 'elf', 'zwölf', 'dreizehn', 'vierzehn', 'fünfzehn', 'sechzehn', 'siebzehn', 'achtzehn', 'neunzehn'];
+const TENS = ['', '', 'zwanzig', 'dreißig', 'vierzig', 'fünfzig', 'sechzig', 'siebzig', 'achtzig', 'neunzig'];
+
+/** Chrome writes numbers as digits ("40"); the game's words are spelled out ("vierzig"). */
+export function numberDe(n: number): string {
+  if (n < 20) return ONES[n];
+  if (n < 100) {
+    const o = n % 10;
+    return (o ? (o === 1 ? 'ein' : ONES[o]) + 'und' : '') + TENS[Math.floor(n / 10)];
+  }
+  if (n < 1000) {
+    const h = Math.floor(n / 100);
+    const r = n % 100;
+    return (h === 1 ? 'ein' : ONES[h]) + 'hundert' + (r ? numberDe(r) : '');
+  }
+  if (n < 1000000) {
+    const k = Math.floor(n / 1000);
+    const r = n % 1000;
+    return (k === 1 ? 'ein' : numberDe(k)) + 'tausend' + (r ? numberDe(r) : '');
+  }
+  return String(n);
+}
+
 function words(t: string): string[] {
   return t
+    .replace(/\d+/g, (d) => ` ${numberDe(Number(d))} `)
     .toLowerCase()
     .replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss')
     .replace(/[^a-z0-9 ]+/g, ' ')

@@ -1316,3 +1316,14 @@ describe('清晰度', () => {
     expect(clarity('das Brot', ['das Brote'])).toBeGreaterThan(85);
   });
 });
+
+describe('跟读 numbers', () => {
+  it('reads digits as German number words', async () => {
+    const { numberDe, shadowOk } = await import('../src/core/shadow');
+    expect(numberDe(40)).toBe('vierzig');
+    expect(numberDe(21)).toBe('einundzwanzig');
+    expect(numberDe(1999)).toBe('eintausendneunhundertneunundneunzig');
+    expect(shadowOk('vierzig', ['40'])).toBe(true);
+    expect(shadowOk('Ich bin 21 Jahre alt.', ['ich bin einundzwanzig Jahre alt'])).toBe(true);
+  });
+});
