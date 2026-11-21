@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { gradeMoechte, gradeTyped, normalize } from '../src/core/grading';
 import { fullForm, WORD_BY_ID, WORDS } from '../src/data/words';
-import { newGame, addXp, migrate, attack, gearTier, addGearKill } from '../src/core/state';
+import { newGame, addXp, migrate, attack, gearTier, addGearKill, affinityOf } from '../src/core/state';
 import { applyWin } from '../src/core/outcomes';
 import { recordKill, kindOf, stageOf } from '../src/core/srs';
 import { CONFIG, monsterHpAt, xpToNext } from '../src/core/config';
@@ -829,6 +829,30 @@ describe('0.4 战斗修正版', () => {
     expect(effArmor(s, b, 0)).toBeCloseTo(8 / 9);
     b.monster.lvl = 12;
     expect(effArmor(s, b, 0)).toBeCloseTo(0.125 / 1.125);
+  });
+  it('相亲和: matching gender + right stance 10%/tier, others 0, plain amulet 4%/tier; plural counts as die', () => {
+    const s = lvl15();
+    s.gearKills = { '2': 40 * 16 }; // tier 4
+    const w = WORDS.find((x) => x.lvl <= 15 && x.art === 'der')!;
+    const b = startBattle(s, w, makeRng(1));
+    b.monster.lvl = 17;
+    b.intent = { ...b.intent, caseArt: undefined };
+    b.phase = 'der';
+    const plain = effArmor(s, b, 0);
+    expect(plain).toBeCloseTo((4 * 0.84) / (1 + 4 * 0.84));
+    s.flags.affinity = 'der';
+    expect(effArmor(s, b, 0)).toBeCloseTo((4 * 0.6) / (1 + 4 * 0.6));
+    b.phase = 'die'; // wrong stance: no resonance
+    expect(effArmor(s, b, 0)).toBeCloseTo(4 / 5);
+    b.phase = 'der';
+    s.flags.affinity = 'das';
+    expect(effArmor(s, b, 0)).toBeCloseTo(4 / 5);
+    b.pluralMon = true;
+    b.phase = 'die';
+    s.flags.affinity = 'die';
+    expect(effArmor(s, b, 0)).toBeCloseTo((4 * 0.6) / (1 + 4 * 0.6));
+    s.level = 8; // locked below Lv9: plain amulet
+    expect(affinityOf(s)).toBeNull();
   });
   it('gear tiers come from shards: tier n at 40 × n², damage +18% per tier', () => {
     const s = lvl15();

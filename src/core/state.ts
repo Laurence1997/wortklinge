@@ -2,6 +2,7 @@ import type { Look } from './look';
 import { CONFIG, monsterHpAt, playerBaseHp, XP_CURVE, xpToNext } from './config';
 import { hpBonus, type ClassId } from './classes';
 import type { Item, Slot, WordProgress } from './types';
+import { UNLOCK } from './unlocks';
 
 export interface DayLog {
   minutes: number;
@@ -171,9 +172,20 @@ export function nextTierKills(s: Pick<GameState, 'gearKills' | 'region'>): numbe
   return t >= CONFIG.gear.tiers ? null : CONFIG.gear.shardsPerTierSq * (t + 1) ** 2;
 }
 
-/** Armor penetration from gear. */
-export function gearPen(s: Pick<GameState, 'gearKills' | 'region'>): number {
-  return CONFIG.gear.pen * gearTier(s);
+export type Affinity = 'der' | 'die' | 'das';
+
+/** 相亲和 (0.6, Lv9): the amulet's affinity, switched freely at a bonfire; none = a plain amulet. */
+export function affinityOf(s: Pick<GameState, 'flags' | 'level'>): Affinity | null {
+  const a = s.flags?.affinity;
+  return s.level >= UNLOCK.affinity && (a === 'der' || a === 'die' || a === 'das') ? a : null;
+}
+
+/** Armor penetration from gear: a plain amulet 4% per tier on every monster; an attuned one 10% per tier on a monster
+ *  whose name matches it (plural counts as die) while you stand in its right stance, 0% on the rest. */
+export function gearPen(s: Pick<GameState, 'gearKills' | 'region' | 'flags' | 'level'>, match = false): number {
+  const aff = affinityOf(s);
+  if (!aff) return CONFIG.gear.pen * gearTier(s);
+  return match ? CONFIG.gear.affinityPen * gearTier(s) : 0;
 }
 
 /** A kill drops gear shards (1, or 2 for a due review) for the monster's region, and rarely the next tier whole. Returns the new tier when it went up. */

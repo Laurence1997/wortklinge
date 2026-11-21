@@ -21,7 +21,7 @@ if (process.env.COMBO) for (const c of CONFIG.combo) c.dmg *= +process.env.COMBO
 if (process.env.INS) CONFIG.tech.inscribeMult = +process.env.INS;
 if (process.env.GEAR) CONFIG.gear.dmg = +process.env.GEAR;
 if (process.env.ARM) CONFIG.armor.base = +process.env.ARM;
-const rng = makeRng(11);
+let rng = makeRng(11);
 
 type T = 'grind' | 'balance' | 'learn';
 // pa = chance the first stance on a monster is right (词性三相, 0.5). PHASE=0: no stance picked (counts as wrong).
@@ -40,12 +40,16 @@ const DEATH = 60;
 let CLS: Record<T, 'writer' | 'guardian' | null> = { grind: null, balance: null, learn: null };
 if (process.env.CLASSES) CLS = { grind: 'guardian', balance: 'writer', learn: 'writer' };
 let cur: T = 'balance';
+// 0.6 相亲和: AFF=der|die|das sets the amulet's affinity; GENDER=der|die|das keeps the field to one gender.
+let AFF: string | undefined = process.env.AFF;
+let GENDER: string | undefined = process.env.GENDER;
 function player(L: number, G: number): GameState {
   const s = newGame('S', 'student', Date.now());
   s.level = L;
   if (L > 10) s.cls = CLS[cur];
   s.region = L > 10 ? 2 : 1;
   s.gearKills = { [String(s.region)]: CONFIG.gear.shardsPerTierSq * G * G };
+  if (AFF) s.flags.affinity = AFF;
   s.equipped.dict = makeItem(rng, L, 'green', 'dict'); // 1 hint a fight (低语 without a class)
   for (const w of WORDS.filter((x) => x.lvl <= L)) s.words[w.id] = { stage: 1, due: 9e15, firstSeen: 0, lastSeen: 0, relapse: 0, correct: 1, wrong: 0 };
   return s;
@@ -56,7 +60,7 @@ function fight(t: T, s: GameState, m: number, keepHp = false) {
   const P = TYPES[t];
   if (!keepHp) s.hp = maxHp(s);
   s.combo = 0;
-  const pool = WORDS.filter((w) => Math.abs(w.lvl - m) <= 2 && w.family !== 'truhe' && w.pos !== 'phr');
+  const pool = WORDS.filter((w) => Math.abs(w.lvl - m) <= 2 && w.family !== 'truhe' && w.pos !== 'phr' && (!GENDER || w.art === GENDER));
   const w = pool[Math.floor(rng() * pool.length)];
   // Half the field is new words, half words you have met.
   const known = rng() < 0.5;
@@ -276,6 +280,20 @@ if (process.env.MAP) {
   console.log(`${nodes ? '0.5 scene map' : '0.4 map baseline'} (REST ${REST * 100}% HP, ${HOUR / 3600} h per row)`);
   const LVS = process.env.LVS ? process.env.LVS.split(',').map(Number) : [2, 4, 6, 8, 12, 15, 18];
   for (const L of LVS) for (const t of ['grind', 'balance', 'learn'] as T[]) console.log(nodes ? runNodes(t, L) : run(t, L));
+  process.exit(0);
+}
+
+if (process.env.AFFCMP) {
+  // Same field, questions per kill: plain amulet vs each affinity (mixed field), then one-gender fields matched vs not.
+  for (const L of [9, 12, 15, 18]) {
+    const G = gearAt(L);
+    const m = L + 1;
+    const q = (aff?: string, g?: string) => { AFF = aff; GENDER = g; rng = makeRng(7); return cell('balance', L, G, m).q; };
+    const plain = q();
+    const mixed = ['der', 'die', 'das'].map((a) => `${a} ${(q(a) - plain).toFixed(2)}`).join(' ');
+    const one = ['der', 'die', 'das'].map((g) => { const p = q(undefined, g); const r = q(g, g); const w = q(g === 'der' ? 'das' : 'der', g); return `${g}: plain ${p.toFixed(2)} right ${(r - p).toFixed(2)} wrong ${(w - p).toFixed(2)}`; }).join(' | ');
+    console.log(`L${L} G${G} vs Lv${m} plain ${plain.toFixed(2)} q/kill · mixed field Δ ${mixed}\n    ${one}`);
+  }
   process.exit(0);
 }
 

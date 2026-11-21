@@ -1,7 +1,7 @@
 import { CONFIG, xpToNext } from '../core/config';
 import { AFFIX_ZH, itemScore, mainStatText, QUALITY_ZH, requiredLevel, SLOT_ZH } from '../core/loot';
 import { kindOf, progressSummary, stageOf, STAGE_ZH } from '../core/srs';
-import { attack, critChance, dayKey, hintsPerFight, maxHp, now } from '../core/state';
+import { affinityOf, attack, critChance, dayKey, hintsPerFight, maxHp, now } from '../core/state';
 import type { AffixKey, Item, Slot, Word } from '../core/types';
 import { has, UNLOCK } from '../core/unlocks';
 import { FAMILIES } from '../data/families';
@@ -137,6 +137,16 @@ export class Panels {
     const s = this.ctrl.state;
     const left = h('div');
     if (this.ctrl.nearBonfire()) left.append(h('h3', '外观（篝火旁免费改）'), lookPicker(s.look, (l) => this.ctrl.setLook(l)).el);
+    if (s.level >= UNLOCK.affinity) {
+      const aff = affinityOf(s);
+      left.append(h('h3', '护符亲和'), h('p.muted', `现在：${aff ?? '无（普通护符，所有怪破甲每档 4%）'}。${aff ? `${aff} 的怪、选对相时破甲每档 10%，其他怪不破。` : ''}`));
+      if (this.ctrl.nearBonfire()) {
+        const row = h('div.row');
+        for (const a of ['der', 'die', 'das', null] as const)
+          row.append(h(`button.btn${aff === a ? '' : '.ghost'}`, { onclick: () => (this.ctrl.setAffinity(a), this.render()) }, a ?? '无'));
+        left.append(row);
+      } else left.append(h('p.muted', '到篝火旁可以免费换。'));
+    }
     const stats: Array<[string, string]> = [
       ['等级', `${s.level}（经验 ${s.xp} / ${xpToNext(s.level)}）`],
       ['生命', `${s.hp} / ${maxHp(s)}`],

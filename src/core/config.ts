@@ -100,7 +100,7 @@ export const CONFIG = {
 
   /** 0.4 装备档位: 8 tiers per region; tier n needs 40 × n² shards, 1 shard per kill, and a small chance to drop
    *  the next tier whole. */
-  gear: { tiers: 8, shardsPerTierSq: 40, wholeChance: 0.02, dmg: 0.18, hp: 0.08, pen: 0.04 },
+  gear: { tiers: 8, shardsPerTierSq: 40, wholeChance: 0.02, dmg: 0.18, hp: 0.08, pen: 0.04, affinityPen: 0.1 },
 
   /** 0.4 技能改的是下一题: 铭刻 raises the next question one step (×1.5 on a hit), 低语 gives the first letter
    *  (×0.5, costs class resource or a dictionary hint), 齐鸣 lets one answer hit the whole pack. Cooldowns in turns

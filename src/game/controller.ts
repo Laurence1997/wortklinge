@@ -19,6 +19,8 @@ import { pickSpawns, zoneMinLevel, zoneWords } from '../core/spawn';
 import {
   addXp,
   gearTier,
+  affinityOf,
+  type Affinity,
   clearSave,
   dayKey,
   exportJson,
@@ -191,6 +193,13 @@ export class Controller {
     const b = this.scene?.map?.bonfire;
     const p = this.scene?.player;
     return !!b && !!p && Math.hypot(b.x * 16 + 8 - p.x, b.y * 16 + 8 - p.y) < 40;
+  }
+
+  /** 相亲和: switch the amulet's affinity (free, at a bonfire). */
+  setAffinity(a: Affinity | null): void {
+    if (a) this.state.flags.affinity = a;
+    else delete this.state.flags.affinity;
+    this.persist();
   }
 
   setLook(look: Look): void {
@@ -610,7 +619,7 @@ export class Controller {
         if (res.bagFull) toast('背包满了，没捡起来（C 整理）');
         if (res.gearUp) {
           sfx.loot();
-          toast(`装备升到第 ${res.gearUp} 档：伤害 +${Math.round(CONFIG.gear.dmg * 100 * res.gearUp)}%，破甲 ${Math.round(CONFIG.gear.pen * 100 * res.gearUp)}%`, 'gold');
+          toast(`装备升到第 ${res.gearUp} 档：伤害 +${Math.round(CONFIG.gear.dmg * 100 * res.gearUp)}%，破甲 ${affinityOf(s) ? `对上亲和 ${Math.round(CONFIG.gear.affinityPen * 100 * res.gearUp)}%` : `${Math.round(CONFIG.gear.pen * 100 * res.gearUp)}%`}`, 'gold');
         }
         if (res.chest) this.gotChest(res.chest, b.monster.lvl);
         if (b.word.family === 'krume') this.questFire('krumeKill');
