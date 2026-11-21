@@ -110,7 +110,7 @@ export function newGame(name: string, origin: string, t = Date.now()): GameState
     equipped: {},
     bag: [],
     echo: null,
-    flags: {},
+    flags: { seen05: true },
     xpCurve: XP_CURVE,
     skills: [],
     skillUses: {},

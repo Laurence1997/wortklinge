@@ -36,6 +36,16 @@
 
 ![战斗](docs/battle.png)
 
+### 0.5：新内容
+
+- **词性三相。** 出手前选 der / die / das 相，选对打中弱点；7 级起要按怪那句话里缺的位置选变格后的冠词（den、einen……），15 级起加第三格。
+- **句子怪「残句」。** 金色名牌，三步打散：接下半句、选意思、写整句，掉短句卡。
+- **跟读。** 5 级起答对后可以跟着读那句德语（只支持电脑版 Chrome 的语音识别），读得像多给经验。
+- **大地图和小世界。** 一站一站点着走，每个区域有一条读懂路牌才出现的隐藏支线；按 M 打开大地图。
+- **开局 60 分钟。** 装备、铭刻和低语、终结技提前到 3、4、5 级，每个新系统一场教学战；成就和剧情纸条。
+
+只支持电脑版 Chrome。
+
 ### 0.3：已经能玩的内容
 
 第 1 区「余烬营地」，1–10 级，202 个 Goethe A1 词（问候、自我介绍、数字、家人、营地物品）：
@@ -117,6 +127,10 @@ A browser game that teaches German to Chinese-speaking learners. It isn't flashc
 - **Articles are elements.** In `Ich möchte einen / eine / ein …` sentence attacks, the noun's gender sets the element: masculine = ice, feminine = fire, neuter = poison.
 - **Souls-like bonfires.** Resting respawns the words that are due. Dying never costs learning progress, but your gold and XP stay on the word that killed you until you win them back.
 - **Bosses are real conversations.** The first boss, *The Nameless Neighbour*, asks who you are and where you're from, on a timer, in randomised phrasings. Answer in full German sentences.
+
+### Version 0.5
+
+Stances (pick der / die / das before you strike; from level 7 the declined article the monster's line is missing), sentence monsters that drop phrase cards, optional read-along with Chrome speech recognition, a point-and-click scene map with hidden side routes, and a reworked first hour (gear, skills and the finisher open at levels 3, 4 and 5, each with a teaching fight). Desktop Chrome only.
 
 ### Version 0.3
 

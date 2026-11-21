@@ -1268,3 +1268,17 @@ describe('0.5 开局节奏表: unlocks moved earlier', async () => {
     expect(resMax(s)).toBe(5);
   });
 });
+
+describe('0.5 存档: old saves keep their level and get the new defaults', () => {
+  it('a v3 Lv4 save keeps Lv4 and its XP, has 言灵, and is flagged for the one-time 0.5 note', async () => {
+    const { resMax } = await import('../src/core/classes');
+    const old = newGame('Alt', 'student', T0) as any;
+    old.level = 4; old.xp = 100; old.version = 3; old.flags = { intro: true };
+    const s = migrate(JSON.parse(JSON.stringify(old)))!;
+    expect(s.level).toBe(4);
+    expect(s.xp).toBe(100);
+    expect(resMax(s)).toBe(5);
+    expect(s.flags.seen05).toBeUndefined();
+    expect(newGame('N', 'student', T0).flags.seen05).toBe(true);
+  });
+});
