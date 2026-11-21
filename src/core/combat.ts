@@ -160,6 +160,8 @@ export interface Battle {
   pluralDue: boolean;
   /** Rewards already paid (packs settle each kill at once). */
   settled?: boolean;
+  /** 教学战: this fight started with a full 言灵 bar to try 终结技. */
+  teachFin?: boolean;
   /** 跟读 paid out in this fight (once per fight). */
   shadowed?: boolean;
   hintsLeft: number;

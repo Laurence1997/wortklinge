@@ -19,6 +19,8 @@ import { gradeTyped } from '../core/grading';
 import { recordAnswer } from '../core/srs';
 import { cloud, leaderboard, mustChangePassword, push, setNickname, signOut } from '../net/cloud';
 import { loginView } from './account';
+import { toast } from './feedback';
+import { ACHIEVEMENTS, NOTES } from '../data/achievements';
 import { lookPicker } from './title';
 import { BARGAIN_LINES, ensureShop, price, refreshCost, sellPrice, SLOT_NOUN } from '../core/shop';
 
@@ -534,6 +536,11 @@ export class Panels {
     wrap.append(
       h('p.small.muted', `共 ${WORDS.length} 个词：无名 ${p.new} · 裂形 ${p.cracked} · 半名 ${p.half} · 归名 ${p.guiming}。今天到期 ${p.due} 个。打熟了，它们才会变回原样。`),
     );
+    // 成就 and 纸条 (0.5).
+    const ach = h('div.small', h('b', '成就 '), ...ACHIEVEMENTS.map((a) => h('span', { title: a.how, style: s.flags[`ach_${a.id}`] ? 'color:var(--gold, #ffcf4a)' : 'opacity:.45' }, ` ${s.flags[`ach_${a.id}`] ? '★' : '☆'} ${a.zh}${s.flags[`ach_${a.id}`] ? a.title : ''}（${a.how}）`)));
+    wrap.append(ach);
+    const notes = NOTES.filter((n) => s.flags[`note_${n.id}`]);
+    if (notes.length) wrap.append(h('div.small', h('b', '纸条 '), ...notes.map((n) => h('p.small', `【${n.zh}】${n.text}`))));
     const filters = h('div.tabs');
     const fams = [['all', '全部'], ...Object.values(FAMILIES).map((f) => [f.id, f.zh])];
     for (const [id, zh] of fams)
@@ -694,6 +701,15 @@ export class Panels {
     }
     if (!days.length) table.append(h('tr', h('td', { colspan: 7 }, '还没有记录。')));
     wrap.append(table);
+    // 开局计时 (0.5): the active-play minute each thing first happened, for the 60-minute rhythm check.
+    const ms = Object.entries(s.flags).filter(([k]) => k.startsWith('ms_')).sort((a, b) => Number(a[1]) - Number(b[1]));
+    if (ms.length) {
+      const MS: Record<string, string> = { lv: '升到', q_: '题型：', mv_: '招式：', m_: '遇到：', z_: '第一次在这片打怪：', gear: '装备升到第', drop: '第一次掉装备', card: '第一张短句卡', guiming: '第一次归名', duel: '第一次默写对决', bonfire: '第一次篝火休息', shadow: '第一次跟读成功' };
+      const label = (k: string) => { const key = k.slice(3); const p = Object.keys(MS).find((x) => key.startsWith(x)); return p ? `${MS[p]}${key.slice(p.length)}` : key; };
+      const lines = ms.map(([k, v]) => `${String(v).padStart(5)} 分  ${label(k)}`);
+      wrap.append(h('h3', `开局计时（累计游玩 ${Math.round(((s.flags.playSec as number) ?? 0) / 60)} 分钟）`), h('pre.small', lines.join('\n')));
+      wrap.append(h('button.btn', { onclick: () => void navigator.clipboard?.writeText(lines.join('\n')).then(() => toast('已复制')).catch(() => undefined) }, '复制开局计时'));
+    }
     const file = h('input', { type: 'file', accept: '.json,application/json', hidden: true }) as HTMLInputElement;
     file.onchange = async () => {
       const f = file.files?.[0];

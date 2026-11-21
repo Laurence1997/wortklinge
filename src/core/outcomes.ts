@@ -78,7 +78,9 @@ export function applyWin(s: GameState, b: Battle, rng: Rng, opts: { heal?: boole
   if (kill.guiming) log.guiming += 1;
   log.kills += 1;
   s.stats.kills += 1;
-  const gearUp = b.tutorial === 'loss' ? null : addGearKill(s, b.phrase ? s.region ?? 1 : w.region ?? 1, rng(), b.kind === 'due' ? 1 + CONFIG.xp.dueShards : 1);
+  // 碎片 count from Lv1, but a tier-up is only announced once gear opens (Lv3, 节奏表).
+  const gearUpRaw = b.tutorial === 'loss' ? null : addGearKill(s, b.phrase ? s.region ?? 1 : w.region ?? 1, rng(), b.kind === 'due' ? 1 + CONFIG.xp.dueShards : 1);
+  const gearUp = has(s.level, 'gear') ? gearUpRaw : null;
 
   // Drops: 20% from small monsters once gear is unlocked; the first one is a guaranteed green (Lv5 lesson).
   let drop: Item | null = null;

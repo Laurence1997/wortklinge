@@ -101,12 +101,12 @@ describe('归名 (spaced repetition)', () => {
 
 describe('levels', () => {
   it('follows the design curve and stops at the version cap', () => {
-    // 0.3 提速: Lv1–5 ×0.7, Lv6–10 ×0.4, Lv11+ unchanged.
-    expect(xpToNext(1)).toBe(117);
+    // 0.5 开局节奏表: Lv1–5 minutes [67, 49, 40, 38, 60] ×0.7; Lv6–10 ×0.4, Lv11+ unchanged.
+    expect(xpToNext(1)).toBe(782);
     expect(xpToNext(5)).toBe(700);
     expect(xpToNext(10)).toBeGreaterThan(950);
     expect(xpToNext(11)).toBeGreaterThan(2400);
-    expect(xpToNext(1, 1)).toBe(167);
+    expect(xpToNext(1, 1)).toBe(1117);
     const s = newGame('T', 'student', T0);
     addXp(s, 1_000_000);
     expect(s.level).toBe(CONFIG.levelCap);
@@ -1254,5 +1254,17 @@ describe('0.5 小世界: scene data', async () => {
     for (const s of SCENES) expect(routeTo(s.region === 1 ? 'r1-camp' : 'r2-feuer', s.id), s.id).not.toBeNull();
     for (const r of [1, 2]) expect(SCENES.some((s) => s.region === r && s.hiddenBy)).toBe(true);
     expect(routeTo('r1-camp', 'r1-door')!.length).toBe(5);
+  });
+});
+
+describe('0.5 开局节奏表: unlocks moved earlier', async () => {
+  const { resMax } = await import('../src/core/classes');
+  it('gear 3, 铭刻/低语 4, 终结技 5; 言灵 fills from Lv4', () => {
+    expect([UNLOCK.gear, UNLOCK.inscribe, UNLOCK.whisper, UNLOCK.sentence]).toEqual([3, 4, 4, 5]);
+    const s = newGame('T', 'student');
+    s.level = 3;
+    expect(resMax(s)).toBe(0);
+    s.level = 4;
+    expect(resMax(s)).toBe(5);
   });
 });

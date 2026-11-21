@@ -430,12 +430,14 @@ export class BattleUI {
               ? '  复数一律 die'
               : s.level >= 7
                 ? b.intent.caseArt ? '  按它这句话里缺的位置选冠词（会变格）' : '  这句没有它的名字：按名字选 der/die/das'
-                : s.level <= 5 ? '  选对护甲降一档；6 级前选错不罚' : '  选对护甲降一档、回资源；选错护甲翻倍',
+                : s.level <= 5 ? (s.level >= 4 ? '  选对护甲降一档、回言灵；6 级前选错不罚' : '  选对护甲降一档；6 级前选错不罚') : '  选对护甲降一档、回资源；选错护甲翻倍',
         ),
       );
     }
 
-    clear(el).append(h('div.b-top', monEl, intent, me), stance, movesEl, q, blog);
+    // 教学战 (0.5 节奏表): the first fight after a new move opens points at it.
+    const teach = this.phase === 'choose' && s.flags.teachSkills && !b.tutorial ? h('div.small', { style: 'color:var(--gold, #ffcf4a)' }, '新招：试试 Q 铭刻（下一题难一级，伤害 ×1.5）或 W 低语（给首字母）') : this.phase === 'choose' && b.teachFin ? h('div.small', { style: 'color:var(--gold, #ffcf4a)' }, '言灵已满：按 F 放终结技，看中文写整句') : '';
+    clear(el).append(h('div.b-top', monEl, intent, me), stance, teach, movesEl, q, blog);
     blog.scrollTop = blog.scrollHeight;
     if (this.input && this.phase === 'answer') window.setTimeout(() => this.input?.focus(), 0);
   }

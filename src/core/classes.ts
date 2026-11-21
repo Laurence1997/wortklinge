@@ -126,8 +126,8 @@ export function respec(s: GameState): boolean {
 }
 
 export function resMax(s: GameState): number {
-  // Before a class: 言灵, 5 at most, from Lv5 (终结技 spends it).
-  if (!s.cls) return s.level >= 5 ? 5 : 0;
+  // Before a class: 言灵, 5 at most, from Lv4 (铭刻 misses cost it; 终结技 spends it from Lv5).
+  if (!s.cls) return s.level >= 4 ? 5 : 0;
   return CLASSES[s.cls].resMax + (s.cls === 'writer' ? rank(s, 'zhanmo') : 0);
 }
 

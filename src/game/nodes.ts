@@ -162,6 +162,7 @@ export class NodeNav {
     // Fields left half-empty while you stood in them refill now that you have moved.
     for (const z of new Set(scenesOf(this.w.map.region).map((x) => x.zone).filter(Boolean))) this.w.fillZone(z as ZoneId);
     this.draw();
+    if (this.here.id === 'r1-x') this.w.ctrl.sawNeighbour();
   }
 
   // ---- drawing ------------------------------------------------------------------------------------

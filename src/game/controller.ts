@@ -10,7 +10,7 @@ import { favour, FAVOUR, KONRAD_WORDS, QUESTS, questEvent, questState, startQues
 import { CHEST_ZH, CHESTS, lockWord, openChest, type ChestKind } from '../core/chest';
 import { gradeTyped } from '../core/grading';
 import { buy as buyItem, openShop, refresh as refreshShop, sell as sellItem } from '../core/shop';
-import { CLASSES, respec, respecCost, spent, TALENT_FROM_LEVEL, type ClassId } from '../core/classes';
+import { CLASSES, resMax, respec, respecCost, spent, TALENT_FROM_LEVEL, type ClassId } from '../core/classes';
 import { makeItem } from '../core/loot';
 import { applyLoss, applyWin, postFightHeal } from '../core/outcomes';
 import { defaultRng, type Rng } from '../core/rng';
@@ -18,6 +18,7 @@ import { atLeastHalfShare, flushSkill, instantGuiming, kindOf, recordAnswer, sta
 import { pickSpawns, zoneMinLevel, zoneWords } from '../core/spawn';
 import {
   addXp,
+  gearTier,
   clearSave,
   dayKey,
   exportJson,
@@ -43,6 +44,7 @@ import { BattleUI } from '../ui/battle';
 import { BossUI } from '../ui/boss';
 import { advance, banner, dialogHasChoices, dialogOpen, say, setPrompt, toast, type Line } from '../ui/feedback';
 import { logLine } from '../ui/gamelog';
+import { ACHIEVEMENTS, NOTES } from '../data/achievements';
 import { SAYINGS } from '../data/sayings';
 import { renderHud } from '../ui/hud';
 import { Panels } from '../ui/panels';
@@ -99,8 +101,55 @@ export class Controller {
         this.persist();
       }
     }, 60_000);
+    // 开局计时 (0.5 block 6): active play seconds, so milestones can be checked against the 60-minute table.
+    window.setInterval(() => {
+      if (document.visibilityState === 'visible' && Date.now() - this.lastInput < 120_000 && $('title').hidden)
+        this.state.flags.playSec = ((this.state.flags.playSec as number) ?? 0) + 10;
+    }, 10_000);
     window.setInterval(() => this.persist(), 20_000);
     window.addEventListener('beforeunload', () => this.persist());
+  }
+
+  /** 成就: a title in the codex and a gold toast; nothing else. */
+  achieve(id: string): void {
+    const k = `ach_${id}`;
+    if (this.state.flags[k]) return;
+    const a = ACHIEVEMENTS.find((x) => x.id === id);
+    if (!a) return;
+    this.state.flags[k] = true;
+    this.milestone(k);
+    sfx.levelUp();
+    toast(`成就：${a.zh} · 称号${a.title}`, 'gold');
+    logLine(`成就：${a.zh}（${a.how}）`, 'good');
+  }
+
+  /** 纸条: a story note found as a drop, kept in the codex. */
+  findNote(id: string): void {
+    const n = NOTES.find((x) => x.id === id);
+    if (!n || this.state.flags[`note_${id}`]) return;
+    this.state.flags[`note_${id}`] = true;
+    this.milestone(`note_${id}`);
+    window.setTimeout(() => say([{ who: SYS, text: `它散开的地方留下一张纸。【${n.zh}】` }, { who: '纸条', text: n.text }, { who: SYS, text: '纸条收进了图鉴。' }]), 400);
+  }
+
+  /** 剧情片段 (节奏表 45–50 分): the first time you reach the crossroads, the neighbour's door is in sight. */
+  sawNeighbour(): void {
+    if (this.state.flags.sawNeighbour) return;
+    this.state.flags.sawNeighbour = true;
+    this.milestone('story_door');
+    say([
+      { who: SYS, text: '路的尽头有一扇门。门缝里漏出红光，一下一下，像在呼吸。' },
+      { who: SYS, text: '门后有人在念名字。念一个，停一下。听不清是谁的。' },
+      { who: HILDE, text: '（远远地喊）别过去！那是「邻居」。你现在叫不出它的名字。' },
+      { who: SYS, text: '【无名的邻居】区域首领。8 级起可以敲门，这片街区的名字叫回四成，门才会开' },
+    ]);
+  }
+
+  /** 开局计时: the active-play minute something happened for the first time (kept once). */
+  milestone(key: string): void {
+    const k = `ms_${key}`;
+    if (k in this.state.flags) return;
+    this.state.flags[k] = Math.round((((this.state.flags.playSec as number) ?? 0) / 60) * 10) / 10;
   }
 
   // ---- Scene hooks ---------------------------------------------------------------
@@ -202,6 +251,7 @@ export class Controller {
   /** Lessons tied to a level (游戏设计 › 新手引导). */
   private onLevelUp(level: number) {
     const s = this.state;
+    this.milestone(`lv${level}`);
     sfx.levelUp();
     banner(`Lv ${level}`, (UNLOCK_TEXT[level] ?? [])[0] ?? '');
     const unlocked = UNLOCK_TEXT[level] ?? [];
@@ -211,22 +261,29 @@ export class Controller {
         lines.push({ who: SYS, text: '【默写】有些怪要你把名字打出来。名词带冠词：der Tee' });
         break;
       case 3:
-        lines.push({ who: HILDE, text: '累了就回来坐（E）。打散的东西会再长出来。牙少一点。' });
+        lines.push({ who: HILDE, text: this.scene.nodes ? '累了就回营地坐坐。打散的东西会再长出来。牙少一点。' : '累了就回来坐（E）。打散的东西会再长出来。牙少一点。' });
+        lines.push({ who: SYS, text: `【装备】下一只怪会掉东西。C 打开角色，穿上。打得越多，碎片越多，攒够 40 片装备升一档${gearTier(s) ? `。你一路打来已经攒够了：现在是第 ${gearTier(s)} 档，伤害更高，同级的怪少挨一下` : ''}` });
         s.flags.teachRest = true;
         break;
       case 4:
         s.flags.pendingLoss = true;
+        s.flags.teachSkills = true;
+        lines.push(
+          { who: SYS, text: '【铭刻 Q】下一题难一级，答对伤害 ×1.5，答错丢 1 点言灵。不限次数' },
+          { who: SYS, text: '【低语 W】下一题给首字母。不耗资源，但那题不算会写，也不能归名' },
+          { who: SYS, text: '【言灵】打中弱点、答对打字题都会攒言灵，最多 5 点' },
+        );
         break;
       case 5:
-        lines.push({ who: SYS, text: '【装备】下一只怪会掉东西。C 打开角色，穿上。【低语 W】下一题给首字母。不耗资源，但那题不算会写，也不能归名' });
-        break;
-      case 6:
+        s.flags.teachFinisher = true;
         lines.push(
           { who: HILDE, text: '光叫名字不够。说一整句，它们更怕。' },
           { who: HILDE, text: '「Ich möchte einen Tee.」听见了？der 到了这里变成 einen。die 变 eine，das 变 ein。' },
-          { who: SYS, text: '【铭刻 Q】下一题难一级，答对伤害 ×1.5，答错丢 1 点言灵。不限次数' },
-          { who: SYS, text: '【终结技 F】言灵攒满后，对见过的怪看中文写整句：吃的喝的 Ich möchte，地方 Wo ist，人 Ich habe。写对破甲。der 冰 · die 火 · das 毒' },
+          { who: SYS, text: '【终结技 F】言灵攒满后，对任何怪看中文写整句：吃的喝的 Ich möchte，地方 Wo ist，人 Ich habe。写对破甲。下一场你的言灵是满的，试一下' },
         );
+        break;
+      case 6:
+        lines.push({ who: SYS, text: '【元素】选对相附带元素：der 冰 · die 火 · das 毒' });
         break;
       case 7:
         s.flags.pendingBreak = true;
@@ -271,6 +328,7 @@ export class Controller {
     if (this.battle) return;
     const s = this.state;
     rollDay(s);
+    this.milestone(m.phrase ? 'm_phrase' : m.rare ? 'm_rare' : m.isEcho ? 'm_echo' : `m_${m.word.pos ?? 'n'}`);
     let tutorial: Tutorial = null;
     if (s.flags.pendingLoss && !m.isEcho) tutorial = 'loss';
     else if (s.flags.pendingBreak) tutorial = 'break';
@@ -292,6 +350,7 @@ export class Controller {
       if (!tutorial && !opts.trial) {
         const say = rollSaying(s, m.word, this.rng);
         if (say) {
+          this.milestone('m_saying');
           this.battle.saying = say;
           if (this.battle.intent.kind !== 'charge' && this.battle.intent.kind !== 'flee') this.battle.intent = { ...this.battle.intent, ...shoutLine(say) };
         }
@@ -316,6 +375,12 @@ export class Controller {
     if (m.word.id === 'brot' && !s.flags.brotDone) {
       this.battle.monster.hp = this.battle.monster.maxHp = 1;
       this.battle.monster.dmg = 1;
+    }
+    // 教学战 (Lv5): the first fight after 终结技 opens starts with a full 言灵 bar.
+    if (s.flags.teachFinisher && !tutorial && !opts.trial && !m.phrase && has(s.level, 'sentence') && resMax(s)) {
+      delete s.flags.teachFinisher;
+      this.battle.cfx.res = resMax(s);
+      this.battle.teachFin = true;
     }
     this.pack = [this.battle];
     this.packEntities = [m];
@@ -390,6 +455,7 @@ export class Controller {
     const ok = score >= CONFIG.shadow.match;
     if (!ok || !this.canShadow()) return { ok, score, xp: 0 };
     for (const b of this.pack.length ? this.pack : [this.battle!]) b.shadowed = true;
+    this.milestone('shadow');
     const xp = CONFIG.shadow.xp;
     const lv = addXp(this.state, xp);
     logLine(`跟读：「${target}」读得像，经验 +${xp}`, 'good');
@@ -398,7 +464,11 @@ export class Controller {
   }
 
   askQuestion(move: Move): Question {
-    return makeQuestion(this.state, this.battle!, move, this.rng, undefined, this.pack.length > 1, this.pack);
+    const q = makeQuestion(this.state, this.battle!, move, this.rng, undefined, this.pack.length > 1, this.pack);
+    this.milestone(`q_${q.type}${q.type === 'cloze' && q.prompt.startsWith('代词') ? '_pron' : ''}`);
+    if (move !== 'attack') this.milestone(`mv_${move}`);
+    if (move === 'inscribe' || move === 'whisper') delete this.state.flags.teachSkills;
+    return q;
   }
 
   useHint(q: Question): string | null {
@@ -410,6 +480,11 @@ export class Controller {
     const b = this.battle!;
     const r = resolveTurn(s, b, move, q, input, this.rng, this.pack);
     if (r.killer) this.killer = r.killer;
+    // 成就 · 五连弱点: right stances in a row (a wrong one resets; turns without a stance don't count).
+    if (r.phase === 'right') {
+      s.flags.weakRun = ((s.flags.weakRun as number) ?? 0) + 1;
+      if ((s.flags.weakRun as number) >= 5) this.achieve('weak5');
+    } else if (r.phase === 'wrong' || r.phase === 'soft') s.flags.weakRun = 0;
     if (b.tutorial === 'packCharge' || this.pack.some((x) => x.tutorial === 'packCharge')) s.flags.firstPackDone = true;
     // Packs settle every kill at once; the fight goes on with the next target.
     if (this.pack.length > 1) {
@@ -484,6 +559,10 @@ export class Controller {
           banner('归名', `${fullForm(b.word)} · ${b.word.zh}`);
           this.speak(fullForm(b.word));
         }
+        if (res.card) this.achieve('card1');
+        if (stageOf(s, b.word) >= 2) this.achieve('half1');
+        // 剧情片段 (节奏表 20–25 分): from Lv2 the first kill drops the neighbour's note.
+        if (s.level >= 2 && !s.flags.note_neighbour && !b.phrase) this.findNote('neighbour');
         logLine(b.phrase ? `击败残句：${b.phrase.a} ${b.phrase.b}（${b.phrase.zh}）` : `击败 ${fullForm(b.word)}（${b.word.zh}）`, 'good');
         if (res.card) {
           const x = SAYINGS.find((y) => y.id === res.card!.id);
@@ -504,6 +583,11 @@ export class Controller {
         if (res.echoRecovered) {
           banner('回响', `取回 ${res.echoRecovered.gold} 金币和 ${res.echoRecovered.xp} 经验`);
         }
+        this.milestone(`z_${m.zone}`);
+        if (res.drop) this.milestone('drop');
+        if (res.card) this.milestone('card');
+        if (res.gearUp) this.milestone(`gear${res.gearUp}`);
+        if (res.kill.guiming) this.milestone('guiming');
         if (res.drop) {
           (res.drop.quality === 'orange' ? sfx.orange : sfx.loot)();
           toast(`掉落：${res.drop.name}（${{ white: '普通', green: '优秀', purple: '史诗', orange: '传说' }[res.drop.quality]}）`, res.drop.quality === 'white' ? '' : 'gold');
@@ -941,6 +1025,7 @@ export class Controller {
       return;
     }
     rollDay(s);
+    this.milestone('bonfire');
     s.hp = maxHp(s);
     s.combo = 0;
     resetClassFx(s);
@@ -991,7 +1076,7 @@ export class Controller {
       { who: '考官', text: `「Prüfung?」我只考你没见过的词。看你本来会多少。（还剩 ${left} 个）` },
       { who: SYS, text: `【默写对决】名词带冠词。写对：经验 ×${DUEL.xpMult}，当场归名。写错：挨打，词留在野外。每 ${DUEL.readBar} 题它出手一次。倒下就结束，写对的都算` },
     ], undefined, [
-      { label: '开始对决', act: () => this.panels.showDuel(startDuel(s, region, Math.random)) },
+      { label: '开始对决', act: () => (this.milestone('duel'), this.panels.showDuel(startDuel(s, region, Math.random))) },
       ...(this.canJump() ? [{ label: `跳区考核（升到 ${JUMP.toLevel} 级）`, act: () => this.jumpExam() }] : []),
       { label: '先不了', act: () => {} },
     ]);
