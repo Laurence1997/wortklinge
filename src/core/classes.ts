@@ -27,7 +27,7 @@ export const CLASSES: Record<ClassId, ClassDef> = {
     skillCost: 3,
     trialZh: '3 场战斗，每一题都要默写',
     blurb: [
-      '打字题答对墨水 +1，填变形 +2（最多 5）。墨水攒满可放终结技，低语耗 3。',
+      '打字题答对墨水 +1，填变形 +2（最多 5）。墨水攒满可放终结技。',
       '被动：连续默写答对 3 题，下一击必定暴击。',
       '职业技能「墨水风暴」（3 墨水）：默写一个你学过的长词，字母越多伤害越高。',
     ],
@@ -42,7 +42,7 @@ export const CLASSES: Record<ClassId, ClassDef> = {
     trialZh: '3 场战斗，对手都是拖久了变凶的复习怪',
     blurb: [
       '答错时受到的伤害 −20%。',
-      '每答一题（对错都算），沉着 +1（最多 5）。沉着攒满可放终结技，低语耗 3。',
+      '每答一题（对错都算），沉着 +1（最多 5）。沉着攒满可放终结技。',
       '职业技能「稳住」（3 沉着，不用答题）：挡下这回合的第一击。',
       '「Ich habe keine Ahnung.」的反弹从 20% 升到 30%。',
     ],
@@ -126,7 +126,7 @@ export function respec(s: GameState): boolean {
 }
 
 export function resMax(s: GameState): number {
-  // Before a class: 言灵, 5 at most, from Lv5 (低语 / 终结技 spend it).
+  // Before a class: 言灵, 5 at most, from Lv5 (终结技 spends it).
   if (!s.cls) return s.level >= 5 ? 5 : 0;
   return CLASSES[s.cls].resMax + (s.cls === 'writer' ? rank(s, 'zhanmo') : 0);
 }

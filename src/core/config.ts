@@ -103,7 +103,7 @@ export const CONFIG = {
   /** 0.4 技能改的是下一题: 铭刻 raises the next question one step (×1.5 on a hit), 低语 gives the first letter
    *  (×0.5, costs class resource or a dictionary hint), 齐鸣 lets one answer hit the whole pack. Cooldowns in turns
    *  (铭刻: none since 2026-11-20, a miss costs 1 resource instead). */
-  tech: { inscribeCd: 0, inscribeMissCost: 1, inscribeMult: 1.5, whisperCost: 3, whisperMult: 0.5, chorusCd: 4 },
+  tech: { inscribeCd: 0, inscribeMissCost: 1, inscribeMult: 1.5, chorusCd: 4 },
 
   combo: [
     { at: 50, name: '言灵附体 Wortgewalt', dmg: 0.5 },

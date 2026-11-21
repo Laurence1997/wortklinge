@@ -50,6 +50,9 @@ export interface Intent {
   element: Element;
   line: string;
   zh: string;
+  /** 0.4 怪的台词: the example sentence it mumbles with its own name swallowed; `full` is read out after a right answer. */
+  full?: string;
+  fullZh?: string;
   /** Which layers this line uses, for the post-fight recap. */
   layers: Array<'count' | 'element' | 'negation' | 'object'>;
 }
@@ -67,6 +70,8 @@ export interface WordProgress {
   read?: number;
   /** 会写: right answers that wrote it out (默写, 变位, 复数, 句式). 归名 always needs one. */
   write?: number;
+  /** 低语 was used on it: its next appearance asks it again without the hint. */
+  hinted?: boolean;
 }
 
 export type Quality = 'white' | 'green' | 'purple' | 'orange';

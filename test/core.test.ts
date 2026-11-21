@@ -923,3 +923,60 @@ describe('终结技 for every monster, 铭刻 without cooldown', () => {
     expect(moveReady(s, b, 'inscribe')).toBe(true);
   });
 });
+
+describe('2026-11-21: 低语, 越区引导, reviews, 怪的台词', () => {
+  it('低语 is free but not 会写, earns nothing, and is not offered again until answered without it', () => {
+    const s = newGame('T', 'student', T0);
+    s.level = 8;
+    s.words['tee'] = { stage: 1, due: 9e15, firstSeen: 0, lastSeen: 0, relapse: 0, correct: 1, wrong: 0 };
+    const b = startBattle(s, WORD_BY_ID['tee'], makeRng(3));
+    b.intent = { ...b.intent, kind: 'wait', hits: 0 };
+    b.monster.hp = 999;
+    b.cfx.res = 2;
+    expect(moveReady(s, b, 'whisper')).toBe(true);
+    const q = makeQuestion(s, b, 'whisper', makeRng(3));
+    resolveTurn(s, b, 'whisper', q, q.answer!, makeRng(3));
+    expect(b.cfx.res).toBe(2);
+    expect(b.writeOk ?? 0).toBe(0);
+    expect(s.words['tee'].hinted).toBe(true);
+    expect(moveReady(s, b, 'whisper')).toBe(false);
+  });
+  it('words you can write stay off the field until due; reviews come to your zone at your level', () => {
+    const s = newGame('T', 'student', T0);
+    s.level = 9;
+    const zone = WORD_BY_ID['tee'].zone;
+    for (const w of WORDS.filter((x) => x.zone === zone)) s.words[w.id] = { stage: 1, due: 9e15, firstSeen: 0, lastSeen: 0, relapse: 0, correct: 1, wrong: 0, read: 1, write: 1 };
+    const t = Date.now();
+    s.words['tee'].due = t - 1000;
+    const picks = pickSpawns(s, 'aschehof', 10, new Set(), makeRng(1));
+    expect(picks.some((p) => p.word.id === 'tee' && p.kind === 'due')).toBe(true);
+    expect(pickSpawns(s, zone, 10, new Set(['tee']), makeRng(1)).filter((p) => p.kind === 'shadow').length).toBe(0);
+    const b = startBattle(s, WORD_BY_ID['tee'], makeRng(1));
+    expect(b.kind).toBe('due');
+    expect(b.monster.lvl).toBe(9);
+  });
+  it('跳区考核: 16 of 20 passes, failing early ends it', async () => {
+    const { startJumpExam, JUMP } = await import('../src/core/duel');
+    const s = newGame('T', 'student', T0);
+    s.level = 7;
+    const d = startJumpExam(s, makeRng(1));
+    expect(d.queue.length).toBe(JUMP.words);
+    for (let i = 0; i < 16; i++) answerDuel(s, d, fullForm(d.queue[0]));
+    expect(d.over).toBe('win');
+    const d2 = startJumpExam(s, makeRng(2));
+    for (let i = 0; i < 5; i++) answerDuel(s, d2, 'zzz');
+    expect(d2.over).toBe('lose');
+    expect(s.hp).toBeGreaterThan(0);
+  });
+  it('the monster mumbles its own example sentence without its name', async () => {
+    const { voiceLine } = await import('../src/core/cloze');
+    for (const w of WORDS) {
+      const v = voiceLine(w, 0);
+      if (!v) continue;
+      expect(v.line).toContain('… mmh …');
+      expect(v.full.length).toBeGreaterThan(v.line.length - 8);
+    }
+    const v = voiceLine(WORD_BY_ID['tee'], 0)!;
+    expect(v.line.toLowerCase()).not.toContain('tee ');
+  });
+});

@@ -26,7 +26,7 @@ const MOVE_INFO: Record<Move, { key: string; zh: string; sub: string }> = {
   break: { key: 'D', zh: '破防', sub: '默写 · 克防御' },
   sentence: { key: 'F', zh: '终结技', sub: '看中文写整句 · 破甲' },
   inscribe: { key: 'Q', zh: '铭刻', sub: '题难一级 · 答对 ×1.5 · 答错丢 1 资源' },
-  whisper: { key: 'W', zh: '低语', sub: '给首字母 · 伤害减半' },
+  whisper: { key: 'W', zh: '低语', sub: '给首字母 · 不算会写' },
   chorus: { key: 'E', zh: '齐鸣', sub: '这一题打整群' },
   skill: { key: 'R', zh: '技能', sub: '写对整句' },
   cls: { key: 'G', zh: '职业技能', sub: '' },
@@ -41,6 +41,7 @@ export class BattleUI {
   input: HTMLInputElement | null = null;
   private autoTimer = 0;
   private lastValue = '';
+  private voicedFull = '';
   private renderedQ: Question | null = null;
 
   constructor(private ctrl: Controller) {}
@@ -93,10 +94,14 @@ export class BattleUI {
   submit(value: string): void {
     if (this.phase !== 'answer' || !this.question) return;
     this.lastValue = value;
+    const voiced = this.b.intent;
     this.report = this.ctrl.answer(this.move, this.question, value);
     this.phase = 'result';
     // 完形填空: read the whole sentence once the blank is answered.
     if (this.question.type === 'cloze' && this.question.full) this.ctrl.speak(this.question.full);
+    // 归名的奖励: a right answer gives the mumbled sentence back whole, read aloud.
+    this.voicedFull = this.report.correct && voiced.full ? `${voiced.full}（${voiced.fullZh}）` : '';
+    if (this.voicedFull && this.question.type !== 'cloze') this.ctrl.speak(voiced.full!);
     this.render();
     // Auto-advance: about a second for a clean hit, longer when there is a correction to read.
     const clean = this.report.correct && !this.report.verdict.notes.length;
@@ -277,10 +282,8 @@ export class BattleUI {
                 ? `冷却 ${b.cfx.inscribeCd}`
                 : mv === 'chorus' && b.chorusCd
                   ? `冷却 ${b.chorusCd}`
-                  : mv === 'whisper'
-                    ? b.cfx.res >= 3 || !b.hintsLeft
-                      ? `耗 3 ${resName(s)} · 伤害减半`
-                      : `词典提示剩 ${b.hintsLeft} · 伤害减半`
+                  : mv === 'whisper' && !moveReady(s, b, 'whisper')
+                    ? '上次提示过，这次先自己写'
                     : mv === 'sentence'
                       ? `${resName(s)} ${b.cfx.res}/${resMax(s)}${b.cfx.res >= resMax(s) ? ' · 可以放了' : ' · 满了才能用'}`
                       : info.sub;
@@ -344,7 +347,7 @@ export class BattleUI {
     const r = this.report;
     // 难题就是预告: the only hint left is on the question itself while it charges.
     if (this.b.intent.kind === 'charge' && this.phase !== 'result') wrap.append(h('div.prompt', { style: 'color:var(--gold, #ffcf4a)' }, h('span', '它在蓄力——答对打断')));
-    const tags = [qq.inscribed ? '铭刻 ×2' : '', qq.whispered ? '低语 ×0.5' : '', qq.chorus ? '齐鸣' : ''].filter(Boolean).join(' · ');
+    const tags = [qq.inscribed ? '铭刻 ×1.5' : '', qq.whispered ? '低语 · 不算会写' : '', qq.chorus ? '齐鸣' : ''].filter(Boolean).join(' · ');
     wrap.append(h('div.prompt', h('span', qq.prompt), tags ? h('span.tag', tags) : ''));
     const focusColor = qq.type === 'article' && this.phase === 'result' && this.b.word.art ? ARTICLE_COLOR[genderOf(this.b.word) ?? 'pl'] : '';
     const long = qq.type === 'cloze' ? 'font-size:22px;line-height:1.4;' : '';
@@ -390,6 +393,7 @@ export class BattleUI {
       if (r.element) fb.append(h('span', `  元素：${ELEMENT_ZH[r.element]}`));
       for (const n of r.verdict.notes) fb.append(h('span.note', n));
       if (r.readRight) fb.append(h('span.note', '读懂了它：连击 +1'));
+      if (this.voicedFull) fb.append(h('span.note', `它刚才念的是：${this.voicedFull}`));
       fb.append(h('span.note.muted', this.ctrl.fightOver() ? '结算（Enter 跳过）' : '下一题（Enter 跳过）'));
       wrap.append(fb);
     }

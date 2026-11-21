@@ -11,7 +11,7 @@ import { canLearn, CLASSES, learn, rank, spent, talentPoints, TALENT_FROM_LEVEL,
 import { fullForm, genderOf, hasArticleQuestion, WORDS } from '../data/words';
 import type { Controller } from '../game/controller';
 import { $, bar, clear, h, umlautButtons } from './dom';
-import { DUEL, duelPool, startDuel, type Duel } from '../core/duel';
+import { DUEL, duelPool, JUMP, startDuel, type Duel } from '../core/duel';
 import { CHEST_ZH, type ChestKind } from '../core/chest';
 import { favour, FAVOUR, QUESTS, type QuestId } from '../core/quests';
 import { gradeTyped } from '../core/grading';
@@ -262,8 +262,10 @@ export class Panels {
     const wrap = h('div');
     wrap.append(
       bar('hp', s.hp, maxHp(s), `你的生命 ${s.hp} / ${maxHp(s)}`),
-      bar('xp', d.hp, DUEL.examinerHp, `考官 ${d.hp} / ${DUEL.examinerHp}`),
-      h('p.small.muted', `考官读条：${'■'.repeat(d.bar)}${'□'.repeat(DUEL.readBar - d.bar)}（满了就出手）· 写对 ${d.right} · 写错 ${d.wrong} · 剩 ${d.queue.length} 个词`),
+      d.exam
+        ? h('p.small.muted', `跳区考核：写对 ${d.right} / ${JUMP.pass} · 写错 ${d.wrong} · 剩 ${d.queue.length} 个词（考官不出手）`)
+        : bar('xp', d.hp, DUEL.examinerHp, `考官 ${d.hp} / ${DUEL.examinerHp}`),
+      d.exam ? '' : h('p.small.muted', `考官读条：${'■'.repeat(d.bar)}${'□'.repeat(DUEL.readBar - d.bar)}（满了就出手）· 写对 ${d.right} · 写错 ${d.wrong} · 剩 ${d.queue.length} 个词`),
     );
     if (d.last) {
       const l = d.last;
@@ -275,9 +277,9 @@ export class Panels {
     }
     if (d.over) {
       wrap.append(
-        h('h3', d.over === 'win' ? (d.hp <= 0 ? '你赢了考官。' : '这一区没有词可考了。') : '你撑不住了，对决结束。'),
+        h('h3', d.exam ? (d.over === 'win' ? `跳区考核通过：升到 ${s.level} 级。` : `差一点：写对 ${d.right} 个，要 ${JUMP.pass} 个。没关系，随时再考。`) : d.over === 'win' ? (d.hp <= 0 ? '你赢了考官。' : '这一区没有词可考了。') : '你撑不住了，对决结束。'),
         h('p', `这一场写对 ${d.right} 个词，都已经归名。`),
-        h('div.row', h('button.btn.primary', { onclick: () => { const r = s.region ?? 1; if (duelPool(s, r).length) this.showDuel(startDuel(s, r, Math.random)); else this.close(); } }, '再来一场'), h('button.btn', { onclick: () => this.close() }, '离开')),
+        h('div.row', d.exam ? '' : h('button.btn.primary', { onclick: () => { const r = s.region ?? 1; if (duelPool(s, r).length) this.showDuel(startDuel(s, r, Math.random)); else this.close(); } }, '再来一场'), h('button.btn', { onclick: () => this.close() }, '离开')),
       );
       return wrap;
     }

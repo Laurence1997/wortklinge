@@ -443,6 +443,15 @@ export class WorldScene extends Phaser.Scene {
     this.checkInteractions();
   }
 
+  /** 越区引导: stepping into a field whose monsters are above your level asks first (once per field). */
+  private zoneGate(x: number, y: number): boolean {
+    const to = zoneAt(x, y, this.map.region);
+    if (!to || !to.monsters) return true;
+    const from = zoneAt(this.player.x, this.player.y, this.map.region);
+    if (from?.id === to.id) return true;
+    return this.ctrl.mayEnterZone(to.id);
+  }
+
   private updatePlayer(dt: number) {
     let vx = 0;
     let vy = 0;
@@ -471,6 +480,11 @@ export class WorldScene extends Phaser.Scene {
     const nx = this.player.x + (vx / len) * SPEED * dt;
     const ny = this.player.y + (vy / len) * SPEED * dt;
     let moved = false;
+    if (!this.zoneGate(nx, ny)) {
+      this.moveTarget = null;
+      this.player.anims.stop();
+      return;
+    }
     if (this.canStand(nx, this.player.y)) {
       this.player.x = nx;
       moved = true;

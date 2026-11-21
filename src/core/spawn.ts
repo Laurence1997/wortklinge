@@ -19,6 +19,12 @@ export function zoneWords(zone: ZoneId): Word[] {
   return WORDS.filter((w) => w.zone === zone);
 }
 
+/** The lowest monster level of a field (its easiest word). */
+export function zoneMinLevel(zone: ZoneId): number {
+  const ws = zoneWords(zone).filter((w) => w.family !== 'truhe');
+  return ws.length ? Math.min(...ws.map((w) => w.lvl)) : 1;
+}
+
 /** Words a player can meet at their level: Lv1 fights only nouns (冠词攻击). */
 function eligible(s: GameState, w: Word): boolean {
   if (w.family === 'truhe') return false; // 宝箱怪 only appears as a rare spawn
@@ -38,6 +44,11 @@ export function pickSpawns(s: GameState, zone: ZoneId, count: number, alive: Set
     else if (k === 'new') fresh.push(w);
     else if (k === 'shadow') shadows.push(w);
   }
+  // Reviews (2026-11-21) come to wherever you are: due words of every field of your region and the ones before it.
+  for (const w of WORDS) {
+    if (w.zone === zone || alive.has(w.id) || (w.region ?? 1) > (s.region ?? 1) || !eligible(s, w)) continue;
+    if (kindOf(s, w, t) === 'due') due.push(w);
+  }
   const out: SpawnPick[] = [];
   // Most overdue first. Leave room for one non-review monster so a big backlog never fills the field.
   due.sort((a, b) => s.words[a.id].due - s.words[b.id].due);
@@ -48,7 +59,12 @@ export function pickSpawns(s: GameState, zone: ZoneId, count: number, alive: Set
   const newSlots = Math.min(count - out.length, Math.max(1, Math.ceil(count * 0.6)));
   for (const w of fresh.slice(0, newSlots)) out.push({ word: w, kind: 'new' });
 
-  for (const w of shuffle(rng, shadows)) {
+  // 越区引导 (2026-11-21): between reviews, practise what you can't write yet: not recognised first, then
+  // recognised but not written. Words you can already write stay away until they are due, so a region you
+  // have learned empties out and only its reviews come back (no XP is taken away).
+  const unwritten = shuffle(rng, shadows.filter((w) => !(s.words[w.id]?.write ?? 0)));
+  unwritten.sort((a, b) => Number((s.words[a.id]?.read ?? 0) > 0) - Number((s.words[b.id]?.read ?? 0) > 0));
+  for (const w of unwritten) {
     if (out.length >= count) break;
     out.push({ word: w, kind: 'shadow' });
   }

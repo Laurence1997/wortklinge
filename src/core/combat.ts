@@ -13,7 +13,7 @@ import { fullForm, genderOf, hasArticleQuestion, WORDS } from '../data/words';
 import { SKILLS } from '../data/skills';
 import { SAYING_BY_ID, SAYING_CFG, SAYINGS } from '../data/sayings';
 import { expectedSentence, gradeSentence, nextPattern, PATTERNS, type Pattern } from './sentence';
-import { clozeModeFor, clozeOptions, gradeCloze, hasExamples, makeCloze, wholeSentence, type ClozeMode } from './cloze';
+import { clozeModeFor, clozeOptions, gradeCloze, hasExamples, makeCloze, voiceLine, wholeSentence, type ClozeMode } from './cloze';
 import { CONJ, PERSON_LABEL, type Person } from '../data/verbs';
 import { QTYPES, type QKey } from '../data/questionTypes';
 import { CLASSES, critRunNeeded, rank, resMax, shieldReflect, wrongHitShare, type ClassId } from './classes';
@@ -148,6 +148,8 @@ export interface Battle {
   /** Rewards already paid (packs settle each kill at once). */
   settled?: boolean;
   hintsLeft: number;
+  /** 低语 used on this word and not yet answered right without a hint. */
+  hinted?: boolean;
   firstCorrectDone: boolean;
   lastKillTyped: boolean;
   skillCooldown: number;
@@ -195,7 +197,9 @@ export function startBattle(
   // The word holding your echo waits at your level, so you can win it back.
   // 0.4: armor doubles per level above you, and a zone mixes words of several levels (schilderstrasse 3–7,
   // kornspeicher 12–20), so a field monster stands at most one level above you.
-  const lvl = opts.isEcho ? Math.min(word.lvl, s.level) : Math.min(word.lvl, s.level + CONFIG.monster.maxAbove(s.level));
+  // A field you chose to enter above your level (越区引导) keeps its monsters' full level.
+  // Review monsters (2026-11-21) stand at your level wherever they turn up: old word, current-region monster, full pay.
+  const lvl = opts.isEcho ? Math.min(word.lvl, s.level) : kind === 'due' ? Math.max(word.lvl, s.level) : s.flags[`zoneOk_${word.zone}`] ? word.lvl : Math.min(word.lvl, s.level + CONFIG.monster.maxAbove(s.level));
   const overdue = overdueSteps(s, word, t);
   const st = monsterStats(lvl, stage, kind, overdue);
   const monster: MonsterState = { lvl, hp: st.hp, maxHp: st.hp, dmg: st.dmg, vulnerable: 0, burn: 0, poison: 0, chilled: false, broken: 0 };
@@ -277,6 +281,12 @@ function nextIntent(s: GameState, b: Battle, rng: Rng): Intent {
   if (intent.layers.includes('negation') || (intent.layers.includes('object') && intent.kind === 'wait') || (tut === 'heal' && intent.kind === 'heal')) b.trapUsed = true;
   if (intent.kind === 'charge') b.turnsSinceCharge = 0;
   else b.turnsSinceCharge += 1;
+  // 怪的台词 (2026-11-21): outside tutorials it mumbles one of its own example sentences with its name swallowed
+  // (a listening clue that never says the answer). Only the big attack keeps the shouted stock lines as a warning.
+  if (!tut && intent.kind !== 'charge' && intent.kind !== 'flee') {
+    const v = voiceLine(b.word, b.turn);
+    if (v) intent = { ...intent, line: v.line, zh: v.zh, full: v.full, fullZh: v.fullZh };
+  }
   return intent;
 }
 
@@ -312,7 +322,8 @@ export function moveReady(s: GameState, b: Battle, move: Move): boolean {
   if (move === 'skill') return b.skillCooldown === 0;
   if (move === 'cls') return !!s.cls && b.cfx.res >= CLASSES[s.cls].skillCost;
   if (move === 'inscribe') return !b.cfx.inscribeCd;
-  if (move === 'whisper') return b.cfx.res >= CONFIG.tech.whisperCost || b.hintsLeft > 0;
+  // 低语 is free, but a word you were hinted on is asked again without it first.
+  if (move === 'whisper') return !b.hinted && !s.words[b.word.id]?.hinted;
   if (move === 'sentence') return resMax(s) > 0 && b.cfx.res >= resMax(s);
   if (move === 'chorus') return b.chorusCd === 0;
   return true;
@@ -469,6 +480,11 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
   if (b.pluralDue && canType) {
     const pl = [plural, cl ?? typed, typed, article];
     return pl[b.step % pl.length]();
+  }
+  // Reviews from Lv6: never the old choice questions again; typing and cloze (form cloze from Lv11).
+  if (b.kind === 'due' && canType && s.level >= 6) {
+    const rv: Array<() => Question> = cl ? [cl, typed] : [typed];
+    return rv[b.step % rv.length]();
   }
   if (cl) {
     // Lv6+: at least half the questions are cloze or typing; a plain choice only opens a new word.
@@ -763,7 +779,16 @@ export function resolveTurn(
   let interrupted = false;
   b.qIndex += 1;
   if (q.type === 'sentence') b.sxUsed = (b.sxUsed ?? 0) + 1;
-  if (ok) {
+  // 低语 (2026-11-21): a hinted answer is not 会写/认得, earns no resource and cannot be the 归名 blow.
+  // The word is marked so its next appearance asks it again without the hint.
+  if (q.whispered) {
+    b.hinted = true;
+    if (s.words[b.word.id]) s.words[b.word.id].hinted = true;
+  } else if (ok && b.hinted) {
+    b.hinted = false;
+    if (s.words[b.word.id]) delete s.words[b.word.id].hinted;
+  }
+  if (ok && !q.whispered) {
     if (q.type === 'typed' || q.type === 'conj' || q.type === 'plural' || q.type === 'sentence' || (q.type === 'cloze' && q.clozeMode !== 'pick')) b.writeOk = (b.writeOk ?? 0) + 1;
     else if (q.type === 'article' || q.type === 'pickDe' || q.type === 'pickZh' || q.type === 'callout' || q.type === 'cloze') b.readOk = (b.readOk ?? 0) + 1;
   }
@@ -783,18 +808,14 @@ export function resolveTurn(
   const critWasReady = cfx.critReady; // earned this turn = the *next* hit crits
   const typedLike = q.type === 'typed' || q.type === 'conj' || q.type === 'plural' || q.type === 'storm' || clozeTyped;
   if (move === 'cls' && s.cls) cfx.res = Math.max(0, cfx.res - CLASSES[s.cls].skillCost);
-  // 0.4 techniques: 低语 costs 3 class resource (or a dictionary hint without a class); 铭刻 / 齐鸣 go on cooldown.
-  if (move === 'whisper') {
-    if (cfx.res >= CONFIG.tech.whisperCost) cfx.res -= CONFIG.tech.whisperCost;
-    else b.hintsLeft = Math.max(0, b.hintsLeft - 1);
-  }
+  // 0.4 techniques: 低语 is free (its price: no 会写, no resource, no 归名); 铭刻 / 齐鸣 cooldowns.
   if (move === 'sentence') cfx.res = 0;
   // 铭刻 has no cooldown (Lucas 2026-11-20: encourage it); a miss on an inscribed question costs 1 resource.
   if (q.inscribed && !ok) cfx.res = Math.max(0, cfx.res - CONFIG.tech.inscribeMissCost);
   if (move === 'inscribe') cfx.inscribeCd = CONFIG.tech.inscribeCd;
   if (move === 'chorus') b.chorusCd = CONFIG.tech.chorusCd;
   // 题型奖励表: a correct answer earns its row's resource (guardians: +1 for every answer instead, their passive).
-  if (ok && s.cls !== 'guardian' && move !== 'cls') cfx.res += QTYPES[qKey(q)].res;
+  if (ok && s.cls !== 'guardian' && move !== 'cls' && !q.whispered) cfx.res += QTYPES[qKey(q)].res;
   if (s.cls === 'writer' && typedLike && q.type !== 'storm') {
     if (ok) {
       cfx.run += 1;
@@ -807,7 +828,7 @@ export function resolveTurn(
   }
   // Any wrong answer breaks the writer's streak (it carries across fights otherwise).
   if (s.cls === 'writer' && !ok) cfx.run = 0;
-  if (s.cls === 'guardian' && move !== 'cls') cfx.res += 1 + (!ok && rank(s, 'chenzhuo') ? 1 : 0);
+  if (s.cls === 'guardian' && move !== 'cls' && !q.whispered) cfx.res += 1 + (!ok && rank(s, 'chenzhuo') ? 1 : 0);
   cfx.res = Math.min(cfx.res, resMax(s));
 
   // --- 1. You act first.
@@ -849,7 +870,8 @@ export function resolveTurn(
       log.push({ text: '「稳住」——你沉下身子。第一下，挡得住。', tone: 'good' });
     } else {
       const atk = attack(s);
-      const tier = qTier(q);
+      // 低语: the hinted question hits like one tier easier (typed → choice armor, hard → typed, no armor break).
+      const tier = (q.whispered ? Math.max(0, qTier(q) - 1) : qTier(q)) as 0 | 1 | 2;
       let mult = between(rng, CONFIG.damage.roll[0], CONFIG.damage.roll[1]);
       const pen = s.cls === 'writer' ? 0.05 * rank(s, 'bifeng') : 0;
       // 0.4: the question type no longer multiplies damage (armor does that, below). Gear affixes stay.
@@ -863,7 +885,6 @@ export function resolveTurn(
         if (has(s.level, 'layerElement')) element = ELEMENT_BY_GENDER[genderOf(b.word) ?? 'n'];
       }
       if (q.inscribed) mult *= CONFIG.tech.inscribeMult;
-      if (q.whispered) mult *= CONFIG.tech.whisperMult;
 
       const breaking = intent.kind === 'defend' && writtenQ;
       const g = genderOf(b.word);
@@ -952,7 +973,7 @@ export function resolveTurn(
       m.hp = 0;
       b.outcome = 'win';
       if (q.type === 'storm' && multi && overkill > 0) spillStorm(s, pack, b, overkill, typedLike, log);
-      b.lastKillTyped = typedQ && (q.type === 'sentence' ? verdict.word?.id === b.word.id : true);
+      b.lastKillTyped = typedQ && !q.whispered && (q.type === 'sentence' ? verdict.word?.id === b.word.id : true);
       if (q.type === 'typed' && !q.withArticle && hasArticleQuestion(b.word)) b.lastKillTyped = false;
       // A noun's 归名 blow must write the article: only a form cloze that includes one (den Tee) counts.
       if (q.type === 'cloze' && hasArticleQuestion(b.word) && !(q.clozeMode === 'form' && ARTICLE_RE.test(q.answer ?? ''))) b.lastKillTyped = false;

@@ -32,6 +32,7 @@ export function applyWin(s: GameState, b: Battle, rng: Rng, opts: { heal?: boole
   const wasNew = b.kind === 'new';
   const kill = recordKill(s, w, b.lastKillTyped, b.slipped, t);
   flushSkill(s, w, b);
+  if (b.hinted && s.words[w.id]) s.words[w.id].hinted = true;
 
   let xp = b.kind === 'new' ? CONFIG.xp.newMonster : b.kind === 'due' ? CONFIG.xp.dueMonster : CONFIG.xp.shadowMonster;
   if (b.kind === 'due') xp *= CONFIG.xp.dueBonus;

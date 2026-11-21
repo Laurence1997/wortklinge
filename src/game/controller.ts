@@ -1,4 +1,4 @@
-import { answerDuel, DUEL, duelPool, startDuel, type Duel } from '../core/duel';
+import { answerDuel, DUEL, duelPool, JUMP, startDuel, startJumpExam, type Duel } from '../core/duel';
 import type { Look } from '../core/look';
 // The game controller: owns the save, runs battles and tutorials, and glues the
 // Phaser world to the DOM interface. Game rules live in src/core and stay pure.
@@ -15,7 +15,7 @@ import { makeItem } from '../core/loot';
 import { applyLoss, applyWin, postFightHeal } from '../core/outcomes';
 import { defaultRng, type Rng } from '../core/rng';
 import { atLeastHalfShare, flushSkill, instantGuiming, kindOf, recordAnswer, stageOf } from '../core/srs';
-import { pickSpawns, zoneWords } from '../core/spawn';
+import { pickSpawns, zoneMinLevel, zoneWords } from '../core/spawn';
 import {
   addXp,
   clearSave,
@@ -215,7 +215,7 @@ export class Controller {
         s.flags.pendingLoss = true;
         break;
       case 5:
-        lines.push({ who: SYS, text: '【装备】下一只怪会掉东西。C 打开角色，穿上。【低语 W】下一题给首字母，伤害减半，耗 3 言灵或 1 次词典提示' });
+        lines.push({ who: SYS, text: '【装备】下一只怪会掉东西。C 打开角色，穿上。【低语 W】下一题给首字母。不耗资源，但那题不算会写，也不能归名' });
         break;
       case 6:
         lines.push(
@@ -886,6 +886,18 @@ export class Controller {
     }
   }
 
+  /** 越区引导: a field above your level asks once; after a yes its monsters keep their full level. */
+  mayEnterZone(zone: ZoneId): boolean {
+    const s = this.state;
+    const gap = zoneMinLevel(zone) - s.level;
+    if (gap <= 0 || s.flags[`zoneOk_${zone}`]) return true;
+    say([{ who: SYS, text: `这里的怪比你高 ${gap} 级起。等级每差 1 级，它们的护甲翻一倍，也打得更疼。` }], undefined, [
+      { label: '进去', act: () => { s.flags[`zoneOk_${zone}`] = true; this.persist(); } },
+      { label: '先回去', act: () => undefined },
+    ]);
+    return false;
+  }
+
   rest(): void {
     const s = this.state;
     if (!has(s.level, 'bonfireRest')) {
@@ -899,7 +911,17 @@ export class Controller {
     this.scene.spawnAll();
     const due = WORDS.filter((w) => kindOf(s, w) === 'due').length;
     banner('篝火', '生命回满，怪物全部刷新');
-    say([{ who: SYS, text: due ? `火噼啪响。外面有 ${due} 个名字又长出了牙（头上有「!」）。` : '火噼啪响。外面很安静。明天，昨天打散的东西会回来。' }]);
+    const lines: Line[] = [{ who: SYS, text: due ? `火噼啪响。外面有 ${due} 个名字又长出了牙（头上有「!」）。` : '火噼啪响。外面很安静。明天，昨天打散的东西会回来。' }];
+    // 越区引导: about 70% of this region written → point at the higher fields and the examiner (once per region).
+    const region = s.region ?? 1;
+    const rw = WORDS.filter((w) => (w.region ?? 1) === region && w.pos !== 'phr');
+    const written = rw.filter((w) => (s.words[w.id]?.write ?? 0) > 0).length / Math.max(1, rw.length);
+    if (written >= 0.7 && !s.flags[`moveOn${region}`]) {
+      s.flags[`moveOn${region}`] = true;
+      lines.push({ who: region === 1 ? HILDE : '守火人', text: `这片的名字你写得出七成了（${Math.round(written * 100)}%）。这里的东西认得你了，不会再扑上来。往更深的野外走走，或者去找考官。` });
+      if (region === 1) lines.push({ who: SYS, text: '【跳区考核】主城考官那里：先过首领的限时对话，再默写下一区 20 个词，写对 16 个直接升到 11 级' });
+    }
+    say(lines);
     if (s.flags.teachRest) s.flags.teachRest = false;
     this.refresh();
     this.persist();
@@ -934,13 +956,56 @@ export class Controller {
       { who: SYS, text: `【默写对决】名词带冠词。写对：经验 ×${DUEL.xpMult}，当场归名。写错：挨打，词留在野外。每 ${DUEL.readBar} 题它出手一次。倒下就结束，写对的都算` },
     ], undefined, [
       { label: '开始对决', act: () => this.panels.showDuel(startDuel(s, region, Math.random)) },
+      ...(this.canJump() ? [{ label: `跳区考核（升到 ${JUMP.toLevel} 级）`, act: () => this.jumpExam() }] : []),
       { label: '先不了', act: () => {} },
     ]);
+  }
+
+  /** 跳区考核 is for region 1 players below the region-2 start level who still have region-2 words to write. */
+  private canJump(): boolean {
+    const s = this.state;
+    return (s.region ?? 1) === 1 && s.level < JUMP.toLevel && duelPool(s, 2).length >= JUMP.words;
+  }
+
+  private jumpPending = false;
+
+  /** Step 1: this region's boss conversation (no 40% gate); step 2: write 16 of 20 region-2 words. */
+  private jumpExam() {
+    const s = this.state;
+    say([
+      { who: '考官', text: '「Springen?」想跳过去，先让门后那个认得你，再写下一区的 20 个词，写对 16 个。' },
+      { who: SYS, text: `【跳区考核】过了：首领算打赢，直接升到 ${JUMP.toLevel} 级，写对的词当场归名。没过不罚，随时再来` },
+    ], () => {
+      if (s.flags.bossKills) this.panels.showDuel(startJumpExam(s, Math.random));
+      else {
+        this.jumpPending = true;
+        this.openBoss();
+      }
+    });
+  }
+
+  private passJump() {
+    const s = this.state;
+    const gained: number[] = [];
+    while (s.level < JUMP.toLevel) gained.push(++s.level);
+    s.xp = 0;
+    s.hp = maxHp(s);
+    banner('跳区考核通过', `升到 ${s.level} 级 · 门后是面包集市`);
+    for (const l of gained) this.onLevelUp(l);
+    this.refresh();
+    this.persist();
   }
 
   /** Called by the duel panel after each answer. */
   duelAnswer(d: Duel, input: string): void {
     const r = answerDuel(this.state, d, input);
+    if (d.exam) {
+      for (const l of r.levelUp?.levels ?? []) this.onLevelUp(l);
+      if (d.over === 'win') this.passJump();
+      this.refresh();
+      this.persist();
+      return;
+    }
     for (const l of r.levelUp?.levels ?? []) this.onLevelUp(l);
     this.refresh();
     this.persist();
@@ -1132,10 +1197,14 @@ export class Controller {
       const lines: Line[] = BOSS.outro.map((t) => ({ who: SYS, text: t }));
       lines.push({ who: SYS, text: `获得 ${CONFIG.xp.boss} 经验、120 金币和 ${drops.length} 件装备（按 C 查看）。` });
       const learnable = Object.values(SKILLS).filter((k) => k.boss === 1 && !s.skills.includes(k.id));
+      const jump = this.jumpPending;
+      this.jumpPending = false;
       const after = () => {
         for (const l of lv.levels) this.onLevelUp(l);
         this.refresh();
         this.persist();
+        // 跳区考核 step 2 right after the boss.
+        if (jump) window.setTimeout(() => say([{ who: '考官', text: '「Gut. Jetzt schreib.」下一区的 20 个词，写对 16 个。' }], () => this.panels.showDuel(startJumpExam(s, Math.random))), 400);
       };
       if (dailyFirst && learnable.length && has(s.level, 'skills')) {
         lines.push({ who: SYS, text: '它说过的话，你能留下一句。【句子技能 R】写对整句释放。选一句：' });
@@ -1155,6 +1224,7 @@ export class Controller {
         say(lines, after);
       }
     } else {
+      this.jumpPending = false;
       sfx.death();
       s.hp = maxHp(s);
       this.scene.teleportToBonfire();

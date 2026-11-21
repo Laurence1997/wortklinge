@@ -96,3 +96,16 @@ const Q_TEMPLATES: Record<string, { zh: string; answer: string }> = {
   wie: { zh: '你叫什么名字？', answer: 'Wie heißt du?' },
   'wie-viel': { zh: '这个多少钱？', answer: 'Wie viel kostet das?' },
 };
+
+/** 怪的台词: example sentence n (rotating) with the word swallowed — 「Ich trinke jeden Morgen … mmh …」.
+ *  The Chinese is blanked the same way; when the meaning can't be found in it, the Chinese is withheld. */
+export function voiceLine(w: Word, n: number): { line: string; zh: string; full: string; fullZh: string } | null {
+  const parsed = (EXAMPLES[w.id] ?? []).map(parse).filter((x): x is NonNullable<typeof x> => !!x);
+  if (!parsed.length) return null;
+  const p = parsed[n % parsed.length];
+  const line = `${p.before}… mmh …${p.after}`.replace(/\s+/g, ' ').trim();
+  const zhs = w.zh.split(/[；;，,、/（）()]/).map((x) => x.trim()).filter((x) => x.length > 0).sort((a, b) => b.length - a.length);
+  const hit = zhs.find((z) => p.zh.includes(z));
+  const zh = hit ? p.zh.replace(hit, '……') : '（它含糊地念着什么，听不清。）';
+  return { line, zh, full: (p.before + p.blank + p.after).trim(), fullZh: p.zh };
+}

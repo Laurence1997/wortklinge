@@ -24,6 +24,9 @@ export const DUEL = {
   wrongHitShare: 0.15,
 };
 
+/** 跳区考核 (越区引导, 2026-11-21): 20 random words of the next region, 16 right to pass. No damage, no penalty. */
+export const JUMP = { words: 20, pass: 16, toLevel: 11 };
+
 export interface Duel {
   region: number;
   queue: Word[];
@@ -32,6 +35,8 @@ export interface Duel {
   over: 'win' | 'lose' | null;
   right: number;
   wrong: number;
+  /** 跳区考核 instead of a normal duel. */
+  exam?: boolean;
   last?: { ok: boolean; verdict: Verdict; word: Word; xp: number; hit: number };
 }
 
@@ -42,6 +47,11 @@ export function duelPool(s: GameState, region: number): Word[] {
 
 export function startDuel(s: GameState, region: number, rng: Rng): Duel {
   return { region, queue: shuffle(rng, duelPool(s, region)), hp: DUEL.examinerHp, bar: 0, over: null, right: 0, wrong: 0 };
+}
+
+export function startJumpExam(s: GameState, rng: Rng): Duel {
+  const queue = shuffle(rng, duelPool(s, 2)).slice(0, JUMP.words);
+  return { region: 2, queue, hp: JUMP.pass, bar: 0, over: null, right: 0, wrong: 0, exam: true };
 }
 
 export function answerDuel(s: GameState, d: Duel, input: string): { levelUp: LevelUpResult | null } {
@@ -71,6 +81,12 @@ export function answerDuel(s: GameState, d: Duel, input: string): { levelUp: Lev
     log.wrong += 1;
     if (s.words[w.id]) s.words[w.id].wrong += 1;
     hit += Math.max(1, Math.round(maxHp(s) * DUEL.wrongHitShare));
+  }
+  if (d.exam) {
+    d.last = { ok: verdict.ok, verdict, word: w, xp, hit: 0 };
+    if (d.right >= JUMP.pass) d.over = 'win';
+    else if (d.right + d.queue.length < JUMP.pass) d.over = 'lose'; // can't reach 16 any more
+    return { levelUp };
   }
   d.bar += 1;
   if (d.bar >= DUEL.readBar) {
