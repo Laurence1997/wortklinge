@@ -1,5 +1,5 @@
 import type { Battle, Question, TurnReport } from '../core/combat';
-import { availableMoves, comboTier, effArmor, moveReady, needsPhase, phaseOf, resName, shownDe, stancesFor, teachPhase, readTarget } from '../core/combat';
+import { availableMoves, comboTier, effArmor, moveReady, needsPhase, phaseOf, resName, shownDe, stancesFor, teachPhase, readTarget, readRecall } from '../core/combat';
 import { shadowOk } from '../core/shadow';
 import { has } from '../core/unlocks';
 import type { Stance } from '../core/cloze';
@@ -200,25 +200,29 @@ export class BattleUI {
   /** 读音攻击: read a never-met word aloud. Heard close enough → the turn's attack lands as a right answer;
    *  otherwise nothing is spent (read again or attack normally). */
   async readAttack(): Promise<void> {
-    const target = readTarget(this.ctrl.state, this.b);
-    if (!target || this.phase !== 'choose' || listening() || !canListen() || !moveReady(this.ctrl.state, this.b, 'attack')) return;
+    const s = this.ctrl.state;
+    const fresh = readTarget(s, this.b);
+    const target = fresh ?? readRecall(s, this.b);
+    if (!target || this.phase !== 'choose' || listening() || !canListen() || !moveReady(s, this.b, 'attack')) return;
     if (needsPhase(this.b) && !this.b.phase) {
       this.phaseNag = true;
       this.render();
       return;
     }
     const b = this.b;
-    this.readMsg = `在听……读出「${target}」`;
+    const zh = b.word.zh;
+    this.readMsg = fresh ? `在听……读出「${target}」` : `在听……说出「${zh}」的德语${b.word.art ? '（带冠词）' : ''}`;
     this.render();
     const heard = await listenOnce();
     if (this.phase !== 'choose' || this.b !== b) return;
+    const retry = '：再说一次，或者正常出手（不耗回合）';
     if (heard === null) this.readMsg = '';
-    else if (!heard.length) this.readMsg = '没听清，可以再读一次，或者按 A 普通攻击（不耗回合）';
-    else if (!shadowOk(target, heard)) this.readMsg = `听到的是「${heard[0]}」，差一点：再读一次，或者按 A 普通攻击（不耗回合）`;
+    else if (!heard.length) this.readMsg = `没听清${retry}`;
+    else if (!shadowOk(target, heard)) this.readMsg = `听到的是「${heard[0]}」${fresh ? '，差一点' : '，不太对'}${retry}`;
     else {
       this.readMsg = '';
-      logLine(`读音攻击：「${target}」读对了，必中`, 'good');
-      this.choose('attack');
+      logLine(fresh ? `读音攻击：「${target}」读对了，必中` : `读音攻击：说对了「${target}」，算一次低语（弱一击）`, 'good');
+      this.choose(fresh ? 'attack' : 'whisper');
       const q = this.question;
       if ((this.phase as Phase) === 'answer' && q) this.submit(q.answer ?? '');
       return;
@@ -257,7 +261,7 @@ export class BattleUI {
       this.continue();
       return true;
     }
-    if (!typing && e.key.toLowerCase() === 's' && this.phase === 'choose' && canListen() && readTarget(this.ctrl.state, this.b)) {
+    if (!typing && e.key.toLowerCase() === 's' && this.phase === 'choose' && canListen() && (readTarget(this.ctrl.state, this.b) || readRecall(this.ctrl.state, this.b))) {
       void this.readAttack();
       return true;
     }
@@ -443,13 +447,24 @@ export class BattleUI {
     // 读出来 (Lv5+): always on the move bar, so it can be found. A never-met word → 读音攻击; after a right answer → 跟读.
     if (has(s.level, 'shadowing') && canListen() && !b.tutorial) {
       const rt = readTarget(s, b);
+      const rr = rt ? null : readRecall(s, b);
       const canShadowNow = this.shadowReady() && this.phase === 'choose';
-      const on = !listening() && this.phase === 'choose' && (!!rt || canShadowNow);
-      const sub = listening() ? '在听……' : rt ? `必中 · ${rt}` : canShadowNow ? '跟读上一句 · 多给经验' : this.ctrl.canShadow() ? '新词可读出来攻击；答对后可跟读' : '这场已经读过了';
+      const on = !listening() && this.phase === 'choose' && (!!rt || !!rr || canShadowNow);
+      const sub = listening()
+        ? '在听……'
+        : rt
+          ? `必中 · ${rt}`
+          : rr
+            ? `弱一击 · 凭记忆说出「${w.zh}」`
+            : canShadowNow
+              ? '跟读上一句 · 多给经验'
+              : this.ctrl.canShadow()
+                ? '新词可读出来攻击；答对后可跟读'
+                : '这场已经读过了';
       movesEl.append(
         h(
           'button.btn',
-          { disabled: !on, onclick: () => void (rt ? this.readAttack() : this.shadow()), title: '读出来（S）：新词读得像就是必中的一击；答对后可以跟读整句多拿经验。读不好不扣任何东西' },
+          { disabled: !on, onclick: () => void (rt || rr ? this.readAttack() : this.shadow()), title: '读出来（S）：新词读得像就是必中的一击；见过的词凭记忆说出来算一次低语；答对后可以跟读整句多拿经验。读不好不扣任何东西' },
           h('kbd', 'S'),
           '读出来',
           h('small', sub),

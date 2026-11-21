@@ -438,6 +438,14 @@ export function readTarget(s: GameState, b: Battle): string | null {
   return b.word.art ? fullForm(b.word) : b.word.de;
 }
 
+/** 读音攻击 on a word you have met (Lv5+): say it from its Chinese, nothing German on screen. Heard close enough →
+ *  a 低语 hit (one armor tier lower, not 会写, no resource, never the 归名 blow; same per-word lock as 低语). */
+export function readRecall(s: GameState, b: Battle): string | null {
+  if (!has(s.level, 'shadowing') || readTarget(s, b) || b.tutorial || b.pluralMon || b.phrase || b.trial) return null;
+  if (!availableMoves(s, b, 1).includes('whisper') || !moveReady(s, b, 'whisper')) return null;
+  return b.word.art ? fullForm(b.word) : b.word.de;
+}
+
 /** What the monster card may show: its plural crowd name or the word, never the article. */
 export function shownDe(b: Battle): string {
   return b.pluralMon ? b.word.pl! : b.word.de;
