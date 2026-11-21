@@ -21,6 +21,7 @@ export const anchorPx = (sc: SceneDef) => ({ x: sc.at.x * TILE + 8, y: sc.at.y *
 export class NodeNav {
   here!: SceneDef;
   hopping = false;
+  private veil?: Phaser.GameObjects.Rectangle;
   private gfx?: Phaser.GameObjects.Graphics;
   private labels: Phaser.GameObjects.Text[] = [];
   private panel: HTMLElement;
@@ -55,12 +56,17 @@ export class NodeNav {
       this.here = hub;
     } else this.here = nearestScene(region, this.s.pos.x, this.s.pos.y, this.revealed);
     this.s.flags[`seenArea${region}`] = true;
+    // The 0.4 street map stays underneath (scenes stand on its tiles) but is veiled, so routes and monsters read first.
+    this.veil?.destroy();
+    this.veil = this.w.add.rectangle(0, 0, 8000, 8000, 0x07040a, CONFIG.map.veil).setOrigin(0).setDepth(-1);
     this.place();
     this.draw();
   }
 
   stop(): void {
     this.panel.hidden = true;
+    this.veil?.destroy();
+    this.veil = undefined;
   }
 
   private place(): void {
@@ -179,7 +185,7 @@ export class NodeNav {
         if (!this.revealed(b) || a.id > b.id) continue;
         const pa = anchorPx(a);
         const pb = anchorPx(b);
-        g.lineStyle(2, b.type === 'hidden' || a.type === 'hidden' ? 0xffcf4a : 0x8a2a30, 0.55);
+        g.lineStyle(2, b.type === 'hidden' || a.type === 'hidden' ? 0xffcf4a : 0xa83440, 0.85);
         g.lineBetween(pa.x, pa.y, pb.x, pb.y);
       }
     for (const sc of list) {

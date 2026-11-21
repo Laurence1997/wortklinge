@@ -101,7 +101,7 @@ export class WorldScene extends Phaser.Scene {
     addCanvas('glow', tex.glow);
     addCanvas('dot', tex.dot);
 
-    this.add.image(0, 0, 'map').setOrigin(0, 0);
+    this.add.image(0, 0, 'map').setOrigin(0, 0).setDepth(-2);
     const W = MAP_W * TILE;
     const H = MAP_H * TILE;
     this.cameras.main.setBounds(0, 0, W, H);
