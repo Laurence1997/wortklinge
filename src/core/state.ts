@@ -180,12 +180,14 @@ export function affinityOf(s: Pick<GameState, 'flags' | 'level'>): Affinity | nu
   return s.level >= UNLOCK.affinity && (a === 'der' || a === 'die' || a === 'das') ? a : null;
 }
 
-/** Armor penetration from gear: a plain amulet 4% per tier on every monster; an attuned one 10% per tier on a monster
- *  whose name matches it (plural counts as die) while you stand in its right stance, 0% on the rest. */
-export function gearPen(s: Pick<GameState, 'gearKills' | 'region' | 'flags' | 'level'>, match = false): number {
-  const aff = affinityOf(s);
-  if (!aff) return CONFIG.gear.pen * gearTier(s);
-  return match ? CONFIG.gear.affinityPen * gearTier(s) : 0;
+/** Armor penetration from gear: a plain amulet 4% per tier; an attuned one gives none (it trades it for 相亲和 damage). */
+export function gearPen(s: Pick<GameState, 'gearKills' | 'region' | 'flags' | 'level'>): number {
+  return affinityOf(s) ? 0 : CONFIG.gear.pen * gearTier(s);
+}
+
+/** 相亲和 damage bonus on a hit whose monster matches the amulet and whose stance is right: +6% per tier. */
+export function affinityDmg(s: Pick<GameState, 'gearKills' | 'region'>): number {
+  return CONFIG.gear.affinityDmg * gearTier(s);
 }
 
 /** A kill drops gear shards (1, or 2 for a due review) for the monster's region, and rarely the next tier whole. Returns the new tier when it went up. */

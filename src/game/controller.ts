@@ -47,6 +47,8 @@ import { BossUI } from '../ui/boss';
 import { advance, banner, dialogHasChoices, dialogOpen, say, setPrompt, toast, type Line } from '../ui/feedback';
 import { logLine } from '../ui/gamelog';
 import { ACHIEVEMENTS, NOTES } from '../data/achievements';
+import { SCENE_BY_ID } from '../data/world';
+import { dropPages, pageNo, pageRegion, readPage, regionRestored, restorePage } from '../core/diary';
 import { SAYINGS } from '../data/sayings';
 import { renderHud } from '../ui/hud';
 import { Panels } from '../ui/panels';
@@ -108,7 +110,7 @@ export class Controller {
       if (document.visibilityState === 'visible' && Date.now() - this.lastInput < 120_000 && $('title').hidden)
         this.state.flags.playSec = ((this.state.flags.playSec as number) ?? 0) + 10;
     }, 10_000);
-    window.setInterval(() => this.persist(), 20_000);
+    window.setInterval(() => (this.checkDiary(), this.persist()), 20_000);
     window.addEventListener('beforeunload', () => this.persist());
   }
 
@@ -123,6 +125,44 @@ export class Controller {
     sfx.levelUp();
     toast(`成就：${a.zh} · 称号${a.title}`, 'gold');
     logLine(`成就：${a.zh}（${a.how}）`, 'good');
+  }
+
+  /** 日记残页: drop the pages whose word group is all 半名 (old saves get theirs on the first check). */
+  checkDiary(): void {
+    const ps = dropPages(this.state);
+    if (!ps.length) return;
+    this.milestone('diary_drop');
+    sfx.levelUp();
+    for (const p of ps) {
+      const sc = SCENE_BY_ID[p.scene];
+      toast(`日记残页：第 ${pageRegion(p.scene)} 区第 ${pageNo(p.scene)} 页（${sc?.zh ?? p.scene}）。按 B 在图鉴里复原`, 'gold');
+      logLine(`掉落日记残页：${sc?.zh ?? p.scene} 这组词全到半名了。按 B 打开图鉴，把这一页填回去。`, 'good');
+    }
+    this.persist();
+  }
+
+  /** 日记残页 rewards (no level-gap decay); the region title once every page of it is restored. */
+  diaryDone(scene: string, firstTry: number): number {
+    const xp = restorePage(this.state, scene, firstTry);
+    if (xp) this.diaryXp(xp, `复原日记残页（一次填对 ${firstTry} 空）`);
+    const r = pageRegion(scene);
+    if (regionRestored(this.state, r)) this.achieve(`diary${r}`);
+    this.persist();
+    return xp;
+  }
+
+  diaryRead(scene: string): number {
+    const xp = readPage(this.state, scene);
+    if (xp) this.diaryXp(xp, '把日记残页读出来');
+    this.persist();
+    return xp;
+  }
+
+  private diaryXp(xp: number, why: string): void {
+    const lv = addXp(this.state, xp);
+    logLine(`${why}，经验 +${xp}`, 'good');
+    for (const l of lv.levels) this.onLevelUp(l);
+    this.refresh();
   }
 
   /** 纸条: a story note found as a drop, kept in the codex. */
@@ -516,6 +556,7 @@ export class Controller {
     }
     recordAnswer(s, b.word, r.correct);
     flushSkill(s, b.word, b);
+    if (r.correct) this.checkDiary();
     const log = todayLog(s);
     if (r.correct) log.correct += 1;
     else log.wrong += 1;
@@ -619,7 +660,7 @@ export class Controller {
         if (res.bagFull) toast('背包满了，没捡起来（C 整理）');
         if (res.gearUp) {
           sfx.loot();
-          toast(`装备升到第 ${res.gearUp} 档：伤害 +${Math.round(CONFIG.gear.dmg * 100 * res.gearUp)}%，破甲 ${affinityOf(s) ? `对上亲和 ${Math.round(CONFIG.gear.affinityPen * 100 * res.gearUp)}%` : `${Math.round(CONFIG.gear.pen * 100 * res.gearUp)}%`}`, 'gold');
+          toast(`装备升到第 ${res.gearUp} 档：伤害 +${Math.round(CONFIG.gear.dmg * 100 * res.gearUp)}%，${affinityOf(s) ? `亲和伤害 +${Math.round(CONFIG.gear.affinityDmg * 100 * res.gearUp)}%` : `破甲 ${Math.round(CONFIG.gear.pen * 100 * res.gearUp)}%`}`, 'gold');
         }
         if (res.chest) this.gotChest(res.chest, b.monster.lvl);
         if (b.word.family === 'krume') this.questFire('krumeKill');

@@ -21,6 +21,7 @@ if (process.env.COMBO) for (const c of CONFIG.combo) c.dmg *= +process.env.COMBO
 if (process.env.INS) CONFIG.tech.inscribeMult = +process.env.INS;
 if (process.env.GEAR) CONFIG.gear.dmg = +process.env.GEAR;
 if (process.env.ARM) CONFIG.armor.base = +process.env.ARM;
+if (process.env.AFFDMG) CONFIG.gear.affinityDmg = +process.env.AFFDMG;
 let rng = makeRng(11);
 
 type T = 'grind' | 'balance' | 'learn';
@@ -288,11 +289,12 @@ if (process.env.AFFCMP) {
   for (const L of [9, 12, 15, 18]) {
     const G = gearAt(L);
     const m = L + 1;
-    const q = (aff?: string, g?: string) => { AFF = aff; GENDER = g; rng = makeRng(7); return cell('balance', L, G, m).q; };
+    const K = process.env.AFFCMP === 'kpm';
+    const q = (aff?: string, g?: string) => { AFF = aff; GENDER = g; rng = makeRng(7); const c = cell('balance', L, G, m); return K ? 60 / c.kpm : c.q; };
     const plain = q();
     const mixed = ['der', 'die', 'das'].map((a) => `${a} ${(q(a) - plain).toFixed(2)}`).join(' ');
     const one = ['der', 'die', 'das'].map((g) => { const p = q(undefined, g); const r = q(g, g); const w = q(g === 'der' ? 'das' : 'der', g); return `${g}: plain ${p.toFixed(2)} right ${(r - p).toFixed(2)} wrong ${(w - p).toFixed(2)}`; }).join(' | ');
-    console.log(`L${L} G${G} vs Lv${m} plain ${plain.toFixed(2)} q/kill · mixed field Δ ${mixed}\n    ${one}`);
+    console.log(`L${L} G${G} vs Lv${m} plain ${plain.toFixed(2)} ${K ? 's' : 'q'}/kill · mixed field Δ ${mixed}\n    ${one}`);
   }
   process.exit(0);
 }

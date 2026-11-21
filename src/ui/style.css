@@ -275,3 +275,16 @@ label.toggle { display: flex; gap: 8px; align-items: center; padding: 6px 0; }
 #scene-panel kbd { font-size: 10px; opacity: .7; }
 .bigmap { display: flex; flex-direction: column; gap: 6px; }
 .bigmap .btn { text-align: left; }
+
+/* 日记残页 (0.6) */
+.btn.tiny { padding: 1px 6px; font-size: 12px; margin: 2px 3px; }
+.diary-page { font-size: 18px; line-height: 2.6; }
+.diary-line { margin: 2px 0; padding: 0 6px; border-left: 2px solid transparent; }
+.diary-line.reading { border-left-color: var(--gold, #ffcf4a); background: rgba(255, 207, 74, .06); }
+.diary-blank { display: inline-flex; flex-direction: column; align-items: center; vertical-align: middle; line-height: 1.2; margin: 0 3px; }
+.diary-blank small { font-size: 11px; opacity: .7; }
+.diary-blank .base { opacity: .55; font-style: italic; }
+.diary-blank b.filled { color: #9fe28a; }
+.diary-blank b.revealed { color: #ffb05a; }
+.diary-blank .hole { letter-spacing: 1px; opacity: .6; }
+.diary-blank input.diary { font: inherit; font-size: 16px; padding: 1px 4px; }

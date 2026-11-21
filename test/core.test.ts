@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { gradeMoechte, gradeTyped, normalize } from '../src/core/grading';
 import { fullForm, WORD_BY_ID, WORDS } from '../src/data/words';
-import { newGame, addXp, migrate, attack, gearTier, addGearKill, affinityOf } from '../src/core/state';
+import { SCENES } from '../src/data/world';
+import { DIARY, parseLine } from '../src/data/diary';
+import { newGame, addXp, migrate, attack, gearTier, addGearKill, affinityOf, affinityDmg } from '../src/core/state';
 import { applyWin } from '../src/core/outcomes';
 import { recordKill, kindOf, stageOf } from '../src/core/srs';
 import { CONFIG, monsterHpAt, xpToNext } from '../src/core/config';
-import { startBattle, makeQuestion, resolveTurn, spillStorm, effArmor, qTier, linkPack, moveReady, phaseOf } from '../src/core/combat';
+import { startBattle, makeQuestion, resolveTurn, spillStorm, effArmor, affinityMatch, qTier, linkPack, moveReady, phaseOf } from '../src/core/combat';
 import { makeRng } from '../src/core/rng';
 import { answerBoss, startBoss } from '../src/core/boss';
 import { BOSS_QUESTIONS } from '../src/data/boss';
@@ -830,27 +832,28 @@ describe('0.4 战斗修正版', () => {
     b.monster.lvl = 12;
     expect(effArmor(s, b, 0)).toBeCloseTo(0.125 / 1.125);
   });
-  it('相亲和: matching gender + right stance 10%/tier, others 0, plain amulet 4%/tier; plural counts as die', () => {
+  it('相亲和: attuned amulet drops the 4%/tier pen and adds 10%/tier damage on a matching gender with the right stance', () => {
     const s = lvl15();
     s.gearKills = { '2': 40 * 16 }; // tier 4
     const w = WORDS.find((x) => x.lvl <= 15 && x.art === 'der')!;
     const b = startBattle(s, w, makeRng(1));
     b.monster.lvl = 17;
+    expect(effArmor(s, b, 0)).toBeCloseTo((4 * 0.84) / (1 + 4 * 0.84));
+    s.flags.affinity = 'der';
+    expect(effArmor(s, b, 0)).toBeCloseTo(4 / 5);
+    expect(affinityDmg(s)).toBeCloseTo(0.4);
     b.intent = { ...b.intent, caseArt: undefined };
     b.phase = 'der';
-    const plain = effArmor(s, b, 0);
-    expect(plain).toBeCloseTo((4 * 0.84) / (1 + 4 * 0.84));
-    s.flags.affinity = 'der';
-    expect(effArmor(s, b, 0)).toBeCloseTo((4 * 0.6) / (1 + 4 * 0.6));
-    b.phase = 'die'; // wrong stance: no resonance
-    expect(effArmor(s, b, 0)).toBeCloseTo(4 / 5);
+    expect(affinityMatch(s, b)).toBe(true);
+    b.phase = 'die';
+    expect(affinityMatch(s, b)).toBe(false); // wrong stance: nothing
     b.phase = 'der';
     s.flags.affinity = 'das';
-    expect(effArmor(s, b, 0)).toBeCloseTo(4 / 5);
+    expect(affinityMatch(s, b)).toBe(false);
     b.pluralMon = true;
     b.phase = 'die';
     s.flags.affinity = 'die';
-    expect(effArmor(s, b, 0)).toBeCloseTo((4 * 0.6) / (1 + 4 * 0.6));
+    expect(affinityMatch(s, b)).toBe(true); // plural counts as die
     s.level = 8; // locked below Lv9: plain amulet
     expect(affinityOf(s)).toBeNull();
   });
@@ -1366,6 +1369,26 @@ describe('0.6 场景记忆法: word groups', () => {
     for (const sc of SCENES.filter((x) => x.type === 'field')) {
       expect(sc.words?.length ?? 0, sc.id).toBeGreaterThanOrEqual(6);
       expect(sc.words!.length, sc.id).toBeLessThanOrEqual(13);
+    }
+  });
+});
+
+describe('0.6 日记残页', () => {
+  it('one page per field scene; 4–6 sentences, 35–70 words, ≥6 of its own group (all if fewer), each blank once', () => {
+    const fields = SCENES.filter((sc) => sc.words && (sc.region === 1 || sc.region === 2));
+    expect(DIARY.map((p) => p.scene).sort()).toEqual(fields.map((sc) => sc.id).sort());
+    for (const p of DIARY) {
+      const group = SCENES.find((sc) => sc.id === p.scene)!.words!;
+      const ids = p.lines.flatMap((l) => [...l.matchAll(/\{([a-z0-9-]+)(?::[^}]+)?\}/g)].map((m) => m[1]));
+      for (const id of ids) expect(group, `${p.scene} ${id}`).toContain(id);
+      expect(new Set(ids).size, p.scene).toBe(ids.length);
+      expect(ids.length, p.scene).toBeGreaterThanOrEqual(Math.min(6, group.length));
+      expect(p.lines.length, p.scene).toBeGreaterThanOrEqual(4);
+      expect(p.lines.length, p.scene).toBeLessThanOrEqual(6);
+      const text = p.lines.map((l) => parseLine(l, (id) => WORD_BY_ID[id].de).map((x) => (typeof x === 'string' ? x : x.form)).join('')).join(' ');
+      const n = text.split(/\s+/).filter((x) => /\p{L}/u.test(x)).length;
+      expect(n, `${p.scene} ${n} words`).toBeGreaterThanOrEqual(35);
+      expect(n, `${p.scene} ${n} words`).toBeLessThanOrEqual(70);
     }
   });
 });

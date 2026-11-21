@@ -6,7 +6,7 @@ import { gradeTyped, normalize, type Verdict } from './grading';
 import { ELEMENT_ZH, generateIntent, INTENT_ZH } from './intents';
 import { between, pick, shuffle, type Rng } from './rng';
 import { kindOf, stageOf, overdueSteps, type Kind, type Stage } from './srs';
-import { affinityOf, affixTotal, attack, critChance, gearPen, gearTier, hintsPerFight, maxHp, now, type GameState } from './state';
+import { affinityDmg, affinityOf, affixTotal, attack, critChance, gearPen, gearTier, hintsPerFight, maxHp, now, type GameState } from './state';
 import type { Element, Intent, Move, Word } from './types';
 import { has } from './unlocks';
 import { fullForm, genderOf, hasArticleQuestion, WORD_BY_ID, WORDS, zhWithPos } from '../data/words';
@@ -452,7 +452,7 @@ export function shownDe(b: Battle): string {
 }
 
 /** 相亲和: the amulet's affinity is the monster's own gender (plural = die; a case change still counts the name's
- *  der/die/das) and the right stance is up. */
+ *  der/die/das) and the stance is right. Wrong-stance turns get nothing. */
 export function affinityMatch(s: GameState, b: Battle): boolean {
   const aff = affinityOf(s);
   if (!aff || !b.word.art || !b.phase || b.phase !== phaseOf(b)) return false;
@@ -462,7 +462,7 @@ export function affinityMatch(s: GameState, b: Battle): boolean {
 export function effArmor(s: GameState, b: Battle, tier: 0 | 1 | 2, factor = 1): number {
   const C = CONFIG.armor;
   if (tier === 2 || b.monster.broken > 0) return 0;
-  let a = Math.pow(C.base, b.monster.lvl - s.level) * Math.max(0, 1 - gearPen(s, affinityMatch(s, b))) * factor;
+  let a = Math.pow(C.base, b.monster.lvl - s.level) * Math.max(0, 1 - gearPen(s)) * factor;
   if (tier === 1) a *= C.typedFactor;
   return Math.min(C.maxReduction, a / (1 + a));
 }
@@ -1195,7 +1195,8 @@ export function resolveTurn(
         if (resMax(s) && move !== 'sentence') cfx.res = Math.min(resMax(s), cfx.res + CONFIG.phase.rightRes);
         if (has(s.level, 'layerElement')) element = ELEMENT_BY_GENDER[b.pluralMon ? 'pl' : genderOf(b.word) ?? 'n'] ?? element;
         if (Object.values(s.equipped).some((it) => it?.legendary === 'articleJudgement')) b.judgement = true;
-        log.push({ text: `${b.phase} 相打中弱点：护甲降一档${resMax(s) && move !== 'sentence' ? `，${resName(s)} +${CONFIG.phase.rightRes}` : ''}${affinityMatch(s, b) && gearTier(s) ? `；护符亲和 ${affinityOf(s)} 共鸣，破甲 ${Math.round(gearPen(s, true) * 100)}%` : ''}。`, tone: 'good' });
+        if (affinityMatch(s, b)) mult *= 1 + affinityDmg(s);
+        log.push({ text: `${b.phase} 相打中弱点：护甲降一档${resMax(s) && move !== 'sentence' ? `，${resName(s)} +${CONFIG.phase.rightRes}` : ''}${affinityMatch(s, b) && gearTier(s) ? `；护符亲和 ${affinityOf(s)} 共鸣，伤害 +${Math.round(affinityDmg(s) * 100)}%` : ''}。`, tone: 'good' });
       } else if (phaseFx === 'wrong') log.push({ text: `${b.phase ?? '无'} 相被抵抗：它不是 ${b.phase ?? '这个'} 相。护甲翻倍。`, tone: 'bad' });
       else if (phaseFx === 'soft') log.push({ text: `${b.phase ? `${b.phase} 相不对` : '没选相'}：这里要 ${ph}${b.pluralMon ? '（复数一律 die）' : phaseCase(b) === 'acc' ? '（第四格）' : phaseCase(b) === 'dat' ? '（第三格）' : ''}。这一级还不罚，选对了护甲降一档。`, tone: 'sys' });
       const judged = b.judgement;

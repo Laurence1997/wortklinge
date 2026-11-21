@@ -9,7 +9,7 @@ import { SKILLS, skillLinesOpen } from '../data/skills';
 import { phraseCards } from '../core/combat';
 import { SAYINGS, SAYING_CFG } from '../data/sayings';
 import { canLearn, CLASSES, learn, rank, spent, talentPoints, TALENT_FROM_LEVEL, TALENTS, TIER_GATE } from '../core/classes';
-import { fullForm, genderOf, hasArticleQuestion, WORDS, zhWithPos } from '../data/words';
+import { fullForm, genderOf, hasArticleQuestion, WORD_BY_ID, WORDS, zhWithPos } from '../data/words';
 import type { Controller } from '../game/controller';
 import { $, bar, clear, h, umlautButtons } from './dom';
 import { DUEL, duelPool, JUMP, startDuel, type Duel } from '../core/duel';
@@ -21,11 +21,15 @@ import { cloud, leaderboard, mustChangePassword, push, setNickname, signOut } fr
 import { loginView } from './account';
 import { toast } from './feedback';
 import { ACHIEVEMENTS, NOTES } from '../data/achievements';
-import { canListen, listenOnce } from './listen';
+import { canListen, lastConfidence, listening, listenOnce } from './listen';
+import { clarity, shadowOk } from '../core/shadow';
+import { DIARY, DIARY_WRITER, type DiaryBlank } from '../data/diary';
+import { SCENE_BY_ID } from '../data/world';
+import { blanksOf, checkBlank, DIARY_MISSES, DIARY_XP, lineText, pageLines, pageNo, pageRegion, pageState } from '../core/diary';
 import { lookPicker } from './title';
 import { BARGAIN_LINES, ensureShop, price, refreshCost, sellPrice, SLOT_NOUN } from '../core/shop';
 
-export type PanelName = 'hero' | 'talents' | 'quests' | 'codex' | 'words' | 'data' | 'account' | 'settings' | 'help' | 'shop' | 'chest' | 'quiz' | 'duel' | 'bigmap';
+export type PanelName = 'hero' | 'talents' | 'quests' | 'codex' | 'words' | 'data' | 'account' | 'settings' | 'help' | 'shop' | 'chest' | 'quiz' | 'duel' | 'bigmap' | 'diary';
 
 export class Panels {
   open: PanelName | null = null;
@@ -35,6 +39,12 @@ export class Panels {
     cloud.onChange = () => {
       if (this.open === 'account') this.render();
     };
+    // 日记残页: hold S to read the current line (release ends it; battle.ts stops the hold on keyup).
+    window.addEventListener('keydown', (e) => {
+      if (this.open !== 'diary' || e.repeat || e.key.toLowerCase() !== 's' || document.activeElement?.tagName === 'INPUT') return;
+      e.preventDefault();
+      void this.diaryReadLine();
+    });
   }
 
   private bigmap: HTMLElement | null = null;
@@ -100,6 +110,13 @@ export class Panels {
       window.setTimeout(() => (el.querySelector('input.quiz') as HTMLInputElement | null)?.focus(), 0);
       return;
     }
+    if (this.open === 'diary' && this.diary) {
+      panel.append(h('h2', h('span', `日记残页 · 第 ${pageRegion(this.diary.scene)} 区第 ${pageNo(this.diary.scene)} 页`), h('button.btn.ghost', { onclick: () => this.close() }, '合上 Esc')), this.diaryBody());
+      clear(el).append(panel);
+      el.onclick = null;
+      window.setTimeout(() => (el.querySelector('input.diary') as HTMLInputElement | null)?.focus(), 0);
+      return;
+    }
     if (this.open === 'bigmap' && this.bigmap) {
       panel.append(h('h2', h('span', '大地图'), h('button.btn.ghost', { onclick: () => this.close() }, '关闭 Esc')), this.bigmap);
       clear(el).append(panel);
@@ -117,13 +134,13 @@ export class Panels {
       if (this.buying !== null) window.setTimeout(() => (el.querySelector('input.buy-line') as HTMLInputElement | null)?.focus(), 0);
       return;
     }
-    const titles: Record<Exclude<PanelName, 'shop' | 'chest' | 'quiz' | 'duel' | 'bigmap'>, string> = { hero: '角色与装备', talents: '职业与天赋', quests: '任务', codex: '图鉴', words: '单词本', data: '数据与存档', account: '账号与排行', settings: '设置', help: '怎么玩' };
+    const titles: Record<Exclude<PanelName, 'shop' | 'chest' | 'quiz' | 'duel' | 'bigmap' | 'diary'>, string> = { hero: '角色与装备', talents: '职业与天赋', quests: '任务', codex: '图鉴', words: '单词本', data: '数据与存档', account: '账号与排行', settings: '设置', help: '怎么玩' };
     const tabs = h('div.tabs');
-    (Object.keys(titles) as Array<Exclude<PanelName, 'shop' | 'chest' | 'quiz' | 'duel' | 'bigmap'>>).forEach((k) =>
+    (Object.keys(titles) as Array<Exclude<PanelName, 'shop' | 'chest' | 'quiz' | 'duel' | 'bigmap' | 'diary'>>).forEach((k) =>
       tabs.append(h(`button.btn${this.open === k ? '.on' : ''}`, { onclick: () => this.show(k) }, titles[k])),
     );
-    panel.append(h('h2', h('span', titles[this.open as Exclude<PanelName, 'shop' | 'chest' | 'quiz' | 'duel' | 'bigmap'>]), h('button.btn.ghost', { onclick: () => this.close() }, '关闭 Esc')), tabs);
-    const body = { bigmap: () => h('div'), shop: () => h('div'), chest: () => h('div'), quiz: () => h('div'), duel: () => h('div'), hero: () => this.hero(), talents: () => this.talents(), quests: () => this.questsBody(), codex: () => this.codex(), words: () => this.wordbook(), data: () => this.data(), account: () => this.account(), settings: () => this.settings(), help: () => this.help() }[this.open]();
+    panel.append(h('h2', h('span', titles[this.open as Exclude<PanelName, 'shop' | 'chest' | 'quiz' | 'duel' | 'bigmap' | 'diary'>]), h('button.btn.ghost', { onclick: () => this.close() }, '关闭 Esc')), tabs);
+    const body = { diary: () => h('div'), bigmap: () => h('div'), shop: () => h('div'), chest: () => h('div'), quiz: () => h('div'), duel: () => h('div'), hero: () => this.hero(), talents: () => this.talents(), quests: () => this.questsBody(), codex: () => this.codex(), words: () => this.wordbook(), data: () => this.data(), account: () => this.account(), settings: () => this.settings(), help: () => this.help() }[this.open]();
     panel.append(body);
     clear(el).append(panel);
     el.onclick = (e) => {
@@ -139,7 +156,7 @@ export class Panels {
     if (this.ctrl.nearBonfire()) left.append(h('h3', '外观（篝火旁免费改）'), lookPicker(s.look, (l) => this.ctrl.setLook(l)).el);
     if (s.level >= UNLOCK.affinity) {
       const aff = affinityOf(s);
-      left.append(h('h3', '护符亲和'), h('p.muted', `现在：${aff ?? '无（普通护符，所有怪破甲每档 4%）'}。${aff ? `${aff} 的怪、选对相时破甲每档 10%，其他怪不破。` : ''}`));
+      left.append(h('h3', '护符亲和'), h('p.muted', `现在：${aff ?? '无（普通护符，所有怪破甲每档 4%）'}。${aff ? `不再破甲；${aff} 的怪（复数算 die）这一下选对相时伤害每档 +10%。` : ''}`));
       if (this.ctrl.nearBonfire()) {
         const row = h('div.row');
         for (const a of ['der', 'die', 'das', null] as const)
@@ -275,6 +292,126 @@ export class Panels {
       h('div.typing', input, umlautButtons(input), h('button.btn.primary', { onclick: go }, '说 ↵')),
     );
     return wrap;
+  }
+
+  // ---- 日记残页 (0.6) --------------------------------------------------------------------
+
+  private diary: { scene: string; at: number; misses: number; firstTry: number; revealed: Set<number>; msg: string; readAt: number; readMsg: string } | null = null;
+
+  showDiary(scene: string): void {
+    const restored = pageState(this.ctrl.state, scene) === 2;
+    const n = blanksOf(DIARY.find((p) => p.scene === scene)!).length;
+    this.diary = { scene, at: restored ? n : 0, misses: 0, firstTry: 0, revealed: new Set(), msg: '', readAt: 0, readMsg: '' };
+    this.show('diary');
+  }
+
+  private diaryBody(): HTMLElement {
+    const d = this.diary!;
+    const s = this.ctrl.state;
+    const page = DIARY.find((p) => p.scene === d.scene)!;
+    const lines = pageLines(page);
+    const blanks = blanksOf(page);
+    const done = d.at >= blanks.length;
+    const writer = s.flags.bossKills ? DIARY_WRITER : 'J▒▒▒s K▒▒l▒r';
+    const wrap = h('div.diary-page');
+    wrap.append(h('p.small.muted', `写日记的人：${writer}。${done ? '' : '把这一页的词填回去（每个空下面是中文，上面的小字是原形）。错两次就亮答案，这一页照样能复原。'}`));
+    let k = 0;
+    lines.forEach((parts, li) => {
+      const row = h(`div.diary-line${done && d.readAt === li && pageState(s, d.scene) === 2 && !s.flags[`diaryRead_${d.scene}`] ? '.reading' : ''}`);
+      for (const part of parts) {
+        if (typeof part === 'string') {
+          row.append(h('span', part));
+          continue;
+        }
+        const i = k++;
+        const zh = WORD_BY_ID[part.id]?.zh ?? '';
+        const cell = h('span.diary-blank');
+        if (part.base && i >= d.at) cell.append(h('small.base', part.base));
+        if (i < d.at) cell.append(h(`b.${d.revealed.has(i) ? 'revealed' : 'filled'}`, part.form));
+        else if (i === d.at) {
+          const input = h('input.diary', { type: 'text', autocomplete: 'off', spellcheck: 'false', style: `width:${Math.max(4, part.form.length + 2)}ch` }) as HTMLInputElement;
+          input.addEventListener('keydown', (e) => {
+            if (e.key !== 'Enter') return;
+            e.preventDefault();
+            e.stopPropagation();
+            this.diaryAnswer(input.value, part);
+          });
+          cell.append(input);
+        } else cell.append(h('span.hole', '＿'.repeat(Math.min(8, Math.max(2, Math.ceil(part.form.length / 2))))));
+        if (i >= d.at) cell.append(h('small.zh', zh));
+        row.append(cell);
+      }
+      if (done) row.append(h('button.btn.ghost.tiny', { title: '听这一句', onclick: () => this.ctrl.speak(lineText(parts)) }, '听'));
+      wrap.append(row);
+    });
+    if (!done) {
+      const cur = wrap.querySelector('input.diary') as HTMLInputElement | null;
+      if (cur) wrap.append(h('div.typing', umlautButtons(cur), h('button.btn.primary', { onclick: () => this.diaryAnswer(cur.value, blanks[d.at]) }, '填 ↵')));
+      wrap.append(h('div.small.muted', `${d.at} / ${blanks.length}`));
+    }
+    if (d.msg) wrap.append(h('div.feedback.' + (d.msg.startsWith('对') || d.msg.startsWith('复原') ? 'ok' : 'no'), d.msg));
+    if (done && pageState(s, d.scene) === 2) {
+      if (s.flags[`diaryRead_${d.scene}`]) wrap.append(h('p.small.muted', '这一页已经读过了。可以点「听」再听一遍。'));
+      else if (canListen()) {
+        const btn = h('button.btn', {}, `按住读第 ${d.readAt + 1} 句（S）`);
+        btn.addEventListener('pointerdown', (e) => {
+          e.preventDefault();
+          void this.diaryReadLine();
+        });
+        wrap.append(h('p.small', `可选：一句一句读出来（读得像就过，七成的词对上就行），全读完经验 +${DIARY_XP.read}。`), btn);
+        if (d.readMsg) wrap.append(h('div.small', d.readMsg));
+      } else wrap.append(h('p.small.muted', '朗读要用 Chrome 的麦克风；设置里可以试麦克风。'));
+    }
+    return wrap;
+  }
+
+  private diaryAnswer(value: string, b: DiaryBlank): void {
+    const d = this.diary!;
+    if (!value.trim()) return;
+    if (checkBlank(value, b)) {
+      if (d.misses === 0) d.firstTry++;
+      d.msg = `对：${b.form}`;
+      d.at++;
+      d.misses = 0;
+    } else if (++d.misses >= DIARY_MISSES) {
+      d.msg = `是「${b.form}」。记住它，接着填。`;
+      d.revealed.add(d.at);
+      d.at++;
+      d.misses = 0;
+    } else {
+      d.msg = `不对，再想想（还能错 ${DIARY_MISSES - d.misses} 次）`;
+    }
+    const page = DIARY.find((p) => p.scene === d.scene)!;
+    if (d.at >= blanksOf(page).length && pageState(this.ctrl.state, d.scene) !== 2) {
+      const xp = this.ctrl.diaryDone(d.scene, d.firstTry);
+      d.msg = `复原了这一页。${xp ? `经验 +${xp}（一次填对 ${d.firstTry} 空）` : ''}`;
+    }
+    this.render();
+  }
+
+  private async diaryReadLine(): Promise<void> {
+    const d = this.diary;
+    const s = this.ctrl.state;
+    if (!d || listening() || !canListen() || pageState(s, d.scene) !== 2 || s.flags[`diaryRead_${d.scene}`]) return;
+    const lines = pageLines(DIARY.find((p) => p.scene === d.scene)!);
+    const at = d.readAt;
+    const target = lineText(lines[at]);
+    d.readMsg = '录音中……读完松开';
+    this.render();
+    const heard = await listenOnce({ hold: true });
+    if (this.diary !== d || d.readAt !== at) return;
+    if (heard === null) d.readMsg = '';
+    else if (!heard.length) d.readMsg = '没听清，再读一次（不扣任何东西）';
+    else if (!shadowOk(target, heard)) d.readMsg = `听到的是「${heard[0]}」，清晰度 ${clarity(target, heard, lastConfidence)}，再读一次`;
+    else {
+      d.readAt++;
+      d.readMsg = `第 ${at + 1} 句读得像，清晰度 ${clarity(target, heard, lastConfidence)}`;
+      if (d.readAt >= lines.length) {
+        const xp = this.ctrl.diaryRead(d.scene);
+        d.readMsg = `整页读完了。${xp ? `经验 +${xp}` : ''}`;
+      }
+    }
+    this.render();
   }
 
   // ---- 默写对决 ---------------------------------------------------------------------
@@ -550,6 +687,14 @@ export class Panels {
     // 成就 and 纸条 (0.5).
     const ach = h('div.small', h('b', '成就 '), ...ACHIEVEMENTS.map((a) => h('span', { title: a.how, style: s.flags[`ach_${a.id}`] ? 'color:var(--gold, #ffcf4a)' : 'opacity:.45' }, ` ${s.flags[`ach_${a.id}`] ? '★' : '☆'} ${a.zh}${s.flags[`ach_${a.id}`] ? a.title : ''}（${a.how}）`)));
     wrap.append(ach);
+    const pages = DIARY.filter((p) => pageState(s, p.scene));
+    const diaryRow = h('div.small', h('b', `日记残页 ${pages.length} / ${DIARY.length} `));
+    if (!pages.length) diaryRow.append(h('span.muted', '一个场景的一组词全到半名，就掉一页邻居的日记。'));
+    for (const p of pages) {
+      const st = pageState(s, p.scene);
+      diaryRow.append(h(`button.btn.tiny${st === 2 ? '.ghost' : ''}`, { title: SCENE_BY_ID[p.scene]?.zh ?? '', onclick: () => this.showDiary(p.scene) }, `${pageRegion(p.scene)}-${pageNo(p.scene)}${st === 2 ? (s.flags[`diaryRead_${p.scene}`] ? ' ✓读' : ' ✓') : ' 待复原'}`));
+    }
+    wrap.append(diaryRow);
     const notes = NOTES.filter((n) => s.flags[`note_${n.id}`]);
     if (notes.length) wrap.append(h('div.small', h('b', '纸条 '), ...notes.map((n) => h('p.small', `【${n.zh}】${n.text}`))));
     const filters = h('div.tabs');
