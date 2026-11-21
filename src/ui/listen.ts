@@ -26,7 +26,7 @@ if (Ctor) {
       if (!ds.some((d) => d.kind === 'audioinput')) blocked = true;
     }).catch(() => {});
     (navigator.permissions as any)?.query?.({ name: 'microphone' }).then((p: { state: string; onchange: unknown }) => {
-      const sync = () => { if (p.state === 'denied') blocked = true; };
+      const sync = () => { if (p.state === 'denied') blocked = true; else if (p.state === 'granted') blocked = false; };
       sync();
       p.onchange = sync;
     }).catch(() => {});

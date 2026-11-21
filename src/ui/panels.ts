@@ -21,6 +21,7 @@ import { cloud, leaderboard, mustChangePassword, push, setNickname, signOut } fr
 import { loginView } from './account';
 import { toast } from './feedback';
 import { ACHIEVEMENTS, NOTES } from '../data/achievements';
+import { canListen, listenOnce } from './listen';
 import { lookPicker } from './title';
 import { BARGAIN_LINES, ensureShop, price, refreshCost, sellPrice, SLOT_NOUN } from '../core/shop';
 
@@ -757,6 +758,17 @@ export class Panels {
       slider('音乐', 'music'),
       slider('音效', 'sfx'),
     );
+    // 跟读试音: check the microphone and Chrome's recognition at any level (跟读 itself opens at Lv5).
+    const out = h('span.small.muted', canListen() ? '读一句德语，比如「Ich trinke Kaffee.」' : '没检测到麦克风，或者这个网站的麦克风权限被拒绝了');
+    const btn = h('button.btn', '🎤 试麦克风') as HTMLButtonElement;
+    btn.onclick = async () => {
+      btn.disabled = true;
+      out.textContent = '在听……请说德语';
+      const heard = await listenOnce();
+      btn.disabled = false;
+      out.textContent = heard === null ? '用不了麦克风：在地址栏左边的网站设置里允许麦克风，再刷新' : heard.length ? `听到：${heard[0]}` : '没听清，再试一次';
+    };
+    wrap.append(h('label.toggle', h('span', { style: 'width:60px' }, '跟读'), btn, out));
     return wrap;
   }
 
@@ -776,7 +788,7 @@ export class Panels {
     ];
     const wrap = h('div');
     for (const [k, v] of rows) wrap.append(h('div.stat', h('span', { style: 'width:90px;flex:none' }, k), h('span', { style: 'text-align:right' }, v)));
-    wrap.append(h('p.small.muted', `0.4：第 1 区余烬营地（1–10 级）和第 2 区面包集市（11–20 级）。当前 ${s.level} 级，等级上限 ${CONFIG.levelCap}。`));
+    wrap.append(h('p.small.muted', `0.5：第 1 区余烬营地（1–10 级）和第 2 区面包集市（11–20 级）。当前 ${s.level} 级，等级上限 ${CONFIG.levelCap}。`));
     return wrap;
   }
 }
