@@ -163,6 +163,9 @@ export class BattleUI {
   }
 
   private shadowRow(): HTMLElement | string {
+    // Before the first right answer of a fight there is nothing to read yet: say where 跟读 will appear.
+    if (!this.shadowText && !this.shadowMsg && this.phase === 'choose' && canListen() && this.ctrl.canShadow())
+      return h('span.note.shadow.small.muted', '🎤 答对后可以跟读（按 T 或点 🎤）');
     if (!this.shadowText || !canListen() || (!this.ctrl.canShadow() && !this.shadowMsg)) return '';
     return h(
       'span.note.shadow',
