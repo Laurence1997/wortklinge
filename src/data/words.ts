@@ -388,6 +388,16 @@ export function genderOf(w: Word): 'm' | 'f' | 'n' | 'pl' | null {
 }
 
 /** Words you can be asked der/die/das about (plural-only nouns answer "die"). */
+/** 词性标签 for questions that show Chinese and ask for German (是 = Ja / sein, 工作 = Arbeit / arbeiten). */
+export function posTag(w: Word): string {
+  return { n: w.art ? '名词·带冠词' : '名词', v: '动词', adj: '形容词·副词', phr: '短语', num: '数词', name: '国家·语言', q: '疑问词' }[w.pos];
+}
+
+/** The Chinese with its 词性 tag: 工作〔动词〕. */
+export function zhWithPos(w: Word): string {
+  return `${w.digit ?? w.zh}〔${posTag(w)}〕`;
+}
+
 export function hasArticleQuestion(w: Word): boolean {
   return !!w.art;
 }

@@ -9,7 +9,7 @@ import { kindOf, stageOf, overdueSteps, type Kind, type Stage } from './srs';
 import { affixTotal, attack, critChance, gearPen, hintsPerFight, maxHp, now, type GameState } from './state';
 import type { Element, Intent, Move, Word } from './types';
 import { has } from './unlocks';
-import { fullForm, genderOf, hasArticleQuestion, WORD_BY_ID, WORDS } from '../data/words';
+import { fullForm, genderOf, hasArticleQuestion, WORD_BY_ID, WORDS, zhWithPos } from '../data/words';
 import { SKILLS } from '../data/skills';
 import { SAYING_CFG, SAYINGS } from '../data/sayings';
 import { expectedSentence, gradeSentence, nextPattern, PATTERNS, type Pattern } from './sentence';
@@ -371,7 +371,7 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
   if (move === 'cls') {
     if (s.cls === 'guardian') return { type: 'steady', prompt: '稳住：花 3 沉着，挡下这回合的第一击', focus: '稳住', options: ['稳住！'], answer: '稳住！' };
     const lw = stormWord(s, rng, w);
-    return { type: 'storm', prompt: '墨水风暴：默写这个词（名词带冠词），字母越多伤害越高', focus: lw.zh, withArticle: hasArticleQuestion(lw), answer: fullForm(lw), word: lw };
+    return { type: 'storm', prompt: '墨水风暴：默写这个词（名词带冠词），字母越多伤害越高', focus: zhWithPos(lw), withArticle: hasArticleQuestion(lw), answer: fullForm(lw), word: lw };
   }
   if (move === 'skill') {
     const sk = SKILLS[skillId ?? s.skills[0]];
@@ -395,7 +395,7 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
   const typed = (): Question => ({
     type: 'typed',
     prompt: isNoun ? '默写：带上冠词（der / die / das）' : '默写这个词',
-    focus: promptZh,
+    focus: zhWithPos(w),
     withArticle: isNoun,
     answer: fullForm(w),
   });

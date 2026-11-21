@@ -11,6 +11,7 @@ import { fullForm, genderOf } from '../data/words';
 import type { Controller } from '../game/controller';
 import { ARTICLE_COLOR, GLITCH } from '../game/sprites';
 import { $, bar, clear, h, umlautButtons } from './dom';
+import { logLine } from './gamelog';
 
 type Phase = 'choose' | 'answer' | 'result';
 
@@ -94,8 +95,11 @@ export class BattleUI {
     if (this.phase !== 'answer' || !this.question) return;
     this.lastValue = value;
     const voiced = this.b.intent;
+    const target = this.b;
+    const logFrom = target.log.length;
     this.report = this.ctrl.answer(this.move, this.question, value);
     this.phase = 'result';
+    this.logTurn(target, this.question, value, this.report, logFrom);
     // 完形填空: read the whole sentence once the blank is answered.
     if (this.question.type === 'cloze' && this.question.full) this.ctrl.speak(this.question.full);
     // 归名的奖励: a right answer gives the mumbled sentence back whole, read aloud.
@@ -107,6 +111,20 @@ export class BattleUI {
     const delay = this.ctrl.fightOver() ? 1600 : clean ? 1000 : 2600;
     window.clearTimeout(this.autoTimer);
     this.autoTimer = window.setTimeout(() => this.continue(), delay);
+  }
+
+  /** 记录: one line per answer (question, your answer, the right one, damage), then the fight's own log lines. */
+  private logTurn(b: Battle, q: Question, value: string, r: TurnReport, from: number): void {
+    const name = fullForm(b.word);
+    const ask = q.focus ? `「${q.focus}」` : '';
+    const right = r.verdict.correct || q.answer || '';
+    const head = r.correct
+      ? `${name}：${ask} 你答 ${value} ✓${r.crit ? ' 暴击' : ''}${r.playerDamage ? `，造成 ${r.playerDamage} 伤害` : ''}`
+      : `${name}：${ask} 你答 ${value || '（空）'} ✗${right ? `，正确：${right}` : ''}`;
+    logLine(head, r.correct ? 'good' : 'bad');
+    for (const n of r.verdict.notes) if (!n.startsWith('正确答案')) logLine(`  ${n}`, 'info');
+    if (r.monsterDamage) logLine(`  它出手：你受到 ${r.monsterDamage} 伤害`, 'bad');
+    for (const l of b.log.slice(from)) logLine(`  ${l.text}`, l.tone === 'good' ? 'good' : l.tone === 'bad' ? 'bad' : l.tone === 'crit' ? 'gold' : 'info');
   }
 
   continue(): void {
@@ -308,10 +326,12 @@ export class BattleUI {
       q.append(this.renderQuestion(this.question));
     }
 
+    // The whole fight's log, scrollable (the newest line in view).
     const blog = h('div.blog');
-    for (const l of b.log.slice(-3)) blog.append(h(`div.${l.tone}`, l.text));
+    for (const l of b.log) blog.append(h(`div.${l.tone}`, l.text));
 
     clear(el).append(h('div.b-top', monEl, intent, me), movesEl, q, blog);
+    blog.scrollTop = blog.scrollHeight;
     if (this.input && this.phase === 'answer') window.setTimeout(() => this.input?.focus(), 0);
   }
 

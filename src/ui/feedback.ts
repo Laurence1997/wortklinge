@@ -1,6 +1,8 @@
 import { $, clear, h } from './dom';
+import { logLine } from './gamelog';
 
 export function toast(text: string, cls = ''): void {
+  logLine(text, cls === 'gold' ? 'gold' : 'info');
   const box = $('toasts');
   const el = h(`div.toast.panel${cls ? '.' + cls : ''}`, text);
   box.append(el);
@@ -10,6 +12,7 @@ export function toast(text: string, cls = ''): void {
 
 let bannerTimer = 0;
 export function banner(big: string, sub = ''): void {
+  logLine(sub ? `【${big}】${sub}` : `【${big}】`, 'gold');
   const el = $('banner');
   clear(el).append(h('div.big', big), sub ? h('div.sub', sub) : '');
   el.hidden = false;

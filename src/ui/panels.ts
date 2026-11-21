@@ -8,7 +8,7 @@ import { FAMILIES } from '../data/families';
 import { SKILLS } from '../data/skills';
 import { SAYINGS, SAYING_CFG } from '../data/sayings';
 import { canLearn, CLASSES, learn, rank, spent, talentPoints, TALENT_FROM_LEVEL, TALENTS, TIER_GATE } from '../core/classes';
-import { fullForm, genderOf, hasArticleQuestion, WORDS } from '../data/words';
+import { fullForm, genderOf, hasArticleQuestion, WORDS, zhWithPos } from '../data/words';
 import type { Controller } from '../game/controller';
 import { $, bar, clear, h, umlautButtons } from './dom';
 import { DUEL, duelPool, JUMP, startDuel, type Duel } from '../core/duel';
@@ -250,9 +250,12 @@ export class Panels {
   // ---- 默写对决 ---------------------------------------------------------------------
 
   private duel: Duel | null = null;
+  /** 默写对决: after a wrong answer the next word waits until Enter. */
+  private duelHold = false;
 
   showDuel(d: Duel): void {
     this.duel = d;
+    this.duelHold = false;
     this.show('duel');
   }
 
@@ -269,9 +272,20 @@ export class Panels {
     );
     if (d.last) {
       const l = d.last;
-      const fb = h(`div.feedback.${l.ok ? 'ok' : 'no'}`, h('b', l.ok ? `对：${fullForm(l.word)}` : `不对，是 ${fullForm(l.word)}`), h('span', `  ${l.word.zh}`));
-      if (l.ok) fb.append(h('span.note', `当场归名！+${l.xp} 经验`));
-      for (const n of l.verdict.notes) fb.append(h('span.note', n));
+      const fb = h(`div.feedback.${l.ok ? 'ok' : 'no'}`);
+      if (l.ok) {
+        fb.append(h('b', `写对了：${fullForm(l.word)}`), h('span', `（${zhWithPos(l.word)}）`), h('span.note', `当场归名！+${l.xp} 经验`));
+        for (const n of l.verdict.notes) fb.append(h('span.note', n));
+      } else {
+        // A wrong answer waits for Enter: what you wrote, then the right spelling, each on its own line.
+        fb.append(
+          h('b', '写错了'),
+          h('span.note', `题目：${zhWithPos(l.word)}`),
+          h('span.note', `你写的：${l.input || '（空）'}`),
+          h('span.note', h('b', `正确写法：${fullForm(l.word)}`)),
+        );
+        for (const n of l.verdict.notes) if (!n.startsWith('正确答案')) fb.append(h('span.note', n));
+      }
       if (l.hit) fb.append(h('span.note', `考官出手：你受到 ${l.hit} 点伤害`));
       wrap.append(fb);
     }
@@ -283,11 +297,25 @@ export class Panels {
       );
       return wrap;
     }
+    if (this.duelHold && d.last && !d.last.ok) {
+      const next = h('button.btn.primary.duel-next', { onclick: () => { this.duelHold = false; this.render(); } }, '看清了，下一个 ↵') as HTMLButtonElement;
+      next.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          e.stopPropagation();
+          next.click();
+        }
+      });
+      wrap.append(h('div.row', next));
+      window.setTimeout(() => next.focus(), 0);
+      return wrap;
+    }
     const w = d.queue[0];
     const input = h('input.duel', { type: 'text', autocomplete: 'off', spellcheck: 'false', placeholder: hasArticleQuestion(w) ? 'der / die / das + 名词' : '写出德语' }) as HTMLInputElement;
     const go = () => {
       if (!input.value.trim()) return;
       this.ctrl.duelAnswer(d, input.value);
+      this.duelHold = !d.last?.ok;
       this.render();
     };
     input.addEventListener('keydown', (e) => {
@@ -297,7 +325,7 @@ export class Panels {
         go();
       }
     });
-    wrap.append(h('div.focus', { style: 'font-size:28px;margin:10px 0' }, w.zh), h('div.typing', input, umlautButtons(input), h('button.btn.primary', { onclick: go }, '写 ↵')));
+    wrap.append(h('div.focus', { style: 'font-size:28px;margin:10px 0' }, zhWithPos(w)), h('div.typing', input, umlautButtons(input), h('button.btn.primary', { onclick: go }, '写 ↵')));
     return wrap;
   }
 

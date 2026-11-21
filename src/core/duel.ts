@@ -37,7 +37,7 @@ export interface Duel {
   wrong: number;
   /** 跳区考核 instead of a normal duel. */
   exam?: boolean;
-  last?: { ok: boolean; verdict: Verdict; word: Word; xp: number; hit: number };
+  last?: { ok: boolean; verdict: Verdict; word: Word; xp: number; hit: number; input: string };
 }
 
 /** Words of this region that can be written and that you have never met (Lucas 2026-11-19: no skipping reviews). */
@@ -83,7 +83,7 @@ export function answerDuel(s: GameState, d: Duel, input: string): { levelUp: Lev
     hit += Math.max(1, Math.round(maxHp(s) * DUEL.wrongHitShare));
   }
   if (d.exam) {
-    d.last = { ok: verdict.ok, verdict, word: w, xp, hit: 0 };
+    d.last = { ok: verdict.ok, verdict, word: w, xp, hit: 0, input: input.trim() };
     if (d.right >= JUMP.pass) d.over = 'win';
     else if (d.right + d.queue.length < JUMP.pass) d.over = 'lose'; // can't reach 16 any more
     return { levelUp };
@@ -94,7 +94,7 @@ export function answerDuel(s: GameState, d: Duel, input: string): { levelUp: Lev
     hit += Math.max(1, Math.round(maxHp(s) * DUEL.hitShare));
   }
   s.hp = Math.max(0, s.hp - hit);
-  d.last = { ok: verdict.ok, verdict, word: w, xp, hit };
+  d.last = { ok: verdict.ok, verdict, word: w, xp, hit, input: input.trim() };
   if (d.hp <= 0) d.over = 'win';
   else if (s.hp <= 0) {
     d.over = 'lose';

@@ -35,12 +35,13 @@ import { has, UNLOCK_TEXT } from '../core/unlocks';
 import { BOSS } from '../data/boss';
 import { BOSS2 } from '../data/boss2';
 import { SKILLS } from '../data/skills';
-import { fullForm, hasArticleQuestion, WORD_BY_ID, WORDS } from '../data/words';
+import { fullForm, hasArticleQuestion, WORD_BY_ID, WORDS, zhWithPos } from '../data/words';
 import { initAudio, setBattleMusic, setVolumes, sfx, speak, speechAvailable, hasGermanVoice } from './audio';
 import type { MonsterEntity, WorldScene } from './WorldScene';
 import { BattleUI } from '../ui/battle';
 import { BossUI } from '../ui/boss';
 import { advance, banner, dialogHasChoices, dialogOpen, say, setPrompt, toast, type Line } from '../ui/feedback';
+import { logLine } from '../ui/gamelog';
 import { renderHud } from '../ui/hud';
 import { Panels } from '../ui/panels';
 import { $, isTyping } from '../ui/dom';
@@ -459,6 +460,7 @@ export class Controller {
           banner('归名', `${fullForm(b.word)} · ${b.word.zh}`);
           this.speak(fullForm(b.word));
         }
+        logLine(`击败 ${fullForm(b.word)}（${b.word.zh}）`, 'good');
         const bits = [`+${res.xp} 经验`, `+${res.gold} 金币`];
         if (res.review) bits.push('复习 +50%');
         if (res.kill.to > res.kill.from && !res.kill.guiming) bits.push(`${b.word.de}：${['无名', '裂形', '半名', '归名'][res.kill.to]}`);
@@ -1005,6 +1007,12 @@ export class Controller {
   /** Called by the duel panel after each answer. */
   duelAnswer(d: Duel, input: string): void {
     const r = answerDuel(this.state, d, input);
+    const l = d.last;
+    if (l) {
+      const tag = d.exam ? '跳区考核' : '默写对决';
+      logLine(l.ok ? `${tag}：${zhWithPos(l.word)} 你写 ${l.input} ✓ +${l.xp} 经验` : `${tag}：${zhWithPos(l.word)} 你写 ${l.input || '（空）'} ✗，正确：${fullForm(l.word)}`, l.ok ? 'good' : 'bad');
+      if (l.hit) logLine(`  考官出手：你受到 ${l.hit} 伤害`, 'bad');
+    }
     if (d.exam) {
       for (const l of r.levelUp?.levels ?? []) this.onLevelUp(l);
       if (d.over === 'win') this.passJump();
