@@ -1012,3 +1012,15 @@ describe('2026-11-21: 低语, 越区引导, reviews, 怪的台词', () => {
     expect(v.line.toLowerCase()).not.toContain('tee ');
   });
 });
+
+describe('词性标签 (2026-11-21)', () => {
+  it('tells countries from languages and nouns from verbs', async () => {
+    const { posTag } = await import('../src/data/words');
+    const by = (de: string) => WORDS.find((x) => x.de === de)!;
+    expect(posTag(by('China'))).toBe('国名·不带冠词');
+    expect(posTag(by('Schweiz'))).toBe('国名·带冠词');
+    expect(posTag(by('Chinesisch'))).toBe('语言名·不带冠词');
+    expect(posTag(by('arbeiten'))).toBe('动词');
+    expect(posTag(by('Arbeit'))).toBe('名词·带冠词');
+  });
+});

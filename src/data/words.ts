@@ -390,7 +390,12 @@ export function genderOf(w: Word): 'm' | 'f' | 'n' | 'pl' | null {
 /** Words you can be asked der/die/das about (plural-only nouns answer "die"). */
 /** 词性标签 for questions that show Chinese and ask for German (是 = Ja / sein, 工作 = Arbeit / arbeiten). */
 export function posTag(w: Word): string {
-  return { n: w.art ? '名词·带冠词' : '名词', v: '动词', adj: '形容词·副词', phr: '短语', num: '数词', name: '国家·语言', q: '疑问词' }[w.pos];
+  if (w.pos === 'name') {
+    // Languages (Deutsch, Chinesisch) and countries share the 'name' pos; tell them apart by the Chinese (…语).
+    if (/语$/.test(w.zh)) return '语言名·不带冠词';
+    return w.art ? '国名·带冠词' : '国名·不带冠词';
+  }
+  return { n: w.art ? '名词·带冠词' : '名词', v: '动词', adj: '形容词·副词', phr: '日常用语', num: '数词', q: '疑问词' }[w.pos];
 }
 
 /** The Chinese with its 词性 tag: 工作〔动词〕. */
