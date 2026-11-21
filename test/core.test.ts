@@ -1024,3 +1024,36 @@ describe('词性标签 (2026-11-21)', () => {
     expect(posTag(by('Arbeit'))).toBe('名词·带冠词');
   });
 });
+
+describe('句子技能轮换 + 墨水风暴抽词 (2026-11-21)', () => {
+  it('a skill asks its first line, unlocks one more every 5 casts and rotates; every line in a skill has its own Chinese', async () => {
+    const { SKILLS, skillLine, skillLinesOpen } = await import('../src/data/skills');
+    const sk = SKILLS.wieBitte;
+    expect(skillLine(sk, 0).de).toBe('Wie bitte?');
+    expect(skillLinesOpen(sk, 4)).toBe(1);
+    expect(skillLine(sk, 4).de).toBe('Wie bitte?');
+    expect(skillLine(sk, 5).de).toBe(sk.lines[1].de); // the cast it unlocks
+    expect(skillLinesOpen(sk, 100)).toBe(sk.lines.length);
+    for (const k of Object.values(SKILLS)) {
+      expect(k.lines[0].de).toBe(k.de);
+      expect(new Set(k.lines.map((l) => l.zh)).size).toBe(k.lines.length);
+    }
+    const s = newGame('T', 'student', T0);
+    s.level = 8;
+    s.skills = ['wieBitte'];
+    s.skillUses.wieBitte = 5;
+    const b = startBattle(s, WORDS[0], makeRng(3));
+    const q = makeQuestion(s, b, 'skill', makeRng(1));
+    expect(q.answer).toBe('Noch einmal, bitte.');
+    expect(resolveTurn(s, b, 'skill', q, 'Noch einmal, bitte', makeRng(2)).correct).toBe(true);
+  });
+  it('墨水风暴 prefers words due soon or written wrong lately', async () => {
+    const { stormWord } = await import('../src/core/combat');
+    const s = newGame('T', 'student', T0);
+    const ws = WORDS.filter((x) => x.pos === 'n').slice(0, 30);
+    for (const w of ws) s.words[w.id] = { stage: 2, due: 9e15, firstSeen: 0, lastSeen: 0, relapse: 0, correct: 1, wrong: 0 };
+    const pickMe = ws.slice(0, 5);
+    for (const w of pickMe) s.words[w.id].due = 0;
+    for (let i = 0; i < 30; i++) expect(pickMe).toContain(stormWord(s, makeRng(i), WORDS[0]));
+  });
+});

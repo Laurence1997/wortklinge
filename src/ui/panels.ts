@@ -5,7 +5,7 @@ import { attack, critChance, dayKey, hintsPerFight, maxHp, now } from '../core/s
 import type { AffixKey, Item, Slot, Word } from '../core/types';
 import { has } from '../core/unlocks';
 import { FAMILIES } from '../data/families';
-import { SKILLS } from '../data/skills';
+import { SKILLS, skillLinesOpen } from '../data/skills';
 import { SAYINGS, SAYING_CFG } from '../data/sayings';
 import { canLearn, CLASSES, learn, rank, spent, talentPoints, TALENT_FROM_LEVEL, TALENTS, TIER_GATE } from '../core/classes';
 import { fullForm, genderOf, hasArticleQuestion, WORDS, zhWithPos } from '../data/words';
@@ -132,7 +132,7 @@ export class Panels {
       left.append(h('h3', '句子技能'));
       for (const id of s.skills) {
         const sk = SKILLS[id];
-        left.append(h('div.slot', h('div.k', sk.zh), h('div', h('div', { style: 'font-family:var(--mono)' }, sk.de), h('div.small.muted', sk.effect))));
+        left.append(h('div.slot', h('div.k', sk.zh), h('div', h('div', { style: 'font-family:var(--mono)' }, sk.lines.slice(0, skillLinesOpen(sk, s.skillUses[sk.id] ?? 0)).map((l) => l.de).join(' / ')), h('div.small.muted', `${sk.effect} · 已解锁 ${skillLinesOpen(sk, s.skillUses[sk.id] ?? 0)} / ${sk.lines.length} 种说法，每放 5 次多一种`))));
       }
     }
 

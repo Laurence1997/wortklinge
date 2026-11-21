@@ -1,7 +1,7 @@
 // Turn-based combat as a reading game: the monster says its next move in German,
 // you pick a counter, then answer a question. You act first.
 
-import { CONFIG, monsterHpAt, playerBaseHp } from './config';
+import { CONFIG, DAY, HOUR, monsterHpAt, playerBaseHp } from './config';
 import { gradeTyped, normalize, type Verdict } from './grading';
 import { ELEMENT_ZH, generateIntent, INTENT_ZH } from './intents';
 import { between, pick, shuffle, type Rng } from './rng';
@@ -10,7 +10,7 @@ import { affixTotal, attack, critChance, gearPen, hintsPerFight, maxHp, now, typ
 import type { Element, Intent, Move, Word } from './types';
 import { has } from './unlocks';
 import { fullForm, genderOf, hasArticleQuestion, WORD_BY_ID, WORDS, zhWithPos } from '../data/words';
-import { SKILLS } from '../data/skills';
+import { SKILLS, skillLine, skillLinesOpen } from '../data/skills';
 import { SAYING_CFG, SAYINGS } from '../data/sayings';
 import { expectedSentence, gradeSentence, nextPattern, PATTERNS, type Pattern } from './sentence';
 import { EXAMPLES, clozeModeFor, clozeOptions, exampleSplits, gradeCloze, hasExamples, makeCloze, voiceLine, wholeSentence, type ClozeMode } from './cloze';
@@ -375,7 +375,10 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
   }
   if (move === 'skill') {
     const sk = SKILLS[skillId ?? s.skills[0]];
-    return { type: 'skill', prompt: `释放「${sk.zh}」：写对整句`, focus: sk.zhLine, answer: sk.de, skillId: sk.id };
+    const uses = s.skillUses[sk.id] ?? 0;
+    const line = skillLine(sk, uses);
+    const open = skillLinesOpen(sk, uses);
+    return { type: 'skill', prompt: `释放「${sk.zh}」：写对整句${sk.lines.length > 1 ? `（已解锁 ${open} / ${sk.lines.length} 句）` : ''}`, focus: line.zh, answer: line.de, skillId: sk.id };
   }
   const article = (): Question => ({
     type: 'article',
@@ -607,7 +610,16 @@ export function sentencePattern(s: GameState, b: Battle): Pattern | null {
 /** A long word you have met (longest few of them), for 墨水风暴. Falls back to the target's word. */
 export function stormWord(s: GameState, rng: Rng, fallback: Word): Word {
   const known = WORDS.filter((x) => s.words[x.id] && x.pos !== 'phr' && x.pos !== 'num' && !x.digit);
-  const pool = known.sort((a, b) => letters(b) - letters(a)).slice(0, 12);
+  const byLength = (xs: Word[]) => [...xs].sort((a, b) => letters(b) - letters(a));
+  // 2026-11-21: words due within 12 hours or written wrong and seen in the last 3 days come first, so the
+  // big attack doubles as review; fewer than 4 of them → topped up with the longest words you know.
+  const t = now(s);
+  const urgent = known.filter((x) => {
+    const st = s.words[x.id];
+    return st.due <= t + 12 * HOUR || (st.wrong > 0 && t - st.lastSeen <= 3 * DAY);
+  });
+  let pool = byLength(urgent).slice(0, 12);
+  if (pool.length < 4) pool = [...pool, ...byLength(known.filter((x) => !pool.includes(x))).slice(0, 12 - pool.length)];
   return pool.length ? pick(rng, pool) : fallback;
 }
 
@@ -667,7 +679,7 @@ export function gradeQuestion(_s: GameState, b: Battle, q: Question, input: stri
     }
     case 'skill': {
       const sk = SKILLS[q.skillId!];
-      const fake: Word = { id: sk.id, de: sk.de, zh: sk.zh, pos: 'phr', family: 'echo', lvl: 1, zone: 'camp' };
+      const fake: Word = { id: sk.id, de: q.answer ?? sk.de, zh: sk.zh, pos: 'phr', family: 'echo', lvl: 1, zone: 'camp' };
       return gradeTyped(input, fake, false);
     }
     case 'conj':
@@ -876,26 +888,29 @@ export function resolveTurn(
     if (move === 'skill') {
       const sk = SKILLS[q.skillId!];
       b.skillCooldown = sk.cooldown;
+      const said = q.answer ?? sk.de;
+      const before = skillLinesOpen(sk, s.skillUses[sk.id] ?? 0);
       s.skillUses[sk.id] = (s.skillUses[sk.id] ?? 0) + 1;
+      if (skillLinesOpen(sk, s.skillUses[sk.id]) > before) log.push({ text: `「${sk.zh}」解锁了新的说法，下次放它时会考。`, tone: 'sys' });
       if (sk.id === 'keineAhnung') {
         b.fx.shield = true;
-        log.push({ text: `「${sk.de}」——字在你身前立成一面墙。`, tone: 'good' });
+        log.push({ text: `「${said}」——字在你身前立成一面墙。`, tone: 'good' });
       } else if (sk.id === 'wieBitte') {
         interrupted = true;
-        log.push({ text: `「${sk.de}」——它愣住了。`, tone: 'good' });
+        log.push({ text: `「${said}」——它愣住了。`, tone: 'good' });
       } else if (sk.id === 'zuTeuer') {
         b.fx.cheap = true;
-        log.push({ text: `「${sk.de}」——它们下手轻了一半。`, tone: 'good' });
+        log.push({ text: `「${said}」——它们下手轻了一半。`, tone: 'good' });
       } else if (sk.id === 'wieViel') {
         b.fx.peek = 2;
-        log.push({ text: `「${sk.de}」——你看见了它们下一步。`, tone: 'good' });
+        log.push({ text: `「${said}」——你看见了它们下一步。`, tone: 'good' });
       } else if (sk.id === 'stimmtSo') {
         b.fx.stimmt = true;
-        log.push({ text: `「${sk.de}」——这一场，金币翻倍。`, tone: 'good' });
+        log.push({ text: `「${said}」——这一场，金币翻倍。`, tone: 'good' });
       } else if (sk.id === 'freutMich') {
         const heal = Math.round(maxHp(s) * 0.3);
         s.hp = Math.min(maxHp(s), s.hp + heal);
-        log.push({ text: `「${sk.de}」——生命 +${heal}。`, tone: 'good' });
+        log.push({ text: `「${said}」——生命 +${heal}。`, tone: 'good' });
       }
     } else if (move === 'cls' && q.type === 'steady') {
       blocking = true;
