@@ -105,6 +105,42 @@ export const FAMILIES: Record<FamilyId, Family> = {
     tendency: { attack: 40, defend: 40, charge: 20 },
     glyph: '▣',
   },
+  fahrzeug: {
+    id: 'fahrzeug',
+    zh: '空车',
+    de: 'Leerfahrzeug',
+    lore: '没有司机的车票、车厢和行李，按着早已作废的时刻表在站前街上来回开。',
+    verb: { ich: 'ramme', inf: 'rammen', zh: '撞' },
+    tendency: { attack: 55, defend: 25, charge: 20, heal: 10 },
+    glyph: '◫',
+  },
+  nachhall: {
+    id: 'nachhall',
+    zh: '余响',
+    de: 'Nachhall',
+    lore: '已经做完的事还在铁轨镇回荡：上车、下车、等过的车。它们只记得自己「做过了」。',
+    verb: { ich: 'halle', inf: 'hallen', zh: '回荡' },
+    tendency: { attack: 50, defend: 20, charge: 30, heal: 15 },
+    glyph: '≈',
+  },
+  wegweiser: {
+    id: 'wegweiser',
+    zh: '路标鬼',
+    de: 'Wegweiser',
+    lore: '老城路口的路牌、门牌和楼层号，全都指向错误的方向。问路的人最后都站在原地。',
+    verb: { ich: 'stoße', inf: 'stoßen', zh: '推' },
+    tendency: { attack: 45, defend: 35, charge: 20, heal: 10 },
+    glyph: '↱',
+  },
+  uhrwerk: {
+    id: 'uhrwerk',
+    zh: '钟虫',
+    de: 'Uhrwerk',
+    lore: '时刻表大厅里拆散的齿轮和指针。它们晚点，却总说自己准时。',
+    verb: { ich: 'ticke', inf: 'ticken', zh: '滴答敲' },
+    tendency: { attack: 50, defend: 25, charge: 25, heal: 10 },
+    glyph: '◷',
+  },
 };
 
 /** A1 phrase bank (游戏设计 › 同一个意图，不同的说法). Lines marked * in the doc are game-only. */

@@ -33,7 +33,7 @@ export interface Rect {
   h: number;
 }
 
-export type RegionId = 1 | 2;
+export type RegionId = 1 | 2 | 3;
 export type NpcId = 'hilde' | 'greta' | 'mira' | 'konrad' | 'examiner';
 
 export interface ZoneDef {

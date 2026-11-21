@@ -26,14 +26,14 @@ export interface Word {
   /** Tutorial words respawn fast. */
   tutorial?: boolean;
   /** Region the word belongs to (1 = 余烬营地, 2 = 面包集市). */
-  region?: 1 | 2;
+  region?: 1 | 2 | 3;
   /** Short example sentence shown in the 图鉴 card once 归名. */
   ex?: string;
 }
 
-export type FamilyId = 'zahnding' | 'echo' | 'zahlwurm' | 'sippe' | 'schild' | 'krume' | 'muenzling' | 'kram' | 'gier' | 'truhe';
+export type FamilyId = 'zahnding' | 'echo' | 'zahlwurm' | 'sippe' | 'schild' | 'krume' | 'muenzling' | 'kram' | 'gier' | 'truhe' | 'fahrzeug' | 'nachhall' | 'wegweiser' | 'uhrwerk';
 /** Region 1: camp, echogasse, schilderstrasse, aschehof. Region 2 (面包集市): markt (city), gemuesegasse, waagegasse, kornspeicher. */
-export type ZoneId = 'camp' | 'echogasse' | 'schilderstrasse' | 'aschehof' | 'markt' | 'gemuesegasse' | 'waagegasse' | 'kornspeicher';
+export type ZoneId = 'camp' | 'echogasse' | 'schilderstrasse' | 'aschehof' | 'markt' | 'gemuesegasse' | 'waagegasse' | 'kornspeicher' | 'gleisdorf' | 'bahnhofstrasse' | 'altstadt' | 'fahrplanhalle';
 
 /** flee = 宝箱怪 / rare monster shouting 「Ich muss los!」: kill it this turn or it runs. */
 export type IntentKind = 'attack' | 'defend' | 'charge' | 'heal' | 'wait' | 'flee';

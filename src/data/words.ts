@@ -8,6 +8,7 @@
 
 import type { Article, FamilyId, Pos, Word, ZoneId } from '../core/types';
 import { REGION2_GROUPS } from './words2';
+import { REGION3_GROUPS } from './words3';
 
 interface Group {
   family: FamilyId;
@@ -315,7 +316,7 @@ function slug(s: string): string {
 function build(): Word[] {
   const out: Word[] = [];
   const seen = new Set<string>();
-  const all = [...groups.map((g) => ({ g, region: 1 as const })), ...REGION2_GROUPS.map((g) => ({ g, region: 2 as const }))];
+  const all = [...groups.map((g) => ({ g, region: 1 as const })), ...REGION2_GROUPS.map((g) => ({ g, region: 2 as const })), ...REGION3_GROUPS.map((g) => ({ g, region: 3 as const }))];
   for (const { g, region } of all) {
     g.rows.forEach((row, i) => {
       const parts = row.split('|').map((p) => p.trim());
