@@ -832,7 +832,7 @@ describe('0.4 战斗修正版', () => {
     b.monster.lvl = 12;
     expect(effArmor(s, b, 0)).toBeCloseTo(0.125 / 1.125);
   });
-  it('相亲和: attuned amulet drops the 4%/tier pen and gives +2 resource on a matching gender with the right stance', () => {
+  it('相亲和: attuned amulet keeps the 4%/tier pen and gives +2 resource on a matching gender with the right stance', () => {
     const s = lvl15();
     s.gearKills = { '2': 40 * 16 }; // tier 4
     const w = WORDS.find((x) => x.lvl <= 15 && x.art === 'der')!;
@@ -840,7 +840,7 @@ describe('0.4 战斗修正版', () => {
     b.monster.lvl = 17;
     expect(effArmor(s, b, 0)).toBeCloseTo((4 * 0.84) / (1 + 4 * 0.84));
     s.flags.affinity = 'der';
-    expect(effArmor(s, b, 0)).toBeCloseTo(4 / 5);
+    expect(effArmor(s, b, 0)).toBeCloseTo((4 * 0.84) / (1 + 4 * 0.84)); // pen kept
     b.intent = { ...b.intent, caseArt: undefined };
     b.phase = 'der';
     expect(affinityMatch(s, b)).toBe(true);

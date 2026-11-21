@@ -44,6 +44,8 @@ let cur: T = 'balance';
 // 0.6 相亲和: AFF=der|die|das sets the amulet's affinity; GENDER=der|die|das keeps the field to one gender.
 let AFF: string | undefined = process.env.AFF;
 let GENDER: string | undefined = process.env.GENDER;
+let INS_N = 0;
+let SEN_N = 0;
 function player(L: number, G: number): GameState {
   const s = newGame('S', 'student', Date.now());
   s.level = L;
@@ -97,10 +99,10 @@ function fight(t: T, s: GameState, m: number, keepHp = false) {
     let move: Move = 'attack';
     let q: Question = makeQuestion(s, b, 'attack', rng);
     if (moveReady(s, b, 'sentence')) {
-      move = 'sentence';
+      move = 'sentence'; SEN_N++;
       q = makeQuestion(s, b, move, rng);
     } else if (P.inscribe && s.level >= 6 && moveReady(s, b, 'inscribe') && qTier(q) < 2) {
-      move = 'inscribe';
+      move = 'inscribe'; INS_N++;
       q = makeQuestion(s, b, move, rng);
     } else if (P.whisper && qTier(q) > 0 && moveReady(s, b, 'whisper')) {
       move = 'whisper';
@@ -290,10 +292,11 @@ if (process.env.AFFCMP) {
     const G = gearAt(L);
     const m = L + 1;
     const K = process.env.AFFCMP === 'kpm';
-    const q = (aff?: string, g?: string) => { AFF = aff; GENDER = g; rng = makeRng(7); const c = cell('balance', L, G, m); return K ? 60 / c.kpm : c.q; };
+    const ins: Record<string, number> = {};
+    const q = (aff?: string, g?: string) => { AFF = aff; GENDER = g; rng = makeRng(7); INS_N = 0; SEN_N = 0; const c = cell('balance', L, G, m); ins[`${aff ?? '-'}/${g ?? '-'}`] = (INS_N + SEN_N) / (c.win * N); return K ? 60 / c.kpm : c.q; };
     const plain = q();
     const mixed = ['der', 'die', 'das'].map((a) => `${a} ${(q(a) - plain).toFixed(2)}`).join(' ');
-    const one = ['der', 'die', 'das'].map((g) => { const p = q(undefined, g); const r = q(g, g); const w = q(g === 'der' ? 'das' : 'der', g); return `${g}: plain ${p.toFixed(2)} right ${(r - p).toFixed(2)} wrong ${(w - p).toFixed(2)}`; }).join(' | ');
+    const one = ['der', 'die', 'das'].map((g) => { const p = q(undefined, g); const r = q(g, g); const w = q(g === 'der' ? 'das' : 'der', g); const wa = g === 'der' ? 'das' : 'der'; return `${g}: plain ${p.toFixed(2)} right ${(r - p).toFixed(2)} (${((100 * (r - p)) / p).toFixed(1)}%) wrong ${(w - p).toFixed(2)} · 铭刻+终结/杀 ${ins[`-/${g}`].toFixed(2)}→${ins[`${g}/${g}`].toFixed(2)}/${ins[`${wa}/${g}`].toFixed(2)}`; }).join(' | ');
     console.log(`L${L} G${G} vs Lv${m} plain ${plain.toFixed(2)} ${K ? 's' : 'q'}/kill · mixed field Δ ${mixed}\n    ${one}`);
   }
   process.exit(0);
