@@ -660,7 +660,7 @@ export class Controller {
         if (res.bagFull) toast('背包满了，没捡起来（C 整理）');
         if (res.gearUp) {
           sfx.loot();
-          toast(`装备升到第 ${res.gearUp} 档：伤害 +${Math.round(CONFIG.gear.dmg * 100 * res.gearUp)}%，${affinityOf(s) ? `亲和伤害 +${Math.round(CONFIG.gear.affinityDmg * 100 * res.gearUp)}%` : `破甲 ${Math.round(CONFIG.gear.pen * 100 * res.gearUp)}%`}`, 'gold');
+          toast(`装备升到第 ${res.gearUp} 档：伤害 +${Math.round(CONFIG.gear.dmg * 100 * res.gearUp)}%，${affinityOf(s) ? '护符调了亲和，不破甲' : `破甲 ${Math.round(CONFIG.gear.pen * 100 * res.gearUp)}%`}`, 'gold');
         }
         if (res.chest) this.gotChest(res.chest, b.monster.lvl);
         if (b.word.family === 'krume') this.questFire('krumeKill');

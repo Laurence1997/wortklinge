@@ -15,7 +15,7 @@ export const DIARY_WRITER = 'Jonas Keller';
 export const DIARY: DiaryPage[] = [
   // ---- Region 1 · 最后的营地: notes against forgetting, ending at „Wie heiße ich?“ ----
   { scene: 'r1-e1', lines: [
-    'Ich schreibe alles auf, sonst vergesse ich es.',
+    'Seit dieser Nacht ist die Stadt still. Ich schreibe alles auf, sonst vergesse ich es.',
     'Auf dem {tisch} stehen eine {tasse} und ein {glas}.',
     'Morgens trinke ich {tee}, abends {kaffee}.',
     'Das {brot} ist alt, aber ich esse es.',
@@ -38,7 +38,7 @@ export const DIARY: DiaryPage[] = [
     'Ein {schuh} fehlt. Wo ist er?',
   ] },
   { scene: 'r1-e5', lines: [
-    'Im Hof übe ich Wörter.',
+    'Im Hof übe ich Wörter mit dem neuen Nachbarn. Er kommt von weit her.',
     'Am Morgen sage ich: „{guten-morgen}!“',
     'Am Mittag sage ich „{guten-tag}“, am Abend „{guten-abend}“.',
     'Die Kinder rufen nur „{hallo}“ und „{tschuess}“.',
@@ -109,7 +109,7 @@ export const DIARY: DiaryPage[] = [
     'Bin ich {lehrer}? Bin ich {arzt}? Bin ich {koch}?',
     'Neben mir sitzt eine {studentin}. Sie sucht {arbeit}.',
     'Der Mann am Fenster ist {ingenieur}, seine Frau ist {aerztin}.',
-    'Ich weiß es nicht mehr. Ich weiß nur: Ich schreibe gern.',
+    'Ich weiß es nicht mehr. Ich weiß nur eins: Ich mag Briefe.',
   ] },
   { scene: 'r1-s8', lines: [
     'Ich klingle an jeder Tür.',
@@ -179,12 +179,12 @@ export const DIARY: DiaryPage[] = [
     'Eine {katze} schläft auf dem Bett, ein {hund} liegt vor der Tür.',
     '{heute} ist mein {geburtstag}, glaube ich.',
     'Ich bin {hier}, das weiß ich.',
-    'Aber {morgen}? Wer bin ich dann? Wie heiße ich?',
+    'Aber {morgen}? Wenn du das liest: Wie heiße ich?',
   ] },
 
-  // ---- Region 2 · 面包集市: with Konrad and his daughter Lina, until they leave for the station ----
+  // ---- Region 2 · 面包集市: his shopping book; bread at Konrad's, his daughter Lina, the night she runs for the last train ----
   { scene: 'r2-g1', lines: [
-    'Heute gehe ich mit Konrad und seiner Tochter Lina auf den Markt.',
+    'Jeden Morgen kaufe ich bei Konrad Brot. Heute gehe ich mit seiner Tochter Lina auf den Markt.',
     'Lina kauft {obst}: einen {apfel}, eine {birne} und eine {banane}.',
     'Konrad nimmt eine {zitrone} und eine {orange}.',
     'Die {erdbeere:Erdbeeren} sind rot, die {kirsche:Kirschen} auch.',
@@ -251,15 +251,15 @@ export const DIARY: DiaryPage[] = [
     'Im Laden steht eine alte {waage}.',
     'Konrad kauft ein {kilo} Mehl und ein {pfund} Butter.',
     'Lina nimmt einen {liter} Milch und einen {becher} Joghurt.',
-    'Für den Zug kaufen wir eine {packung} Kekse und eine {dose} Cola.',
-    'Ich trage alles in einer {tuete}.',
+    'Für die Reise kauft Lina eine {packung} Kekse und eine {dose} Cola.',
+    'Ich trage alles in einer {tuete}. Nachts, sagt Lina, frisst die Waage Wörter.',
   ] },
   { scene: 'r2-w6', lines: [
-    'Konrad rechnet laut.',
+    'Lina rechnet laut.',
     'Das Mehl kostet {neunundneunzig-num} Cent, die Milch {fuenfundvierzig-num} Cent.',
     'Eine Fahrkarte kostet {fuenfundzwanzig-num} Euro.',
-    'Er hat nur {sechzig-num} Euro, Lina hat {zweiunddreissig-num}.',
-    'Sie brauchen zwei Fahrkarten. „Das geht“, sagt Lina.',
+    'Sie hat {sechzig-num} Euro, Konrad gibt ihr noch {zweiunddreissig-num}.',
+    'Sie braucht nur eine Fahrkarte. „Das geht“, sagt sie.',
     'Konrad lacht: „In {tausend-num} Jahren sind wir reich.“',
   ] },
   { scene: 'r2-w3', lines: [
@@ -284,7 +284,7 @@ export const DIARY: DiaryPage[] = [
     'Konrad sagt: „{ich-nehme-das}“ Der Mann fragt: „{bar-oder-mit-karte}“',
   ] },
   { scene: 'r2-w4', lines: [
-    'Am Bahnhof gibt es einen kleinen Laden.',
+    'Vor dem Markt gibt es einen kleinen Laden.',
     'Konrad fragt: „{haben-sie-brot}“ Dann lacht er, denn er ist selbst Bäcker.',
     'Lina sagt: „{ich-haette-gern-ein-kilo-aepfel}“',
     '„{wo-ist-die-kasse}“, frage ich. „{kann-ich-mit-karte-zahlen}“',
@@ -292,16 +292,16 @@ export const DIARY: DiaryPage[] = [
     'Die Frau sagt: „Nur bar.“ Konrad gibt ihr zehn Euro: „{stimmt-so}“',
   ] },
   { scene: 'r2-k1', lines: [
-    'Wir {brauchen} Essen für die Reise.',
-    'Konrad {kaufen:kauft} Brot. Es {kosten:kostet} nicht viel.',
-    'Lina {nehmen:nimmt} zwei Äpfel und {bezahlen:bezahlt}.',
-    'Auf dem Weg {essen} wir Brot und {trinken} Wasser.',
+    'Lina {brauchen:braucht} Essen für ihre Reise.',
+    'Sie {kaufen:kauft} Brot bei ihrem Vater. Es {kosten:kostet} nichts.',
+    'Dann {nehmen:nimmt} sie zwei Äpfel und {bezahlen:bezahlt}.',
+    'Am Abend {essen} wir zusammen Brot und {trinken} Tee.',
     'Konrad {geben:gibt} mir sein letztes Brötchen. „Für dich“, sagt er.',
   ] },
   { scene: 'r2-k5', lines: [
     'In Konrads Küche steht viel {geschirr}.',
-    'Er packt einen {teller}, eine {gabel} und ein {messer} ein.',
-    'Lina nimmt ihren {loeffel} und eine kleine {schuessel}.',
+    'Lina packt einen {teller}, eine {gabel} und ein {messer} ein.',
+    'Sie nimmt auch ihren {loeffel} und eine kleine {schuessel}.',
     'Die alte {kanne} bleibt hier.',
     'Eine {serviette} liegt auf dem Tisch. Darauf steht: „Bis bald.“',
   ] },
@@ -310,35 +310,35 @@ export const DIARY: DiaryPage[] = [
     'Konrad trägt einen {sack} mit {korn}.',
     'Zum {mittagessen} gibt es nur Brot.',
     'Lina hat {hunger} und {durst}, aber sie sagt nichts.',
-    'Das {abendessen} essen wir schon im Zug, sagt Konrad.',
+    'Das {abendessen} esse ich bald im Zug, sagt Lina.',
   ] },
   { scene: 'r2-k3', lines: [
     'In der Mühle {suchen:suche} ich meinen Namen.',
     'Ich {finden:finde} nur Mehl.',
     'Konrad {kochen:kocht} Tee. Er {schmecken:schmeckt} gut.',
     'Lina {helfen:hilft} ihm. Sie {moegen:mag} ihren Vater sehr.',
-    'Ich {sehen:sehe} die zwei und weiß: Sie gehen bald weg.',
+    'Ich {sehen:sehe} die zwei und weiß: Lina geht bald weg.',
   ] },
   { scene: 'r2-k6', lines: [
     'Die {kueche} in der Bäckerei ist kalt.',
     'Der {ofen} ist aus. Auf dem {herd} steht ein leerer {topf}.',
     'Der {kuehlschrank} ist leer, die {pfanne} auch.',
-    'Konrad gibt mir sein {rezept} für Brot.',
-    '„Du backst jetzt für uns alle“, sagt er.',
+    'Konrad schreibt Lina sein {rezept} für Brot auf.',
+    '„Für die Reise“, sagt er. Lina lacht nicht.',
   ] },
   { scene: 'r2-k7', lines: [
     'Am letzten Abend gehen wir in ein {restaurant}.',
     'Die {kellnerin} bringt die {speisekarte}.',
     'Als {vorspeise} essen wir Suppe, als {hauptgericht} eine {pizza}.',
     'Lina möchte einen {nachtisch}. Konrad bestellt ein {getraenk}.',
-    'Der {kellner} fragt: „Wohin fahren Sie?“ Konrad sagt: „Zum Bahnhof.“',
+    'Der {kellner} fragt Lina: „Wohin fahren Sie?“ Sie sagt: „Weit weg.“',
   ] },
   { scene: 'r2-k4', lines: [
-    'Am Morgen {backen:backt} Konrad ein letztes Brot.',
-    'Lina {waschen:wäscht} die Teller. Ich {tragen:trage} die Koffer.',
-    'Konrad {schneiden:schneidet} das Brot, und wir {fruehstuecken:frühstücken} zusammen.',
-    'Dann {zaehlen:zählt} Lina die Fahrkarten: zwei.',
-    'Sie gehen zum Bahnhof. „{vergessen:Vergiss} uns nicht“, sagt Lina.',
+    'In dieser Nacht {wiegen:wiegt} Konrad noch Mehl und {backen:backt} Brot.',
+    'Dann ist alles still. Ich {zaehlen:zähle} die Wörter, ich weiß nur noch wenige.',
+    'Lina {tragen:trägt} ihren Koffer. „{vergessen:Vergiss} mich nicht, Papa“, sagt sie.',
+    'Konrad {waschen:wäscht} weiter die Teller. Er sieht sie nicht mehr.',
+    'Lina geht zum Bahnhof. Ich gehe auch.',
   ] },
 ];
 

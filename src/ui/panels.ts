@@ -156,7 +156,7 @@ export class Panels {
     if (this.ctrl.nearBonfire()) left.append(h('h3', '外观（篝火旁免费改）'), lookPicker(s.look, (l) => this.ctrl.setLook(l)).el);
     if (s.level >= UNLOCK.affinity) {
       const aff = affinityOf(s);
-      left.append(h('h3', '护符亲和'), h('p.muted', `现在：${aff ?? '无（普通护符，所有怪破甲每档 4%）'}。${aff ? `不再破甲；${aff} 的怪（复数算 die）这一下选对相时伤害每档 +10%。` : ''}`));
+      left.append(h('h3', '护符亲和'), h('p.muted', `现在：${aff ?? '无（普通护符，所有怪破甲每档 4%）'}。${aff ? `不再破甲；${aff} 的怪（复数算 die）第一次选对相时资源 +2（平时 +1），换句重选后再算一次。` : ''}`));
       if (this.ctrl.nearBonfire()) {
         const row = h('div.row');
         for (const a of ['der', 'die', 'das', null] as const)

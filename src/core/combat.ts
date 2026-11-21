@@ -6,7 +6,7 @@ import { gradeTyped, normalize, type Verdict } from './grading';
 import { ELEMENT_ZH, generateIntent, INTENT_ZH } from './intents';
 import { between, pick, shuffle, type Rng } from './rng';
 import { kindOf, stageOf, overdueSteps, type Kind, type Stage } from './srs';
-import { affinityDmg, affinityOf, affixTotal, attack, critChance, gearPen, gearTier, hintsPerFight, maxHp, now, type GameState } from './state';
+import { affinityOf, affixTotal, attack, critChance, gearPen, hintsPerFight, maxHp, now, type GameState } from './state';
 import type { Element, Intent, Move, Word } from './types';
 import { has } from './unlocks';
 import { fullForm, genderOf, hasArticleQuestion, WORD_BY_ID, WORDS, zhWithPos } from '../data/words';
@@ -140,6 +140,8 @@ export interface Battle {
   phase?: Stance;
   /** The right stance has landed on it once: its gender shows from then on. */
   phaseHit?: boolean;
+  /** 相亲和: the +2 resource was paid for this pick (a case change asks for a new pick and pays again). */
+  affinityPaid?: boolean;
   /** 先教后考 (0.5): the turn on which a never-met noun had its stance picked for it and shown. */
   phaseTaught?: number;
   /** 复数怪 (0.5, Lv11+): a whole crowd of this word, die Äpfel. Only the die stance is right. */
@@ -331,7 +333,7 @@ function nextIntent(s: GameState, b: Battle, rng: Rng): Intent {
   // 格位姿态: the stance stays picked while the case stays the same; a line in another case asks for a new pick.
   if (b.phase && b.intent) {
     const caseNow = (it: Intent) => (!it.caseArt || b.pluralMon ? 'nom' : caseOf(genderOf(b.word), it.caseArt) ?? 'nom');
-    if (caseNow(b.intent) !== caseNow(intent)) b.phase = undefined;
+    if (caseNow(b.intent) !== caseNow(intent)) (b.phase = undefined), (b.affinityPaid = false);
   }
   return intent;
 }
@@ -1192,11 +1194,14 @@ export function resolveTurn(
       const ph = phaseOf(b);
       if (phaseFx === 'right') {
         b.phaseHit = true;
-        if (resMax(s) && move !== 'sentence') cfx.res = Math.min(resMax(s), cfx.res + CONFIG.phase.rightRes);
+        // 相亲和: the first right hit on a matching monster (per pick) gives +2 instead of +1.
+        const aff = affinityMatch(s, b) && !b.affinityPaid;
+        if (aff) b.affinityPaid = true;
+        const gain = aff ? CONFIG.gear.affinityRes : CONFIG.phase.rightRes;
+        if (resMax(s) && move !== 'sentence') cfx.res = Math.min(resMax(s), cfx.res + gain);
         if (has(s.level, 'layerElement')) element = ELEMENT_BY_GENDER[b.pluralMon ? 'pl' : genderOf(b.word) ?? 'n'] ?? element;
         if (Object.values(s.equipped).some((it) => it?.legendary === 'articleJudgement')) b.judgement = true;
-        if (affinityMatch(s, b)) mult *= 1 + affinityDmg(s);
-        log.push({ text: `${b.phase} 相打中弱点：护甲降一档${resMax(s) && move !== 'sentence' ? `，${resName(s)} +${CONFIG.phase.rightRes}` : ''}${affinityMatch(s, b) && gearTier(s) ? `；护符亲和 ${affinityOf(s)} 共鸣，伤害 +${Math.round(affinityDmg(s) * 100)}%` : ''}。`, tone: 'good' });
+        log.push({ text: `${b.phase} 相打中弱点：护甲降一档${resMax(s) && move !== 'sentence' ? `，${resName(s)} +${gain}${aff ? `（护符亲和 ${affinityOf(s)} 共鸣）` : ''}` : ''}。`, tone: 'good' });
       } else if (phaseFx === 'wrong') log.push({ text: `${b.phase ?? '无'} 相被抵抗：它不是 ${b.phase ?? '这个'} 相。护甲翻倍。`, tone: 'bad' });
       else if (phaseFx === 'soft') log.push({ text: `${b.phase ? `${b.phase} 相不对` : '没选相'}：这里要 ${ph}${b.pluralMon ? '（复数一律 die）' : phaseCase(b) === 'acc' ? '（第四格）' : phaseCase(b) === 'dat' ? '（第三格）' : ''}。这一级还不罚，选对了护甲降一档。`, tone: 'sys' });
       const judged = b.judgement;

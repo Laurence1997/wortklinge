@@ -9,8 +9,8 @@ export interface Achievement {
 export const ACHIEVEMENTS: Achievement[] = [
   { id: 'weak5', zh: '五连弱点', title: '「辨相者」', how: '连续 5 次选对相，打中弱点' },
   { id: 'half1', zh: '第一个半名', title: '「叫得出口」', how: '第一个词进入「半名」：你认得它了' },
-  { id: 'diary1', zh: '营地日记', title: '「拾页人」', how: '复原第 1 区全部日记残页' },
-  { id: 'diary2', zh: '集市日记', title: '「送站人」', how: '复原第 2 区全部日记残页' },
+  { id: 'diary1', zh: '营地日记', title: '「邻居的读者」', how: '复原第 1 区全部日记残页' },
+  { id: 'diary2', zh: '集市日记', title: '「集市的证人」', how: '复原第 2 区全部日记残页' },
   { id: 'card1', zh: '第一张短句卡', title: '「拾句人」', how: '打散一只接句怪或残句，收下第一张短句卡' },
 ];
 

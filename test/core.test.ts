@@ -3,7 +3,7 @@ import { gradeMoechte, gradeTyped, normalize } from '../src/core/grading';
 import { fullForm, WORD_BY_ID, WORDS } from '../src/data/words';
 import { SCENES } from '../src/data/world';
 import { DIARY, parseLine } from '../src/data/diary';
-import { newGame, addXp, migrate, attack, gearTier, addGearKill, affinityOf, affinityDmg } from '../src/core/state';
+import { newGame, addXp, migrate, attack, gearTier, addGearKill, affinityOf } from '../src/core/state';
 import { applyWin } from '../src/core/outcomes';
 import { recordKill, kindOf, stageOf } from '../src/core/srs';
 import { CONFIG, monsterHpAt, xpToNext } from '../src/core/config';
@@ -832,7 +832,7 @@ describe('0.4 战斗修正版', () => {
     b.monster.lvl = 12;
     expect(effArmor(s, b, 0)).toBeCloseTo(0.125 / 1.125);
   });
-  it('相亲和: attuned amulet drops the 4%/tier pen and adds 10%/tier damage on a matching gender with the right stance', () => {
+  it('相亲和: attuned amulet drops the 4%/tier pen and gives +2 resource on a matching gender with the right stance', () => {
     const s = lvl15();
     s.gearKills = { '2': 40 * 16 }; // tier 4
     const w = WORDS.find((x) => x.lvl <= 15 && x.art === 'der')!;
@@ -841,7 +841,6 @@ describe('0.4 战斗修正版', () => {
     expect(effArmor(s, b, 0)).toBeCloseTo((4 * 0.84) / (1 + 4 * 0.84));
     s.flags.affinity = 'der';
     expect(effArmor(s, b, 0)).toBeCloseTo(4 / 5);
-    expect(affinityDmg(s)).toBeCloseTo(0.4);
     b.intent = { ...b.intent, caseArt: undefined };
     b.phase = 'der';
     expect(affinityMatch(s, b)).toBe(true);

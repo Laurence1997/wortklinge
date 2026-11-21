@@ -21,7 +21,7 @@ if (process.env.COMBO) for (const c of CONFIG.combo) c.dmg *= +process.env.COMBO
 if (process.env.INS) CONFIG.tech.inscribeMult = +process.env.INS;
 if (process.env.GEAR) CONFIG.gear.dmg = +process.env.GEAR;
 if (process.env.ARM) CONFIG.armor.base = +process.env.ARM;
-if (process.env.AFFDMG) CONFIG.gear.affinityDmg = +process.env.AFFDMG;
+if (process.env.AFFRES) CONFIG.gear.affinityRes = +process.env.AFFRES;
 let rng = makeRng(11);
 
 type T = 'grind' | 'balance' | 'learn';
