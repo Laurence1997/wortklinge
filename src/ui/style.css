@@ -288,3 +288,6 @@ label.toggle { display: flex; gap: 8px; align-items: center; padding: 6px 0; }
 .diary-blank b.revealed { color: #ffb05a; }
 .diary-blank .hole { letter-spacing: 1px; opacity: .6; }
 .diary-blank input.diary { font: inherit; font-size: 16px; padding: 1px 4px; }
+
+/* 场景插画 (0.6) */
+#scene-panel canvas.scene-art { width: 100%; image-rendering: pixelated; display: block; margin: 4px 0 2px; border: 1px solid var(--line); }

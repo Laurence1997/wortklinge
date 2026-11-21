@@ -1,6 +1,7 @@
 // 0.5 小世界: point-and-click scenes on top of the 0.4 map. The world scene keeps drawing the map, monsters and
 // other players; this class owns where you stand (a scene), moving along the route, where monsters spawn
 // (3 per field scene, never refilling the scene you stand in) and the scene panel on the right.
+import { sceneArtCanvas } from '../ui/sceneArt';
 import Phaser from 'phaser';
 import { CONFIG } from '../core/config';
 import { stageOf } from '../core/srs';
@@ -284,6 +285,7 @@ export class NodeNav {
     const peers = [...online.peers.values()].filter((p) => nearestScene(this.w.map.region, p.x, p.y).id === sc.id).map((p) => p.nick);
     this.panel.replaceChildren(
       h('div.sp-head', h('b', `${sc.no} · ${sc.zh}`), h('span.muted', zone ? ` ${zone.zh} · ${zone.levels}` : sc.type === 'camp' ? ' 安全区' : '')),
+      sceneArtCanvas(sc.id, this.s) ?? '',
       sc.zone
         ? h(
             'div.sp-sec',

@@ -1391,3 +1391,20 @@ describe('0.6 日记残页', () => {
     }
   });
 });
+
+describe('0.6 场景插画', () => {
+  it('every field scene of regions 1–2 has a picture with ≥3 of its own words, inside the canvas', async () => {
+    const { SCENE_ART, parseArt, ART_COLS, ART_ROWS } = await import('../src/data/sceneArt');
+    for (const sc of SCENES.filter((x) => x.words && (x.region === 1 || x.region === 2))) {
+      const spec = SCENE_ART[sc.id];
+      expect(spec, sc.id).toBeTruthy();
+      const tiles = parseArt(spec);
+      const words = new Set(tiles.filter((t) => t.word).map((t) => t.word!));
+      for (const w of words) expect(sc.words, `${sc.id} ${w}`).toContain(w);
+      expect(words.size, sc.id).toBeGreaterThanOrEqual(3);
+      for (const t of tiles) {
+        expect(t.col < ART_COLS && t.row < ART_ROWS && t.tile < 49 * 22, `${sc.id} ${t.tile}`).toBe(true);
+      }
+    }
+  });
+});
