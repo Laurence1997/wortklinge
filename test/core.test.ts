@@ -1282,3 +1282,27 @@ describe('0.5 存档: old saves keep their level and get the new defaults', () =
     expect(newGame('N', 'student', T0).flags.seen05).toBe(true);
   });
 });
+
+describe('先教后考 (teach the stance of a never-met noun)', () => {
+  it('picks the right stance only for new, unnamed nouns', async () => {
+    const { teachPhase } = await import('../src/core/combat');
+    const mk = (over: Record<string, unknown>) => ({ word: { id: 'brot', de: 'Brot', art: 'das', zh: '面包' }, kind: 'new', stage: 0, turn: 1, intent: {}, ...over }) as never;
+    const b1: any = mk({});
+    expect(teachPhase(b1)).toBe(true);
+    expect(b1.phase).toBe('das');
+    expect(b1.phaseTaught).toBe(1);
+    expect(teachPhase(b1)).toBe(true); // same turn: still the taught pick
+    b1.turn = 2;
+    expect(teachPhase(b1)).toBe(false); // next turn: cleared once, the player picks
+    expect(b1.phase).toBeUndefined();
+    b1.phase = 'der';
+    expect(teachPhase(b1)).toBe(false);
+    expect(b1.phase).toBe('der');
+    const b2: any = mk({ kind: 'due', stage: 1 });
+    expect(teachPhase(b2)).toBe(false);
+    expect(b2.phase).toBeUndefined();
+    const b3: any = mk({ phase: 'der' });
+    expect(teachPhase(b3)).toBe(false);
+    expect(b3.phase).toBe('der');
+  });
+});

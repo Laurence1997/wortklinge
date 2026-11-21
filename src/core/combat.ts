@@ -140,6 +140,8 @@ export interface Battle {
   phase?: Stance;
   /** The right stance has landed on it once: its gender shows from then on. */
   phaseHit?: boolean;
+  /** 先教后考 (0.5): the turn on which a never-met noun had its stance picked for it and shown. */
+  phaseTaught?: number;
   /** 复数怪 (0.5, Lv11+): a whole crowd of this word, die Äpfel. Only the die stance is right. */
   pluralMon?: boolean;
   /** 残句 (0.5): a sentence monster with no word nameplate. Finish the half → pick its meaning → write it whole. */
@@ -411,6 +413,21 @@ export function stancesFor(level: number): Stance[] {
 /** Whether attacks on this monster need a stance (every noun outside the scripted tutorial fights). */
 export function needsPhase(b: Battle): boolean {
   return !!phaseOf(b) && !b.tutorial;
+}
+
+/** 先教后考: a noun you have never met (not in your word book) gets the right stance picked and shown on its
+ *  first turn, so the first der/die/das is learned, not guessed. From the next turn the pick is cleared once and the
+ *  player chooses it. Returns true while the stance shown is the taught one. */
+export function teachPhase(b: Battle): boolean {
+  if (b.phaseTaught) {
+    if (b.turn === b.phaseTaught) return b.phase === phaseOf(b);
+    if (b.turn > b.phaseTaught && b.phaseTaught > 0) (b.phase = undefined), (b.phaseTaught = -1);
+    return false;
+  }
+  if (!needsPhase(b) || b.phase || b.kind !== 'new' || b.stage !== 0 || b.pluralMon) return false;
+  b.phase = phaseOf(b)!;
+  b.phaseTaught = b.turn;
+  return true;
 }
 
 /** What the monster card may show: its plural crowd name or the word, never the article. */

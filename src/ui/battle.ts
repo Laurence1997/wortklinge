@@ -1,5 +1,5 @@
 import type { Battle, Question, TurnReport } from '../core/combat';
-import { availableMoves, comboTier, effArmor, moveReady, needsPhase, phaseOf, resName, shownDe, stancesFor } from '../core/combat';
+import { availableMoves, comboTier, effArmor, moveReady, needsPhase, phaseOf, resName, shownDe, stancesFor, teachPhase } from '../core/combat';
 import type { Stance } from '../core/cloze';
 import { ELEMENT_ZH } from '../core/intents';
 import { STAGE_ZH } from '../core/srs';
@@ -76,6 +76,7 @@ export class BattleUI {
   private startTurn() {
     this.zhShown = this.ctrl.state.settings.autoZh || this.ctrl.state.level <= 3;
     this.ctrl.speak(this.b.intent.line);
+    teachPhase(this.b);
     const moves = this.moves().filter((m) => moveReady(this.ctrl.state, this.b, m));
     // 词性三相: a noun monster waits for a stance first (it stays picked for this monster).
     if (moves.length === 1 && !(needsPhase(this.b) && !this.b.phase)) this.choose(moves[0]);
@@ -285,6 +286,7 @@ export class BattleUI {
     this.pending = keep;
     const s = this.ctrl.state;
     const b = this.b;
+    const taught = this.phase !== 'result' ? teachPhase(b) : !!b.phaseTaught && b.phaseTaught === b.turn && b.phase === phaseOf(b); // a pack's next target is taught too
     const el = $('battle');
     el.className = 'panel';
     const w = b.word;
@@ -422,9 +424,18 @@ export class BattleUI {
         ...stancesFor(s.level).map((p, i) =>
           h(`button.btn.${p}${b.phase === p ? '.sel' : ''}`, { disabled: this.phase === 'result', onclick: () => this.setPhase(p), title: `${p}（${(i + 1) % 10}）` }, h('kbd', String((i + 1) % 10)), p),
         ),
+        taught
+          ? h(
+              'span.small',
+              { style: 'color:var(--gold, #ffcf4a)' },
+              `  新词：${fullForm(w)} · ${w.zh}　第一次见，相已替你选好${b.phase !== w.art ? `（这句要 ${b.phase}）` : ''}，记住它`,
+            )
+          : !b.phase && !b.pluralMon
+            ? h('span.small', { style: 'color:var(--gold, #ffcf4a)' }, `  ${w.zh} → 选它的相`)
+            : '',
         h(
           'span.small.muted',
-          this.phaseNag && !b.phase
+          taught ? '' : this.phaseNag && !b.phase
             ? s.level >= 7 ? '  先选相：它这句话里缺的那个冠词是什么？' : '  先选相：它是 der、die 还是 das？'
             : b.pluralMon
               ? '  复数一律 die'
