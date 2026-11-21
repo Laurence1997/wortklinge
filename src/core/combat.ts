@@ -142,6 +142,10 @@ export interface Battle {
   phaseHit?: boolean;
   /** 复数怪 (0.5, Lv11+): a whole crowd of this word, die Äpfel. Only the die stance is right. */
   pluralMon?: boolean;
+  /** 残句 (0.5): a sentence monster with no word nameplate. Finish the half → pick its meaning → write it whole. */
+  phrase?: SayLine;
+  /** 残句: how many of its three steps are done. */
+  phraseStep?: number;
   turn: number;
   turnsSinceCharge: number;
   trapUsed: boolean;
@@ -300,7 +304,10 @@ function nextIntent(s: GameState, b: Battle, rng: Rng): Intent {
   else b.turnsSinceCharge += 1;
   // 怪的台词 (2026-11-21): outside tutorials it mumbles one of its own example sentences with its name swallowed
   // (a listening clue that never says the answer). Only the big attack keeps the shouted stock lines as a warning.
-  if (!tut && intent.kind !== 'charge' && intent.kind !== 'flee' && b.saying && !b.sayingDone) {
+  if (b.phrase && intent.kind !== 'flee') {
+    // 残句: it only ever shouts its half sentence (its big attack included).
+    intent = { ...intent, ...shoutLine(b.phrase) };
+  } else if (!tut && intent.kind !== 'charge' && intent.kind !== 'flee' && b.saying && !b.sayingDone) {
     // 接句怪: until you finish its line, the line is its half sentence (no mumbled example giving the rest away).
     intent = { ...intent, ...shoutLine(b.saying) };
   } else if (!tut && intent.kind !== 'charge' && intent.kind !== 'flee') {
@@ -510,6 +517,24 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
   const fresh = b.kind === 'new' && b.stage === 0 && b.step < 2;
   const am: Move = move === 'inscribe' || move === 'whisper' || move === 'chorus' ? 'attack' : move;
 
+  // 残句 (0.5): three steps whatever the move — finish the half, pick its meaning, write it whole.
+  if (b.phrase) {
+    const x = b.phrase;
+    const st = b.phraseStep ?? 0;
+    let pq: Question;
+    if (st === 0) {
+      pq = sayingQuestion(s, { ...x, cardId: undefined }, rng);
+      pq = { ...pq, prompt: pq.prompt.replace('接句怪：', '残句 1/3：') };
+    }
+    else if (st === 1) {
+      const others = shuffle(rng, SAYINGS.filter((o) => o.zh !== x.zh).map((o) => o.zh)).slice(0, 2);
+      pq = { type: 'pickZh', prompt: '残句 2/3：它把整句喊出来了，选出意思', focus: `${x.a} ${x.b}`, options: shuffle(rng, [x.zh, ...others]), answer: x.zh };
+    } else pq = { type: 'sentence', prompt: '残句 3/3：看中文，写出整句', focus: x.zh, answer: `${x.a} ${x.b}` };
+    if (move === 'inscribe') pq = { ...pq, inscribed: true };
+    if (move === 'whisper') pq = whisperOf(pq, w);
+    return pq;
+  }
+
   // 终结技 (0.4): spends a full resource bar on the whole sentence. Every monster has one: its sentence pattern
   // when the word is in your wordbook, otherwise one of its example sentences (or a template).
   if (move === 'sentence') {
@@ -666,6 +691,32 @@ export function sayLineFor(w: Word, rng: Rng): SayLine | undefined {
   }
   const ex = exampleSplits(w).filter((p) => p.a.split(' ').length >= 2);
   return ex.length ? pick(rng, ex) : undefined;
+}
+
+/** 残句 (0.5): the short sayings no word monster carries — they drop only from sentence monsters. */
+export function phraseCards(): typeof SAYINGS {
+  return SAYINGS.filter((x) => !WORDS.some((w) => hasWord(x.b, w)));
+}
+
+/** The stand-in word of a 残句 (never enters the wordbook: ids start with say_). */
+export function phraseWord(id: string, level: number, zone: Word['zone']): Word {
+  const x = SAYINGS.find((y) => y.id === id)!;
+  return { id: `say_${x.id}`, de: `${x.a} ${x.b}`, zh: x.zh, pos: 'phr', family: 'echo', lvl: level, zone };
+}
+
+export function isPhraseWord(w: Word): boolean {
+  return w.id.startsWith('say_');
+}
+
+/** A fight against a 残句: same-level monster, its line is the half sentence. */
+export function startPhraseBattle(s: GameState, id: string, rng: Rng, zone: Word['zone']): Battle {
+  const x = SAYINGS.find((y) => y.id === id)!;
+  const b = startBattle(s, phraseWord(id, s.level, zone), rng);
+  b.phrase = { a: x.a, b: x.b, zh: x.zh, cardId: x.id };
+  b.phraseStep = 0;
+  b.pluralMon = false;
+  b.intent = { ...b.intent, ...shoutLine(b.phrase) };
+  return b;
 }
 
 /** 接句怪: the monster shouts the first half, you finish it (pick from three below Lv6, typed from Lv6). */
@@ -1108,6 +1159,11 @@ export function resolveTurn(
       if (b.tutorial === 'loss') playerDamage = Math.min(playerDamage, 3);
       // The saying alone never finishes it: the word itself still has to be answered.
       if (q.type === 'saying') playerDamage = Math.max(1, Math.min(playerDamage, m.hp - 1));
+      // 残句: each right step takes a third; only the third step (writing it whole) finishes it.
+      if (b.phrase) {
+        b.phraseStep = (b.phraseStep ?? 0) + 1;
+        playerDamage = b.phraseStep >= 3 ? m.hp : Math.max(1, Math.min(Math.ceil(m.maxHp / 3), m.hp - 1));
+      }
 
       m.hp -= playerDamage;
       s.stats.maxHit = Math.max(s.stats.maxHit, playerDamage);

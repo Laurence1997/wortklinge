@@ -6,6 +6,7 @@ import type { AffixKey, Item, Slot, Word } from '../core/types';
 import { has, UNLOCK } from '../core/unlocks';
 import { FAMILIES } from '../data/families';
 import { SKILLS, skillLinesOpen } from '../data/skills';
+import { phraseCards } from '../core/combat';
 import { SAYINGS, SAYING_CFG } from '../data/sayings';
 import { canLearn, CLASSES, learn, rank, spent, talentPoints, TALENT_FROM_LEVEL, TALENTS, TIER_GATE } from '../core/classes';
 import { fullForm, genderOf, hasArticleQuestion, WORDS, zhWithPos } from '../data/words';
@@ -603,13 +604,14 @@ export class Panels {
     table('熟练', '已经归名的词：认得，也会写。', known);
     if (s.level >= SAYING_CFG.fromLevel) {
       const got = SAYINGS.filter((x) => s.sayings?.[x.id]);
+      const phraseIds = new Set(phraseCards().map((x) => x.id));
       const tb = h('table.log');
       tb.append(h('tr', h('th', '短句'), h('th', '中文'), h('th', '什么时候说')));
       for (const x of SAYINGS) {
         const have = !!s.sayings?.[x.id];
-        tb.append(h('tr', h('td', have ? `${x.a} ${x.b}` : `${x.a} ……`), h('td', have ? x.zh : '？'), h('td', have ? x.when : '在野外遇到喊这句的接句怪，接上下半句就能收下')));
+        tb.append(h('tr', h('td', have ? `${x.a} ${x.b}` : `${x.a} ……`), h('td', have ? x.zh : '？'), h('td', have ? x.when : (phraseIds.has(x.id) ? '野外金色的「残句」怪：接上、听懂、写出整句就能收下' : '在野外遇到喊这句的接句怪，接上下半句就能收下'))));
       }
-      wrap.append(h('h3', `短句卡（${got.length} / ${SAYINGS.length}）`), h('p.small.muted', '怪的词正好在这句里时，它会当接句怪喊上半句，你接下半句就能收下这张卡。卡只用来收集，没有战斗效果。'), tb);
+      wrap.append(h('h3', `短句卡（${got.length} / ${SAYINGS.length}）`), h('p.small.muted', '大部分卡从野外金色的「残句」怪身上掉；怪的词正好在这句里时，接句怪也会喊它。卡只用来收集，没有战斗效果。'), tb);
     }
     if (!Object.keys(s.words).length) wrap.append(h('p', '还没有见过的词。出去打几只怪吧。'));
     return wrap;

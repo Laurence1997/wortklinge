@@ -22,6 +22,8 @@ export interface WinResult {
   review: boolean;
   /** 0.4: the gear tier this kill reached, when it went up. */
   gearUp: number | null;
+  /** 残句 (0.5): the short-saying card it dropped (first = new in the collection). */
+  card?: { id: string; first: boolean };
 }
 
 export function applyWin(s: GameState, b: Battle, rng: Rng, opts: { heal?: boolean } = {}): WinResult {
@@ -30,9 +32,17 @@ export function applyWin(s: GameState, b: Battle, rng: Rng, opts: { heal?: boole
   const log = todayLog(s);
   const w = b.word;
   const wasNew = b.kind === 'new';
-  const kill = recordKill(s, w, b.lastKillTyped, b.slipped, t);
-  flushSkill(s, w, b);
-  if (b.hinted && s.words[w.id]) s.words[w.id].hinted = true;
+  // 残句: a sentence is not a word — nothing goes into the wordbook; its card drops instead.
+  const kill: KillOutcome = b.phrase ? { kind: 'new', from: 0, to: 0, guiming: false, needsTypedFinal: false } : recordKill(s, w, b.lastKillTyped, b.slipped, t);
+  let card: WinResult['card'];
+  if (b.phrase?.cardId) {
+    s.sayings ??= {};
+    card = { id: b.phrase.cardId, first: !s.sayings[b.phrase.cardId] };
+    s.sayings[b.phrase.cardId] = (s.sayings[b.phrase.cardId] ?? 0) + 1;
+  } else {
+    flushSkill(s, w, b);
+    if (b.hinted && s.words[w.id]) s.words[w.id].hinted = true;
+  }
 
   let xp = b.kind === 'new' ? CONFIG.xp.newMonster : b.kind === 'due' ? CONFIG.xp.dueMonster : CONFIG.xp.shadowMonster;
   if (b.kind === 'due') xp *= CONFIG.xp.dueBonus;
@@ -60,7 +70,7 @@ export function applyWin(s: GameState, b: Battle, rng: Rng, opts: { heal?: boole
   s.gold += gold;
   const levelUp = addXp(s, xp);
 
-  if (wasNew) {
+  if (wasNew && !b.phrase) {
     s.daily.newCount += 1;
     log.newWords += 1;
   }
@@ -68,7 +78,7 @@ export function applyWin(s: GameState, b: Battle, rng: Rng, opts: { heal?: boole
   if (kill.guiming) log.guiming += 1;
   log.kills += 1;
   s.stats.kills += 1;
-  const gearUp = b.tutorial === 'loss' ? null : addGearKill(s, w.region ?? 1, rng(), b.kind === 'due' ? 1 + CONFIG.xp.dueShards : 1);
+  const gearUp = b.tutorial === 'loss' ? null : addGearKill(s, b.phrase ? s.region ?? 1 : w.region ?? 1, rng(), b.kind === 'due' ? 1 + CONFIG.xp.dueShards : 1);
 
   // Drops: 20% from small monsters once gear is unlocked; the first one is a guaranteed green (Lv5 lesson).
   let drop: Item | null = null;
@@ -101,7 +111,7 @@ export function applyWin(s: GameState, b: Battle, rng: Rng, opts: { heal?: boole
 
   // 战后喘口气 (packs heal once, after the whole fight)
   if (opts.heal !== false) postFightHeal(s);
-  return { xp, gold, kill, levelUp, drop, bagFull, echoRecovered, review: b.kind === 'due', chest, gearUp };
+  return { xp, gold, kill, levelUp, drop, bagFull, echoRecovered, review: b.kind === 'due', chest, gearUp, card };
 }
 
 export interface LossResult {
@@ -115,7 +125,7 @@ export function applyLoss(s: GameState, b: Battle, at: { x: number; y: number })
   s.combo = 0;
   let lostEcho: LossResult['lostEcho'] = null;
   let newEcho: LossResult['newEcho'] = null;
-  if (has(s.level, 'echo')) {
+  if (has(s.level, 'echo') && !b.phrase) {
     if (s.echo) lostEcho = { gold: s.echo.gold, xp: s.echo.xp };
     newEcho = { gold: s.gold, xp: s.xp };
     s.echo = { wordId: b.word.id, gold: s.gold, xp: s.xp, x: at.x, y: at.y };

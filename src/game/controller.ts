@@ -4,7 +4,7 @@ import type { Look } from '../core/look';
 // Phaser world to the DOM interface. Game rules live in src/core and stay pure.
 
 import { answerBoss, startBoss, type BossFight } from '../core/boss';
-import { linkPack, makeQuestion, monsterStats, pickHint, resetClassFx, resolveTurn, rollSaying, shoutLine, startBattle, type Battle, type Question, type TurnReport, type Tutorial } from '../core/combat';
+import { linkPack, startPhraseBattle, makeQuestion, monsterStats, pickHint, resetClassFx, resolveTurn, rollSaying, shoutLine, startBattle, type Battle, type Question, type TurnReport, type Tutorial } from '../core/combat';
 import { CONFIG, xpToNext } from '../core/config';
 import { favour, FAVOUR, KONRAD_WORDS, QUESTS, questEvent, questState, startQuest, type QuestEvent } from '../core/quests';
 import { CHEST_ZH, CHESTS, lockWord, openChest, type ChestKind } from '../core/chest';
@@ -42,6 +42,7 @@ import { BattleUI } from '../ui/battle';
 import { BossUI } from '../ui/boss';
 import { advance, banner, dialogHasChoices, dialogOpen, say, setPrompt, toast, type Line } from '../ui/feedback';
 import { logLine } from '../ui/gamelog';
+import { SAYINGS } from '../data/sayings';
 import { renderHud } from '../ui/hud';
 import { Panels } from '../ui/panels';
 import { $, isTyping } from '../ui/dom';
@@ -280,6 +281,10 @@ export class Controller {
       const dog = WORD_BY_ID['hund'];
       this.entity = m;
       this.battle = startBattle(s, dog, this.rng, { tutorial: 'loss' });
+    } else if (m.phrase && !tutorial) {
+      // 残句 (0.5): a sentence monster, no word behind it.
+      this.entity = m;
+      this.battle = startPhraseBattle(s, m.phrase, this.rng, m.zone);
     } else {
       this.entity = m;
       this.battle = startBattle(s, m.word, this.rng, { isEcho: m.isEcho, tutorial, trial: opts.trial, rare: m.rare });
@@ -330,13 +335,13 @@ export class Controller {
   /** Region 2 (Lv11+): nearby nouns with different articles join the fight (群怪). */
   private gatherPack(m: MonsterEntity) {
     const s = this.state;
-    if (!has(s.level, 'packs') || s.region !== 2 || m.isEcho || m.scripted || m.rare || !m.word.art || m.word.family === 'truhe') return;
+    if (!has(s.level, 'packs') || s.region !== 2 || m.isEcho || m.scripted || m.rare || m.phrase || !m.word.art || m.word.family === 'truhe') return;
     const firstPack = !s.flags.firstPackDone;
     const max = firstPack || s.level < CONFIG.pack.max3From ? 2 : CONFIG.pack.max;
     const r = CONFIG.pack.radiusTiles * 16;
     const used = new Set([m.word.art]);
     const near = this.scene.monsters
-      .filter((o) => o !== m && !o.isEcho && !o.scripted && !o.rare && o.zone === m.zone && !!o.word.art && o.word.family !== 'truhe' && Math.hypot(o.x - m.x, o.y - m.y) <= r)
+      .filter((o) => o !== m && !o.isEcho && !o.scripted && !o.rare && !o.phrase && o.zone === m.zone && !!o.word.art && o.word.family !== 'truhe' && Math.hypot(o.x - m.x, o.y - m.y) <= r)
       .sort((a, b) => Math.hypot(a.x - m.x, a.y - m.y) - Math.hypot(b.x - m.x, b.y - m.y));
     for (const o of near) {
       if (this.pack.length >= max) break;
@@ -460,7 +465,11 @@ export class Controller {
           banner('归名', `${fullForm(b.word)} · ${b.word.zh}`);
           this.speak(fullForm(b.word));
         }
-        logLine(`击败 ${fullForm(b.word)}（${b.word.zh}）`, 'good');
+        logLine(b.phrase ? `击败残句：${b.phrase.a} ${b.phrase.b}（${b.phrase.zh}）` : `击败 ${fullForm(b.word)}（${b.word.zh}）`, 'good');
+        if (res.card) {
+          const x = SAYINGS.find((y) => y.id === res.card!.id);
+          if (x) toast(res.card.first ? `短句卡「${x.a} ${x.b}」收进收集册：${x.when}` : `又打散一个「${x.a} ${x.b}」`, res.card.first ? 'gold' : '');
+        }
         const bits = [`+${res.xp} 经验`, `+${res.gold} 金币`];
         if (res.review) bits.push('复习 +50%');
         if (res.kill.to > res.kill.from && !res.kill.guiming) bits.push(`${b.word.de}：${['无名', '裂形', '半名', '归名'][res.kill.to]}`);

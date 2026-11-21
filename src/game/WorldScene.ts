@@ -2,14 +2,16 @@ import Phaser from 'phaser';
 import { stageOf, type Stage } from '../core/srs';
 import { now } from '../core/state';
 import type { Word, ZoneId } from '../core/types';
-import { fullForm, genderOf, WORD_BY_ID } from '../data/words';
+import { fullForm, WORD_BY_ID } from '../data/words';
 import { has } from '../core/unlocks';
+import { phraseCards, phraseWord } from '../core/combat';
+import { SAYING_CFG, SAYINGS } from '../data/sayings';
 import { FAMILIES } from '../data/families';
 import type { Controller } from './controller';
 import { DEFAULT_LOOK, lookKey, type Look } from '../core/look';
 import { myBubble, online } from '../net/online';
 import { generateMap, isBlocked, MAP_H, MAP_W, TILE, walkableTilesIn, zonesOf, zoneAt, type MapData, type NpcId, type RegionId, type ZoneDef } from './map';
-import { ARTICLE_COLOR, GLITCH, heroFrames, makeTextures, renderMapCanvas, PAL } from './sprites';
+import { GLITCH, heroFrames, makeTextures, renderMapCanvas, PAL } from './sprites';
 import { sfx } from './audio';
 
 export interface MonsterEntity {
@@ -21,6 +23,8 @@ export interface MonsterEntity {
   scripted?: 'loss' | 'trial';
   /** Rare (gold-rimmed) or 宝箱怪: flees at half HP / turn 3, drops an iron chest. */
   rare?: boolean;
+  /** 残句 (0.5): a sentence monster carrying this short saying (no word nameplate). */
+  phrase?: string;
   x: number;
   y: number;
   tx: number;
@@ -217,6 +221,23 @@ export class WorldScene extends Phaser.Scene {
       this.addMonster(p.word, p.kind, zone, spot.x * TILE + 8, spot.y * TILE + 8);
     }
     this.maybeRare(zone, picks.length, tiles);
+    this.maybePhrase(zone, picks.length, tiles);
+  }
+
+  /** 残句 (0.5, Lv3+): about 1 spawn slot in 10 (1 in 30 once every card is in), at most one per field. */
+  private maybePhrase(zone: ZoneId, added: number, tiles: Array<{ x: number; y: number }>) {
+    const s = this.ctrl.state;
+    if (s.level < SAYING_CFG.fromLevel || !added || !tiles.length || this.monsters.some((m) => m.phrase && m.zone === zone)) return;
+    const cards = phraseCards();
+    const fresh = cards.filter((x) => !s.sayings?.[x.id]);
+    const per = fresh.length ? 0.1 : 1 / 30;
+    if (Math.random() >= 1 - Math.pow(1 - per, added)) return;
+    const pickFrom = fresh.length ? fresh : cards;
+    const x = pickFrom[Math.floor(Math.random() * pickFrom.length)];
+    const c = tiles[Math.floor(Math.random() * tiles.length)];
+    const m = this.addMonster(phraseWord(x.id, s.level, zone), 'new', zone, c.x * TILE + 8, c.y * TILE + 8);
+    m.phrase = x.id;
+    this.styleMonster(m);
   }
 
   /** Region 2 (Lv11+): about 1 respawn in 10 brings a 宝箱怪 or turns a new monster rare. */
@@ -292,9 +313,8 @@ export class WorldScene extends Phaser.Scene {
   styleMonster(m: MonsterEntity) {
     const s = this.ctrl.state;
     m.stage = stageOf(s, m.word, now(s));
-    const g = genderOf(m.word);
-    const artColor = g ? ARTICLE_COLOR[g] : '#c3a9ff';
-    const color = m.stage === 0 ? PAL.bone : artColor;
+    // 词性三相 (0.5): the map never shows a monster's gender either (no article colors).
+    const color = m.phrase ? '#ffcf4a' : m.stage === 0 ? PAL.bone : '#c3a9ff';
     m.label.setColor(color);
     m.label.setShadow(0, 0, m.stage === 0 ? '#ff1830' : color, 6, true, true);
     m.teeth.setText('▼'.repeat(m.stage === 0 ? 4 : m.stage === 1 ? 2 : 1));
@@ -308,6 +328,11 @@ export class WorldScene extends Phaser.Scene {
   /** The name restores with 归名: garbage → half-revealed → "der Ap▒▒". */
   updateGlyph(m: MonsterEntity) {
     const w = m.word;
+    if (m.phrase) {
+      const x = SAYINGS.find((y) => y.id === m.phrase);
+      m.label.setText(x ? `${x.a} …` : '……');
+      return;
+    }
     const rnd = () => GLITCH[Math.floor(Math.random() * GLITCH.length)];
     let txt: string;
     if (m.stage === 0) {
@@ -317,7 +342,7 @@ export class WorldScene extends Phaser.Scene {
       txt = [...w.de].map((ch, i) => (ch === ' ' ? ' ' : m.reveal[i] ? ch : rnd())).join('');
     } else {
       const half = Math.ceil(w.de.length / 2);
-      txt = (w.art ? w.art + ' ' : '') + w.de.slice(0, half) + '▒'.repeat(Math.max(1, w.de.length - half));
+      txt = w.de.slice(0, half) + '▒'.repeat(Math.max(1, w.de.length - half));
     }
     m.label.setText(txt);
   }

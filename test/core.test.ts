@@ -1170,3 +1170,36 @@ describe('0.5 und: a Lv13+ finisher in a pack names two monsters and hits both',
     expect(makeQuestion(s, a, 'sentence', makeRng(3), undefined, true, [a, c]).undWord).toBeUndefined();
   });
 });
+
+describe('0.5 残句: sentence monsters', () => {
+  it('has the 14 cards no word monster carries; three steps kill it; the card drops, nothing enters the wordbook, no echo', async () => {
+    const { phraseCards, startPhraseBattle } = await import('../src/core/combat');
+    const { applyWin, applyLoss } = await import('../src/core/outcomes');
+    const cards = phraseCards();
+    expect(cards.length).toBe(14);
+    const s = newGame('T', 'student', T0);
+    s.level = 6;
+    const id = cards[0].id;
+    const b = startPhraseBattle(s, id, makeRng(1), 'echogasse');
+    expect(b.intent.line.endsWith('…')).toBe(true);
+    const types: string[] = [];
+    for (let i = 0; i < 3 && !b.outcome; i++) {
+      b.intent = { ...b.intent, kind: 'wait', hits: 0 };
+      const q = makeQuestion(s, b, 'attack', makeRng(i));
+      types.push(q.type);
+      resolveTurn(s, b, 'attack', q, q.answer!, makeRng(i));
+      if (i < 2) expect(b.monster.hp).toBeGreaterThan(0);
+    }
+    expect(types).toEqual(['saying', 'pickZh', 'sentence']);
+    expect(b.outcome).toBe('win');
+    const words = Object.keys(s.words).length;
+    const res = applyWin(s, b, makeRng(5));
+    expect(res.card).toEqual({ id, first: true });
+    expect(s.sayings?.[id]).toBe(1);
+    expect(Object.keys(s.words).length).toBe(words);
+    expect(res.xp).toBeGreaterThan(0);
+    const b2 = startPhraseBattle(s, id, makeRng(2), 'echogasse');
+    applyLoss(s, b2, { x: 0, y: 0 });
+    expect(s.echo).toBeNull();
+  });
+});

@@ -245,8 +245,9 @@ export class BattleUI {
     const de = shownDe(b);
 
     // Monster card.
-    const glyph =
-      b.stage === 0
+    const glyph = b.phrase
+      ? `${b.phrase.a} …`
+      : b.stage === 0
         ? Array.from({ length: Math.max(3, Math.min(9, de.length)) }, () => GLITCH[Math.floor(Math.random() * GLITCH.length)]).join('')
         : b.stage === 1
           ? [...de].map((c, i) => (i % 2 === 0 || c === ' ' ? c : '▒')).join('')
@@ -269,6 +270,7 @@ export class BattleUI {
         b.isEcho ? h('span.tag.echo', '带着你的回响') : '',
         b.saying && !b.sayingDone ? h('span.tag.echo', '接句怪') : '',
         b.pluralMon ? h('span.tag.echo', '复数怪 · 一群') : '',
+        b.phrase ? h('span.tag.echo', `残句 · ${b.phraseStep ?? 0}/3`) : '',
         b.stage === 2 && b.kind === 'due' ? h('span.tag', '可归名') : '',
       ),
       bar('hp', m.hp, m.maxHp, `${m.hp} / ${m.maxHp}`),
