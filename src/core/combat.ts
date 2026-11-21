@@ -9,11 +9,11 @@ import { kindOf, stageOf, overdueSteps, type Kind, type Stage } from './srs';
 import { affixTotal, attack, critChance, gearPen, hintsPerFight, maxHp, now, type GameState } from './state';
 import type { Element, Intent, Move, Word } from './types';
 import { has } from './unlocks';
-import { fullForm, genderOf, hasArticleQuestion, WORDS } from '../data/words';
+import { fullForm, genderOf, hasArticleQuestion, WORD_BY_ID, WORDS } from '../data/words';
 import { SKILLS } from '../data/skills';
-import { SAYING_BY_ID, SAYING_CFG, SAYINGS } from '../data/sayings';
+import { SAYING_CFG, SAYINGS } from '../data/sayings';
 import { expectedSentence, gradeSentence, nextPattern, PATTERNS, type Pattern } from './sentence';
-import { clozeModeFor, clozeOptions, gradeCloze, hasExamples, makeCloze, voiceLine, wholeSentence, type ClozeMode } from './cloze';
+import { EXAMPLES, clozeModeFor, clozeOptions, exampleSplits, gradeCloze, hasExamples, makeCloze, voiceLine, wholeSentence, type ClozeMode } from './cloze';
 import { CONJ, PERSON_LABEL, type Person } from '../data/verbs';
 import { QTYPES, type QKey } from '../data/questionTypes';
 import { CLASSES, critRunNeeded, rank, resMax, shieldReflect, wrongHitShare, type ClassId } from './classes';
@@ -39,8 +39,8 @@ export interface Question {
   word?: Word;
   /** conj questions: which person to conjugate for. */
   person?: import('../data/verbs').Person;
-  /** saying questions (接句怪): which saying. */
-  sayingId?: string;
+  /** saying questions (接句怪): what it shouts and what you finish. */
+  say?: SayLine;
   /** sentence questions: which pattern (Ich brauche …, Wo ist …). */
   pattern?: Pattern;
   /** cloze questions: pick / type the dictionary form / type the form the sentence needs. */
@@ -157,8 +157,8 @@ export interface Battle {
   chorusCd: number;
   /** Orange 冠词审判: the next hit after a correct article answer deals double. */
   judgement: boolean;
-  /** 接句怪: the saying it shouts; its first attack question asks for the second half. */
-  saying?: string;
+  /** 接句怪: the half sentence it shouts; its first attack question asks for the rest. */
+  saying?: SayLine;
   sayingDone?: boolean;
   /** Sentence attacks used on this monster this fight (each pattern once, in tag order). */
   sxUsed?: number;
@@ -283,11 +283,19 @@ function nextIntent(s: GameState, b: Battle, rng: Rng): Intent {
   else b.turnsSinceCharge += 1;
   // 怪的台词 (2026-11-21): outside tutorials it mumbles one of its own example sentences with its name swallowed
   // (a listening clue that never says the answer). Only the big attack keeps the shouted stock lines as a warning.
-  if (!tut && intent.kind !== 'charge' && intent.kind !== 'flee') {
+  if (!tut && intent.kind !== 'charge' && intent.kind !== 'flee' && b.saying && !b.sayingDone) {
+    // 接句怪: until you finish its line, the line is its half sentence (no mumbled example giving the rest away).
+    intent = { ...intent, ...shoutLine(b.saying) };
+  } else if (!tut && intent.kind !== 'charge' && intent.kind !== 'flee') {
     const v = voiceLine(b.word, b.turn);
     if (v) intent = { ...intent, line: v.line, zh: v.zh, full: v.full, fullZh: v.fullZh };
   }
   return intent;
+}
+
+/** What a 接句怪 shouts while its line is open. */
+export function shoutLine(say: SayLine): { line: string; zh: string; full: undefined; fullZh: undefined } {
+  return { line: `${say.a} …`, zh: '（它喊出半句，等你接上。）', full: undefined, fullZh: undefined };
 }
 
 // ---- Questions -------------------------------------------------------------
@@ -548,25 +556,47 @@ export function clozeQ(s: GameState, w: Word, rng: Rng, mode: ClozeMode = clozeM
   };
 }
 
-/** 接句怪: the monster shouts the first half, you finish it (pick from three below Lv6, typed from Lv6). */
-export function sayingQuestion(s: GameState, id: string, rng: Rng): Question {
-  const x = SAYING_BY_ID[id];
-  const prompt = '接句怪：它喊出上半句，接上下半句（答对必暴击）';
-  const focus = `「${x.a} …」`;
-  if (s.level >= SAYING_CFG.typedFrom) return { type: 'saying', prompt: prompt + '，打字', focus, answer: x.b, sayingId: id };
-  const others = shuffle(rng, SAYINGS.filter((o) => o.id !== id && normalize(o.b) !== normalize(x.b)).map((o) => o.b)).slice(0, 2);
-  return { type: 'saying', prompt, focus, options: shuffle(rng, [x.b, ...others]), answer: x.b, sayingId: id };
-}
-
-/** Rolls whether a fresh one-on-one monster is a 接句怪 (Lv3+, about 1 in 8). */
-export function rollSaying(s: GameState, rng: Rng): string | undefined {
-  if (s.level < SAYING_CFG.fromLevel || rng() >= SAYING_CFG.chance) return undefined;
-  // Sayings you haven't collected yet come first.
-  const fresh = SAYINGS.filter((x) => !s.sayings?.[x.id]);
-  return pick(rng, fresh.length ? fresh : SAYINGS).id;
+/** 接句怪 (2026-11-21): always about this monster's own word. a = what it shouts, b = what you answer (contains the word). */
+export interface SayLine {
+  a: string;
+  b: string;
+  zh: string;
+  /** Set when it is one of the 20 short sayings: a right answer drops its card. */
+  cardId?: string;
 }
 
 const sayKey = (v: string) => normalize(v).replace(/\s+/g, ' ').trim();
+const bareDe = (w: Word) => normalize(w.art ? w.de.replace(/^(der|die|das)\s+/i, '') : w.de).replace(/\s+/g, ' ').trim();
+const hasWord = (text: string, w: Word) => ` ${sayKey(text)} `.includes(` ${bareDe(w)} `);
+
+/** The 接句 line for this word: a short saying that contains it, else one of its example sentences split before it. */
+export function sayLineFor(w: Word, rng: Rng): SayLine | undefined {
+  const card = SAYINGS.filter((x) => hasWord(x.b, w));
+  if (card.length) {
+    const x = pick(rng, card);
+    return { a: x.a, b: x.b, zh: x.zh, cardId: x.id };
+  }
+  const ex = exampleSplits(w).filter((p) => p.a.split(' ').length >= 2);
+  return ex.length ? pick(rng, ex) : undefined;
+}
+
+/** 接句怪: the monster shouts the first half, you finish it (pick from three below Lv6, typed from Lv6). */
+export function sayingQuestion(s: GameState, say: SayLine, rng: Rng): Question {
+  const prompt = `接句怪：它喊出上半句，接上下半句（答对必暴击）· ${say.zh}`;
+  const focus = `「${say.a} …」`;
+  if (s.level >= SAYING_CFG.typedFrom) return { type: 'saying', prompt: prompt + '，打字', focus, answer: say.b, say };
+  // Wrong endings come from other words' sentences, so the right one is the one that carries this word.
+  const pool = say.cardId ? SAYINGS.map((o) => o.b) : Object.keys(EXAMPLES).flatMap((id) => (WORD_BY_ID[id] ? exampleSplits(WORD_BY_ID[id]).map((p) => p.b) : []));
+  const others = shuffle(rng, pool.filter((o) => sayKey(o) !== sayKey(say.b))).slice(0, 2);
+  return { type: 'saying', prompt, focus, options: shuffle(rng, [say.b, ...others]), answer: say.b, say };
+}
+
+/** Rolls whether a fresh one-on-one monster is a 接句怪 (Lv3+, about 1 in 8) — only when its word has a line. */
+export function rollSaying(s: GameState, w: Word, rng: Rng): SayLine | undefined {
+  if (s.level < SAYING_CFG.fromLevel || rng() >= SAYING_CFG.chance) return undefined;
+  return sayLineFor(w, rng);
+}
+
 
 /** The sentence pattern the next 句式 on this monster uses: only for words in your wordbook, each pattern once per fight. */
 export function sentencePattern(s: GameState, b: Battle): Pattern | null {
@@ -625,8 +655,9 @@ export function gradeQuestion(_s: GameState, b: Battle, q: Question, input: stri
       return { ok, notes: ok ? [q.full!] : [`正确答案：${q.answer}`, q.full!], correct: q.answer! };
     }
     case 'saying': {
-      const x = SAYING_BY_ID[q.sayingId!];
-      const ok = sayKey(input) === sayKey(x.b);
+      const x = q.say!;
+      // The second half alone, or the whole sentence typed out, both count.
+      const ok = sayKey(input) === sayKey(x.b) || sayKey(input) === sayKey(`${x.a} ${x.b}`);
       return { ok, notes: ok ? [`${x.a} ${x.b} —— ${x.zh}`] : [`正确答案：${x.a} ${x.b}（${x.zh}）`], correct: x.b };
     }
     case 'sentence': {
@@ -794,13 +825,15 @@ export function resolveTurn(
   }
   if (q.type === 'saying') {
     b.sayingDone = true;
-    if (ok) {
-      const id = q.sayingId!;
+    const x = q.say!;
+    if (ok && x.cardId) {
+      const id = x.cardId;
       s.sayings ??= {};
       const first = !s.sayings[id];
       s.sayings[id] = (s.sayings[id] ?? 0) + 1;
-      log.push({ text: first ? `短句卡「${SAYING_BY_ID[id].a} ${SAYING_BY_ID[id].b}」收进了收集册。` : `又接上了「${SAYING_BY_ID[id].a} ${SAYING_BY_ID[id].b}」。`, tone: 'good' });
-    } else log.push({ text: `它替你说完：「${SAYING_BY_ID[q.sayingId!].a} ${SAYING_BY_ID[q.sayingId!].b}！」`, tone: 'bad' });
+      log.push({ text: first ? `短句卡「${x.a} ${x.b}」收进了收集册。` : `又接上了「${x.a} ${x.b}」。`, tone: 'good' });
+    } else if (ok) log.push({ text: `接上了：「${x.a} ${x.b}」`, tone: 'good' });
+    else log.push({ text: `它替你说完：「${x.a} ${x.b}」`, tone: 'bad' });
   }
 
   // Class resources: 书写者 earns 墨水 for typed answers, 守护者 earns 沉着 for every answer.

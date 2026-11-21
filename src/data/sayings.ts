@@ -1,4 +1,4 @@
-// 接句怪 (Lv3+): about 1 monster in 8 shouts the first half of a saying, the player finishes it.
+// 接句怪 (Lv3+): about 1 monster in 8 shouts half a line about its own word: one of these sayings when it contains the word, else the word's example sentence (combat.ts sayLineFor).
 // A right answer is a sure crit and drops the saying's card into the collection (no combat effect).
 // To be checked by a Tandem partner before it counts as final.
 

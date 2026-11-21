@@ -581,7 +581,7 @@ export class Panels {
         const have = !!s.sayings?.[x.id];
         tb.append(h('tr', h('td', have ? `${x.a} ${x.b}` : `${x.a} ……`), h('td', have ? x.zh : '？'), h('td', have ? x.when : '在野外遇到喊这句的接句怪，接上下半句就能收下')));
       }
-      wrap.append(h('h3', `短句卡（${got.length} / ${SAYINGS.length}）`), h('p.small.muted', '接句怪喊上半句，你接下半句就能收下这张卡。卡只用来收集，没有战斗效果。'), tb);
+      wrap.append(h('h3', `短句卡（${got.length} / ${SAYINGS.length}）`), h('p.small.muted', '怪的词正好在这句里时，它会当接句怪喊上半句，你接下半句就能收下这张卡。卡只用来收集，没有战斗效果。'), tb);
     }
     if (!Object.keys(s.words).length) wrap.append(h('p', '还没有见过的词。出去打几只怪吧。'));
     return wrap;

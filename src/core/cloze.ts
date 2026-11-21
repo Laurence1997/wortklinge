@@ -30,6 +30,14 @@ function parse(line: string): { before: string; blank: string; after: string; zh
   return m ? { before: m[1], blank: m[2], after: m[3], zh } : null;
 }
 
+/** Example sentences split just before the word: a = the head, b = the word and the rest (接句怪). */
+export function exampleSplits(w: Word): Array<{ a: string; b: string; zh: string }> {
+  return (EXAMPLES[w.id] ?? [])
+    .map(parse)
+    .filter((x): x is NonNullable<typeof x> => !!x && !!x.before.trim())
+    .map((p) => ({ a: p.before.trim(), b: (p.blank + p.after).replace(/\s+/g, ' ').trim(), zh: p.zh }));
+}
+
 export function hasExamples(w: Word): boolean {
   return !!EXAMPLES[w.id]?.length;
 }

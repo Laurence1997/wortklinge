@@ -643,12 +643,13 @@ describe('class resources carry over between fights', () => {
 });
 
 describe('接句怪', () => {
-  it('a right second half is a sure crit, drops the card, never kills, and keeps the word question for later', () => {
+  it('a short saying that carries the word: sure crit, drops the card, never kills, keeps the word question for later', async () => {
+    const { sayLineFor } = await import('../src/core/combat');
     const s = newGame('T', 'student', T0);
     s.level = 4;
     const w = WORDS.find((x) => x.art && (x.region ?? 1) === 1 && !x.tutorial)!;
     const b = startBattle(s, w, makeRng(3));
-    b.saying = 'sicher';
+    b.saying = { a: 'Sicher ist', b: 'sicher', zh: '保险起见', cardId: 'sicher' };
     b.intent = { ...b.intent, kind: 'attack' } as typeof b.intent;
     const q = makeQuestion(s, b, 'attack', makeRng(4));
     expect(q.type).toBe('saying');
@@ -660,14 +661,45 @@ describe('接句怪', () => {
     expect(s.sayings?.sicher).toBe(1);
     expect(b.firstCorrectDone).toBe(false);
     expect(makeQuestion(s, b, 'attack', makeRng(4)).type).not.toBe('saying');
+    // Only words the saying is about get it.
+    expect(sayLineFor(WORDS.find((x) => x.de === 'morgen')!, makeRng(1))?.cardId).toBe('morgen');
+    expect(sayLineFor(w, makeRng(1))?.cardId).not.toBe('sicher');
   });
-  it('is typed from Lv6', () => {
+  it('otherwise splits the word\'s own example before the word, so the answer always carries it (Lucas 2026-11-21)', async () => {
+    const { sayLineFor, rollSaying, sayingQuestion } = await import('../src/core/combat');
+    const mail = WORDS.find((x) => x.de.includes('E-Mail'))!;
+    const say = sayLineFor(mail, makeRng(2))!;
+    expect(say.cardId).toBeUndefined();
+    expect(say.b.toLowerCase()).toContain('e-mail');
+    expect(say.a.split(' ').length).toBeGreaterThanOrEqual(2);
+    // No word ever gets a line that leaves it out.
+    for (const w of WORDS) {
+      const x = sayLineFor(w, makeRng(5));
+      if (x && !x.cardId) expect(x.b.length).toBeGreaterThan(0);
+    }
     const s = newGame('T', 'student', T0);
-    s.level = 6;
-    const b = startBattle(s, WORDS[0], makeRng(3));
-    b.saying = 'glueck';
-    const q = makeQuestion(s, b, 'attack', makeRng(4));
+    s.level = 9;
+    const b = startBattle(s, mail, makeRng(3));
+    b.saying = say;
+    const q = sayingQuestion(s, say, makeRng(4));
     expect(q.options).toBeUndefined();
+    // The second half, or the whole sentence typed out, both count.
+    expect(resolveTurn(s, b, 'attack', q, `${say.a} ${say.b}`, makeRng(9)).correct).toBe(true);
+    // Lv3+, and never on a word without any line.
+    let n = 0;
+    for (let i = 0; i < 400; i++) if (rollSaying(s, mail, makeRng(i))) n++;
+    expect(n).toBeGreaterThan(20);
+    s.level = 2;
+    expect(rollSaying(s, mail, makeRng(1))).toBeUndefined();
+  });
+  it('is typed from Lv6, picked from three below', async () => {
+    const { sayingQuestion } = await import('../src/core/combat');
+    const s = newGame('T', 'student', T0);
+    const say = { a: 'Viel', b: 'Glück!', zh: '祝你好运', cardId: 'glueck' };
+    s.level = 6;
+    expect(sayingQuestion(s, say, makeRng(4)).options).toBeUndefined();
+    s.level = 4;
+    expect(sayingQuestion(s, say, makeRng(4)).options).toHaveLength(3);
   });
 });
 

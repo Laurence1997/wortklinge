@@ -1,4 +1,3 @@
-import { SAYING_BY_ID } from '../data/sayings';
 import type { Battle, Question, TurnReport } from '../core/combat';
 import { availableMoves, comboTier, effArmor, moveReady, resName } from '../core/combat';
 import { ELEMENT_ZH } from '../core/intents';
@@ -82,7 +81,7 @@ export class BattleUI {
     this.question = this.ctrl.askQuestion(move);
     // Listening step: the monster says its own name, the player picks the meaning.
     if (this.question.type === 'pickZh' && this.question.focus) this.ctrl.speak(this.question.focus);
-    if (this.question.type === 'saying') this.ctrl.speak(SAYING_BY_ID[this.question.sayingId!].a);
+    if (this.question.type === 'saying') this.ctrl.speak(this.question.say!.a);
     this.phase = 'answer';
     this.render();
   }
