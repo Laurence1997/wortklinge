@@ -180,6 +180,7 @@ export class WorldScene extends Phaser.Scene {
     this.nodes?.stop();
     this.nodes = CONFIG.map.nodes && !new URLSearchParams(location.search).has('oldmap') ? new NodeNav(this) : null;
     this.nodes?.start();
+    this.fitZoom();
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
       if (this.frozen) return;
       if (this.nodes) this.nodes.click(p.worldX, p.worldY);
@@ -196,7 +197,9 @@ export class WorldScene extends Phaser.Scene {
 
   fitZoom() {
     const w = this.scale.width;
-    this.cameras.main.setZoom(w < 900 ? 2 : w > 1700 ? 4 : 3);
+    // Scene map: zoomed out so most of the route (and the next scenes) fits on screen; walking keeps the close view.
+    if (this.nodes) this.cameras.main.setZoom(w < 1100 ? 1.5 : 2);
+    else this.cameras.main.setZoom(w < 900 ? 2 : w > 1700 ? 4 : 3);
   }
 
   // ---- Monsters ------------------------------------------------------------

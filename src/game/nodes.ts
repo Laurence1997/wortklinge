@@ -14,7 +14,7 @@ import { ZONES, TILE, type NpcId } from './map';
 import type { MonsterEntity, WorldScene } from './WorldScene';
 
 const NPC_ZH: Record<NpcId, string> = { hilde: '守火人 Hilde', greta: '导师 Greta', mira: '商人 Mira', konrad: '面包师傅 Konrad', examiner: '考官' };
-const OFFSETS = [[-18, -4], [18, -4], [0, -16], [-18, 14], [18, 14], [0, -28]];
+const OFFSETS = [[-28, -6], [28, -6], [0, -24], [-28, 16], [28, 16], [0, -38]];
 
 export const anchorPx = (sc: SceneDef) => ({ x: sc.at.x * TILE + 8, y: sc.at.y * TILE + 8 });
 
@@ -120,7 +120,7 @@ export class NodeNav {
 
   click(px: number, py: number): void {
     if (this.hopping || this.w.ctrl.uiBlocking()) return;
-    const sc = scenesOf(this.w.map.region).find((x) => this.revealed(x) && Math.hypot(anchorPx(x).x - px, anchorPx(x).y - py) < 14);
+    const sc = scenesOf(this.w.map.region).find((x) => this.revealed(x) && Math.hypot(anchorPx(x).x - px, anchorPx(x).y - py) < 18);
     if (sc) this.travel(sc.id);
   }
 
@@ -185,11 +185,11 @@ export class NodeNav {
     for (const sc of list) {
       const p = anchorPx(sc);
       const color = sc.type === 'camp' ? 0xffb347 : sc.type === 'door' ? 0xff2040 : sc.type === 'hidden' ? 0xffcf4a : sc.type === 'road' ? 0x9a8a80 : 0xc23040;
-      g.fillStyle(0x07040a, 0.85).fillCircle(p.x, p.y, 7);
-      g.lineStyle(sc === this.here ? 2 : 1, sc === this.here ? 0xffffff : color, 1).strokeCircle(p.x, p.y, 7);
+      g.fillStyle(0x07040a, 0.85).fillCircle(p.x, p.y, 9);
+      g.lineStyle(sc === this.here ? 2 : 1, sc === this.here ? 0xffffff : color, 1).strokeCircle(p.x, p.y, 9);
       this.labels.push(
         this.w.add
-          .text(p.x, p.y, String(sc.no), { fontFamily: '"Courier New", monospace', fontSize: '7px', color: '#e8dccf', resolution: 4 })
+          .text(p.x, p.y, String(sc.no), { fontFamily: '"Courier New", monospace', fontSize: '8px', color: '#e8dccf', resolution: 4 })
           .setOrigin(0.5)
           .setDepth(3001),
       );
