@@ -11,6 +11,7 @@ import { answerBoss, startBoss } from '../src/core/boss';
 import { BOSS_QUESTIONS } from '../src/data/boss';
 import { pickSpawns } from '../src/core/spawn';
 import { CONJ } from '../src/data/verbs';
+import { pronounClozes } from '../src/core/cloze';
 import { answerDuel, duelPool, startDuel } from '../src/core/duel';
 
 const T0 = new Date('2026-11-20T10:00:00').getTime();
@@ -1201,5 +1202,22 @@ describe('0.5 残句: sentence monsters', () => {
     const b2 = startPhraseBattle(s, id, makeRng(2), 'echogasse');
     applyLoss(s, b2, { x: 0, y: 0 });
     expect(s.echo).toBeNull();
+  });
+});
+
+describe('0.5 ihn/sie: pronoun clozes from accusative example sentences', () => {
+  it('swaps a plain object for ihn / sie / es', () => {
+    const p = pronounClozes(WORD_BY_ID.schluessel);
+    expect(p.map((x) => x.full)).toContain('Ich finde ihn nicht.');
+    expect(p[0].answer).toBe('ihn');
+  });
+  it('skips subjects after sein and slots behind bitte / mir (pronoun word order)', () => {
+    expect(pronounClozes(WORD_BY_ID.flasche)).toHaveLength(0); // «Wo ist die Flasche?»
+    expect(pronounClozes(WORD_BY_ID.lampe)).toHaveLength(0); // «Mach bitte die Lampe an» → would need «Mach sie bitte an»
+  });
+  it('only from Lv7, inside cloze questions', () => {
+    const all = WORDS.flatMap((w) => pronounClozes(w));
+    expect(all.length).toBeGreaterThan(20);
+    expect(all.every((x) => ['ihn', 'sie', 'es'].includes(x.answer))).toBe(true);
   });
 });

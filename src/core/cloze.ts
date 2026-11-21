@@ -130,6 +130,39 @@ export function slotArticle(w: Word, n: number): string | null {
   return (STANCES as readonly string[]).includes(first) ? first : null;
 }
 
+const PREPS = new Set(['in', 'an', 'auf', 'mit', 'zu', 'von', 'bei', 'aus', 'nach', 'für', 'durch', 'um', 'ohne', 'gegen', 'neben', 'über', 'unter', 'vor', 'hinter', 'zwischen', 'im', 'am', 'zum', 'zur', 'vom', 'beim']);
+
+/** ihn / sie / es (0.5, Lv7+): example sentences whose slot is den/die/das + the noun as an object
+ *  (not at the start, not after a preposition), turned into a pronoun cloze: Ich trinke den Tee. → Ich trinke ___. (ihn) */
+const COPULA = new Set(['bin', 'bist', 'ist', 'sind', 'seid', 'war', 'warst', 'waren', 'wart', 'sei', 'heiße', 'heißt', 'heißen', 'hieß', 'werde', 'wirst', 'wird', 'werden', 'werdet', 'wurde', 'bleibe', 'bleibst', 'bleibt', 'bleiben']);
+const MIDFIELD = new Set(['bitte', 'hier', 'da', 'dort', 'mal', 'jetzt', 'heute', 'morgen', 'gern', 'gerne', 'auch', 'noch', 'schon', 'immer', 'oft', 'mir', 'dir', 'ihm', 'uns', 'euch', 'ihnen']);
+
+export function pronounClozes(w: Word): Array<{ shown: string; full: string; zh: string; answer: string }> {
+  if (!w.art) return [];
+  const out: Array<{ shown: string; full: string; zh: string; answer: string }> = [];
+  for (const line of EXAMPLES[w.id] ?? []) {
+    const p = parse(line);
+    if (!p || !p.before.trim()) continue;
+    const toks = p.blank.split(' ');
+    if (toks.length !== 2) continue;
+    const [art, noun] = toks;
+    if (noun !== w.de && noun !== w.pl) continue;
+    const prev = p.before.trim().split(/\s+/).pop()!.toLowerCase();
+    if (PREPS.has(prev)) continue;
+    // sein/heißen/werden/bleiben take a nominative: «Das ist die Nachbarin» is not an object slot.
+    if (p.before.toLowerCase().split(/[^a-zäöüß]+/).some((t) => COPULA.has(t))) continue;
+    // A pronoun object jumps ahead of adverbs and dative objects («Mach sie bitte an», «Gib ihn mir»),
+    // so a slot behind them can't simply be swapped.
+    if (MIDFIELD.has(prev)) continue;
+    const plural = noun !== w.de || w.plOnly;
+    const pron = art === 'den' && w.art === 'der' && !plural ? 'ihn' : art === 'das' && w.art === 'das' && !plural ? 'es' : art === 'die' && (plural || w.art === 'die') ? 'sie' : null;
+    if (!pron) continue;
+    const full = (p.before + p.blank + p.after).trim();
+    out.push({ shown: `${full} → ${p.before}___${p.after}`.replace(/\s+/g, ' ').trim(), full: (p.before + pron + p.after).trim(), zh: p.zh, answer: pron });
+  }
+  return out;
+}
+
 /** 怪的台词: example sentence n (rotating) with the word swallowed — 「Ich trinke jeden Morgen … mmh …」.
  *  The Chinese is blanked the same way; when the meaning can't be found in it, the Chinese is withheld. */
 export function voiceLine(w: Word, n: number, ok?: (i: number) => boolean): { line: string; zh: string; full: string; fullZh: string; idx: number } | null {

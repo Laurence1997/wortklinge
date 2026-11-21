@@ -13,7 +13,7 @@ import { fullForm, genderOf, hasArticleQuestion, WORD_BY_ID, WORDS, zhWithPos } 
 import { SKILLS, skillLine, skillLinesOpen } from '../data/skills';
 import { SAYING_CFG, SAYINGS } from '../data/sayings';
 import { expectedSentence, gradeSentence, nextPattern, PATTERNS, sentenceTags, type Pattern } from './sentence';
-import { EXAMPLES, caseOf, slotArticle, type Case, type Stance, clozeModeFor, clozeOptions, exampleSplits, gradeCloze, hasExamples, makeCloze, voiceLine, wholeSentence, type ClozeMode } from './cloze';
+import { EXAMPLES, caseOf, pronounClozes, slotArticle, type Case, type Stance, clozeModeFor, clozeOptions, exampleSplits, gradeCloze, hasExamples, makeCloze, voiceLine, wholeSentence, type ClozeMode } from './cloze';
 import { CONJ, PERSON_LABEL, type Person } from '../data/verbs';
 import { QTYPES, type QKey } from '../data/questionTypes';
 import { CLASSES, critRunNeeded, rank, resMax, shieldReflect, wrongHitShare, type ClassId } from './classes';
@@ -654,6 +654,14 @@ function whisperOf(q: Question, w: Word): Question {
 
 /** 完形填空 for this word at the player's level, or null when no sentence fits. */
 export function clozeQ(s: GameState, w: Word, rng: Rng, mode: ClozeMode = clozeModeFor(s.level)): Question | null {
+  // ihn / sie / es (0.5, Lv7+): now and then the cloze asks for the pronoun instead (counts as 填变形).
+  if (s.level >= CONFIG.phase.accFrom && mode !== 'pick') {
+    const pr = pronounClozes(w);
+    if (pr.length && rng() < CONFIG.phase.pronounChance) {
+      const p = pick(rng, pr);
+      return { type: 'cloze', prompt: `代词：把名词换成 ihn / sie / es · ${p.zh}`, focus: p.shown, answer: p.answer, clozeMode: 'form', full: p.full };
+    }
+  }
   const c = makeCloze(w, mode, rng) ?? (mode === 'base' ? makeCloze(w, 'form', rng) : null);
   if (!c) return null;
   const real: ClozeMode = mode === 'base' && c.answer !== w.de && !c.answer.endsWith(w.de) ? 'form' : mode;
