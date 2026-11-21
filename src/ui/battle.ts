@@ -533,7 +533,7 @@ export class BattleUI {
               { style: 'color:var(--gold, #ffcf4a)' },
               `  新词：${fullForm(w)} · ${w.zh}　第一次见，相已替你选好${b.phase !== w.art ? `（这句要 ${b.phase}）` : ''}，记住它`,
             )
-          : !b.phaseHit && !b.pluralMon && !(this.phase === 'answer' && this.question?.type === 'pickZh')
+          : !b.pluralMon && !(this.phase === 'answer' && this.question?.type === 'pickZh')
             ? h('span.small', { style: 'color:var(--gold, #ffcf4a)' }, `  它是「${w.zh}」→ 选它的相`)
             : '',
         h(
