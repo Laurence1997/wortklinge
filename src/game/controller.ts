@@ -253,7 +253,7 @@ export class Controller {
       const lines: Line[] = [{ who: SYS, text: '【0.5】地图改成一站一站走：点地图上的圆点或右边面板的出口，数字键打怪，M 打开大地图。' }];
       if (s.level >= 3) lines.push({ who: SYS, text: '装备提前到 3 级开放。' });
       if (s.level >= 4) lines.push({ who: SYS, text: '铭刻 Q、低语 W 和言灵提前到 4 级：打中弱点、答对打字题攒言灵，铭刻答错扣 1 点。' });
-      if (s.level >= 5) lines.push({ who: SYS, text: '终结技 F 提前到 5 级；5 级起答对后可以按 T 跟读（可选，读得像多给经验）。' });
+      if (s.level >= 5) lines.push({ who: SYS, text: '终结技 F 提前到 5 级；5 级起技能栏有「读出来」（S）：新词读出来就是必中一击，答对后还可以跟读整句多拿经验（都可选）。' });
       if (s.level >= 3) lines.push({ who: SYS, text: '金色名牌的「残句」是句子怪，打散它收短句卡。' });
       window.setTimeout(() => say(lines), 800);
     }

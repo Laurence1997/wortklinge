@@ -1,6 +1,7 @@
 import type { Battle, Question, TurnReport } from '../core/combat';
 import { availableMoves, comboTier, effArmor, moveReady, needsPhase, phaseOf, resName, shownDe, stancesFor, teachPhase, readTarget } from '../core/combat';
 import { shadowOk } from '../core/shadow';
+import { has } from '../core/unlocks';
 import type { Stance } from '../core/cloze';
 import { ELEMENT_ZH } from '../core/intents';
 import { STAGE_ZH } from '../core/srs';
@@ -168,14 +169,11 @@ export class BattleUI {
   }
 
   private shadowRow(): HTMLElement | string {
-    // Before the first right answer of a fight there is nothing to read yet: say where 跟读 will appear.
-    if (!this.shadowText && !this.shadowMsg && this.phase === 'choose' && canListen() && this.ctrl.canShadow() && !readTarget(this.ctrl.state, this.b))
-      return h('span.note.shadow.small.muted', '🎤 答对后可以跟读（按 T 或点 🎤）');
     if (!this.shadowText || !canListen() || (!this.ctrl.canShadow() && !this.shadowMsg)) return '';
     return h(
       'span.note.shadow',
-      this.shadowReady() && !listening()
-        ? h('button.btn', { onclick: () => void this.shadow(), title: '跟读（T）：读得像多给经验，读不好不扣东西' }, this.phase === 'choose' ? '🎤 跟读上一句' : '🎤 跟读')
+      this.shadowReady() && !listening() && this.phase === 'result'
+        ? h('button.btn', { onclick: () => void this.shadow(), title: '跟读（S）：读得像多给经验，读不好不扣东西' }, h('kbd', 'S'), '跟读这句')
         : '',
       this.shadowMsg ? h('span', ` ${this.shadowMsg}`) : '',
     );
@@ -259,11 +257,11 @@ export class BattleUI {
       this.continue();
       return true;
     }
-    if (!typing && e.key.toLowerCase() === 't' && this.phase === 'choose' && canListen() && readTarget(this.ctrl.state, this.b)) {
+    if (!typing && e.key.toLowerCase() === 's' && this.phase === 'choose' && canListen() && readTarget(this.ctrl.state, this.b)) {
       void this.readAttack();
       return true;
     }
-    if (!typing && e.key.toLowerCase() === 't' && this.shadowReady()) {
+    if (!typing && e.key.toLowerCase() === 's' && this.shadowReady()) {
       void this.shadow();
       return true;
     }
@@ -442,6 +440,23 @@ export class BattleUI {
       }
     }
 
+    // 读出来 (Lv5+): always on the move bar, so it can be found. A never-met word → 读音攻击; after a right answer → 跟读.
+    if (has(s.level, 'shadowing') && canListen() && !b.tutorial) {
+      const rt = readTarget(s, b);
+      const canShadowNow = this.shadowReady() && this.phase === 'choose';
+      const on = !listening() && this.phase === 'choose' && (!!rt || canShadowNow);
+      const sub = listening() ? '在听……' : rt ? `必中 · ${rt}` : canShadowNow ? '跟读上一句 · 多给经验' : this.ctrl.canShadow() ? '新词可读出来攻击；答对后可跟读' : '这场已经读过了';
+      movesEl.append(
+        h(
+          'button.btn',
+          { disabled: !on, onclick: () => void (rt ? this.readAttack() : this.shadow()), title: '读出来（S）：新词读得像就是必中的一击；答对后可以跟读整句多拿经验。读不好不扣任何东西' },
+          h('kbd', 'S'),
+          '读出来',
+          h('small', sub),
+        ),
+      );
+    }
+
     // Question.
     const q = h('div.q');
     if (this.phase === 'choose') {
@@ -453,11 +468,8 @@ export class BattleUI {
         q.append(
           h(
             'div.note.shadow',
-            listening()
-              ? ''
-              : h('button.btn', { onclick: () => void this.readAttack(), title: '读音攻击（T）：读得像就是必中的一击；没读对不耗回合' }, `🎤 读出来攻击：${rt}`),
-            h('span.small', { style: 'color:var(--gold, #ffcf4a)' }, this.readMsg ? `  ${this.readMsg}` : `  新词：${rt} · ${w.zh}（T）`),
-            h('button.btn', { onclick: () => this.ctrl.speak(rt), title: '再听一遍' }, '🔊'),
+            h('span.small', { style: 'color:var(--gold, #ffcf4a)' }, this.readMsg || `新词：${rt} · ${w.zh}　按 S（或点「读出来」）把它读出来，读得像就是必中的一击`),
+            h('button.btn.small', { onclick: () => this.ctrl.speak(rt), title: '再听一遍' }, '再听'),
           ),
         );
     } else if (this.question) {
@@ -483,8 +495,8 @@ export class BattleUI {
               { style: 'color:var(--gold, #ffcf4a)' },
               `  新词：${fullForm(w)} · ${w.zh}　第一次见，相已替你选好${b.phase !== w.art ? `（这句要 ${b.phase}）` : ''}，记住它`,
             )
-          : !b.phase && !b.pluralMon
-            ? h('span.small', { style: 'color:var(--gold, #ffcf4a)' }, `  ${w.zh} → 选它的相`)
+          : !b.phaseHit && !b.pluralMon && !(this.phase === 'answer' && this.question?.type === 'pickZh')
+            ? h('span.small', { style: 'color:var(--gold, #ffcf4a)' }, `  它是「${w.zh}」→ 选它的相`)
             : '',
         h(
           'span.small.muted',

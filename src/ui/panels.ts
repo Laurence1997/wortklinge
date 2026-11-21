@@ -760,7 +760,7 @@ export class Panels {
     );
     // 跟读试音: check the microphone and Chrome's recognition at any level (跟读 itself opens at Lv5).
     const out = h('span.small.muted', canListen() ? '读一句德语，比如「Ich trinke Kaffee.」' : '没检测到麦克风，或者这个网站的麦克风权限被拒绝了');
-    const btn = h('button.btn', '🎤 试麦克风') as HTMLButtonElement;
+    const btn = h('button.btn', '试麦克风') as HTMLButtonElement;
     btn.onclick = async () => {
       btn.disabled = true;
       out.textContent = '在听……请说德语';
@@ -779,7 +779,7 @@ export class Panels {
       ['互动', 'E（篝火、守火人、路牌、门）'],
       ['面板', 'C 角色和装备 · B 图鉴 · Esc 关闭'],
       ['词性三相', '名词怪出手前先选相：1 der · 2 die · 3 das（对这只怪一直有效，随时可以点按钮换）。选对：护甲降一档、回 1 点资源、附带元素；6 级起选错：护甲翻倍、破甲清零。复数怪一律 die'],
-      ['战斗', 'A 攻击 · Q 铭刻 · W 低语 · E 齐鸣（只打同相的怪）· F 终结技 · R 技能 · G 职业技能；1/2/3 选答案；打字题按 Enter 交卷；结果会自动进下一题（Enter 跳过等待）；Z 看中文；V 再听；T 跟读（5 级起可选：答对后跟着读那句德语，读得像每场多给一次经验，读不好不扣东西；没有麦克风就不显示）'],
+      ['战斗', 'A 攻击 · Q 铭刻 · W 低语 · E 齐鸣（只打同相的怪）· F 终结技 · R 技能 · G 职业技能；1/2/3 选答案；打字题按 Enter 交卷；结果会自动进下一题（Enter 跳过等待）；Z 看中文；V 再听；S 读出来（5 级起可选：答对后跟着读那句德语，读得像每场多给一次经验，读不好不扣东西；没有麦克风就不显示）'],
       ['变音字母', '点 ä ö ü ß 按钮，或者写 ae oe ue ss（算对，但会提示正确拼法）'],
       ['归名', '一个词就是一只怪。打败它 3 次（3 次不同的重生，隔天才会重生），最后一下要默写带冠词的全名，它才变回原样'],
       ['遗忘之物', '头上有「!」的怪是今天到期的词，经验和掉落更多。篝火休息会刷新所有怪'],
