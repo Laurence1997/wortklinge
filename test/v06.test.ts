@@ -35,6 +35,8 @@ describe('0.6 Lv21–30 systems', () => {
       expect(g.length).toBe(8);
       expect(new Set(g.map((q) => q.word.id)).size).toBe(8);
       expect(g.filter((q) => q.blanks!.length === 2).length).toBe(2);
+      // 宾格: at least one masculine noun with den / einen (f/n accusative looks like the nominative).
+      expect(g.slice(0, 2).some((q) => q.word.art === 'der' && ['den', 'einen', 'keinen'].includes(q.answer))).toBe(true);
       for (const q of g) {
         expect(q.prompt).toContain('___');
         expect(q.hint).toBeTruthy();

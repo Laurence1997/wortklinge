@@ -162,7 +162,9 @@ export function slotArticle(w: Word, n: number): string | null {
 const PREPS = new Set(['in', 'an', 'auf', 'mit', 'zu', 'von', 'bei', 'aus', 'nach', 'für', 'durch', 'um', 'ohne', 'gegen', 'neben', 'über', 'unter', 'vor', 'hinter', 'zwischen', 'im', 'am', 'zum', 'zur', 'vom', 'beim']);
 
 /** 突破试炼 · 语法 (0.6.x): example sentences of this noun whose slot is article + noun in the accusative or dative
- *  (by the 格位姿态 table), with only the article blanked: Ich fahre mit ___ Bus. (dem) */
+ *  (by the 格位姿态 table), with only the article blanked: Ich fahre mit ___ Bus. (dem)
+ *  The table only marks den / einen as accusative, so accusative clozes are always masculine nouns (docs 0.6.x:
+ *  feminine and neuter accusatives look like the nominative and test nothing). */
 export function caseClozes(w: Word, want: 'acc' | 'dat'): Array<{ shown: string; full: string; zh: string; answer: string; prep: string | null }> {
   if (!w.art) return [];
   const g = (w.plOnly ? 'pl' : w.art === 'der' ? 'm' : w.art === 'die' ? 'f' : 'n') as 'm' | 'f' | 'n' | 'pl';
