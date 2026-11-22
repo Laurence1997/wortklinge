@@ -4,6 +4,7 @@ import { kindOf, progressSummary, stageOf, STAGE_ZH } from '../core/srs';
 import { affinityOf, attack, critChance, dayKey, hintsPerFight, maxHp, now } from '../core/state';
 import type { AffixKey, Item, Slot, Word } from '../core/types';
 import { has, UNLOCK } from '../core/unlocks';
+import { BLIND_FROM, blindBoxes, boxLabel, boxPrice, buyBox } from '../core/blindbox';
 import { FAMILIES } from '../data/families';
 import { SKILLS, skillLinesOpen } from '../data/skills';
 import { phraseCards } from '../core/combat';
@@ -581,6 +582,33 @@ export class Panels {
     wrap.append(h('h3', '货架'), shelf);
 
     // Selling.
+    // 盲盒摊 (0.6, 26 级): read the German label to know what is inside.
+    if (s.level >= BLIND_FROM) {
+      const boxes = blindBoxes(s, this.ctrl.rng);
+      wrap.append(
+        h('h3', '盲盒摊（读懂盒子上的德语，就知道里面是什么）'),
+        h(
+          'div.row',
+          { style: 'flex-wrap:wrap;gap:8px' },
+          ...boxes.map((b, i) =>
+            h(
+              'div.panel',
+              { style: 'padding:8px 10px;min-width:220px' },
+              h('div', { style: 'font-family:var(--mono);color:var(--gold, #ffcf4a)' }, `「${boxLabel(b)}」`),
+              h('button.btn.small', {
+                disabled: s.gold < boxPrice(s, b),
+                onclick: () => {
+                  const r = buyBox(s, i, this.ctrl.rng, CONFIG.loot.bagSize);
+                  this.shopMsg = r.ok ? { text: `打开盒子：${r.item!.name}`, tone: 'ok' } : { text: r.why ?? '买不了', tone: 'no' };
+                  this.ctrl.persist();
+                  this.render();
+                },
+              }, `买（${boxPrice(s, b)} 金币）`),
+            ),
+          ),
+        ),
+      );
+    }
     wrap.append(h('h3', `卖掉背包里的东西（卖价是买价的五分之一）`));
     const bag = h('div.bag');
     for (const it of s.bag) {

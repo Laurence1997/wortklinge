@@ -382,7 +382,7 @@ export class BattleUI {
       h('div.glyph', { style: `color:${color};text-shadow:0 0 8px ${b.stage === 0 ? '#ff1830' : color}` }, glyph),
       h(
         'div',
-        b.kind === 'due' ? h('span.tag.due', '遗忘之物') : b.kind === 'new' ? h('span.tag', '新怪') : h('span.tag', '影子'),
+        b.rusty ? h('span.tag.due', '锈名 · 久拖的遗忘之物') : b.kind === 'due' ? h('span.tag.due', '遗忘之物') : b.kind === 'new' ? h('span.tag', '新怪') : h('span.tag', '影子'),
         b.isEcho ? h('span.tag.echo', '带着你的回响') : '',
         b.saying && !b.sayingDone ? h('span.tag.echo', '接句怪') : '',
         b.pluralMon ? h('span.tag.echo', '复数怪 · 一群') : '',

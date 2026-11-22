@@ -432,6 +432,10 @@ export class Controller {
           if (this.battle.intent.kind !== 'charge' && this.battle.intent.kind !== 'flee') this.battle.intent = { ...this.battle.intent, ...shoutLine(say) };
         }
       }
+      if (this.battle.rusty && !s.flags.rustyTaught) {
+        s.flags.rustyTaught = true;
+        say([{ who: SYS, text: '【锈名】这只遗忘之物拖了太久，名字生了锈：高 1 级、血多三成。打败它经验和金币翻倍，必掉 1 片碎片。它不会逃，也不会追你。' }]);
+      }
       // 怪物诅咒 (0.6, 25 级): about one in ten carries 遗忘 or 沉默; the first one after the hall gate is certain.
       if (s.level >= CONFIG.curse.from && !m.isEcho && (s.flags.curseNext || this.rng() < CONFIG.curse.chance)) {
         const first = !!s.flags.curseNext;

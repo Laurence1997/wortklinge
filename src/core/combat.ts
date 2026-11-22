@@ -183,6 +183,8 @@ export interface Battle {
   teachFin?: boolean;
   /** 怪物诅咒 (0.6, 25 级): 遗忘 = no 低语 and no Chinese hints; 沉默 = no 读出来 / 跟读. A hard question right lifts it. */
   curse?: 'forget' | 'silence';
+  /** 锈名 (0.6, 27 级): a long-overdue review monster, fatter and paying double. */
+  rusty?: boolean;
   /** It carried a curse at the start (pays ×1.3 XP and one more shard even once lifted). */
   cursed?: boolean;
   /** 跟读 paid out in this fight (once per fight). */
@@ -241,8 +243,11 @@ export function startBattle(
   // Review monsters (2026-11-21) stand at your level wherever they turn up: old word, current-region monster, full pay.
   const lvl = opts.isEcho ? Math.min(word.lvl, s.level) : kind === 'due' ? Math.max(word.lvl, s.level) : s.flags[`zoneOk_${word.zone}`] ? word.lvl : Math.min(word.lvl, s.level + CONFIG.monster.maxAbove(s.level));
   const overdue = overdueSteps(s, word, t);
-  const st = monsterStats(lvl, stage, kind, overdue);
-  const monster: MonsterState = { lvl, hp: st.hp, maxHp: st.hp, dmg: st.dmg, vulnerable: 0, burn: 0, poison: 0, chilled: false, broken: 0 };
+  // 锈名 (0.6, 27 级): a review monster 3+ intervals overdue rusts: one level up, ×1.3 HP, double reward.
+  const rusty = kind === 'due' && overdue >= CONFIG.rusty.overdue && s.level >= CONFIG.rusty.from && !opts.tutorial;
+  const st = monsterStats(rusty ? lvl + 1 : lvl, stage, kind, overdue);
+  const hp0 = rusty ? Math.round(st.hp * CONFIG.rusty.hpMult) : st.hp;
+  const monster: MonsterState = { lvl: rusty ? lvl + 1 : lvl, hp: hp0, maxHp: hp0, dmg: st.dmg, vulnerable: 0, burn: 0, poison: 0, chilled: false, broken: 0 };
   const tutorial = opts.tutorial ?? null;
   if (tutorial === 'loss') {
     monster.lvl = s.level + 6;
@@ -253,6 +258,7 @@ export function startBattle(
     word,
     kind,
     overdue,
+    rusty: rusty || undefined,
     stage,
     isEcho: !!opts.isEcho,
     tutorial,
