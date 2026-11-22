@@ -14,7 +14,7 @@ import { SKILLS, skillLine, skillLinesOpen } from '../data/skills';
 import { SAYING_CFG, SAYINGS } from '../data/sayings';
 import { expectedSentence, gradeSentence, nextPattern, PATTERNS, sentenceTags, type Pattern } from './sentence';
 import { PERFEKT, perfektFull, perfektParts } from '../data/perfekt';
-import { EXAMPLES, caseOf, pronounClozes, slotArticle, type Case, type Stance, clozeModeFor, clozeOptions, exampleSplits, gradeCloze, hasExamples, makeCloze, voiceLine, wholeSentence, type ClozeMode } from './cloze';
+import { EXAMPLES, caseOf, pronounClozes, slotArticle, type Case, type Stance, clozeModeFor, clozeOptions, exampleSplits, gradeCloze, hasExamples, makeCloze, twoBlank, voiceLine, wholeSentence, type ClozeMode } from './cloze';
 import { CONJ, PERSON_LABEL, type Person } from '../data/verbs';
 import { QTYPES, type QKey } from '../data/questionTypes';
 import { CLASSES, critRunNeeded, rank, resMax, shieldReflect, wrongHitShare, type ClassId } from './classes';
@@ -57,6 +57,10 @@ export interface Question {
   whispered?: boolean;
   /** 齐鸣: a correct answer hits every monster in the pack. */
   chorus?: boolean;
+  /** 终极技能 (30 级): the two blanks of the frame, in order. */
+  ult?: string[];
+  /** 终极技能: the German frame with two ___. */
+  frame?: string;
 }
 
 /** Row of the 题型奖励表 (src/data/questionTypes.ts) this question belongs to. */
@@ -204,6 +208,9 @@ export interface Battle {
   sayingDone?: boolean;
   /** Sentence attacks used on this monster this fight (each pattern once, in tag order). */
   sxUsed?: number;
+  /** 终极技能 (30 级): used this fight; how many of its two blanks were right. */
+  ultUsed?: boolean;
+  ultHits?: number;
   /** 认得 / 会写 earned on this word this fight, not yet written to the wordbook (new words join it on the kill). */
   readOk?: number;
   writeOk?: number;
@@ -689,6 +696,31 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
     const fin = sentenceQ();
     // und (0.5, Lv13+): in a pack the finisher can name a second monster with und, and hits both.
     const UND: Pattern[] = ['moechte', 'brauche', 'suche', 'habe', 'nehme'];
+    // 终极技能 (30 级, 句型填空版): the first finisher of a fight gives the frame and two blanks: this monster
+    // and another noun from your wordbook that fits the same pattern.
+    if (fin && fin.pattern && PATTERNS[fin.pattern].art !== 'none' && has(s.level, 'ultimate') && !b.ultUsed) {
+      const pat = fin.pattern;
+      const known = WORDS.filter((x) => x.id !== w.id && !!x.art && !!s.words[x.id] && sentenceTags(x).includes(pat));
+      if (known.length) {
+        const mate = pick(rng, known);
+        const P = PATTERNS[pat];
+        const objOf = (x: Word) => expectedSentence(x, pat).slice(P.lead.length + 1).replace(/[.?]$/, '');
+        const end = P.q ? '?' : '.';
+        return {
+          type: 'sentence',
+          prompt: '终极技能 · 句型填空：两个空都填对 ×3，对一个 ×1.5（带冠词）',
+          focus: `${SENTENCE_ZH[pat](w.digit ?? w.zh).replace(/[。？]$/, '')}，还有${mate.zh}。`,
+          frame: `${P.lead} ___ und ___${end}`,
+          pattern: pat,
+          ult: [objOf(w), objOf(mate)],
+          answer: `${P.lead} ${objOf(w)} und ${objOf(mate)}${end}`,
+        };
+      }
+    }
+    if (has(s.level, 'ultimate') && !b.ultUsed) {
+      const two = twoBlank(w, rng, (x) => !!s.words[x.id]);
+      if (two) return { type: 'sentence', prompt: '终极技能 · 句型填空：两个空都填对 ×3，对一个 ×1.5', focus: two.zh, frame: two.frame, ult: two.blanks, answer: two.full };
+    }
     if (fin && fin.pattern && UND.includes(fin.pattern) && has(s.level, 'und')) {
       const mate = mates.find((o) => o !== b && !o.outcome && !!o.word.art && o.word.id !== w.id && sentenceTags(o.word).includes(fin.pattern!));
       if (mate) {
@@ -971,6 +1003,14 @@ export function gradeQuestion(_s: GameState, b: Battle, q: Question, input: stri
       return { ok, notes: ok ? [`${x.a} ${x.b} —— ${x.zh}`] : [`正确答案：${x.a} ${x.b}（${x.zh}）`], correct: x.b };
     }
     case 'sentence': {
+      if (q.ult) {
+        // 终极技能: the two blanks come joined with |, each graded on its own (Bitte/gern ignored like sentences).
+        const parts = input.split('|');
+        const hits = q.ult.map((a, i) => sayKey(parts[i] ?? '') === sayKey(a));
+        const n = hits.filter(Boolean).length;
+        b.ultHits = n;
+        return { ok: n > 0, notes: n === 2 ? [q.answer!] : [`正确答案：${q.answer}`], correct: q.answer!, word: n === 2 ? b.word : undefined };
+      }
       if (q.pattern && q.undWord) {
         // Ich möchte einen Tee und eine Tasse: each half graded as its own sentence.
         const lead = PATTERNS[q.pattern].lead;
@@ -1134,6 +1174,7 @@ export function resolveTurn(
   let interrupted = false;
   b.qIndex += 1;
   if (q.type === 'sentence') b.sxUsed = (b.sxUsed ?? 0) + 1;
+  if (q.ult) b.ultUsed = true;
   // 低语 (2026-11-21): a hinted answer is not 会写/认得, earns no resource and cannot be the 归名 blow.
   // The word is marked so its next appearance asks it again without the hint.
   if (q.whispered) {
@@ -1262,6 +1303,11 @@ export function resolveTurn(
         if (has(s.level, 'layerElement')) element = ELEMENT_BY_GENDER[genderOf(b.word) ?? 'n'];
       }
       if (q.inscribed) mult *= CONFIG.tech.inscribeMult;
+      if (q.ult) {
+        const full = b.ultHits === 2;
+        mult *= full ? CONFIG.ultimate.both : CONFIG.ultimate.one;
+        log.push({ text: full ? `终极技能：两个空都对，×${CONFIG.ultimate.both}。` : `终极技能：对了一个空，×${CONFIG.ultimate.one}。`, tone: 'good' });
+      }
       if (b.fx.doubleNext) {
         mult *= 2;
         b.fx.doubleNext = false;

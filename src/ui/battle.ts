@@ -617,6 +617,32 @@ export class BattleUI {
         );
       });
       wrap.append(opts);
+    } else if (qq.ult) {
+      // 终极技能: the frame with two blanks, one box each; sent as "a|b".
+      const box = () => h('input', { type: 'text', autocomplete: 'off', autocapitalize: 'off', spellcheck: 'false', placeholder: '填空', disabled: this.phase !== 'answer' }) as HTMLInputElement;
+      const a = box();
+      const c = box();
+      if (this.phase === 'result') [a.value, c.value = ''] = this.lastValue.split('|');
+      const send = () => this.submit(`${a.value}|${c.value}`);
+      a.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          e.stopPropagation();
+          c.focus();
+        }
+      });
+      c.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          e.stopPropagation();
+          send();
+        }
+      });
+      this.input = a;
+      wrap.append(
+        h('div.focus', { style: 'font-size:20px' }, qq.frame ?? ''),
+        h('div.typing', a, c, umlautButtons(c), h('button.btn.primary', { disabled: this.phase !== 'answer', onclick: send }, '出招 ↵')),
+      );
     } else {
       const input = h('input', {
         type: 'text',

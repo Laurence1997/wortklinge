@@ -42,6 +42,7 @@ import { BOSS2 } from '../data/boss2';
 import { BOSS3 } from '../data/boss3';
 import { LINA } from '../data/lina';
 import { WEBER, WEBER_POOL, usesDu } from '../data/weber';
+import { answerExam, BREAK, examPassed, PART_ZH, startExam, type Exam } from '../core/breakthrough';
 import { DUNGEON, RULES, type Rule } from '../data/dungeon';
 import { SKILLS } from '../data/skills';
 import { fullForm, hasArticleQuestion, WORD_BY_ID, WORDS, zhWithPos } from '../data/words';
@@ -725,7 +726,7 @@ export class Controller {
         for (const lv of res.levelUp.levels) this.onLevelUp(lv);
         if (res.levelUp.capped && !s.flags.taughtCapLevel) {
           s.flags.taughtCapLevel = true;
-          say([{ who: SYS, text: `【等级上限 ${CONFIG.levelCap}】经验先存着，第 3 区开了接着升。归名和装备照样涨` }]);
+          say([{ who: SYS, text: `【等级上限 ${CONFIG.levelCap}】经验先存着（最多存一级）。去主城找考官考 A1 突破试炼；A2 的区域 0.7 开放。归名和装备照样涨` }]);
         }
       }
     }
@@ -1253,15 +1254,47 @@ export class Controller {
     const region = s.region ?? 1;
     if (s.level < DUEL.fromLevel) return say([{ who: '考官', text: `「Noch nicht.」${DUEL.fromLevel} 级再来。` }]);
     const left = duelPool(s, region).length;
+    if (!left && s.level >= BREAK.from && !s.flags.a1Passed) return this.breakExam();
     if (!left) return say([{ who: '考官', text: '「Fertig.」没什么可考的了。见过的，去外面复习。' }]);
     say([
       { who: '考官', text: `「Prüfung?」我只考你没见过的词。看你本来会多少。（还剩 ${left} 个）` },
       { who: SYS, text: `【默写对决】名词带冠词。写对：经验 ×${DUEL.xpMult}，当场归名。写错：挨打，词留在野外。每 ${DUEL.readBar} 题它出手一次。倒下就结束，写对的都算` },
     ], undefined, [
       { label: '开始对决', act: () => (this.milestone('duel'), this.panels.showDuel(startDuel(s, region, Math.random))) },
+      ...(s.level >= BREAK.from && !s.flags.a1Passed ? [{ label: 'A1 突破试炼', act: () => this.breakExam() }] : []),
       ...(this.canJump() ? [{ label: `跳区考核（升到 ${JUMP.toLevel} 级）`, act: () => this.jumpExam() }] : []),
       { label: '先不了', act: () => {} },
     ]);
+  }
+
+  /** A1 突破试炼 (30 级): 听 读 写 8 questions each, 5 right per part. */
+  private breakExam() {
+    say([
+      { who: '考官', text: '「Die Prüfung A1. Hören, Lesen, Schreiben.」听、读、写，各八题。只考你见过的词。' },
+      { who: SYS, text: `【A1 突破试炼】每部分对 ${BREAK.pass} 题算过。不挨打，没过不罚，随时再考` },
+    ], () => this.panels.showExam(startExam(this.state, Math.random)));
+  }
+
+  examAnswer(e: Exam, input: string): void {
+    const q = e.qs[e.at];
+    answerExam(e, input);
+    const l = e.last;
+    if (l && q) logLine(`突破试炼（${PART_ZH[q.part]}）：${l.ok ? '✓' : `✗ 正确：${q.part === 'write' ? fullForm(q.word) : q.answer}`}`, l.ok ? 'good' : 'bad');
+  }
+
+  /** Called when the exam panel closes after the last question. */
+  examDone(e: Exam): void {
+    const s = this.state;
+    if (!examPassed(e) || s.flags.a1Passed) return;
+    s.flags.a1Passed = true;
+    s.flags.title = 'A1 突破者';
+    banner('A1 突破试炼通过', '称号「A1 突破者」');
+    say([
+      { who: '考官', text: '「Bestanden.」章盖好了。' },
+      { who: SYS, text: '【A1 突破】这一阶段学完了。A2 的区域在 0.7 开放；在那之前经验替你存着，最多存一级。' },
+    ]);
+    this.refresh();
+    this.persist();
   }
 
   /** 跳区考核 is for region 1 players below the region-2 start level who still have region-2 words to write. */
@@ -1479,12 +1512,22 @@ export class Controller {
     const p = this.scene.player;
     const m = this.scene.addMonster(word, s.words[word.id] ? 'due' : 'new', 'fahrplanhalle', p.x + 20, p.y, { scripted: 'trial' });
     this.encounter(m);
-    if (boss && this.battle) {
-      const mon = this.battle.monster;
-      mon.lvl += DUNGEON.bossLvl;
-      mon.hp = mon.maxHp = Math.round(mon.maxHp * DUNGEON.bossHp);
-      mon.dmg = Math.round(mon.dmg * 1.2);
-      toast('站台尽头的东西站起来了');
+    if (this.battle) {
+      // Every fight stands at your level (the boss DUNGEON.bossLvl above), whatever the word's own level.
+      const b = this.battle;
+      const mon = b.monster;
+      const lvl = s.level + (boss ? DUNGEON.bossLvl : 0);
+      if (mon.lvl < lvl) {
+        const st = monsterStats(lvl, b.stage, b.kind, b.overdue);
+        mon.lvl = lvl;
+        mon.hp = mon.maxHp = st.hp;
+        mon.dmg = st.dmg;
+      }
+      if (boss) {
+        mon.hp = mon.maxHp = Math.round(mon.maxHp * DUNGEON.bossHp);
+        mon.dmg = Math.round(mon.dmg * 1.2);
+        toast('站台尽头的东西站起来了');
+      }
     }
   }
 

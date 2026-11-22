@@ -42,6 +42,8 @@ export const CONFIG = {
   xpPerHour: 1000,
   /** 0.3 ships regions 1–2; the level cap keeps players inside released content. */
   levelCap: 30,
+  /** 终极技能 (30 级, 句型填空版): both blanks right / one right. */
+  ultimate: { both: 3, one: 1.5 },
   /** 现在完成时 (0.6 第 5 块): haben/sein stance from 21 (wrong picks free until 22), 填分词 by kind 21/24/27,
    *  region-1/2 verb reviews in the Perfekt one time in three. */
   /** 21 级: big attacks announce when they come (jetzt / gleich / in zwei Runden). */

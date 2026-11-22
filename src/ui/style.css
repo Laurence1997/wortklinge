@@ -291,3 +291,4 @@ label.toggle { display: flex; gap: 8px; align-items: center; padding: 6px 0; }
 
 /* 场景插画 (0.6) */
 #scene-panel canvas.scene-art { width: 100%; image-rendering: pixelated; display: block; margin: 4px 0 2px; border: 1px solid var(--line); }
+.panel .choices { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }

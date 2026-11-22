@@ -13,6 +13,7 @@ import { canLearn, CLASSES, learn, rank, spent, talentPoints, TALENT_FROM_LEVEL,
 import { fullForm, genderOf, hasArticleQuestion, WORD_BY_ID, WORDS, zhWithPos } from '../data/words';
 import type { Controller } from '../game/controller';
 import { $, bar, clear, h, umlautButtons } from './dom';
+import { BREAK, examPassed, PART_ZH, type Exam, type ExamPart } from '../core/breakthrough';
 import { DUEL, duelPool, JUMP, startDuel, type Duel } from '../core/duel';
 import { CHEST_ZH, type ChestKind } from '../core/chest';
 import { favour, FAVOUR, QUESTS, type QuestId } from '../core/quests';
@@ -30,7 +31,7 @@ import { blanksOf, checkBlank, DIARY_MISSES, DIARY_XP, lineText, pageLines, page
 import { lookPicker } from './title';
 import { BARGAIN_LINES, ensureShop, price, refreshCost, sellPrice, SLOT_NOUN } from '../core/shop';
 
-export type PanelName = 'hero' | 'talents' | 'quests' | 'codex' | 'words' | 'data' | 'account' | 'settings' | 'help' | 'shop' | 'chest' | 'quiz' | 'duel' | 'bigmap' | 'diary' | 'ask';
+export type PanelName = 'hero' | 'talents' | 'quests' | 'codex' | 'words' | 'data' | 'account' | 'settings' | 'help' | 'shop' | 'chest' | 'quiz' | 'duel' | 'bigmap' | 'diary' | 'ask' | 'exam';
 
 export class Panels {
   open: PanelName | null = null;
@@ -65,6 +66,11 @@ export class Panels {
   close(): void {
     const wasChest = this.open === 'chest';
     this.duel = null;
+    if (this.open === 'exam' && this.exam) {
+      const e = this.exam;
+      this.exam = null;
+      if (e.over) window.setTimeout(() => this.ctrl.examDone(e), 0);
+    }
     if (this.open === 'ask' && this.asking) {
       // Closing without answering counts as an empty answer, so the caller always continues.
       const a = this.asking;
@@ -108,6 +114,13 @@ export class Panels {
       clear(el).append(panel);
       el.onclick = null;
       window.setTimeout(() => (el.querySelector('input.duel') as HTMLInputElement | null)?.focus(), 0);
+      return;
+    }
+    if (this.open === 'exam' && this.exam) {
+      panel.append(h('h2', h('span', 'A1 突破试炼 · 考官'), h('button.btn.ghost', { onclick: () => this.close() }, this.exam.over ? '离开 Esc' : '放弃 Esc')), this.examBody());
+      clear(el).append(panel);
+      el.onclick = null;
+      window.setTimeout(() => (el.querySelector('input.exam, button.exam-first') as HTMLElement | null)?.focus(), 0);
       return;
     }
     if (this.open === 'ask' && this.asking) {
@@ -163,13 +176,13 @@ export class Panels {
       if (this.buying !== null) window.setTimeout(() => (el.querySelector('input.buy-line') as HTMLInputElement | null)?.focus(), 0);
       return;
     }
-    const titles: Record<Exclude<PanelName, 'shop' | 'chest' | 'quiz' | 'duel' | 'bigmap' | 'diary' | 'ask'>, string> = { hero: '角色与装备', talents: '职业与天赋', quests: '任务', codex: '图鉴', words: '单词本', data: '数据与存档', account: '账号与排行', settings: '设置', help: '怎么玩' };
+    const titles: Record<Exclude<PanelName, 'shop' | 'chest' | 'quiz' | 'duel' | 'bigmap' | 'diary' | 'ask' | 'exam'>, string> = { hero: '角色与装备', talents: '职业与天赋', quests: '任务', codex: '图鉴', words: '单词本', data: '数据与存档', account: '账号与排行', settings: '设置', help: '怎么玩' };
     const tabs = h('div.tabs');
-    (Object.keys(titles) as Array<Exclude<PanelName, 'shop' | 'chest' | 'quiz' | 'duel' | 'bigmap' | 'diary' | 'ask'>>).forEach((k) =>
+    (Object.keys(titles) as Array<Exclude<PanelName, 'shop' | 'chest' | 'quiz' | 'duel' | 'bigmap' | 'diary' | 'ask' | 'exam'>>).forEach((k) =>
       tabs.append(h(`button.btn${this.open === k ? '.on' : ''}`, { onclick: () => this.show(k) }, titles[k])),
     );
-    panel.append(h('h2', h('span', titles[this.open as Exclude<PanelName, 'shop' | 'chest' | 'quiz' | 'duel' | 'bigmap' | 'diary' | 'ask'>]), h('button.btn.ghost', { onclick: () => this.close() }, '关闭 Esc')), tabs);
-    const body = { ask: () => h('div'), diary: () => h('div'), bigmap: () => h('div'), shop: () => h('div'), chest: () => h('div'), quiz: () => h('div'), duel: () => h('div'), hero: () => this.hero(), talents: () => this.talents(), quests: () => this.questsBody(), codex: () => this.codex(), words: () => this.wordbook(), data: () => this.data(), account: () => this.account(), settings: () => this.settings(), help: () => this.help() }[this.open]();
+    panel.append(h('h2', h('span', titles[this.open as Exclude<PanelName, 'shop' | 'chest' | 'quiz' | 'duel' | 'bigmap' | 'diary' | 'ask' | 'exam'>]), h('button.btn.ghost', { onclick: () => this.close() }, '关闭 Esc')), tabs);
+    const body = { exam: () => h('div'), ask: () => h('div'), diary: () => h('div'), bigmap: () => h('div'), shop: () => h('div'), chest: () => h('div'), quiz: () => h('div'), duel: () => h('div'), hero: () => this.hero(), talents: () => this.talents(), quests: () => this.questsBody(), codex: () => this.codex(), words: () => this.wordbook(), data: () => this.data(), account: () => this.account(), settings: () => this.settings(), help: () => this.help() }[this.open]();
     panel.append(body);
     clear(el).append(panel);
     el.onclick = (e) => {
@@ -278,6 +291,69 @@ export class Panels {
       if (id === 'konrad') body.append(h('div.small', `好感：${FAVOUR[favour(s)]}`));
       wrap.append(box);
     }
+    return wrap;
+  }
+
+  private exam: Exam | null = null;
+
+  showExam(e: Exam): void {
+    this.exam = e;
+    this.show('exam');
+    this.speakExam();
+  }
+
+  private speakExam() {
+    const q = this.exam?.qs[this.exam.at];
+    if (q?.say && !this.exam!.over) this.ctrl.speak(q.say);
+  }
+
+  private examBody(): HTMLElement {
+    const e = this.exam!;
+    const wrap = h('div');
+    const parts = (['listen', 'read', 'write'] as ExamPart[]).map((p) => `${PART_ZH[p]} ${e.right[p]} / ${BREAK.perPart}`).join(' · ');
+    wrap.append(h('p.small.muted', `每部分对 ${BREAK.pass} 题算过。${parts}`));
+    if (e.last) {
+      const l = e.last;
+      const fb = h(`div.feedback.${l.ok ? 'ok' : 'no'}`, h('b', l.ok ? '对' : '不对'));
+      if (!l.ok) fb.append(h('span.note', `正确：${l.q.part === 'write' ? fullForm(l.q.word) : l.q.answer}`));
+      if (l.q.say) fb.append(h('span.note', `听到的是：${l.q.say}`));
+      wrap.append(fb);
+    }
+    if (e.over) {
+      const ok = examPassed(e);
+      wrap.append(
+        h('h3', ok ? 'A1 突破试炼通过。' : '这次没过。'),
+        h('p', ok ? '考官在你的证件上盖了一个章。A2 的路 0.7 开放，经验先替你存着（最多存一级）。' : `每部分要对 ${BREAK.pass} 题。不罚，随时再考，题目会换。`),
+        h('div.row', h('button.btn.primary', { onclick: () => this.close() }, '离开')),
+      );
+      return wrap;
+    }
+    const q = e.qs[e.at];
+    const go = (v: string) => {
+      if (!v.trim()) return;
+      this.ctrl.examAnswer(e, v);
+      this.render();
+      this.speakExam();
+    };
+    wrap.append(h('h3', `${PART_ZH[q.part]} · 第 ${e.at + 1} / ${e.qs.length} 题`));
+    if (q.part === 'listen') {
+      wrap.append(h('p', '听，选出意思。'), h('div.row', h('button.btn', { onclick: () => this.ctrl.speak(q.say!) }, '🔊 再听一遍')));
+    } else if (q.part === 'read') wrap.append(h('p', '选出空里的词。'), h('div.focus', { style: 'font-size:22px;margin:10px 0' }, q.prompt));
+    if (q.options) {
+      const row = h('div.choices');
+      q.options.forEach((o, i) => row.append(h(`button.btn${i === 0 ? '.exam-first' : ''}`, { onclick: () => go(o) }, `${i + 1}. ${o}`)));
+      wrap.append(row);
+      return wrap;
+    }
+    const input = h('input.exam', { type: 'text', autocomplete: 'off', spellcheck: 'false', placeholder: hasArticleQuestion(q.word) ? 'der / die / das + 名词' : '写出德语' }) as HTMLInputElement;
+    input.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Enter') {
+        ev.preventDefault();
+        ev.stopPropagation();
+        go(input.value);
+      }
+    });
+    wrap.append(h('div.focus', { style: 'font-size:28px;margin:10px 0' }, q.prompt), h('div.typing', input, umlautButtons(input), h('button.btn.primary', { onclick: () => go(input.value) }, '写 ↵')));
     return wrap;
   }
 
