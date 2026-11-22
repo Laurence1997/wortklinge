@@ -221,7 +221,7 @@ export class NodeNav {
         if (!this.revealed(b) || a.id > b.id) continue;
         const pa = anchorPx(a);
         const pb = anchorPx(b);
-        g.lineStyle(2, b.type === 'hidden' || a.type === 'hidden' ? 0xffcf4a : 0xa83440, 0.85);
+        g.lineStyle(2, b.type === 'hidden' || a.type === 'hidden' ? 0xb8963a : 0x7a2630, 0.7);
         g.lineBetween(pa.x, pa.y, pb.x, pb.y);
       }
     for (const sc of list) {
