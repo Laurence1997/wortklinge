@@ -1,3 +1,4 @@
+import { setRestored } from '../ui/icons';
 import { answerDuel, DUEL, duelPool, JUMP, startDuel, startJumpExam, type Duel } from '../core/duel';
 import type { Look } from '../core/look';
 // The game controller: owns the save, runs battles and tutorials, and glues the
@@ -87,6 +88,7 @@ export class Controller {
   private lastInput = Date.now();
 
   constructor(state: GameState, dev: boolean) {
+    setRestored((who) => (who === 'lina' ? !!this.state.flags.linaFreed : [1, 2, 3].every((r) => regionRestored(this.state, r))));
     this.state = state;
     this.dev = dev;
     // Levels gained when an old save was re-levelled on the faster curve: play their lessons once.

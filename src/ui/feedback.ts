@@ -1,3 +1,4 @@
+import { portrait } from './icons';
 import { $, clear, h } from './dom';
 import { logLine } from './gamelog';
 
@@ -90,7 +91,8 @@ function render() {
     );
     row.append(ch);
   } else row.append(h('span', `${idx + 1} / ${current.lines.length}`), h('button.btn.ghost', { onclick: advance }, last ? '好的' : '继续 ▸'));
-  clear(el).append(h('div.speaker', line.who), text, row);
+  const face = portrait(line.who);
+  clear(el).append(face ? h('div.speaker-row', face, h('div.speaker', line.who)) : h('div.speaker', line.who), text, row);
   el.className = 'panel';
   el.hidden = false;
 }

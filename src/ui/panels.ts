@@ -1,3 +1,4 @@
+import { icon, SLOT_TILE, portrait } from './icons';
 import { CONFIG, xpToNext } from '../core/config';
 import { AFFIX_ZH, itemScore, mainStatText, QUALITY_ZH, requiredLevel, SLOT_ZH } from '../core/loot';
 import { kindOf, progressSummary, stageOf, STAGE_ZH } from '../core/srs';
@@ -153,7 +154,7 @@ export class Panels {
       return;
     }
     if (this.open === 'diary' && this.diary) {
-      panel.append(h('h2', h('span', `日记残页 · 第 ${pageRegion(this.diary.scene)} 区第 ${pageNo(this.diary.scene)} 页`), h('button.btn.ghost', { onclick: () => this.close() }, '合上 Esc')), this.diaryBody());
+      panel.append(h('h2', h('span', portrait('Jonas', 2) ?? '', `日记残页 · 第 ${pageRegion(this.diary.scene)} 区第 ${pageNo(this.diary.scene)} 页`), h('button.btn.ghost', { onclick: () => this.close() }, '合上 Esc')), this.diaryBody());
       clear(el).append(panel);
       el.onclick = null;
       window.setTimeout(() => (el.querySelector('input.diary') as HTMLInputElement | null)?.focus(), 0);
@@ -209,7 +210,7 @@ export class Panels {
     const stats: Array<[string, string]> = [
       ['等级', `${s.level}（经验 ${s.xp} / ${xpToNext(s.level)}）`],
       ['生命', `${s.hp} / ${maxHp(s)}`],
-      ['攻击', String(attack(s))],
+      ['攻击', String(Math.round(attack(s)))],
       ['暴击率', `${(critChance(s) * 100).toFixed(1)}%`],
       ['每场提示', String(hintsPerFight(s))],
       ['金币', String(s.gold)],
@@ -236,7 +237,7 @@ export class Panels {
       right.append(
         h(
           'div.slot',
-          h('div.k', SLOT_ZH[slot]),
+          h('div.k', it ? '' : icon(SLOT_TILE[slot], 1, true, 'slot-icon'), SLOT_ZH[slot]),
           it ? this.itemBody(it) : h('div.muted.small', '空'),
           it ? h('button.btn.small', { onclick: () => this.ctrl.unequip(slot) }, '卸下') : '',
         ),
@@ -808,7 +809,7 @@ export class Panels {
     return h(
       'div',
       { style: 'flex:1' },
-      h(`div.item-name.${it.quality}`, `${it.name}`, h('span.small.muted', `  ${QUALITY_ZH[it.quality]} · ${SLOT_ZH[it.slot]} · 物品等级 ${it.ilvl}`)),
+      h(`div.item-name.${it.quality}`, icon(SLOT_TILE[it.slot], 1, false, 'slot-icon'), `${it.name}`, h('span.small.muted', `  ${QUALITY_ZH[it.quality]} · ${SLOT_ZH[it.slot]} · 物品等级 ${it.ilvl}`)),
       h('div.small', mainStatText(it)),
       ...(it.unidentified ? [h('div.aff', { style: 'color:var(--muted)' }, `未鉴定：${it.affixes.length} 条词缀还没生效（找 Mira 鉴定）`)] : it.affixes.map((a) => h('div.aff', AFFIX_ZH[a.key](a.value)))),
       it.socket === undefined ? '' : h('div.aff', { style: 'color:var(--gold, #ffcf4a)' }, it.socket === '' ? '刻字孔：空的（找导师 Greta 刻 auch 或 denn）' : it.socket === 'auch' ? '刻字 auch：齐鸣打到的其他怪伤害 +20%' : '刻字 denn：难题答对伤害 +20%'),

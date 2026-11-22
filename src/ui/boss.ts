@@ -1,3 +1,4 @@
+import { portrait } from './icons';
 import type { BossFight, BossVerdict } from '../core/boss';
 import { maxHp } from '../core/state';
 import { BOSS as BOSS1 } from '../data/boss';
@@ -129,7 +130,7 @@ export class BossUI {
     }
 
     clear(el).append(
-      h('div.who', `${BOSS.de} · ${BOSS.name}`),
+      h('div.who', portrait(BOSS.name) ?? '', `${BOSS.de} · ${BOSS.name}`),
       f.which >= 5 ? '' : h('div', { style: 'text-align:center' }, h('div.figure', '▓▒█▒▓'), h('div.tagplate', plate || '▒▒▒▒')),
       pips,
       f.healing && !this.waiting ? h('div', { style: 'color:var(--bad);font-family:var(--mono);font-size:18px' }, `「${BOSS.healLine}」`) : '',

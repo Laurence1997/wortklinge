@@ -83,7 +83,7 @@
 
 - **Phaser 3** 负责地图、角色和特效；背包、对话和打字作答用网页元素叠在画面上（中文输入法和 ä ö ü 更好处理）。
 - **纯 TypeScript 的规则核心**（`src/core`）和画面完全分开：战斗、归名、判题、掉落都能单独测试和模拟。
-- **素材**：地图、角色、图标在代码里画；0.6 起每个场景的小插画用 [Kenney](https://www.kenney.nl) 的 1-Bit Pack 图块拼成（CC0，`public/art/`，许可见 `public/art/kenney-1bit-LICENSE.txt`）；音乐是 Web Audio 实时合成的低沉氛围音和心跳；台词用浏览器自带的德语语音。
+- **素材**：地图、角色、图标在代码里画；0.6 起每个场景的小插画用 [Kenney](https://www.kenney.nl) 的 1-Bit Pack 图块拼成（CC0，`public/art/`，许可见 `public/art/kenney-1bit-LICENSE.txt`）；对话头像、怪物图和装备图标用 Kenney 的 Tiny Dungeon（CC0，许可见 `public/art/kenney-tiny-dungeon-LICENSE.txt`），统一染成红色；音乐是 Web Audio 实时合成的低沉氛围音和心跳；台词用浏览器自带的德语语音。
 - 存档在浏览器本地，可导出、导入；没有服务器，没有账号。
 
 ```
@@ -138,7 +138,7 @@ Region 1 (levels 1–10, 202 Goethe A1 words) and Region 2, the Bread Market (le
 
 ### Tech
 
-Phaser 3 for the world, a DOM overlay for typing and menus, and a pure TypeScript rules core (`src/core`) that is fully testable and simulatable without rendering. Map, characters and icons are drawn in code; since 0.6 each scene's small illustration is built from Kenney's 1-Bit Pack tiles ([kenney.nl](https://www.kenney.nl), CC0, see `public/art/`). Music is synthesised with Web Audio, and lines are spoken with the browser's German voice. Saves live in `localStorage` with export/import. No server, no account.
+Phaser 3 for the world, a DOM overlay for typing and menus, and a pure TypeScript rules core (`src/core`) that is fully testable and simulatable without rendering. Map, characters and icons are drawn in code; since 0.6 each scene's small illustration is built from Kenney's 1-Bit Pack tiles ([kenney.nl](https://www.kenney.nl), CC0, see `public/art/`), and portraits, monster pictures and gear icons come from Kenney's Tiny Dungeon (CC0), recoloured red. Music is synthesised with Web Audio, and lines are spoken with the browser's German voice. Saves live in `localStorage` with export/import. No server, no account.
 
 ```bash
 npm install && npm run dev    # add ?dev=1 for debug buttons

@@ -95,8 +95,8 @@ const PEOPLE: Array<[RegExp, number, string?]> = [
   [/考官/, 96],
   [/Weber/, 100],
   [/守夜人/, 97],
-  [/Lina/, 88, 'lina'],
-  [/Jonas/, 112, 'jonas'],
+  [/Lina|幽灵检票员/, 88, 'lina'],
+  [/Jonas|无名的邻居/, 112, 'jonas'],
 ];
 
 let restored: (who: 'lina' | 'jonas') => boolean = () => false;

@@ -1,3 +1,4 @@
+import { icon, monsterTile } from './icons';
 import type { Battle, Question, TurnReport } from '../core/combat';
 import { availableMoves, comboTier, effArmor, moveReady, needsPhase, phaseOf, resName, shownDe, stancesFor, teachPhase, readTarget, readRecall } from '../core/combat';
 import { clarity, shadowOk } from '../core/shadow';
@@ -379,6 +380,7 @@ export class BattleUI {
     const mon = h(
       'div.b-mon',
       h('div.fam', h('span', `${fam.zh} · Lv ${m.lvl}`), h('span', STAGE_ZH[b.stage])),
+      icon(monsterTile(b, this.ctrl.dungeon?.left === 1), 3, false, 'mon-icon'),
       h('div.glyph', { style: `color:${color};text-shadow:0 0 8px ${b.stage === 0 ? '#ff1830' : color}` }, glyph),
       h(
         'div',
@@ -577,6 +579,7 @@ export class BattleUI {
         `button.pk${pb === this.b ? '.sel' : ''}${dead ? '.dead' : ''}`,
         { onclick: () => this.target(i), title: '选中它（Tab 切换）', disabled: dead },
         h('div.fam', h('span', `${FAMILIES[w.family].zh} · Lv ${pb.monster.lvl}`), h('span', dead ? '已打散' : STAGE_ZH[pb.stage])),
+        icon(monsterTile(pb), 2, dead, 'mon-icon small'),
         h('div.nm', { style: `color:${color}` }, known && w.art ? `${phaseOf(pb)} ${shownDe(pb)}` : `？ ${shownDe(pb)}`),
         bar('hp', pb.monster.hp, pb.monster.maxHp, `${pb.monster.hp} / ${pb.monster.maxHp}`),
         dead ? '' : h('div.it', it.line),
