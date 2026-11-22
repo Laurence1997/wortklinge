@@ -99,7 +99,7 @@ export class BossUI {
       h('div.timer', h('i', { style: 'width:100%' })),
     );
     if (!this.waiting) {
-      const input = h('input', { type: 'text', autocomplete: 'off', spellcheck: 'false', placeholder: 'Ich …' }) as HTMLInputElement;
+      const input = h('input', { type: 'text', autocomplete: 'off', spellcheck: 'false', placeholder: /^(time|way)-/.test(f.current.id) ? '…' : 'Ich …' }) as HTMLInputElement;
       input.style.cssText = 'flex:1 1 300px;background:#000;color:#fff;border:1px solid var(--line-hi);padding:9px 10px;font-size:20px;font-family:var(--mono)';
       input.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {

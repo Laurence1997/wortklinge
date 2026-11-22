@@ -83,6 +83,9 @@ export class WorldScene extends Phaser.Scene {
     this.respawnTimers = {};
     this.interactable = null;
     const tex = makeTextures();
+    // A scene restart (travel between regions) re-adds these textures; animations made from the old ones would point
+    // at destroyed frames and crash create(), so drop them first and build them again below.
+    for (const k of ['burn', 'walk']) if (this.anims.exists(k)) this.anims.remove(k);
     const addCanvas = (key: string, cv: HTMLCanvasElement) => {
       if (this.textures.exists(key)) this.textures.remove(key);
       this.textures.addCanvas(key, cv);
@@ -113,7 +116,7 @@ export class WorldScene extends Phaser.Scene {
     const by = b.y * TILE + 8;
     this.add.image(bx, by, 'glow').setScale(2.2).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.9);
     const fire = this.add.sprite(bx, by - 2, 'fire0').setDepth(by);
-    if (!this.anims.exists('burn')) this.anims.create({ key: 'burn', frames: [{ key: 'fire0' }, { key: 'fire1' }], frameRate: 5, repeat: -1 });
+    this.anims.create({ key: 'burn', frames: [{ key: 'fire0' }, { key: 'fire1' }], frameRate: 5, repeat: -1 });
     fire.play('burn');
     this.tweens.add({ targets: fire, scaleX: 1.08, yoyo: true, repeat: -1, duration: 420 });
     for (const l of this.map.lamps) {
@@ -166,7 +169,7 @@ export class WorldScene extends Phaser.Scene {
     const s = this.ctrl.state;
     const start = s.pos.x ? s.pos : { x: this.map.start.x * TILE + 8, y: this.map.start.y * TILE + 8 };
     this.player = this.add.sprite(start.x, start.y, 'hero0').setOrigin(0.5, 0.85);
-    if (!this.anims.exists('walk')) this.anims.create({ key: 'walk', frames: [{ key: 'hero0' }, { key: 'hero1' }], frameRate: 6, repeat: -1 });
+    this.anims.create({ key: 'walk', frames: [{ key: 'hero0' }, { key: 'hero1' }], frameRate: 6, repeat: -1 });
     this.cameras.main.startFollow(this.player, true, 0.15, 0.15);
     this.cameras.main.setZoom(3);
     this.cameras.main.roundPixels = true;

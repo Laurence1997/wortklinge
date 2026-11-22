@@ -151,7 +151,7 @@ const PERFEKT_QS: Array<{ id: string; ask: string[]; zh: string; model: string }
   { id: 'late', ask: ['Warum sind Sie zu spät gekommen?', 'Warum kommen Sie so spät?'], zh: '问你为什么迟到（用完成时）', model: 'Ich habe den Zug verpasst.' },
   { id: 'gestern', ask: ['Was haben Sie gestern gemacht?', 'Und gestern? Was haben Sie gemacht?'], zh: '问你昨天做了什么（用完成时）', model: 'Ich habe Deutsch gelernt.' },
   { id: 'wo', ask: ['Wo sind Sie eingestiegen?', 'Wo sind Sie in den Zug gestiegen?'], zh: '问你在哪里上的车（用完成时）', model: 'Ich bin in Brotmarkt eingestiegen.' },
-  { id: 'wann', ask: ['Wann sind Sie angekommen?', 'Wann sind Sie heute aufgestanden?'], zh: '问你什么时候到的 / 起床的（用完成时）', model: 'Ich bin um sieben Uhr angekommen.' },
+  { id: 'wann', ask: ['Wann sind Sie angekommen?', 'Um wie viel Uhr sind Sie angekommen?'], zh: '问你什么时候到的（用完成时）', model: 'Ich bin um sieben Uhr angekommen.' },
   { id: 'verloren', ask: ['Was haben Sie verloren?', 'Was haben Sie im Zug vergessen?'], zh: '问你丢了什么（用完成时）', model: 'Ich habe meine Fahrkarte verloren.' },
 ];
 
