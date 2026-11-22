@@ -1374,7 +1374,7 @@ describe('0.6 场景记忆法: word groups', () => {
 
 describe('0.6 日记残页', () => {
   it('one page per field scene; 4–6 sentences, 35–70 words, ≥6 of its own group (all if fewer), each blank once', () => {
-    const fields = SCENES.filter((sc) => sc.words && (sc.region === 1 || sc.region === 2));
+    const fields = SCENES.filter((sc) => sc.words);
     expect(DIARY.map((p) => p.scene).sort()).toEqual(fields.map((sc) => sc.id).sort());
     for (const p of DIARY) {
       const group = SCENES.find((sc) => sc.id === p.scene)!.words!;
@@ -1395,7 +1395,7 @@ describe('0.6 日记残页', () => {
 describe('0.6 场景插画', () => {
   it('every field scene of regions 1–2 has a picture with ≥3 of its own words, inside the canvas', async () => {
     const { SCENE_ART, parseArt, ART_COLS, ART_ROWS } = await import('../src/data/sceneArt');
-    for (const sc of SCENES.filter((x) => x.words && (x.region === 1 || x.region === 2))) {
+    for (const sc of SCENES.filter((x) => x.words)) {
       const spec = SCENE_ART[sc.id];
       expect(spec, sc.id).toBeTruthy();
       const tiles = parseArt(spec);
