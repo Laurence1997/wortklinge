@@ -2,7 +2,8 @@
 // into the thing it names; the last one must be typed with its article (归名一击).
 
 import { CONFIG } from './config';
-import { now, type GameState } from './state';
+import { dayKey, now, type GameState } from './state';
+import type { WordProgress } from './types';
 import type { Word } from './types';
 
 export type Kind = 'new' | 'due' | 'shadow' | 'guiming';
@@ -12,9 +13,74 @@ export type Stage = 0 | 1 | 2 | 3;
 
 export const STAGE_ZH = ['无名', '裂形', '半名', '归名'] as const;
 
+// ---- 斩杀 (0.6.x): words you can already write leave the reviews ---------------------------
+// First clean 会写 in the field → 待验证 (pend), gone for the rest of that day. On a later day it comes back
+// with a glitched name and a fixed first question (typing, no hint): right → 可斩杀 and the word retires.
+// A retired word comes back once after 30 days as a 回响 check; right → retired for good.
+
+export function isRetired(p: WordProgress | undefined): boolean {
+  return !!p?.retired;
+}
+
+/** 待验证 since today: it doesn't spawn again before the day switches (04:00, like the dailies). */
+export function pendingToday(p: WordProgress | undefined, t: number): boolean {
+  return !!p?.pend && dayKey(p.pend) === dayKey(t);
+}
+
+/** The 回响 check of a retired word is due. */
+export function recheckDue(p: WordProgress | undefined, t: number): boolean {
+  return !!p?.retired && !p.sure && t >= p.retired + CONFIG.srs.recheck;
+}
+
+/** Its next fight is a verification: 待验证 from an earlier day, or a due 回响 check. */
+export function verifyOf(p: WordProgress | undefined, t: number): 'pend' | 'recheck' | null {
+  if (!p) return null;
+  if (p.pend && !pendingToday(p, t)) return 'pend';
+  if (recheckDue(p, t)) return 'recheck';
+  return null;
+}
+
+/** 斩杀 status for the wordbook: 学习中 / 会写 1/2 / 待验证 / 已斩杀 / 回响抽查中. */
+export function cutStatus(p: WordProgress | undefined, t: number): string {
+  if (!p) return '';
+  if (p.retired) return recheckDue(p, t) ? '回响抽查中' : p.sure ? '已斩杀（永久）' : '已斩杀';
+  if (p.pend) return pendingToday(p, t) ? '会写 1/2（明天验证）' : '待验证';
+  return '学习中';
+}
+
+export function needsVerify(s: GameState, w: Word, t = now(s)): boolean {
+  return !!verifyOf(s.words[w.id], t);
+}
+
+/** Retire a word (斩杀): it counts as 归名 everywhere and leaves the reviews. */
+export function retire(s: GameState, w: Word, t = now(s)): void {
+  const p = s.words[w.id];
+  if (!p) return;
+  if (p.retired && !p.sure && t >= p.retired + CONFIG.srs.recheck) p.sure = true;
+  else p.retired = t;
+  delete p.pend;
+  delete p.hinted;
+  p.stage = 3;
+  p.due = Math.max(p.due, t + CONFIG.srs.recheck);
+}
+
+/** A failed verification: back to the normal reviews, no other penalty. A failed 回响 check is due again now. */
+export function failVerify(s: GameState, w: Word, t = now(s)): void {
+  const p = s.words[w.id];
+  if (!p) return;
+  if (p.pend) delete p.pend;
+  else if (p.retired) {
+    delete p.retired;
+    delete p.sure;
+    p.stage = 2;
+    p.due = t;
+  }
+}
+
 export function kindOf(s: GameState, w: Word, t = now(s)): Kind {
   const p = s.words[w.id];
   if (!p) return 'new';
+  if (p.retired) return 'guiming';
   if (t >= p.due) return 'due';
   return p.stage === 3 ? 'guiming' : 'shadow';
 }
@@ -23,6 +89,7 @@ export function kindOf(s: GameState, w: Word, t = now(s)): Kind {
 export function stageOf(s: GameState, w: Word, t = now(s)): Stage {
   const p = s.words[w.id];
   if (!p) return 0;
+  if (p.retired) return 3;
   if (p.stage === 3 && t >= p.due) return 2;
   return p.stage;
 }
@@ -30,7 +97,7 @@ export function stageOf(s: GameState, w: Word, t = now(s)): Stage {
 /** How many intervals overdue (0 if not due). Overdue monsters get tougher, never lose stage. */
 export function overdueSteps(s: GameState, w: Word, t = now(s)): number {
   const p = s.words[w.id];
-  if (!p || t < p.due) return 0;
+  if (!p || p.retired || t < p.due) return 0;
   const interval = p.stage === 1 ? CONFIG.srs.intervals[0] : CONFIG.srs.intervals[1];
   return Math.min(4, Math.floor((t - p.due) / interval));
 }

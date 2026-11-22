@@ -104,7 +104,7 @@ export class BattleUI {
     this.readMsg = '';
     const rt = canListen() ? readTarget(this.ctrl.state, this.b) : null;
     if (rt) window.setTimeout(() => this.ctrl.speak(readShown(this.b, rt)), 1800);
-    if (moves.length === 1 && !rt && !(needsPhase(this.b) && !this.b.phase)) this.choose(moves[0]);
+    if (moves.length === 1 && !rt && !this.b.cutReady && !(needsPhase(this.b) && !this.b.phase)) this.choose(moves[0]);
     else {
       this.phase = 'choose';
       this.question = null;
@@ -171,7 +171,7 @@ export class BattleUI {
 
   /** 记录: one line per answer (question, your answer, the right one, damage), then the fight's own log lines. */
   private logTurn(b: Battle, q: Question, value: string, r: TurnReport, from: number): void {
-    const name = fullForm(b.word);
+    const name = b.spellSeen || b.verifyDone || b.outcome ? fullForm(b.word) : nameGlyph(b);
     const ask = q.focus ? `「${q.focus}」` : '';
     const right = r.verdict.correct || q.answer || '';
     const head = r.correct
@@ -262,6 +262,15 @@ export class BattleUI {
     this.render();
   }
 
+  /** 斩杀: the verified monster dies on the spot. */
+  cut(): void {
+    if (this.phase !== 'choose' || !this.b.cutReady || this.b.outcome) return;
+    stopListening();
+    logLine(`斩杀 · ${fullForm(this.b.word)}（${this.b.word.zh}）${this.b.verify === 'recheck' ? '永久退役' : '已退役，30 天后回响抽查一次'}`, 'gold');
+    if (this.ctrl.cut()) return; // the fight is over
+    this.startTurn();
+  }
+
   continue(): void {
     if (this.phase !== 'result') return;
     window.clearTimeout(this.autoTimer);
@@ -288,6 +297,11 @@ export class BattleUI {
   onKey(e: KeyboardEvent): boolean {
     if ($('battle').hidden) return false;
     const typing = document.activeElement === this.input;
+    if (!typing && e.key === 'Enter' && this.phase === 'choose' && this.b.cutReady && !this.b.outcome) {
+      e.preventDefault();
+      this.cut();
+      return true;
+    }
     if (this.phase === 'result' && (e.key === 'Enter' || e.key === ' ')) {
       e.preventDefault();
       this.continue();
@@ -394,7 +408,9 @@ export class BattleUI {
         b.pluralMon ? h('span.tag.echo', '复数怪 · 一群') : '',
         b.curse ? h('span.tag.due', b.curse === 'forget' ? '诅咒 · 遗忘' : '诅咒 · 沉默') : b.cursed ? h('span.tag', '咒已破') : '',
         b.phrase ? h('span.tag.echo', `残句 · ${b.phraseStep ?? 0}/3`) : '',
-        b.stage === 2 && b.kind === 'due' ? h('span.tag', '可归名') : '',
+        b.stage === 2 && b.kind === 'due' && !b.verify ? h('span.tag', '可归名') : '',
+        b.verify && !b.verifyDone ? h('span.tag.echo', b.verify === 'recheck' ? '回响抽查 · 写对永久斩杀' : '待验证 · 写对就能斩杀') : '',
+        b.cutReady && !b.outcome ? h('span.tag.echo', '可斩杀') : '',
       ),
       bar('hp', m.hp, m.maxHp, `${m.hp} / ${m.maxHp}`),
       h('div.status', st.join(' · ')),
@@ -442,7 +458,10 @@ export class BattleUI {
     // Moves.
     const moves = this.moves();
     const movesEl = h('div.moves');
-    if (moves.length > 1) {
+    // 斩杀: a verified word dies in one click (XP and drops as usual).
+    if (b.cutReady && !b.outcome)
+      movesEl.append(h('button.btn.primary', { disabled: this.phase !== 'choose', onclick: () => this.cut(), title: '斩杀（Enter）：你会写它了，一键秒杀，经验和掉落照拿' }, h('kbd', 'Enter'), '斩杀', h('small', '一键秒杀 · 以后不用再背')));
+    if (moves.length > 1 || b.cutReady) {
       for (const mv of moves) {
         const info = MOVE_INFO[mv];
         const disabled = this.phase === 'result' || !moveReady(s, b, mv);
@@ -700,7 +719,8 @@ function nameGlyph(b: Battle): string {
   const de = shownDe(b);
   const showG = !needsPhase(b) || !!b.phaseHit;
   if (b.phrase) return `${b.phrase.a} …`;
-  if (b.stage === 0) return Array.from({ length: Math.max(3, Math.min(9, de.length)) }, () => GLITCH[Math.floor(Math.random() * GLITCH.length)]).join('');
+  // 斩杀: a word being verified shows no letters at all, whatever its stage.
+  if (b.stage === 0 || (b.verify && !b.verifyDone)) return Array.from({ length: Math.max(3, Math.min(9, de.length)) }, () => GLITCH[Math.floor(Math.random() * GLITCH.length)]).join('');
   if (b.stage === 1) return [...de].map((c, i) => (i % 2 === 0 || c === ' ' ? c : '▒')).join('');
   return (showG && b.word.art ? (b.pluralMon ? 'die' : b.word.art) + ' ' : '') + de.slice(0, Math.ceil(de.length / 2)) + '▒▒';
 }

@@ -74,6 +74,12 @@ export interface WordProgress {
   write?: number;
   /** 低语 was used on it: its next appearance asks it again without the hint. */
   hinted?: boolean;
+  /** 斩杀 (0.6.x): time of the first clean 会写 (待验证). Gone once verified or failed. */
+  pend?: number;
+  /** 斩杀: time it was retired (退役). Retired words leave the reviews; a 回响 check comes 30 days later. */
+  retired?: number;
+  /** 斩杀: the 30-day 回响 check was passed: retired for good. */
+  sure?: boolean;
 }
 
 export type Quality = 'white' | 'green' | 'purple' | 'orange';

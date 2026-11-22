@@ -7,8 +7,9 @@ import Phaser from 'phaser';
 import { CONFIG } from '../core/config';
 import { has } from '../core/unlocks';
 import { toast } from '../ui/feedback';
-import { stageOf } from '../core/srs';
-import { eligible } from '../core/spawn';
+import { needsVerify, stageOf } from '../core/srs';
+import { eligible, fieldCleared } from '../core/spawn';
+import { JUMP } from '../core/duel';
 import type { ZoneId } from '../core/types';
 import { WORD_BY_ID, fullForm } from '../data/words';
 import { AREAS, AREAS_LATER, SCENE_BY_ID, SCENES, neighbours, nearestScene, routeTo, scenesOf, type SceneDef } from '../data/world';
@@ -65,6 +66,7 @@ export class NodeNav {
       this.here = hub;
     } else this.here = nearestScene(region, this.s.pos.x, this.s.pos.y, this.revealed);
     this.s.flags[`seenArea${region}`] = true;
+    this.claim();
     if (this.here.type === 'road') this.s.flags[`road_${this.here.id}`] = true;
     // The 0.4 street map stays underneath (scenes stand on its tiles) but is veiled, so routes and monsters read first.
     this.veil?.destroy();
@@ -183,6 +185,7 @@ export class NodeNav {
         onComplete: () => {
           this.here = next;
           this.s.pos = { x: p.x, y: p.y };
+          this.claim();
           if (path.length) step();
           else this.arrive();
         },
@@ -197,6 +200,7 @@ export class NodeNav {
     this.w.player.setTexture('hero0');
     // Fields left half-empty while you stood in them refill now that you have moved.
     for (const z of new Set(scenesOf(this.w.map.region).map((x) => x.zone).filter(Boolean))) this.w.fillZone(z as ZoneId);
+    this.claim();
     this.draw();
     // 驿站 (0.6 第 6 块): crossroads you have stood on become teleport targets from Lv21.
     if (this.here.type === 'road') this.s.flags[`road_${this.here.id}`] = true;
@@ -205,6 +209,16 @@ export class NodeNav {
     if (this.here.id === 'r3-hide') this.s.flags.zeroSeen = true;
     // 怪物诅咒 教学: the first cursed monster waits just past the hall gate (Lv25+).
     if (this.here.id === 'r3-fx' && this.s.level >= CONFIG.curse.from && !this.s.flags.curseTaught) this.s.flags.curseNext = true;
+  }
+
+  /** 全量筛选: the words you named in town live here → pay their stored XP (one line in the scene panel). */
+  private claimMsg: { scene: string; text: string } | null = null;
+  private claim(): void {
+    const r = this.w.ctrl.claimScene(this.here.id);
+    if (r) {
+      this.claimMsg = { scene: this.here.id, text: `你在城里认出的 ${r.words} 个词就住在这里 · +${r.xp} 经验` };
+      this.dirty = true;
+    }
   }
 
   // ---- drawing ------------------------------------------------------------------------------------
@@ -229,6 +243,8 @@ export class NodeNav {
       const color = sc.type === 'camp' ? 0xffb347 : sc.type === 'door' ? 0xff2040 : sc.type === 'hidden' ? 0xffcf4a : sc.type === 'road' ? 0x9a8a80 : 0xc23040;
       g.fillStyle(0x07040a, 0.85).fillCircle(p.x, p.y, 9);
       g.lineStyle(sc === this.here ? 2 : 1, sc === this.here ? 0xffffff : color, 1).strokeCircle(p.x, p.y, 9);
+      // 全量筛选: XP waiting here (待领) → a small gold dot beside the circle until it is claimed.
+      if (this.s.screen?.pending?.[sc.id]?.length) g.fillStyle(0xffcf4a, 1).fillCircle(p.x + 9, p.y - 8, 2.5);
       this.labels.push(
         this.w.add
           .text(p.x, p.y, String(sc.no), { fontFamily: '"Courier New", monospace', fontSize: '8px', color: '#e8dccf', resolution: 4 })
@@ -279,7 +295,7 @@ export class NodeNav {
     const busy = this.hopping || this.w.ctrl.uiBlocking();
     const zone = sc.zone ? ZONES.find((z) => z.id === sc.zone) : null;
     const mons = this.monstersIn(sc);
-    const tag = (m: MonsterEntity) => (m.isEcho ? '回响' : m.phrase ? '残句' : m.rare ? '◆ 稀有' : m.kind === 'due' ? '! 复习' : m.kind === 'shadow' ? '旧识' : '新');
+    const tag = (m: MonsterEntity) => (m.isEcho ? '回响' : m.phrase ? '残句' : m.rare ? '◆ 稀有' : !m.phrase && !m.isEcho && needsVerify(this.s, m.word) ? '待验证' : m.kind === 'due' ? '! 复习' : m.kind === 'shadow' ? '旧识' : '新');
     const ia = (kind: string, data?: string) => () => {
       if (!this.w.ctrl.uiBlocking()) this.w.ctrl.interact({ kind, data });
     };
@@ -299,11 +315,15 @@ export class NodeNav {
     const peers = [...online.peers.values()].filter((p) => nearestScene(this.w.map.region, p.x, p.y).id === sc.id).map((p) => p.nick);
     this.panel.replaceChildren(
       h('div.sp-head', h('b', `${sc.no} · ${sc.zh}`), h('span.muted', zone ? ` ${zone.zh} · ${zone.levels}` : sc.type === 'camp' ? ' 安全区' : '')),
+      this.claimMsg?.scene === sc.id ? h('div.small', { style: 'color:var(--gold, #ffcf4a)' }, this.claimMsg.text) : '',
       sceneArtCanvas(sc.id, this.s) ?? '',
       sc.zone
         ? h(
             'div.sp-sec',
             h('div.muted', mons.length ? '这里的怪（点它或按数字键开打）' : '这里暂时没有怪，去下一个场景'),
+            fieldCleared(this.s, sc.zone)
+              ? h('div.small', { style: 'color:var(--gold, #ffcf4a)' }, (this.s.region ?? 1) === 1 && this.s.level < JUMP.toLevel ? '这里的词你大多会了，去下一区吧：主城考官那里可以考「跳区考核」' : '这里的词你大多会了，去下一区吧')
+              : '',
             ...mons.map((m, i) =>
               h(
                 'button.btn.sp-mon' + (m.phrase || m.rare || m.isEcho ? '.gold' : ''),

@@ -1,5 +1,6 @@
 import { icon, setRestored, SLOT_TILE } from '../ui/icons';
-import { answerDuel, DUEL, duelPool, JUMP, startDuel, startJumpExam, type Duel } from '../core/duel';
+import { answerDuel, duelPool, JUMP, startJumpExam, type Duel } from '../core/duel';
+import { answerScreen, claimScene, SCREEN, startScreen, type ScreenRun, type ScreenScope } from '../core/screen';
 import type { Look } from '../core/look';
 // The game controller: owns the save, runs battles and tutorials, and glues the
 // Phaser world to the DOM interface. Game rules live in src/core and stay pure.
@@ -43,7 +44,7 @@ import { BOSS2 } from '../data/boss2';
 import { BOSS3 } from '../data/boss3';
 import { LINA } from '../data/lina';
 import { WEBER, WEBER_POOL, usesDu } from '../data/weber';
-import { a1Complete, answerExam, BREAK, examPassed, PART_ZH, startExam, startGrammarExam, type Exam } from '../core/breakthrough';
+import { answerExam, BREAK, examPassed, PART_ZH, startExam, startGrammarExam, type Exam } from '../core/breakthrough';
 import { DUNGEON, RULES, type Rule } from '../data/dungeon';
 import { SKILLS } from '../data/skills';
 import { fullForm, hasArticleQuestion, WORD_BY_ID, WORDS, zhWithPos } from '../data/words';
@@ -185,6 +186,18 @@ export class Controller {
   }
 
   /** 剧情片段 (节奏表 45–50 分): the first time you reach the crossroads, the neighbour's door is in sight. */
+  /** 全量筛选: walking into a scene pays the XP its town-named words stored there. */
+  claimScene(sceneId: string): { words: number; xp: number } | null {
+    const r = claimScene(this.state, sceneId);
+    if (!r) return null;
+    logLine(`你在城里认出的 ${r.words} 个词就住在这里 · +${r.xp} 经验`, 'good');
+    for (const l of r.levelUp.levels) this.onLevelUp(l);
+    this.checkDiary();
+    this.refresh();
+    this.persist();
+    return r;
+  }
+
   sawNeighbour(): void {
     if (this.state.flags.sawNeighbour) return;
     this.state.flags.sawNeighbour = true;
@@ -426,7 +439,8 @@ export class Controller {
     } else {
       this.entity = m;
       this.battle = startBattle(s, m.word, this.rng, { isEcho: m.isEcho, tutorial, trial: opts.trial, rare: m.rare });
-      if (!tutorial && !opts.trial) {
+      // 斩杀: a word being verified shouts no half sentence (it could show its letters).
+      if (!tutorial && !opts.trial && !this.battle.verify) {
         const say = rollSaying(s, m.word, this.rng);
         if (say) {
           this.milestone('m_saying');
@@ -628,6 +642,25 @@ export class Controller {
     return r;
   }
 
+  /** 斩杀 (0.6.x): a verified monster dies in one click; XP and drops as usual. True when the fight is over. */
+  cut(): boolean {
+    const b = this.battle;
+    if (!b || !b.cutReady || b.outcome) return false;
+    b.monster.hp = 0;
+    b.outcome = 'win';
+    b.lastKillTyped = true;
+    sfx.crit();
+    this.milestone('cut');
+    if (this.pack.length > 1 && !this.fightOver()) {
+      this.settleKill(b, this.packEntities[this.pack.indexOf(b)]);
+      this.retarget();
+      this.refresh();
+      return false;
+    }
+    this.finishBattle();
+    return true;
+  }
+
   flee(): void {
     if (!this.battle) return;
     if (this.battle.tutorial === 'loss') {
@@ -659,8 +692,12 @@ export class Controller {
           { who: HILDE, text: '……真叫回来了。东边回声巷，这种东西到处都是。去吧。火我守着。' },
         ]);
       } else {
-        this.scene.removeMonster(m, res.kill.guiming ? 'guiming' : 'scatter');
-        if (res.kill.guiming) {
+        this.scene.removeMonster(m, res.kill.guiming || b.cutReady ? 'guiming' : 'scatter');
+        if (b.cutReady) {
+          sfx.guiming();
+          toast(b.verify === 'recheck' ? `斩杀 · ${fullForm(b.word)} 永久退役` : `斩杀 · ${fullForm(b.word)} 已退役，30 天后回响抽查一次`, 'gold');
+          this.speak(fullForm(b.word));
+        } else if (res.kill.guiming) {
           sfx.guiming();
           banner('归名', `${fullForm(b.word)} · ${b.word.zh}`);
           this.speak(fullForm(b.word));
@@ -1163,7 +1200,7 @@ export class Controller {
       greta: '<kbd>E</kbd>和导师 Greta 说话',
       mira: '<kbd>E</kbd>和商人 Mira 说话',
       konrad: '<kbd>E</kbd>和面包师傅 Konrad 说话',
-      examiner: '<kbd>E</kbd>找考官默写对决',
+      examiner: '<kbd>E</kbd>找考官筛选你会的词',
       brandt: '<kbd>E</kbd>和站长 Herr Brandt 说话',
       lina: '<kbd>E</kbd>和 Lina 说话',
       weber: '<kbd>E</kbd>去秩序会办事处找 Frau Weber',
@@ -1249,16 +1286,23 @@ export class Controller {
   private talkExaminer() {
     const s = this.state;
     const region = s.region ?? 1;
-    if (s.level < DUEL.fromLevel) return say([{ who: '考官', text: `「Noch nicht.」${DUEL.fromLevel} 级再来。` }]);
-    const left = duelPool(s, region).length;
-    if (!left && s.level >= BREAK.from && !s.flags.a1Passed) return this.breakExam();
-    if (!left && s.level >= BREAK.from && !a1Complete(s.flags)) return this.grammarRetake();
-    if (!left) return say([{ who: '考官', text: '「Fertig.」没什么可考的了。见过的，去外面复习。' }]);
+    if (s.level < SCREEN.fromLevel) return say([{ who: '考官', text: `「Noch nicht.」${SCREEN.fromLevel} 级再来。` }]);
+    void region;
+    const intro = !s.flags.screenIntro;
+    s.flags.screenIntro = true;
+    const scopes: Array<{ label: string; scope: ScreenScope }> = [
+      { label: '筛第 1 区', scope: '1' },
+      { label: '筛第 2 区', scope: '2' },
+      { label: '筛第 3 区', scope: '3' },
+      { label: '全部筛一遍', scope: 'all' },
+    ];
     say([
-      { who: '考官', text: `「Prüfung?」我只考你没见过的词。看你本来会多少。（还剩 ${left} 个）` },
-      { who: SYS, text: `【默写对决】名词带冠词。写对：经验 ×${DUEL.xpMult}，当场归名。写错：挨打，词留在野外。每 ${DUEL.readBar} 题它出手一次。倒下就结束，写对的都算` },
+      intro
+        ? { who: '考官', text: '「Was kannst du schon?」你会的词先写给我，就不用在野外再打一遍。' }
+        : { who: '考官', text: '「Weiter?」接着写你会的词。' },
+      ...(intro ? [{ who: SYS, text: '【全量筛选】只给中文，名词连冠词写。写对的词直接斩杀，经验存在它住的场景，走到那里就领。不会就跳过，什么都不扣。' }] : []),
     ], undefined, [
-      { label: '开始对决', act: () => (this.milestone('duel'), this.panels.showDuel(startDuel(s, region, Math.random))) },
+      ...scopes.map((x) => ({ label: x.label, act: () => (this.milestone('screen'), this.panels.showScreen(startScreen(s, x.scope))) })),
       ...(s.level >= BREAK.from && !s.flags.a1Passed ? [{ label: 'A1 突破试炼', act: () => this.breakExam() }] : []),
       ...(s.level >= BREAK.from && s.flags.a1Passed && !s.flags.a1Grammar ? [{ label: '补考语法', act: () => this.grammarRetake() }] : []),
       ...(this.canJump() ? [{ label: `跳区考核（升到 ${JUMP.toLevel} 级）`, act: () => this.jumpExam() }] : []),
@@ -1368,6 +1412,32 @@ export class Controller {
     for (const l of r.levelUp?.levels ?? []) this.onLevelUp(l);
     this.refresh();
     this.persist();
+  }
+
+  /** 全量筛选: called by the panel after each answer (skip = 「不会，下一个」). */
+  screenAnswer(run: ScreenRun, input: string, skip = false): void {
+    answerScreen(this.state, run, input, skip);
+    this.scene.nodes?.draw(); // gold dots for scenes with XP waiting
+    const l = run.last;
+    if (l && !l.skipped) {
+      logLine(
+        l.ok
+          ? `筛选：${zhWithPos(l.word)} 你写 ${l.input} ✓ 斩杀 · ${fullForm(l.wrote ?? l.word)}${l.scene ? `（经验存在「${l.scene.zh}」）` : ''}`
+          : `筛选：${zhWithPos(l.word)} 你写 ${l.input || '（空）'} ✗，正确：${fullForm(l.word)}`,
+        l.ok ? 'good' : 'bad',
+      );
+    }
+    this.refresh();
+    this.persist();
+  }
+
+  /** 跳区考核 from the screening summary (offered when a region is mostly retired). */
+  startJump(): void {
+    if (this.canJump()) this.jumpExam();
+  }
+
+  canJumpNow(): boolean {
+    return this.canJump();
   }
 
   private talkNpc(id: string) {

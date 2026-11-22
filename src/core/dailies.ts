@@ -36,7 +36,7 @@ const range = (lv: string) => {
 /** Due review words right now (what the 复习 task counts against). */
 export function dueCount(s: GameState): number {
   const t = now(s);
-  return Object.values(s.words).filter((p) => p.due <= t).length;
+  return Object.values(s.words).filter((p) => p.due <= t && !p.retired).length;
 }
 
 function fieldFor(s: GameState): ZoneId {

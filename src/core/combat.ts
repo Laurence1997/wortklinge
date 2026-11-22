@@ -5,7 +5,8 @@ import { CONFIG, DAY, HOUR, monsterHpAt, playerBaseHp } from './config';
 import { gradeTyped, normalize, type Verdict } from './grading';
 import { ELEMENT_ZH, generateIntent, INTENT_ZH } from './intents';
 import { between, makeRng, pick, shuffle, type Rng } from './rng';
-import { kindOf, stageOf, overdueSteps, type Kind, type Stage } from './srs';
+import { failVerify, retire, kindOf, stageOf, overdueSteps, verifyOf, type Kind, type Stage } from './srs';
+import { typoOk } from './cut';
 import { affinityOf, affixTotal, attack, engraved, critChance, gearPen, hintsPerFight, maxHp, now, type GameState } from './state';
 import type { Element, Intent, Move, Word } from './types';
 import { has } from './unlocks';
@@ -215,6 +216,16 @@ export interface Battle {
   /** 终极技能 (30 级): used this fight; how many of its two blanks were right. */
   ultUsed?: boolean;
   ultHits?: number;
+  /** 斩杀 (0.6.x): this fight verifies a 待验证 word ('pend') or a retired word's 30-day 回响 check ('recheck'):
+   *  glitched name, first question fixed (typing, no hint). */
+  verify?: 'pend' | 'recheck';
+  /** 斩杀: the verification question was answered. */
+  verifyDone?: boolean;
+  /** 斩杀: verified — the 「可斩杀」 button kills it on the spot, and its kill retires the word. */
+  cutReady?: boolean;
+  /** 斩杀: this fight showed the word's spelling (a question with the German on screen, or a wrong answer's
+   *  correction), so a typed answer after it no longer counts as 会写. */
+  spellSeen?: boolean;
   /** 认得 / 会写 earned on this word this fight, not yet written to the wordbook (new words join it on the kill). */
   readOk?: number;
   writeOk?: number;
@@ -299,11 +310,16 @@ export function startBattle(
     log: [],
     recap: [],
   };
-  const canPlural = !!word.art && !!word.pl && word.pl !== '-' && !word.plOnly && has(s.level, 'plural');
+  // 斩杀: a 待验证 word (from an earlier day) or a due 回响 check is verified in this fight.
+  const verify = opts.tutorial || opts.trial ? null : verifyOf(s.words[word.id], t);
+  if (verify) b.verify = verify;
+  const canPlural = !verify && !!word.art && !!word.pl && word.pl !== '-' && !word.plOnly && has(s.level, 'plural');
   b.pluralDue = kind === 'due' && canPlural && rng() < 1 / 3;
   // 复数怪 (0.5): from Lv11 about one noun monster in five is a crowd of it (die Äpfel): only die is right,
   // its typed questions ask for the plural, and it is half again as tough.
-  if (canPlural && !opts.isEcho && !tutorial && !opts.trial && word.family !== 'truhe' && rng() < CONFIG.phase.pluralChance) {
+  // 斩杀: a retired noun only comes back as its plural crowd (复数怪 don't retire with the word).
+  const retiredPl = canPlural && !!s.words[word.id]?.retired;
+  if (canPlural && !opts.isEcho && !tutorial && !opts.trial && word.family !== 'truhe' && (retiredPl || rng() < CONFIG.phase.pluralChance)) {
     b.pluralMon = true;
     b.pluralDue = true;
     monster.hp = monster.maxHp = Math.round(monster.maxHp * CONFIG.phase.pluralHp);
@@ -478,6 +494,7 @@ function distractors(rng: Rng, w: Word, field: 'de' | 'zh', n: number): string[]
 /** Moves on the bar. 0.4: no sentence button (the whole sentence is the finisher); 铭刻 / 低语 / 齐鸣 change the next question. */
 export function availableMoves(s: GameState, b: Battle, alive = 1): Move[] {
   if (b.tutorial === 'loss') return ['attack'];
+  if (b.verify && !b.verifyDone) return ['attack']; // 斩杀: the verification question comes first, no 低语
   const moves: Move[] = ['attack'];
   if (has(s.level, 'inscribe')) moves.push('inscribe');
   if (has(s.level, 'whisper')) moves.push('whisper');
@@ -736,6 +753,8 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
     const form = s.level >= 11 && hasExamples(w) ? clozeQ(s, w, rng, 'form') : null;
     return (form && form.clozeMode === 'form' ? form : null) ?? sentenceQ();
   };
+  // 斩杀 (0.6.x): a verification fight opens with typing, no hint (nouns with the article).
+  if (b.verify && !b.verifyDone && move === 'attack') return { ...typed(), prompt: `${b.verify === 'recheck' ? '回响抽查' : '你昨天会写它'}——不看提示再写一次${isNoun ? '（带冠词）' : ''}` };
   const fresh = b.kind === 'new' && b.stage === 0 && b.step < 2;
   const am: Move = move === 'inscribe' || move === 'whisper' || move === 'chorus' ? 'attack' : move;
 
@@ -1008,7 +1027,7 @@ export function stormWord(s: GameState, rng: Rng, fallback: Word): Word {
   const t = now(s);
   const urgent = known.filter((x) => {
     const st = s.words[x.id];
-    return st.due <= t + 12 * HOUR || (st.wrong > 0 && t - st.lastSeen <= 3 * DAY);
+    return (!st.retired && st.due <= t + 12 * HOUR) || (st.wrong > 0 && t - st.lastSeen <= 3 * DAY);
   });
   let pool = byLength(urgent).slice(0, 12);
   if (pool.length < 4) pool = [...pool, ...byLength(known.filter((x) => !pool.includes(x))).slice(0, 12 - pool.length)];
@@ -1138,6 +1157,10 @@ export interface TurnReport {
   killer: Battle | null;
   /** 词性三相 result of this hit. */
   phase?: 'right' | 'wrong' | 'soft' | null;
+  /** 斩杀: pend = first 会写 (待验证 from tomorrow), ready = verified (可斩杀), fail = verification missed. */
+  cut?: 'pend' | 'ready' | 'fail';
+  /** 斩杀: the 会写 / verification was a 笔误 (one letter off) — counted, but not a hit. */
+  cutTypo?: boolean;
 }
 
 function comboMult(combo: number): number {
@@ -1201,6 +1224,52 @@ function syncShared(from: Battle, pack: Battle[]) {
   }
 }
 
+/** A pack mate's name in the log before its spelling has been shown: article (once it is a known noun) + half. */
+function halfName(b: Battle): string {
+  const de = shownDe(b);
+  return de.slice(0, Math.ceil(de.length / 2)) + '▒▒';
+}
+
+/** Question types that put the word's German spelling on screen (斩杀: a typed answer after one is not 会写). */
+const SHOWS_SPELLING = new Set(['article', 'callout', 'pickZh', 'pickDe', 'conj', 'plural', 'saying']);
+
+/**
+ * 斩杀 (0.6.x). Field: typing the word right (or a 笔误) before its spelling showed in this fight, no 低语, not in the
+ * word's first fight → 待验证 from tomorrow. Verification fight: its first (typed) question right or a 笔误 →
+ * 可斩杀; wrong → back to the normal reviews. The hit itself is judged as usual (a 笔误 is still a miss).
+ */
+function cutCheck(s: GameState, b: Battle, q: Question, input: string, ok: boolean): { notes: string[]; report: Pick<TurnReport, 'cut' | 'cutTypo'> } {
+  const notes: string[] = [];
+  const report: Pick<TurnReport, 'cut' | 'cutTypo'> = {};
+  const w = b.word;
+  const p = s.words[w.id];
+  const plainTyped = q.type === 'typed' && q.answer === fullForm(w) && !q.whispered && !b.phrase;
+  const typo = !ok && plainTyped && typoOk(input, w, !!q.withArticle);
+  if (b.verify && !b.verifyDone && q.type === 'typed') {
+    b.verifyDone = true;
+    if (ok || typo) {
+      b.cutReady = true;
+      retire(s, w); // retired now, so fleeing or falling afterwards keeps it
+      report.cut = 'ready';
+      report.cutTypo = typo || undefined;
+      const pass = b.verify === 'recheck' ? '还记得，永久斩杀' : '可以斩杀了';
+      notes.push(typo ? `差一个字母：${fullForm(w)}。算你会，${pass}` : `✓ ${pass}`);
+    } else {
+      failVerify(s, w);
+      report.cut = 'fail';
+      notes.push(b.verify === 'recheck' ? '有点忘了，它回到复习里。' : '还没牢，它会按复习再来。会写 0/2');
+    }
+  } else if (plainTyped && (ok || typo) && p && b.kind !== 'new' && !b.spellSeen && !b.verify && !b.pluralMon && !b.tutorial && !p.pend && !p.retired) {
+    p.pend = now(s);
+    report.cut = 'pend';
+    report.cutTypo = typo || undefined;
+    notes.push(typo ? `差一个字母：${fullForm(w)}。算你会，会写 1/2` : '✓ 会写 1/2 · 明天再遇到写对就能斩杀');
+  }
+  // Anything that put the spelling on screen (the question itself, or a wrong answer's correction).
+  if (SHOWS_SPELLING.has(q.type) || (q.type === 'cloze' && q.clozeMode === 'pick') || !ok || q.whispered) b.spellSeen = true;
+  return { notes, report };
+}
+
 /**
  * One turn. `b` is the monster you target; `pack` holds every monster in the fight
  * (just [b] for a one-on-one). You act first, then every monster still standing acts.
@@ -1216,7 +1285,7 @@ export function resolveTurn(
 ): TurnReport {
   const log: LogLine[] = [];
   const multi = pack.length > 1;
-  const tagOf = (x: Battle) => (multi ? `${x.named || x.stage > 0 ? fullForm(x.word) : '它'} ` : '它');
+  const tagOf = (x: Battle) => (multi ? `${(x.named || x.stage > 0) && !x.verify ? (x.spellSeen ? fullForm(x.word) : halfName(x)) : '它'} ` : '它');
   const alive0 = pack.filter((x) => !x.outcome);
   const dmgMult = packDamageMult(alive0.length);
   const verdict = gradeQuestion(s, b, q, input);
@@ -1256,6 +1325,8 @@ export function resolveTurn(
     if (q.type === 'typed' || q.type === 'conj' || q.type === 'plural' || q.type === 'sentence' || (q.type === 'cloze' && q.clozeMode !== 'pick')) b.writeOk = (b.writeOk ?? 0) + 1;
     else if (q.type === 'article' || q.type === 'pickDe' || q.type === 'pickZh' || q.type === 'callout' || q.type === 'cloze') b.readOk = (b.readOk ?? 0) + 1;
   }
+  const cutFx = cutCheck(s, b, q, input, ok);
+  if (cutFx.notes.length) verdict.notes.push(...cutFx.notes);
   if (q.type === 'saying') {
     b.sayingDone = true;
     const x = q.say!;
@@ -1560,7 +1631,7 @@ export function resolveTurn(
   // Target died and nobody else is left: the fight ends before anyone acts.
   if (pack.every((x) => x.outcome === 'win')) {
     syncShared(b, pack);
-    return finish(s, b, { correct: ok, verdict, playerDamage, crit, newSpell, monsterDamage: 0, parried: false, element, log, outcome: 'win', readRight, kills, killer: null, phase: phaseFx });
+    return finish(s, b, { correct: ok, verdict, playerDamage, crit, newSpell, monsterDamage: 0, parried: false, element, log, outcome: 'win', readRight, kills, killer: null, phase: phaseFx, ...cutFx.report });
   }
 
   // --- 2. Every monster still standing acts.
@@ -1740,7 +1811,7 @@ export function resolveTurn(
   }
   syncShared(b, pack);
   const outcome: Battle['outcome'] = pack.every((x) => x.outcome === 'win') ? 'win' : s.hp <= 0 ? 'lose' : b.outcome;
-  return finish(s, b, { correct: ok, verdict, playerDamage, crit, newSpell, monsterDamage, parried, element, log, outcome, readRight, kills, killer, phase: phaseFx });
+  return finish(s, b, { correct: ok, verdict, playerDamage, crit, newSpell, monsterDamage, parried, element, log, outcome, readRight, kills, killer, phase: phaseFx, ...cutFx.report });
 }
 
 function finish(_s: GameState, b: Battle, r: TurnReport): TurnReport {

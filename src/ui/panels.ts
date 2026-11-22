@@ -1,7 +1,7 @@
 import { icon, SLOT_TILE, portrait } from './icons';
 import { CONFIG, xpToNext } from '../core/config';
 import { AFFIX_ZH, itemScore, mainStatText, QUALITY_ZH, requiredLevel, SLOT_ZH } from '../core/loot';
-import { kindOf, progressSummary, stageOf, STAGE_ZH } from '../core/srs';
+import { cutStatus, kindOf, progressSummary, stageOf, STAGE_ZH } from '../core/srs';
 import { affinityOf, attack, critChance, dayKey, hintsPerFight, maxHp, now } from '../core/state';
 import type { AffixKey, Item, Slot, Word } from '../core/types';
 import { has, UNLOCK } from '../core/unlocks';
@@ -13,9 +13,10 @@ import { SAYINGS, SAYING_CFG } from '../data/sayings';
 import { canLearn, CLASSES, learn, rank, spent, talentPoints, TALENT_FROM_LEVEL, TALENTS, TIER_GATE } from '../core/classes';
 import { fullForm, genderOf, hasArticleQuestion, WORD_BY_ID, WORDS, zhWithPos } from '../data/words';
 import type { Controller } from '../game/controller';
-import { $, bar, clear, h, umlautButtons } from './dom';
+import { $, clear, h, umlautButtons } from './dom';
 import { BREAK, examParts, examPassed, PART_ZH, type Exam } from '../core/breakthrough';
-import { DUEL, duelPool, JUMP, startDuel, type Duel } from '../core/duel';
+import { JUMP, type Duel } from '../core/duel';
+import { pendingScenes, regionLeft, type ScreenRun } from '../core/screen';
 import { CHEST_ZH, type ChestKind } from '../core/chest';
 import { favour, FAVOUR, QUESTS, type QuestId } from '../core/quests';
 import { gradeTyped } from '../core/grading';
@@ -32,7 +33,7 @@ import { blanksOf, checkBlank, DIARY_MISSES, DIARY_XP, lineText, pageLines, page
 import { lookPicker } from './title';
 import { BARGAIN_LINES, ensureShop, price, refreshCost, sellPrice, SLOT_NOUN } from '../core/shop';
 
-export type PanelName = 'hero' | 'talents' | 'quests' | 'codex' | 'words' | 'data' | 'account' | 'settings' | 'help' | 'shop' | 'chest' | 'quiz' | 'duel' | 'bigmap' | 'diary' | 'ask' | 'exam';
+export type PanelName = 'hero' | 'talents' | 'quests' | 'codex' | 'words' | 'data' | 'account' | 'settings' | 'help' | 'shop' | 'chest' | 'quiz' | 'duel' | 'screen' | 'bigmap' | 'diary' | 'ask' | 'exam';
 
 export class Panels {
   open: PanelName | null = null;
@@ -67,6 +68,7 @@ export class Panels {
   close(): void {
     const wasChest = this.open === 'chest';
     this.duel = null;
+    this.screen = null;
     if (this.open === 'exam' && this.exam) {
       const e = this.exam;
       this.exam = null;
@@ -110,8 +112,23 @@ export class Panels {
       window.setTimeout(() => (el.querySelector('input.lock') as HTMLInputElement | null)?.focus(), 0);
       return;
     }
+    if (this.open === 'screen' && this.screen) {
+      const run = this.screen;
+      const leave = () => {
+        // Leaving shows the small summary first (in the examiner's panel, not a popup).
+        if (!run.over && (run.cut.length || run.skipped || run.wrong)) {
+          run.over = true;
+          this.render();
+        } else this.close();
+      };
+      panel.append(h('h2', h('span', '全量筛选 · 考官'), h('button.btn.ghost', { onclick: leave }, '离开 Esc')), this.screenBody());
+      clear(el).append(panel);
+      el.onclick = null;
+      window.setTimeout(() => (el.querySelector('input.duel, button.duel-next') as HTMLElement | null)?.focus(), 0);
+      return;
+    }
     if (this.open === 'duel' && this.duel) {
-      panel.append(h('h2', h('span', '默写对决 · 考官'), h('button.btn.ghost', { onclick: () => this.close() }, this.duel.over ? '离开 Esc' : '认输离开 Esc')), this.duelBody());
+      panel.append(h('h2', h('span', '跳区考核 · 考官'), h('button.btn.ghost', { onclick: () => this.close() }, this.duel.over ? '离开 Esc' : '认输离开 Esc')), this.duelBody());
       clear(el).append(panel);
       el.onclick = null;
       window.setTimeout(() => (el.querySelector('input.duel') as HTMLInputElement | null)?.focus(), 0);
@@ -177,13 +194,13 @@ export class Panels {
       if (this.buying !== null) window.setTimeout(() => (el.querySelector('input.buy-line') as HTMLInputElement | null)?.focus(), 0);
       return;
     }
-    const titles: Record<Exclude<PanelName, 'shop' | 'chest' | 'quiz' | 'duel' | 'bigmap' | 'diary' | 'ask' | 'exam'>, string> = { hero: '角色与装备', talents: '职业与天赋', quests: '任务', codex: '图鉴', words: '单词本', data: '数据与存档', account: '账号与排行', settings: '设置', help: '怎么玩' };
+    const titles: Record<Exclude<PanelName, 'shop' | 'chest' | 'quiz' | 'duel' | 'screen' | 'bigmap' | 'diary' | 'ask' | 'exam'>, string> = { hero: '角色与装备', talents: '职业与天赋', quests: '任务', codex: '图鉴', words: '单词本', data: '数据与存档', account: '账号与排行', settings: '设置', help: '怎么玩' };
     const tabs = h('div.tabs');
-    (Object.keys(titles) as Array<Exclude<PanelName, 'shop' | 'chest' | 'quiz' | 'duel' | 'bigmap' | 'diary' | 'ask' | 'exam'>>).forEach((k) =>
+    (Object.keys(titles) as Array<Exclude<PanelName, 'shop' | 'chest' | 'quiz' | 'duel' | 'screen' | 'bigmap' | 'diary' | 'ask' | 'exam'>>).forEach((k) =>
       tabs.append(h(`button.btn${this.open === k ? '.on' : ''}`, { onclick: () => this.show(k) }, titles[k])),
     );
-    panel.append(h('h2', h('span', titles[this.open as Exclude<PanelName, 'shop' | 'chest' | 'quiz' | 'duel' | 'bigmap' | 'diary' | 'ask' | 'exam'>]), h('button.btn.ghost', { onclick: () => this.close() }, '关闭 Esc')), tabs);
-    const body = { exam: () => h('div'), ask: () => h('div'), diary: () => h('div'), bigmap: () => h('div'), shop: () => h('div'), chest: () => h('div'), quiz: () => h('div'), duel: () => h('div'), hero: () => this.hero(), talents: () => this.talents(), quests: () => this.questsBody(), codex: () => this.codex(), words: () => this.wordbook(), data: () => this.data(), account: () => this.account(), settings: () => this.settings(), help: () => this.help() }[this.open]();
+    panel.append(h('h2', h('span', titles[this.open as Exclude<PanelName, 'shop' | 'chest' | 'quiz' | 'duel' | 'screen' | 'bigmap' | 'diary' | 'ask' | 'exam'>]), h('button.btn.ghost', { onclick: () => this.close() }, '关闭 Esc')), tabs);
+    const body = { exam: () => h('div'), ask: () => h('div'), diary: () => h('div'), bigmap: () => h('div'), shop: () => h('div'), chest: () => h('div'), quiz: () => h('div'), duel: () => h('div'), screen: () => h('div'), hero: () => this.hero(), talents: () => this.talents(), quests: () => this.questsBody(), codex: () => this.codex(), words: () => this.wordbook(), data: () => this.data(), account: () => this.account(), settings: () => this.settings(), help: () => this.help() }[this.open]();
     panel.append(body);
     clear(el).append(panel);
     el.onclick = (e) => {
@@ -557,6 +574,94 @@ export class Panels {
   /** 默写对决: after a wrong answer the next word waits until Enter. */
   private duelHold = false;
 
+  private screen: ScreenRun | null = null;
+  private screenHold = false;
+
+  /** 主城全量筛选 (0.6.x): one word at a time, Chinese only, no damage, no timer. */
+  showScreen(run: ScreenRun): void {
+    this.screen = run;
+    this.screenHold = false;
+    this.show('screen');
+  }
+
+  private screenBody(): HTMLElement {
+    const run = this.screen!;
+    const s = this.ctrl.state;
+    const scopeZh = run.scope === 'all' ? '全部' : `第 ${run.scope} 区`;
+    const wrap = h('div');
+    wrap.append(h('p.small.muted', `${scopeZh} · 这次斩杀 ${run.cut.length} 个 · 跳过 ${run.skipped} · 写错 ${run.wrong}。只给中文，名词连冠词写，必须完全写对；不扣血、不限时，随时离开，进度会保存。`));
+    const l = run.last;
+    if (l) {
+      const fb = h(`div.feedback.${l.ok ? 'ok' : 'no'}`);
+      if (l.ok) {
+        const w = l.wrote ?? l.word;
+        fb.append(h('b', `✓ 斩杀 · ${fullForm(w)}`), h('span.note', l.scene ? `经验存在「${l.scene.zh}」，到那里领` : '它已经斩杀过了'));
+        for (const n of l.verdict?.notes ?? []) fb.append(h('span.note', n));
+      } else if (l.skipped) fb.append(h('b', '这个留到野外学。'));
+      else
+        fb.append(
+          h('b', '这个留到野外学。'),
+          h('span.note', `你写的：${l.input || '（空）'}`),
+          h('span.note', h('b', `正确写法：${fullForm(l.word)}`)),
+        );
+      wrap.append(fb);
+    }
+    const summary = () => {
+      const lines: Array<HTMLElement | string> = [];
+      for (const r of [1, 2, 3]) {
+        if (run.scope !== 'all' && run.scope !== String(r)) continue;
+        const x = regionLeft(s, r);
+        lines.push(h('p', `第 ${r} 区还剩 ${x.left} 个要学（共 ${x.total} 个）。`));
+        // A region more than half retired and not yet passed → straight to the jump exam.
+        if (r === 1 && x.left * 2 < x.total && this.ctrl.canJumpNow())
+          lines.push(h('div.row', h('button.btn.primary', { onclick: () => { this.close(); this.ctrl.startJump(); } }, '第 1 区的词你大多会了，可以试试跳区考核 →')));
+      }
+      return lines;
+    };
+    if (run.over) {
+      wrap.append(h('h3', `这次斩杀 ${run.cut.length} 个词。${run.current ? '' : `${scopeZh}这一轮问完了。`}`), ...summary(), h('div.row', h('button.btn', { onclick: () => this.close() }, '离开')));
+      return wrap;
+    }
+    if (this.screenHold && l && !l.ok) {
+      const next = h('button.btn.primary.duel-next', { onclick: () => { this.screenHold = false; this.render(); } }, '下一个 ↵') as HTMLButtonElement;
+      next.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          e.stopPropagation();
+          next.click();
+        }
+      });
+      wrap.append(h('div.row', next));
+      return wrap;
+    }
+    const w = run.current!;
+    const input = h('input.duel', { type: 'text', autocomplete: 'off', spellcheck: 'false', placeholder: w.art ? 'der / die / das + 名词' : '写出德语' }) as HTMLInputElement;
+    const go = () => {
+      if (!input.value.trim()) return;
+      this.ctrl.screenAnswer(run, input.value);
+      this.screenHold = !run.last?.ok;
+      this.render();
+    };
+    const skip = () => {
+      this.ctrl.screenAnswer(run, '', true);
+      this.screenHold = false;
+      this.render();
+    };
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        e.stopPropagation();
+        go();
+      }
+    });
+    wrap.append(
+      h('div.focus', { style: 'font-size:28px;margin:10px 0' }, zhWithPos(w)),
+      h('div.typing', input, umlautButtons(input), h('button.btn.primary', { onclick: go }, '写 ↵'), h('button.btn', { onclick: skip }, '不会，下一个')),
+      run.cut.length || run.skipped || run.wrong ? h('details', h('summary.small.muted', '结算'), ...summary()) : '',
+    );
+    return wrap;
+  }
+
   showDuel(d: Duel): void {
     this.duel = d;
     this.duelHold = false;
@@ -568,11 +673,7 @@ export class Panels {
     const s = this.ctrl.state;
     const wrap = h('div');
     wrap.append(
-      bar('hp', s.hp, maxHp(s), `你的生命 ${s.hp} / ${maxHp(s)}`),
-      d.exam
-        ? h('p.small.muted', `跳区考核：写对 ${d.right} / ${JUMP.pass} · 写错 ${d.wrong} · 剩 ${d.queue.length} 个词（考官不出手）`)
-        : bar('xp', d.hp, DUEL.examinerHp, `考官 ${d.hp} / ${DUEL.examinerHp}`),
-      d.exam ? '' : h('p.small.muted', `考官读条：${'■'.repeat(d.bar)}${'□'.repeat(DUEL.readBar - d.bar)}（满了就出手）· 写对 ${d.right} · 写错 ${d.wrong} · 剩 ${d.queue.length} 个词`),
+      h('p.small.muted', `跳区考核：写对 ${d.right} / ${JUMP.pass} · 写错 ${d.wrong} · 剩 ${d.queue.length} 个词（考官不出手）`),
     );
     if (d.last) {
       const l = d.last;
@@ -597,7 +698,7 @@ export class Panels {
       wrap.append(
         h('h3', d.exam ? (d.over === 'win' ? `跳区考核通过：升到 ${s.level} 级。` : `差一点：写对 ${d.right} 个，要 ${JUMP.pass} 个。没关系，随时再考。`) : d.over === 'win' ? (d.hp <= 0 ? '你赢了考官。' : '这一区没有词可考了。') : '你撑不住了，对决结束。'),
         h('p', `这一场写对 ${d.right} 个词，都已经归名。`),
-        h('div.row', d.exam ? '' : h('button.btn.primary', { onclick: () => { const r = s.region ?? 1; if (duelPool(s, r).length) this.showDuel(startDuel(s, r, Math.random)); else this.close(); } }, '再来一场'), h('button.btn', { onclick: () => this.close() }, '离开')),
+        h('div.row', h('button.btn', { onclick: () => this.close() }, '离开')),
       );
       return wrap;
     }
@@ -902,9 +1003,14 @@ export class Panels {
     const readOnly: Row[] = [];
     const notYet: Row[] = [];
     const known: Row[] = [];
+    const cut: Row[] = [];
     for (const w of WORDS) {
       const p = s.words[w.id];
       if (!p) continue;
+      if (p.retired) {
+        cut.push({ w, p });
+        continue;
+      }
       const tries = p.correct + p.wrong;
       const weak = p.wrong >= 2 && p.wrong / Math.max(1, tries) >= 0.34;
       if (weak || p.relapse > 0) shaky.push({ w, p });
@@ -917,7 +1023,10 @@ export class Panels {
     for (const l of [wrote, readOnly, notYet]) l.sort((a, b) => a.p.due - b.p.due);
     known.sort((a, b) => a.w.de.localeCompare(b.w.de, 'de'));
     const learningN = wrote.length + readOnly.length + notYet.length;
-    wrap.append(h('p.small.muted', `见过 ${shaky.length + learningN + known.length} 个词：熟练 ${known.length} · 学习中 ${learningN} · 常错 ${shaky.length}。「认得」是选择题答对过，「会写」是默写、变位或整句写对过。存档同步到云端，换电脑也在。`));
+    const pendN = Object.values(s.words).filter((p) => p.pend).length;
+    const claims = pendingScenes(s);
+    wrap.append(h('p', `已斩杀 ${cut.length} · 待验证 ${pendN}${claims.length ? ` · 待领经验：${claims.map((x) => x.zh).join('、')}` : ''}`));
+    wrap.append(h('p.small.muted', `见过 ${shaky.length + learningN + known.length + cut.length} 个词：熟练 ${known.length} · 学习中 ${learningN} · 常错 ${shaky.length}。「认得」是选择题答对过，「会写」是默写、变位或整句写对过。存档同步到云端，换电脑也在。`));
     const table = (title: string, note: string, rows: Row[]) => {
       if (!rows.length) return;
       const tb = h('table.log');
@@ -925,7 +1034,7 @@ export class Panels {
       for (const { w, p } of rows) {
         const g = genderOf(w);
         const gk = g ? { m: 'der', f: 'die', n: 'das', pl: 'pl' }[g] : null;
-        const due = p.due <= t;
+        const due = p.due <= t && !p.retired;
         tb.append(
           h(
             'tr',
@@ -935,7 +1044,7 @@ export class Panels {
             h('td', p.read ? '✓' : '—'),
             h('td', p.write ? '✓' : '—'),
             h('td', `${p.correct} / ${p.wrong}`),
-            h('td', `${STAGE_ZH[p.stage as 0 | 1 | 2 | 3] ?? ''}${due ? ' · 该复习了' : ''}`),
+            h('td', `${p.retired ? '' : `${STAGE_ZH[p.stage as 0 | 1 | 2 | 3] ?? ''} · `}${cutStatus(p, t)}${due ? ' · 该复习了' : ''}`),
           ),
         );
       }
@@ -946,6 +1055,8 @@ export class Panels {
     table('学习中 · 认得，还不会写', '选择题答得出来，还没默写对过。归名的最后一击要默写。', readOnly);
     table('学习中 · 还不认得', '见过，但还没答对过。', notYet);
     table('熟练', '已经归名的词：认得，也会写。', known);
+    cut.sort((a, b) => a.w.de.localeCompare(b.w.de, 'de'));
+    table('已斩杀', '会写的词：不再进复习，也不当委托目标。30 天后回响抽查一次，写对就永久斩杀。', cut);
     if (s.level >= SAYING_CFG.fromLevel) {
       const got = SAYINGS.filter((x) => s.sayings?.[x.id]);
       const phraseIds = new Set(phraseCards().map((x) => x.id));
@@ -1025,7 +1136,7 @@ export class Panels {
     // 开局计时 (0.5): the active-play minute each thing first happened, for the 60-minute rhythm check.
     const ms = Object.entries(s.flags).filter(([k]) => k.startsWith('ms_')).sort((a, b) => Number(a[1]) - Number(b[1]));
     if (ms.length) {
-      const MS: Record<string, string> = { lv: '升到', q_: '题型：', mv_: '招式：', m_: '遇到：', z_: '第一次在这片打怪：', gear: '装备升到第', drop: '第一次掉装备', card: '第一张短句卡', guiming: '第一次归名', duel: '第一次默写对决', bonfire: '第一次篝火休息', shadow: '第一次跟读成功' };
+      const MS: Record<string, string> = { lv: '升到', q_: '题型：', mv_: '招式：', m_: '遇到：', z_: '第一次在这片打怪：', gear: '装备升到第', drop: '第一次掉装备', card: '第一张短句卡', guiming: '第一次归名', duel: '第一次默写对决', screen: '第一次全量筛选', cut: '第一次斩杀', bonfire: '第一次篝火休息', shadow: '第一次跟读成功' };
       const label = (k: string) => { const key = k.slice(3); const p = Object.keys(MS).find((x) => key.startsWith(x)); return p ? `${MS[p]}${key.slice(p.length)}` : key; };
       const lines = ms.map(([k, v]) => `${String(v).padStart(5)} 分  ${label(k)}`);
       wrap.append(h('h3', `开局计时（累计游玩 ${Math.round(((s.flags.playSec as number) ?? 0) / 60)} 分钟）`), h('pre.small', lines.join('\n')));

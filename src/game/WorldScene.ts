@@ -1,6 +1,6 @@
 import { SCENES } from '../data/world';
 import Phaser from 'phaser';
-import { stageOf, type Stage } from '../core/srs';
+import { needsVerify, stageOf, type Stage } from '../core/srs';
 import { now } from '../core/state';
 import type { Word, ZoneId } from '../core/types';
 import { fullForm, WORD_BY_ID } from '../data/words';
@@ -394,7 +394,8 @@ export class WorldScene extends Phaser.Scene {
 
   styleMonster(m: MonsterEntity) {
     const s = this.ctrl.state;
-    m.stage = stageOf(s, m.word, now(s));
+    // 斩杀: a word waiting for verification shows no letters on the map either.
+    m.stage = !m.phrase && needsVerify(s, m.word, now(s)) ? 0 : stageOf(s, m.word, now(s));
     // 词性三相 (0.5): the map never shows a monster's gender either (no article colors).
     const color = m.phrase ? '#ffcf4a' : m.stage === 0 ? PAL.bone : '#c3a9ff';
     m.label.setColor(color);

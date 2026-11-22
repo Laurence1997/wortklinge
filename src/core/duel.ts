@@ -1,27 +1,21 @@
-// 默写对决 (考官 NPC in each region's town, region 1 from Lv2): a special fight against an examiner.
-// Each question is a word of this region you have never met (a test of what you already know);
-// write it (nouns with the article). Words met in the field go through the normal reviews instead.
-// Right: ×2 the normal new-monster XP and the word is named on the spot (it relapses as usual later).
-// Wrong: nothing happens to the word, it stays a new word out in the field. Each word counts once.
-// The examiner hits on a read bar (every 3 answers) and on every wrong answer; when you drop, the duel
-// ends. Words you got right are kept and you can start again at once.
+// 跳区考核 (越区引导, 2026-11-21) at the examiner: 20 words of the next region, 16 right to pass.
+// The old 默写对决 (examiner fight, ×2 XP) was replaced by 主城全量筛选 in 0.6.x (src/core/screen.ts).
+// Right answers on never-met words name them on the spot (×2 new-monster XP); retired words can be asked too
+// (筛选 may have retired most of the next region) and change nothing.
 
 import { CONFIG } from './config';
 import { gradeTyped, type Verdict } from './grading';
 import { shuffle, type Rng } from './rng';
+import { isRetired } from './srs';
 import { addXp, maxHp, now, todayLog, type GameState, type LevelUpResult } from './state';
 import type { Word } from './types';
 import { hasArticleQuestion, WORDS } from '../data/words';
 
 export const DUEL = {
-  fromLevel: 2,
-  /** Correct answers to beat the examiner. */
-  examinerHp: 12,
   xpMult: 2,
-  /** The examiner strikes every this many answers, and on every wrong one. */
-  readBar: 3,
   hitShare: 0.12,
   wrongHitShare: 0.15,
+  readBar: 3,
 };
 
 /** 跳区考核 (越区引导, 2026-11-21): 20 random words of the next region, 16 right to pass. No damage, no penalty. */
@@ -40,13 +34,9 @@ export interface Duel {
   last?: { ok: boolean; verdict: Verdict; word: Word; xp: number; hit: number; input: string };
 }
 
-/** Words of this region that can be written and that you have never met (Lucas 2026-11-19: no skipping reviews). */
+/** Words of this region the jump exam can ask: never met (Lucas 2026-11-19: no skipping reviews) or retired. */
 export function duelPool(s: GameState, region: number): Word[] {
-  return WORDS.filter((w) => (w.region ?? 1) === region && w.pos !== 'phr' && !w.digit && !w.tutorial && !s.words[w.id]);
-}
-
-export function startDuel(s: GameState, region: number, rng: Rng): Duel {
-  return { region, queue: shuffle(rng, duelPool(s, region)), hp: DUEL.examinerHp, bar: 0, over: null, right: 0, wrong: 0 };
+  return WORDS.filter((w) => (w.region ?? 1) === region && w.pos !== 'phr' && !w.digit && !w.tutorial && (!s.words[w.id] || isRetired(s.words[w.id])));
 }
 
 export function startJumpExam(s: GameState, rng: Rng): Duel {
@@ -68,6 +58,11 @@ export function answerDuel(s: GameState, d: Duel, input: string): { levelUp: Lev
     log.correct += 1;
     const t = now(s);
     const old = s.words[w.id];
+    if (isRetired(old)) {
+      d.last = { ok: true, verdict, word: w, xp: 0, hit: 0, input: input.trim() };
+      if (d.right >= JUMP.pass) d.over = 'win';
+      return { levelUp: null };
+    }
     if (!old) {
       s.daily.newCount += 1;
       log.newWords += 1;

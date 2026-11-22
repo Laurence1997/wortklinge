@@ -58,6 +58,8 @@ export interface GameState {
   skillUses: Record<string, number>;
   /** 接句怪: short-saying cards collected (id → times). */
   sayings?: Record<string, number>;
+  /** 主城全量筛选 (0.6.x): XP waiting in scenes (待领) and the cursor per scope. */
+  screen?: import('./screen').ScreenSave;
   /** 0.4 装备档位: kills per region ("1", "2"); the tier follows from them. */
   gearKills?: Record<string, number>;
   recentNouns: string[];
@@ -112,6 +114,7 @@ export function newGame(name: string, origin: string, t = Date.now()): GameState
     bag: [],
     echo: null,
     flags: { seen05: true },
+    screen: { pending: {}, cursor: {} },
     xpCurve: XP_CURVE,
     skills: [],
     skillUses: {},
@@ -324,6 +327,9 @@ export function migrate(raw: unknown): GameState | null {
     s.xpCurve = XP_CURVE;
   }
   const base = newGame(s.name ?? '旅人', s.origin ?? 'student', s.createdAt);
+  // 0.6.x 斩杀: WordProgress.pend / retired / sure are optional (absent = not pending, not retired); the town
+  // screening's 待领 and cursors start empty.
+  s.screen = { pending: { ...(s.screen?.pending ?? {}) }, cursor: { ...(s.screen?.cursor ?? {}) } };
   return { ...base, ...s, settings: { ...base.settings, ...s.settings }, stats: { ...base.stats, ...s.stats } };
 }
 

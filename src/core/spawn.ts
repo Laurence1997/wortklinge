@@ -4,7 +4,7 @@
 // holds `count` monsters and at least one slot stays for something else.
 
 import { shuffle, type Rng } from './rng';
-import { kindOf } from './srs';
+import { isRetired, kindOf, pendingToday, verifyOf } from './srs';
 import { now, type GameState } from './state';
 import type { Word, ZoneId } from './types';
 import { has } from './unlocks';
@@ -34,26 +34,39 @@ export function eligible(s: GameState, w: Word): boolean {
 
 export function pickSpawns(s: GameState, zone: ZoneId, count: number, alive: Set<string>, rng: Rng): SpawnPick[] {
   const t = now(s);
-  const words = zoneWords(zone).filter((w) => !alive.has(w.id) && eligible(s, w));
+  // 斩杀 (0.6.x): retired words stay away (except their 回响 check), 待验证 ones for the rest of the day.
+  const gone = (w: Word) => pendingToday(s.words[w.id], t) || (isRetired(s.words[w.id]) && !verifyOf(s.words[w.id], t));
+  const local = zoneWords(zone).filter((w) => eligible(s, w));
+  const cut = local.filter(gone).length;
+  const words = local.filter((w) => !alive.has(w.id) && !gone(w));
   const due: Word[] = [];
   const fresh: Word[] = [];
   const shadows: Word[] = [];
+  const verify: Word[] = [];
   for (const w of words) {
     const k = kindOf(s, w, t);
-    if (k === 'due') due.push(w);
+    if (verifyOf(s.words[w.id], t)) verify.push(w);
+    else if (k === 'due') due.push(w);
     else if (k === 'new') fresh.push(w);
     else if (k === 'shadow') shadows.push(w);
   }
   // Reviews (2026-11-21) come to wherever you are: due words of every field of your region and the ones before it.
   for (const w of WORDS) {
     if (w.zone === zone || alive.has(w.id) || (w.region ?? 1) > (s.region ?? 1) || !eligible(s, w)) continue;
-    if (kindOf(s, w, t) === 'due') due.push(w);
+    if (gone(w)) continue;
+    if (verifyOf(s.words[w.id], t)) verify.push(w);
+    else if (kindOf(s, w, t) === 'due') due.push(w);
   }
   const out: SpawnPick[] = [];
   // Most overdue first. Leave room for one non-review monster so a big backlog never fills the field.
   due.sort((a, b) => s.words[a.id].due - s.words[b.id].due);
   const dueSlots = count > 1 ? count - 1 : count;
   for (const w of due.slice(0, dueSlots)) out.push({ word: w, kind: 'due' });
+  // 斩杀: yesterday's 待验证 words (and due 回响 checks) come right after the reviews.
+  for (const w of verify) {
+    if (out.length >= dueSlots) break;
+    out.push({ word: w, kind: kindOf(s, w, t) === 'new' ? 'new' : kindOf(s, w, t) === 'due' ? 'due' : 'shadow' });
+  }
 
   // New words in list order (easiest first). No daily cap (言灵过载 removed 2026-11-20).
   const newSlots = Math.min(count - out.length, Math.max(1, Math.ceil(count * 0.6)));
@@ -73,6 +86,40 @@ export function pickSpawns(s: GameState, zone: ZoneId, count: number, alive: Set
     if (out.length >= count) break;
     out.push({ word: w, kind: 'new' });
   }
+  // 场景刷空 (斩杀, 0.6.x): slots freed by retired / 待验证 words are filled with the rest of the reviews, then
+  // monsters of the next region, so a scene never closes because you know its words (学得快升得快).
+  let room = Math.min(count - out.length, cut);
+  const taken = new Set(out.map((p) => p.word.id));
+  const add = (w: Word, kind: SpawnPick['kind']) => {
+    if (room <= 0 || taken.has(w.id)) return;
+    out.push({ word: w, kind });
+    taken.add(w.id);
+    room--;
+  };
+  for (const w of due) add(w, 'due');
+  for (const w of verify) add(w, 'shadow');
+  // Retired nouns still come back as their plural crowd (复数怪 don't retire with the word), a third of the room.
+  if (has(s.level, 'plural')) {
+    let pl = Math.ceil(room / 3);
+    for (const w of shuffle(rng, local.filter((x) => isRetired(s.words[x.id]) && !verifyOf(s.words[x.id], t) && !alive.has(x.id) && !!x.art && !!x.pl && x.pl !== '-' && !x.plOnly))) {
+      if (pl-- <= 0) break;
+      add(w, 'shadow');
+    }
+  }
+  const region = zoneWords(zone)[0]?.region ?? 1;
+  for (const w of WORDS) {
+    if (room <= 0) break;
+    if ((w.region ?? 1) !== region + 1 || alive.has(w.id) || !eligible(s, w) || gone(w)) continue;
+    const k = kindOf(s, w, t);
+    if (k === 'new' || k === 'due') add(w, k);
+  }
   return out;
+}
+
+/** 斩杀: every local word of this field is retired or 待验证 → 「这里的词你大多会了，去下一区吧」. */
+export function fieldCleared(s: GameState, zone: ZoneId): boolean {
+  const t = now(s);
+  const ws = zoneWords(zone).filter((w) => w.family !== 'truhe' && !w.tutorial);
+  return ws.length > 0 && ws.every((w) => isRetired(s.words[w.id]) || !!s.words[w.id]?.pend || (verifyOf(s.words[w.id], t) === 'pend'));
 }
 

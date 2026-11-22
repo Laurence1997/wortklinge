@@ -33,6 +33,8 @@ export function dropPages(s: GameState): DiaryPage[] {
   const out: DiaryPage[] = [];
   for (const p of DIARY) {
     if (pageState(s, p.scene)) continue;
+    // 全量筛选: words named in town drop their page only once you walk into the scene (its 待领 is claimed).
+    if (s.screen?.pending?.[p.scene]?.length) continue;
     const g = groupOf(p.scene);
     if (g.length && g.every((id) => (s.words[id]?.stage ?? 0) >= 2)) {
       s.flags[`diary_${p.scene}`] = 1;

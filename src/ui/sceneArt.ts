@@ -43,7 +43,8 @@ export function sceneArtCanvas(sceneId: string, s: GameState): HTMLCanvasElement
     tmp.width = tmp.height = T;
     const tc = tmp.getContext('2d')!;
     for (const t of tiles) {
-      const st = t.word ? stageOf(s, WORD_BY_ID[t.word]) : -1;
+      // 全量筛选: a word named in town lights up when you first walk in (its 待领 is still waiting here).
+      const st = t.word ? (s.screen?.pending?.[sceneId]?.includes(t.word) ? 1 : stageOf(s, WORD_BY_ID[t.word])) : -1;
       tc.globalCompositeOperation = 'source-over';
       tc.clearRect(0, 0, T, T);
       tc.drawImage(sheet!, (t.tile % SHEET_COLS) * T, Math.floor(t.tile / SHEET_COLS) * T, T, T, 0, 0, T, T);

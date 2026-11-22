@@ -17,6 +17,8 @@ export const CONFIG = {
     tutorialInterval: 3 * MINUTE,
     /** After 归名 the word relapses after these gaps (about 1 week, 1 month, 3 months, then 6 months). */
     relapse: [7 * DAY, 30 * DAY, 90 * DAY, 180 * DAY],
+    /** 斩杀 (0.6.x): a retired word comes back once as a 回响 check after this long. */
+    recheck: 30 * DAY,
     // 言灵过载 removed (Lucas 2026-11-20): no mechanic may pay less because you learn more. New words have no
     // daily cap; the ones you meet today come back as review monsters on schedule, and those pay extra (xp.dueBonus).
   },
