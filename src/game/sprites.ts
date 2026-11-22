@@ -1,5 +1,6 @@
 import { HAIR_COLORS, type Look } from '../core/look';
-// Sprites are drawn in code; since 0.6.x the map ground and buildings use Kenney Tiny Town tiles (see renderMapCanvas).
+// Since 0.6.x the map ground and buildings use Kenney Tiny Town tiles (see renderMapCanvas); since 画风统一 the hero,
+// NPCs and monsters are Kenney Tiny Dungeon tiles. Fire, signs, glow and markers are still drawn in code.
 
 import { makeRng } from '../core/rng';
 import { MAP_H, MAP_W, TILE, T, type MapData, idx } from './map';
@@ -276,86 +277,14 @@ export function dungeonTile(sheet: CanvasImageSource, tile: number, ramp: string
   return cv;
 }
 
-// 主角 (画风统一): built from Kenney Roguelike Characters layers (CC0, public/art/kenney-roguelike-chars.png, 16px tiles
-// with a 1px gap), so no NPC shares your face. Body and clothes take the red ramp like everyone else; the hair keeps
-// its own colour (the only non-red on the map besides gold), which is what marks you and other players.
-const RG = 17;
-const RG_BODY: [number, number] = [0, 0];
-const RG_PANTS: [number, number] = [3, 0];
-/** 体型 → clothes: 瘦 = cloth shirt, 中 = leather, 壮 = plate. */
-const RG_CLOTHES: Array<[number, number]> = [[7, 0], [6, 4], [10, 4]];
-/** [gender][hair] → hair tile (brown block, recoloured). 短发 长发 刺头 马尾. */
-const RG_HAIR: Array<Array<[number, number]>> = [
-  [[19, 0], [20, 0], [21, 2], [20, 2]],
-  [[19, 1], [22, 1], [21, 2], [20, 1]],
-];
 const hex = (h: string) => [1, 3, 5].map((k) => parseInt(h.slice(k, k + 2), 16));
 function shade(c: number[], f: number): number[] {
   return c.map((v) => Math.max(0, Math.min(255, Math.round(f > 1 ? v + (255 - v) * (f - 1) : v * f))));
 }
-function rgLayer(ctx: CanvasRenderingContext2D, sheet: CanvasImageSource, [c, r]: [number, number]) {
-  ctx.drawImage(sheet, c * RG, r * RG, 16, 16, 0, 0, 16, 16);
-}
-export function heroCanvas(look: Look, rogue: CanvasImageSource): HTMLCanvasElement {
-  const cv = document.createElement('canvas');
-  cv.width = cv.height = 16;
-  const ctx = cv.getContext('2d', { willReadFrequently: true })!;
-  // Each layer gets its own part of the red ramp, like the Tiny Dungeon people: skin brightest, clothes in the
-  // middle reds, trousers darkest, so the figure reads instead of merging into one red block.
-  const ramp = CHAR_RAMP.map(hex);
-  const layer = (t: [number, number], steps: number[]) => {
-    const lc = document.createElement('canvas');
-    lc.width = lc.height = 16;
-    const lx = lc.getContext('2d', { willReadFrequently: true })!;
-    rgLayer(lx, rogue, t);
-    const li = lx.getImageData(0, 0, 16, 16);
-    const q = li.data;
-    const L = (i: number) => (0.299 * q[i] + 0.587 * q[i + 1] + 0.114 * q[i + 2]) / 255;
-    const ls: number[] = [];
-    for (let i = 0; i < q.length; i += 4) if (q[i + 3] >= 8) ls.push(L(i));
-    const lo = Math.min(...ls);
-    const span = Math.max(0.2, Math.max(...ls) - lo);
-    for (let i = 0; i < q.length; i += 4) {
-      if (q[i + 3] < 8) continue;
-      const k = steps[Math.min(steps.length - 1, Math.floor(((L(i) - lo) / span) * steps.length))];
-      [q[i], q[i + 1], q[i + 2], q[i + 3]] = [...ramp[k], 255];
-    }
-    lx.putImageData(li, 0, 0);
-    ctx.drawImage(lc, 0, 0);
-  };
-  layer(RG_BODY, [3, 4, 4]);
-  layer(RG_PANTS, [0, 1]);
-  layer(RG_CLOTHES[look.body] ?? RG_CLOTHES[1], [1, 2, 2, 3]);
-  // The eyes: the body tile's two darkest face pixels, kept dark.
-  const img = ctx.getImageData(0, 0, 16, 16);
-  const d = img.data;
-  // Hair in its own colour: three shades of the chosen hair colour by brightness.
-  const hc = document.createElement('canvas');
-  hc.width = hc.height = 16;
-  const hctx = hc.getContext('2d', { willReadFrequently: true })!;
-  rgLayer(hctx, rogue, RG_HAIR[look.gender]?.[look.hair] ?? RG_HAIR[0][0]);
-  const hd = hctx.getImageData(0, 0, 16, 16).data;
-  const base = hex(HAIR_COLORS[look.color] ?? HAIR_COLORS[0]);
-  // Black hair would vanish on the dark map: lift it to a visible charcoal.
-  const col = look.color === 0 ? [74, 60, 62] : base;
-  for (let i = 0; i < hd.length; i += 4) {
-    if (hd[i + 3] < 8) continue;
-    const l = (0.299 * hd[i] + 0.587 * hd[i + 1] + 0.114 * hd[i + 2]) / 255;
-    const c = shade(col, l < 0.3 ? 0.6 : l < 0.45 ? 1 : 1.35);
-    [d[i], d[i + 1], d[i + 2], d[i + 3]] = [...c, 255];
-  }
-  // Dark outline like the Tiny packs have.
-  const solid = (x: number, y: number) => x >= 0 && y >= 0 && x < 16 && y < 16 && d[(y * 16 + x) * 4 + 3] >= 8;
-  const ring: number[] = [];
-  for (let y = 0; y < 16; y++)
-    for (let x = 0; x < 16; x++) if (solid(x, y) && [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => !solid(x + dx, y + dy))) ring.push(y * 16 + x);
-  const ol = hex('#1a0608');
-  for (const p of ring) [d[p * 4], d[p * 4 + 1], d[p * 4 + 2]] = ol;
-  ctx.putImageData(img, 0, 0);
-  return cv;
-}
 
-/** Variant B (for comparison): a Tiny Dungeon person with the hair pixels (Kenney's hair browns, top 10 rows)
+export const heroTile = (look: Look): number => (look.gender ? 99 : 98);
+
+/** 主角 (画风统一): a Tiny Dungeon person with the hair pixels (Kenney's hair browns, top 10 rows)
  *  recoloured to your hair colour, everything else on the red ramp. */
 export function heroTinyCanvas(tile: number, color: number, sheet: CanvasImageSource): HTMLCanvasElement {
   const red = dungeonTile(sheet, tile, CHAR_RAMP);
@@ -379,10 +308,10 @@ export function heroTinyCanvas(tile: number, color: number, sheet: CanvasImageSo
   return cv;
 }
 
-/** Hero figure. Variant B (current prototype): Tiny Dungeon 98 (男) / 99 (女) with your hair colour; `mark` adds a
+/** Hero figure: Tiny Dungeon 98 (男) / 99 (女) with your hair colour (体型 and 发型 no longer change the look); `mark` adds a
  *  thin light outline so you find yourself among NPCs (only your own hero). */
 export function heroFramesKenney(look: Look, dungeon: CanvasImageSource, mark = false): HTMLCanvasElement[] {
-  const fig = heroTinyCanvas(look.gender ? 99 : 98, look.color, dungeon);
+  const fig = heroTinyCanvas(heroTile(look), look.color, dungeon);
   if (mark) {
     const c = fig.getContext('2d', { willReadFrequently: true })!;
     const img = c.getImageData(0, 0, 16, 16);
@@ -417,63 +346,6 @@ function bitmap(rows: string[], colors: Record<string, string>, scale = 1): HTML
   );
   return cv;
 }
-
-const HERO_A = [
-  '....hhhh....',
-  '...hhhhhh...',
-  '...hssssh...',
-  '...seses....',
-  '...ssssss...',
-  '....ssss....',
-  '..rrrrrrrr..',
-  '.ccrrrrrrcc.',
-  '.cccccccccc.',
-  '.sccccccccs.',
-  '..cccccccc..',
-  '..cccccccc..',
-  '...pp..pp...',
-  '...pp..pp...',
-  '...pp...pp..',
-  '..bb....bb..',
-];
-const HERO_B = [
-  '....hhhh....',
-  '...hhhhhh...',
-  '...hssssh...',
-  '...seses....',
-  '...ssssss...',
-  '....ssss....',
-  '..rrrrrrrr..',
-  '.ccrrrrrrcc.',
-  '.cccccccccc.',
-  '.sccccccccs.',
-  '..cccccccc..',
-  '..cccccccc..',
-  '...pp..pp...',
-  '...pp..pp...',
-  '..pp...pp...',
-  '..bb....bb..',
-];
-const HERO_COLORS = { h: '#2a1a1a', s: '#e8d6c4', e: '#120808', r: '#c8242f', c: '#3a3036', p: '#1f1a20', b: '#0c0809' };
-
-const HILDE = [
-  '....gggg....',
-  '...gggggg...',
-  '..gggsssgg..',
-  '..ggseseg...',
-  '..gggssggg..',
-  '..gggggggg..',
-  '.gggggggggg.',
-  '.gggggggggg.',
-  '.ggggoogggg.',
-  '.gggooooggg.',
-  '.gggggggggg.',
-  '.gggggggggg.',
-  '..gggggggg..',
-  '..gggggggg..',
-  '..gggggggg..',
-  '...bb..bb...',
-];
 
 const EMBER_FRAMES = [
   [
@@ -515,32 +387,7 @@ const SIGN = [
 ];
 const SIGN_COLORS = { w: '#5a3a2a', b: '#1d1210', p: '#3a2a20' };
 
-/** The hero drawn with a look: hair style and colour, body width, a skirt for 女. */
-export function heroFrames(look: Look): HTMLCanvasElement[] {
-  return [HERO_A, HERO_B].map((base) => {
-    const rows = base.map((r) => [...r]);
-    const set = (y: number, x: number, ch: string) => {
-      if (y >= 0 && y < rows.length && x >= 0 && x < rows[0].length) rows[y][x] = ch;
-    };
-    // Hair.
-    if (look.hair === 1) for (let y = 2; y <= 6; y++) (set(y, 3, 'h'), set(y, 8, 'h'));
-    if (look.hair === 2) {
-      rows[0] = [...'..h.hh.h....'];
-      set(1, 2, 'h'), set(1, 9, 'h');
-    }
-    if (look.hair === 3) for (let y = 1; y <= 5; y++) set(y, 9 + (y > 2 ? 1 : 0), 'h');
-    // Body width: thin drops the outer coat columns, stout widens the coat and legs.
-    if (look.body === 0) for (let y = 7; y <= 11; y++) for (const x of [1, 10]) if ('cs'.includes(rows[y][x])) set(y, x, '.');
-    if (look.body === 2) for (let y = 7; y <= 11; y++) (set(y, 0, rows[y][1] === '.' ? '.' : 'c'), set(y, 11, rows[y][10] === '.' ? '.' : 'c'), set(y, 1, 'c'), set(y, 10, 'c'));
-    // 女: a coat skirt over the upper legs.
-    if (look.gender === 1) (rows[12] = [...'..cccccccc..'], (rows[11] = [...'..cccccccc..']));
-    return bitmap(rows.map((r) => r.join('')), { ...HERO_COLORS, h: HAIR_COLORS[look.color] });
-  });
-}
-
 export interface Textures {
-  hero: HTMLCanvasElement[];
-  hilde: HTMLCanvasElement;
   fire: HTMLCanvasElement[];
   sign: HTMLCanvasElement;
   glow: HTMLCanvasElement;
@@ -564,8 +411,6 @@ export function makeTextures(): Textures {
   dot.width = dot.height = 2;
   px(dot.getContext('2d')!, 0, 0, '#ffffff', 2, 2);
   return {
-    hero: [bitmap(HERO_A, HERO_COLORS), bitmap(HERO_B, HERO_COLORS)],
-    hilde: bitmap(HILDE, { g: '#4a4048', s: '#d9c6b4', e: '#120808', o: '#ff7a2a', b: '#0c0809' }),
     fire: EMBER_FRAMES.map((f) => bitmap(f, EMBER_COLORS)),
     sign: bitmap(SIGN, SIGN_COLORS),
     glow: radialGlow(128, 'rgba(255,90,50,0.55)'),

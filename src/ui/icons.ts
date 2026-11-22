@@ -4,7 +4,7 @@
 
 import type { Battle } from '../core/combat';
 import type { Slot } from '../core/types';
-import { dungeonTile, heroTinyCanvas, CHAR_RAMP } from '../game/sprites';
+import { dungeonTile, heroTile, heroTinyCanvas, CHAR_RAMP } from '../game/sprites';
 import type { Look } from '../core/look';
 
 const T = 16;
@@ -89,9 +89,7 @@ export function wordTile(w: { id: string; pos?: string; family?: string }): numb
   return NOUN_POOL[h % NOUN_POOL.length];
 }
 
-/** Your own figure (same as on the map): Roguelike Characters layers, hair in its own colour. */
-let rogue: HTMLImageElement | null = null;
-const rogueWaiting: Array<() => void> = [];
+/** Your own figure (same as on the map, without the outline), hair in its own colour. */
 export function heroIcon(look: Look, scale = 4): HTMLCanvasElement {
   const cv = document.createElement('canvas');
   cv.width = cv.height = T * scale;
@@ -99,10 +97,8 @@ export function heroIcon(look: Look, scale = 4): HTMLCanvasElement {
   const draw = () => {
     const ctx = cv.getContext('2d')!;
     ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(heroTinyCanvas(look.gender ? 99 : 98, look.color, sheet!), 0, 0, cv.width, cv.height);
+    ctx.drawImage(heroTinyCanvas(heroTile(look), look.color, sheet!), 0, 0, cv.width, cv.height);
   };
-  void rogue;
-  void rogueWaiting;
   const img = loadSheet();
   if (img.complete && img.naturalWidth) draw();
   else waiting.push(draw);
@@ -141,6 +137,8 @@ let restored: (who: 'lina' | 'jonas') => boolean = () => false;
 export function setRestored(fn: (who: 'lina' | 'jonas') => boolean): void {
   restored = fn;
 }
+
+export const isRestored = (who: 'lina' | 'jonas'): boolean => restored(who);
 
 export function portrait(who: string, scale = 3): HTMLCanvasElement | null {
   const hit = PEOPLE.find(([re]) => re.test(who));

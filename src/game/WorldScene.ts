@@ -13,7 +13,7 @@ import { DEFAULT_LOOK, lookKey, type Look } from '../core/look';
 import { myBubble, online } from '../net/online';
 import { generateMap, isBlocked, MAP_H, MAP_W, TILE, walkableTilesIn, zonesOf, zoneAt, type MapData, type NpcId, type RegionId, type ZoneDef } from './map';
 import { GLITCH, heroFramesKenney, dungeonTile, SHADE_RAMP, CHAR_RAMP, makeTextures, renderMapCanvas, PAL } from './sprites';
-import { NPC_TILE, wordTile } from '../ui/icons';
+import { NPC_TILE, isRestored, wordTile } from '../ui/icons';
 import { sfx } from './audio';
 import { CONFIG } from '../core/config';
 import { NodeNav } from './nodes';
@@ -79,7 +79,6 @@ export class WorldScene extends Phaser.Scene {
   preload() {
     if (!this.textures.exists('town')) this.load.image('town', './art/kenney-tiny-town.png');
     if (!this.textures.exists('dungeon')) this.load.image('dungeon', './art/kenney-tiny-dungeon.png');
-    if (!this.textures.exists('rogue')) this.load.image('rogue', './art/kenney-roguelike-chars.png');
   }
 
   create() {
@@ -108,7 +107,6 @@ export class WorldScene extends Phaser.Scene {
       this.textures.createCanvas(k, 16, 16);
     }
     this.applyLook();
-    addCanvas('hilde', tex.hilde);
     addCanvas('fire0', tex.fire[0]);
     addCanvas('fire1', tex.fire[1]);
     addCanvas('sign', tex.sign);
@@ -136,13 +134,13 @@ export class WorldScene extends Phaser.Scene {
     const d = this.map.door;
     this.add.image(d.x * TILE + 8, d.y * TILE + 16, 'glow').setScale(1.1).setTint(0xff2040).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.7);
 
-    // NPCs and signs. Region-2 NPCs reuse Hilde's figure with their own tint until they get sprites.
-    const NPC_TINT: Record<NpcId, number> = { hilde: 0xffffff, greta: 0x9fc4ff, mira: 0xffd27a, konrad: 0xe8b48a, examiner: 0xc08cff, brandt: 0x8ce0c0, lina: 0xff9a9a, weber: 0xd0d0d0 };
+    // NPCs and signs: each NPC stands as its dialog portrait (Kenney Tiny Dungeon, red ramp).
     const NPC_LABEL: Record<NpcId, string> = { hilde: 'Hilde', greta: 'Greta', mira: 'Mira', konrad: 'Konrad', examiner: '考官 Prüfer', brandt: 'Herr Brandt', lina: 'Lina', weber: 'Frau Weber' };
     for (const n of this.map.npcs) {
-      void NPC_TINT;
-      const nk = `npc-${n.id}`;
-      if (!this.textures.exists(nk)) this.textures.addCanvas(nk, dungeonTile(this.dsheet(), NPC_TILE[n.id] ?? 111, CHAR_RAMP));
+      // Lina stays a shadow (two darkest steps) until she is freed, like her dialog portrait.
+      const shadow = n.id === 'lina' && !isRestored('lina');
+      const nk = `npc-${n.id}${shadow ? '-s' : ''}`;
+      if (!this.textures.exists(nk)) this.textures.addCanvas(nk, dungeonTile(this.dsheet(), NPC_TILE[n.id] ?? 111, shadow ? CHAR_RAMP.slice(0, 2) : CHAR_RAMP));
       this.add.sprite(n.x * TILE + 8, n.y * TILE + 6, nk).setDepth(n.y * TILE + 8);
       if (this.map.region >= 2 || n.id !== 'hilde')
         this.add
@@ -634,10 +632,6 @@ export class WorldScene extends Phaser.Scene {
 /** Redraws your own hero from state.look (title, login prompt, bonfire). */
   dsheet(): HTMLImageElement {
     return this.textures.get('dungeon').getSourceImage() as HTMLImageElement;
-  }
-
-  rsheet(): HTMLImageElement {
-    return this.textures.get('rogue').getSourceImage() as HTMLImageElement;
   }
 
   applyLook(): void {
