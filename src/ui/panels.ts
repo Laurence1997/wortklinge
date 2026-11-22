@@ -809,7 +809,7 @@ export class Panels {
     return h(
       'div',
       { style: 'flex:1' },
-      h(`div.item-name.${it.quality}`, icon(SLOT_TILE[it.slot], 1, false, 'slot-icon'), `${it.name}`, h('span.small.muted', `  ${QUALITY_ZH[it.quality]} · ${SLOT_ZH[it.slot]} · 物品等级 ${it.ilvl}`)),
+      h(`div.item-name.${it.quality}`, icon(SLOT_TILE[it.slot], 1, false, `slot-icon q-${it.quality}`), `${it.name}`, h('span.small.muted', `  ${QUALITY_ZH[it.quality]} · ${SLOT_ZH[it.slot]} · 物品等级 ${it.ilvl}`)),
       h('div.small', mainStatText(it)),
       ...(it.unidentified ? [h('div.aff', { style: 'color:var(--muted)' }, `未鉴定：${it.affixes.length} 条词缀还没生效（找 Mira 鉴定）`)] : it.affixes.map((a) => h('div.aff', AFFIX_ZH[a.key](a.value)))),
       it.socket === undefined ? '' : h('div.aff', { style: 'color:var(--gold, #ffcf4a)' }, it.socket === '' ? '刻字孔：空的（找导师 Greta 刻 auch 或 denn）' : it.socket === 'auch' ? '刻字 auch：齐鸣打到的其他怪伤害 +20%' : '刻字 denn：难题答对伤害 +20%'),

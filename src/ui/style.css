@@ -302,3 +302,9 @@ canvas.icon, canvas.portrait, canvas.mon-icon, canvas.slot-icon { image-renderin
 .b-pack .pk canvas.mon-icon.small { float: right; }
 canvas.slot-icon { margin-right: 4px; }
 .panel h2 canvas.portrait { margin-right: 6px; }
+canvas.slot-icon { border: 1px solid var(--line); padding: 1px; background: #0b0608; }
+canvas.slot-icon.q-white { border-color: var(--q-white); }
+canvas.slot-icon.q-green { border-color: var(--q-green, #5fd16b); }
+canvas.slot-icon.q-purple { border-color: var(--q-purple, #b07cff); }
+canvas.slot-icon.q-orange { border-color: var(--q-orange, #ff9a3c); }
+.toast canvas.slot-icon { margin-right: 6px; }

@@ -2,10 +2,10 @@ import { portrait } from './icons';
 import { $, clear, h } from './dom';
 import { logLine } from './gamelog';
 
-export function toast(text: string, cls = ''): void {
+export function toast(text: string, cls = '', lead?: HTMLElement): void {
   logLine(text, cls === 'gold' ? 'gold' : 'info');
   const box = $('toasts');
-  const el = h(`div.toast.panel${cls ? '.' + cls : ''}`, text);
+  const el = h(`div.toast.panel${cls ? '.' + cls : ''}`, lead ?? '', text);
   box.append(el);
   while (box.children.length > 5) box.firstElementChild?.remove();
   window.setTimeout(() => el.remove(), 3300);

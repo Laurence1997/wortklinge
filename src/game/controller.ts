@@ -1,4 +1,4 @@
-import { setRestored } from '../ui/icons';
+import { icon, setRestored, SLOT_TILE } from '../ui/icons';
 import { answerDuel, DUEL, duelPool, JUMP, startDuel, startJumpExam, type Duel } from '../core/duel';
 import type { Look } from '../core/look';
 // The game controller: owns the save, runs battles and tutorials, and glues the
@@ -88,7 +88,8 @@ export class Controller {
   private lastInput = Date.now();
 
   constructor(state: GameState, dev: boolean) {
-    setRestored((who) => (who === 'lina' ? !!this.state.flags.linaFreed : [1, 2, 3].every((r) => regionRestored(this.state, r))));
+    // Jonas is the neighbour (boss 1): lit once you have beaten him; Lina once her name is back.
+    setRestored((who) => (who === 'lina' ? !!this.state.flags.linaFreed : !!this.state.flags.bossKills));
     this.state = state;
     this.dev = dev;
     // Levels gained when an old save was re-levelled on the faster curve: play their lessons once.
@@ -711,7 +712,7 @@ export class Controller {
         if (res.kill.guiming) this.milestone('guiming');
         if (res.drop) {
           (res.drop.quality === 'orange' ? sfx.orange : sfx.loot)();
-          toast(`掉落：${res.drop.name}（${{ white: '普通', green: '优秀', purple: '史诗', orange: '传说' }[res.drop.quality]}）`, res.drop.quality === 'white' ? '' : 'gold');
+          toast(`掉落：${res.drop.name}（${{ white: '普通', green: '优秀', purple: '史诗', orange: '传说' }[res.drop.quality]}）`, res.drop.quality === 'white' ? '' : 'gold', icon(SLOT_TILE[res.drop.slot], 1, false, `slot-icon q-${res.drop.quality}`));
           if (!s.flags.taughtGear) {
             s.flags.taughtGear = true;
             say([{ who: SYS, text: '【装备】C 打开角色，点「穿上」' }]);

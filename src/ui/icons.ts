@@ -1,6 +1,6 @@
 // 头像和图标 (0.6 第 7 块): Kenney Tiny Dungeon tiles (CC0, public/art/kenney-tiny-dungeon.png), recoloured to a
 // five-step red ramp by brightness so they sit in the red-on-black look. Monsters by kind, gear by slot, people by
-// name. Jonas and Lina stay black shadows until restored (all diary pages / Lina freed).
+// name. Jonas and Lina stay shadows until restored (boss 1 beaten / Lina freed). Gear icons: border = quality.
 
 import type { Battle } from '../core/combat';
 import type { Slot } from '../core/types';
@@ -8,7 +8,6 @@ import type { Slot } from '../core/types';
 const T = 16;
 const COLS = 12;
 const RAMP = ['#1e0606', '#4e1616', '#8f1f24', '#d8333a', '#ffb4a8'];
-const SHADOW = '#050101';
 
 let sheet: HTMLImageElement | null = null;
 const waiting: Array<() => void> = [];
@@ -37,11 +36,11 @@ function tileCanvas(tile: number, shadow: boolean): HTMLCanvasElement {
   const img = ctx.getImageData(0, 0, T, T);
   const d = img.data;
   const ramp = RAMP.map(rgb);
-  const dark = rgb(SHADOW);
   for (let i = 0; i < d.length; i += 4) {
     if (d[i + 3] < 8) continue;
     const lum = (0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]) / 255;
-    const c = shadow ? (lum < 0.2 ? ramp[1] : dark) : ramp[Math.min(4, Math.floor(lum * 5))];
+    // Shadows use only the two darkest steps (docs 第 7 块): outline darkest, body one step up.
+    const c = shadow ? (lum < 0.25 ? ramp[0] : ramp[1]) : ramp[Math.min(4, Math.floor(lum * 5))];
     d[i] = c[0];
     d[i + 1] = c[1];
     d[i + 2] = c[2];
