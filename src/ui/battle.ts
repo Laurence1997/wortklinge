@@ -386,6 +386,7 @@ export class BattleUI {
         b.isEcho ? h('span.tag.echo', '带着你的回响') : '',
         b.saying && !b.sayingDone ? h('span.tag.echo', '接句怪') : '',
         b.pluralMon ? h('span.tag.echo', '复数怪 · 一群') : '',
+        b.curse ? h('span.tag.due', b.curse === 'forget' ? '诅咒 · 遗忘' : '诅咒 · 沉默') : b.cursed ? h('span.tag', '咒已破') : '',
         b.phrase ? h('span.tag.echo', `残句 · ${b.phraseStep ?? 0}/3`) : '',
         b.stage === 2 && b.kind === 'due' ? h('span.tag', '可归名') : '',
       ),
@@ -406,12 +407,12 @@ export class BattleUI {
         { style: 'flex:1;min-width:0' },
         h('div.kind', `${pack.length > 1 ? (b.phaseHit ? fullForm(w) : shownDe(b)) + ' ' : '它'}说`),
         h('div.line', it.line),
-        h('div.zh', this.zhShown ? plainZh(it.zh) : ''),
+        h('div.zh', this.zhShown && this.b.curse !== 'forget' ? plainZh(it.zh) : ''),
         b.queued ? h('div.zh', { style: 'color:var(--gold, #ffcf4a)' }, `看穿 · 下回合：${b.queued.line}${this.zhShown ? `（${plainZh(b.queued.zh)}）` : ''}`) : '',
         h(
           'div.ib',
           h('button.btn', { onclick: () => this.ctrl.speak(it.line), title: '再听一遍（V）' }, '🔊 再听'),
-          h('button.btn', { onclick: () => { this.zhShown = !this.zhShown; this.render(); }, title: '中文（Z）' }, this.zhShown ? '隐藏中文' : '看中文'),
+          this.b.curse === 'forget' ? '' : h('button.btn', { onclick: () => { this.zhShown = !this.zhShown; this.render(); }, title: '中文（Z）' }, this.zhShown ? '隐藏中文' : '看中文'),
           this.phase === 'choose' ? this.shadowRow() : '',
         ),
       ),
@@ -535,7 +536,7 @@ export class BattleUI {
                 ? `  新词：${w.de} · ${w.zh}　完成时用 ${b.phase}，相已替你选好，记住它`
                 : `  新词：${fullForm(w)} · ${w.zh}　第一次见，相已替你选好${b.phase !== w.art ? `（这句要 ${b.phase}）` : ''}，记住它`,
             )
-          : !b.pluralMon && !(this.phase === 'answer' && this.question?.type === 'pickZh')
+          : !b.pluralMon && b.curse !== 'forget' && !(this.phase === 'answer' && this.question?.type === 'pickZh')
             ? h('span.small', { style: 'color:var(--gold, #ffcf4a)' }, `  它是「${w.zh}」→ 选它的相`)
             : '',
         h(

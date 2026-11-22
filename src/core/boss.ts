@@ -33,9 +33,9 @@ export interface BossFight {
   misses: Array<{ asked: string; answer: string; model: string }>;
 }
 
-export function startBoss(s: GameState, rng: Rng, which: 1 | 2 | 3 | 4 | 5 | 6 = 1): BossFight {
+export function startBoss(s: GameState, rng: Rng, which: 1 | 2 | 3 | 4 | 5 | 6 = 1, single?: BossQuestion): BossFight {
   if (which === 6) {
-    const current = identifyQuestion(s, rng);
+    const current = single ?? identifyQuestion(s, rng);
     return { which, hp: 1, maxHp: 1, queue: [], current, asked: current.ask[0], seconds: 0, healing: false, healUsed: true, turn: 1, outcome: null, misses: [] };
   }
   if (which === 5) {

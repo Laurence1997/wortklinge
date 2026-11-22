@@ -55,6 +55,7 @@ export function applyWin(s: GameState, b: Battle, rng: Rng, opts: { heal?: boole
   const gap = levelGapMult(s.level, b.monster.lvl);
   xp = gap === 0 ? 1 : xp * gap;
   xp *= 1 + Math.min(0.3, affixTotal(s, 'xp'));
+  if (b.cursed) xp *= CONFIG.curse.xpMult;
   if (b.tutorial === 'loss') xp = 0;
   xp = Math.round(xp);
 
@@ -81,7 +82,7 @@ export function applyWin(s: GameState, b: Battle, rng: Rng, opts: { heal?: boole
   log.kills += 1;
   s.stats.kills += 1;
   // 碎片 count from Lv1, but a tier-up is only announced once gear opens (Lv3, 节奏表).
-  const gearUpRaw = b.tutorial === 'loss' ? null : addGearKill(s, b.phrase ? s.region ?? 1 : w.region ?? 1, rng(), b.kind === 'due' ? 1 + CONFIG.xp.dueShards : 1);
+  const gearUpRaw = b.tutorial === 'loss' ? null : addGearKill(s, b.phrase ? s.region ?? 1 : w.region ?? 1, rng(), (b.kind === 'due' ? 1 + CONFIG.xp.dueShards : 1) + (b.cursed ? CONFIG.curse.shards : 0));
   const gearUp = has(s.level, 'gear') ? gearUpRaw : null;
 
   // Drops: 20% from small monsters once gear is unlocked; the first one is a guaranteed green (Lv5 lesson).

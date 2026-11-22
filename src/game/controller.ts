@@ -16,7 +16,7 @@ import { applyLoss, applyWin, postFightHeal } from '../core/outcomes';
 import { defaultRng, type Rng } from '../core/rng';
 import { atLeastHalfShare, flushSkill, instantGuiming, kindOf, recordAnswer, stageOf } from '../core/srs';
 import { dailyBoard, dailyKill, dailyText } from '../core/dailies';
-import { identify, unidentifiedItems } from '../core/identify';
+import { engraveQuestion, identify, socketItems, unidentifiedItems } from '../core/identify';
 import { pickSpawns, zoneMinLevel, zoneWords } from '../core/spawn';
 import {
   addXp,
@@ -432,6 +432,20 @@ export class Controller {
           if (this.battle.intent.kind !== 'charge' && this.battle.intent.kind !== 'flee') this.battle.intent = { ...this.battle.intent, ...shoutLine(say) };
         }
       }
+      // 怪物诅咒 (0.6, 25 级): about one in ten carries 遗忘 or 沉默; the first one after the hall gate is certain.
+      if (s.level >= CONFIG.curse.from && !m.isEcho && (s.flags.curseNext || this.rng() < CONFIG.curse.chance)) {
+        const first = !!s.flags.curseNext;
+        delete s.flags.curseNext;
+        this.battle.curse = first ? 'forget' : this.rng() < 0.5 ? 'forget' : 'silence';
+        this.battle.cursed = true;
+        if (!s.flags.curseTaught) {
+          s.flags.curseTaught = true;
+          say([
+            { who: SYS, text: '【怪物诅咒】这只怪身上缠着咒文（名牌上标着）。遗忘：这场不能低语，也没有中文提示。沉默：这场不能读出来和跟读。' },
+            { who: SYS, text: '答对一道难题（铭刻、蓄力时的那题都算）就能破咒。带诅咒的怪经验 ×1.3，多 1 片碎片。' },
+          ]);
+        }
+      }
       if (m.rare && m.word.family !== 'truhe') {
         // Rare monsters: half again as tough. They carry an iron chest and run when hurt.
         const mon = this.battle.monster;
@@ -523,7 +537,7 @@ export class Controller {
 
   /** 跟读 (Lv5+): can the player still earn the read-along bonus in this fight? */
   canShadow(): boolean {
-    return has(this.state.level, 'shadowing') && !!this.battle && !this.pack.some((b) => b.shadowed) && !this.battle.tutorial;
+    return has(this.state.level, 'shadowing') && !!this.battle && this.battle.curse !== 'silence' && !this.pack.some((b) => b.shadowed) && !this.battle.tutorial;
   }
 
   /** 跟读 result. Sounding right pays CONFIG.shadow.xp once per fight; a miss costs nothing. */
@@ -929,7 +943,7 @@ export class Controller {
         ...unid.slice(0, 3).map((it) => ({
           label: `鉴定「${it.name}」`,
           act: () => {
-            this.identifyTarget = it.id;
+            this.singleTask = { kind: 'identify', itemId: it.id };
             this.boss = startBoss(s, this.rng, 6);
             setPrompt(null);
             this.bossUI.open(this.boss);
@@ -983,6 +997,39 @@ export class Controller {
     const s = this.state;
     if (s.level < CONFIG.region2Level) {
       say([{ who: GRETA, text: `太嫩。${CONFIG.region2Level} 级再来。` }]);
+      return;
+    }
+    // 刻字孔 (0.6, 25 级): Greta engraves auch / denn into a socket (again any time, one cloze each).
+    const sockets = s.level >= CONFIG.engrave.from && s.flags.gretaMet ? socketItems(s) : [];
+    if (sockets.length && !this.gretaPlain) {
+      const intro: Line[] = s.flags.engraveSeen
+        ? [{ who: GRETA, text: '要刻字？挑一件，再挑一个词。' }]
+        : [
+            { who: GRETA, text: '这几件带孔。孔里能刻一个小词，德国人天天挂在嘴边的那种。' },
+            { who: SYS, text: '【刻字孔】auch（也）：齐鸣打到的其他怪伤害 +20%。denn（呢、到底）：难题答对伤害 +20%。刻字要答对一道把这个词挖掉的填空；想换随时来，再答一次。' },
+          ];
+      s.flags.engraveSeen = true;
+      say(intro, undefined, [
+        ...sockets.slice(0, 3).flatMap((it) =>
+          (['auch', 'denn'] as const).map((w) => ({
+            label: `「${it.name}」${it.socket ? `（现在：${it.socket}）` : ''}刻 ${w}`,
+            act: () => {
+              this.singleTask = { kind: 'engrave', itemId: it.id, word: w };
+              this.boss = startBoss(s, this.rng, 6, engraveQuestion(w, this.rng));
+              setPrompt(null);
+              this.bossUI.open(this.boss);
+            },
+          })),
+        ),
+        {
+          label: '别的事',
+          act: () => {
+            this.gretaPlain = true;
+            this.talkGreta();
+            this.gretaPlain = false;
+          },
+        },
+      ]);
       return;
     }
     const lines: Line[] = [];
@@ -1346,12 +1393,26 @@ export class Controller {
   }
 
   /** 幽灵检票员 Lina: entering a timetable-hall scene may bring her (Lv25+, after Konrad's quest). */
-  private identifyTarget: string | null = null;
+  private gretaPlain = false;
+  /** The one-question task the which-6 conversation is for (Mira's 鉴定 or Greta's 刻字). */
+  singleTask: { kind: 'identify' | 'engrave'; itemId: string; word?: 'auch' | 'denn' } | null = null;
 
   private finishIdentify(f: BossFight) {
     const s = this.state;
-    const it = unidentifiedItems(s).find((x) => x.id === this.identifyTarget);
-    this.identifyTarget = null;
+    const task = this.singleTask;
+    this.singleTask = null;
+    if (task?.kind === 'engrave') {
+      const it = socketItems(s).find((x) => x.id === task.itemId);
+      if (!it) return;
+      if (!f.misses.length) {
+        it.socket = task.word!;
+        toast(`「${it.name}」刻上了 ${task.word}`, 'gold');
+      } else toast('没刻上。再来一次就行。');
+      this.persist();
+      this.refresh();
+      return;
+    }
+    const it = unidentifiedItems(s).find((x) => x.id === task?.itemId);
     if (!it) return;
     identify(it, f.misses.length === 0, this.rng);
     this.persist();

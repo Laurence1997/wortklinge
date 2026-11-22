@@ -107,4 +107,6 @@ export interface Item {
   legendary?: 'articleJudgement';
   /** 紫装德语鉴定 (0.6, 23 级): affixes hidden and inactive until Mira identifies it. */
   unidentified?: boolean;
+  /** 刻字孔 (0.6, 25 级): '' = an open socket; auch / denn once engraved. */
+  socket?: '' | 'auch' | 'denn';
 }

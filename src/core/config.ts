@@ -164,6 +164,10 @@ export const CONFIG = {
   /** 晚点之王 (0.6 第 5 块, Lv28): HP 8; rewards as 吞秤者, XP scaled by the level curve. */
   /** 幽灵检票员 Lina (0.6 第 5 块): Lv25+, after Konrad's quest; 30 s a question, HP 5. */
   lina: { hp: 5, seconds: 30, fromLevel: 25 },
+  /** 刻字孔 (0.6 第 6 块, 25 级). */
+  engrave: { from: 25, bonus: 0.2 },
+  /** 怪物诅咒 (0.6, 25 级): share of monsters, reward. */
+  curse: { from: 25, chance: 0.1, xpMult: 1.3, shards: 1 },
   boss3: { hp: 8, firstTimeSeconds: 45, laterSeconds: 30, xp: 1000, gold: 350 },
 };
 

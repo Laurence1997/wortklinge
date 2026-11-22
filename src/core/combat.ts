@@ -6,7 +6,7 @@ import { gradeTyped, normalize, type Verdict } from './grading';
 import { ELEMENT_ZH, generateIntent, INTENT_ZH } from './intents';
 import { between, pick, shuffle, type Rng } from './rng';
 import { kindOf, stageOf, overdueSteps, type Kind, type Stage } from './srs';
-import { affinityOf, affixTotal, attack, critChance, gearPen, hintsPerFight, maxHp, now, type GameState } from './state';
+import { affinityOf, affixTotal, attack, engraved, critChance, gearPen, hintsPerFight, maxHp, now, type GameState } from './state';
 import type { Element, Intent, Move, Word } from './types';
 import { has } from './unlocks';
 import { fullForm, genderOf, hasArticleQuestion, WORD_BY_ID, WORDS, zhWithPos } from '../data/words';
@@ -181,6 +181,10 @@ export interface Battle {
   settled?: boolean;
   /** 教学战: this fight started with a full 言灵 bar to try 终结技. */
   teachFin?: boolean;
+  /** 怪物诅咒 (0.6, 25 级): 遗忘 = no 低语 and no Chinese hints; 沉默 = no 读出来 / 跟读. A hard question right lifts it. */
+  curse?: 'forget' | 'silence';
+  /** It carried a curse at the start (pays ×1.3 XP and one more shard even once lifted). */
+  cursed?: boolean;
   /** 跟读 paid out in this fight (once per fight). */
   shadowed?: boolean;
   hintsLeft: number;
@@ -463,7 +467,7 @@ export function moveReady(s: GameState, b: Battle, move: Move): boolean {
   if (move === 'cls') return !!s.cls && b.cfx.res >= CLASSES[s.cls].skillCost;
   if (move === 'inscribe') return !b.cfx.inscribeCd;
   // 低语 is free, but a word you were hinted on is asked again without it first.
-  if (move === 'whisper') return !b.hinted && !s.words[b.word.id]?.hinted;
+  if (move === 'whisper') return b.curse !== 'forget' && !b.hinted && !s.words[b.word.id]?.hinted;
   if (move === 'sentence') return resMax(s) > 0 && b.cfx.res >= resMax(s);
   if (move === 'chorus') return b.chorusCd === 0;
   return true;
@@ -524,7 +528,7 @@ export function teachPhase(b: Battle): boolean {
 /** 读音攻击 (0.5, Lv5+ with 跟读): a never-met word, before its first right answer, may be read aloud as a sure hit.
  *  Returns what to read (nouns with their article), or null when not offered. */
 export function readTarget(s: GameState, b: Battle): string | null {
-  if (!has(s.level, 'shadowing') || b.kind !== 'new' || b.stage !== 0 || b.firstCorrectDone || b.step !== 0) return null;
+  if (!has(s.level, 'shadowing') || b.curse === 'silence' || b.kind !== 'new' || b.stage !== 0 || b.firstCorrectDone || b.step !== 0) return null;
   if (b.tutorial || b.pluralMon || b.phrase || b.trial) return null;
   return b.word.art ? fullForm(b.word) : b.word.de;
 }
@@ -532,7 +536,7 @@ export function readTarget(s: GameState, b: Battle): string | null {
 /** 读音攻击 on a word you have met (Lv5+): say it from its Chinese, nothing German on screen. Heard close enough →
  *  a 低语 hit (one armor tier lower, not 会写, no resource, never the 归名 blow; same per-word lock as 低语). */
 export function readRecall(s: GameState, b: Battle): string | null {
-  if (!has(s.level, 'shadowing') || readTarget(s, b) || b.tutorial || b.pluralMon || b.phrase || b.trial) return null;
+  if (!has(s.level, 'shadowing') || b.curse === 'silence' || readTarget(s, b) || b.tutorial || b.pluralMon || b.phrase || b.trial) return null;
   if (!availableMoves(s, b, 1).includes('whisper') || !moveReady(s, b, 'whisper')) return null;
   return b.word.art ? fullForm(b.word) : b.word.de;
 }
@@ -1257,6 +1261,13 @@ export function resolveTurn(
         b.fx.doubleNext = false;
         log.push({ text: '「Der Zug fährt ab!」——这一击翻倍。', tone: 'good' });
       }
+      // 怪物诅咒: a hard question answered right breaks it.
+      if (tier === 2 && b.curse) {
+        log.push({ text: b.curse === 'forget' ? '咒文碎了：遗忘解除，低语和中文提示回来了。' : '咒文碎了：沉默解除，又能读出来了。', tone: 'good' });
+        delete b.curse;
+      }
+      // 刻字 denn (0.6, 25 级): a hard question answered right hits +20% per engraved item.
+      if (tier === 2 && engraved(s, 'denn')) mult *= 1 + CONFIG.engrave.bonus * engraved(s, 'denn');
 
       const breaking = intent.kind === 'defend' && writtenQ;
       const g = genderOf(b.word);
@@ -1365,7 +1376,9 @@ export function resolveTurn(
           if (o === b || o.outcome) continue;
           // 词性三相: the chorus only rings on monsters of the stance you are in.
           if (needsPhase(o) && phaseOf(o) !== b.phase) continue;
-          const d = Math.max(1, Math.round(atk * comboMult(s.combo) * between(rng, CONFIG.damage.roll[0], CONFIG.damage.roll[1]) * (1 - effArmor(s, o, tier))));
+          // 刻字 auch (0.6, 25 级): the chorus rings +20% louder on the others per engraved item.
+          const auch = 1 + CONFIG.engrave.bonus * engraved(s, 'auch');
+          const d = Math.max(1, Math.round(atk * comboMult(s.combo) * auch * between(rng, CONFIG.damage.roll[0], CONFIG.damage.roll[1]) * (1 - effArmor(s, o, tier))));
           o.monster.hp = Math.max(0, o.monster.hp - d);
           if (o.monster.broken > 0) o.monster.broken -= 1;
           hitOthers.push(`${o.named || o.stage > 0 ? fullForm(o.word) : '另一只'} ${d}`);

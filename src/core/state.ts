@@ -204,6 +204,11 @@ export function hintsPerFight(s: GameState): number {
   return s.equipped.dict?.main ?? 0;
 }
 
+/** 刻字 (0.6, 25 级): how many worn items carry this particle. */
+export function engraved(s: GameState, word: 'auch' | 'denn'): number {
+  return Object.values(s.equipped).filter((it) => it && !it.unidentified && it.socket === word).length;
+}
+
 export function affixTotal(s: GameState, key: string): number {
   let t = 0;
   for (const it of Object.values(s.equipped)) if (!it?.unidentified) for (const a of it?.affixes ?? []) if (a.key === key) t += a.value;

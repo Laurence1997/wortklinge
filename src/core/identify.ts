@@ -10,11 +10,26 @@ import { AFFIX_RANGE } from './loot';
 import type { Rng } from './rng';
 import type { GameState } from './state';
 import type { Item } from './types';
+import { CONFIG } from './config';
+import { PARTICLE_SENTENCES } from '../data/particles';
 
 export const IDENTIFY_FROM = 23;
 
+/** New drops and chest items: purple comes unidentified from Lv23; purple/orange carry a 刻字孔 from Lv25. */
 export function markUnidentified(s: GameState, it: Item): void {
   if (it.quality === 'purple' && s.level >= IDENTIFY_FROM) it.unidentified = true;
+  if ((it.quality === 'purple' || it.quality === 'orange') && s.level >= CONFIG.engrave.from) it.socket = '';
+}
+
+export function socketItems(s: GameState): Item[] {
+  return [...Object.values(s.equipped), ...s.bag].filter((x): x is Item => !!x && x.socket !== undefined);
+}
+
+/** 刻字: one cloze with the particle blanked out. */
+export function engraveQuestion(word: 'auch' | 'denn', rng: Rng): BossQuestion {
+  const line = PARTICLE_SENTENCES[word][Math.floor(rng() * PARTICLE_SENTENCES[word].length)];
+  const [de, zh = ''] = line.split('|');
+  return { id: `engrave-${word}`, ask: [de.replace(/\{[^}]+\}/, '___')], zh: `${zh}（填 auch 或 denn）`, accept: [new RegExp(`^${word}$`)], model: de.replace(/[{}]/g, '') };
 }
 
 export function unidentifiedItems(s: GameState): Item[] {
