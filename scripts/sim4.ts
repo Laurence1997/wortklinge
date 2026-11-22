@@ -3,7 +3,8 @@
 // kills per minute; then how much of the kill-speed spread comes from German vs level/gear.
 // Run: npx vite-node scripts/sim4.ts      Knobs: DMG=<monster dmgPct>, N=<fights per cell>
 import { makeRng } from '../src/core/rng';
-import { CONFIG } from '../src/core/config';
+import { CONFIG, levelGapMult, levelHours, xpToNext } from '../src/core/config';
+import { CONJ } from '../src/data/verbs';
 import { newGame, maxHp, type GameState } from '../src/core/state';
 import { startBattle, makeQuestion, monsterStats, moveReady, needsPhase, phaseOf, qTier, resolveTurn, type Question } from '../src/core/combat';
 import type { Article } from '../src/core/types';
@@ -47,6 +48,7 @@ let GENDER: string | undefined = process.env.GENDER;
 let INS_N = 0;
 let SEN_N = 0;
 let PERF_N = 0;
+const PERF_XP = +(process.env.PERF_XP ?? 1);
 const regionOf = (L: number): RegionId => (L > 20 ? 3 : L > 10 ? 2 : 1);
 function player(L: number, G: number): GameState {
   const s = newGame('S', 'student', Date.now());
@@ -130,7 +132,13 @@ function fight(t: T, s: GameState, m: number, keepHp = false) {
   }
   if (saved) s.words[w.id] = saved;
   const won = b.outcome === 'win';
-  return { qs, sec: sec + (won ? 0 : DEATH), lost: Math.min(1, (maxHp(s) - Math.max(0, s.hp)) / maxHp(s)), won };
+  // Kill XP as outcomes.ts (half new 30, half due 20 × 1.5; typed last hit ×1.5; strong verbs ×1.3; level gap).
+  let xp = 0;
+  if (won) {
+    xp = 30 * (b.lastKillTyped ? CONFIG.xp.typedKillMult : 1) * (w.pos === 'v' && CONJ[w.de]?.strong && s.level >= 6 ? CONFIG.xp.strongVerbMult : 1) * levelGapMult(s.level, m);
+    if (b.perfekt) xp *= PERF_XP;
+  }
+  return { xp, qs, sec: sec + (won ? 0 : DEATH), lost: Math.min(1, (maxHp(s) - Math.max(0, s.hp)) / maxHp(s)), won };
 }
 
 function cell(t: T, L: number, G: number, m = L) {
@@ -238,6 +246,7 @@ if (process.env.MAP) {
     let here = scenes[0].id;
     const s = player(L, gearAt(L));
     s.hp = maxHp(s);
+    let XP = 0;
     let clock = 0, walk = 0, fights = 0, rests = 0, sinceRest = 0, deaths = 0;
     const gaps: number[] = [];
     const hops = (a: string, b: string) => routeTo(a, b)!.length;
@@ -256,6 +265,7 @@ if (process.env.MAP) {
       const o = ready[0];
       clock += CLICK; walk += CLICK;
       const r = fight(t, s, o.m, true);
+      XP += r.xp;
       clock += r.sec - WALK;
       fights++; sinceRest++;
       gaps.push(o.m - L);
@@ -283,7 +293,8 @@ if (process.env.MAP) {
     for (const g of gaps) hist[g] = (hist[g] ?? 0) + 1;
     const share = Object.entries(hist).sort((a, b) => +a[0] - +b[0]).map(([k, v]) => `${+k >= 0 ? '+' : ''}${k}:${Math.round((100 * v) / gaps.length)}%`).join(' ');
     const perBonfire = rests ? (fights / (rests + deaths)).toFixed(0) : `>${fights}`;
-    return `${t.padEnd(7)} L${String(L).padStart(2)} ${z.id.padEnd(15)} ${(fights / (HOUR / 3600)).toFixed(0).padStart(3)} fights/h · move ${((100 * walk) / clock).toFixed(0)}% (${(walk / fights).toFixed(1)} s/fight) · per bonfire ${perBonfire} · deaths ${deaths} · lvl ${share}`;
+    const xph = XP / (HOUR / 3600); const mins = (xpToNext(L) / xph) * 60;
+    return `${t.padEnd(7)} L${String(L).padStart(2)} ${z.id.padEnd(15)} ${(fights / (HOUR / 3600)).toFixed(0).padStart(3)} fights/h · move ${((100 * walk) / clock).toFixed(0)}% (${(walk / fights).toFixed(1)} s/fight) · per bonfire ${perBonfire} · deaths ${deaths} · xp/h ${xph.toFixed(0)} · Lv${L}→${L + 1} ${mins.toFixed(0)} min (curve ${(levelHours(L) * 60).toFixed(0)}, ×${(mins / (xpToNext(L) / CONFIG.xpPerHour * 60)).toFixed(2)}) · lvl ${share}`;
   };
   const nodes = !!process.env.NODES;
   console.log(`${nodes ? '0.5 scene map' : '0.4 map baseline'} (REST ${REST * 100}% HP, ${HOUR / 3600} h per row)`);
