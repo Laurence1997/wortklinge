@@ -150,6 +150,8 @@ export interface Battle {
   intent: Intent;
   /** 「Wie viel kostet das?」: next turn's intent, already decided. */
   queued?: Intent;
+  /** 0.6.x: this turn asks no haben/sein stance (its question would give the verb away). */
+  perfektRest?: boolean;
   /** 词性三相 (0.5): the stance the player attacks in. Sticky for this monster until changed.
    *  From Lv7 (格位姿态) it is the declined article the monster's line needs (den, einem…). */
   phase?: Stance;
@@ -372,19 +374,23 @@ function perfektLine(w: Word): { line: string; zh: string; full: string; fullZh:
   return { line, zh: maskZh(x.zh, w), full: perfektFull(e), fullZh: x.zh };
 }
 
-/** 0.6.x: on a turn whose question would be 选意思 / 选德语 / 填分词, the Perfekt line must not show the verb, so the
- *  participle is swallowed too and the Chinese is a mumble. The question is predicted with a throwaway rng. */
+/** 0.6.x (docs, 完成时台词): a turn whose question would be 选意思 / 选德语 / 填分词 asks no haben/sein stance (like a
+ *  verb monster before 21) and mumbles one of the verb's plain example sentences (verb swallowed, Chinese blanked),
+ *  or just 「… mmh …」; a stance turn keeps the participle in the line. The question is predicted with a throwaway rng. */
 function perfektGuard(s: GameState, b: Battle): void {
+  b.perfektRest = false;
   if (!b.perfekt || !b.intent?.full || b.intent.kind === 'charge' || b.intent.kind === 'flee') return;
-  const e = PERFEKT[b.word.de];
-  if (!e) return;
-  const x = perfektParts(e);
+  const x = perfektParts(PERFEKT[b.word.de]);
   const leaks = (['attack', 'inscribe', 'whisper'] as Move[]).some((m) => {
     const q = makeQuestion(s, b, m, makeRng(b.turn + 1));
     return q.type === 'pickZh' || q.type === 'pickDe' || (q.type === 'cloze' && q.answer === x.pp);
   });
   if (!leaks) return;
-  b.intent = { ...b.intent, line: `${x.before}… mmh …${x.mid}… mmh …${x.after}`.replace(/\s+/g, ' ').trim(), zh: '（它含糊地念着什么，听不清。）' };
+  b.perfektRest = true;
+  const v = voiceLine(b.word, b.turn);
+  b.intent = v
+    ? { ...b.intent, line: v.line, zh: v.zh, full: v.full, fullZh: v.fullZh, caseArt: undefined }
+    : { ...b.intent, line: '… mmh …', zh: '（它含糊地念着什么，听不清。）', full: undefined, fullZh: undefined, caseArt: undefined };
 }
 
 function nextIntent(s: GameState, b: Battle, rng: Rng): Intent {
@@ -399,19 +405,10 @@ function nextIntent(s: GameState, b: Battle, rng: Rng): Intent {
   let intent: Intent;
   if (tut === 'loss') {
     intent = generateIntent(rng, { ...ctx, force: { kind: 'attack', hits: 3, line: 'Ich beiße dreimal!', zh: '我咬三下！', layers: ['count'] } });
-  } else if (tut === 'break' && b.turn <= 2) {
-    intent = generateIntent(rng, { ...ctx, force: { kind: 'defend', line: 'Ich verteidige mich.', zh: '我要防守。' } });
-  } else if (tut === 'negation' && b.turn === 1) {
-    intent = generateIntent(rng, {
-      ...ctx,
-      force: { kind: 'wait', shown: 'attack', hits: 0, line: 'Ich greife jetzt nicht an.', zh: '我现在不进攻。（这回合不攻击）', layers: ['negation'] },
-    });
   } else if (b.flees && b.turn >= 2 && (ctx.hpRatio < 0.5 || b.turn >= 3)) {
     intent = generateIntent(rng, { ...ctx, force: { kind: 'flee', line: 'Ich muss los!', zh: '我得走了！（这回合打不死它，它就跑了）' } });
   } else if (tut === 'packCharge' && b.turn === 1) {
     intent = generateIntent(rng, { ...ctx, force: { kind: 'charge', line: 'Moment!', zh: '等一下！（在蓄力）' } });
-  } else if (tut === 'heal' && ctx.hpRatio <= 0.5 && !b.trapUsed) {
-    intent = generateIntent(rng, { ...ctx, force: { kind: 'heal', line: 'Ich mache eine Pause.', zh: '我休息一下。（要回血）' } });
   } else if (b.monster.chilled && b.intent?.kind === 'charge') {
     // Ice pushed the charge back: it is still charging.
     intent = { ...b.intent, line: 'Moment … noch nicht …', zh: '等等……还没好……（冰把蓄力往后推了）' };
@@ -426,7 +423,6 @@ function nextIntent(s: GameState, b: Battle, rng: Rng): Intent {
     intent = generateIntent(rng, ctx);
     if (intent.kind === 'charge' && !tut && s.level >= CONFIG.timeWords.from) intent = timeCharge(b, intent, rng);
   }
-  if (intent.layers.includes('negation') || (intent.layers.includes('object') && intent.kind === 'wait') || (tut === 'heal' && intent.kind === 'heal')) b.trapUsed = true;
   if (intent.kind === 'charge') b.turnsSinceCharge = 0;
   else b.turnsSinceCharge += 1;
   // 怪的台词 (2026-11-21): outside tutorials it mumbles one of its own example sentences with its name swallowed
@@ -509,7 +505,7 @@ export function moveReady(s: GameState, b: Battle, move: Move): boolean {
  *  or while broken; the hit is divided by (1 + A), i.e. A / (1 + A) is stopped (at most 90%). */
 /** 词性三相: the stance that hits this monster's weak point (null for words without an article). */
 export function phaseOf(b: Battle): Stance | null {
-  if (b.perfekt) return PERFEKT[b.word.de].aux;
+  if (b.perfekt) return b.perfektRest ? null : PERFEKT[b.word.de].aux;
   if (!b.word.art) return null;
   if (b.pluralMon) return 'die';
   // 格位姿态 (Lv7+): the article its line's slot needs; otherwise (no usable line) the name's own der/die/das.
@@ -1333,7 +1329,7 @@ export function resolveTurn(
         log.push({ text: `「${said}」——它们下手轻了一半。`, tone: 'good' });
       } else if (sk.id === 'wieViel') {
         b.fx.peek = 2;
-        log.push({ text: `「${said}」——你看见了它们下一步。`, tone: 'good' });
+        log.push({ text: `「${said}」——接下来两回合，它们要蓄力你会提前知道。`, tone: 'good' });
       } else if (sk.id === 'stimmtSo') {
         b.fx.stimmt = true;
         log.push({ text: `「${said}」——这一场，金币翻倍。`, tone: 'good' });

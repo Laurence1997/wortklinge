@@ -102,7 +102,7 @@ export const SKILLS: Record<string, Skill> = {
       { de: 'Was macht das zusammen?', zh: '一共多少钱？' },
       { de: 'Wie teuer ist das?', zh: '这个有多贵？' },
     ],
-    effect: '接下来 2 回合，提前看到怪物下一回合的打算',
+    effect: '接下来 2 回合，怪物下回合要蓄力就提前一回合告诉你，可以先存资源或铭刻',
     cooldown: 5,
     boss: 2,
   },

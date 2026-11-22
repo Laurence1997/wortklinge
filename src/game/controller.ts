@@ -377,18 +377,8 @@ export class Controller {
       case 6:
         lines.push({ who: SYS, text: '【元素】选对相附带元素：der 冰 · die 火 · das 毒' });
         break;
-      case 7:
-        s.flags.pendingBreak = true;
-        lines.push({ who: SYS, text: '它们学会缩成一团了，嘴里念着「Ich verteidige mich.」' });
-        lines.push({ who: SYS, text: '【防御】选择题只刮三成。默写全名，破甲：这一下和之后两下无视护甲。【连击 Ich beiße zweimal!】题会难一级，答对它只咬得到一口' });
-        break;
       case 8:
-        s.flags.pendingHeal = true;
         lines.push({ who: HILDE, text: `东边那扇门后面，住着个「邻居」。这片街区的名字你叫回四成，它才肯开门。` });
-        break;
-      case 9:
-        s.flags.pendingNegation = true;
-        lines.push({ who: SYS, text: '【nicht】「Ich greife jetzt nicht an.」动词说了，手没动' });
         break;
       case 10:
         lines.push(
@@ -423,9 +413,6 @@ export class Controller {
     this.milestone(m.phrase ? 'm_phrase' : m.rare ? 'm_rare' : m.isEcho ? 'm_echo' : `m_${m.word.pos ?? 'n'}`);
     let tutorial: Tutorial = null;
     if (s.flags.pendingLoss && !m.isEcho) tutorial = 'loss';
-    else if (s.flags.pendingBreak) tutorial = 'break';
-    else if (s.flags.pendingNegation) tutorial = 'negation';
-    else if (s.flags.pendingHeal) tutorial = 'heal';
 
     // The forced loss uses a dog that bites three times (Lv4 lesson).
     if (tutorial === 'loss') {
@@ -635,9 +622,6 @@ export class Controller {
       this.speak(fullForm(b.word));
     }
     // Tutorial bookkeeping.
-    if (b.tutorial === 'break' && b.monster.broken > 0) s.flags.pendingBreak = false;
-    if (b.tutorial === 'negation' && b.turn > 1) s.flags.pendingNegation = false;
-    if (b.tutorial === 'heal' && b.trapUsed) s.flags.pendingHeal = false;
     // 前 10 级连错 2 次自动给中文提示
     if (!r.correct && b.wrongStreak >= 2 && s.level <= 10) r.verdict.notes.push(`提示：${b.word.zh}`);
     this.refresh();

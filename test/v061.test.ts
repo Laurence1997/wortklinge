@@ -89,3 +89,17 @@ describe('0.6.x 修答案泄露', () => {
     expect(showsWord(w, 'Ich esse gern')).toBe(false);
   });
 });
+
+import { generateIntent } from '../src/core/intents';
+describe('0.6.x 意图只剩蓄力和逃跑', () => {
+  it('unforced intents are a plain attack or a charge, one hit, no element', () => {
+    const rng = makeRng(7);
+    for (let i = 0; i < 2000; i++) {
+      const it = generateIntent(rng, { level: 25, family: WORDS[i % WORDS.length].family, hpRatio: (i % 10) / 10, turnsSinceCharge: i % 6, trapUsed: false });
+      expect(['attack', 'charge']).toContain(it.kind);
+      expect(it.hits).toBe(1);
+      expect(it.element).toBe('phys');
+      if (it.kind === 'attack') expect(it.line).toBe('… mmh …');
+    }
+  });
+});

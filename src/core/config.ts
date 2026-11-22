@@ -66,6 +66,9 @@ export const CONFIG = {
     /** 0.4: HP at Lv1, growing ×1.08 per level (sim05). */
     hp1: 20,
     hpGrow: 1.08,
+    /** 0.6.x: knob for monsters from Lv7 (defend turns are gone). 1 = unchanged: the 4/3/2-hit anchors and the 示例战斗 test fix HP; a sim4 MAP run with 1.12 kept
+     *  each level within about ±10% of before, but breaks those anchors (docs to decide). */
+    hpLate: { from: 7, mult: 1 },
     /** One monster action takes this share of a same-level player's HP. The doc's 15% assumes an action bar of
      *  10–15 s; here the monster acts once per answer (3–10 s), so per action it is lower: about what 0.3 had. */
     dmgPct: (level: number) => (level <= 5 ? 0.06 : 0.12),
@@ -177,7 +180,8 @@ export const CONFIG = {
 
 /** 0.4: a fresh monster's HP at this level (before stage and overdue). */
 export function monsterHpAt(level: number): number {
-  return CONFIG.monster.hp1 * Math.pow(CONFIG.monster.hpGrow, level - 1);
+  const late = level >= CONFIG.monster.hpLate.from ? CONFIG.monster.hpLate.mult : 1;
+  return CONFIG.monster.hp1 * Math.pow(CONFIG.monster.hpGrow, level - 1) * late;
 }
 
 /** A player's HP at this level without gear (monster damage is a share of it). */

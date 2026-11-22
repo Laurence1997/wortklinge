@@ -151,7 +151,7 @@ describe('combat', () => {
     expect(b.outcome).toBe('lose');
     expect(b.intent.line).toContain('dreimal');
   });
-  it('the intent decides: a correct hit interrupts a charge, a written answer breaks a guard', () => {
+  it('a correct hit interrupts a charge (0.6.x: guards are gone)', () => {
     const rng = makeRng(3);
     const s = newGame('T', 'student', Date.now());
     s.level = 7;
@@ -163,11 +163,6 @@ describe('combat', () => {
     const r = resolveTurn(s, b, 'attack', q, q.answer!, rng);
     expect(r.readRight).toBe(true);
     expect(r.monsterDamage).toBe(0);
-    const b2 = startBattle(s, WORD_BY_ID['tisch'], rng, { tutorial: 'break' });
-    const q2 = makeQuestion(s, b2, 'attack', rng);
-    expect(q2.type).toBe('typed');
-    resolveTurn(s, b2, 'attack', q2, q2.answer!, rng);
-    expect(b2.monster.broken).toBe(2); // this hit and the next two ignore armor
   });
 });
 
@@ -1427,6 +1422,7 @@ describe('0.6 第 3 区: 现在完成时', async () => {
     s.region = 3;
     const b = startBattle(s, WORD_BY_ID['fahren'], makeRng(1));
     expect(b.perfekt).toBe(true);
+    b.perfektRest = false; // 0.6.x: a pick-meaning turn asks no stance; this test checks a stance turn
     expect(phaseOf(b)).toBe('sein');
     expect(stancesFor(s.level, b)).toEqual(['haben', 'sein']);
     b.intent = { ...b.intent, kind: 'wait', hits: 0 };
@@ -1443,7 +1439,7 @@ describe('0.6 第 3 区: 现在完成时', async () => {
     expect(resolveTurn(s, b, 'attack', q3, q3.answer!, makeRng(7)).phase).toBe('right');
     // A Perfekt line swallows the auxiliary.
     const b2 = startBattle(s, WORD_BY_ID['fahren'], makeRng(9));
-    if (b2.intent.kind !== 'charge' && b2.intent.kind !== 'flee') expect(b2.intent.line).toMatch(/gefahren|mmh ….*… mmh/); // 0.6.x: verb swallowed on pick-meaning turns
+    if (b2.intent.kind !== 'charge' && b2.intent.kind !== 'flee') expect(b2.perfektRest ? !b2.intent.line.includes('gefahren') : b2.intent.line.includes('gefahren')).toBe(true); // 0.6.x
     // Outside region 3 (or below 21) region-3 verbs keep the present tense.
     s.region = 2;
     expect(startBattle(s, WORD_BY_ID['fahren'], makeRng(1)).perfekt).toBeFalsy();

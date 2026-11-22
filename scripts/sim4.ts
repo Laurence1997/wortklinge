@@ -18,6 +18,7 @@ import type { Move } from '../src/core/types';
 
 if (process.env.DMG) { const k = +process.env.DMG; const f = CONFIG.monster.dmgPct; CONFIG.monster.dmgPct = (l: number) => f(l) * k; }
 const N = +(process.env.N ?? 300);
+if (process.env.HPL) CONFIG.monster.hpLate.mult = +process.env.HPL;
 // More knobs: COMBO=<× combo bonus>, INS=<铭刻 ×>, GEAR=<dmg per tier>, ARM=<armor base>
 if (process.env.COMBO) for (const c of CONFIG.combo) c.dmg *= +process.env.COMBO;
 if (process.env.INS) CONFIG.tech.inscribeMult = +process.env.INS;

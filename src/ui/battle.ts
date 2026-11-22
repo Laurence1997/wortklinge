@@ -414,7 +414,7 @@ export class BattleUI {
         h('div.kind', `${pack.length > 1 ? nameGlyph(b) + ' ' : '它'}说`),
         h('div.line', it.line),
         h('div.zh', this.zhShown && this.b.curse !== 'forget' ? plainZh(it.zh) : ''),
-        b.queued ? h('div.zh', { style: 'color:var(--gold, #ffcf4a)' }, `看穿 · 下回合：${b.queued.line}${this.zhShown ? `（${plainZh(b.queued.zh)}）` : ''}`) : '',
+        b.queued?.kind === 'charge' ? h('div.zh', { style: 'color:var(--gold, #ffcf4a)' }, '看穿 · 它下回合要蓄力') : '',
         h(
           'div.ib',
           h('button.btn', { onclick: () => this.ctrl.speak(it.line), title: '再听一遍（V）' }, '🔊 再听'),
