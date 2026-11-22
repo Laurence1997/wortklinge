@@ -9,6 +9,8 @@ import { failVerify, retire, kindOf, stageOf, overdueSteps, verifyOf, type Kind,
 import { typoOk } from './cut';
 import { affinityOf, affixTotal, attack, engraved, critChance, gearPen, hintsPerFight, maxHp, now, type GameState } from './state';
 import type { Element, Intent, Move, Word } from './types';
+import { gradeLink, gradeOrder, gradeSlot, linkTask, orderTask, SLOT_RECENT, slotNouns, slotTask, WRITE_CHANCE, type SlotTask } from './writing';
+import type { LinkRow } from '../data/links';
 import { has } from './unlocks';
 import { count } from './items';
 import { fullForm, genderOf, hasArticleQuestion, WORD_BY_ID, WORDS, zhWithPos } from '../data/words';
@@ -67,10 +69,17 @@ export interface Question {
   ult?: string[];
   /** 终极技能: the German frame with two ___. */
   frame?: string;
+  /** A1 写作 (2026-11-22): 排句 / 槽位造句 (on a cloze slot) or 连句 (a finisher). */
+  write?: 'order' | 'slot' | 'link';
+  /** 槽位造句: the frame and the monster's own sentence. */
+  slot?: SlotTask;
+  /** 连句: the pair and its answer. */
+  link?: LinkRow;
 }
 
 /** Row of the 题型奖励表 (src/data/questionTypes.ts) this question belongs to. */
 export function qKey(q: Question): QKey {
+  if (q.write) return q.write;
   if (q.type === 'cloze') return q.clozeMode === 'form' ? 'clozeForm' : q.clozeMode === 'base' ? 'clozeBase' : 'clozePick';
   if (q.type === 'saying') return q.options ? 'sayingPick' : 'sayingTyped';
   return q.type;
@@ -766,6 +775,19 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
     const extra = pat === 'nehme' ? '（也可以 zwei + 复数）' : '';
     return { type: 'sentence', prompt: `终结技：看中文，写整句${extra}`, focus: SENTENCE_ZH[pat](w.digit ?? w.zh), pattern: pat, answer: expectedSentence(w, pat) };
   };
+  // A1 写作 (2026-11-22): some cloze slots become 排句 or 槽位造句 once open (not on a word's very first questions).
+  const writeQ = (): Question | null => {
+    if (!canType || b.tutorial || b.trial || fresh) return null;
+    if (has(s.level, 'slot') && isNoun && rng() < WRITE_CHANCE.slot) {
+      const t = slotTask(w, rng);
+      if (t) return { type: 'cloze', write: 'slot', slot: t, prompt: `槽位造句：它问「${t.ask}」（${t.askZh}）用你单词本里任何合适的名词回答，冠词和格要对；最近用过的 ${SLOT_RECENT} 个词先不算`, focus: `${t.ask}  →  ${t.frame}`, answer: t.answer };
+    }
+    if (has(s.level, 'wordOrder') && rng() < WRITE_CHANCE.order) {
+      const t = orderTask(w, rng);
+      if (t) return { type: 'cloze', write: 'order', prompt: `排句：把词块排成一句，打出整句（大写的那块在句首）· ${t.zh}`, focus: t.shown.join('  /  '), answer: t.answer, full: t.answer };
+    }
+    return null;
+  };
   const canConj = w.pos === 'v' && conjOpen(s, w);
   /** One step harder than q, or null when nothing harder fits. */
   const harder = (q: Question): Question | null => {
@@ -847,6 +869,15 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
         };
       }
     }
+    // 连句 (2026-11-22): now and then the finisher joins two short sentences (und / oder / aber / denn; weil / dass /
+    // wenn later, verb to the end). Always the one answer, so the check is exact.
+    if (has(s.level, 'link') && !b.tutorial && rng() < WRITE_CHANCE.link) {
+      const r = linkTask(w, rng, has(s.level, 'linkSub'));
+      if (r) {
+        const tip = ['weil', 'dass', 'wenn'].includes(r.conj) ? '（动词放到句末）' : r.conj === 'aber' || r.conj === 'denn' ? '（前面加逗号）' : '';
+        return { type: 'sentence', write: 'link', link: r, prompt: `终结技 · 连句：用 ${r.conj} 把两句连成一句${tip} · ${r.zh}`, focus: `${r.a}  +  ${r.b}`, answer: r.answer };
+      }
+    }
     if (fin) return fin;
     const ws = wholeSentence(w, rng);
     return { type: 'sentence', prompt: '终结技：看中文，写整句', focus: ws.zh, answer: ws.answer };
@@ -885,7 +916,7 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
   // question twice in a row (Lucas, playtest 2026-11-19: three der clicks in a row is boring).
   // New words: article → hear it and pick the meaning → type it (once typing is unlocked).
   // 完形填空: words with example sentences get the cloze into the ladder (Lucas 2026-11-20).
-  const cl = hasExamples(w) ? () => clozeQ(s, w, rng) ?? (isNoun ? article() : pickZh()) : null;
+  const cl = hasExamples(w) || (isNoun && has(s.level, 'slot')) ? () => writeQ() ?? (hasExamples(w) ? clozeQ(s, w, rng) : null) ?? (isNoun ? article() : pickZh()) : null;
   if (canConj) {
     const verbLadder = b.stage === 0 ? [pickZh, cl ?? conj, conj, pickDe] : [conj, cl ?? pickDe, conj, pickZh];
     return verbLadder[b.step % verbLadder.length]();
@@ -938,7 +969,10 @@ function whisperOf(q: Question, w: Word): Question {
   }
   const a = q.answer ?? '';
   let hint = `${a[0] ?? ''}…`;
-  if (q.type === 'sentence' && q.pattern) hint = `${PATTERNS[q.pattern].lead} …`;
+  if (q.write === 'order') hint = `${a.split(' ').slice(0, 2).join(' ')} …`;
+  else if (q.write === 'slot' && q.slot) hint = `${PATTERNS[q.slot.pattern].lead} …（比如眼前这只怪）`;
+  else if (q.write === 'link' && q.link) hint = `… ${q.link.conj} ${q.answer!.split(` ${q.link.conj} `)[1]?.split(' ')[0] ?? ''} …`;
+  else if (q.type === 'sentence' && q.pattern) hint = `${PATTERNS[q.pattern].lead} …`;
   else if (q.withArticle && w.art) hint = `${w.art} ${w.de[0]}…`;
   else if (q.type === 'cloze' && a.includes(' ')) hint = `${a.split(' ')[0]} ${a.split(' ')[1][0]}…`;
   return { ...q, whisper: hint, whispered: true };
@@ -1090,7 +1124,7 @@ export function knownMoechteNouns(s: GameState): Word[] {
   return WORDS.filter((w) => w.moechte && s.words[w.id]);
 }
 
-export function gradeQuestion(_s: GameState, b: Battle, q: Question, input: string): Verdict & { word?: Word } {
+export function gradeQuestion(s: GameState, b: Battle, q: Question, input: string): Verdict & { word?: Word } {
   switch (q.type) {
     case 'article':
     case 'callout':
@@ -1106,6 +1140,16 @@ export function gradeQuestion(_s: GameState, b: Battle, q: Question, input: stri
     case 'steady':
       return { ok: true, notes: [], correct: q.answer! };
     case 'cloze': {
+      if (q.write === 'order') {
+        const ok = gradeOrder(input, q.answer!);
+        return { ok, notes: ok ? [] : [`正确语序：${q.answer}`], correct: q.answer! };
+      }
+      if (q.write === 'slot' && q.slot) {
+        const recent = String(s.flags.slotRecent ?? '').split(',').filter(Boolean);
+        const v = gradeSlot(input, q.slot, slotNouns(q.slot.pattern, (x) => !!s.words[x.id], b.word), recent, b.word.id);
+        if (v.ok && v.used && v.used.id !== b.word.id) s.flags.slotRecent = [v.used.id, ...recent.filter((x) => x !== v.used!.id)].slice(0, SLOT_RECENT).join(',');
+        return { ok: v.ok, notes: v.notes, correct: v.ok ? input.trim() : q.answer!, word: v.ok && v.used?.id === b.word.id ? b.word : undefined };
+      }
       const ok = gradeCloze(input, q.answer!, b.word, q.clozeZh);
       return { ok, notes: ok ? [q.full!] : [`正确答案：${q.answer}`, q.full!, ...clozeWhy(q.answer!, b.word, input)], correct: q.answer! };
     }
@@ -1116,6 +1160,10 @@ export function gradeQuestion(_s: GameState, b: Battle, q: Question, input: stri
       return { ok, notes: ok ? [`${x.a} ${x.b} —— ${x.zh}`] : [`正确答案：${x.a} ${x.b}（${x.zh}）`], correct: x.b };
     }
     case 'sentence': {
+      if (q.write === 'link' && q.link) {
+        const ok = gradeLink(input, q.link);
+        return { ok, notes: ok ? [] : [`正确答案：${q.answer}`], correct: q.answer!, word: ok ? b.word : undefined };
+      }
       if (q.ult) {
         // 终极技能: the two blanks come joined with |, each graded on its own (Bitte/gern ignored like sentences).
         const parts = input.split('|');

@@ -8,7 +8,8 @@ export type QKey =
   | 'typed' | 'conj' | 'plural'
   | 'clozePick' | 'clozeBase' | 'clozeForm'
   | 'sentence' | 'sayingPick' | 'sayingTyped'
-  | 'storm' | 'skill' | 'steady';
+  | 'storm' | 'skill' | 'steady'
+  | 'order' | 'slot' | 'link';
 
 export interface QTypeRow {
   zh: string;
@@ -29,9 +30,13 @@ export const QTYPES: Record<QKey, QTypeRow> = {
   clozeBase: { zh: '完形填空 · 填原形', tier: 1, res: 1 },
   sayingTyped: { zh: '接句 · 打字', tier: 1, res: 1 },
   clozeForm: { zh: '完形填空 · 填变形', tier: 2, res: 2 },
+  // A1 写作 (2026-11-22): 排句 is a typed sentence from given chunks; 槽位造句 picks the noun and its case like 填变形.
+  order: { zh: '排句', tier: 1, res: 1 },
+  slot: { zh: '槽位造句', tier: 2, res: 2 },
   // Spenders and class moves earn nothing.
   sentence: { zh: '终结技 · 看中文写整句', tier: 2, res: 0 },
   storm: { zh: '墨水风暴', tier: 1, res: 0 },
   skill: { zh: '技能（整句）', tier: 1, res: 0 },
+  link: { zh: '终结技 · 连句', tier: 2, res: 0 },
   steady: { zh: '稳住', tier: 0, res: 0 },
 };
