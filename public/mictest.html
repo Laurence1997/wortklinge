@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>发音识别测试</title>
+<style>
+  :root { --bg:#120a0b; --panel:#1f1213; --line:#3a2023; --text:#eadbd6; --dim:#9c8580; --red:#c8414b; --ok:#6fae6a; --bad:#d9733f; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:16px/1.6 system-ui, "PingFang SC", "Microsoft YaHei", sans-serif; }
+  main { max-width:760px; margin:0 auto; padding:24px 16px 60px; }
+  h1 { font-size:22px; margin:0 0 4px; }
+  p.lead { color:var(--dim); margin:0 0 20px; }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:18px; margin-bottom:16px; }
+  .word { font-size:56px; font-weight:700; text-align:center; letter-spacing:1px; margin:8px 0; }
+  .frame { text-align:center; color:var(--dim); min-height:1.6em; }
+  .row { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:12px; }
+  button { background:#2b1a1c; color:var(--text); border:1px solid var(--line); border-radius:8px; padding:10px 16px; font:inherit; cursor:pointer; }
+  button.main { background:var(--red); border-color:var(--red); color:#fff; min-width:160px; }
+  button:disabled { opacity:.5; cursor:default; }
+  .heard { text-align:center; min-height:2.2em; margin-top:12px; font-size:18px; }
+  .ok { color:var(--ok); } .bad { color:var(--bad); } .dim { color:var(--dim); }
+  .progress { text-align:center; color:var(--dim); font-size:14px; }
+  label { margin-right:14px; cursor:pointer; }
+  table { width:100%; border-collapse:collapse; font-size:14px; }
+  th, td { text-align:left; padding:6px 8px; border-bottom:1px solid var(--line); }
+  th { color:var(--dim); font-weight:500; }
+  textarea { width:100%; min-height:140px; background:#0d0708; color:var(--text); border:1px solid var(--line); border-radius:8px; padding:8px; font:13px/1.5 ui-monospace, monospace; }
+  .warn { color:var(--bad); }
+</style>
+</head>
+<body>
+<main>
+  <h1>发音识别测试</h1>
+  <p class="lead">屏幕上出一个德语词，你按「读」（或空格）读出来，页面记下 Chrome 听成了什么。每个词出 2 次，一共 44 次，约 5 分钟。读完把最下面的结果复制发回来就行。请用电脑版 Chrome，在安静的地方测。</p>
+
+  <div class="card" id="unsupported" hidden>
+    <p class="warn">这个浏览器不支持语音识别。请用电脑版 Chrome 打开。</p>
+  </div>
+
+  <div class="card">
+    <div>
+      <label><input type="radio" name="mode" value="word" checked> 只读单词</label>
+      <label><input type="radio" name="mode" value="frame"> 放进句子读（Ich sage jetzt ___.）</label>
+    </div>
+    <p class="dim" style="font-size:14px;margin:6px 0 0">建议先「只读单词」测一轮，再换「放进句子读」测一轮。换模式会重新开始一轮，已测的结果会保留。</p>
+  </div>
+
+  <div class="card">
+    <div class="progress" id="progress"></div>
+    <div class="word" id="word">…</div>
+    <div class="frame" id="frame"></div>
+    <div class="row">
+      <button class="main" id="say">读（空格）</button>
+      <button id="demo">听示范</button>
+      <button id="skip">跳过</button>
+    </div>
+    <div class="heard" id="heard"></div>
+  </div>
+
+  <div class="card">
+    <h2 style="font-size:17px;margin:0 0 8px">结果</h2>
+    <table>
+      <thead><tr><th>类别</th><th>词组</th><th>听对</th><th>听成另一个</th><th>听成别的</th></tr></thead>
+      <tbody id="table"></tbody>
+    </table>
+    <p id="total" style="margin:10px 0"></p>
+    <textarea id="dump" readonly></textarea>
+    <div class="row" style="justify-content:flex-start">
+      <button id="copy">复制结果</button>
+      <button id="reset">清空全部结果</button>
+    </div>
+  </div>
+</main>
+<script>
+// 发音识别原型 (游戏设计 › 下一版方向提案, 2026-11-22): does Chrome's recognizer tell minimal pairs apart
+// when a Chinese speaker reads them? Standalone page, no game code, nothing sent anywhere but Chrome's own recognizer.
+const PAIRS = [
+  ['长短元音 a', 'Stadt', 'Staat'],
+  ['长短元音 i', 'Mitte', 'Miete'],
+  ['长短元音 ü', 'Hütte', 'Hüte'],
+  ['o 和 ö', 'schon', 'schön'],
+  ['u 和 ü', 'Mutter', 'Mütter'],
+  ['i 和 ü', 'vier', 'für'],
+  ['i 和 ü', 'Tier', 'Tür'],
+  ['e 和 ö', 'kennen', 'können'],
+  ['e 和 ö', 'lesen', 'lösen'],
+  ['ch 和 sch', 'Kirche', 'Kirsche'],
+  ['r 和 l', 'Rand', 'Land'],
+];
+const REPS = 2;
+const KEY = 'wk-mictest-v1';
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+const $ = (id) => document.getElementById(id);
+const norm = (s) => s.toLowerCase().replace(/[.,!?;:"„“]/g, ' ').replace(/\s+/g, ' ').trim();
+// The recognizer writes numbers as digits (vier → 4).
+const toks = (s) => norm(s).split(' ').map((t) => (t === '4' ? 'vier' : t));
+
+let log = [];
+try { log = JSON.parse(localStorage.getItem(KEY) || '[]'); } catch { log = []; }
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(log)); } catch {} };
+
+let mode = 'word';
+let queue = [];
+let cur = null;
+let busy = false;
+
+function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+function newRound() {
+  queue = [];
+  PAIRS.forEach((p, i) => { for (let r = 0; r < REPS; r++) { queue.push({ pair: i, side: 1 }); queue.push({ pair: i, side: 2 }); } });
+  shuffle(queue);
+  next();
+}
+function next() {
+  $('heard').textContent = '';
+  if (!queue.length) { cur = null; $('word').textContent = '这一轮测完了'; $('frame').textContent = '可以换另一个模式再测一轮'; $('progress').textContent = ''; return; }
+  cur = queue.shift();
+  const w = PAIRS[cur.pair][cur.side];
+  $('word').textContent = w;
+  $('frame').textContent = mode === 'frame' ? `读整句：Ich sage jetzt ${w}.` : '';
+  $('progress').textContent = `这一轮还剩 ${queue.length + 1} 个 · ${mode === 'frame' ? '放进句子读' : '只读单词'}`;
+}
+
+// hit = recognised as the target, swap = as the other word of the pair, other = neither.
+function judge(alts, target, partner) {
+  const top = toks(alts[0] || '');
+  const t = norm(target), p = norm(partner);
+  const first = top.includes(t) ? 'hit' : top.includes(p) ? 'swap' : 'other';
+  const anyAlt = alts.some((a) => toks(a).includes(t));
+  return { first, anyAlt };
+}
+
+function listen() {
+  if (!SR || !cur || busy) return;
+  busy = true;
+  $('say').disabled = true;
+  $('heard').innerHTML = '<span class="dim">在听…</span>';
+  const r = new SR();
+  r.lang = 'de-DE';
+  r.interimResults = false;
+  r.maxAlternatives = 5;
+  let got = false;
+  r.onresult = (e) => {
+    got = true;
+    const res = e.results[0];
+    const alts = Array.from(res).map((x) => x.transcript);
+    const [, target, partner] = [null, PAIRS[cur.pair][cur.side], PAIRS[cur.pair][cur.side === 1 ? 2 : 1]];
+    const v = judge(alts, target, partner);
+    log.push({ mode, pair: cur.pair, target, heard: alts[0] || '', alts, first: v.first, anyAlt: v.anyAlt, t: Date.now() });
+    save();
+    const cls = v.first === 'hit' ? 'ok' : 'bad';
+    const label = v.first === 'hit' ? '听对了' : v.first === 'swap' ? `听成了 ${partner}` : '听成了别的';
+    $('heard').innerHTML = `<span class="${cls}">${label}</span>　<span class="dim">Chrome 听到：「${escapeHtml(alts[0] || '')}」</span>`;
+    render();
+    setTimeout(next, 1100);
+  };
+  r.onerror = (e) => {
+    const msg = e.error === 'not-allowed' ? '没有麦克风权限：点地址栏左边的图标允许麦克风' : e.error === 'no-speech' ? '没听到声音，再按一次读' : `出错了：${e.error}`;
+    $('heard').innerHTML = `<span class="warn">${msg}</span>`;
+  };
+  r.onend = () => { busy = false; $('say').disabled = false; if (!got && !$('heard').querySelector('.warn')) $('heard').innerHTML = '<span class="warn">没听到声音，再按一次读</span>'; };
+  try { r.start(); } catch { busy = false; $('say').disabled = false; }
+}
+
+function demo() {
+  if (!cur || !window.speechSynthesis) return;
+  const w = PAIRS[cur.pair][cur.side];
+  const u = new SpeechSynthesisUtterance(mode === 'frame' ? `Ich sage jetzt ${w}.` : w);
+  u.lang = 'de-DE';
+  const v = speechSynthesis.getVoices().find((x) => x.lang === 'de-DE' && /Google/.test(x.name)) || speechSynthesis.getVoices().find((x) => x.lang === 'de-DE');
+  if (v) u.voice = v;
+  u.rate = 0.9;
+  speechSynthesis.cancel();
+  speechSynthesis.speak(u);
+}
+
+function escapeHtml(s) { return s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+const pct = (a, b) => (b ? Math.round((a / b) * 100) + '%' : '–');
+
+function render() {
+  const rows = PAIRS.map((p, i) => {
+    const xs = log.filter((x) => x.pair === i);
+    const n = xs.length;
+    const c = (k) => xs.filter((x) => x.first === k).length;
+    return `<tr><td>${p[0]}</td><td>${p[1]} / ${p[2]}</td><td>${n ? `${c('hit')}/${n}` : '–'}</td><td>${n ? c('swap') : '–'}</td><td>${n ? c('other') : '–'}</td></tr>`;
+  });
+  $('table').innerHTML = rows.join('');
+  const by = (m) => log.filter((x) => x.mode === m);
+  const line = (m, name) => { const xs = by(m); const h = xs.filter((x) => x.first === 'hit').length; const s = xs.filter((x) => x.first === 'swap').length; return xs.length ? `${name}：听对 ${h}/${xs.length}（${pct(h, xs.length)}），听成另一个 ${s} 次` : `${name}：还没测`; };
+  $('total').textContent = `${line('word', '只读单词')}　·　${line('frame', '放进句子读')}`;
+  const ua = navigator.userAgent.match(/Chrome\/[\d.]+/)?.[0] || navigator.userAgent.slice(0, 60);
+  $('dump').value = [
+    `mictest v1 · ${ua} · ${new Date().toISOString().slice(0, 16)}`,
+    line('word', 'word'), line('frame', 'frame'),
+    ...log.map((x) => `${x.mode}\t${x.target}\t${x.first}${x.anyAlt && x.first !== 'hit' ? '(alt)' : ''}\t${x.alts.join(' | ')}`),
+  ].join('\n');
+}
+
+$('say').onclick = listen;
+$('demo').onclick = demo;
+$('skip').onclick = () => { if (cur) next(); };
+$('copy').onclick = async () => { try { await navigator.clipboard.writeText($('dump').value); $('copy').textContent = '已复制'; } catch { $('dump').select(); } setTimeout(() => ($('copy').textContent = '复制结果'), 1500); };
+$('reset').onclick = () => { log = []; save(); render(); };
+document.querySelectorAll('input[name=mode]').forEach((el) => el.addEventListener('change', () => { mode = el.value; newRound(); }));
+document.addEventListener('keydown', (e) => { if (e.code === 'Space' && e.target === document.body) { e.preventDefault(); listen(); } });
+if (!SR) { $('unsupported').hidden = false; $('say').disabled = true; }
+render();
+newRound();
+</script>
+</body>
+</html>
