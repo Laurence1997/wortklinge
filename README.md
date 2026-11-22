@@ -36,6 +36,13 @@
 
 ![战斗](docs/battle.png)
 
+### 0.6：新内容
+
+- **第 3 区「铁轨镇」，21–30 级。** 车站、问路、时间、看病和失物招领，约 230 个新词；动词怪开始说现在完成时，选 haben 或 sein 相。首领「晚点之王」和检票员 Lina 的支线。
+- **场景记忆法。** 每个场景一张小插画和一组固定的词，词学到半名，画里对应的东西就亮起来；一组词全到半名掉一页邻居的日记，填回去还能读出来。
+- **21–30 级的新系统。** 驿站传送、每日委托、秩序会登记表（用 Sie）、眼镜、紫装德语鉴定、刻字孔（auch / denn）、怪物诅咒、盲盒摊、锈名怪、零号站台规则地下城、A1 突破试炼、终极技能（句型填空）。
+- **头像和图标。** 对话头像、怪物图和装备图标。
+
 ### 0.5：新内容
 
 - **词性三相。** 出手前选 der / die / das 相，选对打中弱点；7 级起要按怪那句话里缺的位置选变格后的冠词（den、einen……），15 级起加第三格。
@@ -127,6 +134,13 @@ A browser game that teaches German to Chinese-speaking learners. It isn't flashc
 - **Articles are elements.** In `Ich möchte einen / eine / ein …` sentence attacks, the noun's gender sets the element: masculine = ice, feminine = fire, neuter = poison.
 - **Souls-like bonfires.** Resting respawns the words that are due. Dying never costs learning progress, but your gold and XP stay on the word that killed you until you win them back.
 - **Bosses are real conversations.** The first boss, *The Nameless Neighbour*, asks who you are and where you're from, on a timer, in randomised phrasings. Answer in full German sentences.
+
+### Version 0.6
+
+- **Region 3, Gleisdorf, levels 21–30**: stations, directions, time, the doctor and lost-and-found, about 230 new words; verb monsters start speaking in the Perfekt (pick the haben or sein stance). Boss "the King of Delays" and Lina's side story.
+- **Scene memory**: every scene has a small picture and its own set of words that light up as you learn them; finishing a set drops a page of the neighbour's diary to fill in and read aloud.
+- **New systems from 21 to 30**: waystation travel, daily tasks, the registry office form (formal Sie), glasses, German item identification, engraving sockets (auch / denn), monster curses, a blind-box stall, rusty review monsters, the Platform Zero rule-card dungeon, the A1 breakthrough exam and the ultimate skill (fill a sentence frame).
+- **Portraits and icons** for speakers, monsters and gear.
 
 ### Version 0.5
 

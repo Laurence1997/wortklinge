@@ -315,6 +315,16 @@ export class Controller {
       if (s.level >= 3) lines.push({ who: SYS, text: '金色名牌的「残句」是句子怪，打散它收短句卡。' });
       window.setTimeout(() => say(lines), 800);
     }
+    // 0.6: one note for players who were already playing.
+    if (!s.flags.seen06) {
+      s.flags.seen06 = true;
+      if (s.level < 3) return;
+      const lines: Line[] = [{ who: SYS, text: '【0.6】每个场景有了自己的小插画和一组固定的词：词学到半名，画里对应的东西就亮起来。' }];
+      lines.push({ who: SYS, text: '一个场景的词全到半名，会掉一页邻居的日记残页，按 B 在图鉴里填回去，还可以读出来。' });
+      if (s.level >= 9) lines.push({ who: SYS, text: '护符亲和改了：对上亲和的怪选对相，墨水或沉着 +2；破甲照旧。' });
+      if (s.level >= 18) lines.push({ who: SYS, text: '第 3 区铁轨镇开了（21–30 级），等级上限到 30。打赢第 2 区首领吞秤者就能过去；21 级起几乎每一级都有新东西。' });
+      window.setTimeout(() => say(lines), 900);
+    }
   }
 
   /** Lessons tied to a level (游戏设计 › 新手引导). */
