@@ -1,4 +1,5 @@
-// Character looks (联机第一档): shape first, one accent colour (the hair) in the red-black palette.
+// Character looks (联机第一档): one accent colour (the hair) in the red-black palette. Since 画风统一 only gender and
+// hair colour pick the figure (Kenney Tiny Dungeon); body and hair style are kept in saves and the online payload.
 
 export interface Look {
   gender: 0 | 1;

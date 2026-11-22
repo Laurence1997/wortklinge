@@ -4,6 +4,8 @@
 
 import type { Battle } from '../core/combat';
 import type { Slot } from '../core/types';
+import { dungeonTile, heroTile, heroTinyCanvas, CHAR_RAMP } from '../game/sprites';
+import type { Look } from '../core/look';
 
 const T = 16;
 const COLS = 12;
@@ -29,6 +31,11 @@ function tileCanvas(tile: number, shadow: boolean): HTMLCanvasElement {
   const key = `${tile}${shadow ? 's' : ''}`;
   const hit = cache.get(key);
   if (hit) return hit;
+  if (!shadow) {
+    const cv = dungeonTile(sheet!, tile, CHAR_RAMP);
+    cache.set(key, cv);
+    return cv;
+  }
   const cv = document.createElement('canvas');
   cv.width = cv.height = T;
   const ctx = cv.getContext('2d', { willReadFrequently: true })!;
@@ -68,19 +75,47 @@ export function icon(tile: number, scale = 2, shadow = false, cls = 'icon'): HTM
   return cv;
 }
 
+/** 画风统一 (原型): one body per word, the same on the map and in battle. Nouns draw from a pool by word id (never by
+ *  gender, 词性三相 hides it), verbs/adjectives/others keep one shape each so the word class stays readable. */
+const NOUN_POOL = [108, 120, 123, 122, 108, 123];
+export function wordTile(w: { id: string; pos?: string; family?: string }): number {
+  if (w.family === 'truhe') return 92;
+  const p = w.pos;
+  if (p === 'v') return 121;
+  if (p === 'adj') return 110;
+  if (p !== 'n') return 124;
+  let h = 0;
+  for (const ch of w.id) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return NOUN_POOL[h % NOUN_POOL.length];
+}
+
+/** Your own figure (same as on the map, without the outline), hair in its own colour. */
+export function heroIcon(look: Look, scale = 4): HTMLCanvasElement {
+  const cv = document.createElement('canvas');
+  cv.width = cv.height = T * scale;
+  cv.className = 'mon-icon';
+  const draw = () => {
+    const ctx = cv.getContext('2d')!;
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(heroTinyCanvas(heroTile(look), look.color, sheet!), 0, 0, cv.width, cv.height);
+  };
+  const img = loadSheet();
+  if (img.complete && img.naturalWidth) draw();
+  else waiting.push(draw);
+  return cv;
+}
+
 /** Monster portrait tile by kind. */
 export function monsterTile(b: Battle, boss = false): number {
   if (boss) return 109;
   if (b.word.family === 'truhe' || b.flees) return 92;
   if (b.rusty || b.curse) return 110;
   if (b.phrase) return 124;
-  if (b.pluralMon) return 123;
-  const p = b.word.pos;
-  if (p === 'n') return 108;
-  if (p === 'v') return 121;
-  if (p === 'adj') return 122;
-  return 120;
+  return wordTile(b.word);
 }
+
+/** Map figures for NPCs (same tiles as their dialog portraits). */
+export const NPC_TILE: Record<string, number> = { hilde: 111, greta: 84, mira: 99, konrad: 86, brandt: 85, examiner: 96, weber: 100, lina: 88 };
 
 export const SLOT_TILE: Record<Slot, number> = { pen: 130, coat: 102, amulet: 101, dict: 66, glasses: 60 };
 
@@ -102,6 +137,8 @@ let restored: (who: 'lina' | 'jonas') => boolean = () => false;
 export function setRestored(fn: (who: 'lina' | 'jonas') => boolean): void {
   restored = fn;
 }
+
+export const isRestored = (who: 'lina' | 'jonas'): boolean => restored(who);
 
 export function portrait(who: string, scale = 3): HTMLCanvasElement | null {
   const hit = PEOPLE.find(([re]) => re.test(who));

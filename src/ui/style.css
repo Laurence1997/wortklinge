@@ -298,7 +298,9 @@ canvas.icon, canvas.portrait, canvas.mon-icon, canvas.slot-icon { image-renderin
 #dialog .speaker-row .speaker { margin-bottom: 0; }
 #dialog .speaker-row canvas.portrait { border: 1px solid var(--line); background: #0b0608; }
 #boss .who canvas.portrait { margin-right: 8px; }
-.b-mon canvas.mon-icon { float: right; margin: 2px 0 0 6px; }
+.b-mon, .b-me { position: relative; padding-right: 96px !important; }
+.b-mon > canvas.mon-icon, .b-me > canvas.mon-icon { position: absolute; right: 10px; top: 50%; margin-top: -40px; }
+.b-me > canvas.mon-icon { transform: scaleX(-1); }
 .b-pack .pk canvas.mon-icon.small { float: right; }
 canvas.slot-icon { margin-right: 4px; }
 .panel h2 canvas.portrait { margin-right: 6px; }
