@@ -46,11 +46,13 @@ let AFF: string | undefined = process.env.AFF;
 let GENDER: string | undefined = process.env.GENDER;
 let INS_N = 0;
 let SEN_N = 0;
+let PERF_N = 0;
+const regionOf = (L: number): RegionId => (L > 20 ? 3 : L > 10 ? 2 : 1);
 function player(L: number, G: number): GameState {
   const s = newGame('S', 'student', Date.now());
   s.level = L;
   if (L > 10) s.cls = CLS[cur];
-  s.region = L > 10 ? 2 : 1;
+  s.region = regionOf(L);
   s.gearKills = { [String(s.region)]: CONFIG.gear.shardsPerTierSq * G * G };
   if (AFF) s.flags.affinity = AFF;
   s.equipped.dict = makeItem(rng, L, 'green', 'dict'); // 1 hint a fight (低语 without a class)
@@ -77,12 +79,16 @@ function fight(t: T, s: GameState, m: number, keepHp = false) {
   let qs = 0;
   let sec = WALK;
   b.pluralMon = false; // the sim's monster stats are set by hand above
-  const tried: Article[] = [];
+  const tried: string[] = [];
+  if (b.perfekt) PERF_N++;
   const pickPhase = () => {
-    const right = phaseOf(b)!;
-    const left = (['der', 'die', 'das'] as Article[]).filter((p) => !tried.includes(p));
-    const p = tried.length === 0 ? (rng() < P.pa ? right : left.filter((x) => x !== right)[Math.floor(rng() * 2)]) : left.includes(right) && rng() < 1 / Math.max(1, left.length) ? right : left[Math.floor(rng() * left.length)];
-    b.phase = p;
+    const right = phaseOf(b)! as string;
+    // 完成时 (0.6 region 3): two stances, haben / sein; same first-pick accuracy as the article stances.
+    const all = b.perfekt ? ['haben', 'sein'] : ['der', 'die', 'das'];
+    const left = all.filter((p) => !tried.includes(p));
+    const wrong = left.filter((x) => x !== right);
+    const p = tried.length === 0 ? (rng() < P.pa ? right : wrong[Math.floor(rng() * wrong.length)]) : left.includes(right) && rng() < 1 / Math.max(1, left.length) ? right : left[Math.floor(rng() * left.length)];
+    b.phase = p as Article;
     tried.push(p);
   };
   if (PHASE && needsPhase(b)) {
@@ -141,7 +147,7 @@ function cell(t: T, L: number, G: number, m = L) {
 }
 
 // Gear per level roughly as in sim05's balance column (tier resets in region 2).
-const gearAt = (L: number) => (L <= 1 ? 0 : L <= 7 ? 1 + Math.floor((L - 2) / 3) : L <= 10 ? 3 : L <= 12 ? L - 10 : L <= 14 ? 3 : L <= 18 ? 4 + (L >= 18 ? 1 : 0) : 5);
+const gearAt = (L: number): number => (L > 20 ? gearAt(L - 10) : L <= 1 ? 0 : L <= 7 ? 1 + Math.floor((L - 2) / 3) : L <= 10 ? 3 : L <= 12 ? L - 10 : L <= 14 ? 3 : L <= 18 ? 4 + (L >= 18 ? 1 : 0) : 5);
 
 // MAP=1 (0.5 block 5 baseline): an hour of play on the real 0.4 map. The player walks the shortest tile path
 // (SPEED 72 px/s) to the nearest monster in the field for their level; a dead slot refills 9–15 s later at a
@@ -153,7 +159,7 @@ if (process.env.MAP) {
   const range = (lv: string) => { const m = /(\d+)–(\d+)/.exec(lv); return m ? [+m[1], +m[2]] : null; };
   const run = (t: T, L: number) => {
     cur = t;
-    const region: RegionId = L > 10 ? 2 : 1;
+    const region: RegionId = regionOf(L);
     const map = generateMap(region);
     const fields = zonesOf(region).filter((z) => z.monsters && range(z.levels));
     const z = fields.filter((f) => range(f.levels)![0] <= L && L <= range(f.levels)![1]).sort((a, b) => range(b.levels)![0] - range(a.levels)![0])[0] ?? fields[0];
@@ -219,7 +225,7 @@ if (process.env.MAP) {
   const runNodes = (t: T, L: number) => {
     cur = t;
     const CLICK = +(process.env.CLICK ?? 0.5), HOP = CONFIG.map.hopSec;
-    const region: RegionId = L > 10 ? 2 : 1;
+    const region: RegionId = regionOf(L);
     const fields = zonesOf(region).filter((z) => z.monsters && range(z.levels));
     const z = fields.filter((f) => range(f.levels)![0] <= L && L <= range(f.levels)![1]).sort((a, b) => range(b.levels)![0] - range(a.levels)![0])[0] ?? fields[0];
     const words = WORDS.filter((w) => w.zone === z.id && w.family !== 'truhe');
@@ -312,7 +318,7 @@ if (process.env.CMP) {
 }
 console.log(`monster dmgPct Lv1 ${CONFIG.monster.dmgPct(1)} / Lv10 ${CONFIG.monster.dmgPct(10)}, N=${N}`);
 console.log(' L  G | grind q/kill hp% win | balance q/kill hp% win | learn q/kill hp% win');
-for (const L of [1, 3, 5, 6, 8, 10, 11, 13, 15, 18, 20]) {
+for (const L of (process.env.LVS ? process.env.LVS.split(",").map(Number) : [1, 3, 5, 6, 8, 10, 11, 13, 15, 18, 20, 21, 23, 25, 28, 30])) {
   const G = gearAt(L);
   const row = (['grind', 'balance', 'learn'] as T[]).map((t) => {
     const c = cell(t, L, G);
@@ -322,10 +328,12 @@ for (const L of [1, 3, 5, 6, 8, 10, 11, 13, 15, 18, 20]) {
 }
 
 // German share of kill-speed differences (two-way, like sim04/05): L16 G1, L18 G3, L20 G5 against a Lv18 monster.
-const powers: Array<[number, number]> = [[16, 1], [18, 3], [20, 5]];
+const R3 = !!process.env.R3; // region 3: L26 G1 / L28 G3 / L30 G5 against a Lv28 monster
+const REF = R3 ? 28 : 18;
+const powers: Array<[number, number]> = R3 ? [[26, 1], [28, 3], [30, 5]] : [[16, 1], [18, 3], [20, 5]];
 const types: T[] = ['grind', 'balance', 'learn'];
 const grid = new Map<string, number>();
-for (const t of types) for (const [L, G] of powers) grid.set(`${t}/${L}`, cell(t, L, G, 18).kpm);
+for (const t of types) for (const [L, G] of powers) grid.set(`${t}/${L}`, cell(t, L, G, REF).kpm);
 const all = [...grid.values()];
 const mu = all.reduce((a, b) => a + b, 0) / all.length;
 const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
@@ -333,5 +341,6 @@ const ssg = 3 * types.reduce((a, t) => a + (mean(powers.map(([L]) => grid.get(`$
 const ssp = 3 * powers.reduce((a, [L]) => a + (mean(types.map((t) => grid.get(`${t}/${L}`)!)) - mu) ** 2, 0);
 console.log('\nkills/min vs Lv18:', Object.fromEntries([...grid].map(([k, v]) => [k, +v.toFixed(2)])));
 console.log(`German share ${((100 * ssg) / (ssg + ssp)).toFixed(0)}%`);
-const g18 = grid.get('grind/18')!, b18 = grid.get('balance/18')!, l18 = grid.get('learn/18')!;
+const g18 = grid.get(`grind/${REF}`)!, b18 = grid.get(`balance/${REF}`)!, l18 = grid.get(`learn/${REF}`)!;
+console.log(`perfekt battles: ${PERF_N}`);
 console.log(`same power (L18 G3): grind ${g18.toFixed(2)} · balance ${b18.toFixed(2)} · learn ${l18.toFixed(2)} kills/min → balance/grind ×${(b18 / g18).toFixed(2)}`);
