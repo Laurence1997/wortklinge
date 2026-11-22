@@ -2,6 +2,7 @@
 
 import { BOSS_QUESTIONS, type BossQuestion } from '../data/boss';
 import { boss2Questions } from '../data/boss2';
+import { LINA_NAME_Q, linaQuestions } from '../data/lina';
 import { boss3Questions, makeBoard, refreshTimeQuestion, type Board } from '../data/boss3';
 import { CONFIG } from './config';
 import { normalize } from './grading';
@@ -9,8 +10,10 @@ import { pick, shuffle, type Rng } from './rng';
 import { maxHp, type GameState } from './state';
 
 export interface BossFight {
-  /** 1 = 无名的邻居, 2 = 吞秤者, 3 = 晚点之王. */
-  which: 1 | 2 | 3;
+  /** 1 = 无名的邻居, 2 = 吞秤者, 3 = 晚点之王, 4 = 幽灵检票员 Lina (elite: a miss is a fine, not damage). */
+  which: 1 | 2 | 3 | 4;
+  /** Lina: her HP is out and she asks «Wie heiße ich?». */
+  finalAsked?: boolean;
   /** 晚点之王: the departure board (shifts by ten minutes at half HP). */
   board?: Board;
   /** 晚点之王: the delay was just announced (shown with the next question). */
@@ -28,7 +31,13 @@ export interface BossFight {
   misses: Array<{ asked: string; answer: string; model: string }>;
 }
 
-export function startBoss(s: GameState, rng: Rng, which: 1 | 2 | 3 = 1): BossFight {
+export function startBoss(s: GameState, rng: Rng, which: 1 | 2 | 3 | 4 = 1): BossFight {
+  if (which === 4) {
+    const queue = linaQuestions(rng);
+    const current = queue.shift()!;
+    const L = CONFIG.lina;
+    return { which, hp: L.hp, maxHp: L.hp, queue, current, asked: pick(rng, current.ask), seconds: L.seconds, healing: false, healUsed: true, turn: 1, outcome: null, misses: [] };
+  }
   if (which === 3) {
     const board = makeBoard(rng);
     const queue = boss3Questions(rng, board);
@@ -92,6 +101,31 @@ export function answerBoss(s: GameState, f: BossFight, input: string, rng: Rng, 
   const model = q.model.replace('{name}', s.name || 'Lucas');
   let damageTaken = 0;
   let healed = false;
+  if (f.which === 4) {
+    // Lina never hurts you: a miss is a fine and she is gone; her last question is her name.
+    if (!ok) {
+      s.combo = 0;
+      f.misses.push({ asked: f.asked, answer: input, model });
+      f.outcome = 'lose';
+      return { ok, note, model, damageTaken: 0, healed: false };
+    }
+    s.combo += 1;
+    if (f.finalAsked) {
+      f.outcome = 'win';
+      return { ok, note, model, damageTaken: 0, healed: false };
+    }
+    f.hp -= 1;
+    if (f.hp <= 0) {
+      f.finalAsked = true;
+      f.current = LINA_NAME_Q;
+    } else {
+      if (!f.queue.length) f.queue = linaQuestions(rng).slice(1);
+      f.current = f.queue.shift()!;
+    }
+    f.asked = pick(rng, f.current.ask);
+    f.turn += 1;
+    return { ok, note, model, damageTaken: 0, healed: false };
+  }
   if (ok) {
     f.hp -= 1;
     s.combo += 1;

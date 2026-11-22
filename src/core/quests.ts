@@ -3,7 +3,7 @@
 
 import type { GameState } from './state';
 
-export type QuestId = 'main2' | 'konrad';
+export type QuestId = 'main2' | 'konrad' | 'main3' | 'lina';
 export type QuestEvent = 'enterMarket' | 'metMira' | 'boss2' | 'krumeKill' | 'taughtKonrad' | 'heardKonrad' | 'enterRails' | 'metBrandt' | 'brandtTalk' | 'boss3' | 'linaFreed';
 
 export interface QuestStep {
@@ -39,6 +39,25 @@ export const QUESTS: Record<QuestId, QuestDef> = {
       { zh: '帮 Konrad 找回面粉：在菜摊街打倒 5 只碎屑兽', event: 'krumeKill', count: 5 },
       { zh: '回到面包店，教 Konrad 说 5 个面包店的词', event: 'taughtKonrad' },
       { zh: '听 Konrad 把话说完', event: 'heardKonrad' },
+    ],
+  },
+  main3: {
+    id: 'main3',
+    zh: '第 3 章 · 铁轨镇',
+    giver: '主线',
+    steps: [
+      { zh: '走过铁路桥，进入铁轨镇', event: 'enterRails' },
+      { zh: '去站长室找站长 Herr Brandt', event: 'metBrandt' },
+      { zh: '末班站台上有个一直在等车的东西。28 级后打败晚点之王', event: 'boss3' },
+    ],
+  },
+  lina: {
+    id: 'lina',
+    zh: '末班车上的人',
+    giver: 'Konrad',
+    steps: [
+      { zh: '25 级后，在时刻表大厅找到穿着面包房围裙的检票员', event: 'brandtTalk' },
+      { zh: '回答她所有的问题，把名字还给她', event: 'linaFreed' },
     ],
   },
 };

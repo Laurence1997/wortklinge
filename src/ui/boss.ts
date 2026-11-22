@@ -3,6 +3,7 @@ import { maxHp } from '../core/state';
 import { BOSS as BOSS1 } from '../data/boss';
 import { BOSS2 } from '../data/boss2';
 import { BOSS3, boardText } from '../data/boss3';
+import { LINA } from '../data/lina';
 import type { Controller } from '../game/controller';
 import { $, bar, clear, h, umlautButtons } from './dom';
 
@@ -33,7 +34,7 @@ export class BossUI {
     const f = this.fight!;
     this.waiting = false;
     this.deadline = Date.now() + f.seconds * 1000;
-    const meta = f.which === 3 ? BOSS3 : f.which === 2 ? BOSS2 : BOSS1;
+    const meta = f.which === 4 ? LINA : f.which === 3 ? BOSS3 : f.which === 2 ? BOSS2 : BOSS1;
     this.ctrl.speak(f.delayNow ? `${BOSS3.delayLine} ${f.asked}` : f.healing ? `${meta.healLine} ${f.asked}` : f.asked);
     this.render();
     window.clearInterval(this.tick);
@@ -84,7 +85,7 @@ export class BossUI {
     const f = this.fight!;
     const s = this.ctrl.state;
     const el = $('boss');
-    const BOSS = f.which === 3 ? BOSS3 : f.which === 2 ? BOSS2 : BOSS1;
+    const BOSS = f.which === 4 ? LINA : f.which === 3 ? BOSS3 : f.which === 2 ? BOSS2 : BOSS1;
     const killed = f.which === 3 ? s.flags.boss3Kills : f.which === 2 ? s.flags.boss2Kills : s.flags.bossKills;
     const pips = h('div.pips');
     for (let i = 0; i < f.maxHp; i++) pips.append(h(`div.pip${i < f.hp ? '' : '.off'}`));
@@ -112,7 +113,7 @@ export class BossUI {
     } else if (this.last) {
       const v = this.last;
       panel.append(
-        h('div.feedback.' + (v.ok ? 'ok' : 'no'), h('b', v.ok ? '它听懂了。名牌上多了一个字母。' : `它没听懂，你受到 ${v.damageTaken} 点伤害。`)),
+        h('div.feedback.' + (v.ok ? 'ok' : 'no'), h('b', v.ok ? (f.which === 4 ? '她点点头，在票上打了个孔。' : '它听懂了。名牌上多了一个字母。') : f.which === 4 ? '她皱起眉：「Schwarzfahren!」' : `它没听懂，你受到 ${v.damageTaken} 点伤害。`)),
         this.lastAnswer ? h('div.small.muted', `你说：${this.lastAnswer}`) : '',
         v.note ? h('div.small', v.note) : '',
         !v.ok ? h('div.small', `可以这样说：${v.model}`) : '',
@@ -127,6 +128,7 @@ export class BossUI {
       pips,
       f.healing && !this.waiting ? h('div', { style: 'color:var(--bad);font-family:var(--mono);font-size:18px' }, `「${BOSS.healLine}」`) : '',
       f.healing && !this.waiting ? h('div.askzh', BOSS.healZh) : '',
+      f.finalAsked && !this.waiting ? h('div.askzh', LINA.finalZh) : '',
       f.delayNow && !this.waiting ? h('div', { style: 'color:var(--bad);font-family:var(--mono);font-size:18px' }, `「${BOSS3.delayLine}」`) : '',
       f.delayNow && !this.waiting ? h('div.askzh', BOSS3.delayZh) : '',
       h('div.ask', f.asked),

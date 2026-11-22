@@ -1522,3 +1522,26 @@ describe('0.6 第 3 区: 晚点之王', async () => {
     expect(makeBoard(makeRng(1)).rows.map((r) => r.m).sort()).toContain(30);
   });
 });
+
+describe('0.6 第 3 区: 幽灵检票员 Lina', () => {
+  it('a miss is a fine (no damage, she leaves); five right answers, then her name wins', () => {
+    const s = newGame('T', 'student', T0);
+    s.level = 25;
+    const hp = s.hp;
+    const f = startBoss(s, makeRng(1), 4);
+    expect(f.current.id).toBe('ticket');
+    const v = answerBoss(s, f, 'Ich habe keine Fahrkarte.', makeRng(2));
+    expect(v.ok).toBe(false);
+    expect(f.outcome).toBe('lose');
+    expect(s.hp).toBe(hp);
+    const g = startBoss(s, makeRng(3), 4);
+    for (let i = 0; i < 5; i++) {
+      g.current = { ...g.current, accept: [/.*/], grade: undefined };
+      answerBoss(s, g, 'x', makeRng(10 + i));
+    }
+    expect(g.finalAsked).toBe(true);
+    expect(g.outcome).toBeNull();
+    answerBoss(s, g, 'Du heißt Lina.', makeRng(20));
+    expect(g.outcome).toBe('win');
+  });
+});

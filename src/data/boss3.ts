@@ -129,7 +129,7 @@ const PP_AUX: Record<string, 'haben' | 'sein'> = Object.fromEntries(Object.value
 
 /** A Perfekt sentence about yourself: ich/wir + the right form of haben/sein … a known participle at the end. */
 export function gradePerfekt(input: string): { ok: boolean; note: string | null } {
-  const n = normalize(input).replace(/\s+/g, ' ').trim();
+  const n = normalize(input).replace(/\s+/g, ' ').trim().replace(/^(ja|nein|doch) /, '');
   const toks = n.split(' ');
   if (toks.length < 3) return { ok: false, note: '用完成时的整句回答：Ich habe … / Ich bin …' };
   const subj = toks[0];

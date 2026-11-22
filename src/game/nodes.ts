@@ -195,6 +195,8 @@ export class NodeNav {
     for (const z of new Set(scenesOf(this.w.map.region).map((x) => x.zone).filter(Boolean))) this.w.fillZone(z as ZoneId);
     this.draw();
     if (this.here.id === 'r1-x') this.w.ctrl.sawNeighbour();
+    if (this.here.zone === 'fahrplanhalle' && this.here.type === 'field') this.w.ctrl.maybeLina();
+    if (this.here.id === 'r3-hide') this.s.flags.zeroSeen = true;
   }
 
   // ---- drawing ------------------------------------------------------------------------------------
@@ -275,7 +277,8 @@ export class NodeNav {
     };
     const things: HTMLElement[] = [];
     if (sc.bonfire) things.push(h('button.btn', { onclick: ia('bonfire') }, '🔥 篝火休息'));
-    for (const n of sc.npcs ?? []) things.push(h('button.btn', { onclick: ia('npc', n) }, NPC_ZH[n]));
+    const npcs: NpcId[] = [...(sc.npcs ?? []), ...(sc.id === 'r3-platz' && this.s.flags.linaFreed ? (['lina'] as NpcId[]) : [])];
+    for (const n of npcs) things.push(h('button.btn', { onclick: ia('npc', n) }, NPC_ZH[n]));
     if (sc.door) things.push(h('button.btn', { onclick: ia('door') }, this.w.map.region === 3 ? '走上末班站台' : this.w.map.region === 2 ? '推开秤房的门' : '敲门'));
     if (sc.gate) things.push(h('button.btn', { onclick: ia('gate', String(sc.gate)) }, GATE_ZH[sc.gate]));
     for (const sg of sc.signs ?? []) things.push(h('button.btn', { onclick: ia('sign', sg) }, stageOf(this.s, WORD_BY_ID[sg]) >= 3 ? `路牌：${fullForm(WORD_BY_ID[sg])}` : '路牌：▒▒▒'));

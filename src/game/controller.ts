@@ -38,6 +38,7 @@ import { has, UNLOCK, UNLOCK_TEXT } from '../core/unlocks';
 import { BOSS } from '../data/boss';
 import { BOSS2 } from '../data/boss2';
 import { BOSS3 } from '../data/boss3';
+import { LINA } from '../data/lina';
 import { SKILLS } from '../data/skills';
 import { fullForm, hasArticleQuestion, WORD_BY_ID, WORDS, zhWithPos } from '../data/words';
 import { initAudio, setBattleMusic, setVolumes, sfx, speak, speechAvailable, hasGermanVoice } from './audio';
@@ -808,6 +809,16 @@ export class Controller {
       this.giveApron();
       return;
     }
+    if (p.done && s.flags.linaFreed && !s.flags.konradReunion) {
+      s.flags.konradReunion = true;
+      say([
+        { who: K, text: 'Lina … Lina! Meine Tochter heißt Lina!' },
+        { who: K, text: '她回来了？在铁轨镇？……我这就烤一炉最好的面包。Die Bäckerei ist wieder offen!' },
+        { who: SYS, text: '面包房重新开张了。' },
+      ]);
+      this.persist();
+      return;
+    }
     if (p.done) {
       const last = (s.flags.konradBread as number) ?? 0;
       if (now(s) - last >= 3600_000) {
@@ -1206,6 +1217,8 @@ export class Controller {
     if (id === 'mira') return this.talkMira();
     if (id === 'konrad') return this.talkKonrad();
     if (id === 'examiner') return this.talkExaminer();
+    if (id === 'brandt') return this.talkBrandt();
+    if (id === 'lina') return this.talkLina();
     // Region-2 NPCs: their systems (class, shop, Konrad's quest) open with the region-2 build.
     const lines: Record<string, string> = {
       greta: '导师 Greta：「营地来的？10 级再来。」',
@@ -1241,6 +1254,102 @@ export class Controller {
   private enterRegion3() {
     const s = this.state;
     s.flags.seenArea3 = true;
+    if (startQuest(s, 'main3')) {
+      this.questFire('enterRails');
+      say([
+        { who: SYS, text: '铁路桥那头是一座小镇。铁轨从镇子正中穿过去，站台上的钟全停在 23:59。' },
+        { who: SYS, text: '【第 3 章】去站长室找站长 Herr Brandt（广场北边）。' },
+      ]);
+    }
+  }
+
+  /** 站长 Herr Brandt (0.6 第 5 块): main chapter 3; his first talk is the Perfekt teaching fight. */
+  private talkBrandt() {
+    const s = this.state;
+    const B = '站长 Herr Brandt';
+    if (!s.flags.brandtMet) {
+      say(
+        [
+          { who: B, text: 'Guten Tag! Ich bin Herr Brandt, der Stationsvorsteher. Willkommen in Gleisdorf.' },
+          { who: B, text: '这里的东西不说现在，只说过去。它们一直在说自己「做过了」什么。' },
+          { who: B, text: 'Und Sie? Was haben Sie gestern gemacht?' },
+          { who: SYS, text: '【现在完成时】haben / sein 的变位 + 句末的分词：Ich habe Brot gekauft. Ich bin nach Hause gefahren.' },
+          { who: SYS, text: '移动和变化（fahren、kommen、gehen、aufstehen）多用 sein，其余大多用 haben。' },
+          { who: SYS, text: '【haben / sein 相】动词怪说完成时，它吞掉的是 haben 还是 sein，你就选哪个相。23 级前选错不罚。' },
+          { who: B, text: '外面那个就是。它说它「坐车走了」。听听它用的是哪个。' },
+        ],
+        () => {
+          s.flags.brandtMet = true;
+          this.questFire('metBrandt');
+          this.persist();
+          const p = this.scene.player;
+          const m = this.scene.addMonster(WORD_BY_ID['fahren'], 'new', 'gleisdorf', p.x + 20, p.y, { scripted: 'trial' });
+          this.encounter(m);
+        },
+      );
+      return;
+    }
+    const lines: Line[] = [];
+    if (!has(s.level, 'boss3')) lines.push({ who: B, text: '末班站台那个东西，28 级以前别去。它会问你几点、怎么走、为什么来晚了。' });
+    else if (!s.flags.boss3Kills) lines.push({ who: B, text: '末班站台在大厅最里面。看时刻牌，看地图，说完成时。Viel Glück!' });
+    else lines.push({ who: B, text: 'Die Uhren gehen wieder. 钟又走了。谢谢你。' });
+    if (questState(s, 'konrad')?.done && !s.flags.linaFreed)
+      lines.push({ who: B, text: s.level >= CONFIG.lina.fromLevel ? '大厅里有个检票员，穿着面包房的围裙。她总在问别人要票，却说不出自己的名字。' : '最近大厅里有人在查票。等你再强一点（25 级）去看看。' });
+    if (!s.flags.zeroSeen) lines.push({ who: B, text: '时刻表墙上原来有个零号站台。等你认得 Fahrkarte 这个词，也许就能看见。' });
+    say(lines);
+  }
+
+  /** 幽灵检票员 Lina: entering a timetable-hall scene may bring her (Lv25+, after Konrad's quest). */
+  maybeLina(): void {
+    const s = this.state;
+    if (this.battle || this.boss || s.flags.linaFreed || s.level < CONFIG.lina.fromLevel || !questState(s, 'konrad')?.done) return;
+    const miss = (s.flags.linaMiss as number) ?? 0;
+    if (miss + 1 < LINA.pity && this.rng() >= LINA.chance) {
+      s.flags.linaMiss = miss + 1;
+      return;
+    }
+    s.flags.linaMiss = 0;
+    if (startQuest(s, 'lina')) toast('新任务：末班车上的人（按 J 查看）', 'gold');
+    this.questFire('brandtTalk');
+    say(
+      LINA.intro.map((t) => ({ who: LINA.name, text: t })),
+      () => {
+        this.boss = startBoss(this.state, this.rng, 4);
+        setBattleMusic(true);
+        setPrompt(null);
+        this.bossUI.open(this.boss);
+      },
+    );
+  }
+
+  private finishLina(f: BossFight) {
+    const s = this.state;
+    if (f.outcome === 'win') {
+      s.flags.linaFreed = true;
+      this.questFire('linaFreed');
+      const o = makeItem(this.rng, s.level, 'orange');
+      if (s.bag.length < CONFIG.loot.bagSize) s.bag.push(o);
+      s.flags.title = '还名者';
+      sfx.orange();
+      banner('Lina', '她的名字回来了 · 传说装备 + 称号「还名者」');
+      say(LINA.outroWin.map((t) => ({ who: SYS, text: t })));
+    } else {
+      const fine = Math.min(s.gold, LINA.fine);
+      s.gold -= fine;
+      const miss = f.misses.slice(-1).map((m) => ({ who: '回顾', text: `她问「${m.asked}」——可以答：${m.model}` }));
+      say([{ who: LINA.name, text: LINA.outroFine }, { who: SYS, text: `罚票：−${fine} 金币。她还会再出现。` }, ...miss]);
+    }
+  }
+
+  private talkLina() {
+    const s = this.state;
+    const lines: Line[] = [
+      { who: 'Lina', text: 'Ich heiße Lina. 我记得了。' },
+      { who: 'Lina', text: '那天晚上我想赶末班车去找工作。车一直没来。我就一直站在那里，问别人要票。' },
+    ];
+    if (!s.flags.konradReunion) lines.push({ who: 'Lina', text: '我爸爸还在集市吗？告诉他，我很快回去。' });
+    else lines.push({ who: 'Lina', text: 'Papa backt wieder. 爸爸又开始烤面包了。' });
+    say(lines);
   }
 
   /** 末班站台: 晚点之王 (Lv28). */
@@ -1454,7 +1563,9 @@ export class Controller {
     this.bossUI.close();
     setBattleMusic(false);
     this.boss = null;
-    if (f.outcome === 'win' && f.which === 3) {
+    if (f.which === 4) {
+      this.finishLina(f);
+    } else if (f.outcome === 'win' && f.which === 3) {
       this.finishBoss3();
     } else if (f.outcome === 'win' && f.which === 2) {
       this.finishBoss2(f);
