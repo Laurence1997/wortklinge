@@ -41,6 +41,7 @@ import {
 import { shadowScore } from '../core/shadow';
 import type { Move, Quality, Slot, Word, ZoneId } from '../core/types';
 import { has, UNLOCK, UNLOCK_TEXT } from '../core/unlocks';
+import { JOURNAL_KEEP, JOURNAL_WORDS, JOURNAL_XP_SHARE, journalWords, type JournalEntry } from '../core/journal';
 import { BOSS } from '../data/boss';
 import { BOSS2 } from '../data/boss2';
 import { BOSS3 } from '../data/boss3';
@@ -169,6 +170,30 @@ export class Controller {
   diaryRead(scene: string): number {
     const xp = readPage(this.state, scene);
     if (xp) this.diaryXp(xp, '把日记残页读出来');
+    this.persist();
+    return xp;
+  }
+
+  /** 篝火日记: today's 3 words, or null when locked, already written today or too few words fought. */
+  journalOffer(): Word[] | null {
+    const s = this.state;
+    if (!has(s.level, 'diaryWrite')) return null;
+    const today = dayKey(now(s));
+    if ((s.journal ?? []).some((e) => e.day === today)) return null;
+    const start = new Date(`${today}T00:00:00`).getTime() + CONFIG.dayStartHour * 3600_000;
+    const ws = journalWords(s.words, start);
+    return ws.length >= JOURNAL_WORDS ? ws : null;
+  }
+
+  /** Save a 篝火日记 entry; the first of the day gives a little XP. */
+  saveJournal(words: Word[], text: string): number {
+    const s = this.state;
+    const today = dayKey(now(s));
+    const first = !(s.journal ?? []).some((e) => e.day === today);
+    const e: JournalEntry = { day: today, words: words.map((w) => w.id), text: text.trim() };
+    s.journal = [...(s.journal ?? []), e].slice(-JOURNAL_KEEP);
+    const xp = first ? Math.max(1, Math.round(xpToNext(s.level) * JOURNAL_XP_SHARE)) : 0;
+    if (xp) this.diaryXp(xp, '写了篝火日记');
     this.persist();
     return xp;
   }
@@ -1315,7 +1340,12 @@ export class Controller {
       lines.push({ who: region === 1 ? HILDE : '守火人', text: `这片的名字你写得出七成了（${Math.round(written * 100)}%）。这里的东西认得你了，不会再扑上来。往更深的野外走走，或者去找考官。` });
       if (region === 1) lines.push({ who: SYS, text: '【跳区考核】主城考官那里：先过首领的限时对话，再默写下一区 20 个词，写对 16 个直接升到 11 级' });
     }
-    say(lines);
+    // 篝火日记 (Lv16+, 2026-11-22): once a day, write a few sentences with words fought today.
+    const jw = this.journalOffer();
+    if (jw) {
+      lines.push({ who: SYS, text: `【篝火日记】今天打过 ${jw.map((w) => w.de).join('、')}。用它们写两三句话？不判对错，只提示查得出的错。` });
+      say(lines, undefined, [{ label: '写日记', act: () => this.panels.showJournal(jw) }, { label: '今天不写', act: () => undefined }]);
+    } else say(lines);
     if (s.flags.teachRest) s.flags.teachRest = false;
     this.refresh();
     this.persist();

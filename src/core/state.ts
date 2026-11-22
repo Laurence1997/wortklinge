@@ -64,6 +64,8 @@ export interface GameState {
   screen?: import('./screen').ScreenSave;
   /** 词表导入 (2026-11-22): word ids marked 优先 and lemmas the game doesn't have yet (待收录). Optional: absent = none. */
   wordImport?: { ids: string[]; pending: string[] };
+  /** 篝火日记 (2026-11-22): entries written at bonfires (newest last). Optional: absent = none yet. */
+  journal?: import('./journal').JournalEntry[];
   /** 0.4 装备档位: kills per region ("1", "2"); the tier follows from them. */
   gearKills?: Record<string, number>;
   recentNouns: string[];

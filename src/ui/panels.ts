@@ -34,9 +34,10 @@ import { blanksOf, checkBlank, DIARY_MISSES, DIARY_XP, lineText, pageLines, page
 import { lookPicker } from './title';
 import { CONSUMABLE, cap as itemCap, count as itemCount, itemPrice, type Consumable } from '../core/items';
 import { matchRows, mergeImport, readTable } from '../core/wordImport';
+import { checkJournal, type JournalHint } from '../core/journal';
 import { BARGAIN_LINES, ensureShop, price, refreshCost, sellPrice, SLOT_NOUN } from '../core/shop';
 
-export type PanelName = 'hero' | 'talents' | 'quests' | 'codex' | 'words' | 'data' | 'account' | 'settings' | 'help' | 'shop' | 'chest' | 'quiz' | 'duel' | 'screen' | 'bigmap' | 'diary' | 'ask' | 'exam';
+export type PanelName = 'hero' | 'talents' | 'quests' | 'codex' | 'words' | 'data' | 'account' | 'settings' | 'help' | 'shop' | 'chest' | 'quiz' | 'duel' | 'screen' | 'bigmap' | 'diary' | 'ask' | 'exam' | 'journal';
 
 export class Panels {
   open: PanelName | null = null;
@@ -83,6 +84,7 @@ export class Panels {
       this.asking = null;
       window.setTimeout(() => a.onAnswer(''), 0);
     }
+    if (this.open === 'journal') this.journalState = null;
     if (this.open === 'quiz' && this.quiz) {
       const q = this.quiz;
       this.quiz = null;
@@ -173,6 +175,13 @@ export class Panels {
       window.setTimeout(() => (el.querySelector('input.quiz') as HTMLInputElement | null)?.focus(), 0);
       return;
     }
+    if (this.open === 'journal' && this.journalState) {
+      panel.append(h('h2', h('span', '篝火日记'), h('button.btn.ghost', { onclick: () => this.close() }, this.journalState.saved ? '合上 Esc' : '先不写 Esc')), this.journalBody());
+      clear(el).append(panel);
+      el.onclick = null;
+      window.setTimeout(() => (el.querySelector('textarea.journal') as HTMLTextAreaElement | null)?.focus(), 0);
+      return;
+    }
     if (this.open === 'diary' && this.diary) {
       panel.append(h('h2', h('span', portrait('Jonas', 2) ?? '', `日记残页 · 第 ${pageRegion(this.diary.scene)} 区第 ${pageNo(this.diary.scene)} 页`), h('button.btn.ghost', { onclick: () => this.close() }, '合上 Esc')), this.diaryBody());
       clear(el).append(panel);
@@ -197,13 +206,13 @@ export class Panels {
       if (this.buying !== null) window.setTimeout(() => (el.querySelector('input.buy-line') as HTMLInputElement | null)?.focus(), 0);
       return;
     }
-    const titles: Record<Exclude<PanelName, 'shop' | 'chest' | 'quiz' | 'duel' | 'screen' | 'bigmap' | 'diary' | 'ask' | 'exam'>, string> = { hero: '角色与装备', talents: '职业与天赋', quests: '任务', codex: '图鉴', words: '单词本', data: '数据与存档', account: '账号与排行', settings: '设置', help: '怎么玩' };
+    const titles: Record<Exclude<PanelName, 'shop' | 'chest' | 'quiz' | 'duel' | 'screen' | 'bigmap' | 'diary' | 'ask' | 'exam' | 'journal'>, string> = { hero: '角色与装备', talents: '职业与天赋', quests: '任务', codex: '图鉴', words: '单词本', data: '数据与存档', account: '账号与排行', settings: '设置', help: '怎么玩' };
     const tabs = h('div.tabs');
-    (Object.keys(titles) as Array<Exclude<PanelName, 'shop' | 'chest' | 'quiz' | 'duel' | 'screen' | 'bigmap' | 'diary' | 'ask' | 'exam'>>).forEach((k) =>
+    (Object.keys(titles) as Array<Exclude<PanelName, 'shop' | 'chest' | 'quiz' | 'duel' | 'screen' | 'bigmap' | 'diary' | 'ask' | 'exam' | 'journal'>>).forEach((k) =>
       tabs.append(h(`button.btn${this.open === k ? '.on' : ''}`, { onclick: () => this.show(k) }, titles[k])),
     );
-    panel.append(h('h2', h('span', titles[this.open as Exclude<PanelName, 'shop' | 'chest' | 'quiz' | 'duel' | 'screen' | 'bigmap' | 'diary' | 'ask' | 'exam'>]), h('button.btn.ghost', { onclick: () => this.close() }, '关闭 Esc')), tabs);
-    const body = { exam: () => h('div'), ask: () => h('div'), diary: () => h('div'), bigmap: () => h('div'), shop: () => h('div'), chest: () => h('div'), quiz: () => h('div'), duel: () => h('div'), screen: () => h('div'), hero: () => this.hero(), talents: () => this.talents(), quests: () => this.questsBody(), codex: () => this.codex(), words: () => this.wordbook(), data: () => this.data(), account: () => this.account(), settings: () => this.settings(), help: () => this.help() }[this.open]();
+    panel.append(h('h2', h('span', titles[this.open as Exclude<PanelName, 'shop' | 'chest' | 'quiz' | 'duel' | 'screen' | 'bigmap' | 'diary' | 'ask' | 'exam' | 'journal'>]), h('button.btn.ghost', { onclick: () => this.close() }, '关闭 Esc')), tabs);
+    const body = { journal: () => h('div'), exam: () => h('div'), ask: () => h('div'), diary: () => h('div'), bigmap: () => h('div'), shop: () => h('div'), chest: () => h('div'), quiz: () => h('div'), duel: () => h('div'), screen: () => h('div'), hero: () => this.hero(), talents: () => this.talents(), quests: () => this.questsBody(), codex: () => this.codex(), words: () => this.wordbook(), data: () => this.data(), account: () => this.account(), settings: () => this.settings(), help: () => this.help() }[this.open]();
     panel.append(body);
     clear(el).append(panel);
     el.onclick = (e) => {
@@ -448,6 +457,68 @@ export class Panels {
       h('div.focus', { style: 'font-size:28px;margin:10px 0' }, w.zh),
       h('div.typing', input, umlautButtons(input), h('button.btn.primary', { onclick: go }, '说 ↵')),
     );
+    return wrap;
+  }
+
+  // ---- 篝火日记 (2026-11-22): write freely; only sure mistakes are pointed out, nothing is graded ----
+
+  private journalState: { words: Word[]; text: string; hints: JournalHint[] | null; saved: number | null } | null = null;
+
+  showJournal(words: Word[]): void {
+    this.journalState = { words, text: '', hints: null, saved: null };
+    this.show('journal');
+  }
+
+  private journalBody(): HTMLElement {
+    const j = this.journalState!;
+    const wrap = h('div');
+    wrap.append(
+      h('p', '用下面 3 个今天打过的词，写两三句你自己的话。写什么都行：今天去了哪儿、看见了什么、想要什么。'),
+      h('p.small.muted', '这里不判对错。「检查」只会指出规则能确定的错：没用到给的词、冠词和名词对不上、ich / du / er 后面的动词形式不对。查不出的就不管。写完记进日记，每天第一篇给一点经验。'),
+      h('div.row', ...j.words.map((w) => h('span.tag', `${w.art ? `${w.art} ` : ''}${w.de} · ${w.zh}`))),
+    );
+    if (j.saved !== null) {
+      wrap.append(h('div.feedback.ok', j.saved ? `记进日记了。经验 +${j.saved}` : '记进日记了。'), h('pre.small', j.text));
+      return wrap;
+    }
+    const ta = h('textarea.journal', { rows: 5, spellcheck: 'false', autocomplete: 'off', placeholder: 'Heute …', style: 'width:100%;font-size:18px' }) as HTMLTextAreaElement;
+    ta.value = j.text;
+    ta.oninput = () => (j.text = ta.value);
+    const check = () => {
+      j.text = ta.value;
+      j.hints = checkJournal(j.text, j.words);
+      this.render();
+    };
+    const save = () => {
+      j.text = ta.value;
+      const hints = checkJournal(j.text, j.words);
+      if (hints.some((x) => x.kind === 'short' || x.kind === 'missing')) {
+        j.hints = hints;
+        this.render();
+        return;
+      }
+      j.saved = this.ctrl.saveJournal(j.words, j.text);
+      this.render();
+    };
+    wrap.append(h('div', ta), h('div', umlautButtons(ta as unknown as HTMLInputElement)));
+    if (j.hints) {
+      if (!j.hints.length) wrap.append(h('div.feedback.ok', '没查出问题。可以记进日记了。'));
+      else wrap.append(h('div.feedback.no', h('ul', ...j.hints.map((x) => h('li', x.text)))));
+    }
+    wrap.append(
+      h(
+        'div.row',
+        h('button.btn', { onclick: check }, '检查'),
+        h('button.btn.primary', { onclick: save, title: '要用到 3 个词、至少两句；冠词和变位的提示不拦你' }, '记进日记'),
+      ),
+    );
+    const s = this.ctrl.state;
+    const past = (s.journal ?? []).slice(-3).reverse();
+    if (past.length) {
+      const det = h('details.small');
+      det.append(h('summary', `以前的日记（${(s.journal ?? []).length} 篇）`), ...past.map((e) => h('p.small', h('b', e.day), ' ', e.text)));
+      wrap.append(det);
+    }
     return wrap;
   }
 
