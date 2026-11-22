@@ -1243,8 +1243,12 @@ function cutCheck(s: GameState, b: Battle, q: Question, input: string, ok: boole
   const report: Pick<TurnReport, 'cut' | 'cutTypo'> = {};
   const w = b.word;
   const p = s.words[w.id];
-  const plainTyped = q.type === 'typed' && q.answer === fullForm(w) && !q.whispered && !b.phrase;
-  const typo = !ok && plainTyped && typoOk(input, w, !!q.withArticle);
+  // A typed cloze counts too when its answer is the word's dictionary form (nouns with der/die/das) and the
+  // question doesn't show the word (no conjugated / declined form, no «(gehen)» hint).
+  const shown = normalize(`${q.prompt} ${q.focus ?? ''} ${q.frame ?? ''}`);
+  const clozeDict = q.type === 'cloze' && q.clozeMode !== 'pick' && q.answer === fullForm(w) && !shown.includes(normalize(w.de));
+  const plainTyped = (q.type === 'typed' || clozeDict) && q.answer === fullForm(w) && !q.whispered && !b.phrase;
+  const typo = !ok && plainTyped && typoOk(input, w, !!w.art);
   if (b.verify && !b.verifyDone && q.type === 'typed') {
     b.verifyDone = true;
     if (ok || typo) {

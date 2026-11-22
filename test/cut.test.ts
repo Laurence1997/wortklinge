@@ -95,6 +95,33 @@ describe('斩杀 · 野外', () => {
   });
 });
 
+describe('斩杀 · 打字完形填空', () => {
+  it('counts only the dictionary form with the word not on screen', () => {
+    const s = game();
+    met(s, 'lampe');
+    const cz = (focus: string, answer: string): Question => ({ type: 'cloze', clozeMode: 'base', prompt: '完形填空', focus, answer });
+    const b = fight(s, 'lampe');
+    expect(resolveTurn(s, b, 'attack', cz('Wo ist ___? (灯在哪儿？)', 'die Lampe'), 'die Lampe', makeRng(1)).cut).toBe('pend');
+    met(s, 'tisch');
+    const b2 = fight(s, 'tisch');
+    expect(resolveTurn(s, b2, 'attack', cz('Ich suche ___.', 'den Tisch'), 'den Tisch', makeRng(1)).cut).toBeUndefined();
+    met(s, 'stuhl');
+    const b3 = fight(s, 'stuhl');
+    expect(resolveTurn(s, b3, 'attack', cz('Wo ist ___ (Stuhl)?', 'der Stuhl'), 'der Stuhl', makeRng(1)).cut).toBeUndefined();
+  });
+  it('a verb being verified is asked its infinitive from the Chinese', () => {
+    const s = game(8);
+    const v = WORDS.find((w) => w.pos === 'v' && w.region === 1)!;
+    met(s, v.id);
+    s.words[v.id].pend = T0 - DAY;
+    const b = startBattle(s, v, makeRng(2));
+    const q = makeQuestion(s, b, 'attack', makeRng(1));
+    expect(q.type).toBe('typed');
+    expect(q.answer).toBe(v.de);
+    expect(q.focus).not.toContain(v.de);
+  });
+});
+
 describe('斩杀 · 第二天验证', () => {
   function pendYesterday(id: string) {
     const s = game();
