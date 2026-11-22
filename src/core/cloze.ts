@@ -25,7 +25,7 @@ export interface Cloze {
 
 const key = (v: string) => normalize(v).replace(/\s+/g, ' ').trim();
 
-function parse(line: string): { before: string; blank: string; after: string; zh: string } | null {
+export function parse(line: string): { before: string; blank: string; after: string; zh: string } | null {
   const [de, zh = ''] = line.split('|');
   const m = /^(.*)\{([^}]+)\}(.*)$/.exec(de);
   return m ? { before: m[1], blank: m[2], after: m[3], zh } : null;
@@ -160,6 +160,24 @@ export function slotArticle(w: Word, n: number): string | null {
 }
 
 const PREPS = new Set(['in', 'an', 'auf', 'mit', 'zu', 'von', 'bei', 'aus', 'nach', 'für', 'durch', 'um', 'ohne', 'gegen', 'neben', 'über', 'unter', 'vor', 'hinter', 'zwischen', 'im', 'am', 'zum', 'zur', 'vom', 'beim']);
+
+/** 突破试炼 · 语法 (0.6.x): example sentences of this noun whose slot is article + noun in the accusative or dative
+ *  (by the 格位姿态 table), with only the article blanked: Ich fahre mit ___ Bus. (dem) */
+export function caseClozes(w: Word, want: 'acc' | 'dat'): Array<{ shown: string; full: string; zh: string; answer: string; prep: string | null }> {
+  if (!w.art) return [];
+  const g = (w.plOnly ? 'pl' : w.art === 'der' ? 'm' : w.art === 'die' ? 'f' : 'n') as 'm' | 'f' | 'n' | 'pl';
+  const out: Array<{ shown: string; full: string; zh: string; answer: string; prep: string | null }> = [];
+  for (const line of EXAMPLES[w.id] ?? []) {
+    const p = parse(line);
+    if (!p) continue;
+    const toks = p.blank.split(' ');
+    if (toks.length !== 2 || toks[1] !== w.de) continue;
+    if (caseOf(g, toks[0]) !== want) continue;
+    const prev = p.before.trim().split(/\s+/).pop()?.toLowerCase() ?? '';
+    out.push({ shown: `${p.before}___ ${toks[1]}${p.after}`.replace(/\s+/g, ' ').trim(), full: (p.before + p.blank + p.after).trim(), zh: p.zh, answer: toks[0], prep: PREPS.has(prev) ? prev : null });
+  }
+  return out;
+}
 
 /** ihn / sie / es (0.5, Lv7+): example sentences whose slot is den/die/das + the noun as an object
  *  (not at the start, not after a preposition), turned into a pronoun cloze: Ich trinke den Tee. → Ich trinke ___. (ihn) */

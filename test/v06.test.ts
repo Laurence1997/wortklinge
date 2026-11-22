@@ -3,7 +3,7 @@ import { newGame } from '../src/core/state';
 import { makeRng } from '../src/core/rng';
 import { WORD_BY_ID, WORDS } from '../src/data/words';
 import { startBattle, makeQuestion, resolveTurn } from '../src/core/combat';
-import { answerExam, BREAK, examPassed, startExam } from '../src/core/breakthrough';
+import { a1Complete, answerExam, BREAK, examPassed, grammarQs, startExam, startGrammarExam, type ExamQ } from '../src/core/breakthrough';
 import { usesDu, weberQuestions } from '../src/data/weber';
 import { PARTICLE_SENTENCES } from '../src/data/particles';
 import { RULES } from '../src/data/dungeon';
@@ -15,20 +15,39 @@ const T0 = new Date('2026-11-22T10:00:00').getTime();
 const met = { stage: 3 as const, due: 9e15, firstSeen: 0, lastSeen: 0, relapse: 0, correct: 1, wrong: 0 };
 
 describe('0.6 Lv21–30 systems', () => {
-  it('A1 突破试炼: 3 parts × 8, passes only with 5 per part', () => {
+  it('A1 突破试炼: 4 parts × 8, passes only with 5 per part; grammar is 2 acc, 2 dat, 2 conj, 2 Perfekt', () => {
     const s = newGame('T', 'student', T0);
     s.level = 30;
     for (const w of WORDS.filter((x) => (x.region ?? 1) <= 3)) s.words[w.id] = { ...met };
+    const right = (q: ExamQ) => (q.blanks ? q.blanks.join('|') : q.part === 'write' ? `${q.word.art ? q.word.art + ' ' : ''}${q.word.de}` : q.answer);
     const e = startExam(s, makeRng(3));
-    expect(e.qs.length).toBe(3 * BREAK.perPart);
-    expect(new Set(e.qs.map((q) => q.word.id)).size).toBe(e.qs.length);
-    for (const q of e.qs) answerExam(e, q.part === 'write' ? q.word.de.replace(/^/, q.word.art ? `${q.word.art} ` : '') : q.answer);
+    expect(e.qs.length).toBe(4 * BREAK.perPart);
+    for (const q of e.qs) answerExam(e, right(q));
     expect(e.over).toBe(true);
     expect(examPassed(e)).toBe(true);
     const f = startExam(s, makeRng(4));
-    f.qs.forEach((q, i) => answerExam(f, q.part === 'read' && i % 8 < 4 ? 'xxx' : q.part === 'write' ? `${q.word.art ? q.word.art + ' ' : ''}${q.word.de}` : q.answer));
+    f.qs.forEach((q, i) => answerExam(f, q.part === 'read' && i % 8 < 4 ? 'xxx' : right(q)));
     expect(f.right.read).toBe(4);
     expect(examPassed(f)).toBe(false);
+    // Grammar: the fixed mix, typed answers with ae/oe/ue accepted, both Perfekt blanks needed.
+    for (let seed = 1; seed <= 20; seed++) {
+      const g = grammarQs(s, makeRng(seed));
+      expect(g.length).toBe(8);
+      expect(new Set(g.map((q) => q.word.id)).size).toBe(8);
+      expect(g.filter((q) => q.blanks!.length === 2).length).toBe(2);
+      for (const q of g) {
+        expect(q.prompt).toContain('___');
+        expect(q.hint).toBeTruthy();
+      }
+    }
+    const g = startGrammarExam(s, makeRng(5));
+    expect(g.grammarOnly).toBe(true);
+    const h = startGrammarExam(s, makeRng(5));
+    for (const q of h.qs) answerExam(h, q.blanks!.length === 2 ? `${q.blanks![0]}|falsch` : q.blanks![0].replace(/ü/g, 'ue').replace(/ä/g, 'ae').replace(/ö/g, 'oe'));
+    expect(h.right.grammar).toBe(6);
+    expect(examPassed(h)).toBe(true);
+    expect(a1Complete({ a1Passed: true })).toBe(false);
+    expect(a1Complete({ a1Passed: true, a1Grammar: true })).toBe(true);
   });
 
   it('终极技能: first finisher at 30 is a two-blank frame; both right ×3, one right still hits', () => {

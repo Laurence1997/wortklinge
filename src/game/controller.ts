@@ -43,7 +43,7 @@ import { BOSS2 } from '../data/boss2';
 import { BOSS3 } from '../data/boss3';
 import { LINA } from '../data/lina';
 import { WEBER, WEBER_POOL, usesDu } from '../data/weber';
-import { answerExam, BREAK, examPassed, PART_ZH, startExam, type Exam } from '../core/breakthrough';
+import { a1Complete, answerExam, BREAK, examPassed, PART_ZH, startExam, startGrammarExam, type Exam } from '../core/breakthrough';
 import { DUNGEON, RULES, type Rule } from '../data/dungeon';
 import { SKILLS } from '../data/skills';
 import { fullForm, hasArticleQuestion, WORD_BY_ID, WORDS, zhWithPos } from '../data/words';
@@ -1268,6 +1268,7 @@ export class Controller {
     if (s.level < DUEL.fromLevel) return say([{ who: '考官', text: `「Noch nicht.」${DUEL.fromLevel} 级再来。` }]);
     const left = duelPool(s, region).length;
     if (!left && s.level >= BREAK.from && !s.flags.a1Passed) return this.breakExam();
+    if (!left && s.level >= BREAK.from && !a1Complete(s.flags)) return this.grammarRetake();
     if (!left) return say([{ who: '考官', text: '「Fertig.」没什么可考的了。见过的，去外面复习。' }]);
     say([
       { who: '考官', text: `「Prüfung?」我只考你没见过的词。看你本来会多少。（还剩 ${left} 个）` },
@@ -1275,31 +1276,50 @@ export class Controller {
     ], undefined, [
       { label: '开始对决', act: () => (this.milestone('duel'), this.panels.showDuel(startDuel(s, region, Math.random))) },
       ...(s.level >= BREAK.from && !s.flags.a1Passed ? [{ label: 'A1 突破试炼', act: () => this.breakExam() }] : []),
+      ...(s.level >= BREAK.from && s.flags.a1Passed && !s.flags.a1Grammar ? [{ label: '补考语法', act: () => this.grammarRetake() }] : []),
       ...(this.canJump() ? [{ label: `跳区考核（升到 ${JUMP.toLevel} 级）`, act: () => this.jumpExam() }] : []),
       { label: '先不了', act: () => {} },
     ]);
   }
 
-  /** A1 突破试炼 (30 级): 听 读 写 8 questions each, 5 right per part. */
+  /** A1 突破试炼 (30 级): 听 读 写 语法 8 questions each, 5 right per part. */
   private breakExam() {
     say([
-      { who: '考官', text: '「Die Prüfung A1. Hören, Lesen, Schreiben.」听、读、写，各八题。只考你见过的词。' },
+      { who: '考官', text: '「Die Prüfung A1. Hören, Lesen, Schreiben, Grammatik.」听、读、写、语法，各八题。只考你见过的词。' },
       { who: SYS, text: `【A1 突破试炼】每部分对 ${BREAK.pass} 题算过。不挨打，没过不罚，随时再考` },
     ], () => this.panels.showExam(startExam(this.state, Math.random)));
+  }
+
+  /** 补考语法 (0.6.x): saves that passed the three parts before the grammar part existed keep the title; 0.7 needs it for Lv31. */
+  private grammarRetake() {
+    say([
+      { who: '考官', text: '「Noch ein Teil: Grammatik.」上次的章还算数，不过结业考现在多了一段语法。' },
+      { who: SYS, text: `【补考语法】8 题：宾格、与格、变位、完成时各 2 题，对 ${BREAK.pass} 题算过。称号不收回；0.7 升 31 级前要补过` },
+    ], () => this.panels.showExam(startGrammarExam(this.state, Math.random)));
   }
 
   examAnswer(e: Exam, input: string): void {
     const q = e.qs[e.at];
     answerExam(e, input);
     const l = e.last;
-    if (l && q) logLine(`突破试炼（${PART_ZH[q.part]}）：${l.ok ? '✓' : `✗ 正确：${q.part === 'write' ? fullForm(q.word) : q.answer}`}`, l.ok ? 'good' : 'bad');
+    if (l && q) logLine(`突破试炼（${PART_ZH[q.part]}）：${l.ok ? '✓' : `✗ 正确：${q.part === 'write' ? fullForm(q.word) : q.full ?? q.answer}`}`, l.ok ? 'good' : 'bad');
   }
 
   /** Called when the exam panel closes after the last question. */
   examDone(e: Exam): void {
     const s = this.state;
-    if (!examPassed(e) || s.flags.a1Passed) return;
+    if (!examPassed(e)) return;
+    if (e.grammarOnly) {
+      if (s.flags.a1Grammar) return;
+      s.flags.a1Grammar = true;
+      banner('语法补考通过', 'A1 四段全过');
+      say([{ who: '考官', text: '「Gut. Jetzt ist alles komplett.」四段都盖章了。' }]);
+      this.persist();
+      return;
+    }
+    if (s.flags.a1Passed && s.flags.a1Grammar) return;
     s.flags.a1Passed = true;
+    s.flags.a1Grammar = true;
     s.flags.title = 'A1 突破者';
     banner('A1 突破试炼通过', '称号「A1 突破者」');
     say([

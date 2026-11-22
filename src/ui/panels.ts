@@ -14,7 +14,7 @@ import { canLearn, CLASSES, learn, rank, spent, talentPoints, TALENT_FROM_LEVEL,
 import { fullForm, genderOf, hasArticleQuestion, WORD_BY_ID, WORDS, zhWithPos } from '../data/words';
 import type { Controller } from '../game/controller';
 import { $, bar, clear, h, umlautButtons } from './dom';
-import { BREAK, examPassed, PART_ZH, type Exam, type ExamPart } from '../core/breakthrough';
+import { BREAK, examParts, examPassed, PART_ZH, type Exam } from '../core/breakthrough';
 import { DUEL, duelPool, JUMP, startDuel, type Duel } from '../core/duel';
 import { CHEST_ZH, type ChestKind } from '../core/chest';
 import { favour, FAVOUR, QUESTS, type QuestId } from '../core/quests';
@@ -311,19 +311,21 @@ export class Panels {
   private examBody(): HTMLElement {
     const e = this.exam!;
     const wrap = h('div');
-    const parts = (['listen', 'read', 'write'] as ExamPart[]).map((p) => `${PART_ZH[p]} ${e.right[p]} / ${BREAK.perPart}`).join(' · ');
+    const parts = examParts(e).map((p) => `${PART_ZH[p]} ${e.right[p]} / ${BREAK.perPart}`).join(' · ');
     wrap.append(h('p.small.muted', `每部分对 ${BREAK.pass} 题算过。${parts}`));
     if (e.last) {
       const l = e.last;
       const fb = h(`div.feedback.${l.ok ? 'ok' : 'no'}`, h('b', l.ok ? '对' : '不对'));
-      if (!l.ok) fb.append(h('span.note', `正确：${l.q.part === 'write' ? fullForm(l.q.word) : l.q.answer}`));
+      if (!l.ok) fb.append(h('span.note', `正确：${l.q.part === 'write' ? fullForm(l.q.word) : l.q.full ?? l.q.answer}`));
+      if (!l.ok && l.q.hint) fb.append(h('span.note', l.q.hint));
+      if (!l.ok && l.q.alts && l.q.alts.length > 1) fb.append(h('span.note', `这里填 ${l.q.alts.slice(0, 2).join(' 或 ')} 都对。`));
       if (l.q.say) fb.append(h('span.note', `听到的是：${l.q.say}`));
       wrap.append(fb);
     }
     if (e.over) {
       const ok = examPassed(e);
       wrap.append(
-        h('h3', ok ? 'A1 突破试炼通过。' : '这次没过。'),
+        h('h3', ok ? (e.grammarOnly ? '语法补考通过。' : 'A1 突破试炼通过。') : '这次没过。'),
         h('p', ok ? '考官在你的证件上盖了一个章。A2 的路 0.7 开放，经验先替你存着（最多存一级）。' : `每部分要对 ${BREAK.pass} 题。不罚，随时再考，题目会换。`),
         h('div.row', h('button.btn.primary', { onclick: () => this.close() }, '离开')),
       );
@@ -340,6 +342,27 @@ export class Panels {
     if (q.part === 'listen') {
       wrap.append(h('p', '听，选出意思。'), h('div.row', h('button.btn', { onclick: () => this.ctrl.speak(q.say!) }, '🔊 再听一遍')));
     } else if (q.part === 'read') wrap.append(h('p', '选出空里的词。'), h('div.focus', { style: 'font-size:22px;margin:10px 0' }, q.prompt));
+    if (q.part === 'grammar') {
+      // 语法: type into the sentence; the Perfekt has two blanks (auxiliary, participle), sent as "a|b".
+      const boxes = (q.blanks ?? ['']).map(() => h('input.exam', { type: 'text', autocomplete: 'off', spellcheck: 'false', placeholder: '填空' }) as HTMLInputElement);
+      const send = () => go(boxes.map((b) => b.value.trim()).join('|').replace(/^\|+|\|+$/g, '') ? boxes.map((b) => b.value).join('|') : '');
+      boxes.forEach((b, i) =>
+        b.addEventListener('keydown', (ev) => {
+          if (ev.key !== 'Enter') return;
+          ev.preventDefault();
+          ev.stopPropagation();
+          if (i < boxes.length - 1) boxes[i + 1].focus();
+          else send();
+        }),
+      );
+      wrap.append(
+        h('p', boxes.length > 1 ? '在句子里填两个空：助动词和分词。' : '在句子里填空。'),
+        h('div.focus', { style: 'font-size:22px;margin:10px 0' }, q.prompt),
+        q.zh ? h('div.small.muted', q.zh) : '',
+        h('div.typing', ...boxes, umlautButtons(boxes[boxes.length - 1]), h('button.btn.primary', { onclick: send }, '写 ↵')),
+      );
+      return wrap;
+    }
     if (q.options) {
       const row = h('div.choices');
       q.options.forEach((o, i) => row.append(h(`button.btn${i === 0 ? '.exam-first' : ''}`, { onclick: () => go(o) }, `${i + 1}. ${o}`)));
