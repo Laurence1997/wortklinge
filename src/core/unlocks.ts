@@ -35,6 +35,10 @@ export const UNLOCK = {
   layerObject: 13,
   boss2: 18,
   boss3: 28,
+  // 0.6 第 6 块 (21–30 级系统)
+  waystation: 21,
+  dailies: 21,
+  order: 21,
 } as const;
 
 export type Feature = keyof typeof UNLOCK;
@@ -58,4 +62,12 @@ export const UNLOCK_TEXT: Record<number, string[]> = {
   12: ['不规则动词也要写变位：du nimmst、er nimmt', '天赋树：每升 1 级得 1 点，去导师 Greta 那里点', '任务：按 J 打开任务面板'],
   13: ['怪物意图带对象：Ich heile mich. 是治自己，Ich greife dich an. 是打你'],
   18: ['第 2 区首领「吞秤者」：在粮仓尽头的秤房里，考价格和数量'],
+  21: [
+    '现在完成时：动词怪说过去的事，选 haben 或 sein 相（22 级前选错不罚）',
+    '蓄大招的台词带时间：jetzt 马上、gleich 下回合、in zwei Runden 两回合后，说几回合就几回合',
+    '驿站：在篝火或主城，从大地图免费传到去过的片区路口',
+    '每日委托：篝火旁的委托板每天 3 条',
+    '秩序会：铁轨镇广场的 Frau Weber，用 Sie 填登记表攒声望',
+  ],
+  23: ['眼镜：第 5 个部位，蓄力大招对你的伤害更低', '紫装德语鉴定：紫装掉下来是未鉴定的，到 Mira 那里读懂一句德语才揭示词缀'],
 };

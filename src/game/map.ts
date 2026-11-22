@@ -35,7 +35,7 @@ export interface Rect {
 }
 
 export type RegionId = 1 | 2 | 3;
-export type NpcId = 'hilde' | 'greta' | 'mira' | 'konrad' | 'examiner' | 'brandt' | 'lina';
+export type NpcId = 'hilde' | 'greta' | 'mira' | 'konrad' | 'examiner' | 'brandt' | 'lina' | 'weber';
 
 export interface ZoneDef {
   id: ZoneId;
@@ -450,6 +450,7 @@ function generateRegion3(): MapData {
     { id: 'hilde', x: 14, y: 26 },
     { id: 'examiner', x: 12, y: 22 },
     { id: 'brandt', x: 8, y: 19 },
+    { id: 'weber', x: 10, y: 27 },
     { id: 'mira', x: 16, y: 30 },
     { id: 'greta', x: 18, y: 18 },
   ];

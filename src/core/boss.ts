@@ -3,6 +3,8 @@
 import { BOSS_QUESTIONS, type BossQuestion } from '../data/boss';
 import { boss2Questions } from '../data/boss2';
 import { LINA_NAME_Q, linaQuestions } from '../data/lina';
+import { usesDu, weberQuestions } from '../data/weber';
+import { identifyQuestion } from './identify';
 import { boss3Questions, makeBoard, refreshTimeQuestion, type Board } from '../data/boss3';
 import { CONFIG } from './config';
 import { normalize } from './grading';
@@ -10,8 +12,8 @@ import { pick, shuffle, type Rng } from './rng';
 import { maxHp, type GameState } from './state';
 
 export interface BossFight {
-  /** 1 = 无名的邻居, 2 = 吞秤者, 3 = 晚点之王, 4 = 幽灵检票员 Lina (elite: a miss is a fine, not damage). */
-  which: 1 | 2 | 3 | 4;
+  /** 1 = 无名的邻居, 2 = 吞秤者, 3 = 晚点之王, 4 = 幽灵检票员 Lina (elite: a miss is a fine, not damage), 5 = 秩序会登记表 (untimed, no damage), 6 = Mira 的紫装鉴定 (one untimed cloze). */
+  which: 1 | 2 | 3 | 4 | 5 | 6;
   /** Lina: her HP is out and she asks «Wie heiße ich?». */
   finalAsked?: boolean;
   /** 晚点之王: the departure board (shifts by ten minutes at half HP). */
@@ -31,7 +33,16 @@ export interface BossFight {
   misses: Array<{ asked: string; answer: string; model: string }>;
 }
 
-export function startBoss(s: GameState, rng: Rng, which: 1 | 2 | 3 | 4 = 1): BossFight {
+export function startBoss(s: GameState, rng: Rng, which: 1 | 2 | 3 | 4 | 5 | 6 = 1): BossFight {
+  if (which === 6) {
+    const current = identifyQuestion(s, rng);
+    return { which, hp: 1, maxHp: 1, queue: [], current, asked: current.ask[0], seconds: 0, healing: false, healUsed: true, turn: 1, outcome: null, misses: [] };
+  }
+  if (which === 5) {
+    const queue = weberQuestions(rng);
+    const current = queue.shift()!;
+    return { which, hp: 5, maxHp: 5, queue, current, asked: pick(rng, current.ask), seconds: 0, healing: false, healUsed: true, turn: 1, outcome: null, misses: [] };
+  }
   if (which === 4) {
     const queue = linaQuestions(rng);
     const current = queue.shift()!;
@@ -101,6 +112,33 @@ export function answerBoss(s: GameState, f: BossFight, input: string, rng: Rng, 
   const model = q.model.replace('{name}', s.name || 'Lucas');
   let damageTaken = 0;
   let healed = false;
+  if (f.which === 6) {
+    // 鉴定: one try; wrong still reveals the item, just without the better roll.
+    if (!ok) f.misses.push({ asked: f.asked, answer: input, model });
+    f.hp = 0;
+    f.outcome = 'win';
+    return { ok, note, model, damageTaken: 0, healed: false };
+  }
+  if (f.which === 5) {
+    // 登记表: untimed and harmless. du towards Frau Weber is not wrong, but has to be said again with Sie;
+    // any answer that does not fit is asked again (the form is only handed in complete).
+    const du = usesDu(input);
+    const fine = ok && !du;
+    if (du) note = 'Frau Weber 皱眉：「Wie bitte?」请用 Sie / Ihr 再说一次。';
+    if (!fine) {
+      if (!du) f.misses.push({ asked: f.asked, answer: input, model });
+      f.turn += 1;
+      return { ok: false, note, model, damageTaken: 0, healed: false };
+    }
+    f.hp -= 1;
+    if (f.hp <= 0) f.outcome = 'win';
+    else {
+      f.current = f.queue.shift()!;
+      f.asked = pick(rng, f.current.ask);
+    }
+    f.turn += 1;
+    return { ok: true, note, model, damageTaken: 0, healed: false };
+  }
   if (f.which === 4) {
     // Lina never hurts you: a miss is a fine and she is gone; her last question is her name.
     if (!ok) {

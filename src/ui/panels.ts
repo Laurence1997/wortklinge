@@ -189,7 +189,7 @@ export class Panels {
       return h('div.grid2', left, right);
     }
     right.append(h('h3', { style: 'margin-top:0' }, '已装备'));
-    for (const slot of ['pen', 'coat', 'amulet', 'dict'] as Slot[]) {
+    for (const slot of ['pen', 'coat', 'amulet', 'dict', 'glasses'] as Slot[]) {
       const it = s.equipped[slot];
       right.append(
         h(
@@ -558,7 +558,7 @@ export class Panels {
     // Wishlist.
     const wishSlot = h('select', { onchange: (e: Event) => { shop.wish.slot = ((e.target as HTMLSelectElement).value || undefined) as Slot | undefined; this.ctrl.persist(); } }) as HTMLSelectElement;
     wishSlot.append(h('option', { value: '' }, '任意部位'));
-    for (const sl of ['pen', 'coat', 'amulet', 'dict'] as Slot[]) wishSlot.append(h('option', { value: sl, selected: shop.wish.slot === sl }, SLOT_ZH[sl]));
+    for (const sl of ['pen', 'coat', 'amulet', 'dict', 'glasses'] as Slot[]) wishSlot.append(h('option', { value: sl, selected: shop.wish.slot === sl }, SLOT_ZH[sl]));
     const wishAffix = h('select', { onchange: (e: Event) => { shop.wish.affix = ((e.target as HTMLSelectElement).value || undefined) as AffixKey | undefined; this.ctrl.persist(); } }) as HTMLSelectElement;
     wishAffix.append(h('option', { value: '' }, '任意词条'));
     for (const k of Object.keys(AFFIX_ZH) as AffixKey[]) wishAffix.append(h('option', { value: k, selected: shop.wish.affix === k }, AFFIX_ZH[k](0).replace(/[+\-]?0(\.0)?%?/, '').trim() || k));
@@ -670,7 +670,7 @@ export class Panels {
       { style: 'flex:1' },
       h(`div.item-name.${it.quality}`, `${it.name}`, h('span.small.muted', `  ${QUALITY_ZH[it.quality]} · ${SLOT_ZH[it.slot]} · 物品等级 ${it.ilvl}`)),
       h('div.small', mainStatText(it)),
-      ...it.affixes.map((a) => h('div.aff', AFFIX_ZH[a.key](a.value))),
+      ...(it.unidentified ? [h('div.aff', { style: 'color:var(--muted)' }, `未鉴定：${it.affixes.length} 条词缀还没生效（找 Mira 鉴定）`)] : it.affixes.map((a) => h('div.aff', AFFIX_ZH[a.key](a.value)))),
       it.legendary ? h('div.aff', { style: 'color:var(--q-orange)' }, '传说：冠词审判——答对一道冠词题后，下一击伤害翻倍') : '',
     );
   }

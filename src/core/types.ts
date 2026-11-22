@@ -77,7 +77,7 @@ export interface WordProgress {
 }
 
 export type Quality = 'white' | 'green' | 'purple' | 'orange';
-export type Slot = 'pen' | 'coat' | 'amulet' | 'dict';
+export type Slot = 'pen' | 'coat' | 'amulet' | 'dict' | 'glasses';
 
 export interface Affix {
   key: AffixKey;
@@ -105,4 +105,6 @@ export interface Item {
   affixes: Affix[];
   /** Orange legendary effect key. */
   legendary?: 'articleJudgement';
+  /** 紫装德语鉴定 (0.6, 23 级): affixes hidden and inactive until Mira identifies it. */
+  unidentified?: boolean;
 }

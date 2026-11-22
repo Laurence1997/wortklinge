@@ -12,6 +12,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: 'diary1', zh: '营地日记', title: '「邻居的读者」', how: '复原第 1 区全部日记残页' },
   { id: 'diary2', zh: '集市日记', title: '「集市的证人」', how: '复原第 2 区全部日记残页' },
   { id: 'diary3', zh: '铁轨日记', title: '「末班车乘客」', how: '复原第 3 区全部日记残页' },
+  { id: 'order10', zh: '秩序会登记', title: '「守规矩的人」', how: '为秩序会填完 10 份登记表' },
   { id: 'card1', zh: '第一张短句卡', title: '「拾句人」', how: '打散一只接句怪或残句，收下第一张短句卡' },
 ];
 

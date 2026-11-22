@@ -590,6 +590,16 @@ export class BattleUI {
     const wrap = h('div');
     const r = this.report;
     // 难题就是预告: the only hint left is on the question itself while it charges.
+    if (this.b.fx.swap && this.phase === 'answer' && this.move !== 'skill')
+      wrap.append(
+        h('button.btn.ghost.small', {
+          onclick: () => {
+            this.b.fx.swap = false;
+            this.question = this.ctrl.askQuestion(this.move);
+            this.render();
+          },
+        }, '🔁 Könnten Sie das wiederholen? 换一题'),
+      );
     if (this.b.intent.kind === 'charge' && this.phase !== 'result') wrap.append(h('div.prompt', { style: 'color:var(--gold, #ffcf4a)' }, h('span', '它在蓄力——答对打断')));
     const tags = [qq.inscribed ? '铭刻 ×1.5' : '', qq.whispered ? '低语 · 不算会写' : '', qq.chorus ? '齐鸣' : ''].filter(Boolean).join(' · ');
     wrap.append(h('div.prompt', h('span', qq.prompt), tags ? h('span.tag', tags) : ''));

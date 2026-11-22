@@ -9,8 +9,8 @@ export interface Skill {
   lines: Array<{ de: string; zh: string }>;
   effect: string;
   cooldown: number;
-  /** Which boss teaches it (1 = 无名的邻居, 2 = 吞秤者, 3 = 晚点之王). */
-  boss: 1 | 2 | 3;
+  /** Which boss teaches it (1 = 无名的邻居, 2 = 吞秤者, 3 = 晚点之王; 4 = 秩序会声望第 2 档). */
+  boss: 1 | 2 | 3 | 4;
 }
 
 /** Lines unlocked so far: the first, plus one per 5 casts. */
@@ -165,5 +165,20 @@ export const SKILLS: Record<string, Skill> = {
     effect: '每场一次：打倒这只怪后，下一只怪护甲降一档',
     cooldown: 99,
     boss: 3,
+  },
+  wiederholen: {
+    id: 'wiederholen',
+    de: 'Könnten Sie das bitte wiederholen?',
+    zh: '请再说一遍',
+    zhLine: '您能再说一遍吗？',
+    lines: [
+      { de: 'Könnten Sie das bitte wiederholen?', zh: '您能再说一遍吗？' },
+      { de: 'Noch einmal, bitte.', zh: '请再说一次。' },
+      { de: 'Wie bitte? Ich habe das nicht verstanden.', zh: '什么？我没听懂。' },
+      { de: 'Können Sie bitte langsamer sprechen?', zh: '您能说慢一点吗？' },
+    ],
+    effect: '每场一次：之后有一题可以换成同难度的另一题',
+    cooldown: 99,
+    boss: 4,
   },
 };

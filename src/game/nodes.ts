@@ -4,6 +4,8 @@
 import { sceneArtCanvas } from '../ui/sceneArt';
 import Phaser from 'phaser';
 import { CONFIG } from '../core/config';
+import { has } from '../core/unlocks';
+import { toast } from '../ui/feedback';
 import { stageOf } from '../core/srs';
 import { eligible } from '../core/spawn';
 import type { ZoneId } from '../core/types';
@@ -15,7 +17,7 @@ import { sfx } from './audio';
 import { ZONES, TILE, type NpcId } from './map';
 import type { MonsterEntity, WorldScene } from './WorldScene';
 
-const NPC_ZH: Record<NpcId, string> = { hilde: '守火人 Hilde', greta: '导师 Greta', mira: '商人 Mira', konrad: '面包师傅 Konrad', examiner: '考官', brandt: '站长 Herr Brandt', lina: 'Lina' };
+const NPC_ZH: Record<NpcId, string> = { hilde: '守火人 Hilde', greta: '导师 Greta', mira: '商人 Mira', konrad: '面包师傅 Konrad', examiner: '考官', brandt: '站长 Herr Brandt', lina: 'Lina', weber: '秩序会 Frau Weber' };
 const GATE_ZH: Record<number, string> = { 1: '穿过门回余烬营地', 2: '过桥回面包集市', 3: '过铁路桥去铁轨镇' };
 const OFFSETS = [[-28, -6], [28, -6], [0, -24], [-28, 16], [28, 16], [0, -38]];
 
@@ -62,6 +64,7 @@ export class NodeNav {
       this.here = hub;
     } else this.here = nearestScene(region, this.s.pos.x, this.s.pos.y, this.revealed);
     this.s.flags[`seenArea${region}`] = true;
+    if (this.here.type === 'road') this.s.flags[`road_${this.here.id}`] = true;
     // The 0.4 street map stays underneath (scenes stand on its tiles) but is veiled, so routes and monsters read first.
     this.veil?.destroy();
     this.veil = this.w.add.rectangle(0, 0, 8000, 8000, 0x07040a, CONFIG.map.veil).setOrigin(0).setDepth(-1);
@@ -194,6 +197,8 @@ export class NodeNav {
     // Fields left half-empty while you stood in them refill now that you have moved.
     for (const z of new Set(scenesOf(this.w.map.region).map((x) => x.zone).filter(Boolean))) this.w.fillZone(z as ZoneId);
     this.draw();
+    // 驿站 (0.6 第 6 块): crossroads you have stood on become teleport targets from Lv21.
+    if (this.here.type === 'road') this.s.flags[`road_${this.here.id}`] = true;
     if (this.here.id === 'r1-x') this.w.ctrl.sawNeighbour();
     if (this.here.zone === 'fahrplanhalle' && this.here.type === 'field') this.w.ctrl.maybeLina();
     if (this.here.id === 'r3-hide') this.s.flags.zeroSeen = true;
@@ -277,6 +282,7 @@ export class NodeNav {
     };
     const things: HTMLElement[] = [];
     if (sc.bonfire) things.push(h('button.btn', { onclick: ia('bonfire') }, '🔥 篝火休息'));
+    if (sc.bonfire && has(this.s.level, 'dailies')) things.push(h('button.btn', { disabled: busy, onclick: () => this.w.ctrl.showDailies() }, '📋 每日委托'));
     const npcs: NpcId[] = [...(sc.npcs ?? []), ...(sc.id === 'r3-platz' && this.s.flags.linaFreed ? (['lina'] as NpcId[]) : [])];
     for (const n of npcs) things.push(h('button.btn', { onclick: ia('npc', n) }, NPC_ZH[n]));
     if (sc.door) things.push(h('button.btn', { onclick: ia('door') }, this.w.map.region === 3 ? '走上末班站台' : this.w.map.region === 2 ? '推开秤房的门' : '敲门'));
@@ -314,6 +320,41 @@ export class NodeNav {
     );
   }
 
+  /** 驿站 (0.6 第 6 块 细则一): from Lv21, free jumps to any crossroads you have visited, only from a bonfire/hub. */
+  private waystation(): HTMLElement | string {
+    const s = this.s;
+    if (!has(s.level, 'waystation')) return '';
+    const atFire = !!this.here.bonfire;
+    const roads = SCENES.filter((x) => x.type === 'road' && s.flags[`road_${x.id}`] && x.id !== this.here.id);
+    return h(
+      'div.waystation',
+      h('h3', `驿站 · 片区路口${atFire ? '' : '（在篝火或主城才能用）'}`),
+      roads.length
+        ? h(
+            'div.row',
+            { style: 'flex-wrap:wrap;gap:6px' },
+            ...roads.map((x) =>
+              h(
+                'button.btn',
+                {
+                  disabled: !atFire,
+                  onclick: () => {
+                    this.w.ctrl.panels.close();
+                    if (x.region === this.w.map.region) {
+                      this.here = x;
+                      this.place();
+                      this.arrive();
+                    } else this.w.ctrl.travel(x.region, anchorPx(x));
+                  },
+                },
+                `${AREAS.find((a) => a.region === x.region)!.zh} · ${x.zh}`,
+              ),
+            ),
+          )
+        : h('div.small.muted', '还没走到过任何路口。'),
+    );
+  }
+
   /** 大地图: every area; open ones you have visited can be entered (you arrive at their hub). */
   bigMap(): void {
     if (this.w.ctrl.uiBlocking() || this.hopping) return;
@@ -337,7 +378,12 @@ export class NodeNav {
           ),
         ),
         ...AREAS_LATER.map((t) => h('button.btn', { disabled: true }, `${t}（以后开放）`)),
+        this.waystation(),
       ),
     );
+    if (has(s.level, 'waystation') && !s.flags.waystationSeen) {
+      s.flags.waystationSeen = true;
+      toast('驿站开了：在篝火或主城，可以从大地图直接传到去过的片区路口，免费。', 'gold');
+    }
   }
 }

@@ -106,6 +106,8 @@ export interface PlayerFx {
   keepRes?: boolean;
   /** 「Nächster Halt!」: when this monster dies, the next one starts with its armor one tier down. */
   nextHalt?: boolean;
+  /** 「Könnten Sie das bitte wiederholen?」 (秩序会): one later question may be swapped for another of the same kind. */
+  swap?: boolean;
 }
 
 /** Class resource for one fight (shared by a whole pack, like PlayerFx). */
@@ -1221,6 +1223,9 @@ export function resolveTurn(
       } else if (sk.id === 'naechsterHalt') {
         b.fx.nextHalt = true;
         log.push({ text: `「${said}」——打倒它，下一只怪护甲降一档。`, tone: 'good' });
+      } else if (sk.id === 'wiederholen') {
+        b.fx.swap = true;
+        log.push({ text: `「${said}」——之后有一题，你可以请它换一题。`, tone: 'good' });
       } else if (sk.id === 'freutMich') {
         const heal = Math.round(maxHp(s) * 0.3);
         s.hp = Math.min(maxHp(s), s.hp + heal);
@@ -1497,7 +1502,8 @@ export function resolveTurn(
           say({ text: '冻住了。大的推迟了。', tone: 'good' });
           break;
         }
-        const heavy = m.dmg * dmgMult * chillMult * CONFIG.monster.chargeMult * (monsterCrit ? 1.5 : 1);
+        // 眼镜 (0.6, 23 级): the charged hit lands this much softer.
+        const heavy = m.dmg * dmgMult * chillMult * CONFIG.monster.chargeMult * (monsterCrit ? 1.5 : 1) * (1 - (s.equipped.glasses?.main ?? 0));
         if (blocking) {
           hitPlayer(heavy / 2);
           say({ text: `你挡下一半大招，受到 ${monsterDamage} 点伤害。`, tone: 'bad' });

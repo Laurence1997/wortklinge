@@ -126,8 +126,8 @@ export class WorldScene extends Phaser.Scene {
     this.add.image(d.x * TILE + 8, d.y * TILE + 16, 'glow').setScale(1.1).setTint(0xff2040).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.7);
 
     // NPCs and signs. Region-2 NPCs reuse Hilde's figure with their own tint until they get sprites.
-    const NPC_TINT: Record<NpcId, number> = { hilde: 0xffffff, greta: 0x9fc4ff, mira: 0xffd27a, konrad: 0xe8b48a, examiner: 0xc08cff, brandt: 0x8ce0c0, lina: 0xff9a9a };
-    const NPC_LABEL: Record<NpcId, string> = { hilde: 'Hilde', greta: 'Greta', mira: 'Mira', konrad: 'Konrad', examiner: '考官 Prüfer', brandt: 'Herr Brandt', lina: 'Lina' };
+    const NPC_TINT: Record<NpcId, number> = { hilde: 0xffffff, greta: 0x9fc4ff, mira: 0xffd27a, konrad: 0xe8b48a, examiner: 0xc08cff, brandt: 0x8ce0c0, lina: 0xff9a9a, weber: 0xd0d0d0 };
+    const NPC_LABEL: Record<NpcId, string> = { hilde: 'Hilde', greta: 'Greta', mira: 'Mira', konrad: 'Konrad', examiner: '考官 Prüfer', brandt: 'Herr Brandt', lina: 'Lina', weber: 'Frau Weber' };
     for (const n of this.map.npcs) {
       this.add.sprite(n.x * TILE + 8, n.y * TILE + 6, 'hilde').setDepth(n.y * TILE + 8).setTint(NPC_TINT[n.id]);
       if (this.map.region >= 2 || n.id !== 'hilde')

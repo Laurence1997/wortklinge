@@ -118,7 +118,7 @@ export const SCENES: SceneDef[] = [
   { id: 'r2-bridge', region: 2, no: 30, zh: '铁路桥', type: 'road', at: { x: 67, y: 44 }, gate: 3, openFlag: 'boss2Kills' },
 
   // ---- Region 3 · 铁轨镇 (0.6 第 5 块) ----
-  { id: 'r3-platz', region: 3, no: 1, zh: '铁轨镇广场', type: 'camp', at: { x: 13, y: 24 }, npcs: ['hilde', 'examiner'], bonfire: true, gate: 2 },
+  { id: 'r3-platz', region: 3, no: 1, zh: '铁轨镇广场', type: 'camp', at: { x: 13, y: 24 }, npcs: ['hilde', 'examiner', 'weber'], bonfire: true, gate: 2 },
   { id: 'r3-buero', region: 3, no: 2, zh: '站长室', type: 'camp', at: { x: 8, y: 19 }, npcs: ['brandt'] },
   { id: 'r3-stand', region: 3, no: 3, zh: '广场摊位', type: 'camp', at: { x: 15, y: 30 }, npcs: ['mira', 'greta'] },
   { id: 'r3-x', region: 3, no: 4, zh: '站前路口', type: 'road', at: { x: 22, y: 24 }, signs: ['bahnhof', 'altstadt'] },

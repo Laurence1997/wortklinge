@@ -206,7 +206,7 @@ export function hintsPerFight(s: GameState): number {
 
 export function affixTotal(s: GameState, key: string): number {
   let t = 0;
-  for (const it of Object.values(s.equipped)) for (const a of it?.affixes ?? []) if (a.key === key) t += a.value;
+  for (const it of Object.values(s.equipped)) if (!it?.unidentified) for (const a of it?.affixes ?? []) if (a.key === key) t += a.value;
   return t;
 }
 

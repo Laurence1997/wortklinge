@@ -5,6 +5,7 @@
 
 import { CONFIG } from './config';
 import { makeItem } from './loot';
+import { markUnidentified } from './identify';
 import { weighted, type Rng } from './rng';
 import { now, type GameState } from './state';
 import type { Item, Quality, Word } from './types';
@@ -79,6 +80,7 @@ export function openChest(s: GameState, kind: ChestKind, ilvl: number, rng: Rng,
       if (ORDER.indexOf(q2) > ORDER.indexOf(q)) q = q2;
     }
     const it = makeItem(rng, ilvl, q);
+    markUnidentified(s, it);
     if (s.bag.length >= CONFIG.loot.bagSize) bagFull += 1;
     else {
       s.bag.push(it);

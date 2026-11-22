@@ -15,6 +15,8 @@ import { makeItem } from '../core/loot';
 import { applyLoss, applyWin, postFightHeal } from '../core/outcomes';
 import { defaultRng, type Rng } from '../core/rng';
 import { atLeastHalfShare, flushSkill, instantGuiming, kindOf, recordAnswer, stageOf } from '../core/srs';
+import { dailyBoard, dailyKill, dailyText } from '../core/dailies';
+import { identify, unidentifiedItems } from '../core/identify';
 import { pickSpawns, zoneMinLevel, zoneWords } from '../core/spawn';
 import {
   addXp,
@@ -39,6 +41,7 @@ import { BOSS } from '../data/boss';
 import { BOSS2 } from '../data/boss2';
 import { BOSS3 } from '../data/boss3';
 import { LINA } from '../data/lina';
+import { WEBER } from '../data/weber';
 import { SKILLS } from '../data/skills';
 import { fullForm, hasArticleQuestion, WORD_BY_ID, WORDS, zhWithPos } from '../data/words';
 import { initAudio, setBattleMusic, setVolumes, sfx, speak, speechAvailable, hasGermanVoice } from './audio';
@@ -319,6 +322,18 @@ export class Controller {
     const unlocked = UNLOCK_TEXT[level] ?? [];
     const lines: Line[] = unlocked.map((t) => ({ who: SYS, text: `【新能力】${t}` }));
     switch (level) {
+      case 23:
+        if (!s.flags.glassesGift) {
+          s.flags.glassesGift = true;
+          const g = makeItem(this.rng, level, 'white', 'glasses');
+          if (!s.equipped.glasses) s.equipped.glasses = g;
+          else if (s.bag.length < CONFIG.loot.bagSize) s.bag.push(g);
+          lines.push(
+            { who: HILDE, text: '拿着。站台上捡的，镜片裂了一片，还能用。' },
+            { who: SYS, text: `【眼镜】${g.name}已经戴上：怪蓄力的那一下砸到你身上会轻 ${Math.round(g.main * 100)}%。下一只蓄大招的怪，看看伤害。` },
+          );
+        }
+        break;
       case 2:
         lines.push({ who: SYS, text: '【默写】有些怪要你把名字打出来。名词带冠词：der Tee' });
         break;
@@ -666,6 +681,17 @@ export class Controller {
         }
         if (res.chest) this.gotChest(res.chest, b.monster.lvl);
         if (b.word.family === 'krume') this.questFire('krumeKill');
+        if (has(s.level, 'dailies')) {
+          const d = dailyKill(s, this.rng, m.zone, res.kill.kind === 'due');
+          for (const p of d.paid) {
+            toast(`每日委托完成：${dailyText(p.task)} · +${p.xp} 经验 · +${p.gold} 金币 · 碎片 +2`, 'gold');
+            for (const lv of p.levelUp.levels) this.onLevelUp(lv);
+          }
+          if (d.chest) {
+            toast('今天的三条委托都做完了：铁箱一个', 'gold');
+            this.gotChest('iron', s.level);
+          }
+        }
         for (const lv of res.levelUp.levels) this.onLevelUp(lv);
         if (res.levelUp.capped && !s.flags.taughtCapLevel) {
           s.flags.taughtCapLevel = true;
@@ -897,6 +923,22 @@ export class Controller {
       this.panels.buying = null;
       this.panels.show('shop');
     };
+    const unid = unidentifiedItems(s);
+    if (unid.length && s.flags.miraMet) {
+      say([{ who: MIRA, text: `你身上有 ${unid.length} 件没鉴定的紫装。先看哪件？鉴定不要钱。` }], undefined, [
+        ...unid.slice(0, 3).map((it) => ({
+          label: `鉴定「${it.name}」`,
+          act: () => {
+            this.identifyTarget = it.id;
+            this.boss = startBoss(s, this.rng, 6);
+            setPrompt(null);
+            this.bossUI.open(this.boss);
+          },
+        })),
+        { label: '先看看货', act: open },
+      ]);
+      return;
+    }
     if (!s.flags.miraMet) {
       s.flags.miraMet = true;
       say(
@@ -1060,6 +1102,9 @@ export class Controller {
       mira: '<kbd>E</kbd>和商人 Mira 说话',
       konrad: '<kbd>E</kbd>和面包师傅 Konrad 说话',
       examiner: '<kbd>E</kbd>找考官默写对决',
+      brandt: '<kbd>E</kbd>和站长 Herr Brandt 说话',
+      lina: '<kbd>E</kbd>和 Lina 说话',
+      weber: '<kbd>E</kbd>去秩序会办事处找 Frau Weber',
     };
     setPrompt(it.kind === 'npc' ? NPC_TEXT[it.data ?? 'hilde'] : text[it.kind]);
   }
@@ -1219,6 +1264,7 @@ export class Controller {
     if (id === 'examiner') return this.talkExaminer();
     if (id === 'brandt') return this.talkBrandt();
     if (id === 'lina') return this.talkLina();
+    if (id === 'weber') return this.talkWeber();
     // Region-2 NPCs: their systems (class, shop, Konrad's quest) open with the region-2 build.
     const lines: Record<string, string> = {
       greta: '导师 Greta：「营地来的？10 级再来。」',
@@ -1300,6 +1346,85 @@ export class Controller {
   }
 
   /** 幽灵检票员 Lina: entering a timetable-hall scene may bring her (Lv25+, after Konrad's quest). */
+  private identifyTarget: string | null = null;
+
+  private finishIdentify(f: BossFight) {
+    const s = this.state;
+    const it = unidentifiedItems(s).find((x) => x.id === this.identifyTarget);
+    this.identifyTarget = null;
+    if (!it) return;
+    identify(it, f.misses.length === 0, this.rng);
+    this.persist();
+    this.refresh();
+    toast(`${it.name} 鉴定好了${f.misses.length ? '' : '：每条词缀都挑了更好的那个'}`, 'gold');
+  }
+
+  /** 秩序会 (0.6 第 6 块): Frau Weber's 登记表, untimed; reputation 10 / 25 / 50 forms. */
+  private talkWeber() {
+    const s = this.state;
+    const W = WEBER.name;
+    if (!has(s.level, 'order')) return say([{ who: W, text: '「Bitte warten Sie.」（21 级再来）' }]);
+    const forms = (s.flags.weberForms as number) ?? 0;
+    const next = WEBER.tiers.find((t) => t > forms);
+    const lines: Line[] = forms
+      ? [{ who: W, text: `「Guten Tag. Noch ein Formular?」（已交 ${forms} 份${next ? `，再交 ${next - forms} 份升下一档声望` : '，秩序会声望已满'}）` }]
+      : WEBER.intro.map((t, i) => ({ who: i === 2 ? SYS : W, text: t }));
+    say(lines, undefined, [
+      {
+        label: '填一份登记表',
+        act: () => {
+          this.boss = startBoss(this.state, this.rng, 5);
+          setPrompt(null);
+          this.bossUI.open(this.boss);
+        },
+      },
+      { label: '下次再说', act: () => {} },
+    ]);
+  }
+
+  private finishWeber(f: BossFight) {
+    const s = this.state;
+    if (f.outcome !== 'win') return;
+    const forms = ((s.flags.weberForms as number) ?? 0) + 1;
+    s.flags.weberForms = forms;
+    const W = WEBER.name;
+    const lines: Line[] = [{ who: W, text: `「Danke schön. Alles richtig ausgefüllt.」（秩序会登记表 ${forms} 份）` }];
+    const room = () => s.bag.length < CONFIG.loot.bagSize;
+    if (forms === WEBER.tiers[0]) {
+      const it = makeItem(this.rng, s.level, 'green', 'dict');
+      if (room()) s.bag.push(it);
+      lines.push({ who: SYS, text: `【秩序会声望 1 档】Frau Weber 送你一本${it.name}${room() ? '' : '（背包满了，没拿到）'}。` });
+      this.achieve('order10');
+    } else if (forms === WEBER.tiers[1]) {
+      if (!s.skills.includes('wiederholen')) s.skills.push('wiederholen');
+      lines.push({ who: SYS, text: '【秩序会声望 2 档】学会句子技能「Könnten Sie das bitte wiederholen?」：每场一次，之后有一题可以换成同难度的另一题。' });
+    } else if (forms === WEBER.tiers[2]) {
+      const it = makeItem(this.rng, s.level, 'purple', 'dict');
+      if (room()) s.bag.push(it);
+      s.flags.title = '秩序会书记';
+      lines.push({ who: SYS, text: `【秩序会声望 3 档】称号「秩序会书记」，还有一本${it.name}${room() ? '' : '（背包满了，没拿到）'}。` });
+    }
+    this.persist();
+    say(lines);
+  }
+
+  /** 每日委托 board (0.6 第 6 块): in 铁轨镇广场 and at every bonfire, from Lv21. */
+  showDailies(): void {
+    const s = this.state;
+    const b = dailyBoard(s, this.rng);
+    const lines: Line[] = [];
+    if (!s.flags.dailiesSeen) {
+      s.flags.dailiesSeen = true;
+      lines.push({ who: SYS, text: '【每日委托】每天清晨 4 点换 3 条新的。每条给本级 8% 经验、5 只怪的金币和 2 片碎片；三条都做完再给一个铁箱。没做完也没关系，第二天换新的。' });
+    }
+    lines.push({
+      who: '委托板',
+      text: b.list.map((d, i) => `${i + 1}. ${d.done ? '✓ ' : ''}${dailyText(d)}（${d.have}/${d.need}）`).join('\n') + (b.bonus ? '\n今天的铁箱已经领了。' : ''),
+    });
+    this.persist();
+    say(lines);
+  }
+
   maybeLina(): void {
     const s = this.state;
     if (this.battle || this.boss || s.flags.linaFreed || s.level < CONFIG.lina.fromLevel || !questState(s, 'konrad')?.done) return;
@@ -1563,7 +1688,11 @@ export class Controller {
     this.bossUI.close();
     setBattleMusic(false);
     this.boss = null;
-    if (f.which === 4) {
+    if (f.which === 6) {
+      this.finishIdentify(f);
+    } else if (f.which === 5) {
+      this.finishWeber(f);
+    } else if (f.which === 4) {
       this.finishLina(f);
     } else if (f.outcome === 'win' && f.which === 3) {
       this.finishBoss3();

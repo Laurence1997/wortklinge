@@ -1,6 +1,7 @@
 import type { Battle } from './combat';
 import { CONFIG, levelGapMult } from './config';
 import { makeItem, rollQuality } from './loot';
+import { markUnidentified } from './identify';
 import type { Rng } from './rng';
 import { flushSkill, recordKill, type KillOutcome } from './srs';
 import { addGearKill, addXp, affixTotal, maxHp, now, rollDay, todayLog, type GameState, type LevelUpResult } from './state';
@@ -96,6 +97,7 @@ export function applyWin(s: GameState, b: Battle, rng: Rng, opts: { heal?: boole
       let q = rollQuality(rng, maxQ, firstGreen ? 'green' : undefined);
       if (q === 'white' && (b.lastKillTyped || b.kind === 'due') && rng() < 0.15) q = 'green';
       drop = makeItem(rng, b.monster.lvl, q, firstGreen ? 'pen' : undefined);
+      markUnidentified(s, drop);
       if (firstGreen) s.flags.firstGreen = true;
       if (s.bag.length >= CONFIG.loot.bagSize) {
         bagFull = true;
