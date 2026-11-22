@@ -193,7 +193,7 @@ export function speak(text: string, enabled: boolean, rate = 0.9): void {
   if (!enabled || typeof speechSynthesis === 'undefined') return;
   try {
     speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text.replace(/…/g, ', '));
+    const u = new SpeechSynthesisUtterance(text.replace(/\bm+h+\b/gi, ' ').replace(/…/g, ', ').replace(/(,\s*)+/g, ', '));
     u.lang = 'de-DE';
     if (germanVoice) u.voice = germanVoice;
     u.rate = rate;
