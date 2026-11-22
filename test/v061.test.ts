@@ -29,3 +29,23 @@ describe('0.6.x 读音攻击不漏冠词', () => {
     expect(readShown(b, full)).toBe(w.de);
   });
 });
+
+import { phaseWrongWhy } from '../src/core/combat';
+describe('0.6.x 格位姿态选错说清形式', () => {
+  it('a slot stance names the article and the form; a name stance hides it', () => {
+    const s = newGame('T', 'student');
+    s.level = 10;
+    const w = WORDS.find((x) => x.de === 'Kilo')!;
+    const b = startBattle(s, w, makeRng(1));
+    b.intent = { ...b.intent, caseArt: 'ein' };
+    b.phase = 'das';
+    expect(phaseWrongWhy(b)).toBe('没错，Kilo 是 das 词，但这句的空要填 ein（不定冠词）');
+    b.intent = { ...b.intent, caseArt: 'dem' };
+    expect(phaseWrongWhy(b)).toBe('没错，Kilo 是 das 词，但这句的空要填 dem（定冠词，第三格）');
+    b.intent = { ...b.intent, caseArt: 'ein' };
+    b.phase = 'der';
+    expect(phaseWrongWhy(b)).toMatch(/^Kilo 是 das 词/);
+    b.intent = { ...b.intent, caseArt: undefined };
+    expect(phaseWrongWhy(b)).toBe('它不是 der 词');
+  });
+});

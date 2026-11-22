@@ -498,6 +498,18 @@ export function phaseOf(b: Battle): Stance | null {
   return (b.intent?.caseArt as Stance | undefined) ?? b.word.art;
 }
 
+/** 选错相时的说明 (0.6.x): a stance from the line's slot says the noun's own article and the form the slot needs,
+ *  so a right der/die/das is not read as wrong; a stance from the name alone keeps the answer hidden. */
+export function phaseWrongWhy(b: Battle): string {
+  const ph = phaseOf(b);
+  if (b.perfekt) return `${b.word.de} 的完成时不用 ${b.phase}`;
+  if (!ph || !b.intent?.caseArt || b.pluralMon) return b.pluralMon ? '复数一律 die' : `它不是 ${b.phase ?? '这个'} 词`;
+  const c = phaseCase(b);
+  // Neuter/feminine forms look the same in nom and acc, so only a form that shows its case names it.
+  const why = [ph.startsWith('ein') ? '不定冠词' : '定冠词', ...(c === 'acc' ? ['第四格'] : c === 'dat' ? ['第三格'] : [])].join('，');
+  return `${b.phase === b.word.art ? '没错，' : ''}${b.word.de} 是 ${b.word.art} 词，但这句的空要填 ${ph}（${why}）`;
+}
+
 /** The case the right stance stands for (nom when it comes from the name alone). */
 export function phaseCase(b: Battle): Case {
   if (!b.intent?.caseArt || b.pluralMon || b.perfekt) return 'nom';
@@ -1385,7 +1397,7 @@ export function resolveTurn(
         if (has(s.level, 'layerElement')) element = ELEMENT_BY_GENDER[b.pluralMon ? 'pl' : genderOf(b.word) ?? 'n'] ?? element;
         if (Object.values(s.equipped).some((it) => it?.legendary === 'articleJudgement')) b.judgement = true;
         log.push({ text: `${b.phase} 相打中弱点：护甲降一档${resMax(s) && move !== 'sentence' ? `，${resName(s)} +${gain}${aff ? `（护符亲和 ${affinityOf(s)} 共鸣）` : ''}` : ''}。`, tone: 'good' });
-      } else if (phaseFx === 'wrong') log.push({ text: `${b.phase ?? '无'} 相被抵抗：它不是 ${b.phase ?? '这个'} 相。护甲翻倍。`, tone: 'bad' });
+      } else if (phaseFx === 'wrong') log.push({ text: `${b.phase ?? '无'} 相被抵抗：${phaseWrongWhy(b)}。护甲翻倍。`, tone: 'bad' });
       else if (phaseFx === 'soft') log.push({ text: `${b.phase ? `${b.phase} 相不对` : '没选相'}：这里要 ${ph}${b.pluralMon ? '（复数一律 die）' : phaseCase(b) === 'acc' ? '（第四格）' : phaseCase(b) === 'dat' ? '（第三格）' : ''}。这一级还不罚，选对了护甲降一档。`, tone: 'sys' });
       const judged = b.judgement;
       if (judged) {
