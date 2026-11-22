@@ -103,3 +103,10 @@ describe('0.6.x 意图只剩蓄力和逃跑', () => {
     }
   });
 });
+
+import { EXAMPLES } from '../src/core/cloze';
+describe('0.6.x 例句补齐', () => {
+  it('every word outside the tutorial has an example sentence, so no monster falls back to stock attack lines', () => {
+    expect(WORDS.filter((w) => !w.tutorial && !EXAMPLES[w.id]?.length).map((w) => w.id)).toEqual([]);
+  });
+});

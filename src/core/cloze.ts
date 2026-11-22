@@ -8,11 +8,12 @@ import type { Word } from './types';
 import { EX1 } from '../data/examples1';
 import { EX2 } from '../data/examples2';
 import { EX3 } from '../data/examples3';
+import { EX4 } from '../data/examples4';
 import { genderOf, WORDS } from '../data/words';
 
 export type ClozeMode = 'pick' | 'base' | 'form';
 
-export const EXAMPLES: Record<string, string[]> = { ...EX1, ...EX2, ...EX3 };
+export const EXAMPLES: Record<string, string[]> = { ...EX1, ...EX2, ...EX3, ...EX4 };
 
 export interface Cloze {
   /** Sentence with ___ where the answer goes. */
