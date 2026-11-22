@@ -1,3 +1,4 @@
+import { SCENES } from '../data/world';
 import Phaser from 'phaser';
 import { stageOf, type Stage } from '../core/srs';
 import { now } from '../core/state';
@@ -74,6 +75,10 @@ export class WorldScene extends Phaser.Scene {
     this.ctrl = data.ctrl;
   }
 
+  preload() {
+    if (!this.textures.exists('town')) this.load.image('town', './art/kenney-tiny-town.png');
+  }
+
   create() {
     const region: RegionId = this.ctrl.state.region ?? 1;
     this.map = generateMap(region);
@@ -90,7 +95,10 @@ export class WorldScene extends Phaser.Scene {
       if (this.textures.exists(key)) this.textures.remove(key);
       this.textures.addCanvas(key, cv);
     };
-    addCanvas('map', renderMapCanvas(this.map));
+    const oldmap = !CONFIG.map.nodes || new URLSearchParams(location.search).has('oldmap');
+    const town = !oldmap && this.textures.exists('town') ? (this.textures.get('town').getSourceImage() as HTMLImageElement) : null;
+    const hidden = SCENES.filter((x) => x.region === region && x.type === 'hidden').map((x) => x.at);
+    addCanvas('map', renderMapCanvas(this.map, town, hidden));
     void tex;
     for (const k of ['hero0', 'hero1']) {
       if (this.textures.exists(k)) this.textures.remove(k);

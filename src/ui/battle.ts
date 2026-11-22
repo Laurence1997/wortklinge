@@ -1,7 +1,7 @@
 import { icon, monsterTile } from './icons';
 import type { Battle, Question, TurnReport } from '../core/combat';
-import { availableMoves, comboTier, effArmor, moveReady, needsPhase, phaseOf, resName, shownDe, stancesFor, teachPhase, readTarget, readRecall } from '../core/combat';
-import { clarity, shadowOk } from '../core/shadow';
+import { availableMoves, comboTier, effArmor, moveReady, needsPhase, phaseOf, resName, shownDe, stancesFor, teachPhase, readTarget, readRecall, readShown } from '../core/combat';
+import { articleSlip, clarity, shadowOk } from '../core/shadow';
 import { has } from '../core/unlocks';
 import type { Stance } from '../core/cloze';
 import { ELEMENT_ZH } from '../core/intents';
@@ -103,7 +103,7 @@ export class BattleUI {
     // 词性三相: a noun monster waits for a stance first (it stays picked for this monster).
     this.readMsg = '';
     const rt = canListen() ? readTarget(this.ctrl.state, this.b) : null;
-    if (rt) window.setTimeout(() => this.ctrl.speak(rt), 1800);
+    if (rt) window.setTimeout(() => this.ctrl.speak(readShown(this.b, rt)), 1800);
     if (moves.length === 1 && !rt && !(needsPhase(this.b) && !this.b.phase)) this.choose(moves[0]);
     else {
       this.phase = 'choose';
@@ -231,14 +231,23 @@ export class BattleUI {
     }
     const b = this.b;
     const zh = b.word.zh;
-    this.readMsg = (fresh ? `录音中……读出「${target}」` : `录音中……说出「${zh}」的德语${b.word.art ? '（带冠词）' : ''}`) + '，松开结束';
+    const shown = fresh ? readShown(b, fresh) : '';
+    this.readMsg = (fresh ? `录音中……读出「${shown}」${shown !== fresh ? '（连冠词一起读）' : ''}` : `录音中……说出「${zh}」的德语${b.word.art ? '（带冠词）' : ''}`) + '，松开结束';
     this.render();
     const heard = await listenOnce({ hold: true });
     if (this.phase !== 'choose' || this.b !== b) return;
     const retry = '：再说一次，或者正常出手（不耗回合）';
     if (heard === null) this.readMsg = '';
     else if (!heard.length) this.readMsg = `没听清${retry}`;
-    else if (!shadowOk(target, heard)) this.readMsg = `听到的是「${heard[0]}」，清晰度 ${clarity(target, heard, lastConfidence)}${retry}`;
+    else if (!shadowOk(target, heard)) {
+      const slip = articleSlip(target, heard);
+      this.readMsg =
+        slip === null
+          ? `听到的是「${heard[0]}」，清晰度 ${clarity(target, heard, lastConfidence)}${retry}`
+          : slip
+            ? `冠词读错了：你读的是 ${slip}${retry}`
+            : `没听清冠词${retry}`;
+    }
     else {
       this.readMsg = '';
       const c = clarity(target, heard, lastConfidence);
@@ -477,7 +486,7 @@ export class BattleUI {
       const sub = listening()
         ? '在听……'
         : rt
-          ? `必中 · ${rt}`
+          ? `必中 · ${readShown(b, rt)}${readShown(b, rt) !== rt ? '（连冠词读）' : ''}`
           : rr
             ? `弱一击 · 凭记忆说出「${w.zh}」`
             : canShadowNow
@@ -504,12 +513,13 @@ export class BattleUI {
         h('div.prompt', h('span', needsPhase(b) && !b.phase ? b.perfekt ? '先选相：它这句完成时缺的是 haben 还是 sein？按 1 haben、2 sein，再出手' : (s.level >= 7 ? '先选相：按数字键选它这句话需要的冠词，再出手' : '先选相：按 1 der、2 die、3 das，再出手') : '听它说什么，再出手')),
       );
       const rt = canListen() ? readTarget(s, b) : null;
+      const rs = rt ? readShown(b, rt) : '';
       if (rt)
         q.append(
           h(
             'div.note.shadow',
-            h('span.small', { style: 'color:var(--gold, #ffcf4a)' }, this.readMsg || `新词：${rt} · ${w.zh}　按住 S（或按住「按住读」）把它读出来，松开结束，读得像就是必中的一击`),
-            h('button.btn.small', { onclick: () => this.ctrl.speak(rt), title: '再听一遍' }, '再听'),
+            h('span.small', { style: 'color:var(--gold, #ffcf4a)' }, this.readMsg || `新词：${rs} · ${w.zh}　按住 S（或按住「按住读」）把它${rs !== rt ? '连冠词一起' : ''}读出来，松开结束，读得像就是必中的一击`),
+            h('button.btn.small', { onclick: () => this.ctrl.speak(rs), title: '再听一遍' }, '再听'),
           ),
         );
       else if (this.readMsg) q.append(h('div.note.shadow', h('span.small', { style: 'color:var(--gold, #ffcf4a)' }, this.readMsg)));

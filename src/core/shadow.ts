@@ -92,3 +92,21 @@ export function clarity(target: string, heard: string[], confidence = 0): number
   const m = closeness(target, heard);
   return Math.round(100 * m * (confidence > 0 ? 0.6 + 0.4 * confidence : 1));
 }
+
+const ARTICLES = ['der', 'die', 'das', 'den', 'dem', 'des', 'ein', 'eine', 'einen', 'einem', 'einer'];
+
+/** 读音攻击 on a noun ("der Euro"): the noun was heard but the article was wrong or left out.
+ *  Returns the article heard ('' when none), or null when the noun itself was not heard well enough. */
+export function articleSlip(target: string, heard: string[]): string | null {
+  const want = words(target);
+  if (want.length < 2 || !ARTICLES.includes(want[0])) return null;
+  const noun = want.slice(1).join(' ');
+  let none = false;
+  for (const h of heard) {
+    if (!shadowOk(noun, [h])) continue;
+    const got = words(h).find((w) => ARTICLES.includes(w));
+    if (got && got !== want[0]) return got;
+    if (!got) none = true;
+  }
+  return none ? '' : null;
+}

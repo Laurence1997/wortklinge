@@ -1,5 +1,5 @@
 import { HAIR_COLORS, type Look } from '../core/look';
-// All art is drawn in code: 1-bit-style pixel tiles in red and black, no downloaded assets.
+// Sprites are drawn in code; since 0.6.x the map ground and buildings use Kenney Tiny Town tiles (see renderMapCanvas).
 
 import { makeRng } from '../core/rng';
 import { MAP_H, MAP_W, TILE, T, type MapData, idx } from './map';
@@ -150,15 +150,79 @@ function drawTile(c: Ctx, t: number, ox: number, oy: number, seed: number) {
   }
 }
 
-/** The whole static map as one canvas (cheap to render, crisp when scaled). */
-export function renderMapCanvas(m: MapData): HTMLCanvasElement {
+// 地块 (0.6.x 小修): Kenney Tiny Town tiles (CC0, public/art/kenney-tiny-town.png) recoloured by brightness.
+// Docs: only dark reds, walkable ground one step brighter than walls and houses, hidden side paths only the two
+// darkest steps; fog, lamps, tents and the boss door stay code-drawn (they are markers). ?oldmap is untouched.
+const MAP_SHADES = ['#0b0506', '#1d0a0c', '#341214', '#4e191c'];
+const RAMP_WALL = [0, 1, 2];
+const RAMP_FLOOR = [1, 2, 3];
+const RAMP_HIDDEN = [0, 1, 1];
+const TOWN_COLS = 12;
+/** Town tile indices per map tile type and region (several = picked by position). */
+const TOWN: Record<1 | 2 | 3, Partial<Record<number, number[]>>> = {
+  1: { [T.Ground]: [0, 0, 0, 0, 0, 0, 0, 1], [T.Ash]: [25, 25, 37], [T.Road]: [25, 24, 26], [T.Wall]: [72, 73, 75, 72, 84], [T.Roof]: [64, 65, 66], [T.Rubble]: [43], [T.Tree]: [4, 16, 28, 5], [T.Crate]: [130, 106] },
+  2: { [T.Ground]: [0, 0, 0, 0, 0, 0, 0, 1], [T.Ash]: [25, 37], [T.Road]: [126], [T.Wall]: [76, 77, 79, 76, 88], [T.Roof]: [52, 53, 54], [T.Rubble]: [43], [T.Tree]: [3, 15, 27, 5], [T.Crate]: [130, 106, 57] },
+  3: { [T.Ground]: [0, 0, 0, 0, 0, 0, 0, 1], [T.Ash]: [109, 108], [T.Road]: [126], [T.Wall]: [76, 77, 79, 88, 77], [T.Roof]: [48, 49, 50], [T.Rubble]: [43], [T.Tree]: [16, 28, 4], [T.Crate]: [130, 131] },
+};
+const OVERLAY = new Set<number>([T.Tree, T.Crate]);
+const FLOORISH = new Set<number>([T.Ground, T.Ash, T.Road, T.Rubble]);
+
+const tinted = new Map<string, HTMLCanvasElement>();
+function townTile(sheet: CanvasImageSource, tile: number, ramp: number[]): HTMLCanvasElement {
+  const key = `${tile}:${ramp.join('')}`;
+  const hit = tinted.get(key);
+  if (hit) return hit;
+  const cv = document.createElement('canvas');
+  cv.width = cv.height = 16;
+  const ctx = cv.getContext('2d', { willReadFrequently: true })!;
+  ctx.drawImage(sheet, (tile % TOWN_COLS) * 16, Math.floor(tile / TOWN_COLS) * 16, 16, 16, 0, 0, 16, 16);
+  const img = ctx.getImageData(0, 0, 16, 16);
+  const d = img.data;
+  const shades = ramp.map((i) => MAP_SHADES[i]).map((h) => [1, 3, 5].map((k) => parseInt(h.slice(k, k + 2), 16)));
+  // Stretch each tile's own brightness range over the ramp, so pale tiles (stone, walls) keep their detail.
+  const lums: number[] = [];
+  for (let i = 0; i < d.length; i += 4) lums.push(d[i + 3] < 8 ? -1 : (0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]) / 255);
+  const seen = lums.filter((v) => v >= 0);
+  const lo = Math.min(...seen);
+  const span = Math.max(0.25, Math.max(...seen) - lo);
+  for (let i = 0; i < d.length; i += 4) {
+    if (d[i + 3] < 8) continue;
+    const lum = (lums[i / 4] - lo) / span;
+    const c = shades[Math.min(shades.length - 1, Math.floor(lum * shades.length))];
+    d[i] = c[0];
+    d[i + 1] = c[1];
+    d[i + 2] = c[2];
+    d[i + 3] = 255;
+  }
+  ctx.putImageData(img, 0, 0);
+  tinted.set(key, cv);
+  return cv;
+}
+
+/** The whole static map as one canvas (cheap to render, crisp when scaled). With the Town sheet loaded the ground,
+ *  walls, roofs, rubble, trees and crates use Kenney tiles; `hidden` are tile spots of hidden side paths. */
+export function renderMapCanvas(m: MapData, sheet?: CanvasImageSource | null, hidden: Array<{ x: number; y: number }> = []): HTMLCanvasElement {
   const cv = document.createElement('canvas');
   cv.width = MAP_W * TILE;
   cv.height = MAP_H * TILE;
   const c = cv.getContext('2d')!;
   c.imageSmoothingEnabled = false;
+  const set = TOWN[(m.region ?? 1) as 1 | 2 | 3] ?? TOWN[1];
   for (let y = 0; y < MAP_H; y++)
-    for (let x = 0; x < MAP_W; x++) drawTile(c, m.tiles[idx(x, y)], x * TILE, y * TILE, x * 7349 + y * 1931);
+    for (let x = 0; x < MAP_W; x++) {
+      const t = m.tiles[idx(x, y)];
+      const seed = x * 7349 + y * 1931;
+      const list = sheet ? set[t] : undefined;
+      if (!list) {
+        drawTile(c, t, x * TILE, y * TILE, seed);
+        continue;
+      }
+      const dark = hidden.some((h) => Math.abs(h.x - x) <= 4 && Math.abs(h.y - y) <= 4);
+      const ramp = dark ? RAMP_HIDDEN : FLOORISH.has(t) ? RAMP_FLOOR : RAMP_WALL;
+      const pickOf = (xs: number[]) => xs[(seed >>> 3) % xs.length];
+      if (OVERLAY.has(t)) c.drawImage(townTile(sheet!, pickOf(set[T.Ground]!), dark ? RAMP_HIDDEN : RAMP_FLOOR), x * TILE, y * TILE);
+      c.drawImage(townTile(sheet!, pickOf(list), OVERLAY.has(t) && !dark ? RAMP_WALL : ramp), x * TILE, y * TILE);
+    }
   return cv;
 }
 

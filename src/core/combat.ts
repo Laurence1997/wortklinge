@@ -546,6 +546,13 @@ export function readTarget(s: GameState, b: Battle): string | null {
   return b.word.art ? fullForm(b.word) : b.word.de;
 }
 
+/** What the read-aloud button shows and says (0.6.x): the bare noun, so the article is not given away before it is
+ *  judged; only on the 先教后考 turn (stance already picked for you) the full form. */
+export function readShown(b: Battle, target: string): string {
+  if (!b.word.art || target !== fullForm(b.word)) return target;
+  return b.phaseTaught && b.phaseTaught === b.turn && b.phase === phaseOf(b) ? target : b.word.de;
+}
+
 /** 读音攻击 on a word you have met (Lv5+): say it from its Chinese, nothing German on screen. Heard close enough →
  *  a 低语 hit (one armor tier lower, not 会写, no resource, never the 归名 blow; same per-word lock as 低语). */
 export function readRecall(s: GameState, b: Battle): string | null {
