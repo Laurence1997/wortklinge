@@ -1,6 +1,7 @@
 // 0.5 小世界: point-and-click scenes on top of the 0.4 map. The world scene keeps drawing the map, monsters and
 // other players; this class owns where you stand (a scene), moving along the route, where monsters spawn
 // (3 per field scene, never refilling the scene you stand in) and the scene panel on the right.
+import { DUNGEON } from '../data/dungeon';
 import { sceneArtCanvas } from '../ui/sceneArt';
 import Phaser from 'phaser';
 import { CONFIG } from '../core/config';
@@ -284,6 +285,7 @@ export class NodeNav {
     };
     const things: HTMLElement[] = [];
     if (sc.bonfire) things.push(h('button.btn', { onclick: ia('bonfire') }, '🔥 篝火休息'));
+    if (sc.id === 'r3-hide' && this.s.level >= DUNGEON.from) things.push(h('button.btn.primary', { disabled: busy, onclick: () => this.w.ctrl.enterDungeon() }, '🚪 进入零号站台（规则表地下城）'));
     if (sc.bonfire && has(this.s.level, 'dailies')) things.push(h('button.btn', { disabled: busy, onclick: () => this.w.ctrl.showDailies() }, '📋 每日委托'));
     const npcs: NpcId[] = [...(sc.npcs ?? []), ...(sc.id === 'r3-platz' && this.s.flags.linaFreed ? (['lina'] as NpcId[]) : [])];
     for (const n of npcs) things.push(h('button.btn', { onclick: ia('npc', n) }, NPC_ZH[n]));

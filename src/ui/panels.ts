@@ -30,7 +30,7 @@ import { blanksOf, checkBlank, DIARY_MISSES, DIARY_XP, lineText, pageLines, page
 import { lookPicker } from './title';
 import { BARGAIN_LINES, ensureShop, price, refreshCost, sellPrice, SLOT_NOUN } from '../core/shop';
 
-export type PanelName = 'hero' | 'talents' | 'quests' | 'codex' | 'words' | 'data' | 'account' | 'settings' | 'help' | 'shop' | 'chest' | 'quiz' | 'duel' | 'bigmap' | 'diary';
+export type PanelName = 'hero' | 'talents' | 'quests' | 'codex' | 'words' | 'data' | 'account' | 'settings' | 'help' | 'shop' | 'chest' | 'quiz' | 'duel' | 'bigmap' | 'diary' | 'ask';
 
 export class Panels {
   open: PanelName | null = null;
@@ -65,6 +65,12 @@ export class Panels {
   close(): void {
     const wasChest = this.open === 'chest';
     this.duel = null;
+    if (this.open === 'ask' && this.asking) {
+      // Closing without answering counts as an empty answer, so the caller always continues.
+      const a = this.asking;
+      this.asking = null;
+      window.setTimeout(() => a.onAnswer(''), 0);
+    }
     if (this.open === 'quiz' && this.quiz) {
       const q = this.quiz;
       this.quiz = null;
@@ -104,6 +110,28 @@ export class Panels {
       window.setTimeout(() => (el.querySelector('input.duel') as HTMLInputElement | null)?.focus(), 0);
       return;
     }
+    if (this.open === 'ask' && this.asking) {
+      const a = this.asking;
+      const input = h('input.ask', { type: 'text', autocomplete: 'off', spellcheck: 'false', placeholder: 'Ich …' }) as HTMLInputElement;
+      const go = () => {
+        if (!input.value.trim()) return;
+        this.asking = null;
+        this.close();
+        a.onAnswer(input.value);
+      };
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          e.stopPropagation();
+          go();
+        }
+      });
+      panel.append(h('h2', h('span', a.title), h('button.btn.ghost', { onclick: () => this.close() }, '不回答 Esc')), h('p', a.prompt), h('div.typing', input, umlautButtons(input), h('button.btn.primary', { onclick: go }, '说 ↵')));
+      clear(el).append(panel);
+      el.onclick = null;
+      window.setTimeout(() => input.focus(), 0);
+      return;
+    }
     if (this.open === 'quiz' && this.quiz) {
       panel.append(h('h2', h('span', this.quiz.title), h('button.btn.ghost', { onclick: () => this.close() }, this.quiz.queue.length ? '先不教 Esc' : '完成 Esc')), this.quizBody());
       clear(el).append(panel);
@@ -135,13 +163,13 @@ export class Panels {
       if (this.buying !== null) window.setTimeout(() => (el.querySelector('input.buy-line') as HTMLInputElement | null)?.focus(), 0);
       return;
     }
-    const titles: Record<Exclude<PanelName, 'shop' | 'chest' | 'quiz' | 'duel' | 'bigmap' | 'diary'>, string> = { hero: '角色与装备', talents: '职业与天赋', quests: '任务', codex: '图鉴', words: '单词本', data: '数据与存档', account: '账号与排行', settings: '设置', help: '怎么玩' };
+    const titles: Record<Exclude<PanelName, 'shop' | 'chest' | 'quiz' | 'duel' | 'bigmap' | 'diary' | 'ask'>, string> = { hero: '角色与装备', talents: '职业与天赋', quests: '任务', codex: '图鉴', words: '单词本', data: '数据与存档', account: '账号与排行', settings: '设置', help: '怎么玩' };
     const tabs = h('div.tabs');
-    (Object.keys(titles) as Array<Exclude<PanelName, 'shop' | 'chest' | 'quiz' | 'duel' | 'bigmap' | 'diary'>>).forEach((k) =>
+    (Object.keys(titles) as Array<Exclude<PanelName, 'shop' | 'chest' | 'quiz' | 'duel' | 'bigmap' | 'diary' | 'ask'>>).forEach((k) =>
       tabs.append(h(`button.btn${this.open === k ? '.on' : ''}`, { onclick: () => this.show(k) }, titles[k])),
     );
-    panel.append(h('h2', h('span', titles[this.open as Exclude<PanelName, 'shop' | 'chest' | 'quiz' | 'duel' | 'bigmap' | 'diary'>]), h('button.btn.ghost', { onclick: () => this.close() }, '关闭 Esc')), tabs);
-    const body = { diary: () => h('div'), bigmap: () => h('div'), shop: () => h('div'), chest: () => h('div'), quiz: () => h('div'), duel: () => h('div'), hero: () => this.hero(), talents: () => this.talents(), quests: () => this.questsBody(), codex: () => this.codex(), words: () => this.wordbook(), data: () => this.data(), account: () => this.account(), settings: () => this.settings(), help: () => this.help() }[this.open]();
+    panel.append(h('h2', h('span', titles[this.open as Exclude<PanelName, 'shop' | 'chest' | 'quiz' | 'duel' | 'bigmap' | 'diary' | 'ask'>]), h('button.btn.ghost', { onclick: () => this.close() }, '关闭 Esc')), tabs);
+    const body = { ask: () => h('div'), diary: () => h('div'), bigmap: () => h('div'), shop: () => h('div'), chest: () => h('div'), quiz: () => h('div'), duel: () => h('div'), hero: () => this.hero(), talents: () => this.talents(), quests: () => this.questsBody(), codex: () => this.codex(), words: () => this.wordbook(), data: () => this.data(), account: () => this.account(), settings: () => this.settings(), help: () => this.help() }[this.open]();
     panel.append(body);
     clear(el).append(panel);
     el.onclick = (e) => {
@@ -251,6 +279,14 @@ export class Panels {
       wrap.append(box);
     }
     return wrap;
+  }
+
+  private asking: { title: string; prompt: string; onAnswer: (text: string) => void } | null = null;
+
+  /** One free-text answer (the night guard's formal question in 零号站台). */
+  ask(title: string, prompt: string, onAnswer: (text: string) => void): void {
+    this.asking = { title, prompt, onAnswer };
+    this.show('ask');
   }
 
   private quiz: { title: string; intro: string; queue: Word[]; done: Word[]; last?: { ok: boolean; text: string }; onDone: () => void } | null = null;

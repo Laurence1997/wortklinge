@@ -41,7 +41,8 @@ import { BOSS } from '../data/boss';
 import { BOSS2 } from '../data/boss2';
 import { BOSS3 } from '../data/boss3';
 import { LINA } from '../data/lina';
-import { WEBER } from '../data/weber';
+import { WEBER, WEBER_POOL, usesDu } from '../data/weber';
+import { DUNGEON, RULES, type Rule } from '../data/dungeon';
 import { SKILLS } from '../data/skills';
 import { fullForm, hasArticleQuestion, WORD_BY_ID, WORDS, zhWithPos } from '../data/words';
 import { initAudio, setBattleMusic, setVolumes, sfx, speak, speechAvailable, hasGermanVoice } from './audio';
@@ -563,6 +564,13 @@ export class Controller {
     this.milestone(`q_${q.type}${q.type === 'cloze' && q.prompt.startsWith('代词') ? '_pron' : ''}`);
     if (move !== 'attack') this.milestone(`mv_${move}`);
     if (move === 'inscribe' || move === 'whisper') delete this.state.flags.teachSkills;
+    if (this.dungeon) {
+      this.dungeon.asked = Date.now();
+      if (move === 'whisper' && this.dungeon.rule.id === 'keineHilfe' && this.dungeon.kept) {
+        this.dungeon.kept = false;
+        toast('「Keine Hilfe.」你用了低语：这次的规则加成作废了。');
+      }
+    }
     return q;
   }
 
@@ -573,6 +581,10 @@ export class Controller {
   answer(move: Move, q: Question, input: string): TurnReport {
     const s = this.state;
     const b = this.battle!;
+    if (this.dungeon?.rule.id === 'schnell' && this.dungeon.kept && Date.now() - this.dungeon.asked > DUNGEON.seconds * 1000) {
+      this.dungeon.kept = false;
+      toast('「Schnell!」超过 10 秒了：这次的规则加成作废了。');
+    }
     const r = resolveTurn(s, b, move, q, input, this.rng, this.pack);
     if (r.killer) this.killer = r.killer;
     // 成就 · 五连弱点: right stances in a row (a wrong one resets; turns without a stance don't count).
@@ -768,6 +780,7 @@ export class Controller {
     this.scene.endFocus();
     this.scene.restyleAll();
     if (this.trial) this.trialNext(won);
+    else if (this.dungeon) this.dungeonNext(won);
     if (b.outcome === 'fled' && b.flees && !lost) toast('它抱着铁箱跑了。下次，在它喊「Ich muss los!」之前。');
     this.refresh();
     this.persist();
@@ -1422,6 +1435,111 @@ export class Controller {
     this.persist();
     this.refresh();
     toast(`${it.name} 鉴定好了${f.misses.length ? '' : '：每条词缀都挑了更好的那个'}`, 'gold');
+  }
+
+  // ---- 零号站台 地下城 (0.6 第 6 块, 28 级) ----------------------------------------------------
+  dungeon: { rule: Rule; left: number; kept: boolean; asked: number; redrawn: boolean } | null = null;
+
+  /** Entered from the 零号站台 scene panel. */
+  enterDungeon(): void {
+    const s = this.state;
+    if (this.battle || this.boss || this.dungeon) return;
+    if (s.level < DUNGEON.from) return say([{ who: SYS, text: `站台尽头的门锁着。（${DUNGEON.from} 级）` }]);
+    const draw = (redrawn: boolean, not?: string) => {
+      const pool = RULES.filter((r) => r.id !== not);
+      const rule = pool[Math.floor(this.rng() * pool.length)];
+      const lines: Line[] = [];
+      if (!s.flags.dungeonSeen) {
+        s.flags.dungeonSeen = true;
+        lines.push({ who: SYS, text: '【地下城规则表】零号站台：5 场战斗加一个小首领。门口贴着一张德语规则卡，读懂了再进。守规矩有加成；破了规矩不会怎样，只是这次的加成没了。每天第一次通关给金箱。' });
+      }
+      lines.push({ who: '规则卡', text: `「${rule.de}」` });
+      say(lines, undefined, [
+        { label: `接受（通关奖励 ×${rule.mult}）`, act: () => this.startDungeon(rule, redrawn) },
+        ...(redrawn ? [] : [{ label: '重抽一次', act: () => draw(true, rule.id) }]),
+        { label: '先不进', act: () => {} },
+        { label: '这张卡什么意思？', act: () => say([{ who: SYS, text: rule.zh }], () => draw(redrawn, undefined)) },
+      ]);
+    };
+    draw(false);
+  }
+
+  private startDungeon(rule: Rule, redrawn: boolean) {
+    this.dungeon = { rule, left: DUNGEON.fights + 1, kept: true, asked: Date.now(), redrawn };
+    toast(`零号站台：${DUNGEON.fights} 场，然后是站台尽头的那个东西`);
+    this.dungeonFight();
+  }
+
+  private dungeonFight() {
+    const s = this.state;
+    const d = this.dungeon!;
+    const boss = d.left === 1;
+    const pool = WORDS.filter((w) => w.region === 3 && w.lvl <= s.level && w.family !== 'truhe' && w.pos !== 'phr' && (d.rule.id !== 'verben' || w.pos === 'v') && (!boss || w.pos === 'n' || d.rule.id === 'verben'));
+    const word = pool[Math.floor(this.rng() * pool.length)];
+    const p = this.scene.player;
+    const m = this.scene.addMonster(word, s.words[word.id] ? 'due' : 'new', 'fahrplanhalle', p.x + 20, p.y, { scripted: 'trial' });
+    this.encounter(m);
+    if (boss && this.battle) {
+      const mon = this.battle.monster;
+      mon.lvl += DUNGEON.bossLvl;
+      mon.hp = mon.maxHp = Math.round(mon.maxHp * DUNGEON.bossHp);
+      mon.dmg = Math.round(mon.dmg * 1.2);
+      toast('站台尽头的东西站起来了');
+    }
+  }
+
+  private dungeonNext(won: boolean) {
+    const s = this.state;
+    const d = this.dungeon!;
+    if (!won) {
+      this.dungeon = null;
+      say([{ who: SYS, text: '你被推回了站台入口。规则卡还贴在门上，下次再来。' }]);
+      return;
+    }
+    d.left -= 1;
+    if (d.left > 0) {
+      const go = () => this.scene.time.delayedCall(500, () => this.dungeonFight());
+      // 「Bitte siezen!」: the night guard asks one formal question between fights.
+      if (d.rule.id === 'siezen' && d.left % 2 === 0) {
+        const q = WEBER_POOL[Math.floor(this.rng() * WEBER_POOL.length)];
+        const ask = q.ask[0];
+        say([{ who: '守夜人', text: `「${ask}」（回答你自己的情况。他用的是 Sie，你也别用 du）` }], undefined, [
+          { label: '回答', act: () => this.siezenAnswer(ask, go) },
+        ]);
+        return;
+      }
+      toast(`零号站台：还剩 ${d.left === 1 ? '最后的小首领' : `${d.left - 1} 场`}`);
+      go();
+      return;
+    }
+    this.dungeon = null;
+    const today = dayKey(now(s));
+    const daily = s.flags.dungeonDay !== today;
+    s.flags.dungeonDay = today;
+    s.flags.dungeonClears = ((s.flags.dungeonClears as number) ?? 0) + 1;
+    const mult = d.kept ? d.rule.mult : 1;
+    const xp = Math.round(xpToNext(s.level) * DUNGEON.clearXp * mult);
+    const gold = Math.round(CONFIG.gold.perKill(s.level) * DUNGEON.clearGoldKills * mult);
+    const lv = addXp(s, xp);
+    s.gold += gold;
+    if (daily) this.gotChest('gold', s.level);
+    banner('零号站台通关', `${xp} 经验 · ${gold} 金币${daily ? ' · 金箱' : ''}`);
+    say([{ who: SYS, text: d.kept ? `规矩守住了（「${d.rule.de}」）：奖励 ×${d.rule.mult}。` : '这次破了规矩，只拿基础奖励。' }]);
+    for (const l of lv.levels) this.onLevelUp(l);
+    this.persist();
+    this.nextChest();
+  }
+
+  /** The night guard's formal question (Bitte siezen!): du voids the bonus, any answer goes on. */
+  private siezenAnswer(ask: string, go: () => void) {
+    this.panels.ask('守夜人', `「${ask}」`, (text: string) => {
+      if (!text) toast('你没说话。守夜人哼了一声，还是让开了。');
+      else if (this.dungeon && usesDu(text) && this.dungeon.kept) {
+        this.dungeon.kept = false;
+        toast('「Bitte siezen!」你用了 du：这次的规则加成作废了。');
+      } else toast('守夜人点点头，让开了路。');
+      go();
+    });
   }
 
   /** 秩序会 (0.6 第 6 块): Frau Weber's 登记表, untimed; reputation 10 / 25 / 50 forms. */
