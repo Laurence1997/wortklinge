@@ -39,7 +39,8 @@ export type ZoneId = 'camp' | 'echogasse' | 'schilderstrasse' | 'aschehof' | 'ma
 export type IntentKind = 'attack' | 'defend' | 'charge' | 'heal' | 'wait' | 'flee';
 /** cls = the class skill (书写者 墨水风暴 / 守护者 稳住). */
 /** 0.4: inscribe = 铭刻, whisper = 低语, chorus = 齐鸣 (techniques that change the next question). */
-export type Move = 'attack' | 'block' | 'break' | 'sentence' | 'skill' | 'cls' | 'inscribe' | 'whisper' | 'chorus';
+/** item = a 药片 turn (物品栏, 2026-11-22): no question, the monsters act. */
+export type Move = 'attack' | 'block' | 'break' | 'sentence' | 'skill' | 'cls' | 'inscribe' | 'whisper' | 'chorus' | 'item';
 
 export interface Intent {
   /** What the monster will actually do. */

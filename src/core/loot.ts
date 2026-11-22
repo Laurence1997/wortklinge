@@ -129,7 +129,7 @@ export function mainStatText(it: Item): string {
     case 'amulet':
       return `暴击率 +${(it.main * 100).toFixed(1)}%`;
     case 'dict':
-      return `每场提示 ${it.main} 次`;
+      return `低语纸条上限 +${it.main}`;
     case 'glasses':
       return `蓄力大招对你的伤害 −${Math.round(it.main * 100)}%`;
   }

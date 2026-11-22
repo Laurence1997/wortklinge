@@ -7,6 +7,7 @@ import { flushSkill, recordKill, type KillOutcome } from './srs';
 import { addGearKill, addXp, affixTotal, maxHp, now, rollDay, todayLog, type GameState, type LevelUpResult } from './state';
 import type { Item } from './types';
 import { has } from './unlocks';
+import { rollItemDrops, type Consumable } from './items';
 import { CONJ } from '../data/verbs';
 import { CHEST_RATE, type ChestKind } from './chest';
 
@@ -16,6 +17,8 @@ export interface WinResult {
   kill: KillOutcome;
   levelUp: LevelUpResult;
   drop: Item | null;
+  /** 物品栏 drops (纸条 / 药片), already added to the counts. */
+  items: Consumable[];
   chest: ChestKind | null;
   bagFull: boolean;
   echoRecovered: { gold: number; xp: number } | null;
@@ -118,7 +121,9 @@ export function applyWin(s: GameState, b: Battle, rng: Rng, opts: { heal?: boole
 
   // 战后喘口气 (packs heal once, after the whole fight)
   if (opts.heal !== false) postFightHeal(s);
-  return { xp, gold, kill, levelUp, drop, bagFull, echoRecovered, review: b.kind === 'due', chest, gearUp, card };
+  // 物品栏 (2026-11-22): rolled last, so the earlier rolls keep their order.
+  const items = b.tutorial === 'loss' ? [] : rollItemDrops(s, rng);
+  return { xp, gold, kill, levelUp, drop, items, bagFull, echoRecovered, review: b.kind === 'due', chest, gearUp, card };
 }
 
 export interface LossResult {

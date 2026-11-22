@@ -1,6 +1,7 @@
 import { icon, monsterTile } from './icons';
 import type { Battle, Question, TurnReport } from '../core/combat';
-import { availableMoves, comboTier, effArmor, moveReady, needsPhase, phaseOf, resName, shownDe, stancesFor, teachPhase, readTarget, readRecall, readShown, phaseWrongWhy } from '../core/combat';
+import { count as itemCount, itemsOpen, tabletHeal } from '../core/items';
+import { availableMoves, canHint, comboTier, effArmor, moveReady, needsPhase, phaseOf, resName, shownDe, stancesFor, teachPhase, readTarget, readRecall, readShown, phaseWrongWhy } from '../core/combat';
 import { articleSlip, clarity, shadowOk } from '../core/shadow';
 import { has } from '../core/unlocks';
 import type { Stance } from '../core/cloze';
@@ -35,6 +36,7 @@ const MOVE_INFO: Record<Move, { key: string; zh: string; sub: string }> = {
   chorus: { key: 'E', zh: '齐鸣', sub: '这一题打同相的整群' },
   skill: { key: 'R', zh: '技能', sub: '写对整句' },
   cls: { key: 'G', zh: '职业技能', sub: '' },
+  item: { key: 'H', zh: '药片', sub: '回血 · 占一回合' },
 };
 
 export class BattleUI {
@@ -122,7 +124,7 @@ export class BattleUI {
   }
 
   choose(move: Move): void {
-    if (!this.moves().includes(move) || !moveReady(this.ctrl.state, this.b, move)) return;
+    if (!(this.moves().includes(move) || move === 'whisper') || !moveReady(this.ctrl.state, this.b, move)) return;
     stopListening();
     if (needsPhase(this.b) && !this.b.phase && move !== 'skill' && move !== 'cls') {
       this.phaseNag = true;
@@ -136,6 +138,40 @@ export class BattleUI {
     if (this.question.type === 'pickZh' && this.question.focus) this.ctrl.speak(this.question.focus);
     if (this.question.type === 'saying') this.ctrl.speak(this.question.say!.a);
     this.phase = 'answer';
+    this.render();
+  }
+
+  /** 药片 (物品栏): heal and spend the turn; the monsters act. */
+  tablet(): void {
+    if (this.phase !== 'choose') return;
+    const target = this.b;
+    const from = target.log.length;
+    const r = this.ctrl.useTablet();
+    if (!r) return;
+    stopListening();
+    this.report = r.report;
+    this.question = { type: 'steady', prompt: '吃了一片药', focus: `生命 +${r.heal}`, item: true };
+    this.move = 'item';
+    this.phase = 'result';
+    this.lastValue = '';
+    this.voicedFull = '';
+    this.shadowText = '';
+    logLine(`吃了一片药：生命 +${r.heal}`, 'good');
+    if (r.report.monsterDamage) logLine(`  它出手：你受到 ${r.report.monsterDamage} 伤害`, 'bad');
+    for (const l of target.log.slice(from)) logLine(`  ${l.text}`, l.tone === 'good' ? 'good' : l.tone === 'bad' ? 'bad' : l.tone === 'crit' ? 'gold' : 'info');
+    this.render();
+    window.clearTimeout(this.autoTimer);
+    this.autoTimer = window.setTimeout(() => this.continue(), this.ctrl.fightOver() ? 1600 : 1400);
+  }
+
+  /** 低语 as a hint on the question already shown (2026-11-22, Lucas: 精简出手按钮). */
+  hint(): void {
+    if (this.phase !== 'answer' || !this.question) return;
+    const q = this.ctrl.hint(this.move, this.question);
+    if (!q) return;
+    this.question = q;
+    this.renderedQ = q; // keep what was typed so far
+    this.move = 'whisper';
     this.render();
   }
 
@@ -316,7 +352,7 @@ export class BattleUI {
       void this.shadow();
       return true;
     }
-    if (this.phase === 'answer' && e.key === 'Escape' && this.moves().length > 1) {
+    if (this.phase === 'answer' && e.key === 'Escape' && this.moves().length > 1 && !this.question?.whispered) {
       this.phase = 'choose';
       this.render();
       return true;
@@ -337,7 +373,15 @@ export class BattleUI {
     if (typing) return false;
     const k = e.key.toLowerCase();
     if (this.phase === 'choose' || (this.phase === 'answer' && this.question?.options)) {
-      const map: Record<string, Move> = { a: 'attack', q: 'inscribe', w: 'whisper', e: 'chorus', f: 'sentence', r: 'skill', g: 'cls' };
+      if (k === 'h' && this.phase === 'choose') {
+        this.tablet();
+        return true;
+      }
+      if (k === 'w' && this.phase === 'answer') {
+        this.hint();
+        return true;
+      }
+      const map: Record<string, Move> = { a: 'attack', q: 'inscribe', e: 'chorus', f: 'sentence', r: 'skill', g: 'cls' };
       if (map[k]) {
         this.choose(map[k]);
         return true;
@@ -452,6 +496,17 @@ export class BattleUI {
       bar('hp', s.hp, maxHp(s), `${s.hp} / ${maxHp(s)}`),
       h('div.hud-row', h('span', '连击 ', h('b.combo', String(s.combo))), tier ? h('span.combo', tier.split(' ')[0]) : ''),
       h('div.status', fx.join(' · ')),
+      itemsOpen(s) && !b.tutorial
+        ? h(
+            'div.hud-row.small',
+            h('span', { title: '低语纸条：答题时按 W（打字时按 ?）给提示，这题不算会写。篝火休息补到 3 张' }, `纸条 ×${itemCount(s, 'hint')}`),
+            h('button.btn.ghost.small', {
+              disabled: this.phase !== 'choose' || itemCount(s, 'tablet') <= 0 || s.hp >= maxHp(s),
+              onclick: () => this.tablet(),
+              title: `药片：回 ${tabletHeal(s)} 生命，占一回合（怪照常出手）`,
+            }, h('kbd', 'H'), `药片 ×${itemCount(s, 'tablet')}`),
+          )
+        : '',
       h('div.hud-row', h('button.btn.ghost.small', { onclick: () => this.ctrl.flee(), title: '撤退：连击清零' }, '撤退')),
     );
 
@@ -463,6 +518,8 @@ export class BattleUI {
       movesEl.append(h('button.btn.primary', { disabled: this.phase !== 'choose', onclick: () => this.cut(), title: '斩杀（Enter）：你会写它了，一键秒杀，经验和掉落照拿' }, h('kbd', 'Enter'), '斩杀', h('small', '一键秒杀 · 以后不用再背')));
     if (moves.length > 1 || b.cutReady) {
       for (const mv of moves) {
+        // 2026-11-22 精简出手按钮: the finisher shows only when the resource bar is full.
+        if (mv === 'sentence' && !moveReady(s, b, mv)) continue;
         const info = MOVE_INFO[mv];
         const disabled = this.phase === 'result' || !moveReady(s, b, mv);
         const sub =
@@ -474,11 +531,9 @@ export class BattleUI {
                 ? `冷却 ${b.cfx.inscribeCd}`
                 : mv === 'chorus' && b.chorusCd
                   ? `冷却 ${b.chorusCd}`
-                  : mv === 'whisper' && !moveReady(s, b, 'whisper')
-                    ? '上次提示过，这次先自己写'
-                    : mv === 'sentence'
-                      ? `${resName(s)} ${b.cfx.res}/${resMax(s)}${b.cfx.res >= resMax(s) ? ' · 可以放了' : ' · 满了才能用'}`
-                      : info.sub;
+                  : mv === 'sentence'
+                    ? `${resName(s)} ${b.cfx.res}/${resMax(s)} · 可以放了`
+                    : info.sub;
         movesEl.append(
           h(
             `button.btn${this.move === mv && this.phase !== 'choose' ? '.sel' : ''}`,
@@ -581,7 +636,7 @@ export class BattleUI {
     }
 
     // 教学战 (0.5 节奏表): the first fight after a new move opens points at it.
-    const teach = this.phase === 'choose' && s.flags.teachSkills && !b.tutorial ? h('div.small', { style: 'color:var(--gold, #ffcf4a)' }, '新招：试试 Q 铭刻（下一题难一级，伤害 ×1.5）或 W 低语（给首字母）') : this.phase === 'choose' && b.teachFin ? h('div.small', { style: 'color:var(--gold, #ffcf4a)' }, '言灵已满：按 F 放终结技，看中文写整句') : '';
+    const teach = this.phase === 'choose' && s.flags.teachSkills && !b.tutorial ? h('div.small', { style: 'color:var(--gold, #ffcf4a)' }, '新招：试试 Q 铭刻（下一题难一级，伤害 ×1.5）；答题卡住时可以按 W 低语（给提示，但这题不算会写）') : this.phase === 'choose' && b.teachFin ? h('div.small', { style: 'color:var(--gold, #ffcf4a)' }, '言灵已满：按 F 放终结技，看中文写整句') : '';
     clear(el).append(h('div.b-top', monEl, intent, me), stance, teach, movesEl, q, blog);
     blog.scrollTop = blog.scrollHeight;
     if (this.input && this.phase === 'answer') window.setTimeout(() => this.input?.focus(), 0);
@@ -630,7 +685,11 @@ export class BattleUI {
       );
     if (this.b.intent.kind === 'charge' && this.phase !== 'result') wrap.append(h('div.prompt', { style: 'color:var(--gold, #ffcf4a)' }, h('span', '它在蓄力——答对打断')));
     const tags = [qq.inscribed ? '铭刻 ×1.5' : '', qq.whispered ? '低语 · 不算会写' : '', qq.chorus ? '齐鸣' : ''].filter(Boolean).join(' · ');
-    wrap.append(h('div.prompt', h('span', qq.prompt), tags ? h('span.tag', tags) : ''));
+    const hintBtn =
+      this.phase === 'answer' && canHint(this.ctrl.state, this.b, this.move, qq)
+        ? h('button.btn.ghost.small', { onclick: () => this.hint(), title: '低语：用一张纸条，给一个提示（选择题去掉一个错选项，打字题给首字母）。代价：这题不算会写、不回资源、护甲按低一档算，这个词下次要先不带提示答对' }, h('kbd', 'W'), `低语 · 提示（纸条 ${itemCount(this.ctrl.state, 'hint')}）`)
+        : '';
+    wrap.append(h('div.prompt', h('span', qq.prompt), tags ? h('span.tag', tags) : '', hintBtn));
     const focusColor = qq.type === 'article' && this.phase === 'result' && this.b.word.art ? ARTICLE_COLOR[genderOf(this.b.word) ?? 'pl'] : '';
     const long = qq.type === 'cloze' ? 'font-size:22px;line-height:1.4;' : '';
     wrap.append(h('div.focus', { style: (focusColor ? `color:${focusColor};` : '') + long }, qq.focus));
@@ -670,6 +729,8 @@ export class BattleUI {
         h('div.focus', { style: 'font-size:20px' }, qq.frame ?? ''),
         h('div.typing', a, c, umlautButtons(c), h('button.btn.primary', { disabled: this.phase !== 'answer', onclick: send }, '出招 ↵')),
       );
+    } else if (qq.item) {
+      // 药片 turn: nothing to answer.
     } else {
       const input = h('input', {
         type: 'text',
@@ -686,6 +747,10 @@ export class BattleUI {
           e.preventDefault();
           e.stopPropagation(); // don't let the same Enter also press "continue"
           this.submit(input.value);
+        } else if (e.key === '?' && this.phase === 'answer' && canHint(this.ctrl.state, this.b, this.move, qq)) {
+          // 低语 while typing (W would be a letter): grading ignores '?', so it is free to use as the key.
+          e.preventDefault();
+          this.hint();
         }
       });
       this.input = input;
@@ -695,8 +760,9 @@ export class BattleUI {
     }
     if (this.phase === 'result' && r) {
       const fb = h(`div.feedback.${r.correct ? 'ok' : 'no'}`);
-      const head = r.correct ? (r.crit ? (r.newSpell ? '新言灵！暴击！' : '暴击！') : r.parried ? '弹反！' : '答对了') : '答错了';
+      const head = qq.item ? '吃了药片' : r.correct ? (r.crit ? (r.newSpell ? '新言灵！暴击！' : '暴击！') : r.parried ? '弹反！' : '答对了') : '答错了';
       fb.append(h('b', head));
+      if (qq.item && r.monsterDamage) fb.append(h('span', `  它趁机出手：${r.monsterDamage} 伤害`));
       if (r.correct && this.b.word && (qq.type === 'article' || qq.type === 'typed')) fb.append(h('span', `  ${fullForm(this.b.word)} · ${this.b.word.zh}`));
       if (r.phase === 'right') fb.append(h('span', `  ${this.b.phase} 相 · 弱点`));
       if (r.phase === 'wrong') fb.append(h('span', `  ${this.b.phase} 相被抵抗：${phaseWrongWhy(this.b)}`));

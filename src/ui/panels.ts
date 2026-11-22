@@ -31,6 +31,7 @@ import { DIARY, DIARY_WRITER, type DiaryBlank } from '../data/diary';
 import { SCENE_BY_ID } from '../data/world';
 import { blanksOf, checkBlank, DIARY_MISSES, DIARY_XP, lineText, pageLines, pageNo, pageRegion, pageState } from '../core/diary';
 import { lookPicker } from './title';
+import { CONSUMABLE, cap as itemCap, count as itemCount, itemPrice, type Consumable } from '../core/items';
 import { BARGAIN_LINES, ensureShop, price, refreshCost, sellPrice, SLOT_NOUN } from '../core/shop';
 
 export type PanelName = 'hero' | 'talents' | 'quests' | 'codex' | 'words' | 'data' | 'account' | 'settings' | 'help' | 'shop' | 'chest' | 'quiz' | 'duel' | 'screen' | 'bigmap' | 'diary' | 'ask' | 'exam';
@@ -229,7 +230,7 @@ export class Panels {
       ['生命', `${s.hp} / ${maxHp(s)}`],
       ['攻击', String(Math.round(attack(s)))],
       ['暴击率', `${(critChance(s) * 100).toFixed(1)}%`],
-      ['每场提示', String(hintsPerFight(s))],
+      ['低语纸条上限', String(5 + hintsPerFight(s))],
       ['金币', String(s.gold)],
       ['最高连击', String(s.bestCombo)],
       ['击杀 / 死亡', `${s.stats.kills} / ${s.stats.deaths}`],
@@ -804,6 +805,39 @@ export class Panels {
 
     if (this.shopMsg) wrap.append(h(`div.feedback.${this.shopMsg.tone}`, this.shopMsg.text));
 
+    // 物品栏 (2026-11-22): 纸条 and 药片, one at a time, bought with a German sentence too.
+    const cons = h('div.bag');
+    for (const k of ['hint', 'tablet'] as Consumable[]) {
+      const c = CONSUMABLE[k];
+      const line = h('input.buy-line', { type: 'text', value: 'Ich nehme ', autocomplete: 'off', spellcheck: 'false' }) as HTMLInputElement;
+      const go = () => {
+        const r = this.ctrl.buyConsumable(k, line.value);
+        this.shopMsg = r.ok
+          ? { text: `Mira：「Gern!」花了 ${r.paid} 金币，现在有 ${itemCount(s, k)} 个${c.zh}。`, tone: 'ok' }
+          : r.reason === 'sentence'
+            ? { text: `Mira 没听懂。可以说：Ich nehme ${c.acc}.`, tone: 'no' }
+            : r.reason === 'full'
+              ? { text: `${c.zh}已经带满了（上限 ${itemCap(s, k)}）。`, tone: 'no' }
+              : { text: `钱不够：要 ${r.paid} 金币。`, tone: 'no' };
+        this.render();
+      };
+      line.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          e.stopPropagation();
+          go();
+        }
+      });
+      cons.append(
+        h(
+          'div.item',
+          h('div', h('b', `${c.zh}（${c.de}）`), h('div.small', c.use), h('div.small', `价格 ${itemPrice(s, k)} 金币 · 现有 ${itemCount(s, k)} / ${itemCap(s, k)}`)),
+          h('div.typing', line, umlautButtons(line), h('button.btn.primary', { onclick: go }, '买 ↵')),
+        ),
+      );
+    }
+    wrap.append(h('h3', '消耗品（用德语说：Ich nehme + 第四格）'), cons);
+
     const shelf = h('div.bag');
     shop.items.forEach((it, i) => {
       const p = price(s, it);
@@ -1210,7 +1244,7 @@ export class Panels {
       ['互动', 'E（篝火、守火人、路牌、门）'],
       ['面板', 'C 角色和装备 · B 图鉴 · Esc 关闭'],
       ['词性三相', '名词怪出手前先选相：1 der · 2 die · 3 das（对这只怪一直有效，随时可以点按钮换）。选对：护甲降一档、回 1 点资源、附带元素；6 级起选错：护甲翻倍、破甲清零。复数怪一律 die'],
-      ['战斗', 'A 攻击 · Q 铭刻 · W 低语 · E 齐鸣（只打同相的怪）· F 终结技 · R 技能 · G 职业技能；1/2/3 选答案；打字题按 Enter 交卷；结果会自动进下一题（Enter 跳过等待）；Z 看中文；V 再听；S 读出来（5 级起可选：答对后跟着读那句德语，读得像每场多给一次经验，读不好不扣东西；没有麦克风就不显示）'],
+      ['战斗', 'A 攻击 · Q 铭刻 · E 齐鸣（只打同相的怪）· F 终结技（言灵满了才出现）· R 技能 · G 职业技能 · H 吃药片（回血，占一回合）；答题时 W 低语（用一张纸条给提示，打字时按 ?）；1/2/3 选答案；打字题按 Enter 交卷；结果会自动进下一题（Enter 跳过等待）；Z 看中文；V 再听；S 读出来（5 级起可选：答对后跟着读那句德语，读得像每场多给一次经验，读不好不扣东西；没有麦克风就不显示）'],
       ['变音字母', '点 ä ö ü ß 按钮，或者写 ae oe ue ss（算对，但会提示正确拼法）'],
       ['归名', '一个词就是一只怪。打败它 3 次（3 次不同的重生，隔天才会重生），最后一下要默写带冠词的全名，它才变回原样'],
       ['遗忘之物', '头上有「!」的怪是今天到期的词，经验和掉落更多。篝火休息会刷新所有怪'],

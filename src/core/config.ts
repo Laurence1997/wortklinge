@@ -118,6 +118,11 @@ export const CONFIG = {
    *  (×0.5, costs class resource or a dictionary hint), 齐鸣 lets one answer hit the whole pack. Cooldowns in turns
    *  (铭刻: none since 2026-11-20, a miss costs 1 resource instead). */
   tech: { inscribeCd: 0, inscribeMissCost: 1, inscribeMult: 1.5, chorusCd: 4 },
+  /** 物品栏 (2026-11-22, Lucas): 低语纸条 (one 低语 each) and 药片 (heal, takes the turn). Prices in 一小时金币. */
+  items: {
+    hintStart: 3, hintRefill: 3, hintCap: 5, hintDrop: 0.04, hintPrice: 0.02,
+    tabletStart: 1, tabletCap: 3, tabletDrop: 0.06, tabletPrice: 0.06, tabletHeal: 0.4,
+  },
 
   combo: [
     { at: 50, name: '言灵附体 Wortgewalt', dmg: 0.5 },

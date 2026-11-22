@@ -6,7 +6,8 @@ import type { Look } from '../core/look';
 // Phaser world to the DOM interface. Game rules live in src/core and stay pure.
 
 import { answerBoss, startBoss, type BossFight } from '../core/boss';
-import { linkPack, startPhraseBattle, makeQuestion, monsterStats, pickHint, resetClassFx, resolveTurn, rollSaying, shoutLine, startBattle, type Battle, type Question, type TurnReport, type Tutorial } from '../core/combat';
+import { bonfireRefill, grantStarter, tabletHeal, useItem, CONSUMABLE, count as itemCount, buyConsumable, type Consumable } from '../core/items';
+import { canHint, hintOf, ITEM_TURN, linkPack, startPhraseBattle, makeQuestion, monsterStats, pickHint, resetClassFx, resolveTurn, rollSaying, shoutLine, startBattle, type Battle, type Question, type TurnReport, type Tutorial } from '../core/combat';
 import { CONFIG, xpToNext } from '../core/config';
 import { favour, FAVOUR, KONRAD_WORDS, QUESTS, questEvent, questState, startQuest, type QuestEvent } from '../core/quests';
 import { CHEST_ZH, CHESTS, lockWord, openChest, type ChestKind } from '../core/chest';
@@ -107,6 +108,8 @@ export class Controller {
       state.cls = (state.flags.trialPrev as ClassId) || null;
       delete state.flags.trialPrev;
     }
+    // 物品栏 (2026-11-22): saves already past Lv4 get the starter 纸条 / 药片 once.
+    grantStarter(state);
     window.addEventListener('keydown', (e) => this.onKey(e));
     for (const ev of ['keydown', 'mousedown', 'mousemove']) window.addEventListener(ev, () => (this.lastInput = Date.now()), { passive: true });
     // Count active minutes for the playtest log (idle > 2 min doesn't count).
@@ -324,7 +327,7 @@ export class Controller {
       if (s.level < 2) return;
       const lines: Line[] = [{ who: SYS, text: '【0.5】地图改成一站一站走：点地图上的圆点或右边面板的出口，数字键打怪，M 打开大地图。' }];
       if (s.level >= 3) lines.push({ who: SYS, text: '装备提前到 3 级开放。' });
-      if (s.level >= 4) lines.push({ who: SYS, text: '铭刻 Q、低语 W 和言灵提前到 4 级：打中弱点、答对打字题攒言灵，铭刻答错扣 1 点。' });
+      if (s.level >= 4) lines.push({ who: SYS, text: '铭刻 Q、低语（答题时按 W）和言灵提前到 4 级：打中弱点、答对打字题攒言灵，铭刻答错扣 1 点。' });
       if (s.level >= 5) lines.push({ who: SYS, text: '终结技 F 提前到 5 级；5 级起技能栏有「读出来」（S）：新词读出来就是必中一击，答对后还可以跟读整句多拿经验（都可选）。' });
       if (s.level >= 3) lines.push({ who: SYS, text: '金色名牌的「残句」是句子怪，打散它收短句卡。' });
       window.setTimeout(() => say(lines), 800);
@@ -349,6 +352,7 @@ export class Controller {
     banner(`Lv ${level}`, (UNLOCK_TEXT[level] ?? [])[0] ?? '');
     const unlocked = UNLOCK_TEXT[level] ?? [];
     const lines: Line[] = unlocked.map((t) => ({ who: SYS, text: `【新能力】${t}` }));
+    if (grantStarter(s)) lines.push({ who: SYS, text: `【物品栏】送你 ${itemCount(s, 'hint')} 张低语纸条和 ${itemCount(s, 'tablet')} 片药片。${CONSUMABLE.hint.zh}：${CONSUMABLE.hint.use}。${CONSUMABLE.tablet.zh}：${CONSUMABLE.tablet.use}。篝火休息会把纸条补到 3 张。` });
     switch (level) {
       case 23:
         if (!s.flags.glassesGift) {
@@ -375,7 +379,7 @@ export class Controller {
         s.flags.teachSkills = true;
         lines.push(
           { who: SYS, text: '【铭刻 Q】下一题难一级，答对伤害 ×1.5，答错丢 1 点言灵。不限次数' },
-          { who: SYS, text: '【低语 W】下一题给首字母。不耗资源，但那题不算会写，也不能归名' },
+          { who: SYS, text: '【低语 W】看到题后卡住了，按 W（打字时按 ?）用一张低语纸条要提示：选择题去掉一个错选项，打字题给首字母。那题不算会写，也不能归名' },
           { who: SYS, text: '【言灵】打中弱点、答对打字题都会攒言灵，最多 5 点' },
         );
         break;
@@ -578,15 +582,56 @@ export class Controller {
     const q = makeQuestion(this.state, this.battle!, move, this.rng, undefined, this.pack.length > 1, this.pack);
     this.milestone(`q_${q.type}${q.type === 'cloze' && q.prompt.startsWith('代词') ? '_pron' : ''}`);
     if (move !== 'attack') this.milestone(`mv_${move}`);
-    if (move === 'inscribe' || move === 'whisper') delete this.state.flags.teachSkills;
-    if (this.dungeon) {
-      this.dungeon.asked = Date.now();
-      if (move === 'whisper' && this.dungeon.rule.id === 'keineHilfe' && this.dungeon.kept) {
-        this.dungeon.kept = false;
-        toast('「Keine Hilfe.」你用了低语：这次的规则加成作废了。');
-      }
-    }
+    if (move === 'inscribe') delete this.state.flags.teachSkills;
+    if (this.dungeon) this.dungeon.asked = Date.now();
+    if (move === 'whisper') this.onWhisper();
     return q;
+  }
+
+  /** 低语 taken as a hint on the question already shown (2026-11-22); null when not allowed. */
+  hint(move: Move, q: Question): Question | null {
+    if (!canHint(this.state, this.battle!, move, q) || !useItem(this.state, 'hint')) return null;
+    this.milestone('mv_whisper');
+    this.persist();
+    this.onWhisper();
+    return hintOf(this.battle!, q);
+  }
+
+  /** 药片 (物品栏): heal, then the monsters act (the turn is spent). Null when there is none or HP is full. */
+  useTablet(): { report: TurnReport; heal: number } | null {
+    const s = this.state;
+    const b = this.battle;
+    if (!b || b.outcome || b.tutorial || s.hp >= maxHp(s) || itemCount(s, 'tablet') <= 0) return null;
+    useItem(s, 'tablet');
+    const before = s.hp;
+    s.hp = Math.min(maxHp(s), s.hp + tabletHeal(s));
+    const heal = s.hp - before;
+    this.milestone('tablet');
+    const r = resolveTurn(s, b, 'item', ITEM_TURN, '', this.rng, this.pack);
+    if (r.killer) this.killer = r.killer;
+    if (r.monsterDamage > 0) {
+      sfx.hurt();
+      this.scene.shake(0.004);
+    }
+    this.refresh();
+    this.persist();
+    return { report: r, heal };
+  }
+
+  buyConsumable(k: Consumable, sentence: string) {
+    const r = buyConsumable(this.state, k, sentence);
+    if (r.ok) sfx.loot();
+    this.refresh();
+    this.persist();
+    return r;
+  }
+
+  private onWhisper(): void {
+    delete this.state.flags.teachSkills;
+    if (this.dungeon?.rule.id === 'keineHilfe' && this.dungeon.kept) {
+      this.dungeon.kept = false;
+      toast('「Keine Hilfe.」你用了低语：这次的规则加成作废了。');
+    }
   }
 
   useHint(q: Question): string | null {
@@ -740,6 +785,7 @@ export class Controller {
           }
         }
         if (res.bagFull) toast('背包满了，没捡起来（C 整理）');
+        for (const k of res.items) toast(`捡到：${CONSUMABLE[k].zh}（现有 ${itemCount(s, k)}）`);
         if (res.gearUp) {
           sfx.loot();
           toast(`装备升到第 ${res.gearUp} 档：伤害 +${Math.round(CONFIG.gear.dmg * 100 * res.gearUp)}%，破甲 ${Math.round(CONFIG.gear.pen * 100 * res.gearUp)}%`, 'gold');
@@ -1246,6 +1292,8 @@ export class Controller {
     s.hp = maxHp(s);
     s.combo = 0;
     resetClassFx(s);
+    const notes = bonfireRefill(s);
+    if (notes) toast(`低语纸条补到了 ${itemCount(s, 'hint')} 张`);
     this.scene.spawnAll();
     const due = WORDS.filter((w) => kindOf(s, w) === 'due').length;
     banner('篝火', '生命回满，怪物全部刷新');

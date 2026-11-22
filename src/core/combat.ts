@@ -10,6 +10,7 @@ import { typoOk } from './cut';
 import { affinityOf, affixTotal, attack, engraved, critChance, gearPen, hintsPerFight, maxHp, now, type GameState } from './state';
 import type { Element, Intent, Move, Word } from './types';
 import { has } from './unlocks';
+import { count } from './items';
 import { fullForm, genderOf, hasArticleQuestion, WORD_BY_ID, WORDS, zhWithPos } from '../data/words';
 import { SKILLS, skillLine, skillLinesOpen } from '../data/skills';
 import { SAYING_CFG, SAYINGS } from '../data/sayings';
@@ -58,6 +59,8 @@ export interface Question {
   /** 低语: the first letter (typed) shown as a hint; ×0.5 on a hit. */
   whisper?: string;
   whispered?: boolean;
+  /** 药片 turn (物品栏): nothing to answer. */
+  item?: boolean;
   /** 齐鸣: a correct answer hits every monster in the pack. */
   chorus?: boolean;
   /** 终极技能 (30 级): the two blanks of the frame, in order. */
@@ -491,18 +494,41 @@ function distractors(rng: Rng, w: Word, field: 'de' | 'zh', n: number): string[]
   return out;
 }
 
-/** Moves on the bar. 0.4: no sentence button (the whole sentence is the finisher); 铭刻 / 低语 / 齐鸣 change the next question. */
+/** Moves on the bar. 0.4: no sentence button (the whole sentence is the finisher); 铭刻 / 齐鸣 change the next question.
+ *  2026-11-22 (Lucas, 精简出手按钮): 低语 is no longer a move on the bar but a hint taken after the question is shown (canHint). */
 export function availableMoves(s: GameState, b: Battle, alive = 1): Move[] {
   if (b.tutorial === 'loss') return ['attack'];
   if (b.verify && !b.verifyDone) return ['attack']; // 斩杀: the verification question comes first, no 低语
   const moves: Move[] = ['attack'];
   if (has(s.level, 'inscribe')) moves.push('inscribe');
-  if (has(s.level, 'whisper')) moves.push('whisper');
   if (has(s.level, 'chorus') && alive > 1) moves.push('chorus');
   if (has(s.level, 'sentence')) moves.push('sentence');
   if (has(s.level, 'skills') && s.skills.length) moves.push('skill');
   if (s.cls) moves.push('cls');
   return moves;
+}
+
+/** 低语 is unlocked and allowed in this fight (not in the loss tutorial, not on the 斩杀 verification question). */
+function hintOpen(s: GameState, b: Battle): boolean {
+  return has(s.level, 'whisper') && b.tutorial !== 'loss' && !(b.verify && !b.verifyDone);
+}
+
+/** 低语 as a hint (2026-11-22): after seeing a normal attack's question, before answering. Same costs as before
+ *  (not 会写, no resource, one armor tier lower, never the 归名 blow, the word is flagged). Not on 铭刻 / 齐鸣 /
+ *  finisher / skill questions, and only once per question. */
+export function canHint(s: GameState, b: Battle, move: Move, q: Question | null): boolean {
+  if (!q || move !== 'attack' || q.whispered || q.inscribed || q.chorus || !q.answer || q.item) return false;
+  if (count(s, 'hint') <= 0) return false; // 物品栏: each 低语 uses a 纸条
+  if (q.type === 'sentence' || q.type === 'skill' || q.type === 'storm' || q.type === 'steady' || q.ult) return false;
+  return hintOpen(s, b) && moveReady(s, b, 'whisper');
+}
+
+/** The placeholder question of a 药片 turn (物品栏): nothing is asked. */
+export const ITEM_TURN: Question = { type: 'steady', prompt: '吃药片', focus: '', item: true };
+
+/** The hinted version of a question (choice: one wrong option removed; typed: the first letter). */
+export function hintOf(b: Battle, q: Question): Question {
+  return whisperOf(q, b.word);
 }
 
 /** Whether a move can be used right now (cooldown, resource). */
@@ -634,7 +660,7 @@ export function readShown(b: Battle, target: string): string {
  *  a 低语 hit (one armor tier lower, not 会写, no resource, never the 归名 blow; same per-word lock as 低语). */
 export function readRecall(s: GameState, b: Battle): string | null {
   if (!has(s.level, 'shadowing') || b.curse === 'silence' || readTarget(s, b) || b.tutorial || b.pluralMon || b.phrase || b.trial) return null;
-  if (!availableMoves(s, b, 1).includes('whisper') || !moveReady(s, b, 'whisper')) return null;
+  if (!hintOpen(s, b) || !moveReady(s, b, 'whisper')) return null;
   return b.word.art ? fullForm(b.word) : b.word.de;
 }
 
@@ -1292,7 +1318,9 @@ export function resolveTurn(
   const tagOf = (x: Battle) => (multi ? `${(x.named || x.stage > 0) && !x.verify ? (x.spellSeen ? fullForm(x.word) : halfName(x)) : '它'} ` : '它');
   const alive0 = pack.filter((x) => !x.outcome);
   const dmgMult = packDamageMult(alive0.length);
-  const verdict = gradeQuestion(s, b, q, input);
+  // 药片 (物品栏): no answer this turn; the monsters act as after a right one (a charged hit still lands).
+  const itemTurn = move === 'item';
+  const verdict: Verdict & { word?: Word } = itemTurn ? { ok: true, correct: '', notes: [] } : gradeQuestion(s, b, q, input);
   const m = b.monster;
   const intent = b.intent;
   const ok = verdict.ok;
@@ -1310,332 +1338,335 @@ export function resolveTurn(
   let phaseFx: TurnReport['phase'] = null;
   // 读对意图: a correct hit that interrupts (蓄力/回血/逃跑) or a written answer that breaks a guard.
   const writtenQ = q.type === 'typed' || q.type === 'conj' || q.type === 'plural' || q.type === 'storm' || clozeTyped || (q.type === 'callout' && !!q.withArticle);
-  const readRight = ok && move !== 'cls' && (['charge', 'heal', 'flee'].includes(intent.kind) || (intent.kind === 'defend' && writtenQ));
+  const readRight = !itemTurn && ok && move !== 'cls' && (['charge', 'heal', 'flee'].includes(intent.kind) || (intent.kind === 'defend' && writtenQ));
   let blocking = false;
   let interrupted = false;
-  b.qIndex += 1;
-  if (q.type === 'sentence') b.sxUsed = (b.sxUsed ?? 0) + 1;
-  if (q.ult) b.ultUsed = true;
-  // 低语 (2026-11-21): a hinted answer is not 会写/认得, earns no resource and cannot be the 归名 blow.
-  // The word is marked so its next appearance asks it again without the hint.
-  if (q.whispered) {
-    b.hinted = true;
-    if (s.words[b.word.id]) s.words[b.word.id].hinted = true;
-  } else if (ok && b.hinted) {
-    b.hinted = false;
-    if (s.words[b.word.id]) delete s.words[b.word.id].hinted;
-  }
-  if (ok && !q.whispered) {
-    if (q.type === 'typed' || q.type === 'conj' || q.type === 'plural' || q.type === 'sentence' || (q.type === 'cloze' && q.clozeMode !== 'pick')) b.writeOk = (b.writeOk ?? 0) + 1;
-    else if (q.type === 'article' || q.type === 'pickDe' || q.type === 'pickZh' || q.type === 'callout' || q.type === 'cloze') b.readOk = (b.readOk ?? 0) + 1;
-  }
-  const cutFx = cutCheck(s, b, q, input, ok);
-  if (cutFx.notes.length) verdict.notes.push(...cutFx.notes);
-  if (q.type === 'saying') {
-    b.sayingDone = true;
-    const x = q.say!;
-    if (ok && x.cardId) {
-      const id = x.cardId;
-      s.sayings ??= {};
-      const first = !s.sayings[id];
-      s.sayings[id] = (s.sayings[id] ?? 0) + 1;
-      log.push({ text: first ? `短句卡「${x.a} ${x.b}」收进了收集册。` : `又接上了「${x.a} ${x.b}」。`, tone: 'good' });
-    } else if (ok) log.push({ text: `接上了：「${x.a} ${x.b}」`, tone: 'good' });
-    else log.push({ text: `它替你说完：「${x.a} ${x.b}」`, tone: 'bad' });
-  }
+  let cutFx: ReturnType<typeof cutCheck> = { notes: [], report: {} };
+  if (!itemTurn) {
+    b.qIndex += 1;
+    if (q.type === 'sentence') b.sxUsed = (b.sxUsed ?? 0) + 1;
+    if (q.ult) b.ultUsed = true;
+    // 低语 (2026-11-21): a hinted answer is not 会写/认得, earns no resource and cannot be the 归名 blow.
+    // The word is marked so its next appearance asks it again without the hint.
+    if (q.whispered) {
+      b.hinted = true;
+      if (s.words[b.word.id]) s.words[b.word.id].hinted = true;
+    } else if (ok && b.hinted) {
+      b.hinted = false;
+      if (s.words[b.word.id]) delete s.words[b.word.id].hinted;
+    }
+    if (ok && !q.whispered) {
+      if (q.type === 'typed' || q.type === 'conj' || q.type === 'plural' || q.type === 'sentence' || (q.type === 'cloze' && q.clozeMode !== 'pick')) b.writeOk = (b.writeOk ?? 0) + 1;
+      else if (q.type === 'article' || q.type === 'pickDe' || q.type === 'pickZh' || q.type === 'callout' || q.type === 'cloze') b.readOk = (b.readOk ?? 0) + 1;
+    }
+    cutFx = cutCheck(s, b, q, input, ok);
+    if (cutFx.notes.length) verdict.notes.push(...cutFx.notes);
+    if (q.type === 'saying') {
+      b.sayingDone = true;
+      const x = q.say!;
+      if (ok && x.cardId) {
+        const id = x.cardId;
+        s.sayings ??= {};
+        const first = !s.sayings[id];
+        s.sayings[id] = (s.sayings[id] ?? 0) + 1;
+        log.push({ text: first ? `短句卡「${x.a} ${x.b}」收进了收集册。` : `又接上了「${x.a} ${x.b}」。`, tone: 'good' });
+      } else if (ok) log.push({ text: `接上了：「${x.a} ${x.b}」`, tone: 'good' });
+      else log.push({ text: `它替你说完：「${x.a} ${x.b}」`, tone: 'bad' });
+    }
 
-  // Class resources: 书写者 earns 墨水 for typed answers, 守护者 earns 沉着 for every answer.
-  const cfx = b.cfx;
-  const critWasReady = cfx.critReady; // earned this turn = the *next* hit crits
-  const typedLike = q.type === 'typed' || q.type === 'conj' || q.type === 'plural' || q.type === 'storm' || clozeTyped;
-  if (move === 'cls' && s.cls) cfx.res = Math.max(0, cfx.res - CLASSES[s.cls].skillCost);
-  // 0.4 techniques: 低语 is free (its price: no 会写, no resource, no 归名); 铭刻 / 齐鸣 cooldowns.
-  if (move === 'sentence') cfx.res = 0;
-  // 铭刻 has no cooldown (Lucas 2026-11-20: encourage it); a miss on an inscribed question costs 1 resource.
-  const kept = !ok && !!b.fx.keepRes;
-  if (kept) {
-    b.fx.keepRes = false;
-    log.push({ text: '「Ich habe den Zug verpasst.」——这次答错，什么也没丢。', tone: 'good' });
-  }
-  if (q.inscribed && !ok && !kept) cfx.res = Math.max(0, cfx.res - CONFIG.tech.inscribeMissCost);
-  if (move === 'inscribe') cfx.inscribeCd = CONFIG.tech.inscribeCd;
-  if (move === 'chorus') b.chorusCd = CONFIG.tech.chorusCd;
-  // 题型奖励表: a correct answer earns its row's resource (guardians: +1 for every answer instead, their passive).
-  if (ok && s.cls !== 'guardian' && move !== 'cls' && !q.whispered) cfx.res += QTYPES[qKey(q)].res;
-  if (s.cls === 'writer' && typedLike && q.type !== 'storm') {
+    // Class resources: 书写者 earns 墨水 for typed answers, 守护者 earns 沉着 for every answer.
+    const cfx = b.cfx;
+    const critWasReady = cfx.critReady; // earned this turn = the *next* hit crits
+    const typedLike = q.type === 'typed' || q.type === 'conj' || q.type === 'plural' || q.type === 'storm' || clozeTyped;
+    if (move === 'cls' && s.cls) cfx.res = Math.max(0, cfx.res - CLASSES[s.cls].skillCost);
+    // 0.4 techniques: 低语 is free (its price: no 会写, no resource, no 归名); 铭刻 / 齐鸣 cooldowns.
+    if (move === 'sentence') cfx.res = 0;
+    // 铭刻 has no cooldown (Lucas 2026-11-20: encourage it); a miss on an inscribed question costs 1 resource.
+    const kept = !ok && !!b.fx.keepRes;
+    if (kept) {
+      b.fx.keepRes = false;
+      log.push({ text: '「Ich habe den Zug verpasst.」——这次答错，什么也没丢。', tone: 'good' });
+    }
+    if (q.inscribed && !ok && !kept) cfx.res = Math.max(0, cfx.res - CONFIG.tech.inscribeMissCost);
+    if (move === 'inscribe') cfx.inscribeCd = CONFIG.tech.inscribeCd;
+    if (move === 'chorus') b.chorusCd = CONFIG.tech.chorusCd;
+    // 题型奖励表: a correct answer earns its row's resource (guardians: +1 for every answer instead, their passive).
+    if (ok && s.cls !== 'guardian' && move !== 'cls' && !q.whispered) cfx.res += QTYPES[qKey(q)].res;
+    if (s.cls === 'writer' && typedLike && q.type !== 'storm') {
+      if (ok) {
+        cfx.run += 1;
+        if (cfx.run >= critRunNeeded(s) && !cfx.critReady) {
+          cfx.critReady = true;
+          cfx.run = 0;
+          log.push({ text: `连写对 ${critRunNeeded(s)} 个：下一击必暴。`, tone: 'good' });
+        }
+      }
+    }
+    // Any wrong answer breaks the writer's streak (it carries across fights otherwise).
+    if (s.cls === 'writer' && !ok && !kept) cfx.run = 0;
+    if (s.cls === 'guardian' && move !== 'cls' && !q.whispered) cfx.res += 1 + (!ok && rank(s, 'chenzhuo') ? 1 : 0);
+    cfx.res = Math.min(cfx.res, resMax(s));
+
+    // --- 1. You act first.
     if (ok) {
-      cfx.run += 1;
-      if (cfx.run >= critRunNeeded(s) && !cfx.critReady) {
-        cfx.critReady = true;
-        cfx.run = 0;
-        log.push({ text: `连写对 ${critRunNeeded(s)} 个：下一击必暴。`, tone: 'good' });
-      }
-    }
-  }
-  // Any wrong answer breaks the writer's streak (it carries across fights otherwise).
-  if (s.cls === 'writer' && !ok && !kept) cfx.run = 0;
-  if (s.cls === 'guardian' && move !== 'cls' && !q.whispered) cfx.res += 1 + (!ok && rank(s, 'chenzhuo') ? 1 : 0);
-  cfx.res = Math.min(cfx.res, resMax(s));
+      b.wrongStreak = 0;
+      if (q.type === 'callout') b.named = true;
+      if (q.type !== 'saying') b.step += 1;
+      s.combo += 1;
+      if (readRight && move !== 'skill') s.combo += 1; // 读对意图并出对克制招式，连击额外 +1
+      s.bestCombo = Math.max(s.bestCombo, s.combo);
 
-  // --- 1. You act first.
-  if (ok) {
-    b.wrongStreak = 0;
-    if (q.type === 'callout') b.named = true;
-    if (q.type !== 'saying') b.step += 1;
-    s.combo += 1;
-    if (readRight && move !== 'skill') s.combo += 1; // 读对意图并出对克制招式，连击额外 +1
-    s.bestCombo = Math.max(s.bestCombo, s.combo);
-
-    if (move === 'skill') {
-      const sk = SKILLS[q.skillId!];
-      b.skillCooldown = sk.cooldown;
-      const said = q.answer ?? sk.de;
-      const before = skillLinesOpen(sk, s.skillUses[sk.id] ?? 0);
-      s.skillUses[sk.id] = (s.skillUses[sk.id] ?? 0) + 1;
-      if (skillLinesOpen(sk, s.skillUses[sk.id]) > before) log.push({ text: `「${sk.zh}」解锁了新的说法，下次放它时会考。`, tone: 'sys' });
-      if (sk.id === 'keineAhnung') {
-        b.fx.shield = true;
-        log.push({ text: `「${said}」——字在你身前立成一面墙。`, tone: 'good' });
-      } else if (sk.id === 'wieBitte') {
-        interrupted = true;
-        log.push({ text: `「${said}」——它愣住了。`, tone: 'good' });
-      } else if (sk.id === 'zuTeuer') {
-        b.fx.cheap = true;
-        log.push({ text: `「${said}」——它们下手轻了一半。`, tone: 'good' });
-      } else if (sk.id === 'wieViel') {
-        b.fx.peek = 2;
-        log.push({ text: `「${said}」——接下来两回合，它们要蓄力你会提前知道。`, tone: 'good' });
-      } else if (sk.id === 'stimmtSo') {
-        b.fx.stimmt = true;
-        log.push({ text: `「${said}」——这一场，金币翻倍。`, tone: 'good' });
-      } else if (sk.id === 'zugFaehrtAb') {
-        b.fx.doubleNext = true;
-        log.push({ text: `「${said}」——下一题答对，伤害翻倍。`, tone: 'good' });
-      } else if (sk.id === 'verpasst') {
-        b.fx.keepRes = true;
-        log.push({ text: `「${said}」——下一次答错不丢资源。`, tone: 'good' });
-      } else if (sk.id === 'naechsterHalt') {
-        b.fx.nextHalt = true;
-        log.push({ text: `「${said}」——打倒它，下一只怪护甲降一档。`, tone: 'good' });
-      } else if (sk.id === 'wiederholen') {
-        b.fx.swap = true;
-        log.push({ text: `「${said}」——之后有一题，你可以请它换一题。`, tone: 'good' });
-      } else if (sk.id === 'freutMich') {
-        const heal = Math.round(maxHp(s) * 0.3);
-        s.hp = Math.min(maxHp(s), s.hp + heal);
-        log.push({ text: `「${said}」——生命 +${heal}。`, tone: 'good' });
-      }
-    } else if (move === 'cls' && q.type === 'steady') {
-      blocking = true;
-      if (rank(s, 'yishou')) cfx.yishou = true;
-      log.push({ text: '「稳住」——你沉下身子。第一下，挡得住。', tone: 'good' });
-    } else {
-      const atk = attack(s);
-      // 低语: the hinted question hits like one tier easier (typed → choice armor, hard → typed, no armor break).
-      const tier = (q.whispered ? Math.max(0, qTier(q) - 1) : qTier(q)) as 0 | 1 | 2;
-      let mult = between(rng, CONFIG.damage.roll[0], CONFIG.damage.roll[1]);
-      const pen = s.cls === 'writer' ? 0.05 * rank(s, 'bifeng') : 0;
-      // 0.4: the question type no longer multiplies damage (armor does that, below). Gear affixes stay.
-      if (q.type === 'storm') {
-        const n = letters(q.word!);
-        mult *= ((1 + (0.15 + 0.03 * rank(s, 'changci')) * n) / 1.4) * (1 + pen); // same ratio to typing as before
-        log.push({ text: `墨水风暴：${fullForm(q.word!)}，${n} 个字母。`, tone: 'good' });
-      } else if (typedLike) mult *= 1 + affixTotal(s, 'typedDmg') + pen;
-      if (q.type === 'sentence') {
-        mult *= 1 + affixTotal(s, 'sentenceDmg');
-        if (has(s.level, 'layerElement')) element = ELEMENT_BY_GENDER[genderOf(b.word) ?? 'n'];
-      }
-      if (q.inscribed) mult *= CONFIG.tech.inscribeMult;
-      if (q.ult) {
-        const full = b.ultHits === 2;
-        mult *= full ? CONFIG.ultimate.both : CONFIG.ultimate.one;
-        log.push({ text: full ? `终极技能：两个空都对，×${CONFIG.ultimate.both}。` : `终极技能：对了一个空，×${CONFIG.ultimate.one}。`, tone: 'good' });
-      }
-      if (b.fx.doubleNext) {
-        mult *= 2;
-        b.fx.doubleNext = false;
-        log.push({ text: '「Der Zug fährt ab!」——这一击翻倍。', tone: 'good' });
-      }
-      // 怪物诅咒: a hard question answered right breaks it.
-      if (tier === 2 && b.curse) {
-        log.push({ text: b.curse === 'forget' ? '咒文碎了：遗忘解除，低语和中文提示回来了。' : '咒文碎了：沉默解除，又能读出来了。', tone: 'good' });
-        delete b.curse;
-      }
-      // 刻字 denn (0.6, 25 级): a hard question answered right hits +20% per engraved item.
-      if (tier === 2 && engraved(s, 'denn')) mult *= 1 + CONFIG.engrave.bonus * engraved(s, 'denn');
-
-      const breaking = intent.kind === 'defend' && writtenQ;
-      const g = genderOf(b.word);
-      if (g === 'm') mult *= 1 + affixTotal(s, 'vsMasc');
-      if (g === 'f') mult *= 1 + affixTotal(s, 'vsFem');
-      if (g === 'n') mult *= 1 + affixTotal(s, 'vsNeut');
-      mult *= comboMult(s.combo);
-
-      // Crits: forced ones first (接句怪, 初识暴击), then the random roll.
-      if (q.type === 'saying') {
-        crit = true;
-      } else if (b.stage === 0 && b.kind === 'new' && !b.firstCorrectDone) {
-        crit = true;
-        newSpell = true;
-      } else if ((s.flags.wortgewalt as number) > 0) {
-        crit = true;
-      } else if (critWasReady) {
-        crit = true;
-        cfx.critReady = false;
+      if (move === 'skill') {
+        const sk = SKILLS[q.skillId!];
+        b.skillCooldown = sk.cooldown;
+        const said = q.answer ?? sk.de;
+        const before = skillLinesOpen(sk, s.skillUses[sk.id] ?? 0);
+        s.skillUses[sk.id] = (s.skillUses[sk.id] ?? 0) + 1;
+        if (skillLinesOpen(sk, s.skillUses[sk.id]) > before) log.push({ text: `「${sk.zh}」解锁了新的说法，下次放它时会考。`, tone: 'sys' });
+        if (sk.id === 'keineAhnung') {
+          b.fx.shield = true;
+          log.push({ text: `「${said}」——字在你身前立成一面墙。`, tone: 'good' });
+        } else if (sk.id === 'wieBitte') {
+          interrupted = true;
+          log.push({ text: `「${said}」——它愣住了。`, tone: 'good' });
+        } else if (sk.id === 'zuTeuer') {
+          b.fx.cheap = true;
+          log.push({ text: `「${said}」——它们下手轻了一半。`, tone: 'good' });
+        } else if (sk.id === 'wieViel') {
+          b.fx.peek = 2;
+          log.push({ text: `「${said}」——接下来两回合，它们要蓄力你会提前知道。`, tone: 'good' });
+        } else if (sk.id === 'stimmtSo') {
+          b.fx.stimmt = true;
+          log.push({ text: `「${said}」——这一场，金币翻倍。`, tone: 'good' });
+        } else if (sk.id === 'zugFaehrtAb') {
+          b.fx.doubleNext = true;
+          log.push({ text: `「${said}」——下一题答对，伤害翻倍。`, tone: 'good' });
+        } else if (sk.id === 'verpasst') {
+          b.fx.keepRes = true;
+          log.push({ text: `「${said}」——下一次答错不丢资源。`, tone: 'good' });
+        } else if (sk.id === 'naechsterHalt') {
+          b.fx.nextHalt = true;
+          log.push({ text: `「${said}」——打倒它，下一只怪护甲降一档。`, tone: 'good' });
+        } else if (sk.id === 'wiederholen') {
+          b.fx.swap = true;
+          log.push({ text: `「${said}」——之后有一题，你可以请它换一题。`, tone: 'good' });
+        } else if (sk.id === 'freutMich') {
+          const heal = Math.round(maxHp(s) * 0.3);
+          s.hp = Math.min(maxHp(s), s.hp + heal);
+          log.push({ text: `「${said}」——生命 +${heal}。`, tone: 'good' });
+        }
+      } else if (move === 'cls' && q.type === 'steady') {
+        blocking = true;
+        if (rank(s, 'yishou')) cfx.yishou = true;
+        log.push({ text: '「稳住」——你沉下身子。第一下，挡得住。', tone: 'good' });
       } else {
-        const chance = critChance(s) + (q.type === 'article' || q.type === 'pickDe' || q.type === 'pickZh' ? affixTotal(s, 'choiceCrit') : 0);
-        crit = rng() < chance;
-      }
-      if (q.type !== 'saying') b.firstCorrectDone = true;
-      if (crit) mult *= CONFIG.player.critMult;
-      // 护甲和破甲: a hard question (or writing through a guard) breaks the armor for this hit and the next two.
-      const stanceMove = move === 'attack' || move === 'inscribe' || move === 'whisper' || move === 'chorus' || move === 'sentence';
-      if (stanceMove && needsPhase(b)) {
-        const pc = phaseCase(b);
-        // Not punished yet: Lv1–5, and the first level of each case (acc at 7, dat at 15).
-        const soft = (b.perfekt && s.level <= CONFIG.perfekt.softUntil) || s.level <= CONFIG.phase.softUntil || (pc === 'acc' && s.level === CONFIG.phase.accFrom) || (pc === 'dat' && s.level === CONFIG.phase.datFrom);
-        phaseFx = phaseRight(b) ? 'right' : soft ? 'soft' : 'wrong';
-      }
-      if (phaseFx === 'wrong') {
-        // Resisted: whatever break it had is gone, and this hit meets doubled armor.
-        if (m.broken > 0) log.push({ text: '破甲被抵消了。', tone: 'bad' });
-        m.broken = 0;
-      }
-      const wasBroken = m.broken > 0;
-      if ((tier === 2 || breaking) && !wasBroken && phaseFx !== 'wrong') {
-        m.broken = CONFIG.armor.breakHits + (breaking && s.cls === 'writer' && rank(s, 'tengxie') ? 1 : 0);
-        log.push({ text: breaking ? `写对了。壳裂开了：这一下和之后 ${m.broken - 1} 下无视护甲。` : `难题破甲：这一下和之后 ${m.broken - 1} 下无视护甲。`, tone: 'good' });
-      }
-      // Right stance = the hit meets armor one tier lower (a choice answer as if typed, a typed one ignores it).
-      const armor = phaseFx === 'right' ? effArmor(s, b, tier === 0 ? 1 : 2) : phaseFx === 'wrong' ? effArmor(s, b, tier === 2 ? 1 : tier, CONFIG.phase.wrongArmor) : effArmor(s, b, tier);
-      if (m.broken > 0) m.broken -= 1;
-      mult *= 1 - armor;
-      const ph = phaseOf(b);
-      if (phaseFx === 'right') {
-        b.phaseHit = true;
-        // 相亲和: the first right hit on a matching monster (per pick) gives +2 instead of +1.
-        const aff = affinityMatch(s, b) && !b.affinityPaid;
-        if (aff) b.affinityPaid = true;
-        const gain = aff ? CONFIG.gear.affinityRes : CONFIG.phase.rightRes;
-        if (resMax(s) && move !== 'sentence') cfx.res = Math.min(resMax(s), cfx.res + gain);
-        if (has(s.level, 'layerElement')) element = ELEMENT_BY_GENDER[b.pluralMon ? 'pl' : genderOf(b.word) ?? 'n'] ?? element;
-        if (Object.values(s.equipped).some((it) => it?.legendary === 'articleJudgement')) b.judgement = true;
-        log.push({ text: `${b.phase} 相打中弱点：护甲降一档${resMax(s) && move !== 'sentence' ? `，${resName(s)} +${gain}${aff ? `（护符亲和 ${affinityOf(s)} 共鸣）` : ''}` : ''}。`, tone: 'good' });
-      } else if (phaseFx === 'wrong') log.push({ text: `${b.phase ?? '无'} 相被抵抗：${phaseWrongWhy(b)}。护甲翻倍。`, tone: 'bad' });
-      else if (phaseFx === 'soft') log.push({ text: `${b.phase ? `${b.phase} 相不对` : '没选相'}：这里要 ${ph}${b.pluralMon ? '（复数一律 die）' : phaseCase(b) === 'acc' ? '（第四格）' : phaseCase(b) === 'dat' ? '（第三格）' : ''}。这一级还不罚，选对了护甲降一档。`, tone: 'sys' });
-      const judged = b.judgement;
-      if (judged) {
-        mult *= 2;
-        b.judgement = false;
-      }
-      if (q.type === 'article' && Object.values(s.equipped).some((it) => it?.legendary === 'articleJudgement')) b.judgement = true;
-
-      const charging = intent.kind === 'charge';
-      if (intent.kind === 'defend' && !breaking && !wasBroken) mult *= CONFIG.damage.vsDefend;
-      mult = Math.min(mult, CONFIG.damage.maxMultiplierOfBase);
-      playerDamage = Math.max(1, Math.round(atk * mult));
-      if (b.tutorial === 'loss') playerDamage = Math.min(playerDamage, 3);
-      // The saying alone never finishes it: the word itself still has to be answered.
-      if (q.type === 'saying') playerDamage = Math.max(1, Math.min(playerDamage, m.hp - 1));
-      // 残句: each right step takes a third; only the third step (writing it whole) finishes it.
-      if (b.phrase) {
-        b.phraseStep = (b.phraseStep ?? 0) + 1;
-        playerDamage = b.phraseStep >= 3 ? m.hp : Math.max(1, Math.min(Math.ceil(m.maxHp / 3), m.hp - 1));
-      }
-
-      m.hp -= playerDamage;
-      s.stats.maxHit = Math.max(s.stats.maxHit, playerDamage);
-      if (crit) s.stats.crits += 1;
-      if (charging || intent.kind === 'heal' || intent.kind === 'flee') interrupted = true;
-      // 听懂了时间词: 铭刻 or the finisher on the turn before an announced big attack breaks it early.
-      if (b.chargeIn === 1 && (q.inscribed || q.type === 'sentence')) {
-        b.chargeIn = undefined;
-        if (b.queued?.kind === 'charge') b.queued = undefined;
-        log.push({ text: '你听懂了它说的时间：抢在大招之前打断了它。', tone: 'good' });
-      }
-      if (cfx.yishou && move !== 'cls') {
-        cfx.yishou = false;
-        const d = Math.max(1, Math.round(attack(s) * (1 - effArmor(s, b, 0)) * between(rng, CONFIG.damage.roll[0], CONFIG.damage.roll[1])));
-        m.hp -= d;
-        playerDamage += d;
-        log.push({ text: `以守为攻：顺势再一下，${d}。`, tone: 'good' });
-      }
-      if (element === 'ice') m.chilled = true;
-      if (element === 'fire') m.burn = CONFIG.status.burnTurns;
-      if (element === 'poison') m.poison = Math.min(CONFIG.status.poisonMaxStacks, m.poison + 1);
-
-      // 齐鸣: the same answer lands on every other monster still standing (each against its own armor).
-      if (q.chorus && multi) {
-        const hitOthers: string[] = [];
-        for (const o of pack) {
-          if (o === b || o.outcome) continue;
-          // 词性三相: the chorus only rings on monsters of the stance you are in.
-          if (needsPhase(o) && phaseOf(o) !== b.phase) continue;
-          // 刻字 auch (0.6, 25 级): the chorus rings +20% louder on the others per engraved item.
-          const auch = 1 + CONFIG.engrave.bonus * engraved(s, 'auch');
-          const d = Math.max(1, Math.round(atk * comboMult(s.combo) * auch * between(rng, CONFIG.damage.roll[0], CONFIG.damage.roll[1]) * (1 - effArmor(s, o, tier))));
-          o.monster.hp = Math.max(0, o.monster.hp - d);
-          if (o.monster.broken > 0) o.monster.broken -= 1;
-          hitOthers.push(`${o.named || o.stage > 0 ? fullForm(o.word) : '另一只'} ${d}`);
+        const atk = attack(s);
+        // 低语: the hinted question hits like one tier easier (typed → choice armor, hard → typed, no armor break).
+        const tier = (q.whispered ? Math.max(0, qTier(q) - 1) : qTier(q)) as 0 | 1 | 2;
+        let mult = between(rng, CONFIG.damage.roll[0], CONFIG.damage.roll[1]);
+        const pen = s.cls === 'writer' ? 0.05 * rank(s, 'bifeng') : 0;
+        // 0.4: the question type no longer multiplies damage (armor does that, below). Gear affixes stay.
+        if (q.type === 'storm') {
+          const n = letters(q.word!);
+          mult *= ((1 + (0.15 + 0.03 * rank(s, 'changci')) * n) / 1.4) * (1 + pen); // same ratio to typing as before
+          log.push({ text: `墨水风暴：${fullForm(q.word!)}，${n} 个字母。`, tone: 'good' });
+        } else if (typedLike) mult *= 1 + affixTotal(s, 'typedDmg') + pen;
+        if (q.type === 'sentence') {
+          mult *= 1 + affixTotal(s, 'sentenceDmg');
+          if (has(s.level, 'layerElement')) element = ELEMENT_BY_GENDER[genderOf(b.word) ?? 'n'];
         }
-        if (hitOthers.length) log.push({ text: `齐鸣：${hitOthers.join('，')}。`, tone: 'good' });
-      }
-      // und: the second named monster takes the same blow (against its own armor; a finisher breaks it anyway).
-      if (q.undWord && multi) {
-        const o = pack.find((x) => x !== b && !x.outcome && x.word.id === q.undWord!.id);
-        if (o) {
-          const d = Math.max(1, Math.round(playerDamage * (1 - effArmor(s, o, tier))));
-          o.monster.hp = Math.max(0, o.monster.hp - d);
-          log.push({ text: `und：${q.undWord.de} 也挨了 ${d}。`, tone: 'good' });
+        if (q.inscribed) mult *= CONFIG.tech.inscribeMult;
+        if (q.ult) {
+          const full = b.ultHits === 2;
+          mult *= full ? CONFIG.ultimate.both : CONFIG.ultimate.one;
+          log.push({ text: full ? `终极技能：两个空都对，×${CONFIG.ultimate.both}。` : `终极技能：对了一个空，×${CONFIG.ultimate.one}。`, tone: 'good' });
         }
+        if (b.fx.doubleNext) {
+          mult *= 2;
+          b.fx.doubleNext = false;
+          log.push({ text: '「Der Zug fährt ab!」——这一击翻倍。', tone: 'good' });
+        }
+        // 怪物诅咒: a hard question answered right breaks it.
+        if (tier === 2 && b.curse) {
+          log.push({ text: b.curse === 'forget' ? '咒文碎了：遗忘解除，低语和中文提示回来了。' : '咒文碎了：沉默解除，又能读出来了。', tone: 'good' });
+          delete b.curse;
+        }
+        // 刻字 denn (0.6, 25 级): a hard question answered right hits +20% per engraved item.
+        if (tier === 2 && engraved(s, 'denn')) mult *= 1 + CONFIG.engrave.bonus * engraved(s, 'denn');
+
+        const breaking = intent.kind === 'defend' && writtenQ;
+        const g = genderOf(b.word);
+        if (g === 'm') mult *= 1 + affixTotal(s, 'vsMasc');
+        if (g === 'f') mult *= 1 + affixTotal(s, 'vsFem');
+        if (g === 'n') mult *= 1 + affixTotal(s, 'vsNeut');
+        mult *= comboMult(s.combo);
+
+        // Crits: forced ones first (接句怪, 初识暴击), then the random roll.
+        if (q.type === 'saying') {
+          crit = true;
+        } else if (b.stage === 0 && b.kind === 'new' && !b.firstCorrectDone) {
+          crit = true;
+          newSpell = true;
+        } else if ((s.flags.wortgewalt as number) > 0) {
+          crit = true;
+        } else if (critWasReady) {
+          crit = true;
+          cfx.critReady = false;
+        } else {
+          const chance = critChance(s) + (q.type === 'article' || q.type === 'pickDe' || q.type === 'pickZh' ? affixTotal(s, 'choiceCrit') : 0);
+          crit = rng() < chance;
+        }
+        if (q.type !== 'saying') b.firstCorrectDone = true;
+        if (crit) mult *= CONFIG.player.critMult;
+        // 护甲和破甲: a hard question (or writing through a guard) breaks the armor for this hit and the next two.
+        const stanceMove = move === 'attack' || move === 'inscribe' || move === 'whisper' || move === 'chorus' || move === 'sentence';
+        if (stanceMove && needsPhase(b)) {
+          const pc = phaseCase(b);
+          // Not punished yet: Lv1–5, and the first level of each case (acc at 7, dat at 15).
+          const soft = (b.perfekt && s.level <= CONFIG.perfekt.softUntil) || s.level <= CONFIG.phase.softUntil || (pc === 'acc' && s.level === CONFIG.phase.accFrom) || (pc === 'dat' && s.level === CONFIG.phase.datFrom);
+          phaseFx = phaseRight(b) ? 'right' : soft ? 'soft' : 'wrong';
+        }
+        if (phaseFx === 'wrong') {
+          // Resisted: whatever break it had is gone, and this hit meets doubled armor.
+          if (m.broken > 0) log.push({ text: '破甲被抵消了。', tone: 'bad' });
+          m.broken = 0;
+        }
+        const wasBroken = m.broken > 0;
+        if ((tier === 2 || breaking) && !wasBroken && phaseFx !== 'wrong') {
+          m.broken = CONFIG.armor.breakHits + (breaking && s.cls === 'writer' && rank(s, 'tengxie') ? 1 : 0);
+          log.push({ text: breaking ? `写对了。壳裂开了：这一下和之后 ${m.broken - 1} 下无视护甲。` : `难题破甲：这一下和之后 ${m.broken - 1} 下无视护甲。`, tone: 'good' });
+        }
+        // Right stance = the hit meets armor one tier lower (a choice answer as if typed, a typed one ignores it).
+        const armor = phaseFx === 'right' ? effArmor(s, b, tier === 0 ? 1 : 2) : phaseFx === 'wrong' ? effArmor(s, b, tier === 2 ? 1 : tier, CONFIG.phase.wrongArmor) : effArmor(s, b, tier);
+        if (m.broken > 0) m.broken -= 1;
+        mult *= 1 - armor;
+        const ph = phaseOf(b);
+        if (phaseFx === 'right') {
+          b.phaseHit = true;
+          // 相亲和: the first right hit on a matching monster (per pick) gives +2 instead of +1.
+          const aff = affinityMatch(s, b) && !b.affinityPaid;
+          if (aff) b.affinityPaid = true;
+          const gain = aff ? CONFIG.gear.affinityRes : CONFIG.phase.rightRes;
+          if (resMax(s) && move !== 'sentence') cfx.res = Math.min(resMax(s), cfx.res + gain);
+          if (has(s.level, 'layerElement')) element = ELEMENT_BY_GENDER[b.pluralMon ? 'pl' : genderOf(b.word) ?? 'n'] ?? element;
+          if (Object.values(s.equipped).some((it) => it?.legendary === 'articleJudgement')) b.judgement = true;
+          log.push({ text: `${b.phase} 相打中弱点：护甲降一档${resMax(s) && move !== 'sentence' ? `，${resName(s)} +${gain}${aff ? `（护符亲和 ${affinityOf(s)} 共鸣）` : ''}` : ''}。`, tone: 'good' });
+        } else if (phaseFx === 'wrong') log.push({ text: `${b.phase ?? '无'} 相被抵抗：${phaseWrongWhy(b)}。护甲翻倍。`, tone: 'bad' });
+        else if (phaseFx === 'soft') log.push({ text: `${b.phase ? `${b.phase} 相不对` : '没选相'}：这里要 ${ph}${b.pluralMon ? '（复数一律 die）' : phaseCase(b) === 'acc' ? '（第四格）' : phaseCase(b) === 'dat' ? '（第三格）' : ''}。这一级还不罚，选对了护甲降一档。`, tone: 'sys' });
+        const judged = b.judgement;
+        if (judged) {
+          mult *= 2;
+          b.judgement = false;
+        }
+        if (q.type === 'article' && Object.values(s.equipped).some((it) => it?.legendary === 'articleJudgement')) b.judgement = true;
+
+        const charging = intent.kind === 'charge';
+        if (intent.kind === 'defend' && !breaking && !wasBroken) mult *= CONFIG.damage.vsDefend;
+        mult = Math.min(mult, CONFIG.damage.maxMultiplierOfBase);
+        playerDamage = Math.max(1, Math.round(atk * mult));
+        if (b.tutorial === 'loss') playerDamage = Math.min(playerDamage, 3);
+        // The saying alone never finishes it: the word itself still has to be answered.
+        if (q.type === 'saying') playerDamage = Math.max(1, Math.min(playerDamage, m.hp - 1));
+        // 残句: each right step takes a third; only the third step (writing it whole) finishes it.
+        if (b.phrase) {
+          b.phraseStep = (b.phraseStep ?? 0) + 1;
+          playerDamage = b.phraseStep >= 3 ? m.hp : Math.max(1, Math.min(Math.ceil(m.maxHp / 3), m.hp - 1));
+        }
+
+        m.hp -= playerDamage;
+        s.stats.maxHit = Math.max(s.stats.maxHit, playerDamage);
+        if (crit) s.stats.crits += 1;
+        if (charging || intent.kind === 'heal' || intent.kind === 'flee') interrupted = true;
+        // 听懂了时间词: 铭刻 or the finisher on the turn before an announced big attack breaks it early.
+        if (b.chargeIn === 1 && (q.inscribed || q.type === 'sentence')) {
+          b.chargeIn = undefined;
+          if (b.queued?.kind === 'charge') b.queued = undefined;
+          log.push({ text: '你听懂了它说的时间：抢在大招之前打断了它。', tone: 'good' });
+        }
+        if (cfx.yishou && move !== 'cls') {
+          cfx.yishou = false;
+          const d = Math.max(1, Math.round(attack(s) * (1 - effArmor(s, b, 0)) * between(rng, CONFIG.damage.roll[0], CONFIG.damage.roll[1])));
+          m.hp -= d;
+          playerDamage += d;
+          log.push({ text: `以守为攻：顺势再一下，${d}。`, tone: 'good' });
+        }
+        if (element === 'ice') m.chilled = true;
+        if (element === 'fire') m.burn = CONFIG.status.burnTurns;
+        if (element === 'poison') m.poison = Math.min(CONFIG.status.poisonMaxStacks, m.poison + 1);
+
+        // 齐鸣: the same answer lands on every other monster still standing (each against its own armor).
+        if (q.chorus && multi) {
+          const hitOthers: string[] = [];
+          for (const o of pack) {
+            if (o === b || o.outcome) continue;
+            // 词性三相: the chorus only rings on monsters of the stance you are in.
+            if (needsPhase(o) && phaseOf(o) !== b.phase) continue;
+            // 刻字 auch (0.6, 25 级): the chorus rings +20% louder on the others per engraved item.
+            const auch = 1 + CONFIG.engrave.bonus * engraved(s, 'auch');
+            const d = Math.max(1, Math.round(atk * comboMult(s.combo) * auch * between(rng, CONFIG.damage.roll[0], CONFIG.damage.roll[1]) * (1 - effArmor(s, o, tier))));
+            o.monster.hp = Math.max(0, o.monster.hp - d);
+            if (o.monster.broken > 0) o.monster.broken -= 1;
+            hitOthers.push(`${o.named || o.stage > 0 ? fullForm(o.word) : '另一只'} ${d}`);
+          }
+          if (hitOthers.length) log.push({ text: `齐鸣：${hitOthers.join('，')}。`, tone: 'good' });
+        }
+        // und: the second named monster takes the same blow (against its own armor; a finisher breaks it anyway).
+        if (q.undWord && multi) {
+          const o = pack.find((x) => x !== b && !x.outcome && x.word.id === q.undWord!.id);
+          if (o) {
+            const d = Math.max(1, Math.round(playerDamage * (1 - effArmor(s, o, tier))));
+            o.monster.hp = Math.max(0, o.monster.hp - d);
+            log.push({ text: `und：${q.undWord.de} 也挨了 ${d}。`, tone: 'good' });
+          }
+        }
+
+        const tag = (judged ? '冠词审判！' : '') + (crit ? (newSpell ? '新言灵！暴击 ' : '暴击 ') : '');
+        const el = element ? `（${ELEMENT_ZH[element]}）` : '';
+        log.push({ text: `${tag}你造成 ${playerDamage} 点伤害${el}。`, tone: crit ? 'crit' : 'good' });
+        if (intent.kind === 'defend' && !breaking && !wasBroken) log.push({ text: '它缩着。选择题只刮三成，默写才撬得开。', tone: 'info' });
       }
 
-      const tag = (judged ? '冠词审判！' : '') + (crit ? (newSpell ? '新言灵！暴击 ' : '暴击 ') : '');
-      const el = element ? `（${ELEMENT_ZH[element]}）` : '';
-      log.push({ text: `${tag}你造成 ${playerDamage} 点伤害${el}。`, tone: crit ? 'crit' : 'good' });
-      if (intent.kind === 'defend' && !breaking && !wasBroken) log.push({ text: '它缩着。选择题只刮三成，默写才撬得开。', tone: 'info' });
-    }
-
-    if (m.hp <= 0) {
-      const overkill = -m.hp;
-      m.hp = 0;
-      b.outcome = 'win';
-      if (q.type === 'storm' && multi && overkill > 0) spillStorm(s, pack, b, overkill, typedLike, log);
-      b.lastKillTyped = typedQ && !q.whispered && (q.type === 'sentence' ? verdict.word?.id === b.word.id : true);
-      if (q.type === 'typed' && !q.withArticle && hasArticleQuestion(b.word)) b.lastKillTyped = false;
-      // A noun's 归名 blow must write the article: only a form cloze that includes one (den Tee) counts.
-      if (q.type === 'cloze' && hasArticleQuestion(b.word) && !(q.clozeMode === 'form' && ARTICLE_RE.test(q.answer ?? ''))) b.lastKillTyped = false;
-      log.push({ text: `${tagOf(b)}散了。`, tone: 'sys' });
-      kills.push(b);
-    }
-  } else {
-    if (s.cls === 'writer' && typedLike && rank(s, 'lengjing') && !cfx.calmUsed) {
-      cfx.calmUsed = true;
-      log.push({ text: '冷静：写错了，连击还在。', tone: 'info' });
-    } else s.combo = 0;
-    b.wrongStreak += 1;
-    if (b.stage === 2 && !b.slipped && b.kind === 'due') {
-      b.slipped = true;
-      log.push({ text: '错了。它长回一颗牙（退回裂形）。', tone: 'bad' });
-    }
-    if (stray) {
-      const d = Math.max(1, Math.round(attack(s) * (1 - effArmor(s, stray, 0)) * CONFIG.pack.strayMult * between(rng, CONFIG.damage.roll[0], CONFIG.damage.roll[1])));
-      stray.monster.hp = Math.max(0, stray.monster.hp - d);
-      log.push({ text: `你喊 ${input}，应声的是 ${fullForm(stray.word)}：只有 ${d}。`, tone: 'bad' });
-      if (stray.monster.hp <= 0) {
-        stray.outcome = 'win';
-        stray.lastKillTyped = false;
-        kills.push(stray);
-        log.push({ text: `${fullForm(stray.word)} 被打散了。`, tone: 'sys' });
+      if (m.hp <= 0) {
+        const overkill = -m.hp;
+        m.hp = 0;
+        b.outcome = 'win';
+        if (q.type === 'storm' && multi && overkill > 0) spillStorm(s, pack, b, overkill, typedLike, log);
+        b.lastKillTyped = typedQ && !q.whispered && (q.type === 'sentence' ? verdict.word?.id === b.word.id : true);
+        if (q.type === 'typed' && !q.withArticle && hasArticleQuestion(b.word)) b.lastKillTyped = false;
+        // A noun's 归名 blow must write the article: only a form cloze that includes one (den Tee) counts.
+        if (q.type === 'cloze' && hasArticleQuestion(b.word) && !(q.clozeMode === 'form' && ARTICLE_RE.test(q.answer ?? ''))) b.lastKillTyped = false;
+        log.push({ text: `${tagOf(b)}散了。`, tone: 'sys' });
+        kills.push(b);
       }
-    } else log.push({ text: q.type === 'callout' ? `没有谁叫 ${input}。落空。` : '没叫对。它没反应。', tone: 'bad' });
-  }
+    } else {
+      if (s.cls === 'writer' && typedLike && rank(s, 'lengjing') && !cfx.calmUsed) {
+        cfx.calmUsed = true;
+        log.push({ text: '冷静：写错了，连击还在。', tone: 'info' });
+      } else s.combo = 0;
+      b.wrongStreak += 1;
+      if (b.stage === 2 && !b.slipped && b.kind === 'due') {
+        b.slipped = true;
+        log.push({ text: '错了。它长回一颗牙（退回裂形）。', tone: 'bad' });
+      }
+      if (stray) {
+        const d = Math.max(1, Math.round(attack(s) * (1 - effArmor(s, stray, 0)) * CONFIG.pack.strayMult * between(rng, CONFIG.damage.roll[0], CONFIG.damage.roll[1])));
+        stray.monster.hp = Math.max(0, stray.monster.hp - d);
+        log.push({ text: `你喊 ${input}，应声的是 ${fullForm(stray.word)}：只有 ${d}。`, tone: 'bad' });
+        if (stray.monster.hp <= 0) {
+          stray.outcome = 'win';
+          stray.lastKillTyped = false;
+          kills.push(stray);
+          log.push({ text: `${fullForm(stray.word)} 被打散了。`, tone: 'sys' });
+        }
+      } else log.push({ text: q.type === 'callout' ? `没有谁叫 ${input}。落空。` : '没叫对。它没反应。', tone: 'bad' });
+    }
 
 
-  // Target died and nobody else is left: the fight ends before anyone acts.
-  if (pack.every((x) => x.outcome === 'win')) {
-    syncShared(b, pack);
-    return finish(s, b, { correct: ok, verdict, playerDamage, crit, newSpell, monsterDamage: 0, parried: false, element, log, outcome: 'win', readRight, kills, killer: null, phase: phaseFx, ...cutFx.report });
+    // Target died and nobody else is left: the fight ends before anyone acts.
+    if (pack.every((x) => x.outcome === 'win')) {
+      syncShared(b, pack);
+      return finish(s, b, { correct: ok, verdict, playerDamage, crit, newSpell, monsterDamage: 0, parried: false, element, log, outcome: 'win', readRight, kills, killer: null, phase: phaseFx, ...cutFx.report });
+    }
   }
 
   // --- 2. Every monster still standing acts.

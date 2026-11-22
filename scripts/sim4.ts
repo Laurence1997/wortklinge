@@ -7,7 +7,8 @@ import { makeRng } from '../src/core/rng';
 import { CONFIG, levelGapMult, levelHours, xpToNext } from '../src/core/config';
 import { CONJ } from '../src/data/verbs';
 import { newGame, maxHp, type GameState } from '../src/core/state';
-import { startBattle, makeQuestion, monsterStats, moveReady, needsPhase, phaseOf, qTier, resolveTurn, type Question } from '../src/core/combat';
+import { bonfireRefill, count as itemCount, grantStarter, rollItemDrops } from '../src/core/items';
+import { canHint, hintOf, ITEM_TURN, startBattle, makeQuestion, monsterStats, moveReady, needsPhase, phaseOf, qTier, resolveTurn, type Question } from '../src/core/combat';
 import type { Article } from '../src/core/types';
 import { makeItem } from '../src/core/loot';
 import { WORDS } from '../src/data/words';
@@ -26,6 +27,9 @@ if (process.env.GEAR) CONFIG.gear.dmg = +process.env.GEAR;
 if (process.env.ARM) CONFIG.armor.base = +process.env.ARM;
 if (process.env.AFFRES) CONFIG.gear.affinityRes = +process.env.AFFRES;
 let rng = makeRng(11);
+// ITEMS=0: 低语 free as before (only the per-word lock), no 药片. Default: the 物品栏 rules.
+const ITEMS = process.env.ITEMS !== '0';
+let TAB_N = 0, HINT_N = 0;
 
 type T = 'grind' | 'balance' | 'learn';
 // pa = chance the first stance on a monster is right (词性三相, 0.5). PHASE=0: no stance picked (counts as wrong).
@@ -62,6 +66,8 @@ function player(L: number, G: number): GameState {
   if (AFF) s.flags.affinity = AFF;
   s.equipped.dict = makeItem(rng, L, 'green', 'dict'); // 1 hint a fight (低语 without a class)
   for (const w of WORDS.filter((x) => x.lvl <= L)) s.words[w.id] = { stage: 1, due: 9e15, firstSeen: 0, lastSeen: 0, relapse: 0, correct: 1, wrong: 0 };
+  grantStarter(s); // 物品栏: 3 纸条, 1 药片
+  if (!ITEMS) s.flags.invHint = 1e9; // old rules: 低语 limited only by the per-word lock
   return s;
 }
 
@@ -110,6 +116,15 @@ function fight(t: T, s: GameState, m: number, keepHp = false) {
       pickPhase();
       sec += PHASE_SEC;
     }
+    // 物品栏 (2026-11-22): below 30% HP with a 药片 in the bag, eat it (the turn is spent, the monster acts).
+    if (ITEMS && s.hp < maxHp(s) * 0.3 && itemCount(s, 'tablet') > 0) {
+      s.flags.invTablet = itemCount(s, 'tablet') - 1;
+      s.hp = Math.min(maxHp(s), s.hp + Math.round(maxHp(s) * CONFIG.items.tabletHeal));
+      TAB_N++;
+      resolveTurn(s, b, 'item', ITEM_TURN, '', rng);
+      sec += 2;
+      continue;
+    }
     let move: Move = 'attack';
     let q: Question = makeQuestion(s, b, 'attack', rng);
     if (moveReady(s, b, 'sentence')) {
@@ -118,9 +133,12 @@ function fight(t: T, s: GameState, m: number, keepHp = false) {
     } else if (P.inscribe && s.level >= 6 && moveReady(s, b, 'inscribe') && qTier(q) < 2) {
       move = 'inscribe'; INS_N++;
       q = makeQuestion(s, b, move, rng);
-    } else if (P.whisper && qTier(q) > 0 && moveReady(s, b, 'whisper')) {
+    } else if (P.whisper && qTier(q) > 0 && canHint(s, b, 'attack', q)) {
+      // 低语 is a hint on the question already shown (2026-11-22): same question, hinted; ITEMS=1 spends a 纸条.
       move = 'whisper';
-      q = makeQuestion(s, b, move, rng);
+      q = hintOf(b, q);
+      if (ITEMS) s.flags.invHint = itemCount(s, 'hint') - 1;
+      HINT_N++;
     }
     const tier = qTier(q);
     const acc = Math.min(0.99, P.acc[tier] + (q.whispered ? 0.25 : 0));
@@ -154,7 +172,9 @@ function cell(t: T, L: number, G: number, m = L) {
   for (let i = 0; i < N; i++) {
     // A session of 20 fights: combo and the 铭刻 cooldown carry over, like real play between bonfires.
     if (i % 20 === 0) s = player(L, G);
+    if (i % 5 === 0) bonfireRefill(s); // about one bonfire rest per 5 fights
     const r = fight(t, s, m);
+    if (ITEMS && r.won) rollItemDrops(s, rng);
     q += r.qs; sec += r.sec; lost += r.lost; wins += r.won ? 1 : 0;
   }
   return { q: q / N, lost: lost / N, win: wins / N, kpm: (wins / sec) * 60 };
@@ -387,6 +407,7 @@ const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
 const ssg = 3 * types.reduce((a, t) => a + (mean(powers.map(([L]) => grid.get(`${t}/${L}`)!)) - mu) ** 2, 0);
 const ssp = 3 * powers.reduce((a, [L]) => a + (mean(types.map((t) => grid.get(`${t}/${L}`)!)) - mu) ** 2, 0);
 console.log('\nkills/min vs Lv18:', Object.fromEntries([...grid].map(([k, v]) => [k, +v.toFixed(2)])));
+console.log(`物品栏 ${ITEMS ? 'on' : 'off'}: 药片 used ${TAB_N}, 低语 used ${HINT_N}`);
 console.log(`German share ${((100 * ssg) / (ssg + ssp)).toFixed(0)}%`);
 const g18 = grid.get(`grind/${REF}`)!, b18 = grid.get(`balance/${REF}`)!, l18 = grid.get(`learn/${REF}`)!;
 console.log(`perfekt battles: ${PERF_N}`);
