@@ -44,6 +44,8 @@ export const CONFIG = {
   levelCap: 30,
   /** 现在完成时 (0.6 第 5 块): haben/sein stance from 21 (wrong picks free until 22), 填分词 by kind 21/24/27,
    *  region-1/2 verb reviews in the Perfekt one time in three. */
+  /** 21 级: big attacks announce when they come (jetzt / gleich / in zwei Runden). */
+  timeWords: { from: 21 },
   perfekt: { from: 21, softUntil: 22, irregularFrom: 24, prefixFrom: 27, reviewChance: 1 / 3 },
   /** The neighbour's door opens onto region 2 (面包集市) at this level, after the region-1 boss. */
   region2Level: 10,

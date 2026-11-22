@@ -1461,3 +1461,30 @@ describe('0.6 第 3 区: 现在完成时', async () => {
     expect(q.clozeMode).toBe('form');
   });
 });
+
+describe('0.6 第 3 区: 时间词进难题预告', () => {
+  it('an announced big attack lands exactly when said; 铭刻 on the turn before breaks it', () => {
+    const s = newGame('T', 'student', T0);
+    s.level = 21;
+    const w = WORDS.find((x) => x.region === 3 && x.pos === 'n')!;
+    const b = startBattle(s, w, makeRng(1));
+    b.monster.hp = b.monster.maxHp = 5000;
+    b.intent = { kind: 'wait', shown: 'charge', hits: 0, element: 'phys', line: 'Gleich kommt mein großer Schlag!', zh: '', layers: ['time'] };
+    b.chargeIn = 1;
+    b.phase = phaseOf(b) ?? undefined;
+    const q = makeQuestion(s, b, 'attack', makeRng(2));
+    resolveTurn(s, b, 'attack', q, q.answer!, makeRng(3));
+    expect(b.intent.kind).toBe('charge');
+    expect(b.intent.line).toBe('Jetzt!');
+
+    const b2 = startBattle(s, w, makeRng(4));
+    b2.monster.hp = b2.monster.maxHp = 5000;
+    b2.intent = { kind: 'wait', shown: 'charge', hits: 0, element: 'phys', line: 'Gleich kommt mein großer Schlag!', zh: '', layers: ['time'] };
+    b2.chargeIn = 1;
+    b2.phase = phaseOf(b2) ?? undefined;
+    const q2 = makeQuestion(s, b2, 'inscribe', makeRng(5));
+    resolveTurn(s, b2, 'inscribe', q2, q2.answer!, makeRng(6));
+    expect(b2.chargeIn).toBeUndefined();
+    expect(b2.intent.line).not.toBe('Jetzt!');
+  });
+});

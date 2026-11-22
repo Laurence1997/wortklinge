@@ -145,6 +145,8 @@ export interface Battle {
   affinityPaid?: boolean;
   /** 先教后考 (0.5): the turn on which a never-met noun had its stance picked for it and shown. */
   phaseTaught?: number;
+  /** 21 级「时间」进难题预告: turns left until an announced big attack («gleich», «in zwei Runden»). */
+  chargeIn?: number;
   /** 现在完成时 (0.6, region 3 Lv21+): a verb monster speaking in the Perfekt; its stance is haben / sein. */
   perfekt?: boolean;
   /** 复数怪 (0.5, Lv11+): a whole crowd of this word, die Äpfel. Only the die stance is right. */
@@ -280,6 +282,24 @@ export function startBattle(
   return b;
 }
 
+/** 21 级「时间」进难题预告: a big attack says when it comes — jetzt (this turn, as before), gleich (next turn) or
+ *  in zwei Runden — and comes exactly then. Announcing turns are a breath (no attack). */
+function timeCharge(b: Battle, intent: Intent, rng: Rng): Intent {
+  const r = rng();
+  if (r < 1 / 3) return { ...intent, line: 'Jetzt kommt mein großer Schlag!', zh: '现在就放大招！', layers: [...intent.layers, 'time'] };
+  const n = r < 2 / 3 ? 1 : 2;
+  b.chargeIn = n;
+  return {
+    kind: 'wait',
+    shown: 'charge',
+    hits: 0,
+    element: 'phys',
+    line: n === 1 ? 'Gleich kommt mein großer Schlag!' : 'In zwei Runden kommt mein großer Schlag!',
+    zh: n === 1 ? '马上（下回合）就放大招！' : '再过两回合放大招！',
+    layers: ['time'],
+  };
+}
+
 /** 现在完成时 (0.6 第 5 块): from Lv21 every region-3 verb monster in region 3 speaks in the Perfekt, and a region-1/2
  *  verb coming back as a review does so one time in three (as plurals do in region 2). */
 export function perfektBattle(s: GameState, w: Word, kind: Kind, rng: Rng, scripted = false): boolean {
@@ -346,8 +366,16 @@ function nextIntent(s: GameState, b: Battle, rng: Rng): Intent {
   } else if (b.monster.chilled && b.intent?.kind === 'charge') {
     // Ice pushed the charge back: it is still charging.
     intent = { ...b.intent, line: 'Moment … noch nicht …', zh: '等等……还没好……（冰把蓄力往后推了）' };
+  } else if (!tut && b.chargeIn !== undefined) {
+    // An announced big attack: normal turns until the time runs out, then it lands as said.
+    b.chargeIn -= 1;
+    if (b.chargeIn <= 0) {
+      b.chargeIn = undefined;
+      intent = generateIntent(rng, { ...ctx, force: { kind: 'charge', line: 'Jetzt!', zh: '现在！（说好的大招来了）', layers: ['time'] } });
+    } else intent = generateIntent(rng, { ...ctx, turnsSinceCharge: 0 });
   } else {
     intent = generateIntent(rng, ctx);
+    if (intent.kind === 'charge' && !tut && s.level >= CONFIG.timeWords.from) intent = timeCharge(b, intent, rng);
   }
   if (intent.layers.includes('negation') || (intent.layers.includes('object') && intent.kind === 'wait') || (tut === 'heal' && intent.kind === 'heal')) b.trapUsed = true;
   if (intent.kind === 'charge') b.turnsSinceCharge = 0;
@@ -357,13 +385,13 @@ function nextIntent(s: GameState, b: Battle, rng: Rng): Intent {
   if (b.phrase && intent.kind !== 'flee') {
     // 残句: it only ever shouts its half sentence (its big attack included).
     intent = { ...intent, ...shoutLine(b.phrase) };
-  } else if (!tut && intent.kind !== 'charge' && intent.kind !== 'flee' && b.saying && !b.sayingDone) {
+  } else if (!tut && intent.kind !== 'charge' && intent.kind !== 'flee' && !intent.layers.includes('time') && b.saying && !b.sayingDone) {
     // 接句怪: until you finish its line, the line is its half sentence (no mumbled example giving the rest away).
     intent = { ...intent, ...shoutLine(b.saying) };
-  } else if (!tut && intent.kind !== 'charge' && intent.kind !== 'flee' && b.perfekt) {
+  } else if (!tut && intent.kind !== 'charge' && intent.kind !== 'flee' && !intent.layers.includes('time') && b.perfekt) {
     // 现在完成时: the Perfekt sentence with haben / sein swallowed.
     intent = { ...intent, ...perfektLine(b.word), caseArt: undefined };
-  } else if (!tut && intent.kind !== 'charge' && intent.kind !== 'flee') {
+  } else if (!tut && intent.kind !== 'charge' && intent.kind !== 'flee' && !intent.layers.includes('time')) {
     // 格位姿态 (Lv7+): only sentences whose slot is in a case this level reads, and the stance must match the slot.
     const g = genderOf(b.word);
     const open = casesOpen(s.level);
@@ -1276,6 +1304,12 @@ export function resolveTurn(
       s.stats.maxHit = Math.max(s.stats.maxHit, playerDamage);
       if (crit) s.stats.crits += 1;
       if (charging || intent.kind === 'heal' || intent.kind === 'flee') interrupted = true;
+      // 听懂了时间词: 铭刻 or the finisher on the turn before an announced big attack breaks it early.
+      if (b.chargeIn === 1 && (q.inscribed || q.type === 'sentence')) {
+        b.chargeIn = undefined;
+        if (b.queued?.kind === 'charge') b.queued = undefined;
+        log.push({ text: '你听懂了它说的时间：抢在大招之前打断了它。', tone: 'good' });
+      }
       if (cfx.yishou && move !== 'cls') {
         cfx.yishou = false;
         const d = Math.max(1, Math.round(attack(s) * (1 - effArmor(s, b, 0)) * between(rng, CONFIG.damage.roll[0], CONFIG.damage.roll[1])));
