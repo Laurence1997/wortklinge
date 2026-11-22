@@ -127,11 +127,13 @@ const CASE_ARTS: Record<Case, Record<'m' | 'f' | 'n' | 'pl', string[]>> = {
 /** The articles of the answer's case for this noun's gender, or null when the answer is not article + noun. */
 function sameCaseArticles(answer: string, w: Word): string[] | null {
   const [det, ...rest] = answer.trim().split(/\s+/);
-  const g = genderOf(w);
-  if (w.pos !== 'n' || !g || !rest.length || !det || key(rest.join(' ')) !== key(w.de)) return null; // not a plural or -n form
+  const noun = key(rest.join(' '));
+  // Singular dictionary form, or the plural (with the dative -n): plural only takes die / keine, den / keinen.
+  const g = noun === key(w.de) ? genderOf(w) : w.pl && (noun === key(w.pl) || noun === key(w.pl + 'n')) ? 'pl' : null;
+  if (w.pos !== 'n' || !g || !rest.length || !det) return null;
   const d = det.toLowerCase();
   if (!/^(d(er|ie|as|en|em)|k?ein(e|en|em|er)?)$/.test(d)) return null;
-  const c = caseOf(g, d.replace(/^k/, ''));
+  const c = caseOf(g, g === 'pl' ? ({ keine: 'die', keinen: 'den' } as Record<string, string>)[d] ?? d : d.replace(/^k/, ''));
   if (!c) return null;
   const list = CASE_ARTS[c][g];
   return list.includes(d) ? list : null;

@@ -63,6 +63,9 @@ describe('0.6.x 完形填空答错讲清原因', () => {
     expect(clozeWhy('einen Großvater', gv, 'meine Grossvater')[1]).toBe('冠词词尾不对：Großvater 是阳性，这里要 einen。');
     const tasse = WORDS.find((x) => x.de === 'Tasse')!;
     expect(gradeCloze('eine Tassen', 'die Tassen', tasse, '我在洗杯子。')).toBe(false);
+    expect(gradeCloze('keine Tassen', 'die Tassen', tasse, '我在洗杯子。')).toBe(true);
+    expect(gradeCloze('keinen Tassen', 'den Tassen', tasse, '我用杯子喝。')).toBe(true);
+    expect(gradeCloze('die Tassen', 'den Tassen', tasse, '我用杯子喝。')).toBe(false);
     expect(clozeWhy('die Tassen', tasse, 'eine Tassen')).toEqual([]);
   });
 });
