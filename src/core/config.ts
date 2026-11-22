@@ -161,6 +161,8 @@ export const CONFIG = {
 
   /** 吞秤者 (region 2, Lv18): prices and quantities. */
   boss2: { hp: 7, firstTimeSeconds: 45, laterSeconds: 30, xp: 900, gold: 300 },
+  /** 晚点之王 (0.6 第 5 块, Lv28): HP 8; rewards as 吞秤者, XP scaled by the level curve. */
+  boss3: { hp: 8, firstTimeSeconds: 45, laterSeconds: 30, xp: 1000, gold: 350 },
 };
 
 /** 0.4: a fresh monster's HP at this level (before stage and overdue). */

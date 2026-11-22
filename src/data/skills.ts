@@ -9,8 +9,8 @@ export interface Skill {
   lines: Array<{ de: string; zh: string }>;
   effect: string;
   cooldown: number;
-  /** Which boss teaches it (1 = 无名的邻居, 2 = 吞秤者). */
-  boss: 1 | 2;
+  /** Which boss teaches it (1 = 无名的邻居, 2 = 吞秤者, 3 = 晚点之王). */
+  boss: 1 | 2 | 3;
 }
 
 /** Lines unlocked so far: the first, plus one per 5 casts. */
@@ -120,5 +120,50 @@ export const SKILLS: Record<string, Skill> = {
     effect: '这场战斗里打死的怪，金币翻倍',
     cooldown: 6,
     boss: 2,
+  },
+  zugFaehrtAb: {
+    id: 'zugFaehrtAb',
+    de: 'Der Zug fährt ab!',
+    zh: '发车',
+    zhLine: '火车开了！',
+    lines: [
+      { de: 'Der Zug fährt ab!', zh: '火车开了！' },
+      { de: 'Bitte einsteigen!', zh: '请上车！' },
+      { de: 'Wir fahren jetzt los.', zh: '我们现在出发。' },
+      { de: 'Der Zug fährt pünktlich ab.', zh: '火车准时开出。' },
+    ],
+    effect: '每场一次：下一题答对伤害翻倍',
+    cooldown: 99,
+    boss: 3,
+  },
+  verpasst: {
+    id: 'verpasst',
+    de: 'Ich habe den Zug verpasst.',
+    zh: '错过',
+    zhLine: '我错过了火车。',
+    lines: [
+      { de: 'Ich habe den Zug verpasst.', zh: '我错过了火车。' },
+      { de: 'Ich bin zu spät gekommen.', zh: '我来晚了。' },
+      { de: 'Der Bus ist schon abgefahren.', zh: '公交车已经开走了。' },
+      { de: 'Ich habe den Bus verpasst.', zh: '我错过了公交车。' },
+    ],
+    effect: '每场一次：下一次答错不丢资源（铭刻失手不扣，连写不断）',
+    cooldown: 99,
+    boss: 3,
+  },
+  naechsterHalt: {
+    id: 'naechsterHalt',
+    de: 'Nächster Halt!',
+    zh: '下一站',
+    zhLine: '下一站！',
+    lines: [
+      { de: 'Nächster Halt!', zh: '下一站！' },
+      { de: 'Nächste Station: Altstadt.', zh: '下一站：老城。' },
+      { de: 'Wir steigen hier aus.', zh: '我们在这里下车。' },
+      { de: 'Endstation, bitte alle aussteigen!', zh: '终点站，请全部下车！' },
+    ],
+    effect: '每场一次：打倒这只怪后，下一只怪护甲降一档',
+    cooldown: 99,
+    boss: 3,
   },
 };

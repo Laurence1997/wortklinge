@@ -100,6 +100,12 @@ export interface PlayerFx {
   peek?: number;
   /** 「Stimmt so.」: monsters killed this fight drop double gold. */
   stimmt?: boolean;
+  /** 「Der Zug fährt ab!」: the next right answer hits twice as hard. */
+  doubleNext?: boolean;
+  /** 「Ich habe den Zug verpasst.」: the next wrong answer costs no resource. */
+  keepRes?: boolean;
+  /** 「Nächster Halt!」: when this monster dies, the next one starts with its armor one tier down. */
+  nextHalt?: boolean;
 }
 
 /** Class resource for one fight (shared by a whole pack, like PlayerFx). */
@@ -145,6 +151,8 @@ export interface Battle {
   affinityPaid?: boolean;
   /** 先教后考 (0.5): the turn on which a never-met noun had its stance picked for it and shown. */
   phaseTaught?: number;
+  /** 「Nächster Halt!」: this monster's armor is one tier down for the whole fight. */
+  armorDown?: boolean;
   /** 21 级「时间」进难题预告: turns left until an announced big attack («gleich», «in zwei Runden»). */
   chargeIn?: number;
   /** 现在完成时 (0.6, region 3 Lv21+): a verb monster speaking in the Perfekt; its stance is haben / sein. */
@@ -276,6 +284,10 @@ export function startBattle(
     b.pluralMon = true;
     b.pluralDue = true;
     monster.hp = monster.maxHp = Math.round(monster.maxHp * CONFIG.phase.pluralHp);
+  }
+  if (s.flags.nextHalt && !tutorial) {
+    b.armorDown = true;
+    delete s.flags.nextHalt;
   }
   b.perfekt = perfektBattle(s, word, kind, rng, !!tutorial || !!opts.trial);
   b.intent = nextIntent(s, b, rng);
@@ -538,6 +550,7 @@ export function affinityMatch(s: GameState, b: Battle): boolean {
 
 export function effArmor(s: GameState, b: Battle, tier: 0 | 1 | 2, factor = 1): number {
   const C = CONFIG.armor;
+  if (b.armorDown && tier < 2) tier = (tier + 1) as 1 | 2;
   if (tier === 2 || b.monster.broken > 0) return 0;
   let a = Math.pow(C.base, b.monster.lvl - s.level) * Math.max(0, 1 - gearPen(s)) * factor;
   if (tier === 1) a *= C.typedFactor;
@@ -1143,7 +1156,12 @@ export function resolveTurn(
   // 0.4 techniques: 低语 is free (its price: no 会写, no resource, no 归名); 铭刻 / 齐鸣 cooldowns.
   if (move === 'sentence') cfx.res = 0;
   // 铭刻 has no cooldown (Lucas 2026-11-20: encourage it); a miss on an inscribed question costs 1 resource.
-  if (q.inscribed && !ok) cfx.res = Math.max(0, cfx.res - CONFIG.tech.inscribeMissCost);
+  const kept = !ok && !!b.fx.keepRes;
+  if (kept) {
+    b.fx.keepRes = false;
+    log.push({ text: '「Ich habe den Zug verpasst.」——这次答错，什么也没丢。', tone: 'good' });
+  }
+  if (q.inscribed && !ok && !kept) cfx.res = Math.max(0, cfx.res - CONFIG.tech.inscribeMissCost);
   if (move === 'inscribe') cfx.inscribeCd = CONFIG.tech.inscribeCd;
   if (move === 'chorus') b.chorusCd = CONFIG.tech.chorusCd;
   // 题型奖励表: a correct answer earns its row's resource (guardians: +1 for every answer instead, their passive).
@@ -1159,7 +1177,7 @@ export function resolveTurn(
     }
   }
   // Any wrong answer breaks the writer's streak (it carries across fights otherwise).
-  if (s.cls === 'writer' && !ok) cfx.run = 0;
+  if (s.cls === 'writer' && !ok && !kept) cfx.run = 0;
   if (s.cls === 'guardian' && move !== 'cls' && !q.whispered) cfx.res += 1 + (!ok && rank(s, 'chenzhuo') ? 1 : 0);
   cfx.res = Math.min(cfx.res, resMax(s));
 
@@ -1194,6 +1212,15 @@ export function resolveTurn(
       } else if (sk.id === 'stimmtSo') {
         b.fx.stimmt = true;
         log.push({ text: `「${said}」——这一场，金币翻倍。`, tone: 'good' });
+      } else if (sk.id === 'zugFaehrtAb') {
+        b.fx.doubleNext = true;
+        log.push({ text: `「${said}」——下一题答对，伤害翻倍。`, tone: 'good' });
+      } else if (sk.id === 'verpasst') {
+        b.fx.keepRes = true;
+        log.push({ text: `「${said}」——下一次答错不丢资源。`, tone: 'good' });
+      } else if (sk.id === 'naechsterHalt') {
+        b.fx.nextHalt = true;
+        log.push({ text: `「${said}」——打倒它，下一只怪护甲降一档。`, tone: 'good' });
       } else if (sk.id === 'freutMich') {
         const heal = Math.round(maxHp(s) * 0.3);
         s.hp = Math.min(maxHp(s), s.hp + heal);
@@ -1220,6 +1247,11 @@ export function resolveTurn(
         if (has(s.level, 'layerElement')) element = ELEMENT_BY_GENDER[genderOf(b.word) ?? 'n'];
       }
       if (q.inscribed) mult *= CONFIG.tech.inscribeMult;
+      if (b.fx.doubleNext) {
+        mult *= 2;
+        b.fx.doubleNext = false;
+        log.push({ text: '「Der Zug fährt ab!」——这一击翻倍。', tone: 'good' });
+      }
 
       const breaking = intent.kind === 'defend' && writtenQ;
       const g = genderOf(b.word);

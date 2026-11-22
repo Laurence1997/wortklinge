@@ -1488,3 +1488,37 @@ describe('0.6 第 3 区: 时间词进难题预告', () => {
     expect(b2.intent.line).not.toBe('Jetzt!');
   });
 });
+
+describe('0.6 第 3 区: 晚点之王', async () => {
+  const { timeRe, gradePerfekt, makeBoard } = await import('../src/data/boss3');
+  it('reads times the A1 ways, grades Perfekt answers about yourself, and shifts the board at half HP', () => {
+    const t = (h: number, m: number, say: string) => new RegExp(`^${timeRe(h, m)}$`).test(normalize(say));
+    expect(t(8, 30, 'halb neun')).toBe(true);
+    expect(t(8, 30, 'acht Uhr dreißig')).toBe(true);
+    expect(t(8, 15, 'Viertel nach acht')).toBe(true);
+    expect(t(8, 45, 'Viertel vor neun')).toBe(true);
+    expect(t(9, 0, 'neun Uhr')).toBe(true);
+    expect(t(8, 40, 'zwanzig vor neun')).toBe(true);
+    expect(t(8, 30, 'halb acht')).toBe(false);
+    expect(gradePerfekt('Ich habe den Zug verpasst.').ok).toBe(true);
+    expect(gradePerfekt('Ich bin zu spät aufgestanden.').ok).toBe(true);
+    expect(gradePerfekt('Wir sind spazieren gegangen.').ok).toBe(true);
+    const wrong = gradePerfekt('Ich habe nach Hause gegangen.');
+    expect(wrong.ok).toBe(false);
+    expect(wrong.note).toContain('sein');
+    expect(gradePerfekt('Ich verpasse den Zug.').ok).toBe(false);
+
+    const s = newGame('T', 'student', T0);
+    s.level = 28;
+    const f = startBoss(s, makeRng(3), 3);
+    expect(f.hp).toBe(8);
+    expect(f.board!.rows).toHaveLength(3);
+    for (let i = 0; i < 4; i++) {
+      f.current = { ...f.current, accept: [/.*/], grade: undefined };
+      answerBoss(s, f, 'x', makeRng(10 + i));
+    }
+    expect(f.hp).toBe(4);
+    expect(f.board!.delay).toBe(10);
+    expect(makeBoard(makeRng(1)).rows.map((r) => r.m).sort()).toContain(30);
+  });
+});

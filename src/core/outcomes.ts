@@ -60,6 +60,7 @@ export function applyWin(s: GameState, b: Battle, rng: Rng, opts: { heal?: boole
   let gold = CONFIG.gold.perKill(b.monster.lvl);
   gold = Math.round(gold * overdueMult);
   if (b.fx.stimmt) gold *= 2;
+  if (b.fx.nextHalt) s.flags.nextHalt = true;
   let echoRecovered: WinResult['echoRecovered'] = null;
   if (s.echo && s.echo.wordId === w.id) {
     echoRecovered = { gold: s.echo.gold, xp: s.echo.xp };

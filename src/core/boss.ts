@@ -2,14 +2,19 @@
 
 import { BOSS_QUESTIONS, type BossQuestion } from '../data/boss';
 import { boss2Questions } from '../data/boss2';
+import { boss3Questions, makeBoard, refreshTimeQuestion, type Board } from '../data/boss3';
 import { CONFIG } from './config';
 import { normalize } from './grading';
 import { pick, shuffle, type Rng } from './rng';
 import { maxHp, type GameState } from './state';
 
 export interface BossFight {
-  /** 1 = 无名的邻居, 2 = 吞秤者. */
-  which: 1 | 2;
+  /** 1 = 无名的邻居, 2 = 吞秤者, 3 = 晚点之王. */
+  which: 1 | 2 | 3;
+  /** 晚点之王: the departure board (shifts by ten minutes at half HP). */
+  board?: Board;
+  /** 晚点之王: the delay was just announced (shown with the next question). */
+  delayNow?: boolean;
   hp: number;
   maxHp: number;
   queue: BossQuestion[];
@@ -23,7 +28,18 @@ export interface BossFight {
   misses: Array<{ asked: string; answer: string; model: string }>;
 }
 
-export function startBoss(s: GameState, rng: Rng, which: 1 | 2 = 1): BossFight {
+export function startBoss(s: GameState, rng: Rng, which: 1 | 2 | 3 = 1): BossFight {
+  if (which === 3) {
+    const board = makeBoard(rng);
+    const queue = boss3Questions(rng, board);
+    const current = queue.shift()!;
+    const B = CONFIG.boss3;
+    return {
+      which, board, hp: B.hp, maxHp: B.hp, queue, current, asked: pick(rng, current.ask),
+      seconds: s.flags.boss3Kills ? B.laterSeconds : B.firstTimeSeconds,
+      healing: false, healUsed: false, turn: 1, outcome: null, misses: [],
+    };
+  }
   if (which === 2) {
     const queue = boss2Questions(rng, true);
     const current = queue.shift()!;
@@ -68,8 +84,9 @@ export interface BossVerdict {
 export function answerBoss(s: GameState, f: BossFight, input: string, rng: Rng, timedOut = false): BossVerdict {
   const q = f.current;
   const n = normalize(input);
-  const ok = !timedOut && q.accept.some((re) => re.test(n));
-  let note: string | null = null;
+  const graded = q.grade && !timedOut ? q.grade(input) : null;
+  const ok = !timedOut && (graded ? graded.ok : q.accept.some((re) => re.test(n)));
+  let note: string | null = graded?.note ?? null;
   if (!ok && !timedOut) for (const [re, msg] of q.traps ?? []) if (re.test(n)) note = msg;
   if (timedOut) note = '时间到了。';
   const model = q.model.replace('{name}', s.name || 'Lucas');
@@ -89,6 +106,7 @@ export function answerBoss(s: GameState, f: BossFight, input: string, rng: Rng, 
     }
   }
   f.healing = false;
+  f.delayNow = false;
   if (f.hp <= 0) f.outcome = 'win';
   else if (s.hp <= 0) {
     s.hp = 0;
@@ -99,7 +117,13 @@ export function answerBoss(s: GameState, f: BossFight, input: string, rng: Rng, 
       f.healing = true;
       f.healUsed = true;
     }
-    if (!f.queue.length) f.queue = f.which === 2 ? boss2Questions(rng, false) : shuffle(rng, BOSS_QUESTIONS.filter((x) => x.id !== 'greet'));
+    // 晚点之王 at half HP: «Der Zug hat zehn Minuten Verspätung.» Every time on the board moves ten minutes on.
+    if (f.board && !f.board.delay && f.hp <= f.maxHp / 2) {
+      f.board.delay = 10;
+      f.delayNow = true;
+      f.queue = f.queue.map((x) => refreshTimeQuestion(rng, x, f.board!));
+    }
+    if (!f.queue.length) f.queue = f.which === 3 ? boss3Questions(rng, f.board!) : f.which === 2 ? boss2Questions(rng, false) : shuffle(rng, BOSS_QUESTIONS.filter((x) => x.id !== 'greet'));
     f.current = f.queue.shift()!;
     f.asked = pick(rng, f.current.ask);
     f.turn += 1;

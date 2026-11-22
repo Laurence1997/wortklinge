@@ -4,7 +4,7 @@
 import type { GameState } from './state';
 
 export type QuestId = 'main2' | 'konrad';
-export type QuestEvent = 'enterMarket' | 'metMira' | 'boss2' | 'krumeKill' | 'taughtKonrad' | 'heardKonrad';
+export type QuestEvent = 'enterMarket' | 'metMira' | 'boss2' | 'krumeKill' | 'taughtKonrad' | 'heardKonrad' | 'enterRails' | 'metBrandt' | 'brandtTalk' | 'boss3' | 'linaFreed';
 
 export interface QuestStep {
   zh: string;

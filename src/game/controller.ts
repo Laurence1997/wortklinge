@@ -37,6 +37,7 @@ import type { Move, Slot, Word, ZoneId } from '../core/types';
 import { has, UNLOCK, UNLOCK_TEXT } from '../core/unlocks';
 import { BOSS } from '../data/boss';
 import { BOSS2 } from '../data/boss2';
+import { BOSS3 } from '../data/boss3';
 import { SKILLS } from '../data/skills';
 import { fullForm, hasArticleQuestion, WORD_BY_ID, WORDS, zhWithPos } from '../data/words';
 import { initAudio, setBattleMusic, setVolumes, sfx, speak, speechAvailable, hasGermanVoice } from './audio';
@@ -1249,7 +1250,70 @@ export class Controller {
       say([{ who: '末班站台', text: '站台尽头的钟停在 23:59。有什么在等车，等了很久。（28 级）' }]);
       return;
     }
-    say([{ who: '末班站台', text: '……' }]);
+    const go = () =>
+      say(
+        BOSS3.intro.map((t) => ({ who: BOSS3.name, text: t })),
+        () => {
+          this.boss = startBoss(this.state, this.rng, 3);
+          setBattleMusic(true);
+          setPrompt(null);
+          this.bossUI.open(this.boss);
+        },
+      );
+    if (s.hp < maxHp(s) * 0.5) {
+      say([{ who: SYS, text: '你身上的血不到一半。先回火边？' }], undefined, [
+        { label: '直接走上站台', act: go },
+        { label: '先去休息', act: () => undefined },
+      ]);
+      return;
+    }
+    go();
+  }
+
+  /** 晚点之王 rewards (as 吞秤者): gold chest on the first kill each day, orange + title 「准点者」 the first time,
+   *  then one of its three sentences as a skill. */
+  private finishBoss3() {
+    const s = this.state;
+    const first = !s.flags.boss3Kills;
+    s.flags.boss3Kills = ((s.flags.boss3Kills as number) ?? 0) + 1;
+    const today = dayKey(now(s));
+    const dailyFirst = s.flags.boss3Day !== today;
+    s.flags.boss3Day = today;
+    const lv = addXp(s, CONFIG.boss3.xp);
+    s.gold += CONFIG.boss3.gold;
+    this.questFire('boss3');
+    this.chestQueue.push({ kind: dailyFirst ? 'gold' : 'iron', ilvl: s.level });
+    if (first) {
+      const o = makeItem(this.rng, s.level, 'orange');
+      if (s.bag.length < CONFIG.loot.bagSize) s.bag.push(o);
+      s.flags.title = '准点者';
+    }
+    sfx.orange();
+    banner('晚点之王倒下了', first ? '首杀：传说装备 + 称号「准点者」' : dailyFirst ? '金箱' : '铁箱');
+    const lines: Line[] = BOSS3.outro.map((t) => ({ who: SYS, text: t }));
+    lines.push({ who: SYS, text: `获得 ${CONFIG.boss3.xp} 经验、${CONFIG.boss3.gold} 金币和一个${dailyFirst ? '金' : '铁'}箱。` });
+    const after = () => {
+      for (const l of lv.levels) this.onLevelUp(l);
+      this.refresh();
+      this.persist();
+      this.nextChest();
+    };
+    const learnable = Object.values(SKILLS).filter((k) => k.boss === 3 && !s.skills.includes(k.id));
+    if (dailyFirst && learnable.length) {
+      lines.push({ who: SYS, text: '它说过的话，你能留下一句。【句子技能 R】选一句：' });
+      say(
+        lines,
+        undefined,
+        learnable.map((k) => ({
+          label: `${k.de}（${k.zh}：${k.effect}）`,
+          act: () => {
+            s.skills = [k.id, ...s.skills].slice(0, 3);
+            toast(`学会句子技能：${k.de}`, 'gold');
+            after();
+          },
+        })),
+      );
+    } else say(lines, after);
   }
 
   private knockRegion2() {
@@ -1390,7 +1454,9 @@ export class Controller {
     this.bossUI.close();
     setBattleMusic(false);
     this.boss = null;
-    if (f.outcome === 'win' && f.which === 2) {
+    if (f.outcome === 'win' && f.which === 3) {
+      this.finishBoss3();
+    } else if (f.outcome === 'win' && f.which === 2) {
       this.finishBoss2(f);
     } else if (f.outcome === 'win') {
       const first = !s.flags.bossKills;

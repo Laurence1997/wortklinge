@@ -13,6 +13,8 @@ export interface BossQuestion {
   model: string;
   /** Region 2: the price tag or count shown on screen. */
   visual?: string;
+  /** Region 3: a grader instead of patterns (Perfekt answers about yourself). */
+  grade?: (input: string) => { ok: boolean; note: string | null };
   /** Mistakes worth naming: [pattern, note]. */
   traps?: Array<[RegExp, string]>;
 }
