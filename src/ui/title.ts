@@ -1,4 +1,4 @@
-import { heroFrames } from '../game/sprites';
+import { heroIcon } from './icons';
 import { DEFAULT_LOOK, LOOK_OPTIONS, type Look } from '../core/look';
 import type { GameState } from '../core/state';
 import { $, clear, h } from './dom';
@@ -88,8 +88,8 @@ function confirmOverwrite(): boolean {
 /** Four small selects (性别 体型 发型 发色) with a live preview. */
 export function lookPicker(start: Look = DEFAULT_LOOK, onChange?: (l: Look) => void): { el: HTMLElement; value: () => Look } {
   const cur: Look = { ...start };
-  const preview = h('img', { style: 'width:48px;height:64px;image-rendering:pixelated;vertical-align:middle' }) as HTMLImageElement;
-  const draw = () => (preview.src = heroFrames(cur)[0].toDataURL());
+  const preview = h('span', { style: 'display:inline-block;width:64px;height:64px;vertical-align:middle;background:#1d0a0c' });
+  const draw = () => preview.replaceChildren(heroIcon(cur, 4));
   const row = h('div.row', { style: 'gap:6px;align-items:center;flex-wrap:wrap' }, preview);
   (Object.keys(LOOK_OPTIONS) as Array<keyof Look>).forEach((k) => {
     const sel = h('select', { title: LOOK_OPTIONS[k].zh }) as HTMLSelectElement;

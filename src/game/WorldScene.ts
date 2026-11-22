@@ -79,6 +79,7 @@ export class WorldScene extends Phaser.Scene {
   preload() {
     if (!this.textures.exists('town')) this.load.image('town', './art/kenney-tiny-town.png');
     if (!this.textures.exists('dungeon')) this.load.image('dungeon', './art/kenney-tiny-dungeon.png');
+    if (!this.textures.exists('rogue')) this.load.image('rogue', './art/kenney-roguelike-chars.png');
   }
 
   create() {
@@ -635,8 +636,12 @@ export class WorldScene extends Phaser.Scene {
     return this.textures.get('dungeon').getSourceImage() as HTMLImageElement;
   }
 
+  rsheet(): HTMLImageElement {
+    return this.textures.get('rogue').getSourceImage() as HTMLImageElement;
+  }
+
   applyLook(): void {
-    const frames = heroFramesKenney(this.ctrl.state.look ?? DEFAULT_LOOK, this.dsheet());
+    const frames = heroFramesKenney(this.ctrl.state.look ?? DEFAULT_LOOK, this.dsheet(), true);
     ['hero0', 'hero1'].forEach((k, i) => {
       const t = this.textures.get(k) as Phaser.Textures.CanvasTexture;
       t.context.clearRect(0, 0, 16, 16);

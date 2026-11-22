@@ -276,16 +276,128 @@ export function dungeonTile(sheet: CanvasImageSource, tile: number, ramp: string
   return cv;
 }
 
-/** Look → Kenney figure: gender and hair pick the figure, the hair colour becomes the outline accent. */
-export function heroTile(look: Look): number {
-  return look.gender ? [99, 88, 100, 99][look.hair] : [98, 87, 85, 98][look.hair];
+// 主角 (画风统一): built from Kenney Roguelike Characters layers (CC0, public/art/kenney-roguelike-chars.png, 16px tiles
+// with a 1px gap), so no NPC shares your face. Body and clothes take the red ramp like everyone else; the hair keeps
+// its own colour (the only non-red on the map besides gold), which is what marks you and other players.
+const RG = 17;
+const RG_BODY: [number, number] = [0, 0];
+const RG_PANTS: [number, number] = [3, 0];
+/** 体型 → clothes: 瘦 = cloth shirt, 中 = leather, 壮 = plate. */
+const RG_CLOTHES: Array<[number, number]> = [[7, 0], [6, 4], [10, 4]];
+/** [gender][hair] → hair tile (brown block, recoloured). 短发 长发 刺头 马尾. */
+const RG_HAIR: Array<Array<[number, number]>> = [
+  [[19, 0], [20, 0], [21, 2], [20, 2]],
+  [[19, 1], [22, 1], [21, 2], [20, 1]],
+];
+const hex = (h: string) => [1, 3, 5].map((k) => parseInt(h.slice(k, k + 2), 16));
+function shade(c: number[], f: number): number[] {
+  return c.map((v) => Math.max(0, Math.min(255, Math.round(f > 1 ? v + (255 - v) * (f - 1) : v * f))));
 }
-export function heroFramesKenney(look: Look, sheet: CanvasImageSource): HTMLCanvasElement[] {
-  const base = dungeonTile(sheet, heroTile(look), CHAR_RAMP, look.color ? HAIR_COLORS[look.color] : '#e8dccf');
+function rgLayer(ctx: CanvasRenderingContext2D, sheet: CanvasImageSource, [c, r]: [number, number]) {
+  ctx.drawImage(sheet, c * RG, r * RG, 16, 16, 0, 0, 16, 16);
+}
+export function heroCanvas(look: Look, rogue: CanvasImageSource): HTMLCanvasElement {
+  const cv = document.createElement('canvas');
+  cv.width = cv.height = 16;
+  const ctx = cv.getContext('2d', { willReadFrequently: true })!;
+  // Each layer gets its own part of the red ramp, like the Tiny Dungeon people: skin brightest, clothes in the
+  // middle reds, trousers darkest, so the figure reads instead of merging into one red block.
+  const ramp = CHAR_RAMP.map(hex);
+  const layer = (t: [number, number], steps: number[]) => {
+    const lc = document.createElement('canvas');
+    lc.width = lc.height = 16;
+    const lx = lc.getContext('2d', { willReadFrequently: true })!;
+    rgLayer(lx, rogue, t);
+    const li = lx.getImageData(0, 0, 16, 16);
+    const q = li.data;
+    const L = (i: number) => (0.299 * q[i] + 0.587 * q[i + 1] + 0.114 * q[i + 2]) / 255;
+    const ls: number[] = [];
+    for (let i = 0; i < q.length; i += 4) if (q[i + 3] >= 8) ls.push(L(i));
+    const lo = Math.min(...ls);
+    const span = Math.max(0.2, Math.max(...ls) - lo);
+    for (let i = 0; i < q.length; i += 4) {
+      if (q[i + 3] < 8) continue;
+      const k = steps[Math.min(steps.length - 1, Math.floor(((L(i) - lo) / span) * steps.length))];
+      [q[i], q[i + 1], q[i + 2], q[i + 3]] = [...ramp[k], 255];
+    }
+    lx.putImageData(li, 0, 0);
+    ctx.drawImage(lc, 0, 0);
+  };
+  layer(RG_BODY, [3, 4, 4]);
+  layer(RG_PANTS, [0, 1]);
+  layer(RG_CLOTHES[look.body] ?? RG_CLOTHES[1], [1, 2, 2, 3]);
+  // The eyes: the body tile's two darkest face pixels, kept dark.
+  const img = ctx.getImageData(0, 0, 16, 16);
+  const d = img.data;
+  // Hair in its own colour: three shades of the chosen hair colour by brightness.
+  const hc = document.createElement('canvas');
+  hc.width = hc.height = 16;
+  const hctx = hc.getContext('2d', { willReadFrequently: true })!;
+  rgLayer(hctx, rogue, RG_HAIR[look.gender]?.[look.hair] ?? RG_HAIR[0][0]);
+  const hd = hctx.getImageData(0, 0, 16, 16).data;
+  const base = hex(HAIR_COLORS[look.color] ?? HAIR_COLORS[0]);
+  // Black hair would vanish on the dark map: lift it to a visible charcoal.
+  const col = look.color === 0 ? [74, 60, 62] : base;
+  for (let i = 0; i < hd.length; i += 4) {
+    if (hd[i + 3] < 8) continue;
+    const l = (0.299 * hd[i] + 0.587 * hd[i + 1] + 0.114 * hd[i + 2]) / 255;
+    const c = shade(col, l < 0.3 ? 0.6 : l < 0.45 ? 1 : 1.35);
+    [d[i], d[i + 1], d[i + 2], d[i + 3]] = [...c, 255];
+  }
+  // Dark outline like the Tiny packs have.
+  const solid = (x: number, y: number) => x >= 0 && y >= 0 && x < 16 && y < 16 && d[(y * 16 + x) * 4 + 3] >= 8;
+  const ring: number[] = [];
+  for (let y = 0; y < 16; y++)
+    for (let x = 0; x < 16; x++) if (solid(x, y) && [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => !solid(x + dx, y + dy))) ring.push(y * 16 + x);
+  const ol = hex('#1a0608');
+  for (const p of ring) [d[p * 4], d[p * 4 + 1], d[p * 4 + 2]] = ol;
+  ctx.putImageData(img, 0, 0);
+  return cv;
+}
+
+/** Variant B (for comparison): a Tiny Dungeon person with the hair pixels (Kenney's hair browns, top 10 rows)
+ *  recoloured to your hair colour, everything else on the red ramp. */
+export function heroTinyCanvas(tile: number, color: number, sheet: CanvasImageSource): HTMLCanvasElement {
+  const red = dungeonTile(sheet, tile, CHAR_RAMP);
+  const cv = document.createElement('canvas');
+  cv.width = cv.height = 16;
+  const ctx = cv.getContext('2d', { willReadFrequently: true })!;
+  ctx.drawImage(sheet, (tile % 12) * 16, Math.floor(tile / 12) * 16, 16, 16, 0, 0, 16, 16);
+  const src = ctx.getImageData(0, 0, 16, 16).data;
+  ctx.clearRect(0, 0, 16, 16);
+  ctx.drawImage(red, 0, 0);
+  const img = ctx.getImageData(0, 0, 16, 16);
+  const d = img.data;
+  const col = color === 0 ? [74, 60, 62] : hex(HAIR_COLORS[color]);
+  for (let p = 0; p < 160; p++) {
+    const i = p * 4;
+    const h = '#' + [src[i], src[i + 1], src[i + 2]].map((v) => v.toString(16).padStart(2, '0')).join('');
+    if (h === '#bd6c4a') [d[i], d[i + 1], d[i + 2]] = shade(col, 1.15);
+    else if (h === '#763b36') [d[i], d[i + 1], d[i + 2]] = shade(col, 0.7);
+  }
+  ctx.putImageData(img, 0, 0);
+  return cv;
+}
+
+/** Hero figure. Variant B (current prototype): Tiny Dungeon 98 (男) / 99 (女) with your hair colour; `mark` adds a
+ *  thin light outline so you find yourself among NPCs (only your own hero). */
+export function heroFramesKenney(look: Look, dungeon: CanvasImageSource, mark = false): HTMLCanvasElement[] {
+  const fig = heroTinyCanvas(look.gender ? 99 : 98, look.color, dungeon);
+  if (mark) {
+    const c = fig.getContext('2d', { willReadFrequently: true })!;
+    const img = c.getImageData(0, 0, 16, 16);
+    const d = img.data;
+    const solid = (x: number, y: number) => x >= 0 && y >= 0 && x < 16 && y < 16 && d[(y * 16 + x) * 4 + 3] >= 8;
+    const ring: number[] = [];
+    for (let y = 0; y < 16; y++)
+      for (let x = 0; x < 16; x++) if (solid(x, y) && [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => !solid(x + dx, y + dy))) ring.push(y * 16 + x);
+    for (const p of ring) [d[p * 4], d[p * 4 + 1], d[p * 4 + 2]] = [232, 220, 207];
+    c.putImageData(img, 0, 0);
+  }
   return [0, 1].map((bob) => {
     const cv = document.createElement('canvas');
     cv.width = cv.height = 16;
-    cv.getContext('2d')!.drawImage(base, 0, -bob);
+    cv.getContext('2d')!.drawImage(fig, 0, -bob);
     return cv;
   });
 }

@@ -4,8 +4,8 @@
 
 import type { Battle } from '../core/combat';
 import type { Slot } from '../core/types';
-import { dungeonTile, heroTile, CHAR_RAMP } from '../game/sprites';
-import { HAIR_COLORS, type Look } from '../core/look';
+import { dungeonTile, heroTinyCanvas, CHAR_RAMP } from '../game/sprites';
+import type { Look } from '../core/look';
 
 const T = 16;
 const COLS = 12;
@@ -89,7 +89,9 @@ export function wordTile(w: { id: string; pos?: string; family?: string }): numb
   return NOUN_POOL[h % NOUN_POOL.length];
 }
 
-/** Your own figure (same as on the map), outline in the hair colour. */
+/** Your own figure (same as on the map): Roguelike Characters layers, hair in its own colour. */
+let rogue: HTMLImageElement | null = null;
+const rogueWaiting: Array<() => void> = [];
 export function heroIcon(look: Look, scale = 4): HTMLCanvasElement {
   const cv = document.createElement('canvas');
   cv.width = cv.height = T * scale;
@@ -97,8 +99,10 @@ export function heroIcon(look: Look, scale = 4): HTMLCanvasElement {
   const draw = () => {
     const ctx = cv.getContext('2d')!;
     ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(dungeonTile(sheet!, heroTile(look), CHAR_RAMP, look.color ? HAIR_COLORS[look.color] : '#e8dccf'), 0, 0, cv.width, cv.height);
+    ctx.drawImage(heroTinyCanvas(look.gender ? 99 : 98, look.color, sheet!), 0, 0, cv.width, cv.height);
   };
+  void rogue;
+  void rogueWaiting;
   const img = loadSheet();
   if (img.complete && img.naturalWidth) draw();
   else waiting.push(draw);
