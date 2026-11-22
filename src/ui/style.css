@@ -310,3 +310,30 @@ canvas.slot-icon.q-green { border-color: var(--q-green, #5fd16b); }
 canvas.slot-icon.q-purple { border-color: var(--q-purple, #b07cff); }
 canvas.slot-icon.q-orange { border-color: var(--q-orange, #ff9a3c); }
 .toast canvas.slot-icon { margin-right: 6px; }
+
+/* 开箱动画 (0.6.x): ui/chestFx.ts */
+#chest-fx { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; background: rgba(7, 4, 10, 0.72); cursor: pointer; }
+#chest-fx .cfx-panel { min-width: 340px; max-width: 520px; padding: 18px 22px; border: 1px solid #4e1616; background: #0f0809; text-align: center; box-shadow: 0 0 40px rgba(143, 31, 36, 0.35); }
+#chest-fx .cfx-title { color: #e8dccf; font-size: 15px; margin-bottom: 6px; }
+#chest-fx .cfx-box { position: relative; width: 96px; height: 96px; margin: 8px auto 12px; }
+#chest-fx .cfx-chest { position: relative; z-index: 1; image-rendering: pixelated; }
+#chest-fx .cfx-box.shake .cfx-chest { animation: cfx-shake 0.32s linear; }
+@keyframes cfx-shake { 0%, 100% { transform: translate(0, 0) rotate(0); } 20% { transform: translate(-3px, 0) rotate(-4deg); } 40% { transform: translate(3px, -1px) rotate(4deg); } 60% { transform: translate(-2px, 0) rotate(-3deg); } 80% { transform: translate(2px, -1px) rotate(2deg); } }
+#chest-fx .cfx-glow { position: absolute; left: 50%; top: 50%; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; background: radial-gradient(circle, var(--q) 0%, transparent 70%); opacity: 0; }
+#chest-fx .cfx-glow.on { animation: cfx-glow 0.6s ease-out forwards; }
+@keyframes cfx-glow { from { transform: scale(1); opacity: 0.95; } to { transform: scale(22); opacity: 0.35; } }
+#chest-fx .cfx-items { display: flex; flex-direction: column; gap: 6px; min-height: 28px; text-align: left; }
+#chest-fx .cfx-item { display: flex; align-items: center; gap: 8px; color: #e8dccf; }
+#chest-fx .cfx-item.pop { animation: cfx-pop 0.28s ease-out; }
+@keyframes cfx-pop { from { transform: translateY(-14px) scale(0.6); opacity: 0; } to { transform: none; opacity: 1; } }
+#chest-fx .cfx-pair { display: inline-flex; gap: 4px; margin-right: 4px; }
+#chest-fx .cfx-roll { display: inline-block; min-width: 34px; padding: 2px 4px; font-size: 11px; text-align: center; border: 1px solid var(--q); color: var(--q); background: #140a0c; }
+#chest-fx .cfx-roll.drop { opacity: 0.3; text-decoration: line-through; }
+#chest-fx .cfx-roll.keep { box-shadow: 0 0 8px var(--q); }
+#chest-fx .cfx-roll.flip { animation: cfx-flip 0.36s ease-out both; }
+@keyframes cfx-flip { from { transform: rotateY(90deg); opacity: 0.2; } to { transform: rotateY(0); } }
+#chest-fx .cfx-hint { margin-top: 12px; font-size: 11px; color: #7a6a66; }
+/* Orange: a red flash (docs: reds, not white light). */
+#chest-fx .cfx-flash { position: fixed; inset: 0; pointer-events: none; opacity: 0; background: radial-gradient(circle, rgba(255, 180, 168, 0.55) 0%, rgba(216, 51, 58, 0.45) 45%, rgba(78, 22, 22, 0.2) 100%); }
+#chest-fx .cfx-flash.on { animation: cfx-flash 0.7s ease-out; }
+@keyframes cfx-flash { 0% { opacity: 0; } 15% { opacity: 1; } 100% { opacity: 0; } }

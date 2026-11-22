@@ -43,6 +43,7 @@
 - **21–30 级的新系统。** 驿站传送、每日委托、秩序会登记表（用 Sie）、眼镜、紫装德语鉴定、刻字孔（auch / denn）、怪物诅咒、盲盒摊、锈名怪、零号站台规则地下城、A1 突破试炼、终极技能（句型填空）。
 - **头像和图标。** 对话头像、怪物图和装备图标。
 - **物品栏（0.6.3）。** 低语不再占出手位，改成答题时用的「低语纸条」（按 W，打字时按 ?）；新加回血的「药片」（按 H，占一回合）。纸条回篝火补到 3 张，两样都能掉落、能在商店用德语买；终结技攒满言灵才出现在招式栏。
+- **开宝箱动画（0.6.4）。** 宝箱抖一下再开盖，按开出的最好品质亮光，东西一件件飞出来；铁箱、金箱的言灵锁写对时，每件装备当场翻出两次品质、留下好的那次。出传说时全屏红光一闪。任意键跳过，设置里可以关。只改表现，掉率和数值不变。
 
 ### 0.5：新内容
 
@@ -143,6 +144,7 @@ A browser game that teaches German to Chinese-speaking learners. It isn't flashc
 - **New systems from 21 to 30**: waystation travel, daily tasks, the registry office form (formal Sie), glasses, German item identification, engraving sockets (auch / denn), monster curses, a blind-box stall, rusty review monsters, the Platform Zero rule-card dungeon, the A1 breakthrough exam and the ultimate skill (fill a sentence frame).
 - **Portraits and icons** for speakers, monsters and gear.
 - **Item bar (0.6.3)**: the whisper hint is no longer a move but a consumable note you use after seeing the question (W, or ? while typing); a new tablet heals but spends the turn (H). Notes refill to 3 at a bonfire; both drop from monsters and can be bought in the shop with a German sentence. The finisher button only appears when its bar is full.
+- **Chest animation (0.6.4)**: chests shake, open and glow in the best quality's colour while the items pop out one by one; with the 言灵锁 written right each item shows both quality rolls and keeps the better one. An orange flashes the screen red. Any key skips; it can be turned off in the settings. Presentation only, rates and numbers are unchanged.
 
 ### Version 0.5
 

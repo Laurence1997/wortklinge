@@ -18,6 +18,7 @@ import { BREAK, examParts, examPassed, PART_ZH, type Exam } from '../core/breakt
 import { JUMP, type Duel } from '../core/duel';
 import { pendingScenes, regionLeft, type ScreenRun } from '../core/screen';
 import { CHEST_ZH, type ChestKind } from '../core/chest';
+import { playChest } from './chestFx';
 import { favour, FAVOUR, QUESTS, type QuestId } from '../core/quests';
 import { gradeTyped } from '../core/grading';
 import { recordAnswer } from '../core/srs';
@@ -752,6 +753,7 @@ export class Panels {
       const go = () => {
         c.result = this.ctrl.openLockedChest(c.kind, c.ilvl, c.word, input.value);
         this.render();
+        if (this.ctrl.state.settings.chestAnim !== false) playChest({ kind: c.kind, title: `${CHEST_ZH[c.kind]} · ${c.result.ok ? '锁开了，品质各掷两次' : '锁没认出来，箱子照样打开'}`, result: c.result }, () => {}, this.ctrl.chestSfx);
       };
       input.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
@@ -1199,9 +1201,9 @@ export class Panels {
   private settings(): HTMLElement {
     const s = this.ctrl.state;
     const wrap = h('div');
-    const toggle = (label: string, key: 'tts' | 'autoZh', note: string) => {
+    const toggle = (label: string, key: 'tts' | 'autoZh' | 'chestAnim', note: string) => {
       const cb = h('input', { type: 'checkbox' }) as HTMLInputElement;
-      cb.checked = s.settings[key];
+      cb.checked = s.settings[key] !== false;
       cb.onchange = () => {
         s.settings[key] = cb.checked;
         this.ctrl.persist();
@@ -1220,6 +1222,7 @@ export class Panels {
     wrap.append(
       toggle('朗读怪物的台词', 'tts', this.ctrl.voiceNote()),
       toggle('自动显示台词的中文', 'autoZh', '关掉更有挑战：读懂德语就是你的情报（1–3 级总是显示）'),
+      toggle('开箱动画', 'chestAnim', '宝箱抖一下再打开，东西一件件飞出来；任意键跳过'),
       slider('音乐', 'music'),
       slider('音效', 'sfx'),
     );

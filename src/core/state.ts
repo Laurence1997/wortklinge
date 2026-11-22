@@ -27,6 +27,8 @@ export interface Settings {
   sfx: number;
   /** Show the Chinese meaning of monster lines without clicking. */
   autoZh: boolean;
+  /** 开箱动画 (0.6.x): chests open with a short animation (any key skips). */
+  chestAnim: boolean;
 }
 
 export interface GameState {
@@ -125,7 +127,7 @@ export function newGame(name: string, origin: string, t = Date.now()): GameState
     talents: {},
     pos: { x: 0, y: 0 },
     log: {},
-    settings: { tts: true, music: 0.5, sfx: 0.7, autoZh: false },
+    settings: { tts: true, music: 0.5, sfx: 0.7, autoZh: false, chestAnim: true },
     stats: { kills: 0, deaths: 0, crits: 0, maxHit: 0 },
   };
 }

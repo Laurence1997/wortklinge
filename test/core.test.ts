@@ -512,7 +512,14 @@ describe('rare monsters and chests', () => {
     expect(r.items.length).toBe(2);
     expect(r.rerolled).toBe(true);
     expect(r.items[0].quality).not.toBe('white');
+    // 开箱动画 shows both rolls; the item keeps the better one.
+    const Q = ['white', 'green', 'purple', 'orange'];
+    r.rolls.forEach((rs, i) => {
+      expect(rs.length).toBe(2);
+      expect(Q.indexOf(r.items[i].quality)).toBe(Math.max(...rs.map((q) => Q.indexOf(q))));
+    });
     const g = chest.openChest(s, 'gold', 12, rng);
+    expect(g.rolls.every((rs) => rs.length === 1)).toBe(true);
     expect(['purple', 'orange']).toContain(g.items[0].quality);
     const gold0 = s.gold;
     expect(chest.openChest(s, 'wood', 12, rng).gold).toBeGreaterThan(0);

@@ -66,17 +66,22 @@ export interface ChestResult {
   gold: number;
   rerolled: boolean;
   bagFull: number;
+  /** 开箱动画: the quality rolls per item that went into the bag (two when the 言灵锁 was written right). */
+  rolls: Quality[][];
 }
 
 export function openChest(s: GameState, kind: ChestKind, ilvl: number, rng: Rng, lockOk = false): ChestResult {
   const def = CHESTS[kind];
   const items: Item[] = [];
+  const rolls: Quality[][] = [];
   let bagFull = 0;
   for (let i = 0; i < def.items; i++) {
     const min = i === 0 ? def.first : 'white';
     let q = rollQ(rng, def, min);
+    const seen: Quality[] = [q];
     if (def.locked && lockOk) {
       const q2 = rollQ(rng, def, min);
+      seen.push(q2);
       if (ORDER.indexOf(q2) > ORDER.indexOf(q)) q = q2;
     }
     const it = makeItem(rng, ilvl, q);
@@ -85,9 +90,10 @@ export function openChest(s: GameState, kind: ChestKind, ilvl: number, rng: Rng,
     else {
       s.bag.push(it);
       items.push(it);
+      rolls.push(seen);
     }
   }
   const gold = def.goldKills ? def.goldKills * CONFIG.gold.perKill(ilvl) : 0;
   s.gold += gold;
-  return { items, gold, rerolled: def.locked && lockOk, bagFull };
+  return { items, gold, rerolled: def.locked && lockOk, bagFull, rolls };
 }

@@ -11,6 +11,7 @@ import { canHint, hintOf, ITEM_TURN, linkPack, startPhraseBattle, makeQuestion, 
 import { CONFIG, xpToNext } from '../core/config';
 import { favour, FAVOUR, KONRAD_WORDS, QUESTS, questEvent, questState, startQuest, type QuestEvent } from '../core/quests';
 import { CHEST_ZH, CHESTS, lockWord, openChest, type ChestKind } from '../core/chest';
+import { playChest } from '../ui/chestFx';
 import { gradeTyped } from '../core/grading';
 import { buy as buyItem, openShop, refresh as refreshShop, sell as sellItem } from '../core/shop';
 import { CLASSES, resMax, respec, respecCost, spent, TALENT_FROM_LEVEL, type ClassId } from '../core/classes';
@@ -38,7 +39,7 @@ import {
   type GameState,
 } from '../core/state';
 import { shadowScore } from '../core/shadow';
-import type { Move, Slot, Word, ZoneId } from '../core/types';
+import type { Move, Quality, Slot, Word, ZoneId } from '../core/types';
 import { has, UNLOCK, UNLOCK_TEXT } from '../core/unlocks';
 import { BOSS } from '../data/boss';
 import { BOSS2 } from '../data/boss2';
@@ -879,10 +880,16 @@ export class Controller {
       return;
     }
     const r = openChest(this.state, kind, ilvl, this.rng);
+    if (this.state.settings.chestAnim !== false) {
+      playChest({ kind, title: CHEST_ZH[kind], result: r }, () => this.refresh(), this.chestSfx);
+      return;
+    }
     sfx.loot();
     banner(CHEST_ZH[kind], [...r.items.map((it) => it.name), r.gold ? `${r.gold} 金币` : ''].filter(Boolean).join('、') || '背包满了');
     if (r.bagFull) toast('背包满了，有东西没装下');
   }
+
+  readonly chestSfx = { open: () => sfx.loot(), item: (q: Quality) => (q === 'orange' ? sfx.orange : q === 'white' ? () => {} : sfx.loot)() };
 
   private nextChest() {
     if (this.battle || this.boss) return;
@@ -897,7 +904,8 @@ export class Controller {
     const ok = input !== null && gradeTyped(input, word, hasArticleQuestion(word)).ok;
     if (input !== null) recordAnswer(this.state, word, ok, 'write');
     const r = openChest(this.state, kind, ilvl, this.rng, ok);
-    for (const it of r.items) (it.quality === 'orange' ? sfx.orange : sfx.loot)();
+    // With the animation on, the sounds come with each item as it pops out (ui/chestFx).
+    if (this.state.settings.chestAnim === false) for (const it of r.items) (it.quality === 'orange' ? sfx.orange : sfx.loot)();
     this.refresh();
     this.persist();
     return { ok, ...r };
