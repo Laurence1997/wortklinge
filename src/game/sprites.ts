@@ -226,6 +226,70 @@ export function renderMapCanvas(m: MapData, sheet?: CanvasImageSource | null, hi
   return cv;
 }
 
+// 画风统一 (原型): people and monsters are Kenney Tiny Dungeon tiles recoloured by brightness, like the map tiles.
+// Figures use the same 5-step ramp as the dialog portraits (brighter than the ground, so they read); map monsters
+// use only the three darkest steps, so the glowing garbled name stays the thing you look at.
+export const CHAR_RAMP = ['#1e0606', '#4e1616', '#8f1f24', '#d8333a', '#ffb4a8'];
+export const SHADE_RAMP = ['#14050a', '#5a1419', '#a0242b'];
+const dcache = new Map<string, HTMLCanvasElement>();
+export function dungeonTile(sheet: CanvasImageSource, tile: number, ramp: string[] = CHAR_RAMP, outline?: string): HTMLCanvasElement {
+  const key = `${tile}:${ramp.join('')}:${outline ?? ''}`;
+  const hit = dcache.get(key);
+  if (hit) return hit;
+  const cv = document.createElement('canvas');
+  cv.width = cv.height = 16;
+  const ctx = cv.getContext('2d', { willReadFrequently: true })!;
+  ctx.drawImage(sheet, (tile % 12) * 16, Math.floor(tile / 12) * 16, 16, 16, 0, 0, 16, 16);
+  const img = ctx.getImageData(0, 0, 16, 16);
+  const d = img.data;
+  const shades = ramp.map((h) => [1, 3, 5].map((k) => parseInt(h.slice(k, k + 2), 16)));
+  const solid = (i: number) => d[i + 3] >= 8;
+  const was = new Uint8Array(256);
+  // Stretch the tile's own brightness range over the ramp (as the map tiles do), so faces and eyes keep their detail.
+  const lums: number[] = [];
+  for (let i = 0; i < d.length; i += 4) lums.push(solid(i) ? (0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]) / 255 : -1);
+  const seen = lums.filter((v) => v >= 0);
+  const lo = Math.min(...seen);
+  const span = Math.max(0.25, Math.max(...seen) - lo);
+  for (let i = 0; i < d.length; i += 4) {
+    if (!solid(i)) continue;
+    was[i / 4] = 1;
+    const lum = Math.min(0.999, (lums[i / 4] - lo) / span);
+    const c = shades[Math.min(shades.length - 1, Math.floor(lum * shades.length))];
+    d[i] = c[0];
+    d[i + 1] = c[1];
+    d[i + 2] = c[2];
+    d[i + 3] = 255;
+  }
+  if (outline) {
+    // Kenney figures already carry a dark outline; recolour that ring's outermost pixels to the accent colour.
+    const o = [1, 3, 5].map((k) => parseInt(outline.slice(k, k + 2), 16));
+    for (let p = 0; p < 256; p++) {
+      if (!was[p]) continue;
+      const x = p % 16, y = Math.floor(p / 16);
+      const edge = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => { const nx = x + dx, ny = y + dy; return nx < 0 || ny < 0 || nx > 15 || ny > 15 || !was[ny * 16 + nx]; });
+      if (edge) (d[p * 4] = o[0], d[p * 4 + 1] = o[1], d[p * 4 + 2] = o[2]);
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+  dcache.set(key, cv);
+  return cv;
+}
+
+/** Look → Kenney figure: gender and hair pick the figure, the hair colour becomes the outline accent. */
+export function heroTile(look: Look): number {
+  return look.gender ? [99, 88, 100, 99][look.hair] : [98, 87, 85, 98][look.hair];
+}
+export function heroFramesKenney(look: Look, sheet: CanvasImageSource): HTMLCanvasElement[] {
+  const base = dungeonTile(sheet, heroTile(look), CHAR_RAMP, look.color ? HAIR_COLORS[look.color] : '#e8dccf');
+  return [0, 1].map((bob) => {
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = 16;
+    cv.getContext('2d')!.drawImage(base, 0, -bob);
+    return cv;
+  });
+}
+
 /** Bitmaps: '.' transparent, other chars map to colours. */
 function bitmap(rows: string[], colors: Record<string, string>, scale = 1): HTMLCanvasElement {
   const h = rows.length;

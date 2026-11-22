@@ -1,4 +1,5 @@
-import { icon, monsterTile } from './icons';
+import { icon, monsterTile, heroIcon } from './icons';
+import { DEFAULT_LOOK } from '../core/look';
 import type { Battle, Question, TurnReport } from '../core/combat';
 import { availableMoves, comboTier, effArmor, moveReady, needsPhase, phaseOf, resName, shownDe, stancesFor, teachPhase, readTarget, readRecall, readShown, phaseWrongWhy } from '../core/combat';
 import { articleSlip, clarity, shadowOk } from '../core/shadow';
@@ -398,7 +399,7 @@ export class BattleUI {
     const mon = h(
       'div.b-mon',
       h('div.fam', h('span', `${fam.zh} · Lv ${m.lvl}`), h('span', STAGE_ZH[b.stage])),
-      icon(monsterTile(b, this.ctrl.dungeon?.left === 1), 3, false, 'mon-icon'),
+      icon(monsterTile(b, this.ctrl.dungeon?.left === 1), 5, false, 'mon-icon'),
       h('div.glyph', { style: `color:${color};text-shadow:0 0 8px ${b.stage === 0 ? '#ff1830' : color}` }, glyph),
       h(
         'div',
@@ -448,6 +449,7 @@ export class BattleUI {
     if (resMax(s)) fx.push(`${resName(s)} ${b.cfx.res}/${resMax(s)}${b.cfx.critReady ? ' · 必暴击' : ''}`);
     const me = h(
       'div.b-me',
+      heroIcon(s.look ?? DEFAULT_LOOK, 5),
       h('div.fam', h('span', s.name), h('span', `Lv ${s.level}`)),
       bar('hp', s.hp, maxHp(s), `${s.hp} / ${maxHp(s)}`),
       h('div.hud-row', h('span', '连击 ', h('b.combo', String(s.combo))), tier ? h('span.combo', tier.split(' ')[0]) : ''),

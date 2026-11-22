@@ -12,7 +12,8 @@ import type { Controller } from './controller';
 import { DEFAULT_LOOK, lookKey, type Look } from '../core/look';
 import { myBubble, online } from '../net/online';
 import { generateMap, isBlocked, MAP_H, MAP_W, TILE, walkableTilesIn, zonesOf, zoneAt, type MapData, type NpcId, type RegionId, type ZoneDef } from './map';
-import { GLITCH, heroFrames, makeTextures, renderMapCanvas, PAL } from './sprites';
+import { GLITCH, heroFramesKenney, dungeonTile, SHADE_RAMP, CHAR_RAMP, makeTextures, renderMapCanvas, PAL } from './sprites';
+import { NPC_TILE, wordTile } from '../ui/icons';
 import { sfx } from './audio';
 import { CONFIG } from '../core/config';
 import { NodeNav } from './nodes';
@@ -77,6 +78,7 @@ export class WorldScene extends Phaser.Scene {
 
   preload() {
     if (!this.textures.exists('town')) this.load.image('town', './art/kenney-tiny-town.png');
+    if (!this.textures.exists('dungeon')) this.load.image('dungeon', './art/kenney-tiny-dungeon.png');
   }
 
   create() {
@@ -102,7 +104,7 @@ export class WorldScene extends Phaser.Scene {
     void tex;
     for (const k of ['hero0', 'hero1']) {
       if (this.textures.exists(k)) this.textures.remove(k);
-      this.textures.createCanvas(k, 12, 16);
+      this.textures.createCanvas(k, 16, 16);
     }
     this.applyLook();
     addCanvas('hilde', tex.hilde);
@@ -137,7 +139,10 @@ export class WorldScene extends Phaser.Scene {
     const NPC_TINT: Record<NpcId, number> = { hilde: 0xffffff, greta: 0x9fc4ff, mira: 0xffd27a, konrad: 0xe8b48a, examiner: 0xc08cff, brandt: 0x8ce0c0, lina: 0xff9a9a, weber: 0xd0d0d0 };
     const NPC_LABEL: Record<NpcId, string> = { hilde: 'Hilde', greta: 'Greta', mira: 'Mira', konrad: 'Konrad', examiner: '考官 Prüfer', brandt: 'Herr Brandt', lina: 'Lina', weber: 'Frau Weber' };
     for (const n of this.map.npcs) {
-      this.add.sprite(n.x * TILE + 8, n.y * TILE + 6, 'hilde').setDepth(n.y * TILE + 8).setTint(NPC_TINT[n.id]);
+      void NPC_TINT;
+      const nk = `npc-${n.id}`;
+      if (!this.textures.exists(nk)) this.textures.addCanvas(nk, dungeonTile(this.dsheet(), NPC_TILE[n.id] ?? 111, CHAR_RAMP));
+      this.add.sprite(n.x * TILE + 8, n.y * TILE + 6, nk).setDepth(n.y * TILE + 8);
       if (this.map.region >= 2 || n.id !== 'hilde')
         this.add
           .text(n.x * TILE + 8, n.y * TILE - 6, NPC_LABEL[n.id], { fontFamily: FONT, fontSize: '6px', color: '#d8c8b8', resolution: 4 })
@@ -346,7 +351,13 @@ export class WorldScene extends Phaser.Scene {
     const teeth = this.add.text(0, 1, '', { fontFamily: FONT, fontSize: '5px', color: '#ff3040', resolution: 4 }).setOrigin(0.5, 0);
     const marker = this.add.text(0, -12, '', { fontFamily: FONT, fontSize: '8px', fontStyle: 'bold', color: '#ffcf4a', resolution: 4 }).setOrigin(0.5, 1);
     const shadow = this.add.ellipse(0, 4, 18, 4, 0x000000, 0.6);
-    const container = this.add.container(x, y, [shadow, label, teeth, marker]);
+    const bk = `mon-${wordTile(word)}`;
+    if (!this.textures.exists(bk)) this.textures.addCanvas(bk, dungeonTile(this.dsheet(), wordTile(word), SHADE_RAMP));
+    const body = this.add.image(0, 5, bk).setOrigin(0.5, 1);
+    label.setY(-14);
+    teeth.setY(5);
+    marker.setY(-25);
+    const container = this.add.container(x, y, [shadow, body, label, teeth, marker]);
     const reveal = [...word.de].map(() => Math.random() < 0.5);
     const m: MonsterEntity = {
       uid: this.uid++,
@@ -620,11 +631,15 @@ export class WorldScene extends Phaser.Scene {
   }
 
 /** Redraws your own hero from state.look (title, login prompt, bonfire). */
+  dsheet(): HTMLImageElement {
+    return this.textures.get('dungeon').getSourceImage() as HTMLImageElement;
+  }
+
   applyLook(): void {
-    const frames = heroFrames(this.ctrl.state.look ?? DEFAULT_LOOK);
+    const frames = heroFramesKenney(this.ctrl.state.look ?? DEFAULT_LOOK, this.dsheet());
     ['hero0', 'hero1'].forEach((k, i) => {
       const t = this.textures.get(k) as Phaser.Textures.CanvasTexture;
-      t.context.clearRect(0, 0, 12, 16);
+      t.context.clearRect(0, 0, 16, 16);
       t.context.drawImage(frames[i], 0, 0);
       t.refresh();
     });
@@ -636,7 +651,7 @@ export class WorldScene extends Phaser.Scene {
 
   private peerTexture(look: Look): string {
     const key = `peer-${lookKey(look)}`;
-    if (!this.textures.exists(`${key}-0`)) heroFrames(look).forEach((cv, i) => this.textures.addCanvas(`${key}-${i}`, cv));
+    if (!this.textures.exists(`${key}-0`)) heroFramesKenney(look, this.dsheet()).forEach((cv, i) => this.textures.addCanvas(`${key}-${i}`, cv));
     if (!this.anims.exists(`${key}-walk`)) this.anims.create({ key: `${key}-walk`, frames: [{ key: `${key}-0` }, { key: `${key}-1` }], frameRate: 6, repeat: -1 });
     return key;
   }
