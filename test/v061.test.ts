@@ -78,3 +78,14 @@ describe('0.6.x 完形填空答错讲清原因', () => {
     expect(clozeWhy('die Tassen', tasse, 'eine Tassen')).toEqual([]);
   });
 });
+
+import { maskZh, showsWord } from '../src/core/cloze';
+describe('0.6.x 修答案泄露', () => {
+  it('Chinese blanks every sense; a sentence showing the word again is not a line', () => {
+    const w = { ...WORDS.find((x) => x.de === 'Apfel')!, zh: '苹果' };
+    expect(maskZh('苹果和苹果汁', w)).toBe('……和……汁');
+    expect(maskZh('我喝茶', w)).toMatch(/^（/);
+    expect(showsWord(w, 'Ich trinke Apfelsaft')).toBe(true);
+    expect(showsWord(w, 'Ich esse gern')).toBe(false);
+  });
+});

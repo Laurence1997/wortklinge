@@ -249,15 +249,31 @@ export function voiceLine(w: Word, n: number, ok?: (i: number) => boolean): { li
   const parsed = (EXAMPLES[w.id] ?? []).map(parse).filter((x): x is NonNullable<typeof x> => !!x);
   if (!parsed.length) return null;
   // 格位姿态: when a filter is given, rotate only through the sentences it allows (all of them if none fits).
-  const idxs = parsed.map((_, i) => i).filter((i) => !ok || ok(i));
-  const pool = idxs.length ? idxs : parsed.map((_, i) => i);
+  // 0.6.x: a sentence that shows the word again outside the blank (plural, compound) is never a line.
+  const clean = parsed.map((_, i) => i).filter((i) => !showsWord(w, parsed[i].before + ' ' + parsed[i].after));
+  const base = clean.length ? clean : parsed.map((_, i) => i);
+  const idxs = base.filter((i) => !ok || ok(i));
+  const pool = idxs.length ? idxs : base;
   const idx = pool[n % pool.length];
   const p = parsed[idx];
   const line = `${p.before}… mmh …${p.after}`.replace(/\s+/g, ' ').trim();
-  const zhs = w.zh.split(/[；;，,、/（）()]/).map((x) => x.trim()).filter((x) => x.length > 0).sort((a, b) => b.length - a.length);
-  const hit = zhs.find((z) => p.zh.includes(z));
-  const zh = hit ? p.zh.replace(hit, '……') : '（它含糊地念着什么，听不清。）';
-  return { line, zh, full: (p.before + p.blank + p.after).trim(), fullZh: p.zh, idx };
+  return { line, zh: maskZh(p.zh, w), full: (p.before + p.blank + p.after).trim(), fullZh: p.zh, idx };
+}
+
+/** Whether German text shows this word (or its plural / a compound with it) outside the blank. */
+export function showsWord(w: Word, text: string): boolean {
+  const forms = [w.de, w.pl].filter((x): x is string => !!x).map((x) => key(x)).filter((x) => !x.includes(' '));
+  return key(text)
+    .split(/[^a-z]+/)
+    .some((t) => forms.some((f) => (f.length >= 4 ? t.includes(f) : t === f)));
+}
+
+/** 0.6.x: every sense of the word is blanked in the Chinese, every time it appears; nothing to blank → a mumble. */
+export function maskZh(zh: string, w: Word): string {
+  const senses = w.zh.split(/[；;，,、/（）()]/).map((x) => x.trim()).filter((x) => x.length > 0).sort((a, b) => b.length - a.length);
+  let out = zh;
+  for (const z of senses) out = out.split(z).join('……');
+  return out === zh ? '（它含糊地念着什么，听不清。）' : out.replace(/(……)+/g, '……');
 }
 
 const GENDER_ZH = { m: '阳性', f: '阴性', n: '中性', pl: '复数' } as const;

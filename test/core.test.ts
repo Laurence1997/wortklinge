@@ -1443,7 +1443,7 @@ describe('0.6 第 3 区: 现在完成时', async () => {
     expect(resolveTurn(s, b, 'attack', q3, q3.answer!, makeRng(7)).phase).toBe('right');
     // A Perfekt line swallows the auxiliary.
     const b2 = startBattle(s, WORD_BY_ID['fahren'], makeRng(9));
-    if (b2.intent.kind !== 'charge' && b2.intent.kind !== 'flee') expect(b2.intent.line).toContain('gefahren');
+    if (b2.intent.kind !== 'charge' && b2.intent.kind !== 'flee') expect(b2.intent.line).toMatch(/gefahren|mmh ….*… mmh/); // 0.6.x: verb swallowed on pick-meaning turns
     // Outside region 3 (or below 21) region-3 verbs keep the present tense.
     s.region = 2;
     expect(startBattle(s, WORD_BY_ID['fahren'], makeRng(1)).perfekt).toBeFalsy();

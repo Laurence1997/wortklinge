@@ -370,16 +370,9 @@ export class BattleUI {
     // 词性三相: the card never gives the gender away until the right stance has landed once.
     const showG = !needsPhase(b) || !!b.phaseHit;
     const color = b.stage === 0 || !showG ? '#e8dccf' : b.pluralMon ? ARTICLE_COLOR.pl : g ? ARTICLE_COLOR[g] : '#c3a9ff';
-    const de = shownDe(b);
 
     // Monster card.
-    const glyph = b.phrase
-      ? `${b.phrase.a} …`
-      : b.stage === 0
-        ? Array.from({ length: Math.max(3, Math.min(9, de.length)) }, () => GLITCH[Math.floor(Math.random() * GLITCH.length)]).join('')
-        : b.stage === 1
-          ? [...de].map((c, i) => (i % 2 === 0 || c === ' ' ? c : '▒')).join('')
-          : (showG && w.art ? (b.pluralMon ? 'die' : w.art) + ' ' : '') + de.slice(0, Math.ceil(de.length / 2)) + '▒▒';
+    const glyph = nameGlyph(b);
     const m = b.monster;
     const st: string[] = [];
     if (m.broken > 0) st.push(`破甲 ${m.broken}`);
@@ -418,7 +411,7 @@ export class BattleUI {
       h(
         'div',
         { style: 'flex:1;min-width:0' },
-        h('div.kind', `${pack.length > 1 ? (b.phaseHit ? fullForm(w) : shownDe(b)) + ' ' : '它'}说`),
+        h('div.kind', `${pack.length > 1 ? nameGlyph(b) + ' ' : '它'}说`),
         h('div.line', it.line),
         h('div.zh', this.zhShown && this.b.curse !== 'forget' ? plainZh(it.zh) : ''),
         b.queued ? h('div.zh', { style: 'color:var(--gold, #ffcf4a)' }, `看穿 · 下回合：${b.queued.line}${this.zhShown ? `（${plainZh(b.queued.zh)}）` : ''}`) : '',
@@ -592,7 +585,7 @@ export class BattleUI {
         { onclick: () => this.target(i), title: '选中它（Tab 切换）', disabled: dead },
         h('div.fam', h('span', `${FAMILIES[w.family].zh} · Lv ${pb.monster.lvl}`), h('span', dead ? '已打散' : STAGE_ZH[pb.stage])),
         icon(monsterTile(pb), 2, dead, 'mon-icon small'),
-        h('div.nm', { style: `color:${color}` }, known && w.art ? `${phaseOf(pb)} ${shownDe(pb)}` : `？ ${shownDe(pb)}`),
+        h('div.nm', { style: `color:${color}` }, dead ? fullForm(w) : nameGlyph(pb)),
         bar('hp', pb.monster.hp, pb.monster.maxHp, `${pb.monster.hp} / ${pb.monster.maxHp}`),
         dead ? '' : h('div.it', it.line),
       );
@@ -699,4 +692,15 @@ export class BattleUI {
     return wrap;
   }
 
+}
+
+/** The monster's name as the player may see it (0.6.x: single card, pack cards and 「X 说」 use the same rule):
+ *  glitch when unnamed, every other letter when cracked, half the word (article once the right stance landed) after. */
+function nameGlyph(b: Battle): string {
+  const de = shownDe(b);
+  const showG = !needsPhase(b) || !!b.phaseHit;
+  if (b.phrase) return `${b.phrase.a} …`;
+  if (b.stage === 0) return Array.from({ length: Math.max(3, Math.min(9, de.length)) }, () => GLITCH[Math.floor(Math.random() * GLITCH.length)]).join('');
+  if (b.stage === 1) return [...de].map((c, i) => (i % 2 === 0 || c === ' ' ? c : '▒')).join('');
+  return (showG && b.word.art ? (b.pluralMon ? 'die' : b.word.art) + ' ' : '') + de.slice(0, Math.ceil(de.length / 2)) + '▒▒';
 }

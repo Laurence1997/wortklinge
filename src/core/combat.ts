@@ -4,7 +4,7 @@
 import { CONFIG, DAY, HOUR, monsterHpAt, playerBaseHp } from './config';
 import { gradeTyped, normalize, type Verdict } from './grading';
 import { ELEMENT_ZH, generateIntent, INTENT_ZH } from './intents';
-import { between, pick, shuffle, type Rng } from './rng';
+import { between, makeRng, pick, shuffle, type Rng } from './rng';
 import { kindOf, stageOf, overdueSteps, type Kind, type Stage } from './srs';
 import { affinityOf, affixTotal, attack, engraved, critChance, gearPen, hintsPerFight, maxHp, now, type GameState } from './state';
 import type { Element, Intent, Move, Word } from './types';
@@ -14,7 +14,7 @@ import { SKILLS, skillLine, skillLinesOpen } from '../data/skills';
 import { SAYING_CFG, SAYINGS } from '../data/sayings';
 import { expectedSentence, gradeSentence, nextPattern, PATTERNS, sentenceTags, type Pattern } from './sentence';
 import { PERFEKT, perfektFull, perfektParts } from '../data/perfekt';
-import { EXAMPLES, caseOf, clozeWhy, pronounClozes, slotArticle, type Case, type Stance, clozeModeFor, clozeOptions, exampleSplits, gradeCloze, hasExamples, makeCloze, twoBlank, voiceLine, wholeSentence, type ClozeMode } from './cloze';
+import { EXAMPLES, caseOf, clozeWhy, maskZh, pronounClozes, slotArticle, type Case, type Stance, clozeModeFor, clozeOptions, exampleSplits, gradeCloze, hasExamples, makeCloze, twoBlank, voiceLine, wholeSentence, type ClozeMode } from './cloze';
 import { CONJ, PERSON_LABEL, type Person } from '../data/verbs';
 import { QTYPES, type QKey } from '../data/questionTypes';
 import { CLASSES, critRunNeeded, rank, resMax, shieldReflect, wrongHitShare, type ClassId } from './classes';
@@ -312,6 +312,7 @@ export function startBattle(
   }
   b.perfekt = perfektBattle(s, word, kind, rng, !!tutorial || !!opts.trial);
   b.intent = nextIntent(s, b, rng);
+  perfektGuard(s, b);
   return b;
 }
 
@@ -368,7 +369,22 @@ function perfektLine(w: Word): { line: string; zh: string; full: string; fullZh:
   const e = PERFEKT[w.de];
   const x = perfektParts(e);
   const line = `${x.before}… mmh …${x.mid}${x.pp}${x.after}`.replace(/\s+/g, ' ').trim();
-  return { line, zh: x.zh, full: perfektFull(e), fullZh: x.zh };
+  return { line, zh: maskZh(x.zh, w), full: perfektFull(e), fullZh: x.zh };
+}
+
+/** 0.6.x: on a turn whose question would be 选意思 / 选德语 / 填分词, the Perfekt line must not show the verb, so the
+ *  participle is swallowed too and the Chinese is a mumble. The question is predicted with a throwaway rng. */
+function perfektGuard(s: GameState, b: Battle): void {
+  if (!b.perfekt || !b.intent?.full || b.intent.kind === 'charge' || b.intent.kind === 'flee') return;
+  const e = PERFEKT[b.word.de];
+  if (!e) return;
+  const x = perfektParts(e);
+  const leaks = (['attack', 'inscribe', 'whisper'] as Move[]).some((m) => {
+    const q = makeQuestion(s, b, m, makeRng(b.turn + 1));
+    return q.type === 'pickZh' || q.type === 'pickDe' || (q.type === 'cloze' && q.answer === x.pp);
+  });
+  if (!leaks) return;
+  b.intent = { ...b.intent, line: `${x.before}… mmh …${x.mid}… mmh …${x.after}`.replace(/\s+/g, ' ').trim(), zh: '（它含糊地念着什么，听不清。）' };
 }
 
 function nextIntent(s: GameState, b: Battle, rng: Rng): Intent {
@@ -1721,6 +1737,7 @@ export function resolveTurn(
       if (x.outcome) continue;
       x.turn += 1;
       x.intent = x.queued ?? nextIntent(s, x, rng);
+      perfektGuard(s, x);
       x.queued = (b.fx.peek ?? 0) > 0 ? nextIntent(s, x, rng) : undefined;
     }
     if ((b.fx.peek ?? 0) > 0) b.fx.peek! -= 1;
