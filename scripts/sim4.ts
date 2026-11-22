@@ -2,6 +2,7 @@
 // Three players (accuracy by question tier, typing speed), per level: answers per kill, HP lost per kill,
 // kills per minute; then how much of the kill-speed spread comes from German vs level/gear.
 // Run: npx vite-node scripts/sim4.ts      Knobs: DMG=<monster dmgPct>, N=<fights per cell>
+import { DUNGEON, RULES } from '../src/data/dungeon';
 import { makeRng } from '../src/core/rng';
 import { CONFIG, levelGapMult, levelHours, xpToNext } from '../src/core/config';
 import { CONJ } from '../src/data/verbs';
@@ -49,6 +50,7 @@ let INS_N = 0;
 let SEN_N = 0;
 let PERF_N = 0;
 const PERF_XP = +(process.env.PERF_XP ?? 1);
+let FIGHT_HP = 1, FIGHT_DMG = 1;
 const regionOf = (L: number): RegionId => (L > 20 ? 3 : L > 10 ? 2 : 1);
 function player(L: number, G: number): GameState {
   const s = newGame('S', 'student', Date.now());
@@ -78,6 +80,9 @@ function fight(t: T, s: GameState, m: number, keepHp = false) {
   b.monster.lvl = m;
   b.monster.hp = b.monster.maxHp = st.hp;
   b.monster.dmg = st.dmg;
+  // 零号站台 boss (DUNGEON=1): HP and damage multipliers.
+  b.monster.hp = b.monster.maxHp = Math.round(b.monster.maxHp * FIGHT_HP);
+  b.monster.dmg = Math.round(b.monster.dmg * FIGHT_DMG);
   let qs = 0;
   let sec = WALK;
   b.pluralMon = false; // the sim's monster stats are set by hand above
@@ -297,6 +302,36 @@ if (process.env.MAP) {
     return `${t.padEnd(7)} L${String(L).padStart(2)} ${z.id.padEnd(15)} ${(fights / (HOUR / 3600)).toFixed(0).padStart(3)} fights/h · move ${((100 * walk) / clock).toFixed(0)}% (${(walk / fights).toFixed(1)} s/fight) · per bonfire ${perBonfire} · deaths ${deaths} · xp/h ${xph.toFixed(0)} · Lv${L}→${L + 1} ${mins.toFixed(0)} min (curve ${(levelHours(L) * 60).toFixed(0)}, ×${(mins / (xpToNext(L) / CONFIG.xpPerHour * 60)).toFixed(2)}) · lvl ${share}`;
   };
   const nodes = !!process.env.NODES;
+  if (process.env.DUNGEON) {
+    // 零号站台 vs the field: 5 fights at your level + a boss 2 levels up (HP ×2.5, dmg ×1.2), entry overhead,
+    // clear bonus = xpToNext × clearXp × the average rule bonus (all rules kept). Target: ≤ 1.2× field xp/h.
+    if (process.env.CXP) (DUNGEON as { clearXp: number }).clearXp = +process.env.CXP;
+    const avgMult = RULES.reduce((a, r) => a + r.mult, 0) / RULES.length;
+    for (const L of [28, 29, 30]) for (const t of ['grind', 'balance', 'learn'] as T[]) {
+      const field = +(/xp\/h (\d+)/.exec(runNodes(t, L))![1]);
+      let xp = 0, sec = 0, runs = 0;
+      for (let i = 0; i < 60; i++) {
+        const s = player(L, gearAt(L));
+        s.hp = maxHp(s);
+        let ok = true;
+        sec += 20; // walk in, read the card, accept
+        for (let f = 0; f < DUNGEON.fights + 1 && ok; f++) {
+          const boss = f === DUNGEON.fights;
+          FIGHT_HP = boss ? DUNGEON.bossHp : 1;
+          FIGHT_DMG = boss ? 1.2 : 1;
+          const r = fight(t, s, L + (boss ? DUNGEON.bossLvl : 0), true);
+          FIGHT_HP = FIGHT_DMG = 1;
+          xp += r.xp; sec += r.sec - WALK + 2;
+          ok = r.won;
+          if (ok) postFightHeal(s);
+        }
+        if (ok) { xp += xpToNext(L) * DUNGEON.clearXp * avgMult; runs++; }
+      }
+      const xph = (xp / sec) * 3600;
+      console.log(`${t.padEnd(7)} L${L} dungeon xp/h ${xph.toFixed(0)} · field ${field} · ×${(xph / field).toFixed(2)} · clears ${runs}/60 · ${(sec / 60 / 60).toFixed(1)} min/run`);
+    }
+    process.exit(0);
+  }
   console.log(`${nodes ? '0.5 scene map' : '0.4 map baseline'} (REST ${REST * 100}% HP, ${HOUR / 3600} h per row)`);
   const LVS = process.env.LVS ? process.env.LVS.split(',').map(Number) : [2, 4, 6, 8, 12, 15, 18];
   for (const L of LVS) for (const t of ['grind', 'balance', 'learn'] as T[]) console.log(nodes ? runNodes(t, L) : run(t, L));

@@ -20,6 +20,7 @@ export const RULES: Rule[] = [
   { id: 'schnell', de: 'Schnell!', zh: '快：每题 10 秒内答，超时这次加成作废。', mult: 1.5 },
 ];
 
-export const DUNGEON = { fights: 5, from: 28, bossHp: 2.5, bossLvl: 2, seconds: 10, clearXp: 0.03, clearGoldKills: 10 };
-// clearXp 0.03 (sim 2026-11-22): 6 fights take about 2 min in sim4 terms and earn ~8% of a level from kills; a 10% clear
-// bonus made a run ~2.7× the field rate (everyone would farm only the dungeon). 3% × the rule bonus keeps it ~+40–60%.
+export const DUNGEON = { fights: 5, from: 28, bossHp: 2.5, bossLvl: 2, seconds: 10, clearXp: 0.025, clearGoldKills: 10 };
+// clearXp 0.025 (docs 2026-11-22: a run, rule bonus included, at most 1.2× the field's XP per hour, no run limit).
+// `HOURS=2 NODES=1 MAP=1 DUNGEON=1 npx vite-node scripts/sim4.ts`, L28–30: balance ×0.96–1.09, learn ×0.99–1.07,
+// grind ×0.93–1.13 except L28 ×1.35 (grind players die a lot in the L28 field, the dungeon stands at their level).
