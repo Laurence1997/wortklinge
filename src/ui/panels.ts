@@ -33,6 +33,7 @@ import { SCENE_BY_ID } from '../data/world';
 import { blanksOf, checkBlank, DIARY_MISSES, DIARY_XP, lineText, pageLines, pageNo, pageRegion, pageState } from '../core/diary';
 import { lookPicker } from './title';
 import { CONSUMABLE, cap as itemCap, count as itemCount, itemPrice, type Consumable } from '../core/items';
+import { matchRows, mergeImport, readTable } from '../core/wordImport';
 import { BARGAIN_LINES, ensureShop, price, refreshCost, sellPrice, SLOT_NOUN } from '../core/shop';
 
 export type PanelName = 'hero' | 'talents' | 'quests' | 'codex' | 'words' | 'data' | 'account' | 'settings' | 'help' | 'shop' | 'chest' | 'quiz' | 'duel' | 'screen' | 'bigmap' | 'diary' | 'ask' | 'exam';
@@ -1027,6 +1028,56 @@ export class Panels {
     return wrap;
   }
 
+  // ---- 词表导入 (2026-11-22): bring a word list from another app; only changes what you meet first ----
+
+  private importBox(): HTMLElement {
+    const s = this.ctrl.state;
+    const box = h('div.import-box');
+    const imp = s.wordImport;
+    const file = h('input', { type: 'file', accept: '.csv,.tsv,.txt,.xlsx,text/csv,text/plain', hidden: true }) as HTMLInputElement;
+    file.onchange = async () => {
+      const f = file.files?.[0];
+      if (!f) return;
+      try {
+        const table = await readTable(f);
+        const r = matchRows(table, WORDS);
+        if (!r.rows) {
+          toast('没在这个文件里找到单词');
+          return;
+        }
+        s.wordImport = mergeImport(s.wordImport, r);
+        this.ctrl.persist();
+        toast(`读了 ${r.rows} 个词：${r.matched.length} 个游戏里有，标成优先；${r.missing.length} 个游戏里还没有，放进待收录${r.skipped ? `；表里有排名，只取了排名最前的 ${r.rows} 个` : ''}`);
+        this.render();
+      } catch {
+        toast('读不了这个文件。请导出成 CSV（或 Language Reactor 的 xlsx）再试');
+      }
+    };
+    const n = imp?.ids.length ?? 0;
+    const learned = (imp?.ids ?? []).filter((id) => s.words[id]).length;
+    box.append(
+      h('h3', '导入要学的词'),
+      h('p.small.muted', '从 Language Reactor、Anki、Excel 导出 CSV（或 Language Reactor 的 xlsx），游戏里有的词会标成「优先」，在它所在的场景里先出来；还没到那个区的，到了才出现。只改先学哪些词，不加经验和掉落。文件只在你的浏览器里读，不会上传。'),
+      h(
+        'div.row',
+        h('button.btn', { onclick: () => file.click() }, n ? '再导入一个文件' : '选择文件导入'),
+        file,
+        n || imp?.pending.length
+          ? h('button.btn.ghost', { onclick: () => { if (window.confirm('清除导入的优先词和待收录清单？（学习进度不受影响）')) { s.wordImport = undefined; this.ctrl.persist(); this.render(); } } }, '清除导入')
+          : null,
+      ),
+    );
+    if (imp && (n || imp.pending.length)) {
+      box.append(h('p.small', `优先 ${n} 个（已经见过 ${learned} 个）· 待收录 ${imp.pending.length} 个`));
+      if (imp.pending.length) {
+        const det = h('details.small');
+        det.append(h('summary', '待收录：游戏里还没有的词'), h('p.small.muted', '这些词以后补进词库后会自动标成优先。'), h('p.small', imp.pending.join('、')));
+        box.append(det);
+      }
+    }
+    return box;
+  }
+
   // ---- 单词本: what you know, what you're learning, what you keep getting wrong ----------------
 
   private wordbook(): HTMLElement {
@@ -1061,6 +1112,7 @@ export class Panels {
     const learningN = wrote.length + readOnly.length + notYet.length;
     const pendN = Object.values(s.words).filter((p) => p.pend).length;
     const claims = pendingScenes(s);
+    wrap.append(this.importBox());
     wrap.append(h('p', `已斩杀 ${cut.length} · 待验证 ${pendN}${claims.length ? ` · 待领经验：${claims.map((x) => x.zh).join('、')}` : ''}`));
     wrap.append(h('p.small.muted', `见过 ${shaky.length + learningN + known.length + cut.length} 个词：熟练 ${known.length} · 学习中 ${learningN} · 常错 ${shaky.length}。「认得」是选择题答对过，「会写」是默写、变位或整句写对过。存档同步到云端，换电脑也在。`));
     const table = (title: string, note: string, rows: Row[]) => {

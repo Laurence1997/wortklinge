@@ -9,6 +9,7 @@ import { now, type GameState } from './state';
 import type { Word, ZoneId } from './types';
 import { has } from './unlocks';
 import { WORDS } from '../data/words';
+import { prioritise } from './wordImport';
 
 export interface SpawnPick {
   word: Word;
@@ -69,6 +70,9 @@ export function pickSpawns(s: GameState, zone: ZoneId, count: number, alive: Set
   }
 
   // New words in list order (easiest first). No daily cap (言灵过载 removed 2026-11-20).
+  // 词表导入 (2026-11-22): imported 优先 words of this scene come first, at most 3 at a time.
+  const prio = new Set(s.wordImport?.ids ?? []);
+  if (prio.size) fresh.splice(0, fresh.length, ...prioritise(fresh, prio));
   const newSlots = Math.min(count - out.length, Math.max(1, Math.ceil(count * 0.6)));
   for (const w of fresh.slice(0, newSlots)) out.push({ word: w, kind: 'new' });
 

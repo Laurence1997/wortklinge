@@ -62,6 +62,8 @@ export interface GameState {
   sayings?: Record<string, number>;
   /** 主城全量筛选 (0.6.x): XP waiting in scenes (待领) and the cursor per scope. */
   screen?: import('./screen').ScreenSave;
+  /** 词表导入 (2026-11-22): word ids marked 优先 and lemmas the game doesn't have yet (待收录). Optional: absent = none. */
+  wordImport?: { ids: string[]; pending: string[] };
   /** 0.4 装备档位: kills per region ("1", "2"); the tier follows from them. */
   gearKills?: Record<string, number>;
   recentNouns: string[];
