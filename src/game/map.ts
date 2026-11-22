@@ -1,5 +1,6 @@
 // Maps. Region 1: 最后的营地 — a fog-locked block of a ruined German town.
 // Region 2: 面包集市 — the market behind the neighbour's door.
+// Region 3: 铁轨镇 — the rail town over the bridge east of the granary (0.6).
 // Generated from fixed seeds so every player walks the same streets. Both maps are 74×48.
 
 import { makeRng } from '../core/rng';
@@ -34,7 +35,7 @@ export interface Rect {
 }
 
 export type RegionId = 1 | 2 | 3;
-export type NpcId = 'hilde' | 'greta' | 'mira' | 'konrad' | 'examiner';
+export type NpcId = 'hilde' | 'greta' | 'mira' | 'konrad' | 'examiner' | 'brandt' | 'lina';
 
 export interface ZoneDef {
   id: ZoneId;
@@ -55,6 +56,10 @@ export const ZONES: ZoneDef[] = [
   { id: 'gemuesegasse', region: 2, zh: '菜摊街', de: 'Gemüsegasse', rect: { x: 24, y: 3, w: 26, h: 19 }, levels: 'Lv 11–14', monsters: 10 },
   { id: 'waagegasse', region: 2, zh: '秤巷', de: 'Waagegasse', rect: { x: 24, y: 27, w: 26, h: 18 }, levels: 'Lv 14–17', monsters: 10 },
   { id: 'kornspeicher', region: 2, zh: '粮仓', de: 'Kornspeicher', rect: { x: 52, y: 6, w: 17, h: 36 }, levels: 'Lv 17–20', monsters: 10 },
+  { id: 'gleisdorf', region: 3, zh: '铁轨镇广场', de: 'Gleisdorf', rect: { x: 4, y: 13, w: 18, h: 23 }, levels: '主城', monsters: 0 },
+  { id: 'bahnhofstrasse', region: 3, zh: '站前街', de: 'Bahnhofstraße', rect: { x: 24, y: 3, w: 26, h: 19 }, levels: 'Lv 21–24', monsters: 10 },
+  { id: 'altstadt', region: 3, zh: '老城路口', de: 'Altstadt', rect: { x: 24, y: 27, w: 26, h: 18 }, levels: 'Lv 24–27', monsters: 10 },
+  { id: 'fahrplanhalle', region: 3, zh: '时刻表大厅', de: 'Fahrplanhalle', rect: { x: 52, y: 6, w: 17, h: 36 }, levels: 'Lv 27–30', monsters: 10 },
 ];
 
 export function zonesOf(region: RegionId): ZoneDef[] {
@@ -80,7 +85,7 @@ export function idx(x: number, y: number): number {
 }
 
 export function generateMap(region: RegionId = 1): MapData {
-  return region === 2 ? generateRegion2() : generateRegion1();
+  return region === 3 ? generateRegion3() : region === 2 ? generateRegion2() : generateRegion1();
 }
 
 function generateRegion1(): MapData {
@@ -317,6 +322,10 @@ function generateRegion2(): MapData {
     { id: 'examiner', x: 12, y: 22 },
   ];
   for (const n of npcs) set(n.x, n.y, T.Ground);
+  // 0.6: the rail bridge east of the granary (opens after 吞秤者) leads to region 3. No rng calls, so the rest of
+  // the market stays exactly as it was.
+  for (let x = 60; x < 72; x++) set(x, 44, T.Road);
+  for (let y = 40; y < 45; y++) set(61, y, T.Road);
 
   return {
     region: 2,
@@ -324,6 +333,134 @@ function generateRegion2(): MapData {
     bonfire,
     npcs,
     gates: [{ x: gate.x, y: gate.y, to: 1 }, { x: gate.x, y: gate.y + 1, to: 1 }],
+    sign: { x: bonfire.x, y: bonfire.y - 5 },
+    door,
+    start: { x: 4, y: 24 },
+    lamps,
+    signs,
+  };
+}
+
+function generateRegion3(): MapData {
+  const rng = makeRng(20261121);
+  const tiles = new Uint8Array(MAP_W * MAP_H).fill(T.Ground);
+  const set = (x: number, y: number, t: T) => {
+    if (x >= 0 && y >= 0 && x < MAP_W && y < MAP_H) tiles[idx(x, y)] = t;
+  };
+  const get = (x: number, y: number) => tiles[idx(x, y)];
+
+  for (let y = 0; y < MAP_H; y++)
+    for (let x = 0; x < MAP_W; x++) {
+      const edge = Math.min(x, y, MAP_W - 1 - x, MAP_H - 1 - y);
+      if (edge < 2 || (edge < 3 && rng() < 0.5)) set(x, y, T.Fog);
+    }
+
+  // The railway runs west to east through the town; two streets cross it.
+  for (let x = 2; x < 70; x++) for (let dy = 0; dy < 2; dy++) set(x, 24 + dy, T.Road);
+  for (let y = 4; y < 45; y++) for (let dx = 0; dx < 2; dx++) set(22 + dx, y, T.Road);
+  for (let y = 4; y < 45; y++) for (let dx = 0; dx < 2; dx++) set(50 + dx, y, T.Road);
+
+  // Station street: shop rows; old town: houses with yards; timetable hall: long platforms (walls with gaps).
+  const blocks = (r: Rect, style: 'shops' | 'houses' | 'platforms') => {
+    const step = style === 'platforms' ? 6 : 7;
+    for (let y = r.y; y < r.y + r.h; y++)
+      for (let x = r.x; x < r.x + r.w; x++) {
+        if (get(x, y) === T.Fog) continue;
+        const lx = x - r.x;
+        const ly = y - r.y;
+        if (lx % step === 0 || ly % step === 0) {
+          set(x, y, T.Road);
+          continue;
+        }
+        const bx = lx % step;
+        const by = ly % step;
+        const inner = bx >= 2 && bx <= step - 2 && by >= 2 && by <= step - 2;
+        if (!inner) {
+          if (rng() < 0.03) set(x, y, style === 'houses' ? T.Tree : T.Lamp);
+          else if (rng() < 0.03) set(x, y, T.Crate);
+          continue;
+        }
+        if (style === 'platforms') {
+          if (by === 2 && bx !== 3) set(x, y, T.Wall);
+          else if (rng() < 0.15) set(x, y, T.Crate);
+        } else {
+          const edgeB = bx === 2 || bx === step - 2 || by === 2 || by === step - 2;
+          if (edgeB) set(x, y, rng() < (style === 'houses' ? 0.2 : 0.1) ? T.Rubble : T.Wall);
+          else set(x, y, T.Roof);
+        }
+      }
+  };
+  blocks(zonesOf(3)[1].rect, 'shops');
+  blocks(zonesOf(3)[2].rect, 'houses');
+  blocks(zonesOf(3)[3].rect, 'platforms');
+
+  // The town square: ash around the bonfire, the stationmaster's office north, the stalls south.
+  const bonfire = { x: 12, y: 24 };
+  for (let y = 14; y < 35; y++)
+    for (let x = 4; x < 22; x++) {
+      if (get(x, y) === T.Fog) continue;
+      const d = Math.hypot(x - bonfire.x, (y - bonfire.y) * 0.9);
+      if (d < 4) set(x, y, T.Ash);
+      else if (get(x, y) !== T.Road) set(x, y, T.Ground);
+    }
+  for (let y = 14; y <= 18; y++)
+    for (let x = 5; x <= 11; x++) {
+      const edgeB = x === 5 || x === 11 || y === 14 || y === 18;
+      set(x, y, edgeB ? (y === 18 && x === 8 ? T.Ground : T.Wall) : T.Roof);
+    }
+  for (let x = 14; x <= 19; x++) set(x, 31, T.Crate);
+  set(18, 17, T.Tent);
+  for (let x = 4; x < 22; x++) for (let dy = 0; dy < 2; dy++) set(x, 24 + dy, T.Road);
+
+  // The last platform at the east end: 晚点之王 waits behind it.
+  const door = { x: 70, y: 24 };
+  for (let y = 18; y < 31; y++) {
+    set(71, y, T.Wall);
+    if (y !== 24 && y !== 25) set(70, y, T.Wall);
+  }
+  set(door.x, 24, T.Door);
+  set(door.x, 25, T.Door);
+
+  // West end: the bridge back to the market.
+  const gate = { x: 2, y: 24 };
+  set(1, 24, T.Door);
+  set(1, 25, T.Door);
+  set(2, 24, T.Road);
+  set(2, 25, T.Road);
+
+  const lamps = [
+    { x: 21, y: 23 },
+    { x: 30, y: 26 },
+    { x: 44, y: 23 },
+    { x: 49, y: 26 },
+    { x: 60, y: 23 },
+    { x: 68, y: 26 },
+    { x: 4, y: 23 },
+  ];
+  for (const l of lamps) set(l.x, l.y, T.Lamp);
+
+  const signs = [
+    { x: 23, y: 21, wordId: 'bahnhof' },
+    { x: 25, y: 26, wordId: 'altstadt' },
+    { x: 52, y: 22, wordId: 'fahrplan' },
+  ];
+  for (const sg of signs) set(sg.x, sg.y, T.Ground);
+
+  const npcs: MapData['npcs'] = [
+    { id: 'hilde', x: 14, y: 26 },
+    { id: 'examiner', x: 12, y: 22 },
+    { id: 'brandt', x: 8, y: 19 },
+    { id: 'mira', x: 16, y: 30 },
+    { id: 'greta', x: 18, y: 18 },
+  ];
+  for (const n of npcs) set(n.x, n.y, T.Ground);
+
+  return {
+    region: 3,
+    tiles,
+    bonfire,
+    npcs,
+    gates: [{ x: gate.x, y: gate.y, to: 2 }, { x: gate.x, y: gate.y + 1, to: 2 }],
     sign: { x: bonfire.x, y: bonfire.y - 5 },
     door,
     start: { x: 4, y: 24 },

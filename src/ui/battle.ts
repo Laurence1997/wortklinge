@@ -318,7 +318,7 @@ export class BattleUI {
       }
     }
     if (this.phase === 'choose' && needsPhase(this.b) && /^[0-9]$/.test(e.key)) {
-      const list = stancesFor(this.ctrl.state.level);
+      const list = stancesFor(this.ctrl.state.level, this.b);
       const st = list[(Number(e.key) + 9) % 10];
       if (st) {
         this.setPhase(st);
@@ -498,7 +498,7 @@ export class BattleUI {
     const q = h('div.q');
     if (this.phase === 'choose') {
       q.append(
-        h('div.prompt', h('span', needsPhase(b) && !b.phase ? (s.level >= 7 ? '先选相：按数字键选它这句话需要的冠词，再出手' : '先选相：按 1 der、2 die、3 das，再出手') : '听它说什么，再出手')),
+        h('div.prompt', h('span', needsPhase(b) && !b.phase ? b.perfekt ? '先选相：它这句完成时缺的是 haben 还是 sein？按 1 haben、2 sein，再出手' : (s.level >= 7 ? '先选相：按数字键选它这句话需要的冠词，再出手' : '先选相：按 1 der、2 die、3 das，再出手') : '听它说什么，再出手')),
       );
       const rt = canListen() ? readTarget(s, b) : null;
       if (rt)
@@ -524,21 +524,25 @@ export class BattleUI {
       stance = h(
         'div.stance',
         h('span.muted', '相：'),
-        ...stancesFor(s.level).map((p, i) =>
+        ...stancesFor(s.level, b).map((p, i) =>
           h(`button.btn.${p}${b.phase === p ? '.sel' : ''}`, { disabled: this.phase === 'result', onclick: () => this.setPhase(p), title: `${p}（${(i + 1) % 10}）` }, h('kbd', String((i + 1) % 10)), p),
         ),
         taught
           ? h(
               'span.small',
               { style: 'color:var(--gold, #ffcf4a)' },
-              `  新词：${fullForm(w)} · ${w.zh}　第一次见，相已替你选好${b.phase !== w.art ? `（这句要 ${b.phase}）` : ''}，记住它`,
+              b.perfekt
+                ? `  新词：${w.de} · ${w.zh}　完成时用 ${b.phase}，相已替你选好，记住它`
+                : `  新词：${fullForm(w)} · ${w.zh}　第一次见，相已替你选好${b.phase !== w.art ? `（这句要 ${b.phase}）` : ''}，记住它`,
             )
           : !b.pluralMon && !(this.phase === 'answer' && this.question?.type === 'pickZh')
             ? h('span.small', { style: 'color:var(--gold, #ffcf4a)' }, `  它是「${w.zh}」→ 选它的相`)
             : '',
         h(
           'span.small.muted',
-          taught ? '' : this.phaseNag && !b.phase
+          taught ? '' : b.perfekt
+            ? s.level <= 22 ? '  完成时：移动、变化（fahren、kommen、aufstehen）多用 sein，其余用 haben；23 级前选错不罚' : '  选对护甲降一档、回资源；选错护甲翻倍'
+            : this.phaseNag && !b.phase
             ? s.level >= 7 ? '  先选相：它这句话里缺的那个冠词是什么？' : '  先选相：它是 der、die 还是 das？'
             : b.pluralMon
               ? '  复数一律 die'

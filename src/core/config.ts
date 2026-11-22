@@ -41,7 +41,10 @@ export const CONFIG = {
   earlyXpMult: (level: number) => (level <= 5 ? 0.7 : level <= 10 ? 0.4 : 1),
   xpPerHour: 1000,
   /** 0.3 ships regions 1–2; the level cap keeps players inside released content. */
-  levelCap: 20,
+  levelCap: 30,
+  /** 现在完成时 (0.6 第 5 块): haben/sein stance from 21 (wrong picks free until 22), 填分词 by kind 21/24/27,
+   *  region-1/2 verb reviews in the Perfekt one time in three. */
+  perfekt: { from: 21, softUntil: 22, irregularFrom: 24, prefixFrom: 27, reviewChance: 1 / 3 },
   /** The neighbour's door opens onto region 2 (面包集市) at this level, after the region-1 boss. */
   region2Level: 10,
 

@@ -13,6 +13,7 @@ import { fullForm, genderOf, hasArticleQuestion, WORD_BY_ID, WORDS, zhWithPos } 
 import { SKILLS, skillLine, skillLinesOpen } from '../data/skills';
 import { SAYING_CFG, SAYINGS } from '../data/sayings';
 import { expectedSentence, gradeSentence, nextPattern, PATTERNS, sentenceTags, type Pattern } from './sentence';
+import { PERFEKT, perfektFull, perfektParts } from '../data/perfekt';
 import { EXAMPLES, caseOf, pronounClozes, slotArticle, type Case, type Stance, clozeModeFor, clozeOptions, exampleSplits, gradeCloze, hasExamples, makeCloze, voiceLine, wholeSentence, type ClozeMode } from './cloze';
 import { CONJ, PERSON_LABEL, type Person } from '../data/verbs';
 import { QTYPES, type QKey } from '../data/questionTypes';
@@ -144,6 +145,8 @@ export interface Battle {
   affinityPaid?: boolean;
   /** 先教后考 (0.5): the turn on which a never-met noun had its stance picked for it and shown. */
   phaseTaught?: number;
+  /** 现在完成时 (0.6, region 3 Lv21+): a verb monster speaking in the Perfekt; its stance is haben / sein. */
+  perfekt?: boolean;
   /** 复数怪 (0.5, Lv11+): a whole crowd of this word, die Äpfel. Only the die stance is right. */
   pluralMon?: boolean;
   /** 残句 (0.5): a sentence monster with no word nameplate. Finish the half → pick its meaning → write it whole. */
@@ -272,8 +275,47 @@ export function startBattle(
     b.pluralDue = true;
     monster.hp = monster.maxHp = Math.round(monster.maxHp * CONFIG.phase.pluralHp);
   }
+  b.perfekt = perfektBattle(s, word, kind, rng, !!tutorial || !!opts.trial);
   b.intent = nextIntent(s, b, rng);
   return b;
+}
+
+/** 现在完成时 (0.6 第 5 块): from Lv21 every region-3 verb monster in region 3 speaks in the Perfekt, and a region-1/2
+ *  verb coming back as a review does so one time in three (as plurals do in region 2). */
+export function perfektBattle(s: GameState, w: Word, kind: Kind, rng: Rng, scripted = false): boolean {
+  if (scripted || w.pos !== 'v' || !PERFEKT[w.de] || s.level < CONFIG.perfekt.from) return false;
+  if ((w.region ?? 1) === 3) return (s.region ?? 1) === 3;
+  return kind !== 'new' && rng() < CONFIG.perfekt.reviewChance;
+}
+
+/** 填分词 opens by kind: ge-…-t at Lv21, strong and mixed at Lv24, separable and prefixed at Lv27. */
+export function ppOpen(level: number, w: Word): boolean {
+  const e = PERFEKT[w.de];
+  if (!e || level < CONFIG.perfekt.from) return false;
+  return e.kind === 'reg' || (e.kind === 'irr' && level >= CONFIG.perfekt.irregularFrom) || level >= CONFIG.perfekt.prefixFrom;
+}
+
+/** 填分词: Ich habe Brot ___ (kaufen) → gekauft. Counts as a form cloze. */
+export function ppQ(w: Word): Question | null {
+  const e = PERFEKT[w.de];
+  if (!e) return null;
+  const x = perfektParts(e);
+  return {
+    type: 'cloze',
+    prompt: `填分词：打出 Partizip II · ${x.zh}`,
+    focus: `${x.before}${x.aux}${x.mid}___ (${w.de})${x.after}`.replace(/\s+/g, ' ').trim(),
+    answer: x.pp,
+    clozeMode: 'form',
+    full: perfektFull(e),
+  };
+}
+
+/** The Perfekt line a verb monster mumbles: its auxiliary swallowed (that is the stance to pick). */
+function perfektLine(w: Word): { line: string; zh: string; full: string; fullZh: string } {
+  const e = PERFEKT[w.de];
+  const x = perfektParts(e);
+  const line = `${x.before}… mmh …${x.mid}${x.pp}${x.after}`.replace(/\s+/g, ' ').trim();
+  return { line, zh: x.zh, full: perfektFull(e), fullZh: x.zh };
 }
 
 function nextIntent(s: GameState, b: Battle, rng: Rng): Intent {
@@ -318,6 +360,9 @@ function nextIntent(s: GameState, b: Battle, rng: Rng): Intent {
   } else if (!tut && intent.kind !== 'charge' && intent.kind !== 'flee' && b.saying && !b.sayingDone) {
     // 接句怪: until you finish its line, the line is its half sentence (no mumbled example giving the rest away).
     intent = { ...intent, ...shoutLine(b.saying) };
+  } else if (!tut && intent.kind !== 'charge' && intent.kind !== 'flee' && b.perfekt) {
+    // 现在完成时: the Perfekt sentence with haben / sein swallowed.
+    intent = { ...intent, ...perfektLine(b.word), caseArt: undefined };
   } else if (!tut && intent.kind !== 'charge' && intent.kind !== 'flee') {
     // 格位姿态 (Lv7+): only sentences whose slot is in a case this level reads, and the stance must match the slot.
     const g = genderOf(b.word);
@@ -387,6 +432,7 @@ export function moveReady(s: GameState, b: Battle, move: Move): boolean {
  *  or while broken; the hit is divided by (1 + A), i.e. A / (1 + A) is stopped (at most 90%). */
 /** 词性三相: the stance that hits this monster's weak point (null for words without an article). */
 export function phaseOf(b: Battle): Stance | null {
+  if (b.perfekt) return PERFEKT[b.word.de].aux;
   if (!b.word.art) return null;
   if (b.pluralMon) return 'die';
   // 格位姿态 (Lv7+): the article its line's slot needs; otherwise (no usable line) the name's own der/die/das.
@@ -395,7 +441,7 @@ export function phaseOf(b: Battle): Stance | null {
 
 /** The case the right stance stands for (nom when it comes from the name alone). */
 export function phaseCase(b: Battle): Case {
-  if (!b.intent?.caseArt || b.pluralMon) return 'nom';
+  if (!b.intent?.caseArt || b.pluralMon || b.perfekt) return 'nom';
   return caseOf(genderOf(b.word), b.intent.caseArt) ?? 'nom';
 }
 
@@ -405,7 +451,8 @@ export function casesOpen(level: number): Case[] {
 }
 
 /** Stance buttons for this level: der/die/das; from Lv7 also den and ein/eine/einen; from Lv15 dem/einem/einer. */
-export function stancesFor(level: number): Stance[] {
+export function stancesFor(level: number, b?: Battle): Stance[] {
+  if (b?.perfekt) return ['haben', 'sein'];
   const out: Stance[] = ['der', 'die', 'das'];
   if (level >= CONFIG.phase.accFrom) out.push('den', 'ein', 'eine', 'einen');
   if (level >= CONFIG.phase.datFrom) out.push('dem', 'einem', 'einer');
@@ -558,6 +605,7 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
       if (q.type === 'cloze') return clozeQ(s, w, rng, s.level >= 11 ? 'form' : 'base') ?? typed();
       return canConj ? conj() : typed();
     }
+    if (b.perfekt && ppOpen(s.level, w)) return ppQ(w);
     const form = s.level >= 11 && hasExamples(w) ? clozeQ(s, w, rng, 'form') : null;
     return (form && form.clozeMode === 'form' ? form : null) ?? sentenceQ();
   };
@@ -611,7 +659,7 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
   // a multi-hit one asks one step harder. A word you have never answered keeps its usual question.
   if (am === 'attack' && q.type !== 'saying' && q.type !== 'callout' && !b.tutorial && !fresh && canType) {
     if (b.intent.kind === 'charge') {
-      const form = s.level >= 11 && hasExamples(w) ? clozeQ(s, w, rng, 'form') : null;
+      const form = b.perfekt && ppOpen(s.level, w) ? ppQ(w) : s.level >= 11 && hasExamples(w) ? clozeQ(s, w, rng, 'form') : null;
       const hard = form?.clozeMode === 'form' ? form : qTier(q) === 0 ? (canConj ? conj() : typed()) : q;
       if (qTier(hard) > qTier(q)) q = hard;
     } else if (b.intent.kind === 'attack' && b.intent.hits > 1) q = harder(q) ?? q;
@@ -1174,7 +1222,7 @@ export function resolveTurn(
       if (stanceMove && needsPhase(b)) {
         const pc = phaseCase(b);
         // Not punished yet: Lv1–5, and the first level of each case (acc at 7, dat at 15).
-        const soft = s.level <= CONFIG.phase.softUntil || (pc === 'acc' && s.level === CONFIG.phase.accFrom) || (pc === 'dat' && s.level === CONFIG.phase.datFrom);
+        const soft = (b.perfekt && s.level <= CONFIG.perfekt.softUntil) || s.level <= CONFIG.phase.softUntil || (pc === 'acc' && s.level === CONFIG.phase.accFrom) || (pc === 'dat' && s.level === CONFIG.phase.datFrom);
         phaseFx = b.phase === phaseOf(b) ? 'right' : soft ? 'soft' : 'wrong';
       }
       if (phaseFx === 'wrong') {

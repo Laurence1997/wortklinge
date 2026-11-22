@@ -24,6 +24,14 @@ function row(s: string, strong = false): Conj {
   return { forms: { ich, du, er, wir, ihr, sie }, strong: strong || undefined };
 }
 
+/** Separable verbs: the particle goes after every form (steige … ein). */
+function sep(s: string, particle: string, strong = false, pastStrong = false): Conj {
+  const c = row(s, strong);
+  for (const k of PERSONS) c.forms[k] = `${c.forms[k]} ${particle}`;
+  if (pastStrong) c.pastStrong = true;
+  return c;
+}
+
 /** Present tense regular, past strong or mixed. */
 function rowPast(s: string): Conj {
   return { ...row(s), pastStrong: true };
@@ -77,4 +85,53 @@ export const CONJ: Record<string, Conj> = {
   wiegen: rowPast('wiege wiegst wiegt wiegen wiegt wiegen'),
   frühstücken: row('frühstücke frühstückst frühstückt frühstücken frühstückt frühstücken'),
   mischen: row('mische mischst mischt mischen mischt mischen'),
+  // Region 3
+  reservieren: row('reserviere reservierst reserviert reservieren reserviert reservieren'),
+  halten: row('halte hältst hält halten haltet halten', true),
+  warten: row('warte wartest wartet warten wartet warten'),
+  parken: row('parke parkst parkt parken parkt parken'),
+  abholen: sep('hole holst holt holen holt holen', 'ab'),
+  bringen: rowPast('bringe bringst bringt bringen bringt bringen'),
+  fliegen: rowPast('fliege fliegst fliegt fliegen fliegt fliegen'),
+  reisen: row('reise reist reist reisen reist reisen'),
+  fahren: row('fahre fährst fährt fahren fahrt fahren', true),
+  einsteigen: sep('steige steigst steigt steigen steigt steigen', 'ein', false, true),
+  aussteigen: sep('steige steigst steigt steigen steigt steigen', 'aus', false, true),
+  umsteigen: sep('steige steigst steigt steigen steigt steigen', 'um', false, true),
+  abfahren: sep('fahre fährst fährt fahren fahrt fahren', 'ab', true),
+  ankommen: sep('komme kommst kommt kommen kommt kommen', 'an', false, true),
+  mitnehmen: sep('nehme nimmst nimmt nehmen nehmt nehmen', 'mit', true),
+  abbiegen: sep('biege biegst biegt biegen biegt biegen', 'ab', false, true),
+  besichtigen: row('besichtige besichtigst besichtigt besichtigen besichtigt besichtigen'),
+  anrufen: sep('rufe rufst ruft rufen ruft rufen', 'an', false, true),
+  wehtun: sep('tue tust tut tun tut tun', 'weh', false, true),
+  'spazieren gehen': sep('gehe gehst geht gehen geht gehen', 'spazieren', false, true),
+  sitzen: rowPast('sitze sitzt sitzt sitzen sitzt sitzen'),
+  liegen: rowPast('liege liegst liegt liegen liegt liegen'),
+  schicken: row('schicke schickst schickt schicken schickt schicken'),
+  passieren: row('passiere passierst passiert passieren passiert passieren'),
+  verpassen: row('verpasse verpasst verpasst verpassen verpasst verpassen'),
+  treffen: row('treffe triffst trifft treffen trefft treffen', true),
+  besuchen: row('besuche besuchst besucht besuchen besucht besuchen'),
+  erzählen: row('erzähle erzählst erzählt erzählen erzählt erzählen'),
+  lachen: row('lache lachst lacht lachen lacht lachen'),
+  spielen: row('spiele spielst spielt spielen spielt spielen'),
+  feiern: row('feiere feierst feiert feiern feiert feiern'),
+  einladen: sep('lade lädst lädt laden ladet laden', 'ein', true),
+  kennenlernen: sep('lerne lernst lernt lernen lernt lernen', 'kennen'),
+  verlieren: rowPast('verliere verlierst verliert verlieren verliert verlieren'),
+  gehören: row('gehöre gehörst gehört gehören gehört gehören'),
+  zeigen: row('zeige zeigst zeigt zeigen zeigt zeigen'),
+  holen: row('hole holst holt holen holt holen'),
+  öffnen: row('öffne öffnest öffnet öffnen öffnet öffnen'),
+  schließen: rowPast('schließe schließt schließt schließen schließt schließen'),
+  laufen: row('laufe läufst läuft laufen lauft laufen', true),
+  rennen: rowPast('renne rennst rennt rennen rennt rennen'),
+  aufstehen: sep('stehe stehst steht stehen steht stehen', 'auf', false, true),
+  aufwachen: sep('wache wachst wacht wachen wacht wachen', 'auf'),
+  einschlafen: sep('schlafe schläfst schläft schlafen schlaft schlafen', 'ein', true),
+  bleiben: rowPast('bleibe bleibst bleibt bleiben bleibt bleiben'),
+  zurückkommen: sep('komme kommst kommt kommen kommt kommen', 'zurück', false, true),
+  weggehen: sep('gehe gehst geht gehen geht gehen', 'weg', false, true),
+  schlafen: row('schlafe schläfst schläft schlafen schlaft schlafen', true),
 };

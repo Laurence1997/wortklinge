@@ -123,11 +123,11 @@ export class WorldScene extends Phaser.Scene {
     this.add.image(d.x * TILE + 8, d.y * TILE + 16, 'glow').setScale(1.1).setTint(0xff2040).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.7);
 
     // NPCs and signs. Region-2 NPCs reuse Hilde's figure with their own tint until they get sprites.
-    const NPC_TINT: Record<NpcId, number> = { hilde: 0xffffff, greta: 0x9fc4ff, mira: 0xffd27a, konrad: 0xe8b48a, examiner: 0xc08cff };
-    const NPC_LABEL: Record<NpcId, string> = { hilde: 'Hilde', greta: 'Greta', mira: 'Mira', konrad: 'Konrad', examiner: '考官 Prüfer' };
+    const NPC_TINT: Record<NpcId, number> = { hilde: 0xffffff, greta: 0x9fc4ff, mira: 0xffd27a, konrad: 0xe8b48a, examiner: 0xc08cff, brandt: 0x8ce0c0, lina: 0xff9a9a };
+    const NPC_LABEL: Record<NpcId, string> = { hilde: 'Hilde', greta: 'Greta', mira: 'Mira', konrad: 'Konrad', examiner: '考官 Prüfer', brandt: 'Herr Brandt', lina: 'Lina' };
     for (const n of this.map.npcs) {
       this.add.sprite(n.x * TILE + 8, n.y * TILE + 6, 'hilde').setDepth(n.y * TILE + 8).setTint(NPC_TINT[n.id]);
-      if (this.map.region === 2 || n.id !== 'hilde')
+      if (this.map.region >= 2 || n.id !== 'hilde')
         this.add
           .text(n.x * TILE + 8, n.y * TILE - 6, NPC_LABEL[n.id], { fontFamily: FONT, fontSize: '6px', color: '#d8c8b8', resolution: 4 })
           .setOrigin(0.5, 1)
@@ -260,7 +260,7 @@ export class WorldScene extends Phaser.Scene {
       m.node = sp.sc.id;
       added++;
       if (nav.lucky(sp.sc)) {
-        if (this.map.region === 2 && has(this.ctrl.state.level, 'flee')) {
+        if (this.map.region >= 2 && has(this.ctrl.state.level, 'flee')) {
           m.rare = true;
           this.styleMonster(m);
         } else if (this.map.region === 1 && this.ctrl.state.level >= SAYING_CFG.fromLevel) this.makePhrase(m, zone);
@@ -310,7 +310,7 @@ export class WorldScene extends Phaser.Scene {
   /** Region 2 (Lv11+): about 1 respawn in 10 brings a 宝箱怪 or turns a new monster rare. */
   private maybeRare(zone: ZoneId, added: number, tiles: Array<{ x: number; y: number }>, spot?: () => { x: number; y: number; sc: { id: string } } | null) {
     const s = this.ctrl.state;
-    if (this.map.region !== 2 || !has(s.level, 'flee') || (!tiles.length && !spot) || Math.random() >= 0.1) return;
+    if (this.map.region < 2 || !has(s.level, 'flee') || (!tiles.length && !spot) || Math.random() >= 0.1) return;
     if (this.monsters.some((m) => m.rare && m.zone === zone)) return;
     const truhe = WORD_BY_ID['truhe'];
     if (truhe && Math.random() < 0.5) {

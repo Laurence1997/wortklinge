@@ -34,6 +34,7 @@ export const UNLOCK = {
   quests: 12,
   layerObject: 13,
   boss2: 18,
+  boss3: 28,
 } as const;
 
 export type Feature = keyof typeof UNLOCK;

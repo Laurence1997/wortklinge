@@ -15,7 +15,8 @@ import { sfx } from './audio';
 import { ZONES, TILE, type NpcId } from './map';
 import type { MonsterEntity, WorldScene } from './WorldScene';
 
-const NPC_ZH: Record<NpcId, string> = { hilde: '守火人 Hilde', greta: '导师 Greta', mira: '商人 Mira', konrad: '面包师傅 Konrad', examiner: '考官' };
+const NPC_ZH: Record<NpcId, string> = { hilde: '守火人 Hilde', greta: '导师 Greta', mira: '商人 Mira', konrad: '面包师傅 Konrad', examiner: '考官', brandt: '站长 Herr Brandt', lina: 'Lina' };
+const GATE_ZH: Record<number, string> = { 1: '穿过门回余烬营地', 2: '过桥回面包集市', 3: '过铁路桥去铁轨镇' };
 const OFFSETS = [[-28, -6], [28, -6], [0, -24], [-28, 16], [28, 16], [0, -38]];
 
 /** 0.6: each word's home scene (from the scene word groups). */
@@ -50,7 +51,7 @@ export class NodeNav {
   }
 
   /** Hidden routes show once the sign's word can be read. */
-  revealed = (sc: SceneDef): boolean => !sc.hiddenBy || stageOf(this.s, WORD_BY_ID[sc.hiddenBy]) >= 3;
+  revealed = (sc: SceneDef): boolean => (!sc.hiddenBy || stageOf(this.s, WORD_BY_ID[sc.hiddenBy]) >= 3) && (!sc.openFlag || !!this.s.flags[sc.openFlag]);
 
   start(): void {
     const region = this.w.map.region;
@@ -275,8 +276,8 @@ export class NodeNav {
     const things: HTMLElement[] = [];
     if (sc.bonfire) things.push(h('button.btn', { onclick: ia('bonfire') }, '🔥 篝火休息'));
     for (const n of sc.npcs ?? []) things.push(h('button.btn', { onclick: ia('npc', n) }, NPC_ZH[n]));
-    if (sc.door) things.push(h('button.btn', { onclick: ia('door') }, this.w.map.region === 2 ? '推开秤房的门' : '敲门'));
-    if (sc.gate) things.push(h('button.btn', { onclick: ia('gate') }, '穿过门回余烬营地'));
+    if (sc.door) things.push(h('button.btn', { onclick: ia('door') }, this.w.map.region === 3 ? '走上末班站台' : this.w.map.region === 2 ? '推开秤房的门' : '敲门'));
+    if (sc.gate) things.push(h('button.btn', { onclick: ia('gate', String(sc.gate)) }, GATE_ZH[sc.gate]));
     for (const sg of sc.signs ?? []) things.push(h('button.btn', { onclick: ia('sign', sg) }, stageOf(this.s, WORD_BY_ID[sg]) >= 3 ? `路牌：${fullForm(WORD_BY_ID[sg])}` : '路牌：▒▒▒'));
     const exits = neighbours(sc.id)
       .map((id) => SCENE_BY_ID[id])
@@ -314,7 +315,7 @@ export class NodeNav {
   bigMap(): void {
     if (this.w.ctrl.uiBlocking() || this.hopping) return;
     const s = this.s;
-    const open = (r: number) => r <= this.w.map.region || !!s.flags[`seenArea${r}`] || (r === 2 && !!s.flags.bossKills && s.level >= CONFIG.region2Level);
+    const open = (r: number) => r <= this.w.map.region || !!s.flags[`seenArea${r}`] || (r === 2 && !!s.flags.bossKills && s.level >= CONFIG.region2Level) || (r === 3 && !!s.flags.boss2Kills);
     this.w.ctrl.panels.showBigMap(
       h(
         'div.bigmap',
@@ -326,7 +327,7 @@ export class NodeNav {
               onclick: () => {
                 this.w.ctrl.panels.close();
                 if (a.region === this.w.map.region) this.goHub();
-                else this.w.ctrl.travel(a.region as 1 | 2, anchorPx(SCENE_BY_ID[a.hub]));
+                else this.w.ctrl.travel(a.region, anchorPx(SCENE_BY_ID[a.hub]));
               },
             },
             `${a.zh} · ${a.de} · ${a.levels}${a.region === this.w.map.region ? '（你在这里，点一下回主城）' : open(a.region) ? '' : '（还没去过）'}`,

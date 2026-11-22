@@ -41,6 +41,7 @@ import { SKILLS } from '../data/skills';
 import { fullForm, hasArticleQuestion, WORD_BY_ID, WORDS, zhWithPos } from '../data/words';
 import { initAudio, setBattleMusic, setVolumes, sfx, speak, speechAvailable, hasGermanVoice } from './audio';
 import type { MonsterEntity, WorldScene } from './WorldScene';
+import type { RegionId } from './map';
 import { BattleUI } from '../ui/battle';
 import { BossUI } from '../ui/boss';
 import { advance, banner, dialogHasChoices, dialogOpen, say, setPrompt, toast, type Line } from '../ui/feedback';
@@ -460,7 +461,7 @@ export class Controller {
   /** Region 2 (Lv11+): nearby nouns with different articles join the fight (群怪). */
   private gatherPack(m: MonsterEntity) {
     const s = this.state;
-    if (!has(s.level, 'packs') || s.region !== 2 || m.isEcho || m.scripted || m.rare || m.phrase || !m.word.art || m.word.family === 'truhe') return;
+    if (!has(s.level, 'packs') || (s.region ?? 1) < 2 || m.isEcho || m.scripted || m.rare || m.phrase || !m.word.art || m.word.family === 'truhe') return;
     const firstPack = !s.flags.firstPackDone;
     const max = firstPack || s.level < CONFIG.pack.max3From ? 2 : CONFIG.pack.max;
     const r = CONFIG.pack.radiusTiles * 16;
@@ -1037,9 +1038,9 @@ export class Controller {
     const text: Record<string, string> = {
       bonfire: '<kbd>E</kbd>在篝火旁休息',
       npc: '<kbd>E</kbd>和守火人 Hilde 说话',
-      door: this.state.region === 2 ? '<kbd>E</kbd>推开秤房的门' : '<kbd>E</kbd>敲门',
+      door: this.state.region === 3 ? '<kbd>E</kbd>走上末班站台' : this.state.region === 2 ? '<kbd>E</kbd>推开秤房的门' : '<kbd>E</kbd>敲门',
       sign: '<kbd>E</kbd>看路牌',
-      gate: '<kbd>E</kbd>回余烬营地',
+      gate: it.data === '3' ? '<kbd>E</kbd>过铁路桥去铁轨镇' : it.data === '2' ? '<kbd>E</kbd>过桥回面包集市' : '<kbd>E</kbd>回余烬营地',
     };
     const NPC_TEXT: Record<string, string> = {
       hilde: '<kbd>E</kbd>和守火人 Hilde 说话',
@@ -1054,8 +1055,8 @@ export class Controller {
   interact(it: { kind: string; data?: string }): void {
     if (it.kind === 'bonfire') this.rest();
     else if (it.kind === 'npc') this.talkNpc(it.data ?? 'hilde');
-    else if (it.kind === 'door') (this.state.region === 2 ? this.knockRegion2() : this.knock());
-    else if (it.kind === 'gate') this.travel(1);
+    else if (it.kind === 'door') (this.state.region === 3 ? this.knockRegion3() : this.state.region === 2 ? this.knockRegion2() : this.knock());
+    else if (it.kind === 'gate') this.travel((Number(it.data) || (this.state.region === 3 ? 2 : 1)) as RegionId);
     else if (it.kind === 'sign') {
       const w = WORD_BY_ID[it.data!];
       const st = stageOf(this.state, w);
@@ -1214,15 +1215,41 @@ export class Controller {
   }
 
   /** Walk between regions: the neighbour's door (region 1) and the market's west gate (region 2). */
-  travel(to: 1 | 2, arrive?: { x: number; y: number }): void {
+  travel(to: RegionId, arrive?: { x: number; y: number }): void {
     const s = this.state;
     if (s.region === to) return;
+    const from = s.region ?? 1;
     s.region = to;
     if (to === 2 && startQuest(s, 'main2')) this.questFire('enterMarket');
+    if (to === 3) this.enterRegion3();
     // Arrive next to the door you came through (大地图: at the area's hub).
-    s.pos = arrive ?? (to === 2 ? { x: 4 * 16 + 8, y: 24 * 16 + 8 } : { x: 67 * 16 + 8, y: 24 * 16 + 12 });
+    s.pos =
+      arrive ??
+      (to === 3
+        ? { x: 13 * 16 + 8, y: 24 * 16 + 8 }
+        : to === 2
+          ? from === 3
+            ? { x: 67 * 16 + 8, y: 44 * 16 + 8 }
+            : { x: 4 * 16 + 8, y: 24 * 16 + 8 }
+          : { x: 67 * 16 + 8, y: 24 * 16 + 12 });
     this.persist();
     this.scene.scene.restart({ ctrl: this });
+  }
+
+  /** First steps into 铁轨镇 (0.6 第 5 块). */
+  private enterRegion3() {
+    const s = this.state;
+    s.flags.seenArea3 = true;
+  }
+
+  /** 末班站台: 晚点之王 (Lv28). */
+  private knockRegion3() {
+    const s = this.state;
+    if (!has(s.level, 'boss3')) {
+      say([{ who: '末班站台', text: '站台尽头的钟停在 23:59。有什么在等车，等了很久。（28 级）' }]);
+      return;
+    }
+    say([{ who: '末班站台', text: '……' }]);
   }
 
   private knockRegion2() {

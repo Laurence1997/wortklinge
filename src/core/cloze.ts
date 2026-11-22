@@ -7,11 +7,12 @@ import { pick, shuffle, type Rng } from './rng';
 import type { Word } from './types';
 import { EX1 } from '../data/examples1';
 import { EX2 } from '../data/examples2';
+import { EX3 } from '../data/examples3';
 import { WORDS } from '../data/words';
 
 export type ClozeMode = 'pick' | 'base' | 'form';
 
-export const EXAMPLES: Record<string, string[]> = { ...EX1, ...EX2 };
+export const EXAMPLES: Record<string, string[]> = { ...EX1, ...EX2, ...EX3 };
 
 export interface Cloze {
   /** Sentence with ___ where the answer goes. */
@@ -108,7 +109,8 @@ const Q_TEMPLATES: Record<string, { zh: string; answer: string }> = {
 export type Case = 'nom' | 'acc' | 'dat';
 /** 格位姿态: the stances (articles) that can be picked, in key order 1–9, 0. */
 export const STANCES = ['der', 'die', 'das', 'den', 'ein', 'eine', 'einen', 'dem', 'einem', 'einer'] as const;
-export type Stance = (typeof STANCES)[number];
+/** haben / sein (0.6, region 3 Lv21+): the Perfekt stance of verb monsters. */
+export type Stance = (typeof STANCES)[number] | 'haben' | 'sein';
 const CASE_OF: Record<'m' | 'f' | 'n' | 'pl', Partial<Record<Stance, Case>>> = {
   m: { der: 'nom', ein: 'nom', den: 'acc', einen: 'acc', dem: 'dat', einem: 'dat' },
   f: { die: 'nom', eine: 'nom', der: 'dat', einer: 'dat' },

@@ -24,6 +24,8 @@ export interface SceneDef {
   bonfire?: boolean;
   door?: boolean;
   gate?: RegionId;
+  /** Drawn only once this save flag is set (the rail bridge after 吞秤者). */
+  openFlag?: string;
   signs?: string[];
   /** Hidden route: drawn only once this sign's word can be read (归名 stage ≥ 3). */
   hiddenBy?: string;
@@ -45,10 +47,11 @@ export interface AreaDef {
 export const AREAS: AreaDef[] = [
   { region: 1, zh: '最后的营地', de: 'Glutheim', levels: 'Lv 1–10', hub: 'r1-camp' },
   { region: 2, zh: '面包集市', de: 'Brotmarkt', levels: 'Lv 11–20', hub: 'r2-feuer' },
+  { region: 3, zh: '铁轨镇', de: 'Gleisdorf', levels: 'Lv 21–30', hub: 'r3-platz' },
 ];
 
 /** Areas not built yet, shown greyed out on the big map. */
-export const AREAS_LATER = ['旧城区 · A2', '河港 · A2', '车站 · A2', '图书馆 · B1'];
+export const AREAS_LATER = ['租屋城 · A2', '旧城区 · A2', '河港 · A2', '图书馆 · B1'];
 
 export const SCENES: SceneDef[] = [
   // ---- Region 1 · 最后的营地 ----
@@ -111,6 +114,42 @@ export const SCENES: SceneDef[] = [
   { id: 'r2-k4', region: 2, no: 27, zh: '粮仓 · 地窖口', type: 'field', zone: 'kornspeicher', at: { x: 61, y: 40 }, words: ['schneiden', 'waschen', 'tragen', 'vergessen', 'backen', 'probieren', 'zaehlen', 'braten', 'wiegen', 'fruehstuecken', 'mischen'] },
   { id: 'r2-door', region: 2, no: 28, zh: '秤房', type: 'door', at: { x: 68, y: 24 }, door: true },
   { id: 'r2-hide', region: 2, no: 29, zh: '粮仓阁楼', type: 'hidden', zone: 'kornspeicher', slots: 2, at: { x: 69, y: 4 }, hiddenBy: 'korn', lucky: 3 },
+  // 0.6: the rail bridge to region 3, drawn once 吞秤者 has fallen.
+  { id: 'r2-bridge', region: 2, no: 30, zh: '铁路桥', type: 'road', at: { x: 67, y: 44 }, gate: 3, openFlag: 'boss2Kills' },
+
+  // ---- Region 3 · 铁轨镇 (0.6 第 5 块) ----
+  { id: 'r3-platz', region: 3, no: 1, zh: '铁轨镇广场', type: 'camp', at: { x: 13, y: 24 }, npcs: ['hilde', 'examiner'], bonfire: true, gate: 2 },
+  { id: 'r3-buero', region: 3, no: 2, zh: '站长室', type: 'camp', at: { x: 8, y: 19 }, npcs: ['brandt'] },
+  { id: 'r3-stand', region: 3, no: 3, zh: '广场摊位', type: 'camp', at: { x: 15, y: 30 }, npcs: ['mira', 'greta'] },
+  { id: 'r3-x', region: 3, no: 4, zh: '站前路口', type: 'road', at: { x: 22, y: 24 }, signs: ['bahnhof', 'altstadt'] },
+{ id: 'r3-b1', region: 3, no: 5, zh: '站前街 · 售票机', type: 'field', zone: 'bahnhofstrasse', at: { x: 28, y: 16 }, words: ['fahrkarte', 'ticket', 'automat', 'schalter', 'auskunft', 'einfach', 'hin-und-zurueck', 'klasse', 'fahrt', 'reservieren'] },
+  { id: 'r3-b2', region: 3, no: 6, zh: '站前街 · 公交站', type: 'field', zone: 'bahnhofstrasse', at: { x: 28, y: 9 }, words: ['bus', 'haltestelle', 'linie', 'richtung', 'fahrer', 'fahrerin', 'naechste', 'halten', 'warten', 'endstation'] },
+  { id: 'r3-b3', region: 3, no: 7, zh: '站前街 · 电车道', type: 'field', zone: 'bahnhofstrasse', at: { x: 35, y: 9 }, words: ['strassenbahn', 'u-bahn', 's-bahn', 'zug', 'bahn', 'bahnhof', 'schnell', 'langsam', 'wagen', 'station'] },
+  { id: 'r3-b4', region: 3, no: 8, zh: '站前街 · 自行车棚', type: 'field', zone: 'bahnhofstrasse', at: { x: 39, y: 3 }, words: ['fahrrad', 'auto', 'taxi', 'motorrad', 'schiff', 'parkplatz', 'parken', 'fuehrerschein', 'tankstelle', 'zu-fuss'] },
+  { id: 'r3-b5', region: 3, no: 9, zh: '站前街 · 行李寄存', type: 'field', zone: 'bahnhofstrasse', at: { x: 44, y: 14 }, words: ['gepaeck', 'rucksack', 'schwer', 'leicht', 'abholen', 'bringen', 'eingang', 'ausgang', 'schliessfach', 'voll'] },
+  { id: 'r3-b6', region: 3, no: 10, zh: '站前街 · 站前广场', type: 'field', zone: 'bahnhofstrasse', at: { x: 44, y: 22 }, words: ['flughafen', 'flugzeug', 'reise', 'urlaub', 'hotel', 'ausland', 'tourist', 'touristin', 'fliegen', 'reisen'] },
+  { id: 'r3-b7', region: 3, no: 11, zh: '站前街 · 地下通道', type: 'field', zone: 'bahnhofstrasse', at: { x: 47, y: 4 }, words: ['fahren', 'einsteigen', 'aussteigen', 'umsteigen', 'abfahren', 'ankommen', 'abfahrt', 'ankunft', 'mitnehmen'] },
+  { id: 'r3-b8', region: 3, no: 12, zh: '站前街尽头 · 轨道口', type: 'field', zone: 'bahnhofstrasse', at: { x: 35, y: 18 }, words: ['gleis', 'bahnsteig', 'achtung', 'vorsicht', 'schild', 'verboten', 'gefaehrlich', 'laut', 'leise', 'bruecke'] },
+  { id: 'r3-a1', region: 3, no: 13, zh: '老城路口 · 红绿灯', type: 'field', zone: 'altstadt', at: { x: 28, y: 33 }, words: ['links', 'rechts', 'geradeaus', 'ampel', 'ecke', 'kreuzung', 'zurueck', 'bis', 'abbiegen', 'seite'] },
+  { id: 'r3-a2', region: 3, no: 14, zh: '老城 · 桥头', type: 'field', zone: 'altstadt', at: { x: 28, y: 40 }, words: ['neben', 'vor', 'hinter', 'zwischen', 'gegenueber', 'auf', 'unter', 'ueber', 'an', 'in'] },
+  { id: 'r3-a3', region: 3, no: 15, zh: '老城 · 教堂广场', type: 'field', zone: 'altstadt', at: { x: 35, y: 41 }, words: ['kirche', 'platz', 'turm', 'museum', 'theater', 'kino', 'zentrum', 'mitte', 'altstadt', 'besichtigen'] },
+  { id: 'r3-a4', region: 3, no: 16, zh: '老城 · 市政厅', type: 'field', zone: 'altstadt', at: { x: 38, y: 27 }, words: ['rathaus', 'amt', 'termin', 'polizei', 'buero', 'stock', 'erdgeschoss', 'oben', 'unten', 'aufzug'] },
+  { id: 'r3-a5', region: 3, no: 17, zh: '老城 · 药店街', type: 'field', zone: 'altstadt', at: { x: 42, y: 34 }, words: ['apotheke', 'drogerie', 'tablette', 'medikament', 'friseur', 'kaufhaus', 'cafe', 'buchhandlung'] },
+  { id: 'r3-a6', region: 3, no: 18, zh: '老城 · 医院后门', type: 'field', zone: 'altstadt', at: { x: 35, y: 34 }, words: ['krankenhaus', 'praxis', 'sprechstunde', 'unfall', 'hilfe', 'telefon', 'anrufen', 'notruf', 'gute-besserung', 'wehtun'] },
+  { id: 'r3-a7', region: 3, no: 19, zh: '老城 · 公园', type: 'field', zone: 'altstadt', at: { x: 49, y: 35 }, words: ['park', 'baum', 'blume', 'see', 'fluss', 'garten', 'spielplatz', 'spazieren-gehen', 'sitzen', 'liegen'] },
+  { id: 'r3-a8', region: 3, no: 20, zh: '老城尽头 · 邮局银行街', type: 'field', zone: 'altstadt', at: { x: 47, y: 42 }, words: ['post', 'bank', 'brief', 'briefmarke', 'postkarte', 'geldautomat', 'schicken', 'nah', 'weit', 'weg'] },
+  { id: 'r3-fx', region: 3, no: 21, zh: '大厅入口', type: 'road', at: { x: 51, y: 22 }, signs: ['fahrplan'] },
+  { id: 'r3-f1', region: 3, no: 22, zh: '时刻表大厅 · 大钟下', type: 'field', zone: 'fahrplanhalle', at: { x: 56, y: 13 }, words: ['stunde', 'minute', 'sekunde', 'halb', 'viertel', 'uhrzeit', 'wie-spaet-ist-es', 'um-wie-viel-uhr', 'kurz', 'lange'] },
+  { id: 'r3-f2', region: 3, no: 23, zh: '时刻表大厅 · 时刻表墙', type: 'field', zone: 'fahrplanhalle', at: { x: 65, y: 13 }, words: ['puenktlich', 'spaet', 'frueh', 'verspaetung', 'fahrplan', 'zeit', 'jetzt', 'gleich', 'bald', 'sofort'] },
+  { id: 'r3-f3', region: 3, no: 24, zh: '时刻表大厅 · 候车室', type: 'field', zone: 'fahrplanhalle', at: { x: 61, y: 7 }, words: ['morgen-2', 'vormittag', 'mittag', 'nachmittag', 'abend', 'nacht', 'morgens', 'abends', 'nachts', 'mittags'] },
+  { id: 'r3-f4', region: 3, no: 25, zh: '时刻表大厅 · 站台一', type: 'field', zone: 'fahrplanhalle', at: { x: 56, y: 31 }, words: ['montag', 'dienstag', 'mittwoch', 'donnerstag', 'freitag', 'samstag', 'sonntag', 'wochenende'] },
+  { id: 'r3-f5', region: 3, no: 26, zh: '时刻表大厅 · 站台二', type: 'field', zone: 'fahrplanhalle', at: { x: 62, y: 19 }, words: ['gestern', 'vorgestern', 'letzte-woche', 'letztes-jahr', 'frueher', 'schon', 'noch-nicht', 'vorhin', 'passieren', 'verpassen'] },
+  { id: 'r3-f6', region: 3, no: 27, zh: '时刻表大厅 · 餐车', type: 'field', zone: 'fahrplanhalle', at: { x: 68, y: 34 }, words: ['treffen', 'besuchen', 'erzaehlen', 'lachen', 'spielen', 'feiern', 'einladen', 'kennenlernen'] },
+  { id: 'r3-f7', region: 3, no: 28, zh: '时刻表大厅 · 失物招领', type: 'field', zone: 'fahrplanhalle', at: { x: 56, y: 40 }, words: ['fundbuero', 'regenschirm', 'verlieren', 'gehoeren', 'zeigen', 'holen', 'oeffnen', 'schliessen', 'sache'] },
+  { id: 'r3-f8', region: 3, no: 29, zh: '时刻表大厅尽头 · 末班站台口', type: 'field', zone: 'fahrplanhalle', at: { x: 63, y: 40 }, words: ['laufen', 'rennen', 'aufstehen', 'aufwachen', 'einschlafen', 'bleiben', 'zurueckkommen', 'weggehen', 'schlafen'] },
+  { id: 'r3-door', region: 3, no: 30, zh: '末班站台', type: 'door', at: { x: 68, y: 24 }, door: true },
+  // 零号站台: drawn on the timetable wall once die Fahrkarte reaches 归名.
+  { id: 'r3-hide', region: 3, no: 31, zh: '零号站台', type: 'hidden', zone: 'fahrplanhalle', slots: 2, at: { x: 69, y: 4 }, hiddenBy: 'fahrkarte', lucky: 3 },
 ];
 
 /** Paths between scenes (both ways). */
@@ -129,7 +168,15 @@ export const LINKS: Array<[string, string]> = [
   ['r2-w3', 'r2-w8'], ['r2-w8', 'r2-w4'], ['r2-w2', 'r2-w4'],
   ['r2-x', 'r2-kx'], ['r2-kx', 'r2-k1'], ['r2-k1', 'r2-k5'], ['r2-k1', 'r2-k2'], ['r2-k5', 'r2-k6'], ['r2-kx', 'r2-k3'],
   ['r2-k3', 'r2-k7'], ['r2-k7', 'r2-k4'], ['r2-k3', 'r2-k4'],
-  ['r2-k2', 'r2-door'], ['r2-k6', 'r2-door'], ['r2-k4', 'r2-door'], ['r2-k2', 'r2-hide'],
+  ['r2-k2', 'r2-door'], ['r2-k6', 'r2-door'], ['r2-k4', 'r2-door'], ['r2-k2', 'r2-hide'], ['r2-k4', 'r2-bridge'],
+  ['r3-platz', 'r3-buero'], ['r3-platz', 'r3-stand'], ['r3-platz', 'r3-x'],
+  ['r3-x', 'r3-b1'], ['r3-b1', 'r3-b2'], ['r3-b2', 'r3-b3'], ['r3-b3', 'r3-b4'], ['r3-b4', 'r3-b7'], ['r3-b3', 'r3-b5'],
+  ['r3-b1', 'r3-b8'], ['r3-b8', 'r3-b6'], ['r3-b5', 'r3-b6'], ['r3-b5', 'r3-b7'],
+  ['r3-x', 'r3-a1'], ['r3-a1', 'r3-a4'], ['r3-a1', 'r3-a6'], ['r3-a1', 'r3-a2'], ['r3-a2', 'r3-a3'], ['r3-a6', 'r3-a5'],
+  ['r3-a4', 'r3-a5'], ['r3-a3', 'r3-a8'], ['r3-a5', 'r3-a7'], ['r3-a7', 'r3-a8'],
+  ['r3-x', 'r3-fx'], ['r3-fx', 'r3-f1'], ['r3-f1', 'r3-f3'], ['r3-f3', 'r3-f2'], ['r3-f1', 'r3-f5'], ['r3-f2', 'r3-f5'],
+  ['r3-fx', 'r3-f4'], ['r3-f4', 'r3-f6'], ['r3-f4', 'r3-f7'], ['r3-f7', 'r3-f8'], ['r3-f6', 'r3-f8'],
+  ['r3-f8', 'r3-door'], ['r3-f5', 'r3-door'], ['r3-f2', 'r3-hide'],
 ];
 
 export const SCENE_BY_ID: Record<string, SceneDef> = Object.fromEntries(SCENES.map((s) => [s.id, s]));

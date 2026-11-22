@@ -392,7 +392,7 @@ describe('region 2: packs, conjugation, plurals', () => {
   });
 
   it('has conjugation rows for every region verb', () => {
-    for (const w of WORDS.filter((x) => x.pos === 'v' && x.region === 2)) expect(CONJ[w.de], w.de).toBeDefined();
+    for (const w of WORDS.filter((x) => x.pos === 'v' && (x.region === 2 || x.region === 3))) expect(CONJ[w.de], w.de).toBeDefined();
   });
 });
 
@@ -1200,11 +1200,11 @@ describe('0.5 und: a Lv13+ finisher in a pack names two monsters and hits both',
 });
 
 describe('0.5 残句: sentence monsters', () => {
-  it('has the 14 cards no word monster carries; three steps kill it; the card drops, nothing enters the wordbook, no echo', async () => {
+  it('has the 12 cards (14 before region 3: schwer and Wochenende now carry theirs) no word monster carries; three steps kill it; the card drops, nothing enters the wordbook, no echo', async () => {
     const { phraseCards, startPhraseBattle } = await import('../src/core/combat');
     const { applyWin, applyLoss } = await import('../src/core/outcomes');
     const cards = phraseCards();
-    expect(cards.length).toBe(14);
+    expect(cards.length).toBe(12);
     const s = newGame('T', 'student', T0);
     s.level = 6;
     const id = cards[0].id;
@@ -1266,7 +1266,7 @@ describe('0.5 小世界: scene data', async () => {
   const { SCENES, LINKS, SCENE_BY_ID, routeTo } = await import('../src/data/world');
   const { generateMap, isBlocked } = await import('../src/game/map');
   it('every scene stands on a walkable tile, scenes are ≥6 tiles apart (packs stay inside one scene)', () => {
-    for (const r of [1, 2] as const) {
+    for (const r of [1, 2, 3] as const) {
       const m = generateMap(r);
       const ss = SCENES.filter((s) => s.region === r);
       for (const s of ss) expect(isBlocked(m, s.at.x, s.at.y), s.id).toBe(false);
@@ -1277,8 +1277,8 @@ describe('0.5 小世界: scene data', async () => {
   });
   it('links are valid, everything is reachable from the hub, and each area has a side route', () => {
     for (const [a, b] of LINKS) expect(!!SCENE_BY_ID[a] && !!SCENE_BY_ID[b] && SCENE_BY_ID[a].region === SCENE_BY_ID[b].region).toBe(true);
-    for (const s of SCENES) expect(routeTo(s.region === 1 ? 'r1-camp' : 'r2-feuer', s.id), s.id).not.toBeNull();
-    for (const r of [1, 2]) expect(SCENES.some((s) => s.region === r && s.hiddenBy)).toBe(true);
+    for (const s of SCENES) expect(routeTo(({ 1: 'r1-camp', 2: 'r2-feuer', 3: 'r3-platz' } as const)[s.region], s.id), s.id).not.toBeNull();
+    for (const r of [1, 2, 3]) expect(SCENES.some((s) => s.region === r && s.hiddenBy)).toBe(true);
     expect(routeTo('r1-camp', 'r1-door')!.length).toBe(6);
   });
 });
@@ -1406,5 +1406,58 @@ describe('0.6 场景插画', () => {
         expect(t.col < ART_COLS && t.row < ART_ROWS && t.tile < 49 * 22, `${sc.id} ${t.tile}`).toBe(true);
       }
     }
+  });
+});
+
+describe('0.6 第 3 区: 现在完成时', async () => {
+  const { PERFEKT, perfektParts } = await import('../src/data/perfekt');
+  const { ppOpen, ppQ, stancesFor } = await import('../src/core/combat');
+  it('every verb has an auxiliary, a participle and a sentence with {aux} and [participle]', () => {
+    for (const w of WORDS.filter((x) => x.pos === 'v')) {
+      const e = PERFEKT[w.de];
+      expect(e, w.de).toBeTruthy();
+      expect(perfektParts(e).pp, w.de).toBe(e.pp);
+    }
+    expect(PERFEKT['fahren'].aux).toBe('sein');
+    expect(PERFEKT['kaufen'].aux).toBe('haben');
+  });
+  it('region-3 verbs in region 3 from Lv21 take a haben/sein stance; wrong picks are free until 22, then double armor', () => {
+    const s = newGame('T', 'student', T0);
+    s.level = 21;
+    s.region = 3;
+    const b = startBattle(s, WORD_BY_ID['fahren'], makeRng(1));
+    expect(b.perfekt).toBe(true);
+    expect(phaseOf(b)).toBe('sein');
+    expect(stancesFor(s.level, b)).toEqual(['haben', 'sein']);
+    b.intent = { ...b.intent, kind: 'wait', hits: 0 };
+    b.monster.hp = b.monster.maxHp = 500;
+    b.phase = 'haben';
+    const q = makeQuestion(s, b, 'attack', makeRng(2));
+    expect(resolveTurn(s, b, 'attack', q, q.answer!, makeRng(3)).phase).toBe('soft');
+    s.level = 23;
+    b.phase = 'haben';
+    const q2 = makeQuestion(s, b, 'attack', makeRng(4));
+    expect(resolveTurn(s, b, 'attack', q2, q2.answer!, makeRng(5)).phase).toBe('wrong');
+    b.phase = 'sein';
+    const q3 = makeQuestion(s, b, 'attack', makeRng(6));
+    expect(resolveTurn(s, b, 'attack', q3, q3.answer!, makeRng(7)).phase).toBe('right');
+    // A Perfekt line swallows the auxiliary.
+    const b2 = startBattle(s, WORD_BY_ID['fahren'], makeRng(9));
+    if (b2.intent.kind !== 'charge' && b2.intent.kind !== 'flee') expect(b2.intent.line).toContain('gefahren');
+    // Outside region 3 (or below 21) region-3 verbs keep the present tense.
+    s.region = 2;
+    expect(startBattle(s, WORD_BY_ID['fahren'], makeRng(1)).perfekt).toBeFalsy();
+  });
+  it('填分词 opens by kind: ge-…-t at 21, strong at 24, separable and prefixed at 27', () => {
+    expect(ppOpen(21, WORD_BY_ID['kaufen'])).toBe(true);
+    expect(ppOpen(20, WORD_BY_ID['kaufen'])).toBe(false);
+    expect(ppOpen(23, WORD_BY_ID['fahren'])).toBe(false);
+    expect(ppOpen(24, WORD_BY_ID['fahren'])).toBe(true);
+    expect(ppOpen(26, WORD_BY_ID['einsteigen'])).toBe(false);
+    expect(ppOpen(27, WORD_BY_ID['einsteigen'])).toBe(true);
+    const q = ppQ(WORD_BY_ID['kaufen'])!;
+    expect(q.answer).toBe('gekauft');
+    expect(q.focus).toContain('___ (kaufen)');
+    expect(q.clozeMode).toBe('form');
   });
 });

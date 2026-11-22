@@ -62,7 +62,7 @@ export interface GameState {
   gearKills?: Record<string, number>;
   recentNouns: string[];
   /** Which map you stand on (1 = 余烬营地, 2 = 面包集市). */
-  region: 1 | 2;
+  region: 1 | 2 | 3;
   /** Class picked at Greta (Lv10+, region 2), the classes whose trial you passed, talents per class. */
   cls: ClassId | null;
   classes: ClassId[];
