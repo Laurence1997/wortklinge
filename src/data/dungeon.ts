@@ -20,4 +20,6 @@ export const RULES: Rule[] = [
   { id: 'schnell', de: 'Schnell!', zh: '快：每题 10 秒内答，超时这次加成作废。', mult: 1.5 },
 ];
 
-export const DUNGEON = { fights: 5, from: 28, bossHp: 2.5, bossLvl: 2, seconds: 10, clearXp: 0.1, clearGoldKills: 10 };
+export const DUNGEON = { fights: 5, from: 28, bossHp: 2.5, bossLvl: 2, seconds: 10, clearXp: 0.03, clearGoldKills: 10 };
+// clearXp 0.03 (sim 2026-11-22): 6 fights take about 2 min in sim4 terms and earn ~8% of a level from kills; a 10% clear
+// bonus made a run ~2.7× the field rate (everyone would farm only the dungeon). 3% × the rule bonus keeps it ~+40–60%.
