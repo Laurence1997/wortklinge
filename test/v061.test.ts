@@ -42,7 +42,7 @@ describe('0.6.x 格位姿态选错说清形式 + 同格同性都算对', () => {
     expect(phaseRight(b, 'ein')).toBe(true);
     expect(phaseRight(b, 'dem')).toBe(false);
     b.phase = 'der';
-    expect(phaseWrongWhy(b)).toBe('Kilo 是 das 词，但这句的空要第一格或第四格：das 或 ein');
+    expect(phaseWrongWhy(b)).toBe('Kilo 是 das 词，这句的空填 das 或 ein');
     b.intent = { ...b.intent, caseArt: 'dem' };
     b.phase = 'das';
     expect(phaseWrongWhy(b)).toBe('没错，Kilo 是 das 词，但这句的空要第三格：dem 或 einem');

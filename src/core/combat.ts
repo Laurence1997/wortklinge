@@ -538,7 +538,11 @@ export function phaseWrongWhy(b: Battle): string {
   // Neuter/feminine forms look the same in nom and acc, so only a form that shows its case names it.
   const why = [ph.startsWith('ein') ? '不定冠词' : '定冠词', ...(c === 'acc' ? ['第四格'] : c === 'dat' ? ['第三格'] : [])].join('，');
   const pair = phasePair(b);
-  if (pair.length > 1) return `${b.phase === b.word.art ? '没错，' : ''}${b.word.de} 是 ${b.word.art} 词，但这句的空要${c === 'acc' ? '第四格' : c === 'dat' ? '第三格' : g2(b) ? '第一格' : '第一格或第四格'}：${pair.join(' 或 ')}`;
+  if (pair.length > 1) {
+    const cz = c === 'acc' ? '第四格' : c === 'dat' ? '第三格' : g2(b) ? '第一格' : '';
+    // Neuter/feminine nom and acc look the same: no case named (docs 0.6.x).
+    return `${b.phase === b.word.art ? '没错，' : ''}${b.word.de} 是 ${b.word.art} 词，${cz ? `但这句的空要${cz}：` : '这句的空填 '}${pair.join(' 或 ')}`;
+  }
   return `${b.phase === b.word.art ? '没错，' : ''}${b.word.de} 是 ${b.word.art} 词，但这句的空要填 ${ph}（${why}）`;
 }
 
