@@ -169,11 +169,15 @@ export const sfx = {
 // ---- Speech ---------------------------------------------------------------
 
 let germanVoice: SpeechSynthesisVoice | null = null;
+/** Chrome's Google voices are online; when one stays silent the local German voice takes over for this session. */
+let onlineFailed = false;
 
 function findVoice() {
   if (typeof speechSynthesis === 'undefined') return;
   const voices = speechSynthesis.getVoices();
+  const local = voices.find((v) => v.lang.startsWith('de') && v.localService) ?? null;
   germanVoice =
+    (onlineFailed ? local : null) ??
     voices.find((v) => v.lang === 'de-DE' && /Google/.test(v.name)) ??
     voices.find((v) => v.lang === 'de-DE') ??
     voices.find((v) => v.lang.startsWith('de')) ??
@@ -189,19 +193,47 @@ export function speechAvailable(): boolean {
   return typeof speechSynthesis !== 'undefined';
 }
 
+/** What is read aloud: the monster's swallowed word (mmh) and … become short pauses, never spelled out. */
+export function spokenText(text: string): string {
+  return text.replace(/\bm+h+\b/gi, ' ').replace(/…/g, ', ').replace(/(\s*,\s*)+/g, ', ').replace(/^[\s,]+/, '').trim();
+}
+
+let speakSeq = 0;
+
 export function speak(text: string, enabled: boolean, rate = 0.9): void {
   if (!enabled || typeof speechSynthesis === 'undefined') return;
-  try {
-    speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text.replace(/\bm+h+\b/gi, ' ').replace(/…/g, ', ').replace(/(,\s*)+/g, ', '));
-    u.lang = 'de-DE';
-    if (germanVoice) u.voice = germanVoice;
-    u.rate = rate;
-    u.pitch = 0.85;
-    speechSynthesis.speak(u);
-  } catch {
-    /* speech is a bonus, never a blocker */
-  }
+  const said = spokenText(text);
+  if (!said) return;
+  const seq = ++speakSeq;
+  const go = (retry: boolean) => {
+    try {
+      speechSynthesis.cancel();
+      speechSynthesis.resume();
+      const u = new SpeechSynthesisUtterance(said);
+      u.lang = 'de-DE';
+      if (germanVoice) u.voice = germanVoice;
+      u.rate = rate;
+      u.pitch = 0.85;
+      let started = false;
+      u.onstart = () => (started = true);
+      const online = !!germanVoice && !germanVoice.localService;
+      const fallBack = () => {
+        if (retry || !online || seq !== speakSeq) return;
+        onlineFailed = true;
+        findVoice();
+        go(true);
+      };
+      u.onerror = (e) => {
+        if (e.error !== 'interrupted' && e.error !== 'canceled') fallBack();
+      };
+      speechSynthesis.speak(u);
+      // An online voice that has not started within 2.5 s is stuck: switch to the local voice.
+      if (online && !retry) window.setTimeout(() => !started && fallBack(), 2500);
+    } catch {
+      /* speech is a bonus, never a blocker */
+    }
+  };
+  go(false);
 }
 
 export function hasGermanVoice(): boolean {
