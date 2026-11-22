@@ -14,7 +14,7 @@ import { SKILLS, skillLine, skillLinesOpen } from '../data/skills';
 import { SAYING_CFG, SAYINGS } from '../data/sayings';
 import { expectedSentence, gradeSentence, nextPattern, PATTERNS, sentenceTags, type Pattern } from './sentence';
 import { PERFEKT, perfektFull, perfektParts } from '../data/perfekt';
-import { EXAMPLES, caseOf, pronounClozes, slotArticle, type Case, type Stance, clozeModeFor, clozeOptions, exampleSplits, gradeCloze, hasExamples, makeCloze, twoBlank, voiceLine, wholeSentence, type ClozeMode } from './cloze';
+import { EXAMPLES, caseOf, clozeWhy, pronounClozes, slotArticle, type Case, type Stance, clozeModeFor, clozeOptions, exampleSplits, gradeCloze, hasExamples, makeCloze, twoBlank, voiceLine, wholeSentence, type ClozeMode } from './cloze';
 import { CONJ, PERSON_LABEL, type Person } from '../data/verbs';
 import { QTYPES, type QKey } from '../data/questionTypes';
 import { CLASSES, critRunNeeded, rank, resMax, shieldReflect, wrongHitShare, type ClassId } from './classes';
@@ -48,6 +48,8 @@ export interface Question {
   pattern?: Pattern;
   /** cloze questions: pick / type the dictionary form / type the form the sentence needs. */
   clozeMode?: ClozeMode;
+  /** 完形填空: the sentence's Chinese (decides whether another article of the same case also counts). */
+  clozeZh?: string;
   /** cloze questions: the whole sentence, read aloud after answering. */
   full?: string;
   /** 铭刻: one step harder than usual, ×2 on a hit. */
@@ -873,6 +875,7 @@ export function clozeQ(s: GameState, w: Word, rng: Rng, mode: ClozeMode = clozeM
     options: real === 'pick' ? clozeOptions(w, c.answer, rng) : undefined,
     clozeMode: real,
     full: c.full,
+    clozeZh: c.zh,
   };
 }
 
@@ -1012,8 +1015,8 @@ export function gradeQuestion(_s: GameState, b: Battle, q: Question, input: stri
     case 'steady':
       return { ok: true, notes: [], correct: q.answer! };
     case 'cloze': {
-      const ok = gradeCloze(input, q.answer!);
-      return { ok, notes: ok ? [q.full!] : [`正确答案：${q.answer}`, q.full!], correct: q.answer! };
+      const ok = gradeCloze(input, q.answer!, b.word, q.clozeZh);
+      return { ok, notes: ok ? [q.full!] : [`正确答案：${q.answer}`, q.full!, ...clozeWhy(q.answer!, b.word, input)], correct: q.answer! };
     }
     case 'saying': {
       const x = q.say!;

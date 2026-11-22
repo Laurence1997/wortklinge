@@ -49,3 +49,20 @@ describe('0.6.x 格位姿态选错说清形式', () => {
     expect(phaseWrongWhy(b)).toBe('它不是 der 词');
   });
 });
+
+import { clozeWhy, gradeCloze } from '../src/core/cloze';
+describe('0.6.x 完形填空答错讲清原因', () => {
+  const gv = WORDS.find((x) => x.de === 'Großvater')!;
+  it('marked Chinese is strict and explains; unmarked Chinese takes any article of the case', () => {
+    expect(gradeCloze('einen Grossvater', 'einen Großvater', gv, '我有一位祖父在巴伐利亚。')).toBe(true);
+    expect(gradeCloze('meinen Großvater', 'einen Großvater', gv, '我有一位祖父在巴伐利亚。')).toBe(false);
+    expect(gradeCloze('den Großvater', 'einen Großvater', gv, '我有一位祖父在巴伐利亚。')).toBe(false);
+    expect(gradeCloze('den Großvater', 'einen Großvater', gv, '我去看祖父。')).toBe(true);
+    expect(gradeCloze('der Großvater', 'einen Großvater', gv, '我去看祖父。')).toBe(false);
+    expect(clozeWhy('einen Großvater', gv, 'meinen Grossvater')).toEqual([expect.stringContaining('第四格'), '格是对的，但这里要用 einen（看中文）。']);
+    expect(clozeWhy('einen Großvater', gv, 'meine Grossvater')[1]).toBe('冠词词尾不对：Großvater 是阳性，这里要 einen。');
+    const tasse = WORDS.find((x) => x.de === 'Tasse')!;
+    expect(gradeCloze('eine Tassen', 'die Tassen', tasse, '我在洗杯子。')).toBe(false);
+    expect(clozeWhy('die Tassen', tasse, 'eine Tassen')).toEqual([]);
+  });
+});

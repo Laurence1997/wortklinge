@@ -164,6 +164,8 @@ export class BattleUI {
     const clean = this.report.correct && !this.report.verdict.notes.length;
     const delay = this.ctrl.fightOver() ? 1600 : clean ? 1000 : 2600;
     window.clearTimeout(this.autoTimer);
+    // 0.6.x: a wrong cloze waits for Enter, so the correction and its rule can be read.
+    if (!this.report.correct && this.question.type === 'cloze' && !this.ctrl.fightOver()) return;
     this.autoTimer = window.setTimeout(() => this.continue(), delay);
   }
 
@@ -691,7 +693,7 @@ export class BattleUI {
       if (r.readRight) fb.append(h('span.note', '读懂了它：连击 +1'));
       if (this.voicedFull) fb.append(h('span.note', `它刚才念的是：${this.voicedFull}`));
       fb.append(this.shadowRow());
-      fb.append(h('span.note.muted', this.ctrl.fightOver() ? '结算（Enter 跳过）' : '下一题（Enter 跳过）'));
+      fb.append(h('span.note.muted', this.ctrl.fightOver() ? '结算（Enter 跳过）' : !r.correct && qq.type === 'cloze' ? h('button.btn.small', { onclick: () => this.continue() }, '看完了，继续（Enter）') : '下一题（Enter 跳过）'));
       wrap.append(fb);
     }
     return wrap;

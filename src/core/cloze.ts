@@ -8,7 +8,7 @@ import type { Word } from './types';
 import { EX1 } from '../data/examples1';
 import { EX2 } from '../data/examples2';
 import { EX3 } from '../data/examples3';
-import { WORDS } from '../data/words';
+import { genderOf, WORDS } from '../data/words';
 
 export type ClozeMode = 'pick' | 'base' | 'form';
 
@@ -104,8 +104,37 @@ export function clozeOptions(w: Word, answer: string, rng: Rng): string[] {
   return shuffle(rng, [answer, ...wrong]);
 }
 
-export function gradeCloze(input: string, answer: string): boolean {
-  return key(input) === key(answer);
+export function gradeCloze(input: string, answer: string, w?: Word, zh?: string): boolean {
+  if (key(input) === key(answer)) return true;
+  // 0.6.x: when the Chinese does not say which determiner (一个 / 这 / 我的 / 没有), any article of the right case
+  // and gender counts, as in the A1 exam (den or einen, dem or einem).
+  if (!w || zh === undefined || ZH_DET.test(zh)) return false;
+  const alts = sameCaseArticles(answer, w);
+  const [idet, ...irest] = input.trim().split(/\s+/);
+  const rest = answer.trim().split(/\s+/).slice(1);
+  return !!alts && !!idet && key(irest.join(' ')) === key(rest.join(' ')) && alts.includes(idet.toLowerCase());
+}
+
+/** Chinese that names the determiner: 一个/一杯…, 这/那, 我的…, 没有. */
+const ZH_DET = /[一两][个位只张本件杯块条把台辆间双份种家盒瓶袋根片口所部盏碗套首封]|喝杯|这|那|[我你他她它您]们?的|没有/;
+
+const CASE_ARTS: Record<Case, Record<'m' | 'f' | 'n' | 'pl', string[]>> = {
+  nom: { m: ['der', 'ein', 'kein'], f: ['die', 'eine', 'keine'], n: ['das', 'ein', 'kein'], pl: ['die', 'keine'] },
+  acc: { m: ['den', 'einen', 'keinen'], f: ['die', 'eine', 'keine'], n: ['das', 'ein', 'kein'], pl: ['die', 'keine'] },
+  dat: { m: ['dem', 'einem', 'keinem'], f: ['der', 'einer', 'keiner'], n: ['dem', 'einem', 'keinem'], pl: ['den', 'keinen'] },
+};
+
+/** The articles of the answer's case for this noun's gender, or null when the answer is not article + noun. */
+function sameCaseArticles(answer: string, w: Word): string[] | null {
+  const [det, ...rest] = answer.trim().split(/\s+/);
+  const g = genderOf(w);
+  if (w.pos !== 'n' || !g || !rest.length || !det || key(rest.join(' ')) !== key(w.de)) return null; // not a plural or -n form
+  const d = det.toLowerCase();
+  if (!/^(d(er|ie|as|en|em)|k?ein(e|en|em|er)?)$/.test(d)) return null;
+  const c = caseOf(g, d.replace(/^k/, ''));
+  if (!c) return null;
+  const list = CASE_ARTS[c][g];
+  return list.includes(d) ? list : null;
 }
 
 /** 终结技 fallback for words without a sentence pattern: one of the word's example sentences, or a template
@@ -227,4 +256,40 @@ export function voiceLine(w: Word, n: number, ok?: (i: number) => boolean): { li
   const hit = zhs.find((z) => p.zh.includes(z));
   const zh = hit ? p.zh.replace(hit, '……') : '（它含糊地念着什么，听不清。）';
   return { line, zh, full: (p.before + p.blank + p.after).trim(), fullZh: p.zh, idx };
+}
+
+const GENDER_ZH = { m: '阳性', f: '阴性', n: '中性', pl: '复数' } as const;
+const DET = /^(d(?:er|ie|as|en|em|es)|(?:k|m|d|s)?ein|ihr|unser|eu(?:e)?r)(e|en|em|er|es)?$/;
+
+/** The ein-family ending a determiner shows (meinen → einen, keiner → einer), or the word itself for der/die/das. */
+function detBase(d: string): string | null {
+  const m = DET.exec(d);
+  if (!m) return null;
+  return m[1].startsWith('d') && !m[2] ? m[1] : `ein${m[2] ?? ''}`;
+}
+
+/** 完形填空答错讲清原因 (0.6.x): for an article + noun answer, one line of the case rule and one line on the input
+ *  (wrong ending, or a right ending on another determiner). Empty when the answer is not article + noun. */
+export function clozeWhy(answer: string, w: Word, input: string): string[] {
+  const g = genderOf(w);
+  const [det, ...rest] = answer.trim().split(/\s+/);
+  const base = det ? detBase(det.toLowerCase()) : null;
+  if (w.pos !== 'n' || !g || !rest.length || !base || key(rest.join(' ')) !== key(w.de)) return [];
+  const c = caseOf(g, base);
+  if (!c) return []; // e.g. a plural form (die Äpfel) of a masculine noun: no gender rule to give
+  const rule =
+    c === 'acc'
+      ? '这里是动词的直接宾语，用第四格：阳性 der → den，ein → einen；阴性、中性不变。'
+      : c === 'dat'
+        ? '这里用第三格：阳性和中性 dem / einem，阴性 der / einer，复数 den。'
+        : g === 'm'
+          ? '这里是主语，用第一格：阳性 der / ein。'
+          : '阴性、中性和复数的第一格和第四格同形：die / eine，das / ein，复数 die。';
+  const out = [rule];
+  const [idet, ...irest] = input.trim().split(/\s+/);
+  if (idet && irest.length && key(irest.join(' ')) === key(rest.join(' ')) && key(idet) !== key(det)) {
+    const ib = detBase(idet.toLowerCase());
+    out.push(ib === base && base.startsWith('ein') ? `格是对的，但这里要用 ${det}（看中文）。` : `冠词词尾不对：${rest.join(' ')} 是${GENDER_ZH[g]}，这里要 ${det}。`);
+  }
+  return out;
 }
