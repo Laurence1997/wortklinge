@@ -30,23 +30,32 @@ describe('0.6.x 读音攻击不漏冠词', () => {
   });
 });
 
-import { phaseWrongWhy } from '../src/core/combat';
-describe('0.6.x 格位姿态选错说清形式', () => {
-  it('a slot stance names the article and the form; a name stance hides it', () => {
+import { phaseRight, phaseWrongWhy } from '../src/core/combat';
+describe('0.6.x 格位姿态选错说清形式 + 同格同性都算对', () => {
+  it('a slot stance takes both articles of the case; a wrong one names the pair; a name stance hides it', () => {
     const s = newGame('T', 'student');
-    s.level = 10;
+    s.level = 16;
     const w = WORDS.find((x) => x.de === 'Kilo')!;
     const b = startBattle(s, w, makeRng(1));
     b.intent = { ...b.intent, caseArt: 'ein' };
-    b.phase = 'das';
-    expect(phaseWrongWhy(b)).toBe('没错，Kilo 是 das 词，但这句的空要填 ein（不定冠词）');
-    b.intent = { ...b.intent, caseArt: 'dem' };
-    expect(phaseWrongWhy(b)).toBe('没错，Kilo 是 das 词，但这句的空要填 dem（定冠词，第三格）');
-    b.intent = { ...b.intent, caseArt: 'ein' };
+    expect(phaseRight(b, 'das')).toBe(true);
+    expect(phaseRight(b, 'ein')).toBe(true);
+    expect(phaseRight(b, 'dem')).toBe(false);
     b.phase = 'der';
-    expect(phaseWrongWhy(b)).toMatch(/^Kilo 是 das 词/);
+    expect(phaseWrongWhy(b)).toBe('Kilo 是 das 词，但这句的空要第一格或第四格：das 或 ein');
+    b.intent = { ...b.intent, caseArt: 'dem' };
+    b.phase = 'das';
+    expect(phaseWrongWhy(b)).toBe('没错，Kilo 是 das 词，但这句的空要第三格：dem 或 einem');
+    expect(phaseRight(b, 'einem')).toBe(true);
     b.intent = { ...b.intent, caseArt: undefined };
+    b.phase = 'der';
     expect(phaseWrongWhy(b)).toBe('它不是 der 词');
+    expect(phaseRight(b, 'ein')).toBe(false);
+    const gv = WORDS.find((x) => x.de === 'Großvater')!;
+    const c = startBattle(s, gv, makeRng(1));
+    c.intent = { ...c.intent, caseArt: 'einen' };
+    expect(phaseRight(c, 'den')).toBe(true);
+    expect(phaseRight(c, 'der')).toBe(false);
   });
 });
 

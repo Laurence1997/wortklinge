@@ -500,6 +500,34 @@ export function phaseOf(b: Battle): Stance | null {
   return (b.intent?.caseArt as Stance | undefined) ?? b.word.art;
 }
 
+/** 同格同性都算对 (0.6.x, Lucas 2026-11-22): on a stance from the line's slot, the definite and the indefinite
+ *  article of the same case and gender both land (den or einen, das or ein); the stance tests case and gender,
+ *  not definite vs indefinite. A stance from the name alone, plural monsters and Perfekt stay exact. */
+export function phasePair(b: Battle): Stance[] {
+  const ph = phaseOf(b);
+  if (!ph) return [];
+  if (b.perfekt || b.pluralMon || !b.intent?.caseArt) return [ph];
+  const g = genderOf(b.word);
+  const c = phaseCase(b);
+  if (!g) return [ph];
+  const T: Record<Case, Record<'m' | 'f' | 'n' | 'pl', Stance[]>> = {
+    nom: { m: ['der', 'ein'], f: ['die', 'eine'], n: ['das', 'ein'], pl: ['die'] },
+    acc: { m: ['den', 'einen'], f: ['die', 'eine'], n: ['das', 'ein'], pl: ['die'] },
+    dat: { m: ['dem', 'einem'], f: ['der', 'einer'], n: ['dem', 'einem'], pl: ['den'] },
+  };
+  const pair = T[c][g];
+  return pair.includes(ph) ? pair : [ph];
+}
+
+/** Masculine: der/ein is only nominative. */
+function g2(b: Battle): boolean {
+  return genderOf(b.word) === 'm';
+}
+
+export function phaseRight(b: Battle, p: Stance | undefined = b.phase): boolean {
+  return !!p && phasePair(b).includes(p);
+}
+
 /** 选错相时的说明 (0.6.x): a stance from the line's slot says the noun's own article and the form the slot needs,
  *  so a right der/die/das is not read as wrong; a stance from the name alone keeps the answer hidden. */
 export function phaseWrongWhy(b: Battle): string {
@@ -509,6 +537,8 @@ export function phaseWrongWhy(b: Battle): string {
   const c = phaseCase(b);
   // Neuter/feminine forms look the same in nom and acc, so only a form that shows its case names it.
   const why = [ph.startsWith('ein') ? '不定冠词' : '定冠词', ...(c === 'acc' ? ['第四格'] : c === 'dat' ? ['第三格'] : [])].join('，');
+  const pair = phasePair(b);
+  if (pair.length > 1) return `${b.phase === b.word.art ? '没错，' : ''}${b.word.de} 是 ${b.word.art} 词，但这句的空要${c === 'acc' ? '第四格' : c === 'dat' ? '第三格' : g2(b) ? '第一格' : '第一格或第四格'}：${pair.join(' 或 ')}`;
   return `${b.phase === b.word.art ? '没错，' : ''}${b.word.de} 是 ${b.word.art} 词，但这句的空要填 ${ph}（${why}）`;
 }
 
@@ -584,7 +614,7 @@ export function shownDe(b: Battle): string {
  *  der/die/das) and the stance is right. Wrong-stance turns get nothing. */
 export function affinityMatch(s: GameState, b: Battle): boolean {
   const aff = affinityOf(s);
-  if (!aff || !b.word.art || !b.phase || b.phase !== phaseOf(b)) return false;
+  if (!aff || !b.word.art || !b.phase || !phaseRight(b)) return false;
   return (b.pluralMon ? 'die' : b.word.art) === aff;
 }
 
@@ -1373,7 +1403,7 @@ export function resolveTurn(
         const pc = phaseCase(b);
         // Not punished yet: Lv1–5, and the first level of each case (acc at 7, dat at 15).
         const soft = (b.perfekt && s.level <= CONFIG.perfekt.softUntil) || s.level <= CONFIG.phase.softUntil || (pc === 'acc' && s.level === CONFIG.phase.accFrom) || (pc === 'dat' && s.level === CONFIG.phase.datFrom);
-        phaseFx = b.phase === phaseOf(b) ? 'right' : soft ? 'soft' : 'wrong';
+        phaseFx = phaseRight(b) ? 'right' : soft ? 'soft' : 'wrong';
       }
       if (phaseFx === 'wrong') {
         // Resisted: whatever break it had is gone, and this hit meets doubled armor.
