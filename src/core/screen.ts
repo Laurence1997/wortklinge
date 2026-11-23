@@ -8,7 +8,7 @@
 
 import { CONFIG, levelGapMult, xpToNext } from './config';
 import { gradeTyped, type Verdict } from './grading';
-import { isRetired, retire } from './srs';
+import { isRetired, retire, stageOf } from './srs';
 import { addXp, now, type GameState, type LevelUpResult } from './state';
 import type { Word } from './types';
 import { hasArticleQuestion, posTag, WORDS } from '../data/words';
@@ -38,15 +38,21 @@ export function screenSave(s: GameState): ScreenSave {
 
 const inScope = (w: Word, scope: ScreenScope) => scope === 'all' || String(w.region ?? 1) === scope;
 
-/** Words this scope can still ask: everything but retired, tutorial and chest words. */
+/** 2026-11-23 Lucas: a learned word is one the HUD counts as 归名 (retired, or 归名 and not due), so the summary
+ *  line and the HUD agree and the examiner never asks a word you already know. A 归名 word that comes due counts
+ *  as 半名 in both places and can be asked again. */
+const learned = (s: GameState, w: Word) => stageOf(s, w) === 3;
+
+/** Words this scope can still ask: everything but learned, tutorial and chest words. */
 export function screenPool(s: GameState, scope: ScreenScope): Word[] {
-  return WORDS.filter((w) => inScope(w, scope) && !w.tutorial && w.family !== 'truhe' && !isRetired(s.words[w.id]));
+  return WORDS.filter((w) => inScope(w, scope) && !w.tutorial && w.family !== 'truhe' && !learned(s, w));
 }
 
-/** Words of a region still to learn (not retired), for the summary line. */
-export function regionLeft(s: GameState, region: number): { left: number; total: number } {
+/** Words of a region still to learn (not 归名), for the summary line. */
+export function regionLeft(s: GameState, region: number): { left: number; total: number; learned: number } {
   const ws = WORDS.filter((w) => (w.region ?? 1) === region && !w.tutorial && w.family !== 'truhe');
-  return { left: ws.filter((w) => !isRetired(s.words[w.id])).length, total: ws.length };
+  const n = ws.filter((w) => learned(s, w)).length;
+  return { left: ws.length - n, total: ws.length, learned: n };
 }
 
 export interface ScreenRun {

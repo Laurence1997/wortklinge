@@ -686,7 +686,7 @@ export class Panels {
       for (const r of [1, 2, 3]) {
         if (run.scope !== 'all' && run.scope !== String(r)) continue;
         const x = regionLeft(s, r);
-        lines.push(h('p', `第 ${r} 区还剩 ${x.left} 个要学（共 ${x.total} 个）。`));
+        lines.push(h('p', `第 ${r} 区：归名 ${x.learned} 个，还剩 ${x.left} 个要学（共 ${x.total} 个）。`));
         // A region more than half retired and not yet passed → straight to the jump exam.
         if (r === 1 && x.left * 2 < x.total && this.ctrl.canJumpNow())
           lines.push(h('div.row', h('button.btn.primary', { onclick: () => { this.close(); this.ctrl.startJump(); } }, '第 1 区的词你大多会了，可以试试跳区考核 →')));

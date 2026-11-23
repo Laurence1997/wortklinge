@@ -299,3 +299,20 @@ describe('存档', () => {
     expect(WORDS.length).toBeGreaterThan(0);
   });
 });
+
+describe('全量筛选 skips learned words (2026-11-23)', () => {
+  it('a 归名 word that is not due is not asked and is not counted as still to learn; once due it is', async () => {
+    const { screenPool, regionLeft } = await import('../src/core/screen');
+    const s = newGame('T', 'student', Date.now());
+    s.level = 5;
+    const w = screenPool(s, '1')[0];
+    const before = regionLeft(s, 1);
+    s.words[w.id] = { stage: 3, due: Date.now() + 10 * DAY } as GameState['words'][string];
+    expect(screenPool(s, '1').some((x) => x.id === w.id)).toBe(false);
+    const after = regionLeft(s, 1);
+    expect(after.left).toBe(before.left - 1);
+    expect(after.learned + after.left).toBe(after.total);
+    s.words[w.id].due = Date.now() - 1000;
+    expect(screenPool(s, '1').some((x) => x.id === w.id)).toBe(true);
+  });
+});
