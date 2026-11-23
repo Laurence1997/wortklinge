@@ -1,7 +1,7 @@
 // 发音评测中转 (游戏设计 › 下一版方向提案, 2026-11-23): the browser sends a short 16 kHz WAV and the text it
 // should say; this calls Azure's pronunciation assessment (REST, short audio) with the key from the project's
 // secrets and returns Azure's JSON. The key never reaches the browser.
-// Secrets: AZURE_SPEECH_KEY, AZURE_SPEECH_REGION (default westeurope).
+// Secrets: AZURE_SPEECH_KEY, AZURE_SPEECH_REGION (default germanywestcentral).
 
 const ALLOWED = ['https://wortklinge.myreverielab.com', 'http://localhost:5173', 'http://localhost:4173', 'null'];
 const MAX_BYTES = 640_000; // ~20 s of 16 kHz mono PCM
@@ -26,7 +26,7 @@ Deno.serve(async (req) => {
   if (!origin || !ALLOWED.includes(origin)) return new Response('origin not allowed', { status: 403, headers: h });
 
   const key = Deno.env.get('AZURE_SPEECH_KEY');
-  const region = Deno.env.get('AZURE_SPEECH_REGION') || 'westeurope';
+  const region = Deno.env.get('AZURE_SPEECH_REGION') || 'germanywestcentral';
   if (!key) return Response.json({ error: 'no_key' }, { status: 500, headers: h });
 
   const ref = decodeURIComponent(req.headers.get('x-reference-text') || '').trim();
