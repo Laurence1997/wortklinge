@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>发音评测测试</title>
+<style>
+  :root { --bg:#120a0b; --panel:#1f1213; --line:#3a2023; --text:#eadbd6; --dim:#9c8580; --red:#c8414b; --ok:#6fae6a; --mid:#d9b13f; --bad:#d9733f; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:16px/1.6 system-ui, "PingFang SC", "Microsoft YaHei", sans-serif; }
+  main { max-width:760px; margin:0 auto; padding:24px 16px 60px; }
+  h1 { font-size:22px; margin:0 0 4px; }
+  p.lead { color:var(--dim); margin:0 0 20px; }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:18px; margin-bottom:16px; }
+  .part { text-align:center; color:var(--dim); font-size:14px; }
+  .instr { text-align:center; font-size:15px; min-height:1.6em; }
+  .word { font-size:56px; font-weight:700; text-align:center; margin:4px 0; }
+  .row { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:12px; }
+  button { background:#2b1a1c; color:var(--text); border:1px solid var(--line); border-radius:8px; padding:10px 16px; font:inherit; cursor:pointer; }
+  button.main { background:var(--red); border-color:var(--red); color:#fff; min-width:170px; }
+  button.rec { background:#7a1f1f; }
+  button:disabled { opacity:.5; cursor:default; }
+  .res { text-align:center; min-height:3.2em; margin-top:12px; }
+  .score { font-size:28px; font-weight:700; }
+  .ph { display:inline-block; margin:2px 3px; padding:1px 6px; border-radius:4px; background:#2b1a1c; font-size:14px; }
+  .ok { color:var(--ok); } .mid { color:var(--mid); } .bad { color:var(--bad); } .dim { color:var(--dim); }
+  table { width:100%; border-collapse:collapse; font-size:14px; }
+  th, td { text-align:left; padding:6px 8px; border-bottom:1px solid var(--line); }
+  th { color:var(--dim); font-weight:500; }
+  textarea { width:100%; min-height:140px; background:#0d0708; color:var(--text); border:1px solid var(--line); border-radius:8px; padding:8px; font:13px/1.5 ui-monospace, monospace; }
+  .warn { color:var(--bad); }
+</style>
+</head>
+<body>
+<main>
+  <h1>发音评测测试（Azure）</h1>
+  <p class="lead">和上次一样的 11 组词，这次由 Azure 给每个音打分（0–100）。分两部分：第一部分正常读 22 个词；第二部分<b>故意读错</b>，屏幕上写 Staat，你读 Stadt，看它能不能发现。大约 6 分钟。读完按「复制结果」发回来。用电脑版 Chrome，在安静的地方测。</p>
+
+  <div class="card">
+    <div class="part" id="part"></div>
+    <div class="instr" id="instr"></div>
+    <div class="word" id="word">…</div>
+    <div class="row">
+      <button class="main" id="say">按住空格或点这里录音</button>
+      <button id="demo">听示范</button>
+      <button id="mine" disabled>听我的录音</button>
+      <button id="skip">跳过</button>
+    </div>
+    <div class="res" id="res"></div>
+  </div>
+
+  <div class="card">
+    <h2 style="font-size:17px;margin:0 0 8px">结果</h2>
+    <p id="total" style="margin:0 0 10px"></p>
+    <table>
+      <thead><tr><th>部分</th><th>屏幕上的词</th><th>你读的</th><th>总分</th><th>最低的音</th><th>Azure 听成</th></tr></thead>
+      <tbody id="table"></tbody>
+    </table>
+    <textarea id="dump" readonly style="margin-top:10px"></textarea>
+    <div class="row" style="justify-content:flex-start">
+      <button id="copy">复制结果</button>
+      <button id="reset">清空并重来</button>
+    </div>
+  </div>
+</main>
+<script>
+// Azure 发音评测原型 (游戏设计 › 下一版方向提案, 2026-11-23). Part A: read each word as shown. Part B: read the
+// OTHER word of the pair while the reference is the shown one; a useful scorer must give part B clearly lower scores.
+// Audio goes to the project's Supabase function, which calls Azure; nothing else is sent anywhere.
+const ENDPOINT = 'https://xmttluclhrjhgokemnso.supabase.co/functions/v1/pron-assess';
+const PAIRS = [
+  ['Stadt', 'Staat'], ['Mitte', 'Miete'], ['Hütte', 'Hüte'], ['schon', 'schön'], ['Mutter', 'Mütter'],
+  ['vier', 'für'], ['Tier', 'Tür'], ['kennen', 'können'], ['lesen', 'lösen'], ['Kirche', 'Kirsche'], ['Rand', 'Land'],
+];
+const KEY = 'wk-mictest-azure-v1';
+const $ = (id) => document.getElementById(id);
+
+function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+function plan() {
+  const a = shuffle(PAIRS.flatMap(([x, y]) => [{ part: 'A', ref: x, read: x }, { part: 'A', ref: y, read: y }]));
+  const b = shuffle(PAIRS.map(([x, y]) => (Math.random() < 0.5 ? { part: 'B', ref: x, read: y } : { part: 'B', ref: y, read: x })));
+  return [...a, ...b];
+}
+
+let st;
+try { st = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch { st = null; }
+if (!st || !Array.isArray(st.queue)) st = { queue: plan(), i: 0, log: [] };
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(st)); } catch {} };
+const cur = () => st.queue[st.i];
+
+function show() {
+  $('res').textContent = '';
+  $('mine').disabled = true;
+  const c = cur();
+  if (!c) { $('part').textContent = ''; $('instr').textContent = '测完了，把下面的结果复制发回来就行'; $('word').textContent = '✓'; $('say').disabled = true; return; }
+  $('say').disabled = false;
+  const left = st.queue.length - st.i;
+  $('part').textContent = c.part === 'A' ? `第一部分：正常读 · 还剩 ${left} 个` : `第二部分：故意读错 · 还剩 ${left} 个`;
+  $('instr').innerHTML = c.part === 'A' ? '照着读这个词' : `屏幕上是这个词，但请你读 <b class="bad" style="font-size:22px">${c.read}</b>`;
+  $('word').textContent = c.ref;
+}
+
+// ---- recording: mono PCM → 16 kHz 16-bit WAV ----
+let stream = null, ctx = null, proc = null, src = null, chunks = [], recording = false, lastWav = null;
+async function startRec() {
+  if (recording || !cur()) return;
+  try {
+    stream ??= await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true } });
+  } catch { $('res').innerHTML = '<span class="warn">没有麦克风权限：点地址栏左边的图标允许麦克风</span>'; return; }
+  ctx ??= new AudioContext();
+  await ctx.resume();
+  src = ctx.createMediaStreamSource(stream);
+  proc = ctx.createScriptProcessor(4096, 1, 1);
+  chunks = [];
+  proc.onaudioprocess = (e) => chunks.push(new Float32Array(e.inputBuffer.getChannelData(0)));
+  src.connect(proc); proc.connect(ctx.destination);
+  recording = true;
+  $('say').classList.add('rec'); $('say').textContent = '录音中…松开结束';
+  $('res').innerHTML = '<span class="dim">在录…</span>';
+}
+function stopRec() {
+  if (!recording) return;
+  recording = false;
+  setTimeout(() => {
+    proc.disconnect(); src.disconnect();
+    $('say').classList.remove('rec'); $('say').textContent = '按住空格或点这里录音';
+    const len = chunks.reduce((n, c) => n + c.length, 0);
+    const all = new Float32Array(len); let o = 0; for (const c of chunks) { all.set(c, o); o += c.length; }
+    if (len < ctx.sampleRate * 0.3) { $('res').innerHTML = '<span class="warn">太短了，按住多一会儿再读</span>'; return; }
+    lastWav = toWav(all, ctx.sampleRate);
+    $('mine').disabled = false;
+    send(lastWav);
+  }, 250);
+}
+function toWav(f32, rate) {
+  const ratio = rate / 16000, n = Math.floor(f32.length / ratio);
+  const buf = new ArrayBuffer(44 + n * 2), v = new DataView(buf);
+  const w = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+  w(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true); w(8, 'WAVE'); w(12, 'fmt '); v.setUint32(16, 16, true);
+  v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, 16000, true); v.setUint32(28, 32000, true);
+  v.setUint16(32, 2, true); v.setUint16(34, 16, true); w(36, 'data'); v.setUint32(40, n * 2, true);
+  for (let i = 0; i < n; i++) {
+    let s = 0, a = Math.floor(i * ratio), b = Math.min(f32.length, Math.floor((i + 1) * ratio));
+    for (let j = a; j < b; j++) s += f32[j];
+    const x = Math.max(-1, Math.min(1, s / Math.max(1, b - a)));
+    v.setInt16(44 + i * 2, x < 0 ? x * 0x8000 : x * 0x7fff, true);
+  }
+  return new Blob([buf], { type: 'audio/wav' });
+}
+
+// ---- Azure via the Supabase function ----
+const num = (x) => (typeof x === 'number' ? Math.round(x) : null);
+const pa = (o) => o?.PronunciationAssessment ?? o ?? {};
+async function send(wav) {
+  const c = cur();
+  $('res').innerHTML = '<span class="dim">评分中…</span>';
+  let j;
+  try {
+    const r = await fetch(ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'audio/wav', 'x-reference-text': encodeURIComponent(c.ref) }, body: wav });
+    j = await r.json();
+    if (!r.ok || j.error) throw new Error(j.error || r.status);
+  } catch (e) { $('res').innerHTML = `<span class="warn">评分失败：${String(e.message || e)}（再试一次，或跳过）</span>`; return; }
+  const nb = j.NBest?.[0];
+  if (j.RecognitionStatus !== 'Success' || !nb) { $('res').innerHTML = `<span class="warn">没听清（${j.RecognitionStatus || '无结果'}），再读一次</span>`; return; }
+  const words = nb.Words || [];
+  const phs = words.flatMap((w) => (w.Phonemes || []).map((p) => ({ p: p.Phoneme || '?', s: num(pa(p).AccuracyScore) })));
+  const acc = num(pa(nb).AccuracyScore), pron = num(pa(nb).PronScore);
+  const low = [...phs].filter((x) => x.s !== null).sort((a, b) => a.s - b.s).slice(0, 2);
+  const entry = { part: c.part, ref: c.ref, read: c.read, acc, pron, heard: nb.Lexical || j.DisplayText || '', err: words.map((w) => pa(w).ErrorType).filter((e) => e && e !== 'None').join(','), phs };
+  st.log.push(entry); st.i++; save();
+  const cls = (s) => (s >= 80 ? 'ok' : s >= 60 ? 'mid' : 'bad');
+  $('res').innerHTML = `<div class="score ${cls(acc)}">${acc ?? '–'}</div>` +
+    `<div>${phs.map((x) => `<span class="ph ${cls(x.s)}">${x.p} ${x.s ?? ''}</span>`).join('')}</div>` +
+    `<div class="dim">Azure 听成：「${escapeHtml(entry.heard)}」</div>`;
+  render();
+  setTimeout(show, 1800);
+}
+
+function demo() {
+  const c = cur(); if (!c || !window.speechSynthesis) return;
+  const u = new SpeechSynthesisUtterance(c.part === 'A' ? c.ref : c.read); u.lang = 'de-DE'; u.rate = 0.9;
+  const vs = speechSynthesis.getVoices(); const v = vs.find((x) => x.lang === 'de-DE' && /Google/.test(x.name)) || vs.find((x) => x.lang === 'de-DE'); if (v) u.voice = v;
+  speechSynthesis.cancel(); speechSynthesis.speak(u);
+}
+function escapeHtml(s) { return String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+const avg = (xs) => (xs.length ? Math.round(xs.reduce((a, b) => a + b, 0) / xs.length) : '–');
+
+function render() {
+  $('table').innerHTML = st.log.map((x) => `<tr><td>${x.part === 'A' ? '正常' : '故意错'}</td><td>${x.ref}</td><td>${x.read}</td><td>${x.acc ?? '–'}</td><td>${[...x.phs].filter((p) => p.s !== null).sort((a, b) => a.s - b.s).slice(0, 2).map((p) => `${p.p} ${p.s}`).join('、')}</td><td>${escapeHtml(x.heard)}</td></tr>`).join('');
+  const A = st.log.filter((x) => x.part === 'A' && x.acc !== null).map((x) => x.acc);
+  const B = st.log.filter((x) => x.part === 'B' && x.acc !== null).map((x) => x.acc);
+  $('total').textContent = `正常读平均 ${avg(A)} 分（${A.length} 个）· 故意读错平均 ${avg(B)} 分（${B.length} 个）`;
+  const ua = navigator.userAgent.match(/Chrome\/[\d.]+/)?.[0] || '';
+  $('dump').value = [
+    `mictest-azure v1 · ${ua} · ${new Date().toISOString().slice(0, 16)}`,
+    `A avg ${avg(A)} (${A.length}) · B avg ${avg(B)} (${B.length})`,
+    ...st.log.map((x) => `${x.part}\t${x.ref}\tread:${x.read}\tacc:${x.acc}\tpron:${x.pron}\t${x.err || '-'}\t${x.heard}\t${x.phs.map((p) => `${p.p}:${p.s}`).join(' ')}`),
+  ].join('\n');
+}
+
+$('say').addEventListener('mousedown', startRec);
+$('say').addEventListener('mouseup', stopRec);
+$('say').addEventListener('mouseleave', stopRec);
+document.addEventListener('keydown', (e) => { if (e.code === 'Space' && !e.repeat && e.target === document.body) { e.preventDefault(); startRec(); } });
+document.addEventListener('keyup', (e) => { if (e.code === 'Space' && e.target === document.body) { e.preventDefault(); stopRec(); } });
+$('demo').onclick = demo;
+$('mine').onclick = () => { if (lastWav) new Audio(URL.createObjectURL(lastWav)).play(); };
+$('skip').onclick = () => { if (cur()) { st.i++; save(); show(); } };
+$('copy').onclick = async () => { try { await navigator.clipboard.writeText($('dump').value); $('copy').textContent = '已复制'; } catch { $('dump').select(); } setTimeout(() => ($('copy').textContent = '复制结果'), 1500); };
+$('reset').onclick = () => { st = { queue: plan(), i: 0, log: [] }; save(); render(); show(); };
+render(); show();
+</script>
+</body>
+</html>
