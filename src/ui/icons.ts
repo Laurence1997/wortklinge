@@ -109,6 +109,7 @@ export function heroIcon(look: Look, scale = 4): HTMLCanvasElement {
 export function monsterTile(b: Battle, boss = false): number {
   if (boss) return 109;
   if (b.word.family === 'truhe' || b.flees) return 92;
+  if (b.elite) return 108;
   if (b.rusty || b.curse) return 110;
   if (b.phrase) return 124;
   return wordTile(b.word);

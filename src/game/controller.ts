@@ -40,6 +40,7 @@ import {
   type GameState,
 } from '../core/state';
 import { shadowScore } from '../core/shadow';
+import { noteEliteWin, type ElitePick } from '../core/elite';
 import type { Move, Quality, Slot, Word, ZoneId } from '../core/types';
 import { has, UNLOCK, UNLOCK_TEXT } from '../core/unlocks';
 import { JOURNAL_KEEP, JOURNAL_WORDS, JOURNAL_XP_SHARE, journalWords, type JournalEntry } from '../core/journal';
@@ -465,6 +466,18 @@ export class Controller {
       const dog = WORD_BY_ID['hund'];
       this.entity = m;
       this.battle = startBattle(s, dog, this.rng, { tutorial: 'loss' });
+    } else if (m.elite && !tutorial) {
+      // 场景精英 (9 级): part 1 of 3 (认 → 用 → 写), one word of its scene each.
+      this.entity = m;
+      this.battle = this.eliteBattle(m.elite, 0);
+      if (!s.flags.eliteTaught) {
+        s.flags.eliteTaught = true;
+        say([
+          { who: SYS, text: '【场景精英 ◈】这个场景的词你学了一半，它把其中 3 个攥在一起来考你。' },
+          { who: SYS, text: '分 3 段，每段换一个词：先认（选择题），再用（例句填空），最后写（默写）。中间不回血，每段打完都算打败这个词。' },
+          { who: SYS, text: '第一次打赢必掉铁箱。以后这个场景有 3 个词到期复习，它还会再来。' },
+        ]);
+      }
     } else if (m.phrase && !tutorial) {
       // 残句 (0.5): a sentence monster, no word behind it.
       this.entity = m;
@@ -542,16 +555,46 @@ export class Controller {
     }
   }
 
+  /** 场景精英: the battle for one part. Never rusty, plural or cursed; hits ×1.2; statuses and hints carry over. */
+  private eliteBattle(pick: ElitePick, seg: number, prev?: Battle): Battle {
+    const b = startBattle(this.state, WORD_BY_ID[pick.words[seg]], this.rng, { elite: true });
+    b.elite = { scene: pick.scene, words: pick.words, seg, review: pick.review };
+    b.monster.dmg = Math.max(1, Math.round(b.monster.dmg * CONFIG.elite.dmgMult));
+    if (prev) {
+      b.fx = prev.fx;
+      b.hintsLeft = prev.hintsLeft;
+      b.skillCooldown = prev.skillCooldown;
+      b.turn = prev.turn + 1;
+    }
+    return b;
+  }
+
+  /** 场景精英: a part is down and another follows. Settles that word (no heal) and starts the next part. */
+  nextElitePart(): boolean {
+    const b = this.battle;
+    const m = this.entity;
+    if (!b?.elite || b.outcome !== 'win' || !m?.elite || b.elite.seg >= b.elite.words.length - 1) return false;
+    this.settleKill(b, m, true, true);
+    const nb = this.eliteBattle(m.elite, b.elite.seg + 1, b);
+    this.battle = nb;
+    this.pack = [nb];
+    this.packEntities = [m];
+    toast(`精英第 ${nb.elite!.seg + 1} / ${nb.elite!.words.length} 段：${['认', '用', '写'][nb.elite!.seg]}`, 'gold');
+    this.refresh();
+    this.persist();
+    return true;
+  }
+
   /** Region 2 (Lv11+): nearby nouns with different articles join the fight (群怪). */
   private gatherPack(m: MonsterEntity) {
     const s = this.state;
-    if (!has(s.level, 'packs') || (s.region ?? 1) < 2 || m.isEcho || m.scripted || m.rare || m.phrase || !m.word.art || m.word.family === 'truhe') return;
+    if (!has(s.level, 'packs') || (s.region ?? 1) < 2 || m.isEcho || m.scripted || m.rare || m.phrase || m.elite || !m.word.art || m.word.family === 'truhe') return;
     const firstPack = !s.flags.firstPackDone;
     const max = firstPack || s.level < CONFIG.pack.max3From ? 2 : CONFIG.pack.max;
     const r = CONFIG.pack.radiusTiles * 16;
     const used = new Set([m.word.art]);
     const near = this.scene.monsters
-      .filter((o) => o !== m && !o.isEcho && !o.scripted && !o.rare && !o.phrase && o.zone === m.zone && !!o.word.art && o.word.family !== 'truhe' && Math.hypot(o.x - m.x, o.y - m.y) <= r)
+      .filter((o) => o !== m && !o.isEcho && !o.scripted && !o.rare && !o.phrase && !o.elite && o.zone === m.zone && !!o.word.art && o.word.family !== 'truhe' && Math.hypot(o.x - m.x, o.y - m.y) <= r)
       .sort((a, b) => Math.hypot(a.x - m.x, a.y - m.y) - Math.hypot(b.x - m.x, b.y - m.y));
     for (const o of near) {
       if (this.pack.length >= max) break;
@@ -747,7 +790,7 @@ export class Controller {
   }
 
   /** Rewards for one dead monster: XP, gold, 归名, drops, lessons. Packs call it per kill. */
-  private settleKill(b: Battle, m: MonsterEntity, inPack = this.pack.length > 1) {
+  private settleKill(b: Battle, m: MonsterEntity, inPack = this.pack.length > 1, keepEntity = false) {
     if (b.settled) return;
     b.settled = true;
     const s = this.state;
@@ -766,7 +809,7 @@ export class Controller {
           { who: HILDE, text: '……真叫回来了。东边回声巷，这种东西到处都是。去吧。火我守着。' },
         ]);
       } else {
-        this.scene.removeMonster(m, res.kill.guiming || b.cutReady ? 'guiming' : 'scatter');
+        if (!keepEntity) this.scene.removeMonster(m, res.kill.guiming || b.cutReady ? 'guiming' : 'scatter');
         if (b.cutReady) {
           sfx.guiming();
           toast(b.verify === 'recheck' ? `斩杀 · ${fullForm(b.word)} 永久退役` : `斩杀 · ${fullForm(b.word)} 已退役，30 天后回响抽查一次`, 'gold');
@@ -865,6 +908,11 @@ export class Controller {
         pack.forEach((x, i) => { if (!x.settled) this.settleKill(x, ents[i], true); });
         postFightHeal(s);
       } else this.settleKill(b, m);
+      if (b.elite && m.elite) {
+        noteEliteWin(s, b.elite.scene);
+        this.milestone('elite');
+        banner('场景精英', `${SCENE_BY_ID[b.elite.scene]?.zh ?? ''} · ${b.elite.words.map((id) => fullForm(WORD_BY_ID[id])).join(' · ')}`);
+      }
     } else if (b.outcome === 'lose') {
       sfx.death();
       const km = ents[pack.indexOf(b)] ?? m;

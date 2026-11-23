@@ -182,6 +182,8 @@ export const CONFIG = {
   engrave: { from: 25, bonus: 0.2 },
   /** 怪物诅咒 (0.6, 25 级): share of monsters, reward. */
   curse: { from: 25, chance: 0.1, xpMult: 1.3, shards: 1 },
+  /** 野外精英 · 场景精英 (2026-11-23, 9 级): half of a scene group at 半名 → one elite; returns when `due` group words are due. */
+  elite: { half: 0.5, due: 3, segs: 3, dmgMult: 1.2, rewardMult: 1.2, repeatChest: 0.3 },
   boss3: { hp: 8, firstTimeSeconds: 45, laterSeconds: 30, xp: 1000, gold: 350 },
 };
 

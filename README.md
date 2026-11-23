@@ -44,6 +44,7 @@
 - **头像和图标。** 对话头像、怪物图和装备图标。
 - **物品栏（0.6.3）。** 低语不再占出手位，改成答题时用的「低语纸条」（按 W，打字时按 ?）；新加回血的「药片」（按 H，占一回合）。纸条回篝火补到 3 张，两样都能掉落、能在商店用德语买；终结技攒满言灵才出现在招式栏。
 - **开宝箱动画（0.6.4）。** 宝箱抖一下再开盖，按开出的最好品质亮光，东西一件件飞出来；铁箱、金箱的言灵锁写对时，每件装备当场翻出两次品质、留下好的那次。出传说时全屏红光一闪。任意键跳过，设置里可以关。只改表现，掉率和数值不变。
+- **野外精英（0.6.5）。** 9 级起，一个场景的词有一半到了半名，就会出一只场景精英（◈）。它带这个场景的 3 个词，分 3 段连着打：先认（选择题）、再用（例句填空）、最后写（默写），中间不回血；每段按普通怪 ×1.2 结算，第一次打赢必掉铁箱。打赢后，这个场景有 3 个词到期复习时它会再来。原来 15 级的族群猎手取消，B1 之前没有红名怪。
 
 ### 0.5：新内容
 
@@ -145,6 +146,7 @@ A browser game that teaches German to Chinese-speaking learners. It isn't flashc
 - **Portraits and icons** for speakers, monsters and gear.
 - **Item bar (0.6.3)**: the whisper hint is no longer a move but a consumable note you use after seeing the question (W, or ? while typing); a new tablet heals but spends the turn (H). Notes refill to 3 at a bonfire; both drop from monsters and can be bought in the shop with a German sentence. The finisher button only appears when its bar is full.
 - **Chest animation (0.6.4)**: chests shake, open and glow in the best quality's colour while the items pop out one by one; with the 言灵锁 written right each item shows both quality rolls and keeps the better one. An orange flashes the screen red. Any key skips; it can be turned off in the settings. Presentation only, rates and numbers are unchanged.
+- **Field elites (0.6.5)**: from Lv9, once half of a scene's words are 半名 the scene sends an elite (◈). It carries three of the scene's words in three back-to-back parts: recognise (choice), use (cloze), write (typing), with no heal in between; each part pays ×1.2 a normal kill and the first win always drops an iron chest. After that it returns whenever three of the scene's words are due. The old Lv15 族群猎手 is dropped; there are no red-name monsters before B1.
 
 ### Version 0.5
 

@@ -56,6 +56,8 @@ let SEN_N = 0;
 let PERF_N = 0;
 const PERF_XP = +(process.env.PERF_XP ?? 1);
 let FIGHT_HP = 1, FIGHT_DMG = 1;
+/** 场景精英 (ELITE=1): the part being fought (0 认 / 1 用 / 2 写), −1 = a normal monster. */
+let ELITE_SEG = -1;
 const regionOf = (L: number): RegionId => (L > 20 ? 3 : L > 10 ? 2 : 1);
 function player(L: number, G: number): GameState {
   const s = newGame('S', 'student', Date.now());
@@ -93,6 +95,7 @@ function fight(t: T, s: GameState, m: number, keepHp = false) {
   let qs = 0;
   let sec = WALK;
   b.pluralMon = false; // the sim's monster stats are set by hand above
+  if (ELITE_SEG >= 0) b.elite = { scene: 'sim', words: [w.id, w.id, w.id], seg: ELITE_SEG, review: false };
   const tried: string[] = [];
   if (b.perfekt) PERF_N++;
   const pickPhase = () => {
@@ -161,6 +164,7 @@ function fight(t: T, s: GameState, m: number, keepHp = false) {
   if (won) {
     xp = 30 * (b.lastKillTyped ? CONFIG.xp.typedKillMult : 1) * (w.pos === 'v' && CONJ[w.de]?.strong && s.level >= 6 ? CONFIG.xp.strongVerbMult : 1) * levelGapMult(s.level, m);
     if (b.perfekt) xp *= PERF_XP;
+    if (b.elite) xp *= CONFIG.elite.rewardMult;
   }
   return { xp, qs, sec: sec + (won ? 0 : DEATH), lost: Math.min(1, (maxHp(s) - Math.max(0, s.hp)) / maxHp(s)), won };
 }
@@ -323,6 +327,33 @@ if (process.env.MAP) {
     return `${t.padEnd(7)} L${String(L).padStart(2)} ${z.id.padEnd(15)} ${(fights / (HOUR / 3600)).toFixed(0).padStart(3)} fights/h · move ${((100 * walk) / clock).toFixed(0)}% (${(walk / fights).toFixed(1)} s/fight) · per bonfire ${perBonfire} · deaths ${deaths} · xp/h ${xph.toFixed(0)} · Lv${L}→${L + 1} ${mins.toFixed(0)} min (curve ${(levelHours(L) * 60).toFixed(0)}, ×${(mins / (xpToNext(L) / CONFIG.xpPerHour * 60)).toFixed(2)}) · lvl ${share}`;
   };
   const nodes = !!process.env.NODES;
+  if (process.env.ELITE) {
+    // 场景精英 vs the field: three parts back to back at your level (认 / 用 / 写 questions), hits ×1.2,
+    // no heal between parts, each part's XP ×1.2. Target (游戏设计「野外精英：场景精英」): ≤ 1.2× field xp/h.
+    for (const L of [9, 12, 15, 18, 22, 26, 29]) for (const t of ['grind', 'balance', 'learn'] as T[]) {
+      const field = +(/xp\/h (\d+)/.exec(runNodes(t, L))![1]);
+      let xp = 0, sec = 0, wins = 0, qs = 0;
+      for (let i = 0; i < 100; i++) {
+        const s = player(L, gearAt(L));
+        s.hp = maxHp(s);
+        let ok = true;
+        for (let seg = 0; seg < 3 && ok; seg++) {
+          ELITE_SEG = seg;
+          FIGHT_DMG = CONFIG.elite.dmgMult;
+          const r = fight(t, s, L, true);
+          ELITE_SEG = -1;
+          FIGHT_DMG = 1;
+          xp += r.xp; sec += r.sec - (seg ? WALK : 0); qs += r.qs;
+          ok = r.won;
+        }
+        if (ok) wins++;
+        postFightHeal(s);
+      }
+      const xph = (xp / sec) * 3600;
+      console.log(`${t.padEnd(7)} L${L} elite xp/h ${xph.toFixed(0)} · field ${field} · ×${(xph / field).toFixed(2)} · win ${wins}% · ${(qs / 100).toFixed(1)} answers · ${(sec / 100 / 60).toFixed(1)} min`);
+    }
+    process.exit(0);
+  }
   if (process.env.DUNGEON) {
     // 零号站台 vs the field: 5 fights at your level + a boss 2 levels up (HP ×2.5, dmg ×1.2), entry overhead,
     // clear bonus = xpToNext × clearXp × the average rule bonus (all rules kept). Target: ≤ 1.2× field xp/h.

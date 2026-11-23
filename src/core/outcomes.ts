@@ -60,11 +60,13 @@ export function applyWin(s: GameState, b: Battle, rng: Rng, opts: { heal?: boole
   xp *= 1 + Math.min(0.3, affixTotal(s, 'xp'));
   if (b.cursed) xp *= CONFIG.curse.xpMult;
   if (b.rusty) xp *= CONFIG.rusty.rewardMult;
+  // 场景精英: each part pays what its word pays as a normal monster, ×1.2.
+  if (b.elite) xp *= CONFIG.elite.rewardMult;
   if (b.tutorial === 'loss') xp = 0;
   xp = Math.round(xp);
 
   let gold = CONFIG.gold.perKill(b.monster.lvl);
-  gold = Math.round(gold * overdueMult * (b.rusty ? CONFIG.rusty.rewardMult : 1));
+  gold = Math.round(gold * overdueMult * (b.rusty ? CONFIG.rusty.rewardMult : 1) * (b.elite ? CONFIG.elite.rewardMult : 1));
   if (b.fx.stimmt) gold *= 2;
   if (b.fx.nextHalt) s.flags.nextHalt = true;
   let echoRecovered: WinResult['echoRecovered'] = null;
@@ -112,9 +114,13 @@ export function applyWin(s: GameState, b: Battle, rng: Rng, opts: { heal?: boole
   }
 
   // Chests (Lv11+): rare monsters always carry an iron chest; due kills 5% forgotten chest; others 3% wood.
+  // 场景精英 (9 级): its last part brings an iron chest (always the first time, else 30%), even before Lv11.
   let chest: ChestKind | null = null;
-  if (has(s.level, 'chests') && b.tutorial !== 'loss' && !b.trial) {
-    if (b.flees) chest = 'iron';
+  if (b.elite && b.elite.seg === b.elite.words.length - 1 && b.tutorial !== 'loss') {
+    if (!b.elite.review || rng() < CONFIG.elite.repeatChest) chest = 'iron';
+  } else if (has(s.level, 'chests') && b.tutorial !== 'loss' && !b.trial) {
+    if (b.elite) chest = null; // 场景精英: no wood chest per part; the elite's iron chest comes with the last part
+    else if (b.flees) chest = 'iron';
     else if (b.kind === 'due' && rng() < CHEST_RATE.forgotten) chest = 'forgotten';
     else if (rng() < CHEST_RATE.wood) chest = 'wood';
   }

@@ -1,4 +1,5 @@
-import { SCENES } from '../data/world';
+import { SCENES, scenesOf } from '../data/world';
+import { elitePick, type ElitePick } from '../core/elite';
 import Phaser from 'phaser';
 import { needsVerify, stageOf, type Stage } from '../core/srs';
 import { now } from '../core/state';
@@ -42,6 +43,8 @@ export interface MonsterEntity {
   stage: Stage;
   /** 小世界 (0.5): the scene this monster stands in. */
   node?: string;
+  /** 野外精英 · 场景精英 (2026-11-23): the scene quiz it carries (its word is the first part's). */
+  elite?: ElitePick;
 }
 
 const SPEED = 72;
@@ -220,7 +223,8 @@ export class WorldScene extends Phaser.Scene {
   // ---- Monsters ------------------------------------------------------------
 
   aliveIds(): Set<string> {
-    return new Set(this.monsters.map((m) => m.word.id));
+    // A scene elite holds all three of its words: none of them spawns on its own meanwhile.
+    return new Set(this.monsters.flatMap((m) => m.elite?.words ?? [m.word.id]));
   }
 
   spawnAll() {
@@ -284,7 +288,29 @@ export class WorldScene extends Phaser.Scene {
     const spot = () => nav.spot(zone, true);
     this.maybeRare(zone, added, [], spot);
     this.maybePhrase(zone, added, [], spot);
+    this.maybeElite(zone);
     nav.touch();
+  }
+
+  /** 场景精英 (9 级): at most one per field; it stands in its own scene (one slot over the usual count). */
+  maybeElite(zone: ZoneId) {
+    const nav = this.nodes;
+    const s = this.ctrl.state;
+    if (!nav || !has(s.level, 'elite') || this.monsters.some((m) => m.elite && m.zone === zone)) return;
+    const taken = this.aliveIds();
+    for (const sc of scenesOf(this.map.region)) {
+      if (sc.zone !== zone || sc.type !== 'field' || sc === nav.here || !nav.revealed(sc)) continue;
+      const pick = elitePick(s, sc, taken);
+      if (!pick) continue;
+      const sp = nav.spot(zone, true, pick.words[0]);
+      if (!sp || sp.sc.id !== sc.id) continue;
+      const w = WORD_BY_ID[pick.words[0]];
+      const m = this.addMonster(w, pick.review ? 'due' : 'new', zone, sp.x, sp.y);
+      m.node = sc.id;
+      m.elite = pick;
+      this.styleMonster(m);
+      return;
+    }
   }
 
   /** Turn a freshly placed monster into a 残句 carrying a card you don't have yet (or any card). */
@@ -411,9 +437,10 @@ export class WorldScene extends Phaser.Scene {
     m.label.setColor(color);
     m.label.setShadow(0, 0, m.stage === 0 ? '#ff1830' : color, 6, true, true);
     m.teeth.setText('▼'.repeat(m.stage === 0 ? 4 : m.stage === 1 ? 2 : 1));
-    m.marker.setText(m.isEcho ? '回响' : m.rare ? '◆' : m.kind === 'due' ? '!' : '');
-    m.marker.setColor(m.isEcho || m.rare ? '#ffcf4a' : '#ff5a5a');
+    m.marker.setText(m.isEcho ? '回响' : m.elite ? '◈ 精英' : m.rare ? '◆' : m.kind === 'due' ? '!' : '');
+    m.marker.setColor(m.isEcho || m.rare ? '#ffcf4a' : m.elite ? '#ff9a3c' : '#ff5a5a');
     if (m.rare) m.label.setShadow(0, 0, '#ffcf4a', 8, true, true);
+    if (m.elite) m.label.setShadow(0, 0, '#ff9a3c', 8, true, true);
     this.updateGlyph(m);
     m.container.setScale(m.kind === 'shadow' ? 0.85 : 1);
   }
