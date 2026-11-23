@@ -13,7 +13,7 @@ import { showTitle } from './ui/title';
 import { importJson } from './core/state';
 import { toast } from './ui/feedback';
 
-const VERSION = '0.6.5';
+const VERSION = '0.6.6';
 const dev = new URLSearchParams(location.search).has('dev');
 
 function boot(state: ReturnType<typeof newGame>) {
