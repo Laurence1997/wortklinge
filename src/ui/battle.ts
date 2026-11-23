@@ -313,6 +313,11 @@ export class BattleUI {
     window.clearTimeout(this.autoTimer);
     stopListening();
     if (this.ctrl.fightOver()) {
+      // 场景精英: the next part starts right away (same fight, no heal).
+      if (this.ctrl.nextElitePart()) {
+        this.startTurn();
+        return;
+      }
       this.ctrl.finishBattle();
       return;
     }
@@ -453,6 +458,7 @@ export class BattleUI {
         b.pluralMon ? h('span.tag.echo', '复数怪 · 一群') : '',
         b.curse ? h('span.tag.due', b.curse === 'forget' ? '诅咒 · 遗忘' : '诅咒 · 沉默') : b.cursed ? h('span.tag', '咒已破') : '',
         b.phrase ? h('span.tag.echo', `残句 · ${b.phraseStep ?? 0}/3`) : '',
+        b.elite ? h('span.tag.echo', `◈ 精英 ${b.elite.seg + 1}/${b.elite.words.length} · ${['认', '用', '写'][b.elite.seg]}`) : '',
         b.stage === 2 && b.kind === 'due' && !b.verify ? h('span.tag', '可归名') : '',
         b.verify && !b.verifyDone ? h('span.tag.echo', b.verify === 'recheck' ? '回响抽查 · 写对永久斩杀' : '待验证 · 写对就能斩杀') : '',
         b.cutReady && !b.outcome ? h('span.tag.echo', '可斩杀') : '',

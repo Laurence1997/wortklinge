@@ -177,6 +177,8 @@ export interface Battle {
   phrase?: SayLine;
   /** 残句: how many of its three steps are done. */
   phraseStep?: number;
+  /** 野外精英 · 场景精英 (2026-11-23): this fight is part `seg` (0 认 / 1 用 / 2 写) of a scene elite carrying `words`. */
+  elite?: { scene: string; words: string[]; seg: number; review: boolean };
   turn: number;
   turnsSinceCharge: number;
   trapUsed: boolean;
@@ -256,7 +258,7 @@ export function startBattle(
   s: GameState,
   word: Word,
   rng: Rng,
-  opts: { isEcho?: boolean; tutorial?: Tutorial; trial?: ClassId; rare?: boolean } = {},
+  opts: { isEcho?: boolean; tutorial?: Tutorial; trial?: ClassId; rare?: boolean; elite?: boolean } = {},
 ): Battle {
   const t = now(s);
   const kind = kindOf(s, word, t);
@@ -269,7 +271,7 @@ export function startBattle(
   const lvl = opts.isEcho ? Math.min(word.lvl, s.level) : kind === 'due' ? Math.max(word.lvl, s.level) : s.flags[`zoneOk_${word.zone}`] ? word.lvl : Math.min(word.lvl, s.level + CONFIG.monster.maxAbove(s.level));
   const overdue = overdueSteps(s, word, t);
   // 锈名 (0.6, 27 级): a review monster 3+ intervals overdue rusts: one level up, ×1.3 HP, double reward.
-  const rusty = kind === 'due' && overdue >= CONFIG.rusty.overdue && s.level >= CONFIG.rusty.from && !opts.tutorial;
+  const rusty = kind === 'due' && overdue >= CONFIG.rusty.overdue && s.level >= CONFIG.rusty.from && !opts.tutorial && !opts.elite;
   const st = monsterStats(rusty ? lvl + 1 : lvl, stage, kind, overdue);
   const hp0 = rusty ? Math.round(st.hp * CONFIG.rusty.hpMult) : st.hp;
   const monster: MonsterState = { lvl: rusty ? lvl + 1 : lvl, hp: hp0, maxHp: hp0, dmg: st.dmg, vulnerable: 0, burn: 0, poison: 0, chilled: false, broken: 0 };
@@ -322,7 +324,7 @@ export function startBattle(
   // its typed questions ask for the plural, and it is half again as tough.
   // 斩杀: a retired noun only comes back as its plural crowd (复数怪 don't retire with the word).
   const retiredPl = canPlural && !!s.words[word.id]?.retired;
-  if (canPlural && !opts.isEcho && !tutorial && !opts.trial && word.family !== 'truhe' && (retiredPl || rng() < CONFIG.phase.pluralChance)) {
+  if (canPlural && !opts.isEcho && !tutorial && !opts.trial && !opts.elite && word.family !== 'truhe' && (retiredPl || rng() < CONFIG.phase.pluralChance)) {
     b.pluralMon = true;
     b.pluralDue = true;
     monster.hp = monster.maxHp = Math.round(monster.maxHp * CONFIG.phase.pluralHp);
@@ -868,6 +870,16 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
 
   function ladderQ(): Question {
   if (am === 'attack' && b.saying && !b.sayingDone && !inPack) return sayingQuestion(s, b.saying, rng);
+  // 场景精英: each part asks only its own layer. ① 认 choice questions; ② 用 cloze (conjugation for verbs,
+  // typing when the word has no example); ③ 写 typing (conjugation for verbs).
+  if (am === 'attack' && b.elite) {
+    if (b.elite.seg === 0 || !canType) {
+      const rec: Array<() => Question> = isNoun ? [article, pickZh, pickDe] : [pickZh, pickDe];
+      return rec[b.step % rec.length]();
+    }
+    if (b.elite.seg === 1) return (hasExamples(w) ? clozeQ(s, w, rng) : null) ?? (canConj ? conj() : typed());
+    return canConj && b.step % 2 === 0 ? conj() : typed();
+  }
   if (am === 'attack' && inPack && isNoun && !b.named && b.stage === 0 && !needsPhase(b)) return callout();
   // 防御 (Lv7+): a written answer breaks the guard. A word not yet at the typing step gets its usual choice question (×0.3).
   if (am === 'attack' && b.intent.kind === 'defend' && canType && (b.tutorial === 'break' || !(b.kind === 'new' && b.stage === 0 && b.step < 2))) {

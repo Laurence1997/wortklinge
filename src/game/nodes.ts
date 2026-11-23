@@ -295,7 +295,7 @@ export class NodeNav {
     const busy = this.hopping || this.w.ctrl.uiBlocking();
     const zone = sc.zone ? ZONES.find((z) => z.id === sc.zone) : null;
     const mons = this.monstersIn(sc);
-    const tag = (m: MonsterEntity) => (m.isEcho ? '回响' : m.phrase ? '残句' : m.rare ? '◆ 稀有' : !m.phrase && !m.isEcho && needsVerify(this.s, m.word) ? '待验证' : m.kind === 'due' ? '! 复习' : m.kind === 'shadow' ? '旧识' : '新');
+    const tag = (m: MonsterEntity) => (m.isEcho ? '回响' : m.elite ? '◈ 精英' : m.phrase ? '残句' : m.rare ? '◆ 稀有' : !m.phrase && !m.isEcho && needsVerify(this.s, m.word) ? '待验证' : m.kind === 'due' ? '! 复习' : m.kind === 'shadow' ? '旧识' : '新');
     const ia = (kind: string, data?: string) => () => {
       if (!this.w.ctrl.uiBlocking()) this.w.ctrl.interact({ kind, data });
     };
@@ -326,7 +326,7 @@ export class NodeNav {
               : '',
             ...mons.map((m, i) =>
               h(
-                'button.btn.sp-mon' + (m.phrase || m.rare || m.isEcho ? '.gold' : ''),
+                'button.btn.sp-mon' + (m.phrase || m.rare || m.isEcho || m.elite ? '.gold' : ''),
                 { disabled: busy, onclick: () => this.fight(m) },
                 h('kbd', String(i + 1)),
                 ` ${m.label.text.replace(/\n/g, ' ')} `,
