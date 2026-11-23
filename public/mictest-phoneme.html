@@ -82,7 +82,7 @@
 const MODEL_URL = 'https://huggingface.co/sadda-speech/wav2vec2-espeak-ctc/resolve/main/model.onnx';
 const VOCAB_URL = 'https://huggingface.co/sadda-speech/wav2vec2-espeak-ctc/resolve/main/vocab.json';
 const CACHE = 'wk-phoneme-v1';
-const KEY = 'wk-mictest-phoneme-v1';
+const KEY = 'wk-mictest-phoneme-v2';
 
 // Expected espeak-style IPA, as space-separated units of the model's vocabulary (short ü has no token: y).
 const IPA = {
@@ -134,6 +134,7 @@ async function loadModel() {
     $('loadText').textContent = '正在下载词表…';
     const v = JSON.parse(new TextDecoder().decode(await fetchCached(VOCAB_URL)));
     vocab = []; for (const [t, i] of Object.entries(v)) vocab[i] = t;
+    buildClasses();
     $('loadText').textContent = '正在下载模型（约 635 MB）…';
     const buf = await fetchCached(MODEL_URL, (p) => { $('loadBar').style.width = `${Math.round(p * 100)}%`; $('loadText').textContent = `正在下载模型… ${Math.round(p * 100)}%`; });
     $('loadText').textContent = '正在启动模型…';
@@ -179,15 +180,61 @@ async function recognise(wave) {
   if (!out) throw new Error('模型运行失败');
   const y = out[session.outputNames[0]];
   const [, T, C] = y.dims; const d = y.data; const isF16 = y.type === 'float16';
-  const ids = [];
+  // Per frame: log-probabilities of blank + the German classes only, renormalised among themselves.
+  const K = GCLASS.length + 1, lp = new Float32Array(T * K), row = new Float32Array(C);
   for (let t = 0; t < T; t++) {
-    let best = 0, bv = -Infinity;
-    for (let c = 0; c < C; c++) { const val = isF16 ? f16ToF32(d[t * C + c]) : d[t * C + c]; if (val > bv) { bv = val; best = c; } }
-    ids.push(best);
+    let mx = -Infinity;
+    for (let c = 0; c < C; c++) { row[c] = isF16 ? f16ToF32(d[t * C + c]) : d[t * C + c]; if (row[c] > mx) mx = row[c]; }
+    const cls = new Float64Array(K);
+    cls[0] = Math.exp(row[0] - mx);
+    GCLASS.forEach((g, k) => { let s2 = 0; for (const id of g.ids) s2 += Math.exp(row[id] - mx); cls[k + 1] = s2; });
+    let tot = 0; for (let k = 0; k < K; k++) tot += cls[k];
+    for (let k = 0; k < K; k++) lp[t * K + k] = Math.log(cls[k] / tot + 1e-30);
   }
-  const res = []; let prev = -1;
-  for (const id of ids) { if (id !== prev && id > 3) res.push(vocab[id]); prev = id; }
-  return res;
+  return { T, K, lp };
+}
+
+// German phoneme classes (several model tokens can make one class: the r-sounds, eu).
+const GSPEC = 'p b t d k ɡ f v s z ʃ ʒ ç x h m n ŋ l j ʔ ts pf tʃ dʒ a aː ɛ ɛː e eː ɪ i iː ɔ o oː ʊ u uː y yː ø øː œ ə ɐ aɪ aʊ'.split(' ');
+let GCLASS = [];
+function buildClasses() {
+  const id = (t) => vocab.indexOf(t);
+  GCLASS = GSPEC.map((n) => ({ name: n, ids: [id(n)] }));
+  GCLASS.push({ name: 'r', ids: ['r', 'ɾ', 'ʁ', 'ɹ'].map(id) }, { name: 'ɔø', ids: ['ɔø', 'ɔɪ'].map(id) });
+  GCLASS = GCLASS.map((g) => ({ ...g, ids: g.ids.filter((i) => i >= 0) })).filter((g) => g.ids.length);
+}
+const classIndex = (u) => GCLASS.findIndex((g) => g.name === u) + 1;
+
+/** Greedy decode over the German classes. */
+function decode({ T, K, lp }) {
+  const out = []; let prev = -1;
+  for (let t = 0; t < T; t++) {
+    let b = 0; for (let k = 1; k < K; k++) if (lp[t * K + k] > lp[t * K + b]) b = k;
+    if (b !== prev && b > 0) out.push(GCLASS[b - 1].name);
+    prev = b;
+  }
+  return out;
+}
+/** CTC log-likelihood of a phoneme sequence given the frames (forward algorithm, blank = 0). */
+function ctcScore({ T, K, lp }, seq) {
+  const L = seq.map(classIndex);
+  if (L.some((x) => x <= 0)) return -Infinity;
+  const ext = [0]; for (const x of L) ext.push(x, 0);
+  const S = ext.length, NEG = -Infinity;
+  const lse = (a, b) => (a === NEG ? b : b === NEG ? a : Math.max(a, b) + Math.log1p(Math.exp(-Math.abs(a - b))));
+  let al = new Float64Array(S).fill(NEG);
+  al[0] = lp[ext[0]]; if (S > 1) al[1] = lp[ext[1]];
+  for (let t = 1; t < T; t++) {
+    const nx = new Float64Array(S).fill(NEG);
+    for (let s2 = 0; s2 < S; s2++) {
+      let v = al[s2];
+      if (s2 > 0) v = lse(v, al[s2 - 1]);
+      if (s2 > 1 && ext[s2] !== 0 && ext[s2] !== ext[s2 - 2]) v = lse(v, al[s2 - 2]);
+      nx[s2] = v === NEG ? NEG : v + lp[t * K + ext[s2]];
+    }
+    al = nx;
+  }
+  return S > 1 ? lse(al[S - 1], al[S - 2]) : al[0];
 }
 
 // ---- test plan ----
@@ -245,18 +292,21 @@ async function judge(w) {
   const c = cur(); busy = true; $('say').disabled = true;
   $('res').innerHTML = '<span class="dim">识别中…</span>';
   const t0 = performance.now();
-  let heard;
-  try { heard = await recognise(w); } catch (e) { $('res').innerHTML = `<span class="warn">${e.message || e}</span>`; busy = false; $('say').disabled = false; return; }
+  let fr;
+  try { fr = await recognise(w); } catch (e) { $('res').innerHTML = `<span class="warn">${e.message || e}</span>`; busy = false; $('say').disabled = false; return; }
   const ms = Math.round(performance.now() - t0);
-  const h = heard.map(norm), tgt = units(IPA[c.ref]), par = units(IPA[partnerOf(c.ref)]);
+  const h = decode(fr), tgt = units(IPA[c.ref]), par = units(IPA[partnerOf(c.ref)]);
+  const sT = ctcScore(fr, tgt), sP = ctcScore(fr, par);
+  const diff = sT - sP;
+  // |diff| under 1 nat = not sure either way.
+  const verdict = diff > 1 ? 'ref' : diff < -1 ? 'partner' : 'tie';
+  const conf = Math.round(100 / (1 + Math.exp(-diff)));
   const dT = lev(h, tgt), dP = lev(h, par);
-  const verdict = dT < dP ? 'ref' : dP < dT ? 'partner' : 'tie';
-  const score = Math.max(0, Math.round((1 - dT / tgt.length) * 100));
-  st.log.push({ part: c.part, ref: c.ref, read: c.read, heard: h.join(' '), dT, dP, verdict, score, ms }); st.i++; save();
+  st.log.push({ part: c.part, ref: c.ref, read: c.read, heard: h.join(' '), diff: Math.round(diff * 10) / 10, dT, dP, verdict, conf, ms }); st.i++; save();
   const closer = verdict === 'ref' ? c.ref : verdict === 'partner' ? partnerOf(c.ref) : '分不出';
   const good = (c.part === 'A' && verdict === 'ref') || (c.part === 'B' && verdict === 'partner');
   $('res').innerHTML = `<div>模型听到：${h.map((u) => `<span class="u">${u}</span>`).join('') || '<span class="dim">（空）</span>'}</div>` +
-    `<div class="${good ? 'ok' : verdict === 'tie' ? 'mid' : 'bad'}">更像 ${closer}　<span class="dim">（和 ${c.ref} 的相似度 ${score}，${ms} 毫秒）</span></div>`;
+    `<div class="${good ? 'ok' : verdict === 'tie' ? 'mid' : 'bad'}">更像 ${closer}　<span class="dim">（像 ${c.ref} 的把握 ${conf}%，${ms} 毫秒）</span></div>`;
   render(); busy = false;
   setTimeout(show, 1800);
 }
@@ -284,9 +334,9 @@ function render() {
   $('total').textContent = `正常读：判成本词 ${aOk}/${A.length} · 故意读错：发现读的是另一个 ${bOk}/${B.length}`;
   const ua = navigator.userAgent.match(/Chrome\/[\d.]+/)?.[0] || '';
   $('dump').value = [
-    `mictest-phoneme v1 · ${ua} · ${provider || '-'} · ${new Date().toISOString().slice(0, 16)}`,
+    `mictest-phoneme v2 · ${ua} · ${provider || '-'} · ${new Date().toISOString().slice(0, 16)}`,
     `A ${aOk}/${A.length} · B ${bOk}/${B.length}`,
-    ...st.log.map((x) => `${x.part}\t${x.ref}\tread:${x.read}\t${x.verdict}\tdT:${x.dT} dP:${x.dP}\t${x.ms}ms\t${x.heard}`),
+    ...st.log.map((x) => `${x.part}\t${x.ref}\tread:${x.read}\t${x.verdict}\tdiff:${x.diff}\tdT:${x.dT} dP:${x.dP}\t${x.ms}ms\t${x.heard}`),
   ].join('\n');
 }
 
