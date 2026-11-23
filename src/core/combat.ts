@@ -472,6 +472,9 @@ function nextIntent(s: GameState, b: Battle, rng: Rng): Intent {
   } else if (!tut && intent.kind !== 'charge' && intent.kind !== 'flee' && !intent.layers.includes('time') && b.perfekt) {
     // 现在完成时: the Perfekt sentence with haben / sein swallowed.
     intent = { ...intent, ...perfektLine(b.word), caseArt: undefined };
+  } else if (!tut && intent.kind !== 'charge' && intent.kind !== 'flee' && !intent.layers.includes('time') && b.pluralMon) {
+    // 复数怪: its examples are singular (「… mmh … beginnt um neun」 asks der), so a crowd only mumbles; the stance is always die.
+    intent = { ...intent, line: '… mmh … mmh …', zh: '一群同一个词的怪挤在一起嘟囔 · 复数一律 die', full: undefined, fullZh: undefined, caseArt: undefined };
   } else if (!tut && intent.kind !== 'charge' && intent.kind !== 'flee' && !intent.layers.includes('time')) {
     // 格位姿态 (Lv7+): only sentences whose slot is in a case this level reads, and the stance must match the slot.
     const g = genderOf(b.word);

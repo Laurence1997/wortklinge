@@ -721,7 +721,9 @@ export class BattleUI {
                 ? `  新词：${w.de} · ${w.zh}　完成时用 ${b.phase}，相已替你选好，记住它`
                 : `  新词：${fullForm(w)} · ${w.zh}　第一次见，相已替你选好${b.phase !== w.art ? `（这句要 ${b.phase}）` : ''}，记住它`,
             )
-          : !b.pluralMon && b.curse !== 'forget' && !(this.phase === 'answer' && this.question?.type === 'pickZh')
+          : b.pluralMon
+            ? h('span.small', { style: 'color:var(--gold, #ffcf4a)' }, this.phase === 'answer' && this.question?.type === 'pickZh' ? '  复数怪 → 一律选 die' : `  这是一群「${w.zh}」（复数怪）→ 一律选 die`)
+          : b.curse !== 'forget' && !(this.phase === 'answer' && this.question?.type === 'pickZh')
             ? h('span.small', { style: 'color:var(--gold, #ffcf4a)' }, `  它是「${w.zh}」→ 选它的相`)
             : '',
         h(
@@ -731,7 +733,7 @@ export class BattleUI {
             : this.phaseNag && !b.phase
             ? s.level >= 7 ? '  先选相：它这句话里缺的那个冠词是什么？' : '  先选相：它是 der、die 还是 das？'
             : b.pluralMon
-              ? '  复数一律 die'
+              ? ''
               : s.level >= 7
                 ? b.intent.caseArt ? '  选句子空里那个冠词：照句中形式选，可能是 ein/eine、den/dem，不一定是词典里的 der/die/das' : '  这句没有它的名字：按名字选 der/die/das'
                 : s.level <= 5 ? (s.level >= 4 ? '  选对护甲降一档、回言灵；6 级前选错不罚' : '  选对护甲降一档；6 级前选错不罚') : '  选对护甲降一档、回资源；选错护甲翻倍',
@@ -763,7 +765,8 @@ export class BattleUI {
         { onclick: () => this.target(i), title: '选中它（Tab 切换）', disabled: dead },
         h('div.fam', h('span', `${FAMILIES[w.family].zh} · Lv ${pb.monster.lvl}`), h('span', dead ? '已打散' : STAGE_ZH[pb.stage])),
         icon(monsterTile(pb), 2, dead, 'mon-icon small'),
-        h('div.nm', { style: `color:${color}` }, dead ? fullForm(w) : nameGlyph(pb)),
+        h('div.nm', { style: `color:${color}` }, dead ? (pb.pluralMon ? `die ${w.pl}` : fullForm(w)) : nameGlyph(pb)),
+        pb.pluralMon && !dead ? h('span.tag.echo', '复数怪 · 一律 die') : '',
         bar('hp', pb.monster.hp, pb.monster.maxHp, `${pb.monster.hp} / ${pb.monster.maxHp}`),
         dead ? '' : h('div.it', it.line),
       );
