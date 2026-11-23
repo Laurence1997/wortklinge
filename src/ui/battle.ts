@@ -19,6 +19,9 @@ import { ARTICLE_COLOR, GLITCH } from '../game/sprites';
 import { $, bar, clear, h, umlautButtons } from './dom';
 import { logLine } from './gamelog';
 import { canListen, lastConfidence, listenOnce, listening, stopHold, stopListening } from './listen';
+import { isRecording, judgePair, playRecording, pronReady, startRecording, stopRecording } from './phoneme';
+import { ECHO_RETRIES, echoVerdict, notePron } from '../core/pron';
+import { PRON_TIP } from '../data/pairs';
 
 type Phase = 'choose' | 'answer' | 'result';
 
@@ -56,6 +59,11 @@ export class BattleUI {
   private shadowMsg = '';
   private renderedQ: Question | null = null;
   private phaseNag = false;
+  // 回音怪 (2026-11-23): the pair's two options, re-reads used, the last message, a judgement in progress.
+  private echoOpts: string[] = [];
+  private echoTries = 0;
+  private echoMsg = '';
+  private echoBusy = false;
 
   constructor(private ctrl: Controller) {
     // Push-to-talk: releasing S ends the recording.
@@ -63,6 +71,88 @@ export class BattleUI {
       if (e.key.toLowerCase() === 's' && listening()) stopHold();
     });
     window.addEventListener('pointerup', () => listening() && stopHold());
+    window.addEventListener('keyup', (e) => {
+      if (e.key === ' ' && isRecording()) void this.echoStop();
+    });
+  }
+
+  /** 回音怪: read aloud when 发音训练 is on and the pair can be judged, otherwise listen and pick. */
+  private echoSetup(): void {
+    const q = this.question;
+    if (!q?.echo) return;
+    this.echoOpts = q.options ?? [q.echo.target, q.echo.partner];
+    this.echoTries = 0;
+    this.echoMsg = '';
+    if (q.echo.sayable && this.ctrl.state.settings.pron && pronReady()) {
+      this.question = { ...q, echo: { ...q.echo, say: true }, options: undefined, prompt: '回音怪 · 读出来：按住空格（或按住下面的按钮）读这个词，松开就判', focus: `${q.echo.target}   /${q.echo.ipaT.replace(/ /g, '')}/` };
+    } else this.echoListen();
+  }
+
+  private echoListen(): void {
+    const q = this.question;
+    if (!q?.echo) return;
+    this.question = { ...q, echo: { ...q.echo, say: false }, options: this.echoOpts, prompt: `回音怪 · 听辨：它读的是 ${this.echoOpts.join(' 还是 ')}？`, focus: '🔊 ？' };
+    this.ctrl.speak(q.echo.target);
+  }
+
+  private async echoStart(): Promise<void> {
+    if (this.phase !== 'answer' || !this.question?.echo?.say || this.echoBusy || isRecording()) return;
+    const ok = await startRecording();
+    if (!ok) {
+      this.echoMsg = '用不了麦克风（在地址栏左边允许麦克风），这题改成听辨';
+      this.echoListen();
+    } else this.echoMsg = '在听……松开就判';
+    this.render();
+  }
+
+  private async echoStop(): Promise<void> {
+    if (!isRecording()) return;
+    const wave = await stopRecording();
+    const q = this.question;
+    if (!q?.echo || this.phase !== 'answer') return;
+    if (!wave) {
+      this.echoMsg = '太短了，按住读完整个词再松开';
+      this.render();
+      return;
+    }
+    const t = q.echo;
+    this.echoBusy = true;
+    this.echoMsg = '在判……';
+    this.render();
+    try {
+      const r = await judgePair(wave, t.ipaT, t.ipaP);
+      const v = echoVerdict(r.target, r.partner);
+      if (v === 'ref') {
+        this.echoBusy = false;
+        this.submit(t.target);
+        return;
+      }
+      if (v === 'tie') {
+        this.echoTries += 1;
+        if (this.echoTries > ECHO_RETRIES) {
+          this.echoMsg = `还是没听清（听到 /${r.heard}/），这题改成听辨`;
+          this.echoListen();
+        } else this.echoMsg = `没听清（听到 /${r.heard}/），再读一次`;
+      } else {
+        // 读错不罚 (2026-11-23): no turn spent; show what it sounded like, play the model and the recording, then listen.
+        notePron(this.ctrl.state, t.cat, false);
+        this.ctrl.persist();
+        this.echoMsg = `听起来像 ${t.partner}（${t.zhP}），不扣血。${PRON_TIP[t.cat]}。先听示范，再听你的录音`;
+        this.ctrl.speak(t.target);
+        window.setTimeout(() => playRecording(wave), 1300);
+        window.setTimeout(() => {
+          if (this.question === q) {
+            this.echoListen();
+            this.render();
+          }
+        }, 3200);
+      }
+    } catch (e) {
+      this.echoMsg = `发音模型出错了（${(e as Error).message}），这题改成听辨`;
+      this.echoListen();
+    }
+    this.echoBusy = false;
+    this.render();
   }
 
   /** A hold-to-talk button: press starts recording, release (or leaving the button) stops it. */
@@ -135,6 +225,7 @@ export class BattleUI {
     this.phaseNag = false;
     this.move = move;
     this.question = this.ctrl.askQuestion(move);
+    this.echoSetup();
     // Listening step: the monster says its own name, the player picks the meaning.
     if (this.question.type === 'pickZh' && this.question.focus) this.ctrl.speak(this.question.focus);
     if (this.question.type === 'saying') this.ctrl.speak(this.question.say!.a);
@@ -395,6 +486,11 @@ export class BattleUI {
         this.setPhase(st);
         return true;
       }
+    }
+    if (this.phase === 'answer' && this.question?.echo?.say && e.key === ' ' && !typing) {
+      e.preventDefault();
+      if (!e.repeat) void this.echoStart();
+      return true;
     }
     if (this.phase === 'answer' && this.question?.options) {
       const n = Number(e.key);
@@ -681,6 +777,7 @@ export class BattleUI {
           onclick: () => {
             this.b.fx.swap = false;
             this.question = this.ctrl.askQuestion(this.move);
+            this.echoSetup();
             this.render();
           },
         }, '🔁 Könnten Sie das wiederholen? 换一题'),
@@ -696,7 +793,19 @@ export class BattleUI {
     const long = qq.type === 'cloze' ? 'font-size:22px;line-height:1.4;' : '';
     wrap.append(h('div.focus', { style: (focusColor ? `color:${focusColor};` : '') + long }, qq.focus));
     this.input = null;
-    if (qq.options) {
+    if (qq.echo && this.phase === 'answer') {
+      if (this.echoMsg) wrap.append(h('div.small', { style: 'color:var(--gold, #ffcf4a)' }, this.echoMsg));
+      if (!qq.echo.say) wrap.append(h('button.btn.ghost.small', { onclick: () => this.ctrl.speak(qq.echo!.target) }, '🔊 再听'));
+    }
+    if (qq.echo?.say) {
+      const btn = h('button.btn.primary', { disabled: this.phase !== 'answer' || this.echoBusy }, isRecording() ? '在听……松开就判' : '🎤 按住读（空格）');
+      btn.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        void this.echoStart();
+      });
+      for (const ev of ['pointerup', 'pointerleave', 'pointercancel']) btn.addEventListener(ev, () => void this.echoStop());
+      wrap.append(h('div.opts', btn, h('button.btn.ghost.small', { onclick: () => this.ctrl.speak(qq.echo!.target), disabled: this.phase !== 'answer' }, '🔊 听示范'), h('button.btn.ghost.small', { onclick: () => { this.echoMsg = ''; this.echoListen(); this.render(); }, disabled: this.phase !== 'answer' }, '改成听辨')));
+    } else if (qq.options) {
       const opts = h('div.opts');
       qq.options.forEach((o, i) => {
         const cls = qq.type === 'article' ? `.${o}` : '';
@@ -766,6 +875,7 @@ export class BattleUI {
       fb.append(h('b', head));
       if (qq.item && r.monsterDamage) fb.append(h('span', `  它趁机出手：${r.monsterDamage} 伤害`));
       if (r.correct && this.b.word && (qq.type === 'article' || qq.type === 'typed')) fb.append(h('span', `  ${fullForm(this.b.word)} · ${this.b.word.zh}`));
+      if (qq.echo) fb.append(h('span', `  ${qq.echo.target}（${qq.echo.zhT}） · ${qq.echo.partner}（${qq.echo.zhP}）`));
       if (r.phase === 'right') fb.append(h('span', `  ${this.b.phase} 相 · 弱点`));
       if (r.phase === 'wrong') fb.append(h('span', `  ${this.b.phase} 相被抵抗：${phaseWrongWhy(this.b)}`));
       if (r.element) fb.append(h('span', `  元素：${ELEMENT_ZH[r.element]}`));

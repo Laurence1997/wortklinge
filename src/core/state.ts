@@ -29,6 +29,8 @@ export interface Settings {
   autoZh: boolean;
   /** 开箱动画 (0.6.x): chests open with a short animation (any key skips). */
   chestAnim: boolean;
+  /** 发音训练 (2026-11-23): read 回音怪 pairs aloud with the in-browser phoneme model (opt-in, ~635 MB). */
+  pron?: boolean;
 }
 
 export interface GameState {
@@ -66,6 +68,8 @@ export interface GameState {
   wordImport?: { ids: string[]; pending: string[] };
   /** 篝火日记 (2026-11-22): entries written at bonfires (newest last). Optional: absent = none yet. */
   journal?: import('./journal').JournalEntry[];
+  /** 回音怪 (2026-11-23): right / wrong per minimal-pair category, for the weak-spot record. */
+  pron?: Partial<Record<import('../data/pairs').PronCat, { ok: number; miss: number }>>;
   /** 0.4 装备档位: kills per region ("1", "2"); the tier follows from them. */
   gearKills?: Record<string, number>;
   recentNouns: string[];

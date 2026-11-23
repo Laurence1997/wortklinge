@@ -1,3 +1,4 @@
+import { loadPron, MODEL_MB, pronForget, pronStatus } from './phoneme';
 import { icon, SLOT_TILE, portrait } from './icons';
 import { CONFIG, xpToNext } from '../core/config';
 import { AFFIX_ZH, itemScore, mainStatText, QUALITY_ZH, requiredLevel, SLOT_ZH } from '../core/loot';
@@ -1360,7 +1361,29 @@ export class Panels {
       out.textContent = heard === null ? '用不了麦克风：在地址栏左边的网站设置里允许麦克风，再刷新' : heard.length ? `听到：${heard[0]}` : '没听清，再试一次';
     };
     wrap.append(h('label.toggle', h('span', { style: 'width:60px' }, '跟读'), btn, out));
+    wrap.append(this.pronSetting());
     return wrap;
+  }
+
+  /** 发音训练 (2026-11-23): opt-in phoneme model for reading 回音怪 pairs aloud. */
+  private pronSetting(): HTMLElement {
+    const s = this.ctrl.state;
+    const cb = h('input', { type: 'checkbox' }) as HTMLInputElement;
+    cb.checked = !!s.settings.pron;
+    const st = pronStatus();
+    const note = h('span.small.muted', st.status === 'ready' ? '模型已就绪：回音怪的 ü / ö / ch / r 这几类可以读出来打' : st.status === 'loading' ? `下载中… ${Math.round(st.progress * 100)}%` : st.status === 'error' ? `出错了：${st.error}` : `回音怪可以读出来打（读错不罚）。要先下载一个约 ${MODEL_MB} MB 的发音模型，存在浏览器里，录音不上传。建议连 Wi-Fi`);
+    const load = () => {
+      void loadPron((p) => (note.textContent = `下载中… ${Math.round(p * 100)}%`))
+        .then(() => (note.textContent = '模型已就绪：回音怪的 ü / ö / ch / r 这几类可以读出来打'))
+        .catch((e) => (note.textContent = `出错了：${(e as Error).message}（可以关掉再打开重试）`));
+    };
+    cb.onchange = () => {
+      s.settings.pron = cb.checked;
+      this.ctrl.persist();
+      if (cb.checked) load();
+    };
+    const del = h('button.btn.small', { onclick: async () => { await pronForget(); s.settings.pron = false; this.ctrl.persist(); this.render(); } }, '删除模型');
+    return h('label.toggle', cb, h('span', '发音训练'), note, st.status === 'ready' ? del : '');
   }
 
   private help(): HTMLElement {

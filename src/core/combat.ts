@@ -12,6 +12,7 @@ import type { Element, Intent, Move, Word } from './types';
 import { gradeLink, gradeOrder, gradeSlot, linkTask, orderTask, SLOT_RECENT, slotNouns, slotTask, WRITE_CHANCE, type SlotTask } from './writing';
 import type { LinkRow } from '../data/links';
 import { has } from './unlocks';
+import { echoOptions, echoTask, notePron, type EchoTask } from './pron';
 import { count } from './items';
 import { fullForm, genderOf, hasArticleQuestion, WORD_BY_ID, WORDS, zhWithPos } from '../data/words';
 import { SKILLS, skillLine, skillLinesOpen } from '../data/skills';
@@ -75,10 +76,13 @@ export interface Question {
   slot?: SlotTask;
   /** 连句: the pair and its answer. */
   link?: LinkRow;
+  /** 回音怪 (2026-11-23): the minimal pair asked (type pickDe; options are the two words). */
+  echo?: EchoTask;
 }
 
 /** Row of the 题型奖励表 (src/data/questionTypes.ts) this question belongs to. */
 export function qKey(q: Question): QKey {
+  if (q.echo) return q.echo.say ? 'echoSay' : 'echoListen';
   if (q.write) return q.write;
   if (q.type === 'cloze') return q.clozeMode === 'form' ? 'clozeForm' : q.clozeMode === 'base' ? 'clozeBase' : 'clozePick';
   if (q.type === 'saying') return q.options ? 'sayingPick' : 'sayingTyped';
@@ -223,6 +227,8 @@ export interface Battle {
   /** 接句怪: the half sentence it shouts; its first attack question asks for the rest. */
   saying?: SayLine;
   sayingDone?: boolean;
+  /** 回音怪: the pair question was answered this fight (once per fight). */
+  echoDone?: boolean;
   /** Sentence attacks used on this monster this fight (each pattern once, in tag order). */
   sxUsed?: number;
   /** 终极技能 (30 级): used this fight; how many of its two blanks were right. */
@@ -528,7 +534,7 @@ function hintOpen(s: GameState, b: Battle): boolean {
 export function canHint(s: GameState, b: Battle, move: Move, q: Question | null): boolean {
   if (!q || move !== 'attack' || q.whispered || q.inscribed || q.chorus || !q.answer || q.item) return false;
   if (count(s, 'hint') <= 0) return false; // 物品栏: each 低语 uses a 纸条
-  if (q.type === 'sentence' || q.type === 'skill' || q.type === 'storm' || q.type === 'steady' || q.ult) return false;
+  if (q.type === 'sentence' || q.type === 'skill' || q.type === 'storm' || q.type === 'steady' || q.ult || q.echo) return false;
   return hintOpen(s, b) && moveReady(s, b, 'whisper');
 }
 
@@ -885,14 +891,14 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
   let q = ladderQ();
   // 难题就是预告 (0.4): a charging monster asks the hardest question (Lv11+ form cloze, before that typing);
   // a multi-hit one asks one step harder. A word you have never answered keeps its usual question.
-  if (am === 'attack' && q.type !== 'saying' && q.type !== 'callout' && !b.tutorial && !fresh && canType) {
+  if (am === 'attack' && q.type !== 'saying' && q.type !== 'callout' && !q.echo && !b.tutorial && !fresh && canType) {
     if (b.intent.kind === 'charge') {
       const form = b.perfekt && ppOpen(s.level, w) ? ppQ(w) : s.level >= 11 && hasExamples(w) ? clozeQ(s, w, rng, 'form') : null;
       const hard = form?.clozeMode === 'form' ? form : qTier(q) === 0 ? (canConj ? conj() : typed()) : q;
       if (qTier(hard) > qTier(q)) q = hard;
     } else if (b.intent.kind === 'attack' && b.intent.hits > 1) q = harder(q) ?? q;
   }
-  if (move === 'inscribe') q = { ...(harder(q) ?? q), inscribed: true };
+  if (move === 'inscribe') q = { ...(q.echo ? q : harder(q) ?? q), inscribed: true };
   if (move === 'whisper') q = whisperOf(q, w);
   if (move === 'chorus') q = { ...q, chorus: true };
   return q;
@@ -912,6 +918,11 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
   if (b.tutorial === 'loss') return isNoun ? article() : pickZh();
   // 半名 and due: the killing blow must be typed, so offer typing.
   if (b.stage === 2 && b.kind === 'due' && canType) return typed();
+  // 回音怪 (2026-11-23): a word with a minimal-pair partner sometimes asks the pair instead (once per fight).
+  if (am === 'attack' && has(s.level, 'pron') && !b.echoDone && !b.tutorial && !b.trial && !fresh && !b.pluralMon) {
+    const t = echoTask(s, w, rng);
+    if (t) return { type: 'pickDe', echo: t, prompt: `回音怪：${t.target} 还是 ${t.partner}？`, focus: t.target, options: echoOptions(t, rng), answer: t.target };
+  }
   // Question ladder: each correct hit asks about another side of the word, never the same
   // question twice in a row (Lucas, playtest 2026-11-19: three der clicks in a row is boring).
   // New words: article → hear it and pick the meaning → type it (once typing is unlocked).
@@ -1394,6 +1405,10 @@ export function resolveTurn(
     b.qIndex += 1;
     if (q.type === 'sentence') b.sxUsed = (b.sxUsed ?? 0) + 1;
     if (q.ult) b.ultUsed = true;
+    if (q.echo) {
+      b.echoDone = true;
+      notePron(s, q.echo.cat, ok);
+    }
     // 低语 (2026-11-21): a hinted answer is not 会写/认得, earns no resource and cannot be the 归名 blow.
     // The word is marked so its next appearance asks it again without the hint.
     if (q.whispered) {

@@ -1,3 +1,4 @@
+import { loadPron, pronCached } from '../ui/phoneme';
 import { icon, setRestored, SLOT_TILE } from '../ui/icons';
 import { answerDuel, duelPool, JUMP, startJumpExam, type Duel } from '../core/duel';
 import { answerScreen, claimScene, SCREEN, startScreen, type ScreenRun, type ScreenScope } from '../core/screen';
@@ -112,6 +113,8 @@ export class Controller {
     }
     // 物品栏 (2026-11-22): saves already past Lv4 get the starter 纸条 / 药片 once.
     grantStarter(state);
+    // 发音训练 (2026-11-23): start the phoneme model in the background when it is on and already downloaded.
+    if (state.settings.pron) void pronCached().then((c) => (c ? loadPron().catch(() => undefined) : undefined));
     window.addEventListener('keydown', (e) => this.onKey(e));
     for (const ev of ['keydown', 'mousedown', 'mousemove']) window.addEventListener(ev, () => (this.lastInput = Date.now()), { passive: true });
     // Count active minutes for the playtest log (idle > 2 min doesn't count).
