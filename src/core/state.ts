@@ -2,6 +2,7 @@ import type { Look } from './look';
 import { CONFIG, monsterHpAt, playerBaseHp, XP_CURVE, xpToNext } from './config';
 import { hpBonus, type ClassId } from './classes';
 import type { Item, Slot, WordProgress } from './types';
+import { convertLegacyAffixes } from './loot';
 import { UNLOCK } from './unlocks';
 
 export interface DayLog {
@@ -158,13 +159,13 @@ export function todayLog(s: GameState): DayLog {
 export function maxHp(s: GameState): number {
   const coat = s.equipped.coat?.main ?? 0;
   // 0.4: the coat's HP counts as a percentage (+0.5% per point); the gear tier does the heavy lifting.
-  return Math.round(playerBaseHp(s.level) * (1 + coat * 0.005) * (1 + hpBonus(s)) * (1 + CONFIG.gear.hp * gearTier(s)));
+  return Math.round(playerBaseHp(s.level) * (1 + coat * 0.005) * (1 + hpBonus(s)) * (1 + CONFIG.gear.hp * gearTier(s)) * (1 + affixTotal(s, 'hp')));
 }
 
 /** 0.4 伤害: half a same-level monster's HP, × (1 + 0.18 × gear tier); the pen adds +1% per attack point. */
 export function attack(s: GameState): number {
   const pen = s.equipped.pen?.main ?? 0;
-  return CONFIG.playerDmgShare * monsterHpAt(s.level) * (1 + CONFIG.gear.dmg * gearTier(s)) * (1 + pen * 0.01);
+  return CONFIG.playerDmgShare * monsterHpAt(s.level) * (1 + CONFIG.gear.dmg * gearTier(s)) * (1 + pen * 0.01) * (1 + affixTotal(s, 'dmg'));
 }
 
 /** Tier reached in one region: tier n after 40 × n² shards there (1 per kill), at most 8. */
@@ -341,6 +342,11 @@ export function migrate(raw: unknown): GameState | null {
   // screening's 待领 and cursors start empty.
   s.screen = { pending: { ...(s.screen?.pending ?? {}) }, cursor: { ...(s.screen?.cursor ?? {}) } };
   migrateSrs2(s);
+  // 副词缀白名单 (2026-11-24): old 默写伤害 / 选择题暴击率 / 句式攻击伤害 become 伤害 +%; no item is removed.
+  for (const it of [...Object.values(s.equipped ?? {}), ...(s.bag ?? [])]) convertLegacyAffixes(it);
+  const shop = (s as { shop?: { items?: Item[]; wish?: { affix?: string } } }).shop;
+  for (const it of shop?.items ?? []) convertLegacyAffixes(it);
+  if (shop?.wish?.affix && ['typedDmg', 'choiceCrit', 'sentenceDmg'].includes(shop.wish.affix)) shop.wish.affix = 'dmg';
   return { ...base, ...s, settings: { ...base.settings, ...s.settings }, stats: { ...base.stats, ...s.stats } };
 }
 

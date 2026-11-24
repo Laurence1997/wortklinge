@@ -100,16 +100,20 @@ export interface Affix {
   key: AffixKey;
   value: number;
 }
+/** 副词缀白名单 (游戏设计 九, 2026-11-23/24): damage, HP, armor pen, less damage when wrong, XP, drop rate, and
+ *  per-gender damage that counts only on a right stance. Old saves' typedDmg / choiceCrit / sentenceDmg are
+ *  converted to dmg in migrate() (LegacyAffixKey). */
 export type AffixKey =
-  | 'typedDmg'
-  | 'choiceCrit'
+  | 'dmg'
+  | 'hp'
+  | 'pen'
   | 'vsMasc'
   | 'vsFem'
   | 'vsNeut'
   | 'wrongDmgReduce'
   | 'xp'
-  | 'dropRate'
-  | 'sentenceDmg';
+  | 'dropRate';
+export type LegacyAffixKey = 'typedDmg' | 'choiceCrit' | 'sentenceDmg';
 
 export interface Item {
   id: string;

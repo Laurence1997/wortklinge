@@ -45,15 +45,15 @@ export const SLOT_ZH: Record<Slot, string> = { pen: '笔', coat: '外套', amule
 export const QUALITY_ZH: Record<Quality, string> = { white: '普通', green: '优秀', purple: '史诗', orange: '传说' };
 
 export const AFFIX_ZH: Record<AffixKey, (v: number) => string> = {
-  typedDmg: (v) => `默写伤害 +${pct(v)}`,
-  choiceCrit: (v) => `选择题暴击率 +${pct(v)}`,
-  vsMasc: (v) => `对阳性名词怪伤害 +${pct(v)}`,
-  vsFem: (v) => `对阴性名词怪伤害 +${pct(v)}`,
-  vsNeut: (v) => `对中性名词怪伤害 +${pct(v)}`,
+  dmg: (v) => `伤害 +${pct(v)}`,
+  hp: (v) => `生命 +${pct(v)}`,
+  pen: (v) => `护甲穿透 +${pct(v)}`,
+  vsMasc: (v) => `选对相时，对阳性怪伤害 +${pct(v)}`,
+  vsFem: (v) => `选对相时，对阴性怪伤害 +${pct(v)}`,
+  vsNeut: (v) => `选对相时，对中性怪伤害 +${pct(v)}`,
   wrongDmgReduce: (v) => `答错时受到伤害 −${pct(v)}`,
   xp: (v) => `经验 +${pct(v)}`,
   dropRate: (v) => `掉宝率 +${pct(v)}`,
-  sentenceDmg: (v) => `句式攻击伤害 +${pct(v)}`,
 };
 
 function pct(v: number): string {
@@ -62,16 +62,36 @@ function pct(v: number): string {
 
 /** Affix ranges by quality (游戏设计 › 词条库, scaled down for Lv 1–10). */
 export const AFFIX_RANGE: Record<AffixKey, Record<'green' | 'purple' | 'orange', [number, number]>> = {
-  typedDmg: { green: [0.06, 0.1], purple: [0.11, 0.16], orange: [0.17, 0.22] },
-  choiceCrit: { green: [0.02, 0.03], purple: [0.04, 0.05], orange: [0.06, 0.07] },
+  dmg: { green: [0.06, 0.1], purple: [0.11, 0.16], orange: [0.17, 0.22] },
+  hp: { green: [0.05, 0.08], purple: [0.09, 0.13], orange: [0.14, 0.2] },
+  pen: { green: [0.02, 0.03], purple: [0.04, 0.05], orange: [0.06, 0.07] },
   vsMasc: { green: [0.05, 0.08], purple: [0.09, 0.13], orange: [0.14, 0.2] },
   vsFem: { green: [0.05, 0.08], purple: [0.09, 0.13], orange: [0.14, 0.2] },
   vsNeut: { green: [0.05, 0.08], purple: [0.09, 0.13], orange: [0.14, 0.2] },
   wrongDmgReduce: { green: [0.03, 0.05], purple: [0.06, 0.08], orange: [0.09, 0.12] },
   xp: { green: [0.02, 0.03], purple: [0.04, 0.05], orange: [0.06, 0.08] },
   dropRate: { green: [0.05, 0.1], purple: [0.11, 0.2], orange: [0.21, 0.3] },
-  sentenceDmg: { green: [0.06, 0.1], purple: [0.11, 0.16], orange: [0.17, 0.22] },
 };
+
+/** Old saves (before 2026-11-24): the removed affixes become 伤害 +% of the same standing in its range. */
+const LEGACY_RANGE: Record<string, Record<'green' | 'purple' | 'orange', [number, number]>> = {
+  typedDmg: AFFIX_RANGE.dmg,
+  sentenceDmg: AFFIX_RANGE.dmg,
+  choiceCrit: { green: [0.02, 0.03], purple: [0.04, 0.05], orange: [0.06, 0.07] },
+};
+export function convertLegacyAffixes(it: Item | null | undefined): void {
+  if (!it?.affixes) return;
+  const q = (it.quality === 'white' ? 'green' : it.quality) as 'green' | 'purple' | 'orange';
+  for (const a of it.affixes as Array<{ key: string; value: number }>) {
+    const old = LEGACY_RANGE[a.key];
+    if (!old) continue;
+    const [lo, hi] = old[q];
+    const [nlo, nhi] = AFFIX_RANGE.dmg[q];
+    const f = hi > lo ? Math.min(1, Math.max(0, (a.value - lo) / (hi - lo))) : 0.5;
+    a.key = 'dmg';
+    a.value = Math.round((nlo + f * (nhi - nlo)) * 100) / 100;
+  }
+}
 
 const AFFIX_COUNT: Record<Quality, number> = { white: 0, green: 1, purple: 2, orange: 3 };
 

@@ -794,7 +794,7 @@ export function effArmor(s: GameState, b: Battle, tier: 0 | 1 | 2, factor = 1): 
   const C = CONFIG.armor;
   if (b.armorDown && tier < 2) tier = (tier + 1) as 1 | 2;
   if (tier === 2 || b.monster.broken > 0) return 0;
-  let a = Math.pow(C.base, b.monster.lvl - s.level) * Math.max(0, 1 - gearPen(s)) * factor;
+  let a = Math.pow(C.base, b.monster.lvl - s.level) * Math.max(0, 1 - gearPen(s) - affixTotal(s, 'pen')) * factor;
   if (tier === 1) a *= C.typedFactor;
   return Math.min(C.maxReduction, a / (1 + a));
 }
@@ -1399,9 +1399,9 @@ export function spillStorm(s: GameState, pack: Battle[], from: Battle, overkill:
   const rest = pack.filter((x) => x !== from && !x.outcome && x.monster.hp > 1);
   if (!rest.length) return 0;
   const next = rest.find((x) => x.intent.kind === 'charge') ?? rest.reduce((a, x) => (x.monster.hp < a.monster.hp ? x : a));
-  const ignoreDefend = s.cls === 'writer' && typedLike && rank(s, 'tengxie') > 0;
+  void typedLike, s; // 誊写 no longer touches defend (removed); kept for the call sites
   let d = overkill;
-  if (next.intent.kind === 'defend' && !ignoreDefend) d *= CONFIG.damage.vsDefend;
+  if (next.intent.kind === 'defend') d *= CONFIG.damage.vsDefend;
   d = Math.min(Math.round(d), next.monster.hp - 1);
   if (d <= 0) return 0;
   next.monster.hp -= d;
@@ -1694,9 +1694,8 @@ export function resolveTurn(
           const n = letters(q.word!);
           mult *= ((1 + (0.15 + 0.03 * rank(s, 'changci')) * n) / 1.4) * (1 + pen); // same ratio to typing as before
           log.push({ text: `墨水风暴：${fullForm(q.word!)}，${n} 个字母。`, tone: 'good' });
-        } else if (typedLike) mult *= 1 + affixTotal(s, 'typedDmg') + pen;
+        } else if (typedLike) mult *= 1 + pen; // 书写者「笔锋」 (class identity, kept); no question-type gear affix
         if (q.type === 'sentence') {
-          mult *= 1 + affixTotal(s, 'sentenceDmg');
           if (has(s.level, 'layerElement')) element = ELEMENT_BY_GENDER[genderOf(b.word) ?? 'n'];
         }
         if (q.inscribed) mult *= CONFIG.tech.inscribeMult;
@@ -1720,9 +1719,6 @@ export function resolveTurn(
 
         const breaking = intent.kind === 'defend' && writtenQ;
         const g = genderOf(b.word);
-        if (g === 'm') mult *= 1 + affixTotal(s, 'vsMasc');
-        if (g === 'f') mult *= 1 + affixTotal(s, 'vsFem');
-        if (g === 'n') mult *= 1 + affixTotal(s, 'vsNeut');
         mult *= comboMult(s.combo);
 
         // Crits: forced ones first (接句怪, 初识暴击), then the random roll.
@@ -1737,7 +1733,7 @@ export function resolveTurn(
           crit = true;
           cfx.critReady = false;
         } else {
-          const chance = critChance(s) + (q.type === 'article' || q.type === 'pickDe' || q.type === 'pickZh' ? affixTotal(s, 'choiceCrit') : 0);
+          const chance = critChance(s);
           crit = rng() < chance;
         }
         if (q.type !== 'saying') b.firstCorrectDone = true;
@@ -1757,12 +1753,15 @@ export function resolveTurn(
         }
         const wasBroken = m.broken > 0;
         if ((tier === 2 || breaking) && !wasBroken && phaseFx !== 'wrong') {
-          m.broken = CONFIG.armor.breakHits + (breaking && s.cls === 'writer' && rank(s, 'tengxie') ? 1 : 0);
+          // 誊写 (书写者大天赋, 游戏设计 十): any hard-question break lasts 4 hits instead of 3.
+          m.broken = CONFIG.armor.breakHits + (s.cls === 'writer' && rank(s, 'tengxie') ? 1 : 0);
           log.push({ text: breaking ? `写对了。壳裂开了：这一下和之后 ${m.broken - 1} 下无视护甲。` : `难题破甲：这一下和之后 ${m.broken - 1} 下无视护甲。`, tone: 'good' });
         }
         // Right stance = the hit meets armor one tier lower (a choice answer as if typed, a typed one ignores it).
         const armor = phaseFx === 'right' ? effArmor(s, b, tier === 0 ? 1 : 2) : phaseFx === 'wrong' ? effArmor(s, b, tier === 2 ? 1 : tier, CONFIG.phase.wrongArmor) : effArmor(s, b, tier);
         if (m.broken > 0) m.broken -= 1;
+        // 按性别的伤害词缀 (游戏设计 九): only on a right stance; a 复数怪 has no gender bonus.
+        if (phaseFx === 'right' && !b.pluralMon) mult *= 1 + affixTotal(s, g === 'm' ? 'vsMasc' : g === 'f' ? 'vsFem' : g === 'n' ? 'vsNeut' : '-');
         const chorusMult = mult; // 齐鸣: the mates take the same hit before their own armor
         mult *= 1 - armor;
         const ph = phaseOf(b);

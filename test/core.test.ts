@@ -1676,3 +1676,42 @@ describe('语境复习 in a fight (2026-11-24)', () => {
     expect(b2.slipped).toBe(false);
   });
 });
+
+describe('副词缀白名单 and 誊写 (2026-11-24)', () => {
+  it('old 默写伤害 / 选择题暴击率 / 句式攻击伤害 become 伤害 +% of the same standing; nothing is removed', () => {
+    const s = newGame('T', 'student');
+    s.equipped.pen = { id: 'a', slot: 'pen', quality: 'purple', ilvl: 5, name: 'x', main: 4, affixes: [{ key: 'typedDmg', value: 0.13 }, { key: 'choiceCrit', value: 0.05 }] } as never;
+    s.bag = [{ id: 'b', slot: 'coat', quality: 'green', ilvl: 5, name: 'y', main: 9, affixes: [{ key: 'sentenceDmg', value: 0.1 }, { key: 'xp', value: 0.02 }] } as never];
+    const m = migrate(JSON.parse(JSON.stringify(s)))!;
+    expect(m.equipped.pen!.affixes.map((a) => a.key)).toEqual(['dmg', 'dmg']);
+    expect(m.equipped.pen!.affixes[0].value).toBe(0.13);
+    expect(m.equipped.pen!.affixes[1].value).toBe(0.16); // top of choiceCrit purple → top of dmg purple
+    expect(m.bag[0].affixes.map((a) => a.key)).toEqual(['dmg', 'xp']);
+    expect(attack(m)).toBeGreaterThan(attack({ ...m, equipped: {} } as never));
+  });
+  it('per-gender damage counts only on a right stance; 誊写 makes a hard break last 4 hits', () => {
+    const s = newGame('T', 'student');
+    s.level = 12;
+    s.equipped.pen = { id: 'a', slot: 'pen', quality: 'orange', ilvl: 12, name: 'x', main: 4, affixes: [{ key: 'vsMasc', value: 0.5 }] } as never;
+    const hit = (phase: string) => {
+      const b = startBattle(s, WORD_BY_ID['tee'], makeRng(1));
+      b.pluralMon = false;
+      b.monster.hp = b.monster.maxHp = 9999;
+      b.intent = { ...b.intent, kind: 'attack', caseArt: undefined };
+      b.phase = phase as never;
+      const q = { type: 'typed', prompt: '', focus: '', withArticle: true, answer: 'der Tee' } as never;
+      return resolveTurn(s, b, 'attack', q, 'der Tee', makeRng(2)).playerDamage;
+    };
+    expect(hit('der')).toBeGreaterThan(hit('die') * 1.3);
+    s.cls = 'writer';
+    s.talents = { writer: { tengxie: 1 } };
+    const b = startBattle(s, WORD_BY_ID['tee'], makeRng(3));
+    b.monster.hp = b.monster.maxHp = 9999;
+    b.pluralMon = false;
+    b.phase = 'der' as never;
+    b.intent = { ...b.intent, kind: 'attack', caseArt: undefined };
+    const hard = { type: 'cloze', clozeMode: 'form', prompt: '', focus: '', answer: 'den Tee', full: 'x' } as never;
+    resolveTurn(s, b, 'attack', hard, 'den Tee', makeRng(4));
+    expect(b.monster.broken).toBe(CONFIG.armor.breakHits); // 4 − the hit itself
+  });
+});

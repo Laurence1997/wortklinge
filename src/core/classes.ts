@@ -64,7 +64,7 @@ export const TALENTS: Record<ClassId, TalentDef[]> = {
     { id: 'zhanmo', zh: '蘸墨', max: 1, tier: 2, desc: () => '墨水上限 +1' },
     { id: 'yiqi', zh: '一气呵成', max: 1, tier: 2, desc: () => '必暴击只要连对 2 题默写' },
     { id: 'lengjing', zh: '冷静', max: 1, tier: 2, desc: () => '每场第一次默写答错不断连击' },
-    { id: 'tengxie', zh: '誊写', max: 1, tier: 3, desc: () => '默写破防后，易伤延长到 3 回合' },
+    { id: 'tengxie', zh: '誊写', max: 1, tier: 3, desc: () => '难题破甲后，无视护甲从 3 下延长到 4 下' },
   ],
   guardian: [
     { id: 'houpi', zh: '厚皮', max: 3, tier: 1, desc: (r) => `生命 +${5 * r}%（每点 5%）` },
