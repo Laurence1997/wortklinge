@@ -617,8 +617,17 @@ export class Controller {
     for (const w of want) if (!take(w === 'same' ? same : diff)) take(w === 'same' ? diff : same);
     if (firstPack && (!picked.length || picked[0].word.art !== m.word.art)) return; // the teaching pack waits for a same-article pair
     const tut = firstPack ? 'packCharge' : null;
+    const lead = this.pack[0];
     for (const o of picked.slice(0, max - 1)) {
       const ob = startBattle(s, o.word, this.rng, { tutorial: tut });
+      // A same-article pair stays a pair: a crowd (复数怪, always die) pairs with a crowd, a single with a single.
+      if (o.word.art === m.word.art && !!ob.pluralMon !== !!lead.pluralMon && o.word.pl && o.word.pl !== '-' && !o.word.plOnly && !tut) {
+        const k = CONFIG.phase.pluralHp;
+        ob.pluralMon = !!lead.pluralMon;
+        ob.pluralDue = ob.pluralMon;
+        ob.monster.hp = ob.monster.maxHp = Math.max(1, Math.round(ob.monster.maxHp * (ob.pluralMon ? k : 1 / k)));
+        if (ob.pluralMon && ob.intent.kind === 'attack') ob.intent = { ...ob.intent, line: '… mmh … mmh …', zh: '一群同一个词的怪挤在一起嘟囔 · 复数一律 die', full: undefined, fullZh: undefined, caseArt: undefined };
+      }
       this.pack.push(ob);
       this.packEntities.push(o);
     }

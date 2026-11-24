@@ -5,7 +5,7 @@
 // First elite: half of the scene's group at 半名 (归名 and retired count). Review elite: 3+ group words due.
 
 import { CONFIG } from './config';
-import { isRetired, kindOf, needsVerify, pendingToday } from './srs';
+import { isRetired, needsVerify, pendingToday, reviewMon } from './srs';
 import { now, type GameState } from './state';
 import type { Word } from './types';
 import { has } from './unlocks';
@@ -50,7 +50,8 @@ export function elitePick(s: GameState, sc: SceneDef, taken: Set<string> = new S
     const words = [...usable].sort((a, b) => rank(a) - rank(b)).slice(0, CONFIG.elite.segs);
     return { scene: sc.id, words: words.map((w) => w.id), review: false };
   }
-  const due = usable.filter((w) => kindOf(s, w, t) === 'due').sort((a, b) => (s.words[a.id]?.due ?? 0) - (s.words[b.id]?.due ?? 0));
+  // 复习精英 (游戏设计 六, 2026-11-24): only words that relapsed into review monsters count, not learning respawns.
+  const due = usable.filter((w) => reviewMon(s.words[w.id], t)).sort((a, b) => (s.words[a.id]?.due ?? 0) - (s.words[b.id]?.due ?? 0));
   if (due.length < CONFIG.elite.due) return null;
   return { scene: sc.id, words: due.slice(0, CONFIG.elite.segs).map((w) => w.id), review: true };
 }

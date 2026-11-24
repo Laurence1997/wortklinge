@@ -9,10 +9,11 @@
   --red: #ff3a4a;
   --red-dim: #8a1f28;
   --gold: #ffcf4a;
-  --der: #4f93ff;
-  --die: #ff5566;
-  --das: #3fd27a;
-  --pl: #ffd23f;
+  /* 冠词不用颜色 (2026-11-24): one red for all; marks keep their shapes (der ■ die ● das ◆ 复数 ▲). */
+  --der: #ff8a7a;
+  --die: #ff8a7a;
+  --das: #ff8a7a;
+  --pl: #ff8a7a;
   --good: #6fe39a;
   --bad: #ff6b6b;
   --crit: #ffcf4a;

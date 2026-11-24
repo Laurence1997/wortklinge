@@ -43,7 +43,7 @@ describe('场景精英: when it comes', () => {
     expect(elitePick(s, scene, taken)).toBeNull();
   });
 
-  it('once beaten it returns only when three group words are due', () => {
+  it('once beaten it returns only when three group words have relapsed into review monsters', () => {
     const s = newGame('T', 'student');
     s.level = 9;
     const ids = scene.words!;
@@ -53,6 +53,8 @@ describe('场景精英: when it comes', () => {
     learned(s, ids.slice(0, 2), 2, Date.now() - 1000);
     expect(elitePick(s, scene)).toBeNull();
     learned(s, ids.slice(0, 3), 2, Date.now() - 1000);
+    expect(elitePick(s, scene)).toBeNull(); // learning respawns (due 半名) don't count: only relapsed words do
+    for (const id of ids.slice(0, 3)) s.words[id].lapsed = true;
     const p = elitePick(s, scene)!;
     expect(p.review).toBe(true);
     expect(new Set(p.words)).toEqual(new Set(ids.slice(0, 3)));

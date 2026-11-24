@@ -36,16 +36,11 @@ export const PAL = {
   gold: '#ffcf4a',
 };
 
-/** Keyed by article and by gender (m/f/n/pl), so either lookup works. */
-export const ARTICLE_COLOR: Record<string, string> = {
-  der: '#4f93ff',
-  die: '#ff5566',
-  das: '#3fd27a',
-  pl: '#ffd23f',
-  m: '#4f93ff',
-  f: '#ff5566',
-  n: '#3fd27a',
-};
+/** 冠词不用颜色 (Lucas 2026-11-24, 游戏设计 十三): every article shows in the same red; der / die / das / plural
+ *  are told apart by the text and the element (der 冰, die 火, das 毒, 复数 雷), never by a colour. */
+export const NAME_RED = '#ff8a7a';
+/** Element word per gender, shown next to a name once its gender is known. */
+export const ELEMENT_TAG: Record<string, string> = { m: '冰', f: '火', n: '毒', pl: '雷' };
 
 type Ctx = CanvasRenderingContext2D;
 

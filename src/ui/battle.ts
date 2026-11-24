@@ -15,7 +15,7 @@ import { SKILLS } from '../data/skills';
 import { CLASSES, resMax } from '../core/classes';
 import { fullForm, genderOf } from '../data/words';
 import type { Controller } from '../game/controller';
-import { ARTICLE_COLOR, GLITCH } from '../game/sprites';
+import { ELEMENT_TAG, GLITCH, NAME_RED } from '../game/sprites';
 import { $, bar, clear, h, umlautButtons } from './dom';
 import { logLine } from './gamelog';
 import { canListen, lastConfidence, listenOnce, listening, stopHold, stopListening } from './listen';
@@ -529,7 +529,8 @@ export class BattleUI {
     const g = genderOf(w);
     // 词性三相: the card never gives the gender away until the right stance has landed once.
     const showG = !needsPhase(b) || !!b.phaseHit;
-    const color = b.stage === 0 || !showG ? '#e8dccf' : b.pluralMon ? ARTICLE_COLOR.pl : g ? ARTICLE_COLOR[g] : '#c3a9ff';
+    const color = b.stage === 0 || !showG ? '#e8dccf' : NAME_RED;
+    const elTag = b.stage > 0 && showG && (b.pluralMon || g) ? ELEMENT_TAG[b.pluralMon ? 'pl' : g!] : '';
 
     // Monster card.
     const glyph = nameGlyph(b);
@@ -545,7 +546,7 @@ export class BattleUI {
       'div.b-mon',
       h('div.fam', h('span', `${fam.zh} · Lv ${m.lvl}`), h('span', STAGE_ZH[b.stage])),
       icon(monsterTile(b, this.ctrl.dungeon?.left === 1), 5, false, 'mon-icon'),
-      h('div.glyph', { style: `color:${color};text-shadow:0 0 8px ${b.stage === 0 ? '#ff1830' : color}` }, glyph),
+      h('div.glyph', { style: `color:${color};text-shadow:0 0 8px ${b.stage === 0 ? '#ff1830' : color}` }, glyph, elTag ? h('span.tag', { style: 'margin-left:6px;font-size:11px;vertical-align:middle' }, elTag) : ''),
       h(
         'div',
         b.rusty ? h('span.tag.due', '锈名 · 久拖的遗忘之物') : b.kind === 'due' ? h('span.tag.due', '遗忘之物') : b.kind === 'new' ? h('span.tag', '新怪') : h('span.tag', '影子'),
@@ -757,7 +758,8 @@ export class BattleUI {
       const w = pb.word;
       const g = genderOf(w);
       const known = !needsPhase(pb) || !!pb.phaseHit;
-      const color = known && g ? ARTICLE_COLOR[g] : '#e8dccf';
+      const color = known && g ? NAME_RED : '#e8dccf';
+      const elTag = known && (pb.pluralMon || g) ? ELEMENT_TAG[pb.pluralMon ? 'pl' : g!] : '';
       const it = pb.intent;
       const dead = !!pb.outcome;
       const card = h(
@@ -765,7 +767,7 @@ export class BattleUI {
         { onclick: () => this.target(i), title: '选中它（Tab 切换）', disabled: dead },
         h('div.fam', h('span', `${FAMILIES[w.family].zh} · Lv ${pb.monster.lvl}`), h('span', dead ? '已打散' : STAGE_ZH[pb.stage])),
         icon(monsterTile(pb), 2, dead, 'mon-icon small'),
-        h('div.nm', { style: `color:${color}` }, dead ? (pb.pluralMon ? `die ${w.pl}` : fullForm(w)) : nameGlyph(pb)),
+        h('div.nm', { style: `color:${color}` }, dead ? (pb.pluralMon ? `die ${w.pl}` : fullForm(w)) : nameGlyph(pb), elTag && !dead ? h('span.tag', { style: 'margin-left:4px;font-size:10px' }, elTag) : ''),
         pb.pluralMon && !dead ? h('span.tag.echo', '复数怪 · 一律 die') : '',
         bar('hp', pb.monster.hp, pb.monster.maxHp, `${pb.monster.hp} / ${pb.monster.maxHp}`),
         dead ? '' : h('div.it', it.line),
@@ -798,7 +800,7 @@ export class BattleUI {
         ? h('button.btn.ghost.small', { onclick: () => this.hint(), title: '低语：用一张纸条，给一个提示（选择题去掉一个错选项，打字题给首字母）。代价：这题不算会写、不回资源、护甲按低一档算，这个词下次要先不带提示答对' }, h('kbd', 'W'), `低语 · 提示（纸条 ${itemCount(this.ctrl.state, 'hint')}）`)
         : '';
     wrap.append(h('div.prompt', h('span', qq.prompt), tags ? h('span.tag', tags) : '', hintBtn));
-    const focusColor = qq.type === 'article' && this.phase === 'result' && this.b.word.art ? ARTICLE_COLOR[genderOf(this.b.word) ?? 'pl'] : '';
+    const focusColor = qq.type === 'article' && this.phase === 'result' && this.b.word.art ? NAME_RED : '';
     const long = qq.type === 'cloze' ? 'font-size:22px;line-height:1.4;' : '';
     wrap.append(h('div.focus', { style: (focusColor ? `color:${focusColor};` : '') + long }, qq.focus));
     this.input = null;
