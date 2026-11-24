@@ -123,7 +123,7 @@ export function newGame(name: string, origin: string, t = Date.now()): GameState
     equipped: {},
     bag: [],
     echo: null,
-    flags: { seen05: true },
+    flags: { seen05: true, srs2: true },
     screen: { pending: {}, cursor: {} },
     xpCurve: XP_CURVE,
     skills: [],
@@ -340,7 +340,31 @@ export function migrate(raw: unknown): GameState | null {
   // 0.6.x 斩杀: WordProgress.pend / retired / sure are optional (absent = not pending, not retired); the town
   // screening's 待领 and cursors start empty.
   s.screen = { pending: { ...(s.screen?.pending ?? {}) }, cursor: { ...(s.screen?.cursor ?? {}) } };
+  migrateSrs2(s);
   return { ...base, ...s, settings: { ...base.settings, ...s.settings }, stats: { ...base.stats, ...s.stats } };
+}
+
+/** 归名 in one day + 语境复习 (2026-11-24, save stays v3, flag srs2): nothing is cleared. Words still learning
+ *  (裂形 / 半名) are due now instead of in 16h / 40h; a 归名 word keeps its 归名 and moves onto the context-review
+ *  schedule at the step its old relapse count reached (its due date only moves earlier); one already overdue is
+ *  a context question now instead of a 半名 monster. A word with wrong answers is not a clean 归名 later. */
+export function migrateSrs2(s: GameState, t = now(s)): void {
+  s.flags ??= {};
+  if (s.flags.srs2) return;
+  const c = CONFIG.srs.context;
+  for (const p of Object.values(s.words ?? {})) {
+    if (!p || p.retired) continue;
+    if (p.stage === 3) {
+      const k = Math.min(p.relapse ?? 0, c.length - 1);
+      p.ctx = k;
+      p.ivl = c[k];
+      p.due = Math.min(Math.max(p.due, t), t + c[k]);
+    } else {
+      p.due = Math.min(p.due, t);
+      if (p.wrong > 0) p.flaw = true;
+    }
+  }
+  s.flags.srs2 = true;
 }
 
 export function exportJson(s: GameState): string {

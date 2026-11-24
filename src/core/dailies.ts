@@ -1,11 +1,11 @@
 // 每日委托 (0.6 第 6 块 细则一): the task board in 铁轨镇广场 (a copy at every bonfire) posts 3 tasks each game day
-// (dayKey): defeat 8–12 monsters in a field, beat N due review monsters (only when that many are due), or bring 3
+// (dayKey): defeat 8–12 monsters in a field, answer N 语境复习 questions right (only when that many are due), or bring 3
 // words of one scene to 半名. Each pays 8% of this level's XP, 5 kills' gold and 2 shards; all three add an iron
 // chest. No streaks, no make-up, nothing lost for skipping. Stored as JSON in flags.daily (save stays v3).
 
 import { CONFIG, xpToNext } from './config';
 import { addGearKill, addXp, dayKey, now, type GameState, type LevelUpResult } from './state';
-import { stageOf } from './srs';
+import { contextDue, stageOf } from './srs';
 import type { Rng } from './rng';
 import type { ZoneId } from './types';
 import { WORD_BY_ID } from '../data/words';
@@ -33,10 +33,10 @@ const range = (lv: string) => {
   return m ? [+m[1], +m[2]] : null;
 };
 
-/** Due review words right now (what the 复习 task counts against). */
+/** 语境复习 questions due right now (what the 复习 task counts against, 2026-11-24). */
 export function dueCount(s: GameState): number {
   const t = now(s);
-  return Object.values(s.words).filter((p) => p.due <= t && !p.retired).length;
+  return Object.values(s.words).filter((p) => contextDue(p, t)).length;
 }
 
 function fieldFor(s: GameState): ZoneId {
@@ -60,7 +60,7 @@ function halfTask(s: GameState, rng: Rng): Daily | null {
 function makeBoard(s: GameState, rng: Rng, day: string): DailyBoard {
   const list: Daily[] = [{ kind: 'kill', zone: fieldFor(s), need: 8 + Math.floor(rng() * 5), have: 0, done: false }];
   const due = dueCount(s);
-  if (due >= 5) list.push({ kind: 'review', need: Math.min(10, due), have: 0, done: false });
+  if (due >= 3) list.push({ kind: 'review', need: Math.min(5, due), have: 0, done: false });
   const half = halfTask(s, rng);
   if (half) list.push(half);
   // Fill up to three with another field (a different one when there is one).
@@ -92,7 +92,7 @@ export function dailyText(d: Daily): string {
   const z = d.zone ? ZONES.find((x) => x.id === d.zone) : null;
   const sc = d.scene ? SCENES.find((x) => x.id === d.scene) : null;
   if (d.kind === 'kill') return `在${z?.zh ?? '野外'}打倒 ${d.need} 只怪`;
-  if (d.kind === 'review') return `打倒 ${d.need} 只到期的复习怪`;
+  if (d.kind === 'review') return `答对 ${d.need} 道语境复习题`;
   return `把「${sc?.zh ?? '某个场景'}」的 ${(d.words ?? []).map((id) => WORD_BY_ID[id]?.zh ?? id).join('、')} 推进到半名`;
 }
 
@@ -116,13 +116,13 @@ function pay(s: GameState, d: Daily): DailyPay {
  * After a kill: count it toward today's tasks. Returns the tasks finished by it (already paid) and whether the
  * three-task iron chest is due. Only from Lv21 (unlock 'dailies').
  */
-export function dailyKill(s: GameState, rng: Rng, zone: ZoneId | undefined, wasDue: boolean): { paid: DailyPay[]; chest: boolean } {
+export function dailyKill(s: GameState, rng: Rng, zone: ZoneId | undefined, reviewOk: boolean): { paid: DailyPay[]; chest: boolean } {
   const b = dailyBoard(s, rng);
   const paid: DailyPay[] = [];
   for (const d of b.list) {
     if (d.done) continue;
     if (d.kind === 'kill' && zone && d.zone === zone) d.have++;
-    else if (d.kind === 'review' && wasDue) d.have++;
+    else if (d.kind === 'review' && reviewOk) d.have++;
     else if (d.kind === 'half') d.have = (d.words ?? []).filter((id) => WORD_BY_ID[id] && stageOf(s, WORD_BY_ID[id]) >= 2).length;
     if (d.have >= d.need) {
       d.have = d.need;

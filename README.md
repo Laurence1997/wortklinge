@@ -47,6 +47,7 @@
 - **野外精英（0.6.5）。** 9 级起，一个场景的词有一半到了半名，就会出一只场景精英（◈）。它带这个场景的 3 个词，分 3 段连着打：先认（选择题）、再用（例句填空）、最后写（默写），中间不回血；每段按普通怪 ×1.2 结算，第一次打赢必掉铁箱。打赢后，这个场景有 3 个词到期复习时它会再来。原来 15 级的族群猎手取消，B1 之前没有红名怪。
 - **写作和词表导入（0.6.6）。** 可以导入别的软件的词表（CSV、Language Reactor 的 xlsx），对上的词在它的场景里先出。7 级起排句（把打乱的几块排成一句）、9 级起槽位造句（用单词本里任何合适的名词回答）、14 级起连句终结技（und / oder / aber / denn，23 级加 weil / dass / wenn）、16 级起篝火日记（用今天打过的词写两三句，只提示查得出的错，不判对错）。
 - **回音怪（0.6.6）。** 5 级起，有「最小对立词」的怪（Tür / Tier、schon / schön）有时会考这两个词：默认听它读、选是哪个；在设置里打开「发音训练」下载约 635 MB 的发音模型后，音色和辅音组可以按住空格读出来打它，录音只在本机处理。读错不耗回合、不罚，会放示范和你的录音对比。长短音组只做听辨。
+- **一天内归名和语境复习（0.6.7）。** 一个词认、用、写三场就能归名，打散后约 6 分钟在本场景重生；第一场全对且有打字题就直接到半名。归名之后不再定期回来当怪，而是 2 天、1 周、1 个月、3 个月各在你正在打的战斗里插一道例句填空（答对破甲、多一片碎片，答错才复发成复习怪）；一路没错没提示的词只在 30 天后抽查一次；在任何地方写对它都算复习过。群怪改成同冠词成对，齐鸣只在目标选对相时响，打同相的那几只。
 
 ### 0.5：新内容
 
@@ -151,6 +152,7 @@ A browser game that teaches German to Chinese-speaking learners. It isn't flashc
 - **Field elites (0.6.5)**: from Lv9, once half of a scene's words are 半名 the scene sends an elite (◈). It carries three of the scene's words in three back-to-back parts: recognise (choice), use (cloze), write (typing), with no heal in between; each part pays ×1.2 a normal kill and the first win always drops an iron chest. After that it returns whenever three of the scene's words are due. The old Lv15 族群猎手 is dropped; there are no red-name monsters before B1.
 - **Writing and word-list import (0.6.6)**: import a word list from another app (CSV, or Language Reactor's xlsx) and the matching words come first in their scenes. From Lv7 put shuffled chunks into a sentence, from Lv9 answer a slot with any fitting noun from your wordbook, from Lv14 a finisher joins two sentences (und / oder / aber / denn, plus weil / dass / wenn at Lv23), and from Lv16 a bonfire journal (two or three sentences with today's words; only sure mistakes are pointed out, nothing is graded).
 - **Echo monsters (0.6.6)**: from Lv5, monsters whose word has a minimal-pair partner (Tür / Tier, schon / schön) sometimes ask which of the two it is. By default you hear one and pick; with 发音训练 on in the settings (a ~635 MB phoneme model, recordings stay on your computer) you read sound-quality and consonant pairs aloud. A misread costs no turn and plays the model voice next to your recording. Length pairs are listen-only.
+- **归名 in a day and context reviews (0.6.7)**: a word is named after three fights (recognise, use, write), respawning in its scene about 6 minutes after each; a flawless first fight with a typed answer jumps straight to 半名. Named words no longer come back as monsters on a schedule: after 2 days, 1 week, 1 month and 3 months one cloze from its example sentence is slipped into whatever fight you are in (right breaks armor and gives a shard; wrong relapses it to a review monster). A word named without a single mistake or hint gets one 30-day check only, and writing it right anywhere counts as a review. Packs now come as same-article pairs, and 齐鸣 rings only when the target's stance is right, hitting the monsters of that stance.
 
 ### Version 0.5
 

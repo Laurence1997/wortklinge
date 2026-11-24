@@ -81,6 +81,16 @@ export interface WordProgress {
   retired?: number;
   /** 斩杀: the 30-day 回响 check was passed: retired for good. */
   sure?: boolean;
+  /** 语境复习 (2026-11-24): context reviews passed since the last 归名 (index into CONFIG.srs.context). */
+  ctx?: number;
+  /** 语境复习: the gap that set `due` (for 「过期 2 个间隔」 and 越久越肥). */
+  ivl?: number;
+  /** 语境复习: every review passed (or the one 30-day spot check of a clean 归名): no more reviews. */
+  ctxDone?: boolean;
+  /** A context review was answered wrong: back in the field as a 半名 review monster (复发中). */
+  lapsed?: boolean;
+  /** Before 归名: a wrong answer or a 低语 on it (a clean 归名 skips the review schedule, rev 51). */
+  flaw?: boolean;
 }
 
 export type Quality = 'white' | 'green' | 'purple' | 'orange';

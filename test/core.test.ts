@@ -3,17 +3,17 @@ import { gradeMoechte, gradeTyped, normalize } from '../src/core/grading';
 import { fullForm, WORD_BY_ID, WORDS } from '../src/data/words';
 import { SCENES } from '../src/data/world';
 import { DIARY, parseLine } from '../src/data/diary';
-import { newGame, addXp, migrate, attack, gearTier, addGearKill, affinityOf } from '../src/core/state';
+import { newGame, addXp, migrate, migrateSrs2, attack, gearTier, addGearKill, affinityOf } from '../src/core/state';
 import { applyWin } from '../src/core/outcomes';
-import { recordKill, kindOf, stageOf } from '../src/core/srs';
-import { CONFIG, monsterHpAt, xpToNext } from '../src/core/config';
-import { startBattle, makeQuestion, resolveTurn, spillStorm, effArmor, affinityMatch, qTier, linkPack, moveReady, phaseOf } from '../src/core/combat';
+import { recordKill, kindOf, stageOf, contextDue, contextPass, contextFail, reviewMon, reviewedByWriting } from '../src/core/srs';
+import { CONFIG, DAY, HOUR, monsterHpAt, xpToNext } from '../src/core/config';
+import { startBattle, makeQuestion, resolveTurn, spillStorm, effArmor, affinityMatch, qTier, linkPack, moveReady, phaseOf, phaseRight, chorusMates, availableMoves, alignPairs } from '../src/core/combat';
 import { makeRng } from '../src/core/rng';
 import { answerBoss, startBoss } from '../src/core/boss';
 import { BOSS_QUESTIONS } from '../src/data/boss';
 import { pickSpawns } from '../src/core/spawn';
 import { CONJ } from '../src/data/verbs';
-import { pronounClozes } from '../src/core/cloze';
+import { pronounClozes, EXAMPLES } from '../src/core/cloze';
 import { UNLOCK } from '../src/core/unlocks';
 import { answerDuel } from '../src/core/duel';
 
@@ -62,42 +62,96 @@ describe('grading', () => {
 });
 
 describe('归名 (spaced repetition)', () => {
-  it('takes three kills on three different respawns, the last one typed', () => {
+  it('2026-11-24: 认 / 用 / 写 in one day, respawning ~6 minutes later; then context reviews, not monsters', () => {
     const s = newGame('T', 'student', T0);
     const w = WORD_BY_ID['stuhl'];
+    const R = CONFIG.srs.respawn;
     expect(kindOf(s, w, T0)).toBe('new');
-    recordKill(s, w, false, false, T0);
+    recordKill(s, w, false, false, T0, { flaw: true });
     expect(stageOf(s, w, T0)).toBe(1);
     expect(kindOf(s, w, T0 + 1000)).toBe('shadow');
-    // Killing the shadow does nothing.
-    recordKill(s, w, true, false, T0 + 1000);
+    recordKill(s, w, true, false, T0 + 1000); // a shadow kill does nothing
     expect(stageOf(s, w, T0 + 1000)).toBe(1);
-    const t1 = T0 + CONFIG.srs.intervals[0];
+    const t1 = T0 + R;
     expect(kindOf(s, w, t1)).toBe('due');
-    recordKill(s, w, false, false, t1);
-    expect(stageOf(s, w, t1)).toBe(2);
-    const t2 = t1 + CONFIG.srs.intervals[1];
-    // A choice-answer kill can't finish it.
-    const o = recordKill(s, w, false, false, t2);
-    expect(o.needsTypedFinal).toBe(true);
-    const t3 = t2 + CONFIG.srs.intervals[0];
-    const o2 = recordKill(s, w, true, false, t3);
-    expect(o2.guiming).toBe(true);
-    expect(stageOf(s, w, t3)).toBe(3);
-    // Relapse after about a week comes back as 半名.
-    const t4 = t3 + CONFIG.srs.relapse[0];
-    expect(stageOf(s, w, t4)).toBe(2);
-    expect(kindOf(s, w, t4)).toBe('due');
+    // 用 needs a right example cloze in the fight.
+    expect(recordKill(s, w, false, false, t1).needsCloze).toBe(true);
+    expect(stageOf(s, w, t1)).toBe(1);
+    const t2 = t1 + R;
+    recordKill(s, w, false, false, t2, { used: true });
+    expect(stageOf(s, w, t2)).toBe(2);
+    const t3 = t2 + R;
+    expect(recordKill(s, w, false, false, t3).needsTypedFinal).toBe(true); // a choice kill can't finish it
+    const t4 = t3 + R;
+    expect(recordKill(s, w, true, false, t4).guiming).toBe(true);
+    expect(t4 - T0).toBeLessThan(HOUR);
+    // Not clean (a wrong answer on the way): 2 days, 1 week, 1 month, 3 months; never a monster on schedule.
+    const p = s.words[w.id];
+    expect(p.due).toBe(t4 + CONFIG.srs.context[0]);
+    const t5 = p.due + 1000;
+    expect(contextDue(p, t5)).toBe(true);
+    expect(kindOf(s, w, t5)).toBe('guiming');
+    expect(stageOf(s, w, t5)).toBe(3);
+    expect(contextPass(s, w, t5)).toBe(CONFIG.srs.context[1]);
+    // Two gaps overdue: it turns back into a review monster (半名).
+    const t6 = p.due + 2 * CONFIG.srs.context[1];
+    expect(kindOf(s, w, t6)).toBe('due');
+    expect(stageOf(s, w, t6)).toBe(2);
+    expect(reviewMon(p, t6)).toBe(true);
+  });
+  it('rev 51 / 52: a clean first fight skips to 半名; a clean 归名 gets one 30-day check; writing it counts', () => {
+    const s = newGame('T', 'student', T0);
+    const w = WORD_BY_ID['tisch'];
+    recordKill(s, w, false, false, T0, { typed: true });
+    expect(stageOf(s, w, T0)).toBe(2);
+    const t1 = T0 + CONFIG.srs.respawn;
+    expect(recordKill(s, w, true, false, t1).guiming).toBe(true);
+    const p = s.words[w.id];
+    expect(p.due).toBe(t1 + CONFIG.srs.spot);
+    expect(contextPass(s, w, p.due)).toBeNull();
+    expect(p.ctxDone).toBe(true);
+    // A wrong context answer relapses it to a 半名 review monster; one 归名一击 names it again.
+    const v = WORD_BY_ID['stuhl'];
+    recordKill(s, v, false, false, T0, { flaw: true, typed: true });
+    expect(stageOf(s, v, T0)).toBe(1);
+    recordKill(s, v, false, false, T0 + 400_000, { used: true });
+    recordKill(s, v, true, false, T0 + 800_000);
+    const q = s.words[v.id];
+    reviewedByWriting(s, v, T0 + DAY); // not due yet: pushed back by its gap
+    expect(q.due).toBe(T0 + DAY + CONFIG.srs.context[0]);
+    contextFail(s, v, q.due);
+    expect(reviewMon(q, q.due)).toBe(true);
+    expect(stageOf(s, v, q.due)).toBe(2);
+    expect(recordKill(s, v, true, false, q.due + 1).guiming).toBe(true);
+    expect(q.relapse).toBe(1);
   });
   it('a wrong answer on 半名 drops it one step, never to 无名', () => {
     const s = newGame('T', 'student', T0);
     const w = WORD_BY_ID['tisch'];
-    recordKill(s, w, false, false, T0);
-    const t1 = T0 + CONFIG.srs.intervals[0];
-    recordKill(s, w, false, false, t1);
-    const t2 = t1 + CONFIG.srs.intervals[1];
+    recordKill(s, w, false, false, T0, { flaw: true });
+    const t1 = T0 + CONFIG.srs.respawn;
+    recordKill(s, w, false, false, t1, { used: true });
+    const t2 = t1 + CONFIG.srs.respawn;
     const o = recordKill(s, w, true, true, t2);
     expect(o.to).toBe(1);
+  });
+  it('migrate (srs2): learning words are due now, 归名 words move onto the context schedule, nothing is lost', () => {
+    const s = newGame('T', 'student', T0);
+    delete s.flags.srs2;
+    s.words.stuhl = { stage: 1, due: T0 + 16 * HOUR, firstSeen: 0, lastSeen: 0, relapse: 0, correct: 1, wrong: 1 };
+    s.words.tisch = { stage: 3, due: T0 + 30 * DAY, firstSeen: 0, lastSeen: 0, relapse: 1, correct: 5, wrong: 0, write: 2 };
+    s.words.brot = { stage: 3, due: T0 - DAY, firstSeen: 0, lastSeen: 0, relapse: 0, correct: 5, wrong: 0 };
+    migrateSrs2(s, T0);
+    expect(s.words.stuhl.due).toBe(T0);
+    expect(s.words.stuhl.flaw).toBe(true);
+    expect(s.words.tisch.stage).toBe(3);
+    expect(s.words.tisch.due).toBe(T0 + CONFIG.srs.context[1]);
+    expect(s.words.brot.due).toBe(T0);
+    expect(contextDue(s.words.brot, T0)).toBe(true);
+    expect(stageOf(s, WORD_BY_ID['brot'], T0)).toBe(3);
+    const before = JSON.stringify(s.words);
+    migrateSrs2(s, T0 + DAY); // once only
+    expect(JSON.stringify(s.words)).toBe(before);
   });
 });
 
@@ -237,6 +291,7 @@ describe('no 言灵过载 (removed 2026-11-20)', () => {
       s.daily.newCount = count;
       const b = startBattle(s, WORD_BY_ID['tee'], rng);
       b.kind = kind;
+      if (kind === 'due') b.reviewMon = true; // 2026-11-24: the bonus is for 复习怪 only
       b.lastKillTyped = false;
       return { s, res: applyWin(s, b, () => 0.99) };
     };
@@ -265,7 +320,8 @@ describe('review backlog', () => {
     const t = Date.now();
     // 150 reviews already spawned today and a big backlog: reviews still appear, one slot stays free.
     s.daily.dueSpawned = 150;
-    for (const w of WORDS.filter((x) => x.zone === zone)) s.words[w.id] = { stage: 1, due: t - 10 * 24 * 3600_000 } as never;
+    // 2026-11-24: only 归名 words left 2+ gaps overdue (or relapsed) are review monsters; learning respawns never fatten.
+    for (const w of WORDS.filter((x) => x.zone === zone)) s.words[w.id] = { stage: 3, due: t - 10 * 24 * 3600_000, ivl: 2 * DAY } as never;
     const picks = pickSpawns(s, zone, 6, new Set(), rng);
     expect(picks.filter((p) => p.kind === 'due').length).toBe(5);
     const b = startBattle(s, WORD_BY_ID['tee'], rng);
@@ -321,6 +377,59 @@ describe('region 2: packs, conjugation, plurals', () => {
     expect(r.phase).toBe('right');
     expect(d.monster.hp).toBeLessThan(500);
     expect(c.monster.hp).toBe(500);
+  });
+
+  it('rev 49: a wrong stance on the target rings no 齐鸣; the button needs a same-stance mate; a charging mate is interrupted', () => {
+    const rng = makeRng(9);
+    const s = newGame('T', 'student');
+    s.level = 11;
+    s.hp = 9999;
+    const a = startBattle(s, nounOf('der'), rng);
+    const d = startBattle(s, WORDS.filter((w) => w.region === 2 && w.pos === 'n' && w.art === 'der' && w.pl && w.pl !== '-')[1], rng);
+    const c = startBattle(s, nounOf('die'), rng);
+    for (const x of [a, c, d]) {
+      x.pluralMon = false;
+      x.monster.hp = x.monster.maxHp = 500;
+      x.intent = { ...x.intent, kind: 'attack', hits: 1, caseArt: undefined };
+    }
+    expect(chorusMates(a, [a, c, d])).toEqual([d]);
+    expect(chorusMates(c, [a, c, d])).toEqual([]);
+    expect(availableMoves(s, c, 3, chorusMates(c, [a, c, d]).length)).not.toContain('chorus');
+    expect(availableMoves(s, a, 3, chorusMates(a, [a, c, d]).length)).toContain('chorus');
+    // Wrong stance: only the target is hit.
+    a.phase = 'die';
+    let q = makeQuestion(s, a, 'chorus', rng, undefined, true);
+    let r = resolveTurn(s, a, 'chorus', q, q.answer!, rng, [a, c, d]);
+    expect(r.phase).toBe('wrong');
+    expect(d.monster.hp).toBe(500);
+    // Right stance: the mate takes the same pre-armor hit and its charge breaks.
+    a.chorusCd = d.chorusCd = c.chorusCd = 0;
+    a.phase = 'der';
+    d.intent = { ...d.intent, kind: 'charge', hits: 1, caseArt: undefined };
+    const hp0 = s.hp;
+    q = makeQuestion(s, a, 'chorus', rng, undefined, true);
+    r = resolveTurn(s, a, 'chorus', q, q.answer!, rng, [a, c, d]);
+    expect(r.phase).toBe('right');
+    expect(d.monster.hp).toBeLessThan(500);
+    expect(r.log.some((l) => /齐鸣：.*打断/.test(l.text))).toBe(true);
+    expect(hp0 - s.hp).toBeLessThan(d.monster.dmg * 2); // no ×2 big attack from the interrupted mate
+  });
+
+  it('rev 49: a same-article pair reads its lines in one case', () => {
+    const s = newGame('T', 'student');
+    s.level = 15;
+    const ders = WORDS.filter((w) => w.pos === 'n' && w.art === 'der' && (EXAMPLES[w.id] ?? []).length >= 2).slice(0, 40);
+    let checked = 0;
+    for (let i = 0; i + 1 < ders.length; i += 2) {
+      const p = [startBattle(s, ders[i], makeRng(i)), startBattle(s, ders[i + 1], makeRng(i + 1))];
+      for (const x of p) x.pluralMon = false;
+      p.forEach((x) => (x.intent = { ...x.intent, kind: 'attack' }));
+      alignPairs(s, p);
+      if (!p.every((x) => x.intent.caseArt)) continue;
+      checked++;
+      expect(phaseRight(p[1], phaseOf(p[0])!)).toBe(true);
+    }
+    expect(checked).toBeGreaterThan(3);
   });
 
   it('every pack member acts, with less damage each', () => {
@@ -1015,6 +1124,10 @@ describe('2026-11-21: 低语, 越区引导, reviews, 怪的台词', () => {
     for (const w of WORDS.filter((x) => x.zone === zone)) s.words[w.id] = { stage: 1, due: 9e15, firstSeen: 0, lastSeen: 0, relapse: 0, correct: 1, wrong: 0, read: 1, write: 1 };
     const t = Date.now();
     s.words['tee'].due = t - 1000;
+    // A learning word respawns only in its own scene; a relapsed one (复发中) follows you.
+    expect(pickSpawns(s, 'aschehof', 10, new Set(), makeRng(1)).some((p) => p.word.id === 'tee')).toBe(false);
+    s.words['tee'].stage = 2;
+    s.words['tee'].lapsed = true;
     const picks = pickSpawns(s, 'aschehof', 10, new Set(), makeRng(1));
     expect(picks.some((p) => p.word.id === 'tee' && p.kind === 'due')).toBe(true);
     expect(pickSpawns(s, zone, 10, new Set(['tee']), makeRng(1)).filter((p) => p.kind === 'shadow').length).toBe(0);
@@ -1529,5 +1642,37 @@ describe('0.6 第 3 区: 幽灵检票员 Lina', () => {
     expect(g.outcome).toBeNull();
     answerBoss(s, g, 'Du heißt Lina.', makeRng(20));
     expect(g.outcome).toBe('win');
+  });
+});
+
+describe('语境复习 in a fight (2026-11-24)', () => {
+  it('a due 归名 word is asked once per fight from turn 2, counts as a hard attack; wrong relapses it', () => {
+    const s = newGame('T', 'student');
+    s.level = 12;
+    const t = Date.now();
+    const rv = WORDS.find((w) => w.pos === 'n' && (EXAMPLES[w.id] ?? []).length > 0 && w.id !== 'tee')!;
+    s.words[rv.id] = { stage: 3, due: t - 1000, firstSeen: 0, lastSeen: 0, relapse: 0, correct: 3, wrong: 0, ctx: 0, ivl: CONFIG.srs.context[0] };
+    const b = startBattle(s, WORD_BY_ID['tee'], makeRng(2));
+    b.monster.hp = b.monster.maxHp = 999;
+    expect(makeQuestion(s, b, 'attack', makeRng(3)).review).toBeUndefined(); // turn 1: the monster's own question
+    b.turn = 2;
+    const q = makeQuestion(s, b, 'attack', makeRng(3));
+    expect(q.review).toBe(rv.id);
+    expect(qTier(q)).toBe(2);
+    const r = resolveTurn(s, b, 'attack', q, q.answer!, makeRng(4));
+    expect(r.review?.ok).toBe(true);
+    expect(r.playerDamage).toBeGreaterThan(0);
+    expect(s.words[rv.id].due).toBeGreaterThan(t + CONFIG.srs.context[1] - 60_000);
+    expect(makeQuestion(s, b, 'attack', makeRng(5)).review).toBeUndefined(); // once per fight
+    // Wrong in another fight: the word relapses to a 半名 review monster.
+    s.words[rv.id].due = t - 1000;
+    const b2 = startBattle(s, WORD_BY_ID['tee'], makeRng(6));
+    b2.monster.hp = b2.monster.maxHp = 999;
+    b2.turn = 2;
+    const q2 = makeQuestion(s, b2, 'attack', makeRng(7));
+    const r2 = resolveTurn(s, b2, 'attack', q2, 'zzz', makeRng(8));
+    expect(r2.review?.ok).toBe(false);
+    expect(reviewMon(s.words[rv.id], Date.now())).toBe(true);
+    expect(b2.slipped).toBe(false);
   });
 });

@@ -185,8 +185,8 @@ describe('斩杀 · 第二天验证', () => {
 
   it('retired words leave the review count', () => {
     const s = game();
-    met(s, 'lampe');
-    s.words.lampe.due = T0 - DAY;
+    met(s, 'lampe', 3);
+    s.words.lampe.due = T0 - DAY; // a context review due (2026-11-24: dueCount counts those)
     expect(dueCount(s)).toBe(1);
     s.words.lampe.retired = T0;
     expect(dueCount(s)).toBe(0);
@@ -312,7 +312,10 @@ describe('全量筛选 skips learned words (2026-11-23)', () => {
     const after = regionLeft(s, 1);
     expect(after.left).toBe(before.left - 1);
     expect(after.learned + after.left).toBe(after.total);
-    s.words[w.id].due = Date.now() - 1000;
+    s.words[w.id].due = Date.now() - 1000; // a context review due: still 归名
+    expect(screenPool(s, '1').some((x) => x.id === w.id)).toBe(false);
+    s.words[w.id].stage = 2; // 复发中 counts as 半名 and can be screened again
+    s.words[w.id].lapsed = true;
     expect(screenPool(s, '1').some((x) => x.id === w.id)).toBe(true);
   });
 });

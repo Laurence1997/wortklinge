@@ -255,7 +255,8 @@ export class WorldScene extends Phaser.Scene {
           break;
         }
       }
-      this.addMonster(p.word, p.kind, zone, spot.x * TILE + 8, spot.y * TILE + 8);
+      const m = this.addMonster(p.word, p.kind, zone, spot.x * TILE + 8, spot.y * TILE + 8);
+      if (p.phrase) this.phraseSlot(m, zone);
     }
     this.maybeRare(zone, picks.length, tiles);
     this.maybePhrase(zone, picks.length, tiles);
@@ -272,12 +273,17 @@ export class WorldScene extends Phaser.Scene {
     let added = 0;
     for (const p of [...first, ...more]) {
       if (added >= need) break;
-      if (this.monsters.some((m) => m.word.id === p.word.id)) continue;
+      if (p.phrase && this.monsters.some((o) => o.phrase && o.zone === zone)) continue;
+      if (!p.phrase && this.monsters.some((m) => m.word.id === p.word.id)) continue;
       const sp = nav.spot(zone, false, p.word.id);
       if (!sp) continue;
       const m = this.addMonster(p.word, p.kind, zone, sp.x, sp.y);
       m.node = sp.sc.id;
       added++;
+      if (p.phrase) {
+        this.phraseSlot(m, zone);
+        continue;
+      }
       if (nav.lucky(sp.sc)) {
         if (this.map.region >= 2 && has(this.ctrl.state.level, 'flee')) {
           m.rare = true;
@@ -311,6 +317,16 @@ export class WorldScene extends Phaser.Scene {
       this.styleMonster(m);
       return;
     }
+  }
+
+  /** 场景刷空: a backfill slot meant for a 残句 (removed again when the field already has one). */
+  private phraseSlot(m: MonsterEntity, zone: ZoneId) {
+    if (this.monsters.some((o) => o !== m && o.phrase && o.zone === zone)) {
+      m.container.destroy();
+      this.monsters = this.monsters.filter((o) => o !== m);
+      return;
+    }
+    this.makePhrase(m, zone);
   }
 
   /** Turn a freshly placed monster into a 残句 carrying a card you don't have yet (or any card). */

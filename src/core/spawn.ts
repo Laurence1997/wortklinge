@@ -4,7 +4,7 @@
 // holds `count` monsters and at least one slot stays for something else.
 
 import { shuffle, type Rng } from './rng';
-import { isRetired, kindOf, pendingToday, verifyOf } from './srs';
+import { isRetired, kindOf, pendingToday, reviewMon, verifyOf } from './srs';
 import { now, type GameState } from './state';
 import type { Word, ZoneId } from './types';
 import { has } from './unlocks';
@@ -14,6 +14,8 @@ import { prioritise } from './wordImport';
 export interface SpawnPick {
   word: Word;
   kind: 'new' | 'due' | 'shadow';
+  /** 场景刷空: this slot is for a 残句 (the word only says where it stands). */
+  phrase?: boolean;
 }
 
 export function zoneWords(zone: ZoneId): Word[] {
@@ -33,7 +35,7 @@ export function eligible(s: GameState, w: Word): boolean {
   return true;
 }
 
-export function pickSpawns(s: GameState, zone: ZoneId, count: number, alive: Set<string>, rng: Rng): SpawnPick[] {
+export function pickSpawns(s: GameState, zone: ZoneId, count: number, alive: Set<string>, rng: Rng, opts: { phraseOk?: boolean } = {}): SpawnPick[] {
   const t = now(s);
   // 斩杀 (0.6.x): retired words stay away (except their 回响 check), 待验证 ones for the rest of the day.
   const gone = (w: Word) => pendingToday(s.words[w.id], t) || (isRetired(s.words[w.id]) && !verifyOf(s.words[w.id], t));
@@ -56,7 +58,7 @@ export function pickSpawns(s: GameState, zone: ZoneId, count: number, alive: Set
     if (w.zone === zone || alive.has(w.id) || (w.region ?? 1) > (s.region ?? 1) || !eligible(s, w)) continue;
     if (gone(w)) continue;
     if (verifyOf(s.words[w.id], t)) verify.push(w);
-    else if (kindOf(s, w, t) === 'due') due.push(w);
+    else if (reviewMon(s.words[w.id], t)) due.push(w); // a learning word respawns only in its own scene
   }
   const out: SpawnPick[] = [];
   // Most overdue first. Leave room for one non-review monster so a big backlog never fills the field.
@@ -90,26 +92,31 @@ export function pickSpawns(s: GameState, zone: ZoneId, count: number, alive: Set
     if (out.length >= count) break;
     out.push({ word: w, kind: 'new' });
   }
-  // 场景刷空 (斩杀, 0.6.x): slots freed by retired / 待验证 words are filled with the rest of the reviews, then
-  // monsters of the next region, so a scene never closes because you know its words (学得快升得快).
-  let room = Math.min(count - out.length, cut);
+  // 场景刷空 (2026-11-24, 游戏设计 七): only the slots freed by 归名, retired and 待验证 words are filled:
+  // review monsters → plural crowds of 归名 or retired nouns (Lv11+, at most a third) → 残句 (while short-saying
+  // cards are missing) → new words of the next region. A scene never closes because you know its words.
+  const named = local.filter((w) => !gone(w) && kindOf(s, w, t) === 'guiming').length;
+  let room = Math.min(count - out.length, cut + named);
   const taken = new Set(out.map((p) => p.word.id));
-  const add = (w: Word, kind: SpawnPick['kind']) => {
-    if (room <= 0 || taken.has(w.id)) return;
-    out.push({ word: w, kind });
-    taken.add(w.id);
+  const add = (w: Word, kind: SpawnPick['kind'], phrase = false) => {
+    if (room <= 0 || (taken.has(w.id) && !phrase)) return;
+    out.push(phrase ? { word: w, kind, phrase } : { word: w, kind });
+    if (!phrase) taken.add(w.id);
     room--;
   };
   for (const w of due) add(w, 'due');
   for (const w of verify) add(w, 'shadow');
-  // Retired nouns still come back as their plural crowd (复数怪 don't retire with the word), a third of the room.
   if (has(s.level, 'plural')) {
     let pl = Math.ceil(room / 3);
-    for (const w of shuffle(rng, local.filter((x) => isRetired(s.words[x.id]) && !verifyOf(s.words[x.id], t) && !alive.has(x.id) && !!x.art && !!x.pl && x.pl !== '-' && !x.plOnly))) {
+    const crowd = (x: Word) => (isRetired(s.words[x.id]) && !verifyOf(s.words[x.id], t)) || (!isRetired(s.words[x.id]) && kindOf(s, x, t) === 'guiming');
+    for (const w of shuffle(rng, local.filter((x) => crowd(x) && !alive.has(x.id) && !taken.has(x.id) && !!x.art && !!x.pl && x.pl !== '-' && !x.plOnly))) {
       if (pl-- <= 0) break;
       add(w, 'shadow');
     }
   }
+  // One 残句 per field at most (WorldScene turns the slot into one); its word only says which scene.
+  const anchor = local.find((w) => !gone(w) && kindOf(s, w, t) === 'guiming') ?? local[0];
+  if (opts.phraseOk && anchor && room > 0) add(anchor, 'shadow', true);
   const region = zoneWords(zone)[0]?.region ?? 1;
   for (const w of WORDS) {
     if (room <= 0) break;

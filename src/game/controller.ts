@@ -8,7 +8,7 @@ import type { Look } from '../core/look';
 
 import { answerBoss, startBoss, type BossFight } from '../core/boss';
 import { bonfireRefill, grantStarter, tabletHeal, useItem, CONSUMABLE, count as itemCount, buyConsumable, type Consumable } from '../core/items';
-import { canHint, hintOf, ITEM_TURN, linkPack, startPhraseBattle, makeQuestion, monsterStats, pickHint, resetClassFx, resolveTurn, rollSaying, shoutLine, startBattle, type Battle, type Question, type TurnReport, type Tutorial } from '../core/combat';
+import { alignPairs, canHint, hintOf, ITEM_TURN, linkPack, phraseCards, startPhraseBattle, makeQuestion, monsterStats, pickHint, resetClassFx, resolveTurn, rollSaying, shoutLine, startBattle, type Battle, type Question, type TurnReport, type Tutorial } from '../core/combat';
 import { CONFIG, xpToNext } from '../core/config';
 import { favour, FAVOUR, KONRAD_WORDS, QUESTS, questEvent, questState, startQuest, type QuestEvent } from '../core/quests';
 import { CHEST_ZH, CHESTS, lockWord, openChest, type ChestKind } from '../core/chest';
@@ -19,7 +19,7 @@ import { CLASSES, resMax, respec, respecCost, spent, TALENT_FROM_LEVEL, type Cla
 import { makeItem } from '../core/loot';
 import { applyLoss, applyWin, postFightHeal } from '../core/outcomes';
 import { defaultRng, type Rng } from '../core/rng';
-import { atLeastHalfShare, flushSkill, instantGuiming, kindOf, recordAnswer, stageOf } from '../core/srs';
+import { atLeastHalfShare, flushSkill, gapZh, instantGuiming, kindOf, recordAnswer, reviewedByWriting, stageOf } from '../core/srs';
 import { dailyBoard, dailyKill, dailyText } from '../core/dailies';
 import { engraveQuestion, identify, socketItems, unidentifiedItems } from '../core/identify';
 import { pickSpawns, zoneMinLevel, zoneWords } from '../core/spawn';
@@ -43,7 +43,7 @@ import { shadowScore } from '../core/shadow';
 import { noteEliteWin, type ElitePick } from '../core/elite';
 import type { Move, Quality, Slot, Word, ZoneId } from '../core/types';
 import { has, UNLOCK, UNLOCK_TEXT } from '../core/unlocks';
-import { JOURNAL_KEEP, JOURNAL_WORDS, JOURNAL_XP_SHARE, journalWords, type JournalEntry } from '../core/journal';
+import { checkJournal, JOURNAL_KEEP, JOURNAL_WORDS, JOURNAL_XP_SHARE, journalWords, usesWord, type JournalEntry } from '../core/journal';
 import { BOSS } from '../data/boss';
 import { BOSS2 } from '../data/boss2';
 import { BOSS3 } from '../data/boss3';
@@ -63,7 +63,7 @@ import { logLine } from '../ui/gamelog';
 import { ACHIEVEMENTS, NOTES } from '../data/achievements';
 import { SCENE_BY_ID } from '../data/world';
 import { dropPages, pageNo, pageRegion, readPage, regionRestored, restorePage } from '../core/diary';
-import { SAYINGS } from '../data/sayings';
+import { SAYING_CFG, SAYINGS } from '../data/sayings';
 import { renderHud } from '../ui/hud';
 import { Panels } from '../ui/panels';
 import { $, isTyping } from '../ui/dom';
@@ -196,6 +196,10 @@ export class Controller {
     const first = !(s.journal ?? []).some((e) => e.day === today);
     const e: JournalEntry = { day: today, words: words.map((w) => w.id), text: text.trim() };
     s.journal = [...(s.journal ?? []), e].slice(-JOURNAL_KEEP);
+    // 写对就算复习 (rev 51): a given word the entry uses without a flagged problem counts as reviewed.
+    const hints = checkJournal(text, words).filter((x) => x.kind === 'article' || x.kind === 'verb');
+    const bare = (w: Word) => w.de.replace(/^(der|die|das|sich) /i, '');
+    for (const w of words) if (usesWord(text, w) && !hints.some((x) => x.text.includes(bare(w)))) reviewedByWriting(s, w);
     const xp = first ? Math.max(1, Math.round(xpToNext(s.level) * JOURNAL_XP_SHARE)) : 0;
     if (xp) this.diaryXp(xp, '写了篝火日记');
     this.persist();
@@ -270,7 +274,9 @@ export class Controller {
   pickSpawns(zone: ZoneId, n: number, alive: Set<string>) {
     // The tutorial bread only lives by the bonfire until it is named.
     if (!this.state.flags.brotDone) alive.add('brot');
-    return pickSpawns(this.state, zone, n, alive, this.rng);
+    const s = this.state;
+    const phraseOk = s.level >= SAYING_CFG.fromLevel && phraseCards().some((x) => !s.sayings?.[x.id]);
+    return pickSpawns(s, zone, n, alive, this.rng, { phraseOk });
   }
 
   /** Called by the scene after every full respawn. */
@@ -549,8 +555,8 @@ export class Controller {
     this.battleUI.open();
     if (this.pack.length > 1 && !s.flags.firstPackDone) {
       say([
-        { who: HILDE, text: '一群！盯住一只，喊它的冠词。' },
-        { who: HILDE, text: '喊错了，打到别的身上，只剩一半。喊「Moment!」那只，先收拾。' },
+        { who: HILDE, text: '一群！这两只是同一个冠词。' },
+        { who: HILDE, text: '选对相，按「齐鸣」：一题打两只，连那只喊「Moment!」的蓄力也一起打断。相选错，齐鸣不响，只打到目标。' },
       ]);
     }
   }
@@ -585,29 +591,57 @@ export class Controller {
     return true;
   }
 
-  /** Region 2 (Lv11+): nearby nouns with different articles join the fight (群怪). */
+  /** Region 2 (Lv11+): nearby nouns of the same scene join the fight (群怪, 游戏设计 六「群怪」 rev 49).
+   *  Lv11–12: 2, same or different article half each (the first pack: 2 of the same article, the mate charging);
+   *  Lv13+: up to 3 = a same-article pair + one with another article; B1: up to 4 with at least one pair.
+   *  A pair's lines use the same case (alignPairs), so a stance right on one is right on the other. */
   private gatherPack(m: MonsterEntity) {
     const s = this.state;
     if (!has(s.level, 'packs') || (s.region ?? 1) < 2 || m.isEcho || m.scripted || m.rare || m.phrase || m.elite || !m.word.art || m.word.family === 'truhe') return;
     const firstPack = !s.flags.firstPackDone;
-    const max = firstPack || s.level < CONFIG.pack.max3From ? 2 : CONFIG.pack.max;
+    const max = firstPack || s.level < CONFIG.pack.max3From ? 2 : s.level >= CONFIG.pack.max4From ? CONFIG.pack.max4 : CONFIG.pack.max;
     const r = CONFIG.pack.radiusTiles * 16;
-    const used = new Set([m.word.art]);
     const near = this.scene.monsters
-      .filter((o) => o !== m && !o.isEcho && !o.scripted && !o.rare && !o.phrase && !o.elite && o.zone === m.zone && !!o.word.art && o.word.family !== 'truhe' && Math.hypot(o.x - m.x, o.y - m.y) <= r)
+      .filter((o) => o !== m && !o.isEcho && !o.scripted && !o.rare && !o.phrase && !o.elite && o.zone === m.zone && !!o.word.art && o.word.family !== 'truhe' && o.word.id !== m.word.id && Math.hypot(o.x - m.x, o.y - m.y) <= r)
       .sort((a, b) => Math.hypot(a.x - m.x, a.y - m.y) - Math.hypot(b.x - m.x, b.y - m.y));
-    for (const o of near) {
-      if (this.pack.length >= max) break;
-      if (used.has(o.word.art!)) continue;
-      used.add(o.word.art!);
-      const ob = startBattle(s, o.word, this.rng, { tutorial: firstPack ? 'packCharge' : null });
+    const same = near.filter((o) => o.word.art === m.word.art);
+    const diff = near.filter((o) => o.word.art !== m.word.art);
+    // Wanted articles after the target, in order: 'same' or 'diff'.
+    const want: Array<'same' | 'diff'> = firstPack ? ['same'] : max === 2 ? [this.rng() < 0.5 ? 'same' : 'diff'] : max === 3 ? ['same', 'diff'] : ['same', 'diff', this.rng() < 0.5 ? 'same' : 'diff'];
+    const picked: MonsterEntity[] = [];
+    const take = (list: MonsterEntity[]) => {
+      const o = list.find((x) => !picked.includes(x));
+      if (o) picked.push(o);
+      return !!o;
+    };
+    for (const w of want) if (!take(w === 'same' ? same : diff)) take(w === 'same' ? diff : same);
+    if (firstPack && (!picked.length || picked[0].word.art !== m.word.art)) return; // the teaching pack waits for a same-article pair
+    const tut = firstPack ? 'packCharge' : null;
+    for (const o of picked.slice(0, max - 1)) {
+      const ob = startBattle(s, o.word, this.rng, { tutorial: tut });
       this.pack.push(ob);
       this.packEntities.push(o);
     }
     if (this.pack.length === 1) return;
-    // Pack-wide values (player statuses, hints, skill cooldown) are shared.
+    // Pack-wide values (player statuses, hints, skill cooldown) are shared; same-article pairs read in one case.
     linkPack(this.pack);
+    alignPairs(s, this.pack);
     this.retarget();
+  }
+
+  /** 每日委托: count a kill (zone) or a right 语境复习 answer toward today's tasks and pay what finished. */
+  private dailyTick(zone: ZoneId | undefined, reviewOk: boolean): void {
+    const s = this.state;
+    if (!has(s.level, 'dailies')) return;
+    const d = dailyKill(s, this.rng, zone, reviewOk);
+    for (const p of d.paid) {
+      toast(`每日委托完成：${dailyText(p.task)} · +${p.xp} 经验 · +${p.gold} 金币 · 碎片 +2`, 'gold');
+      for (const lv of p.levelUp.levels) this.onLevelUp(lv);
+    }
+    if (d.chest) {
+      toast('今天的三条委托都做完了：铁箱一个', 'gold');
+      this.gotChest('iron', s.level);
+    }
   }
 
   /** Default target: a monster that is charging, else the first one still standing. */
@@ -719,6 +753,11 @@ export class Controller {
     }
     const r = resolveTurn(s, b, move, q, input, this.rng, this.pack);
     if (r.killer) this.killer = r.killer;
+    if (r.review) {
+      const rv = r.review;
+      logLine(rv.ok ? `✓ 复习 · ${fullForm(rv.word)}，${rv.next ? `下次 ${gapZh(rv.next)}` : '不用再复习了'}` : `复习没答上：${fullForm(rv.word)} 复发了，会作为复习怪回到野外。`, rv.ok ? 'good' : 'bad');
+      if (rv.ok) this.dailyTick(undefined, true);
+    }
     // 成就 · 五连弱点: right stances in a row (a wrong one resets; turns without a stance don't count).
     if (r.phase === 'right') {
       s.flags.weakRun = ((s.flags.weakRun as number) ?? 0) + 1;
@@ -864,17 +903,7 @@ export class Controller {
         }
         if (res.chest) this.gotChest(res.chest, b.monster.lvl);
         if (b.word.family === 'krume') this.questFire('krumeKill');
-        if (has(s.level, 'dailies')) {
-          const d = dailyKill(s, this.rng, m.zone, res.kill.kind === 'due');
-          for (const p of d.paid) {
-            toast(`每日委托完成：${dailyText(p.task)} · +${p.xp} 经验 · +${p.gold} 金币 · 碎片 +2`, 'gold');
-            for (const lv of p.levelUp.levels) this.onLevelUp(lv);
-          }
-          if (d.chest) {
-            toast('今天的三条委托都做完了：铁箱一个', 'gold');
-            this.gotChest('iron', s.level);
-          }
-        }
+        this.dailyTick(m.zone, false);
         for (const lv of res.levelUp.levels) this.onLevelUp(lv);
         if (res.levelUp.capped && !s.flags.taughtCapLevel) {
           s.flags.taughtCapLevel = true;
@@ -1467,6 +1496,7 @@ export class Controller {
     const q = e.qs[e.at];
     answerExam(e, input);
     const l = e.last;
+    if (l?.ok && q?.word && q.part === 'write') reviewedByWriting(this.state, q.word);
     if (l && q) logLine(`突破试炼（${PART_ZH[q.part]}）：${l.ok ? '✓' : `✗ 正确：${q.part === 'write' ? fullForm(q.word) : q.full ?? q.answer}`}`, l.ok ? 'good' : 'bad');
   }
 

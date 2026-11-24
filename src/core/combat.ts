@@ -5,9 +5,9 @@ import { CONFIG, DAY, HOUR, monsterHpAt, playerBaseHp } from './config';
 import { gradeTyped, normalize, type Verdict } from './grading';
 import { ELEMENT_ZH, generateIntent, INTENT_ZH } from './intents';
 import { between, makeRng, pick, shuffle, type Rng } from './rng';
-import { failVerify, retire, kindOf, stageOf, overdueSteps, verifyOf, type Kind, type Stage } from './srs';
+import { contextDueWords, contextFail, contextPass, gapZh, reviewedByWriting, reviewMon, failVerify, retire, kindOf, stageOf, overdueSteps, verifyOf, type Kind, type Stage } from './srs';
 import { typoOk } from './cut';
-import { affinityOf, affixTotal, attack, engraved, critChance, gearPen, hintsPerFight, maxHp, now, type GameState } from './state';
+import { addGearKill, affinityOf, affixTotal, attack, engraved, critChance, gearPen, hintsPerFight, maxHp, now, type GameState } from './state';
 import type { Element, Intent, Move, Word } from './types';
 import { gradeLink, gradeOrder, gradeSlot, linkTask, orderTask, SLOT_RECENT, slotNouns, slotTask, WRITE_CHANCE, type SlotTask } from './writing';
 import type { LinkRow } from '../data/links';
@@ -62,6 +62,8 @@ export interface Question {
   /** 低语: the first letter (typed) shown as a hint; ×0.5 on a hit. */
   whisper?: string;
   whispered?: boolean;
+  /** 语境复习 (2026-11-24): the word id of a due 归名 word asked in this fight; counts as an attack on the target. */
+  review?: string;
   /** 药片 turn (物品栏): nothing to answer. */
   item?: boolean;
   /** 齐鸣: a correct answer hits every monster in the pack. */
@@ -83,6 +85,7 @@ export interface Question {
 /** Row of the 题型奖励表 (src/data/questionTypes.ts) this question belongs to. */
 export function qKey(q: Question): QKey {
   if (q.echo) return q.echo.say ? 'echoSay' : 'echoListen';
+  if (q.review) return 'clozeForm'; // 语境复习 is a hard question (breaks armor)
   if (q.write) return q.write;
   if (q.type === 'cloze') return q.clozeMode === 'form' ? 'clozeForm' : q.clozeMode === 'base' ? 'clozeBase' : 'clozePick';
   if (q.type === 'saying') return q.options ? 'sayingPick' : 'sayingTyped';
@@ -113,6 +116,8 @@ export interface MonsterState {
 }
 
 export interface PlayerFx {
+  /** 语境复习: this fight's one context question was asked and answered. */
+  ctxAsked?: boolean;
   burn: number;
   poison: number;
   chilled: boolean;
@@ -176,6 +181,8 @@ export interface Battle {
   phaseHit?: boolean;
   /** 相亲和: the +2 resource was paid for this pick (a case change asks for a new pick and pays again). */
   affinityPaid?: boolean;
+  /** 群怪 (rev 49): the stance pick and case before this turn's line, so alignPairs can keep or clear it. */
+  phasePrev?: { phase?: Stance; affinityPaid?: boolean; c: Case };
   /** 先教后考 (0.5): the turn on which a never-met noun had its stance picked for it and shown. */
   phaseTaught?: number;
   /** 「Nächster Halt!」: this monster's armor is one tier down for the whole fight. */
@@ -249,6 +256,12 @@ export interface Battle {
   /** 认得 / 会写 earned on this word this fight, not yet written to the wordbook (new words join it on the kill). */
   readOk?: number;
   writeOk?: number;
+  /** 归名 (2026-11-24): a cloze on this word was answered right in this fight (用). */
+  usedOk?: boolean;
+  /** 复习怪 (relapsed, or a 归名 word 2 gaps overdue): your level, ×1.5 XP, an extra shard. A learning respawn is not one. */
+  reviewMon?: boolean;
+  /** A wrong answer or a 低语 on this word in this fight (a clean 归名 skips the review schedule). */
+  flawed?: boolean;
   outcome: null | 'win' | 'lose' | 'fled';
   log: LogLine[];
   recap: string[];
@@ -283,10 +296,11 @@ export function startBattle(
   // kornspeicher 12–20), so a field monster stands at most one level above you.
   // A field you chose to enter above your level (越区引导) keeps its monsters' full level.
   // Review monsters (2026-11-21) stand at your level wherever they turn up: old word, current-region monster, full pay.
-  const lvl = opts.isEcho ? Math.min(word.lvl, s.level) : kind === 'due' ? Math.max(word.lvl, s.level) : s.flags[`zoneOk_${word.zone}`] ? word.lvl : Math.min(word.lvl, s.level + CONFIG.monster.maxAbove(s.level));
+  const isReview = kind === 'due' && reviewMon(s.words[word.id], t);
+  const lvl = opts.isEcho ? Math.min(word.lvl, s.level) : isReview ? Math.max(word.lvl, s.level) : s.flags[`zoneOk_${word.zone}`] ? word.lvl : Math.min(word.lvl, s.level + CONFIG.monster.maxAbove(s.level));
   const overdue = overdueSteps(s, word, t);
   // 锈名 (0.6, 27 级): a review monster 3+ intervals overdue rusts: one level up, ×1.3 HP, double reward.
-  const rusty = kind === 'due' && overdue >= CONFIG.rusty.overdue && s.level >= CONFIG.rusty.from && !opts.tutorial && !opts.elite;
+  const rusty = isReview && overdue >= CONFIG.rusty.overdue && s.level >= CONFIG.rusty.from && !opts.tutorial && !opts.elite;
   const st = monsterStats(rusty ? lvl + 1 : lvl, stage, kind, overdue);
   const hp0 = rusty ? Math.round(st.hp * CONFIG.rusty.hpMult) : st.hp;
   const monster: MonsterState = { lvl: rusty ? lvl + 1 : lvl, hp: hp0, maxHp: hp0, dmg: st.dmg, vulnerable: 0, burn: 0, poison: 0, chilled: false, broken: 0 };
@@ -299,6 +313,7 @@ export function startBattle(
   const b: Battle = {
     word,
     kind,
+    reviewMon: isReview || undefined,
     overdue,
     rusty: rusty || undefined,
     stage,
@@ -488,11 +503,89 @@ function nextIntent(s: GameState, b: Battle, rng: Rng): Intent {
     if (v) intent = { ...intent, line: v.line, zh: v.zh, full: v.full, fullZh: v.fullZh, caseArt: reads && caseOk(v.idx) ? slotArticle(b.word, v.idx)! : undefined };
   }
   // 格位姿态: the stance stays picked while the case stays the same; a line in another case asks for a new pick.
+  if (b.intent) b.phasePrev = { phase: b.phase, affinityPaid: b.affinityPaid, c: lineCase(b, b.intent) };
   if (b.phase && b.intent) {
-    const caseNow = (it: Intent) => (!it.caseArt || b.pluralMon ? 'nom' : caseOf(genderOf(b.word), it.caseArt) ?? 'nom');
-    if (caseNow(b.intent) !== caseNow(intent)) (b.phase = undefined), (b.affinityPaid = false);
+    if (lineCase(b, b.intent) !== lineCase(b, intent)) (b.phase = undefined), (b.affinityPaid = false);
   }
   return intent;
+}
+
+/** The case a line asks for (nom when the stance comes from the name alone). */
+function lineCase(b: Battle, it: Intent): Case {
+  return !it.caseArt || b.pluralMon ? 'nom' : caseOf(genderOf(b.word), it.caseArt) ?? 'nom';
+}
+
+/** Whether this turn's line is a plain mumbled example (the only kind alignPairs may swap). */
+function plainVoice(s: GameState, b: Battle): boolean {
+  const it = b.intent;
+  return !b.tutorial && it.kind === 'attack' && !it.layers.includes('time') && !b.phrase && !(b.saying && !b.sayingDone) && !b.perfekt && !b.pluralMon && !!b.word.art && s.level >= CONFIG.phase.accFrom;
+}
+
+/** Cases this monster has a line for at this level. */
+function voiceCases(s: GameState, b: Battle): Case[] {
+  const g = genderOf(b.word);
+  const open = casesOpen(s.level);
+  const n = (EXAMPLES[b.word.id] ?? []).length;
+  const out = new Set<Case>();
+  for (let i = 0; i < n; i++) {
+    const c = caseOf(g, slotArticle(b.word, i));
+    if (c && open.includes(c)) out.add(c);
+  }
+  return [...out];
+}
+
+/** Re-voice a plain line in the wanted case (a mumble with the name stance when nothing fits and nom is wanted). */
+function voiceIn(b: Battle, want: Case): void {
+  const g = genderOf(b.word);
+  const ok = (i: number) => caseOf(g, slotArticle(b.word, i)) === want;
+  const v = voiceLine(b.word, b.turn, ok);
+  if (v && ok(v.idx)) b.intent = { ...b.intent, line: v.line, zh: v.zh, full: v.full, fullZh: v.fullZh, caseArt: slotArticle(b.word, v.idx)! };
+  else if (want === 'nom') b.intent = { ...b.intent, line: '… mmh …', zh: '（它含糊地念着什么，听不清。）', full: undefined, fullZh: undefined, caseArt: undefined };
+}
+
+/** The key a pair shares: same article (a plural crowd only pairs with another crowd). */
+function pairKey(b: Battle): string | null {
+  if (!b.word.art || b.perfekt) return null;
+  return b.pluralMon ? 'pl' : b.word.art;
+}
+
+/** 群怪 (rev 49): a same-article pair reads in one case, so the stance right on one is right on the other.
+ *  A member whose line is fixed (charging, fleeing, 接句, crowd) stands in the name's case, so the others follow it;
+ *  otherwise the pair takes a case every member has a line for (the first member's case when it can). */
+export function alignPairs(s: GameState, pack: Battle[]): void {
+  const groups = new Map<string, Battle[]>();
+  for (const x of pack) {
+    const k = !x.outcome ? pairKey(x) : null;
+    if (k) groups.set(k, [...(groups.get(k) ?? []), x]);
+  }
+  for (const g of groups.values()) {
+    if (g.length < 2) continue;
+    const free = g.filter((x) => plainVoice(s, x));
+    let want: Case = 'nom';
+    if (free.length === g.length) {
+      const both = (['nom', 'acc', 'dat'] as Case[]).filter((c) => g.every((x) => voiceCases(s, x).includes(c)));
+      const lead = lineCase(g[0], g[0].intent);
+      want = both.includes(lead) ? lead : both[g[0].turn % Math.max(1, both.length)] ?? 'nom';
+    } else if (free.length < g.length) want = 'nom';
+    for (const x of free) {
+      if (lineCase(x, x.intent) === want) continue;
+      voiceIn(x, want);
+    }
+    // Keep a stance pick the case did not change; clear it when it did.
+    for (const x of g) {
+      const pv = x.phasePrev;
+      if (!pv) continue;
+      const now = lineCase(x, x.intent);
+      if (now === pv.c && !x.phase && pv.phase) (x.phase = pv.phase), (x.affinityPaid = pv.affinityPaid);
+      else if (now !== pv.c && x.phase && x.phase === pv.phase) (x.phase = undefined), (x.affinityPaid = false);
+    }
+  }
+}
+
+/** 齐鸣 shows only when another monster still standing shares the target's stance (rev 49). */
+export function chorusMates(b: Battle, pack: Battle[]): Battle[] {
+  const ph = phaseOf(b);
+  return pack.filter((o) => o !== b && !o.outcome && (ph ? needsPhase(o) && phasePair(o).includes(ph) : pairKey(o) === pairKey(b)));
 }
 
 /** What a 接句怪 shouts while its line is open. */
@@ -516,12 +609,12 @@ function distractors(rng: Rng, w: Word, field: 'de' | 'zh', n: number): string[]
 
 /** Moves on the bar. 0.4: no sentence button (the whole sentence is the finisher); 铭刻 / 齐鸣 change the next question.
  *  2026-11-22 (Lucas, 精简出手按钮): 低语 is no longer a move on the bar but a hint taken after the question is shown (canHint). */
-export function availableMoves(s: GameState, b: Battle, alive = 1): Move[] {
+export function availableMoves(s: GameState, b: Battle, alive = 1, mates = alive - 1): Move[] {
   if (b.tutorial === 'loss') return ['attack'];
   if (b.verify && !b.verifyDone) return ['attack']; // 斩杀: the verification question comes first, no 低语
   const moves: Move[] = ['attack'];
   if (has(s.level, 'inscribe')) moves.push('inscribe');
-  if (has(s.level, 'chorus') && alive > 1) moves.push('chorus');
+  if (has(s.level, 'chorus') && alive > 1 && mates > 0) moves.push('chorus');
   if (has(s.level, 'sentence')) moves.push('sentence');
   if (has(s.level, 'skills') && s.skills.length) moves.push('skill');
   if (s.cls) moves.push('cls');
@@ -537,7 +630,7 @@ function hintOpen(s: GameState, b: Battle): boolean {
  *  (not 会写, no resource, one armor tier lower, never the 归名 blow, the word is flagged). Not on 铭刻 / 齐鸣 /
  *  finisher / skill questions, and only once per question. */
 export function canHint(s: GameState, b: Battle, move: Move, q: Question | null): boolean {
-  if (!q || move !== 'attack' || q.whispered || q.inscribed || q.chorus || !q.answer || q.item) return false;
+  if (!q || move !== 'attack' || q.whispered || q.inscribed || q.chorus || !q.answer || q.item || q.review) return false;
   if (count(s, 'hint') <= 0) return false; // 物品栏: each 低语 uses a 纸条
   if (q.type === 'sentence' || q.type === 'skill' || q.type === 'storm' || q.type === 'steady' || q.ult || q.echo) return false;
   return hintOpen(s, b) && moveReady(s, b, 'whisper');
@@ -643,7 +736,7 @@ export function stancesFor(level: number, b?: Battle): Stance[] {
 
 /** Whether attacks on this monster need a stance (every noun outside the scripted tutorial fights). */
 export function needsPhase(b: Battle): boolean {
-  return !!phaseOf(b) && !b.tutorial;
+  return !!phaseOf(b) && (!b.tutorial || b.tutorial === 'packCharge');
 }
 
 /** 先教后考: a noun you have never met (not in your word book) gets the right stance picked and shown on its
@@ -720,6 +813,20 @@ const SENTENCE_ZH: Record<Pattern, (zh: string) => string> = {
   sind: (z) => `这是我的${z}。（复数）`,
 };
 
+/** 语境复习 (2026-11-24): from the 2nd turn of an ordinary field fight, at most once per fight, a due 归名 word's
+ *  example sentence with that word blanked (nouns with the declined article, verbs conjugated), typed. Words
+ *  without an example sentence are asked as 看中文写 instead. */
+export function contextQuestion(s: GameState, b: Battle, rng: Rng): Question | null {
+  if (b.fx.ctxAsked || b.turn < 2 || b.tutorial || b.verify || b.elite || b.trial || b.phrase || b.isEcho || (b.saying && !b.sayingDone)) return null;
+  if (!has(s.level, 'typing')) return null;
+  const id = contextDueWords(s).find((x) => x !== b.word.id && WORD_BY_ID[x]);
+  if (!id) return null;
+  const rw = WORD_BY_ID[id];
+  const c = makeCloze(rw, 'form', rng);
+  if (c) return { type: 'cloze', review: id, prompt: `语境复习：打出这里要的形式（名词带冠词，动词变位）· ${c.zh}`, focus: c.shown, answer: c.answer, clozeMode: 'form', full: c.full, clozeZh: c.zh };
+  return { type: 'typed', review: id, prompt: `语境复习：${hasArticleQuestion(rw) ? '默写，带上冠词' : '默写这个词'}`, focus: zhWithPos(rw), withArticle: hasArticleQuestion(rw), answer: fullForm(rw) };
+}
+
 export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skillId?: string, inPack = false, mates: Battle[] = []): Question {
   const w = b.word;
   const isNoun = hasArticleQuestion(w);
@@ -737,6 +844,10 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
     const line = skillLine(sk, uses);
     const open = skillLinesOpen(sk, uses);
     return { type: 'skill', prompt: `释放「${sk.zh}」：写对整句${sk.lines.length > 1 ? `（已解锁 ${open} / ${sk.lines.length} 句）` : ''}`, focus: line.zh, answer: line.de, skillId: sk.id };
+  }
+  if (move === 'attack') {
+    const rq = contextQuestion(s, b, rng);
+    if (rq) return rq;
   }
   const articleQ = (): Question => ({
     type: 'article',
@@ -1160,7 +1271,7 @@ export function gradeQuestion(s: GameState, b: Battle, q: Question, input: strin
       return { ok, notes: ok ? [] : [`正确答案：${q.type === 'article' ? fullForm(b.word) : q.answer}`], correct: q.answer! };
     }
     case 'typed':
-      return gradeTyped(input, b.word, !!q.withArticle);
+      return gradeTyped(input, q.review ? WORD_BY_ID[q.review] : b.word, !!q.withArticle);
     case 'storm':
       return gradeTyped(input, q.word!, !!q.withArticle);
     case 'steady':
@@ -1176,8 +1287,9 @@ export function gradeQuestion(s: GameState, b: Battle, q: Question, input: strin
         if (v.ok && v.used && v.used.id !== b.word.id) s.flags.slotRecent = [v.used.id, ...recent.filter((x) => x !== v.used!.id)].slice(0, SLOT_RECENT).join(',');
         return { ok: v.ok, notes: v.notes, correct: v.ok ? input.trim() : q.answer!, word: v.ok && v.used?.id === b.word.id ? b.word : undefined };
       }
-      const ok = gradeCloze(input, q.answer!, b.word, q.clozeZh);
-      return { ok, notes: ok ? [q.full!] : [`正确答案：${q.answer}`, q.full!, ...clozeWhy(q.answer!, b.word, input)], correct: q.answer! };
+      const cw = q.review ? WORD_BY_ID[q.review] : b.word;
+      const ok = gradeCloze(input, q.answer!, cw, q.clozeZh);
+      return { ok, notes: ok ? [q.full!] : [`正确答案：${q.answer}`, q.full!, ...clozeWhy(q.answer!, cw, input)], correct: q.answer! };
     }
     case 'saying': {
       const x = q.say!;
@@ -1261,6 +1373,8 @@ export interface TurnReport {
   cut?: 'pend' | 'ready' | 'fail';
   /** 斩杀: the 会写 / verification was a 笔误 (one letter off) — counted, but not a hit. */
   cutTypo?: boolean;
+  /** 语境复习 answered this turn: the word, right or wrong, and the next gap (null = no more reviews). */
+  review?: { word: Word; ok: boolean; next: number | null };
 }
 
 function comboMult(combo: number): number {
@@ -1374,6 +1488,26 @@ function cutCheck(s: GameState, b: Battle, q: Question, input: string, ok: boole
   return { notes, report };
 }
 
+/** 语境复习 answered: right → next gap, +1 shard, 「✓ 复习 · der Apfel，下次 1 周后」; wrong → the whole sentence
+ *  and the word relapses to a 半名 review monster. Either way this fight's one context question is used. */
+function reviewAnswer(s: GameState, b: Battle, q: Question, ok: boolean): TurnReport['review'] {
+  const w = WORD_BY_ID[q.review!];
+  b.fx.ctxAsked = true;
+  if (!w) return undefined;
+  const p = s.words[w.id];
+  if (p) {
+    if (ok) p.correct += 1;
+    else p.wrong += 1;
+  }
+  if (ok) {
+    const next = contextPass(s, w);
+    addGearKill(s, w.region ?? 1, 1, 1);
+    return { word: w, ok, next };
+  }
+  contextFail(s, w);
+  return { word: w, ok, next: null };
+}
+
 /**
  * One turn. `b` is the monster you target; `pack` holds every monster in the fight
  * (just [b] for a one-on-one). You act first, then every monster still standing acts.
@@ -1415,7 +1549,9 @@ export function resolveTurn(
   const readRight = !itemTurn && ok && move !== 'cls' && (['charge', 'heal', 'flee'].includes(intent.kind) || (intent.kind === 'defend' && writtenQ));
   let blocking = false;
   let interrupted = false;
+  const chorusStopped = new Set<Battle>();
   let cutFx: ReturnType<typeof cutCheck> = { notes: [], report: {} };
+  let reviewFx: TurnReport['review'];
   if (!itemTurn) {
     b.qIndex += 1;
     if (q.type === 'sentence') b.sxUsed = (b.sxUsed ?? 0) + 1;
@@ -1433,11 +1569,21 @@ export function resolveTurn(
       b.hinted = false;
       if (s.words[b.word.id]) delete s.words[b.word.id].hinted;
     }
-    if (ok && !q.whispered) {
-      if (q.type === 'typed' || q.type === 'conj' || q.type === 'plural' || q.type === 'sentence' || (q.type === 'cloze' && q.clozeMode !== 'pick')) b.writeOk = (b.writeOk ?? 0) + 1;
+    if (!q.review && q.type !== 'saying' && (!ok || q.whispered)) b.flawed = true;
+    if (ok && !q.whispered && !q.review && q.type === 'cloze') b.usedOk = true;
+    if (ok && !q.whispered && !q.review) {
+      if (q.type === 'typed' || q.type === 'conj' || q.type === 'plural' || q.type === 'sentence' || (q.type === 'cloze' && q.clozeMode !== 'pick')) {
+        b.writeOk = (b.writeOk ?? 0) + 1;
+        if (!b.phrase) reviewedByWriting(s, verdict.word ?? b.word); // 写对就算复习 (rev 51)
+        else for (const id of Object.keys(s.words)) if (WORD_BY_ID[id] && hasWord(`${b.phrase.a} ${b.phrase.b}`, WORD_BY_ID[id])) reviewedByWriting(s, WORD_BY_ID[id]);
+      }
       else if (q.type === 'article' || q.type === 'pickDe' || q.type === 'pickZh' || q.type === 'callout' || q.type === 'cloze') b.readOk = (b.readOk ?? 0) + 1;
     }
-    cutFx = cutCheck(s, b, q, input, ok);
+    if (!q.review) cutFx = cutCheck(s, b, q, input, ok);
+    else {
+      reviewFx = reviewAnswer(s, b, q, ok);
+      if (reviewFx) verdict.notes.unshift(reviewFx.ok ? `✓ 复习 · ${fullForm(reviewFx.word)}，${reviewFx.next ? `下次 ${gapZh(reviewFx.next)}` : '以后不用再复习了'}` : `复习没答上：${fullForm(reviewFx.word)} 复发了，会作为复习怪（半名）回到野外。`);
+    }
     if (cutFx.notes.length) verdict.notes.push(...cutFx.notes);
     if (q.type === 'saying') {
       b.sayingDone = true;
@@ -1489,7 +1635,7 @@ export function resolveTurn(
     if (ok) {
       b.wrongStreak = 0;
       if (q.type === 'callout') b.named = true;
-      if (q.type !== 'saying') b.step += 1;
+      if (q.type !== 'saying' && !q.review) b.step += 1;
       s.combo += 1;
       if (readRight && move !== 'skill') s.combo += 1; // 读对意图并出对克制招式，连击额外 +1
       s.bestCombo = Math.max(s.bestCombo, s.combo);
@@ -1617,6 +1763,7 @@ export function resolveTurn(
         // Right stance = the hit meets armor one tier lower (a choice answer as if typed, a typed one ignores it).
         const armor = phaseFx === 'right' ? effArmor(s, b, tier === 0 ? 1 : 2) : phaseFx === 'wrong' ? effArmor(s, b, tier === 2 ? 1 : tier, CONFIG.phase.wrongArmor) : effArmor(s, b, tier);
         if (m.broken > 0) m.broken -= 1;
+        const chorusMult = mult; // 齐鸣: the mates take the same hit before their own armor
         mult *= 1 - armor;
         const ph = phaseOf(b);
         if (phaseFx === 'right') {
@@ -1672,19 +1819,23 @@ export function resolveTurn(
         if (element === 'fire') m.burn = CONFIG.status.burnTurns;
         if (element === 'poison') m.poison = Math.min(CONFIG.status.poisonMaxStacks, m.poison + 1);
 
-        // 齐鸣: the same answer lands on every other monster still standing (each against its own armor).
+        // 齐鸣 (rev 49): only when the target's stance is right (or there is no stance to pick, e.g. 复数 crowds
+        // without a pick yet are excluded by needsPhase). The mates sharing that stance take the same hit (crit, hard
+        // question, combo all count) against their own right-stance armor; 刻字 auch +20% each. A charging mate is
+        // interrupted. A wrong or soft stance on the target: only the target is hit, no chorus.
         if (q.chorus && multi) {
           const hitOthers: string[] = [];
-          for (const o of pack) {
-            if (o === b || o.outcome) continue;
-            // 词性三相: the chorus only rings on monsters of the stance you are in.
-            if (needsPhase(o) && phaseOf(o) !== b.phase) continue;
-            // 刻字 auch (0.6, 25 级): the chorus rings +20% louder on the others per engraved item.
+          const rings = needsPhase(b) ? phaseFx === 'right' : true;
+          if (!rings) log.push({ text: '目标的相没选对：齐鸣没响，只打中了目标。', tone: 'bad' });
+          for (const o of rings ? chorusMates(b, pack) : []) {
             const auch = 1 + CONFIG.engrave.bonus * engraved(s, 'auch');
-            const d = Math.max(1, Math.round(atk * comboMult(s.combo) * auch * between(rng, CONFIG.damage.roll[0], CONFIG.damage.roll[1]) * (1 - effArmor(s, o, tier))));
+            const oArmor = needsPhase(o) ? effArmor(s, o, tier === 0 ? 1 : 2) : effArmor(s, o, tier);
+            const d = Math.max(1, Math.round(atk * Math.min(chorusMult, CONFIG.damage.maxMultiplierOfBase) * auch * (1 - oArmor)));
             o.monster.hp = Math.max(0, o.monster.hp - d);
             if (o.monster.broken > 0) o.monster.broken -= 1;
-            hitOthers.push(`${o.named || o.stage > 0 ? fullForm(o.word) : '另一只'} ${d}`);
+            if (o.intent.kind === 'charge' || o.intent.kind === 'flee') chorusStopped.add(o);
+            o.phaseHit = true;
+            hitOthers.push(`${o.named || o.stage > 0 ? fullForm(o.word) : '另一只'} ${d}${chorusStopped.has(o) ? '（打断）' : ''}`);
           }
           if (hitOthers.length) log.push({ text: `齐鸣：${hitOthers.join('，')}。`, tone: 'good' });
         }
@@ -1709,7 +1860,7 @@ export function resolveTurn(
         m.hp = 0;
         b.outcome = 'win';
         if (q.type === 'storm' && multi && overkill > 0) spillStorm(s, pack, b, overkill, typedLike, log);
-        b.lastKillTyped = typedQ && !q.whispered && (q.type === 'sentence' ? verdict.word?.id === b.word.id : true);
+        b.lastKillTyped = typedQ && !q.whispered && !q.review && (q.type === 'sentence' ? verdict.word?.id === b.word.id : true);
         if (q.type === 'typed' && !q.withArticle && hasArticleQuestion(b.word)) b.lastKillTyped = false;
         // A noun's 归名 blow must write the article: only a form cloze that includes one (den Tee) counts.
         if (q.type === 'cloze' && hasArticleQuestion(b.word) && !(q.clozeMode === 'form' && ARTICLE_RE.test(q.answer ?? ''))) b.lastKillTyped = false;
@@ -1722,7 +1873,7 @@ export function resolveTurn(
         log.push({ text: '冷静：写错了，连击还在。', tone: 'info' });
       } else s.combo = 0;
       b.wrongStreak += 1;
-      if (b.stage === 2 && !b.slipped && b.kind === 'due') {
+      if (b.stage === 2 && !b.slipped && b.kind === 'due' && !q.review) {
         b.slipped = true;
         log.push({ text: '错了。它长回一颗牙（退回裂形）。', tone: 'bad' });
       }
@@ -1743,7 +1894,7 @@ export function resolveTurn(
     // Target died and nobody else is left: the fight ends before anyone acts.
     if (pack.every((x) => x.outcome === 'win')) {
       syncShared(b, pack);
-      return finish(s, b, { correct: ok, verdict, playerDamage, crit, newSpell, monsterDamage: 0, parried: false, element, log, outcome: 'win', readRight, kills, killer: null, phase: phaseFx, ...cutFx.report });
+      return finish(s, b, { correct: ok, verdict, playerDamage, crit, newSpell, monsterDamage: 0, parried: false, element, log, outcome: 'win', readRight, kills, killer: null, phase: phaseFx, ...cutFx.report, review: reviewFx });
     }
   }
 
@@ -1777,10 +1928,9 @@ export function resolveTurn(
     if (d > 0) lastHitter = b;
   };
 
-  if (interrupted && intent.kind === 'charge' && b === target) {
-    say({ text: '打断了！它憋的那口气散了。', tone: 'good' });
-  } else if (interrupted && b === target) {
-    /* 「Wie bitte?」cancelled the intent */
+  if ((interrupted && b === target) || chorusStopped.has(b)) {
+    // 「Wie bitte?」 cancels silently; a charge (on the target, or a mate hit by 齐鸣) says it broke.
+    if (intent.kind === 'charge') say({ text: '打断了！它憋的那口气散了。', tone: 'good' });
   } else {
     switch (intent.kind) {
       case 'attack': {
@@ -1920,11 +2070,12 @@ export function resolveTurn(
       perfektGuard(s, x);
       x.queued = (b.fx.peek ?? 0) > 0 ? nextIntent(s, x, rng) : undefined;
     }
+    if (multi) alignPairs(s, pack);
     if ((b.fx.peek ?? 0) > 0) b.fx.peek! -= 1;
   }
   syncShared(b, pack);
   const outcome: Battle['outcome'] = pack.every((x) => x.outcome === 'win') ? 'win' : s.hp <= 0 ? 'lose' : b.outcome;
-  return finish(s, b, { correct: ok, verdict, playerDamage, crit, newSpell, monsterDamage, parried, element, log, outcome, readRight, kills, killer, phase: phaseFx, ...cutFx.report });
+  return finish(s, b, { correct: ok, verdict, playerDamage, crit, newSpell, monsterDamage, parried, element, log, outcome, readRight, kills, killer, phase: phaseFx, ...cutFx.report, review: reviewFx });
 }
 
 function finish(_s: GameState, b: Battle, r: TurnReport): TurnReport {

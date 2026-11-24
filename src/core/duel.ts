@@ -6,7 +6,7 @@
 import { CONFIG } from './config';
 import { gradeTyped, type Verdict } from './grading';
 import { shuffle, type Rng } from './rng';
-import { isRetired } from './srs';
+import { isRetired, setGuiming } from './srs';
 import { addXp, maxHp, now, todayLog, type GameState, type LevelUpResult } from './state';
 import type { Word } from './types';
 import { hasArticleQuestion, WORDS } from '../data/words';
@@ -68,7 +68,8 @@ export function answerDuel(s: GameState, d: Duel, input: string): { levelUp: Lev
       log.newWords += 1;
     }
     xp = Math.round(CONFIG.xp.newMonster * DUEL.xpMult);
-    s.words[w.id] = { stage: 3, due: t + CONFIG.srs.relapse[0], firstSeen: old?.firstSeen ?? t, lastSeen: t, relapse: old?.relapse ?? 0, correct: (old?.correct ?? 0) + 1, wrong: old?.wrong ?? 0, read: old?.read ?? 0, write: (old?.write ?? 0) + 1 };
+    s.words[w.id] = { stage: 3, due: t, firstSeen: old?.firstSeen ?? t, lastSeen: t, relapse: old?.relapse ?? 0, correct: (old?.correct ?? 0) + 1, wrong: old?.wrong ?? 0, read: old?.read ?? 0, write: (old?.write ?? 0) + 1 };
+    setGuiming(s.words[w.id], t, true); // written right with no hint: one 30-day spot check (rev 51)
     log.guiming += 1;
     levelUp = addXp(s, xp);
   } else {

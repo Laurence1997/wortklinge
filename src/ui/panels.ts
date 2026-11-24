@@ -2,7 +2,7 @@ import { loadPron, MODEL_MB, pronForget, pronStatus } from './phoneme';
 import { icon, SLOT_TILE, portrait } from './icons';
 import { CONFIG, xpToNext } from '../core/config';
 import { AFFIX_ZH, itemScore, mainStatText, QUALITY_ZH, requiredLevel, SLOT_ZH } from '../core/loot';
-import { cutStatus, kindOf, progressSummary, stageOf, STAGE_ZH } from '../core/srs';
+import { cutStatus, kindOf, progressSummary, reviewMon, stageOf, STAGE_ZH } from '../core/srs';
 import { affinityOf, attack, critChance, dayKey, hintsPerFight, maxHp, now } from '../core/state';
 import type { AffixKey, Item, Slot, Word } from '../core/types';
 import { has, UNLOCK } from '../core/unlocks';
@@ -22,7 +22,7 @@ import { CHEST_ZH, type ChestKind } from '../core/chest';
 import { playChest } from './chestFx';
 import { favour, FAVOUR, QUESTS, type QuestId } from '../core/quests';
 import { gradeTyped } from '../core/grading';
-import { recordAnswer } from '../core/srs';
+import { recordAnswer, reviewedByWriting } from '../core/srs';
 import { cloud, leaderboard, mustChangePassword, push, setNickname, signOut } from '../net/cloud';
 import { loginView } from './account';
 import { toast } from './feedback';
@@ -599,6 +599,7 @@ export class Panels {
     if (!value.trim()) return;
     if (checkBlank(value, b)) {
       if (d.misses === 0) d.firstTry++;
+      if (WORD_BY_ID[b.id]) reviewedByWriting(this.ctrl.state, WORD_BY_ID[b.id]); // 写对就算复习 (rev 51)
       d.msg = `对：${b.form}`;
       d.at++;
       d.misses = 0;
@@ -1204,7 +1205,7 @@ export class Panels {
             h('td', p.read ? '✓' : '—'),
             h('td', p.write ? '✓' : '—'),
             h('td', `${p.correct} / ${p.wrong}`),
-            h('td', `${p.retired ? '' : `${STAGE_ZH[p.stage as 0 | 1 | 2 | 3] ?? ''} · `}${cutStatus(p, t)}${due ? ' · 该复习了' : ''}`),
+            h('td', p.retired || p.stage === 3 || reviewMon(p, t) ? cutStatus(p, t) : `${STAGE_ZH[p.stage as 0 | 1 | 2 | 3] ?? ''} · ${cutStatus(p, t)}${due ? ' · 该复习了' : ''}`),
           ),
         );
       }

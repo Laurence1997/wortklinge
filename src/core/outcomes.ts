@@ -37,7 +37,7 @@ export function applyWin(s: GameState, b: Battle, rng: Rng, opts: { heal?: boole
   const w = b.word;
   const wasNew = b.kind === 'new';
   // 残句: a sentence is not a word — nothing goes into the wordbook; its card drops instead.
-  const kill: KillOutcome = b.phrase ? { kind: 'new', from: 0, to: 0, guiming: false, needsTypedFinal: false } : recordKill(s, w, b.lastKillTyped, b.slipped, t);
+  const kill: KillOutcome = b.phrase ? { kind: 'new', from: 0, to: 0, guiming: false, needsTypedFinal: false } : recordKill(s, w, b.lastKillTyped, b.slipped, t, { used: b.usedOk, flaw: b.flawed || b.hinted, typed: (b.writeOk ?? 0) > 0 });
   let card: WinResult['card'];
   if (b.phrase?.cardId) {
     s.sayings ??= {};
@@ -49,7 +49,9 @@ export function applyWin(s: GameState, b: Battle, rng: Rng, opts: { heal?: boole
   }
 
   let xp = b.kind === 'new' ? CONFIG.xp.newMonster : b.kind === 'due' ? CONFIG.xp.dueMonster : CONFIG.xp.shadowMonster;
-  if (b.kind === 'due') xp *= CONFIG.xp.dueBonus;
+  // 2026-11-24: only 复习怪 pay the review bonus; a learning respawn (认 → 用 → 写, minutes later) pays as due.
+  const rv = b.kind === 'due' && !!b.reviewMon;
+  if (rv) xp *= CONFIG.xp.dueBonus;
   const overdueMult = 1 + CONFIG.monster.overdueRewardStep * b.overdue;
   xp *= overdueMult;
   if (b.lastKillTyped) xp *= CONFIG.xp.typedKillMult;
@@ -88,7 +90,7 @@ export function applyWin(s: GameState, b: Battle, rng: Rng, opts: { heal?: boole
   log.kills += 1;
   s.stats.kills += 1;
   // 碎片 count from Lv1, but a tier-up is only announced once gear opens (Lv3, 节奏表).
-  const gearUpRaw = b.tutorial === 'loss' ? null : addGearKill(s, b.phrase ? s.region ?? 1 : w.region ?? 1, rng(), (b.kind === 'due' ? 1 + CONFIG.xp.dueShards : 1) + (b.cursed ? CONFIG.curse.shards : 0) + (b.rusty ? CONFIG.rusty.shards : 0));
+  const gearUpRaw = b.tutorial === 'loss' ? null : addGearKill(s, b.phrase ? s.region ?? 1 : w.region ?? 1, rng(), (rv ? 1 + CONFIG.xp.dueShards : 1) + (b.cursed ? CONFIG.curse.shards : 0) + (b.rusty ? CONFIG.rusty.shards : 0));
   const gearUp = has(s.level, 'gear') ? gearUpRaw : null;
 
   // Drops: 20% from small monsters once gear is unlocked; the first one is a guaranteed green (Lv5 lesson).
@@ -97,12 +99,12 @@ export function applyWin(s: GameState, b: Battle, rng: Rng, opts: { heal?: boole
   if (has(s.level, 'gear') && b.tutorial !== 'loss') {
     const firstGreen = !s.flags.firstGreen;
     let rate = CONFIG.loot.smallDropRate * (1 + Math.min(1, affixTotal(s, 'dropRate')));
-    if (b.kind === 'due') rate *= 1.5;
+    if (rv) rate *= 1.5;
     if (firstGreen || rng() < rate) {
       const maxQ = has(s.level, 'purple') ? 'orange' : 'green';
       // 学习加成: typed kills and due words raise purple/orange odds.
       let q = rollQuality(rng, maxQ, firstGreen ? 'green' : undefined);
-      if (q === 'white' && (b.lastKillTyped || b.kind === 'due') && rng() < 0.15) q = 'green';
+      if (q === 'white' && (b.lastKillTyped || rv) && rng() < 0.15) q = 'green';
       drop = makeItem(rng, b.monster.lvl, q, firstGreen ? 'pen' : undefined);
       markUnidentified(s, drop);
       if (firstGreen) s.flags.firstGreen = true;
@@ -121,7 +123,7 @@ export function applyWin(s: GameState, b: Battle, rng: Rng, opts: { heal?: boole
   } else if (has(s.level, 'chests') && b.tutorial !== 'loss' && !b.trial) {
     if (b.elite) chest = null; // 场景精英: no wood chest per part; the elite's iron chest comes with the last part
     else if (b.flees) chest = 'iron';
-    else if (b.kind === 'due' && rng() < CHEST_RATE.forgotten) chest = 'forgotten';
+    else if (rv && rng() < CHEST_RATE.forgotten) chest = 'forgotten';
     else if (rng() < CHEST_RATE.wood) chest = 'wood';
   }
 
@@ -129,7 +131,7 @@ export function applyWin(s: GameState, b: Battle, rng: Rng, opts: { heal?: boole
   if (opts.heal !== false) postFightHeal(s);
   // 物品栏 (2026-11-22): rolled last, so the earlier rolls keep their order.
   const items = b.tutorial === 'loss' ? [] : rollItemDrops(s, rng);
-  return { xp, gold, kill, levelUp, drop, items, bagFull, echoRecovered, review: b.kind === 'due', chest, gearUp, card };
+  return { xp, gold, kill, levelUp, drop, items, bagFull, echoRecovered, review: rv, chest, gearUp, card };
 }
 
 export interface LossResult {

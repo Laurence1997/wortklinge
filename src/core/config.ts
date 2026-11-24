@@ -10,12 +10,20 @@ export const CONFIG = {
   dayStartHour: 4,
 
   srs: {
-    /** Respawn interval after the 1st defeat (无名 → 裂形) and the 2nd (裂形 → 半名).
-     *  Design: 当天、隔天、再过两三天 → 归名 at the earliest on day 3. */
+    /** 归名 in one day (2026-11-24, 游戏设计 七): after the 1st (认) and 2nd (用) defeat, and after a 半名 fight
+     *  without the 归名一击, the word respawns in its own scene a few monsters later (about 5–10 minutes). */
+    respawn: 6 * MINUTE,
+    /** Old 16h / 40h intervals, kept only for migrate() reading old saves. */
     intervals: [16 * HOUR, 40 * HOUR],
     /** Tutorial words respawn quickly so the Lv3 bonfire lesson works. */
     tutorialInterval: 3 * MINUTE,
-    /** After 归名 the word relapses after these gaps (about 1 week, 1 month, 3 months, then 6 months). */
+    /** 语境复习: after 归名 a context question is due after 2 days, 1 week, 1 month and 3 months, once each. */
+    context: [2 * DAY, 7 * DAY, 30 * DAY, 90 * DAY],
+    /** A clean 归名 (no wrong answer, no 低语 in its three fights) gets only one spot check after this long (rev 51). */
+    spot: 30 * DAY,
+    /** A context review this many gaps overdue turns back into a review monster. */
+    overdueToMonster: 2,
+    /** Old relapse gaps (pre-2026-11-24 saves only). */
     relapse: [7 * DAY, 30 * DAY, 90 * DAY, 180 * DAY],
     /** 斩杀 (0.6.x): a retired word comes back once as a 回响 check after this long. */
     recheck: 30 * DAY,
@@ -159,7 +167,7 @@ export const CONFIG = {
   /** 跟读 (0.5, Lv5+, optional): read the line the monster just said back; sounding right pays XP once per fight, never costs anything. */
   shadow: { xp: 10, match: 0.7 },
   phase: { wrongArmor: 2, rightRes: 1, softUntil: 5, accFrom: 7, datFrom: 15, pronounChance: 0.3, pluralChance: 0.2, pluralHp: 1.5 },
-  pack: { hpMult: 0.6, dmgMult: [0.2, 0.12] as [number, number], strayMult: 0.5, max: 3, max3From: 13, radiusTiles: 4, fromLevel: 11 },
+  pack: { hpMult: 0.6, dmgMult: [0.2, 0.12] as [number, number], strayMult: 0.5, max: 3, max3From: 13, max4: 4, max4From: 81, radiusTiles: 4, fromLevel: 11 },
 
   boss: {
     /** Share of region words that must be at least 半名 before the boss appears. */
