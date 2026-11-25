@@ -19,7 +19,12 @@ import { CONJ, PERSONS } from '../../src/data/verbs';
 
 const root = join(__dirname, '../..');
 const dir = join(root, 'proof/tatoeba');
-const file = (n: string) => join(dir, n);
+// The tar archives unpack to .csv (still tab-separated); accept either name.
+const file = (n: string) => {
+  const p = join(dir, n);
+  const alt = p.replace(/\.tsv$/, '.csv');
+  return existsSync(p) || !existsSync(alt) ? p : alt;
+};
 if (!existsSync(file('deu_sentences_detailed.tsv'))) {
   console.log('proof/tatoeba/ is empty: run scripts/proof/tatoeba-download.sh first.');
   process.exit(0);
@@ -137,6 +142,8 @@ for (const c of withPicks) {
 writeFileSync(join(root, 'proof/out/tatoeba.md'), lines.join('\n') + '\n');
 writeFileSync(join(root, 'proof/out/tatoeba.json'), JSON.stringify({ confirmed: confirmed.map((m) => ({ id: m.x.id, tatoeba: m.s })), candidates: cands }, null, 1));
 console.log(`${confirmed.length} of our sentences match a native Tatoeba sentence; ${withPicks.length}/${WORDS.length} words have candidates`);
+for (const m of confirmed.slice(0, 15)) console.log(`  = ${m.x.id}: ${m.x.text} (#${m.s!.id})`);
+for (const c of withPicks.slice(0, 12)) console.log(`  ${c.de}: ${c.picks[0].text}${c.picks[0].zh ? ` — ${c.picks[0].zh}` : ''}${c.picks[0].audio ? ' [audio]' : ''}`);
 if (process.env.GITHUB_STEP_SUMMARY) {
   writeFileSync(process.env.GITHUB_STEP_SUMMARY, `### 德语校对：Tatoeba\n我们的句子里 ${confirmed.length} 条和母语者原句一致；${withPicks.length}/${WORDS.length} 个词有母语例句候选（见 artifact proof-report）。\n`, { flag: 'a' });
 }
