@@ -7,8 +7,8 @@
 // Every item: { id, kind, text, zh?, src }. `id` is `<kind>:<key>` and stays the same while the source key stays;
 // `hash` is from the text, so the in-game report button (src/ui/report.ts) and these files can be matched either way.
 
-import { mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { join, relative } from 'node:path';
 import { sentenceHash } from '../../src/core/sentenceId';
 import { EXAMPLES } from '../../src/core/cloze';
 import { WORDS, WORD_BY_ID } from '../../src/data/words';
@@ -202,6 +202,32 @@ for (const dir of ['core', 'ui', 'game', 'net']) {
       });
     });
   }
+}
+
+// 11. Word-list data files (data/**/*.tsv, e.g. data/wortschatz/): every row with a 例句 column. 搭配 (verb +
+//     preposition pattern) goes along in zh, so DeepSeek can check that the sentence really uses it.
+function tsvFiles(dir: string): string[] {
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
+    e.isDirectory() ? (e.name === 'build' ? [] : tsvFiles(join(dir, e.name))) : e.name.endsWith('.tsv') ? [join(dir, e.name)] : [],
+  );
+}
+const repo = join(__dirname, '../..');
+for (const f of tsvFiles(join(repo, 'data'))) {
+  const [head, ...rows] = readFileSync(f, 'utf8').split(/\r?\n/).filter((l) => l.trim());
+  const cols = head.split('\t');
+  const ex = cols.indexOf('例句');
+  if (ex < 0) continue;
+  const zhCol = cols.indexOf('例句中文');
+  const pat = cols.indexOf('搭配');
+  const rel = relative(repo, f);
+  const name = rel.replace(/^data\//, '').replace(/\.tsv$/, '');
+  rows.forEach((r, i) => {
+    const c = r.split('\t');
+    const key = (pat >= 0 ? c[pat] : c[0])?.trim() || String(i + 1);
+    const zh = [pat >= 0 && c[pat] ? `搭配：${c[pat]}` : '', zhCol >= 0 ? c[zhCol] ?? '' : ''].filter(Boolean).join('；');
+    add('tsv', `${name}:${key}:${i + 1}`, c[ex] ?? '', rel, zh || undefined);
+  });
 }
 
 const outDir = join(__dirname, '../../proof/out');

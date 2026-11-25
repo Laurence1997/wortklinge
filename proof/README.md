@@ -7,7 +7,7 @@ changes game data by itself; they produce lists for a person to decide on.
 |---|---|---|---|
 | 1 | `scripts/proof/extract.ts` collects every German item with an id and a hash (examples, diary, bosses, verb tables, generated sentences, German in game code) | everywhere | — |
 | 2 | `scripts/proof/languagetool.ts`: LanguageTool (open source) grammar and spelling check | GitHub Action on every change to German text; locally with Docker | free |
-| 3 | `scripts/proof/deepseek.ts`: DeepSeek reads sentences + Chinese and lists only suspicious ones | same Action, once the `DEEPSEEK_API_KEY` repository secret exists | cents per full run; cached, reruns only send changed text |
+| 3 | `scripts/proof/deepseek.ts`: DeepSeek reads sentences + Chinese and lists only suspicious ones | same Action, started by hand (Actions → 德语校对 → Run workflow, DeepSeek ticked); needs the `DEEPSEEK_API_KEY` secret | cents per full run; cached, reruns only send changed text |
 | 4 | `scripts/proof/tatoeba.ts`: which of our sentences a native speaker already wrote on Tatoeba, and native example candidates (with audio / Chinese) for every word | Action, run by hand ("Run workflow" → tick Tatoeba) | free |
 
 Plus the in-game 「这句有问题？」 link under answer feedback (`src/ui/report.ts`), which writes to the Supabase table
