@@ -49,7 +49,8 @@ export interface Verdict {
   problem?: string;
   fix?: string;
 }
-const cachePath = join(root, 'proof/out/deepseek-cache.json');
+// One cache per model, so trying another model re-checks everything.
+const cachePath = join(root, MODEL === 'deepseek-flash' ? 'proof/out/deepseek-cache.json' : `proof/out/deepseek-cache-${MODEL}.json`);
 const cache: Record<string, Verdict> = existsSync(cachePath) ? JSON.parse(readFileSync(cachePath, 'utf8')) : {};
 
 const SYSTEM = `你是德语母语的编辑，在校对一款给中国人学德语的游戏（A1–A2 难度）里的德语。
@@ -132,7 +133,7 @@ process.stdout.write('\n');
 const flagged = items.filter((x) => cache[x.hash] && !cache[x.hash].ok);
 const ZH = { error: '错误', unnatural: '不自然', translation: '翻译不符' } as Record<string, string>;
 const lines = [
-  '# DeepSeek 交叉复查结果',
+  `# DeepSeek 交叉复查结果（${MODEL}）`,
   '',
   `复查了 ${items.length} 条（句子、词卡、变位表），${flagged.length} 条被认为可疑。AI 也会误报：这里只是「值得看一眼」的名单。`,
   '',
@@ -147,7 +148,7 @@ for (const sev of ['error', 'translation', 'unnatural']) {
   }
   lines.push('');
 }
-writeFileSync(join(root, 'proof/out/deepseek.md'), lines.join('\n'));
+writeFileSync(join(root, `proof/out/deepseek${MODEL === 'deepseek-flash' ? '' : '-' + MODEL}.md`), lines.join('\n'));
 writeFileSync(join(root, 'proof/out/deepseek.json'), JSON.stringify(flagged.map((x) => ({ ...x, ...cache[x.hash] })), null, 1));
 console.log(`${flagged.length} suspicious → proof/out/deepseek.md`);
 // The full list in the log too, so it can be read without downloading the artifact.
