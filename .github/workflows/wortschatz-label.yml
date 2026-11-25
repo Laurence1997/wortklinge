@@ -4,7 +4,7 @@ name: 词表情境标注 (word list situation labels)
 # back to the same branch. Runs on a push that changes the script (or by hand). Costs a little money per run.
 on:
   push:
-    paths: ['scripts/wortschatz/label_luna.py', 'scripts/wortschatz/label_luna2.py', '.github/workflows/wortschatz-label.yml']
+    paths: ['scripts/wortschatz/label_luna.py', 'scripts/wortschatz/label_luna2.py', 'scripts/wortschatz/label_luna_b2.py', '.github/workflows/wortschatz-label.yml']
   workflow_dispatch:
     inputs:
       limit:
@@ -30,12 +30,12 @@ jobs:
           LIMIT: ${{ inputs.limit || '0' }}
         run: |
           python3 scripts/wortschatz/label_luna.py
-          python3 scripts/wortschatz/label_luna2.py
+          python3 scripts/wortschatz/label_luna_b2.py
       - name: Commit labels
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898233+github-actions[bot]@users.noreply.github.com'
-          git add scripts/wortschatz/out/labels.tsv
+          git add scripts/wortschatz/out/labels*.tsv
           git diff --cached --quiet && exit 0
           git commit -m 'Wortschatz: Luna situation/function labels'
           git push
