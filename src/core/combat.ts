@@ -7,6 +7,7 @@ import { ELEMENT_ZH, generateIntent, INTENT_ZH } from './intents';
 import { between, makeRng, pick, shuffle, type Rng } from './rng';
 import { contextDueWords, contextFail, contextPass, gapZh, reviewedByWriting, reviewMon, failVerify, retire, kindOf, stageOf, overdueSteps, verifyOf, type Kind, type Stage } from './srs';
 import { typoOk } from './cut';
+import { placedCheck, placedPick } from './placement';
 import { addGearKill, affinityOf, affixTotal, attack, engraved, critChance, gearPen, hintsPerFight, maxHp, now, type GameState } from './state';
 import type { Element, Intent, Move, Word } from './types';
 import { gradeLink, gradeOrder, gradeSlot, linkTask, orderTask, SLOT_RECENT, slotNouns, slotTask, WRITE_CHANCE, type SlotTask } from './writing';
@@ -819,12 +820,15 @@ const SENTENCE_ZH: Record<Pattern, (zh: string) => string> = {
 export function contextQuestion(s: GameState, b: Battle, rng: Rng): Question | null {
   if (b.fx.ctxAsked || b.turn < 2 || b.tutorial || b.verify || b.elite || b.trial || b.phrase || b.isEcho || (b.saying && !b.sayingDone)) return null;
   if (!has(s.level, 'typing')) return null;
-  const id = contextDueWords(s).find((x) => x !== b.word.id && WORD_BY_ID[x]);
-  if (!id) return null;
+  const due = contextDueWords(s).find((x) => x !== b.word.id && WORD_BY_ID[x]);
+  // 入学测试: with no review due, one 推定会 word is spot-checked instead.
+  const id = due ?? placedPick(s, rng, b.word.id);
+  if (!id || !WORD_BY_ID[id]) return null;
   const rw = WORD_BY_ID[id];
+  const tag = due ? '语境复习' : '抽查（入学测试推定你会）';
   const c = makeCloze(rw, 'form', rng);
-  if (c) return { type: 'cloze', review: id, prompt: `语境复习：打出这里要的形式（名词带冠词，动词变位）· ${c.zh}`, focus: c.shown, answer: c.answer, clozeMode: 'form', full: c.full, clozeZh: c.zh };
-  return { type: 'typed', review: id, prompt: `语境复习：${hasArticleQuestion(rw) ? '默写，带上冠词' : '默写这个词'}`, focus: zhWithPos(rw), withArticle: hasArticleQuestion(rw), answer: fullForm(rw) };
+  if (c) return { type: 'cloze', review: id, prompt: `${tag}：打出这里要的形式（名词带冠词，动词变位）· ${c.zh}`, focus: c.shown, answer: c.answer, clozeMode: 'form', full: c.full, clozeZh: c.zh };
+  return { type: 'typed', review: id, prompt: `${tag}：${hasArticleQuestion(rw) ? '默写，带上冠词' : '默写这个词'}`, focus: zhWithPos(rw), withArticle: hasArticleQuestion(rw), answer: fullForm(rw) };
 }
 
 export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skillId?: string, inPack = false, mates: Battle[] = []): Question {
@@ -1374,7 +1378,7 @@ export interface TurnReport {
   /** 斩杀: the 会写 / verification was a 笔误 (one letter off) — counted, but not a hit. */
   cutTypo?: boolean;
   /** 语境复习 answered this turn: the word, right or wrong, and the next gap (null = no more reviews). */
-  review?: { word: Word; ok: boolean; next: number | null };
+  review?: { word: Word; ok: boolean; next: number | null; placed?: boolean; reverted?: number };
 }
 
 function comboMult(combo: number): number {
@@ -1495,6 +1499,12 @@ function reviewAnswer(s: GameState, b: Battle, q: Question, ok: boolean): TurnRe
   b.fx.ctxAsked = true;
   if (!w) return undefined;
   const p = s.words[w.id];
+  if (p?.placed && !p.retired) {
+    // 入学测试 spot check: right → retired; wrong → review monster (and maybe the whole band).
+    const reverted = placedCheck(s, w, ok);
+    if (ok) addGearKill(s, w.region ?? 1, 1, 1);
+    return { word: w, ok, next: null, placed: true, reverted };
+  }
   if (p) {
     if (ok) p.correct += 1;
     else p.wrong += 1;
