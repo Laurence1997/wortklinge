@@ -184,7 +184,7 @@ export const CONFIG = {
   boss: {
     /** Share of region words that must be at least 半名 before the boss appears. */
     halfNameShare: 0.4,
-    /** 审查修订 C5: chests for the first N boss kills a day (first gold, then iron). */
+    /** 审查修订 C5: iron chests for the first N boss kills a day (gold only on the very first kill). */
     chestsPerDay: 3,
     minLevel: 8,
     hp: 6,

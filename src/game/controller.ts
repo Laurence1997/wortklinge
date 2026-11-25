@@ -2510,9 +2510,9 @@ export class Controller {
     go();
   }
 
-  /** 审查修订 C5: a boss pays a chest for the first 3 kills of a day (the first one gold, then iron); after that it
-   *  drops like a normal monster. Returns the chest kind, or null and maybe pushes one normal drop. */
-  private bossChest(key: string): 'gold' | 'iron' | null {
+  /** 审查修订 C5: a gold chest only on the very first kill; then an iron chest for the first 3 kills of a day; after
+   *  that it drops like a normal monster. Returns the chest kind, or null and maybe pushes one normal drop. */
+  private bossChest(key: string, first = false): 'gold' | 'iron' | null {
     const s = this.state;
     const today = dayKey(now(s));
     if (s.flags[`${key}Day`] !== today) {
@@ -2521,7 +2521,8 @@ export class Controller {
     }
     const n = ((s.flags[`${key}DayN`] as number) ?? 0) + 1;
     s.flags[`${key}DayN`] = n;
-    if (n <= CONFIG.boss.chestsPerDay) return n === 1 ? 'gold' : 'iron';
+    if (first) return 'gold';
+    if (n <= CONFIG.boss.chestsPerDay) return 'iron';
     if (this.rng() < CONFIG.loot.smallDropRate && s.bag.length < CONFIG.loot.bagSize) {
       const it = makeItem(this.rng, s.level, rollQuality(this.rng, has(s.level, 'purple') ? 'orange' : 'green'));
       s.bag.push(it);
@@ -2536,7 +2537,7 @@ export class Controller {
     const s = this.state;
     const first = !s.flags.boss3Kills;
     s.flags.boss3Kills = ((s.flags.boss3Kills as number) ?? 0) + 1;
-    const chest = this.bossChest('boss3');
+    const chest = this.bossChest('boss3', first);
     const lv = addXp(s, CONFIG.boss3.xp);
     s.gold += CONFIG.boss3.gold;
     this.questFire('boss3');
@@ -2591,7 +2592,7 @@ export class Controller {
     const s = this.state;
     const first = !s.flags.boss2Kills;
     s.flags.boss2Kills = ((s.flags.boss2Kills as number) ?? 0) + 1;
-    const chest = this.bossChest('boss2');
+    const chest = this.bossChest('boss2', first);
     const lv = addXp(s, CONFIG.boss2.xp);
     s.gold += CONFIG.boss2.gold;
     this.questFire('boss2');
@@ -2694,7 +2695,7 @@ export class Controller {
     const b = LATER_BOSS[r]!;
     const first = !s.flags[`boss${r}Kills`];
     s.flags[`boss${r}Kills`] = ((s.flags[`boss${r}Kills`] as number) ?? 0) + 1;
-    const chest = this.bossChest(`boss${r}`);
+    const chest = this.bossChest(`boss${r}`, first);
     const xp = laterBossXp(b.level);
     const gold = laterBossGold(b.level);
     const lv = addXp(s, xp);
@@ -2705,12 +2706,11 @@ export class Controller {
       const o = makeItem(this.rng, s.level, 'orange');
       if (s.bag.length < CONFIG.loot.bagSize) s.bag.push(o);
       s.flags.title = b.title;
-      this.chestQueue.push({ kind: 'gold', ilvl: s.level });
     }
     sfx.orange();
     banner(`${b.name}倒下了`, first ? `首杀：传说装备 + 称号「${b.title}」+ 金箱` : chest === 'gold' ? '金箱' : chest ? '铁箱' : '今天的宝箱已领完');
     const lines: Line[] = b.outro.map((t) => ({ who: SYS, text: t }));
-    lines.push({ who: SYS, text: `获得 ${xp} 经验、${gold} 金币${chest ? `和一个${chest === 'gold' ? '金' : '铁'}箱` : ''}${first ? '，首杀再加一个金箱' : ''}。` });
+    lines.push({ who: SYS, text: `获得 ${xp} 经验、${gold} 金币${chest ? `和一个${chest === 'gold' ? '金' : '铁'}箱` : ''}。` });
     if (first) lines.push(...this.afterBossLines(r));
     const after = () => {
       for (const l of lv.levels) this.onLevelUp(l);
@@ -2849,11 +2849,11 @@ export class Controller {
     } else if (f.outcome === 'win') {
       const first = !s.flags.bossKills;
       s.flags.bossKills = ((s.flags.bossKills as number) ?? 0) + 1;
-      const chest = this.bossChest('boss');
+      const chest = this.bossChest('boss', first);
       const dailyFirst = chest === 'gold';
       const lv = addXp(s, CONFIG.xp.boss);
       s.gold += 120;
-      // 金箱 (first kill of the day): ≥1 purple; first kill ever: an orange too. Otherwise an iron chest.
+      // 金箱 (first kill only): ≥1 purple and an orange. Then an iron chest for the day's first 3 kills.
       const drops = dailyFirst
         ? [makeItem(this.rng, 9, 'purple'), makeItem(this.rng, 9, 'green'), makeItem(this.rng, 9, this.rng() < 0.3 ? 'purple' : 'green')]
         : chest === 'iron'
