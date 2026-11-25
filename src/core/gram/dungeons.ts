@@ -144,13 +144,31 @@ export function prepTask(w: Word, floor: string, lock: number, rng: Rng): GramTa
   const rows = usablePrep().filter((r) => prepVerb(r) === w.de && (floor === '' || r.prep === floor));
   if (!rows.length) return null;
   const r = pick(rng, rows);
-  const lockInfo = { i: lock % 2, of: 2 };
+  // 双锁 (镜像怪 × 介词): a reflexive pairing (sich freuen auf) adds the reflexive pronoun as a first lock.
+  const refl = r.reflexive ? /\b(mich|dich|sich|uns|euch)\b/.exec(r.ex) : null;
+  const of = refl ? 3 : 2;
+  const i = lock % of;
+  const lockInfo = { i, of };
   const rule = `${r.combo}：${r.zh}`;
-  if (lock % 2 === 0) {
+  if (refl && i === 0) {
+    return {
+      sys: 'mirror',
+      prompt: `锁链 1/3 · 反身代词：${r.combo.replace(/ \+ .*$/, '')} · ${r.exZh}`,
+      focus: r.ex.replace(new RegExp(`\\b${refl[1]}\\b`), '___'),
+      answer: refl[1],
+      tier: 1,
+      rule: '反身代词：mich, dich, sich, uns, euch, sich',
+      full: r.ex,
+      zh: r.exZh,
+      lock: lockInfo,
+      wordId: w.id,
+    };
+  }
+  if (i === of - 2) {
     const others = shuffle(rng, ALL_PREPS.filter((p) => p !== r.prep)).slice(0, 3);
     return {
       sys: 'prep',
-      prompt: `锁链 1/2 · 填介词：${w.de} 固定配哪个介词？· ${r.exZh}`,
+      prompt: `锁链 ${i + 1}/${of} · 填介词：${w.de} 固定配哪个介词？· ${r.exZh}`,
       focus: r.ex.replace(` ${r.prep} `, ' ___ '),
       answer: r.prep,
       options: shuffle(rng, [r.prep, ...others]),
@@ -165,7 +183,7 @@ export function prepTask(w: Word, floor: string, lock: number, rng: Rng): GramTa
   const k = r.kasus as 'A' | 'D';
   return {
     sys: 'prep',
-    prompt: `锁链 2/2 · 选格：${r.combo.replace(/ \+ .*$/, '')} 后面用第几格？· ${r.exZh}`,
+    prompt: `锁链 ${of}/${of} · 选格：${r.combo.replace(/ \+ .*$/, '')} 后面用第几格？· ${r.exZh}`,
     focus: r.ex,
     answer: KASUS_ZH[k],
     options: [KASUS_ZH.A, KASUS_ZH.D],

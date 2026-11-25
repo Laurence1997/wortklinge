@@ -51,6 +51,7 @@ import { LINA } from '../data/lina';
 import { WEBER, WEBER_POOL, usesDu } from '../data/weber';
 import { answerExam, BREAK, examPassed, PART_ZH, startExam, startGrammarExam, type Exam } from '../core/breakthrough';
 import { DUNGEON, RULES, type Rule } from '../data/dungeon';
+import { partnerChoices, partnerOf, setPartner } from '../core/gram/partner';
 import { cleared, floorRun, floorsOf, GRAM_DUNGEON, markCleared, type DungeonKind, type Floor } from '../core/gram/dungeons';
 import { SKILLS } from '../data/skills';
 import { fullForm, hasArticleQuestion, WORD_BY_ID, WORDS, zhWithPos } from '../data/words';
@@ -1765,6 +1766,20 @@ export class Controller {
     this.persist();
     this.refresh();
     toast(`${it.name} 鉴定好了${f.misses.length ? '' : '：每条词缀都挑了更好的那个'}`, 'gold');
+  }
+
+  // ---- 复习伙伴 (43) -----------------------------------------------------------------------------
+  choosePartner(): void {
+    const s = this.state;
+    const cur = partnerOf(s);
+    const list = partnerChoices(s).sort((a, b) => (s.words[b.id].lastSeen ?? 0) - (s.words[a.id].lastSeen ?? 0)).filter((w) => w.id !== cur?.id).slice(0, 5);
+    const lines: Line[] = [];
+    if (!s.flags.partnerSeen) {
+      s.flags.partnerSeen = true;
+      lines.push({ who: SYS, text: '【复习伙伴】带一个已经归名的词一起打。每场你第二次出手时，它出一道它自己的例句题；答对，它和你一起出手（这一下 ×1.5）。答错也不会让它掉回复习。' });
+    }
+    lines.push({ who: SYS, text: cur ? `现在的伙伴：${fullForm(cur)}（${cur.zh}）。换一个？` : '还没有归名的词可以当伙伴。' });
+    say(lines, undefined, [...list.map((w) => ({ label: `${fullForm(w)} · ${w.zh}`, act: () => (setPartner(s, w.id), toast(`复习伙伴：${fullForm(w)}`), this.persist()) })), { label: '不换', act: () => {} }]);
   }
 
   // ---- 语法秘境 (0.7–0.8: 变音 24 · 介词 31 · 词族 37), entered from a camp's 「语法秘境」 button -------------------

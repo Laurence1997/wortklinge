@@ -170,3 +170,55 @@ describe('语法秘境', () => {
     }
   });
 });
+
+describe('镜像怪 and 告示怪', () => {
+  it('mirror: reflexive pronoun on the verb, dative from 81', async () => {
+    const { mirrorTask } = await import('../src/core/gram/mirror');
+    const t = mirrorTask(byDe('waschen'), makeRng(1), 35)!;
+    expect(['mich', 'sich']).toContain(t.answer);
+    let dat = false;
+    for (let i = 0; i < 20; i++) if (['mir', 'dir'].includes(mirrorTask(byDe('waschen'), makeRng(i), 81)!.answer)) dat = true;
+    expect(dat).toBe(true);
+  });
+  it('notice: the passage rides on the question and questions cycle', () => {
+    const s = newGame('T', 'student', T0);
+    s.level = 15;
+    s.hp = 999;
+    const w = WORDS.find((x) => x.zone === 'fahrplanhalle' && x.art)!;
+    s.words[w.id] = { stage: 1, due: 9e15, firstSeen: 0, lastSeen: 0, relapse: 0, correct: 1, wrong: 0, read: 1, write: 1 };
+    const b = startBattle(s, w, makeRng(1));
+    b.notice = { id: 'fahrplanhalle-verspaetung', i: 0 };
+    const q1 = makeQuestion(s, b, 'attack', makeRng(1));
+    expect(q1.gram?.passage).toContain('Hamburg');
+    expect(q1.options).toContain(q1.answer);
+    resolveTurn(s, b, 'attack', q1, q1.answer!, makeRng(1));
+    const q2 = makeQuestion(s, b, 'attack', makeRng(2));
+    expect(q2.prompt).not.toBe(q1.prompt);
+  });
+});
+
+describe('复习伙伴', () => {
+  it('on the second attack the partner asks its cloze; right → ×1.5 hit, nothing on the records', async () => {
+    const { setPartner } = await import('../src/core/gram/partner');
+    const s = newGame('T', 'student', T0);
+    s.level = 43;
+    s.hp = 999;
+    s.gram = { boards: Object.keys(BOARDS) };
+    const p = WORDS.find((x) => x.art && EXAMPLES[x.id]?.length && x.id !== 'tisch')!;
+    s.words[p.id] = { stage: 3, due: 9e15, firstSeen: 0, lastSeen: 0, relapse: 0, correct: 3, wrong: 0, read: 1, write: 2 };
+    setPartner(s, p.id);
+    const w = WORDS.find((x) => x.art && x.id !== p.id)!;
+    s.words[w.id] = { stage: 1, due: 9e15, firstSeen: 0, lastSeen: 0, relapse: 0, correct: 1, wrong: 0, read: 1, write: 1 };
+    const b = startBattle(s, w, makeRng(1));
+    b.notice = undefined;
+    b.mirror = undefined;
+    b.qIndex = 1;
+    const q = makeQuestion(s, b, 'attack', makeRng(1));
+    expect(q.partner).toBe(p.id);
+    const before = { ...s.words[p.id] };
+    resolveTurn(s, b, 'attack', q, q.answer!, makeRng(1));
+    expect(b.partnerDone).toBe(true);
+    expect(s.words[p.id].stage).toBe(before.stage);
+    expect(makeQuestion(s, b, 'attack', makeRng(2)).partner).toBeUndefined();
+  });
+});

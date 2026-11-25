@@ -29,6 +29,9 @@ import { gradeGram, type GramTask } from './gram/task';
 import { gramFor } from './gram/hook';
 import { boardDue, markBoard, type ShownBoard } from './gram/boards';
 import { dungeonTask } from './gram/dungeons';
+import { hasMirror, mirrorTask, MIRROR } from './gram/mirror';
+import { partnerOf, PARTNER } from './gram/partner';
+import { noticeById, noticeFor, noticeTask, NOTICE_CFG } from './gram/notice';
 
 /** A grammar task as a battle question (choice when it has options, typed otherwise). */
 export function gramQuestion(t: GramTask, board: ShownBoard | null = null): Question {
@@ -76,6 +79,8 @@ export interface Question {
   whispered?: boolean;
   /** 语境复习 (2026-11-24): the word id of a due 归名 word asked in this fight; counts as an attack on the target. */
   review?: string;
+  /** 复习伙伴 (43): this cloze is on the partner word (id); right → it strikes with you. */
+  partner?: string;
   /** 药片 turn (物品栏): nothing to answer. */
   item?: boolean;
   /** 齐鸣: a correct answer hits every monster in the pack. */
@@ -273,6 +278,12 @@ export interface Battle {
   chorusHits?: string[];
   /** 语法秘境: every attack question is this floor's grammar on the monster's word. */
   gramDungeon?: { kind: import('./gram/dungeons').DungeonKind; floor: string };
+  /** 复习伙伴: its question was asked this fight. */
+  partnerDone?: boolean;
+  /** 告示怪 / 信件怪 (15): the notice it carries, and how many of its questions were asked. */
+  notice?: { id: string; i: number };
+  /** 镜像怪 (35): every attack question is the reflexive pronoun on this verb. */
+  mirror?: boolean;
   /** 语法线: grammar questions asked on this word this fight. */
   gramAsked?: number;
   /** 挑战怪 (rev 342): a word from the scene's challenge pool: your level + 2, ×1.75 XP, opens with a dictation,
@@ -405,6 +416,19 @@ export function startBattle(
     delete s.flags.nextHalt;
   }
   b.perfekt = perfektBattle(s, word, kind, rng, !!tutorial || !!opts.trial);
+  // 告示怪 / 信件怪 (15): now and then a field monster of a zone with a notice carries it.
+  if (!b.perfekt && !tutorial && !opts.trial && !opts.elite && !opts.isEcho && !challenge && s.level >= NOTICE_CFG.from && kind !== 'new' && rng() < NOTICE_CFG.chance) {
+    const n = noticeFor(word.zone, rng);
+    if (n) {
+      b.notice = { id: n.id, i: 0 };
+      b.log.push({ text: `${n.kind === 'letter' ? '信件怪' : '告示怪'}：它身上贴着一张「${n.title}」。读懂它，答对上面的问题才打得中。`, tone: 'info' });
+    }
+  }
+  // 镜像怪 (35): a verb with a reflexive use sometimes comes as its mirror (not before you have met it).
+  if (!b.perfekt && !b.notice && !tutorial && !opts.trial && !opts.elite && s.level >= MIRROR.from && kind !== 'new' && hasMirror(word) && rng() < MIRROR.chance) {
+    b.mirror = true;
+    b.log.push({ text: `镜像怪：${word.de} 照出了你的样子——这一战考反身代词（mich / dich / sich…）。`, tone: 'info' });
+  }
   b.intent = nextIntent(s, b, rng);
   perfektGuard(s, b);
   return b;
@@ -1062,6 +1086,12 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
     return { type: 'sentence', prompt: '终结技：看中文，写整句', focus: ws.zh, answer: ws.answer };
   }
   let q = ladderQ();
+  // 复习伙伴 (43): once per fight, on your second attack, the partner asks a cloze on its own word.
+  const pw = am === 'attack' && !b.partnerDone && b.qIndex === PARTNER.atQuestion && !b.tutorial && !b.trial && !b.gramDungeon ? partnerOf(s) : null;
+  if (pw && pw.id !== w.id) {
+    const pc = clozeQ(s, pw, rng, 'pick');
+    if (pc) q = { ...pc, prompt: `复习伙伴 ${fullForm(pw)}：${pc.prompt}（答对它和你一起出手）`, partner: pw.id };
+  }
   // 难题就是预告 (0.4): a charging monster asks the hardest question (Lv11+ form cloze, before that typing);
   // a multi-hit one asks one step harder. A word you have never answered keeps its usual question.
   if (am === 'attack' && q.type !== 'saying' && q.type !== 'callout' && !q.echo && !b.tutorial && !fresh && canType) {
@@ -1081,6 +1111,14 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
 
   function ladderQ(): Question {
   if (am === 'attack' && b.saying && !b.sayingDone && !inPack) return sayingQuestion(s, b.saying, rng);
+  if (am === 'attack' && b.notice) {
+    const n = noticeById(b.notice.id);
+    if (n) return gramQuestion(noticeTask(n, b.notice.i, rng));
+  }
+  if (am === 'attack' && b.mirror) {
+    const t = mirrorTask(w, rng, s.level);
+    if (t) return gramQuestion(t, boardDue(s, t.sys));
+  }
   if (am === 'attack' && b.gramDungeon) {
     const t = dungeonTask(s, b.gramDungeon.kind, b.gramDungeon.floor, w, rng, b.step);
     if (t) return gramQuestion(t, boardDue(s, t.sys));
@@ -1373,7 +1411,7 @@ export function gradeQuestion(s: GameState, b: Battle, q: Question, input: strin
         if (v.ok && v.used && v.used.id !== b.word.id) s.flags.slotRecent = [v.used.id, ...recent.filter((x) => x !== v.used!.id)].slice(0, SLOT_RECENT).join(',');
         return { ok: v.ok, notes: v.notes, correct: v.ok ? input.trim() : q.answer!, word: v.ok && v.used?.id === b.word.id ? b.word : undefined };
       }
-      const cw = q.review ? WORD_BY_ID[q.review] : b.word;
+      const cw = q.review ? WORD_BY_ID[q.review] : q.partner ? WORD_BY_ID[q.partner] : b.word;
       const ok = gradeCloze(input, q.answer!, cw, q.clozeZh);
       return { ok, notes: ok ? [q.full!] : [`正确答案：${q.answer}`, q.full!, ...clozeWhy(q.answer!, cw, input)], correct: q.answer! };
     }
@@ -1658,6 +1696,8 @@ export function resolveTurn(
     b.qIndex += 1;
     if (q.type === 'sentence') b.sxUsed = (b.sxUsed ?? 0) + 1;
     if (q.gram) b.gramAsked = (b.gramAsked ?? 0) + 1;
+    if (q.gram?.sys === 'notice' && b.notice) b.notice.i += 1;
+    if (q.partner) b.partnerDone = true;
     if (q.board) markBoard(s, q.board.sys);
     if (q.ult) b.ultUsed = true;
     if (q.echo) {
@@ -1673,9 +1713,9 @@ export function resolveTurn(
       b.hinted = false;
       if (s.words[b.word.id]) delete s.words[b.word.id].hinted;
     }
-    if (!q.review && q.type !== 'saying' && (!ok || q.whispered)) b.flawed = true;
-    if (ok && !q.whispered && !q.review && q.type === 'cloze') b.usedOk = true;
-    if (ok && !q.whispered && !q.review) {
+    if (!q.review && !q.partner && q.type !== 'saying' && (!ok || q.whispered)) b.flawed = true;
+    if (ok && !q.whispered && !q.review && !q.partner && q.type === 'cloze') b.usedOk = true;
+    if (ok && !q.whispered && !q.review && !q.partner) {
       if (q.type === 'typed' || q.type === 'conj' || q.type === 'plural' || q.type === 'sentence' || stormAll || (q.type === 'cloze' && q.clozeMode !== 'pick')) {
         b.writeOk = (b.writeOk ?? 0) + 1;
         if (!b.phrase) reviewedByWriting(s, verdict.word ?? b.word); // 写对就算复习 (rev 51)
@@ -1684,8 +1724,10 @@ export function resolveTurn(
       else if (q.type === 'article' || q.type === 'pickDe' || q.type === 'pickZh' || q.type === 'callout' || q.type === 'cloze') b.readOk = (b.readOk ?? 0) + 1;
     }
     // 挑战怪 share (rev 342): the first written answer of a fight, and whether its spelling had shown before.
-    if (!b.firstTry && !q.review && writtenQ) b.firstTry = !ok || q.whispered ? 'bad' : b.spellSeen ? 'ok' : 'dict';
-    if (!q.review) cutFx = cutCheck(s, b, q, input, ok);
+    if (!b.firstTry && !q.review && !q.partner && writtenQ) b.firstTry = !ok || q.whispered ? 'bad' : b.spellSeen ? 'ok' : 'dict';
+    if (q.partner) {
+      /* 复习伙伴: company, not a test — nothing on either word's record */
+    } else if (!q.review) cutFx = cutCheck(s, b, q, input, ok);
     else {
       reviewFx = reviewAnswer(s, b, q, ok);
       if (reviewFx) verdict.notes.unshift(reviewFx.ok ? `✓ 复习 · ${fullForm(reviewFx.word)}，${reviewFx.next ? `下次 ${gapZh(reviewFx.next)}` : '以后不用再复习了'}` : `复习没答上：${fullForm(reviewFx.word)} 复发了，会作为复习怪（半名）回到野外。`);
@@ -1832,6 +1874,10 @@ export function resolveTurn(
         const breaking = intent.kind === 'defend' && writtenQ;
         const g = genderOf(b.word);
         mult *= comboMult(s.combo);
+        if (q.partner) {
+          mult *= PARTNER.mult;
+          log.push({ text: `复习伙伴 ${fullForm(WORD_BY_ID[q.partner])} 和你一起出手！`, tone: 'good' });
+        }
 
         // Crits: forced ones first (接句怪, 初识暴击), then the random roll.
         if (q.type === 'saying') {

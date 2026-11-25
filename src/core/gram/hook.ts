@@ -12,6 +12,7 @@ import { datPronTask, nichtTask, timePrepTask } from './a1b';
 import { praetModalTask, praetSeinTask, praetTask } from './praet';
 import { adjTask } from './adj';
 import { ablautFieldTask } from './dungeons';
+import { mirrorTask } from './mirror';
 import { boardDue, type ShownBoard } from './boards';
 
 /** Unlock levels (游戏设计 十六「语法线」). */
@@ -28,6 +29,7 @@ export const GRAM_LV: Partial<Record<GramSys, number>> = {
   praetModal: 33,
   adj: 41,
   praet: 81,
+  mirror: 35,
   /** 变音秘境: only verbs whose family floor is cleared. */
   ablaut: 24,
 };
@@ -52,6 +54,7 @@ const GENS: Partial<Record<GramSys, Gen>> = {
   adj: (s, w, rng) => adjTask(w, rng, s.level),
   praet: (_s, w, rng) => praetTask(w, rng),
   ablaut: (s, w, rng) => ablautFieldTask(s, w, rng),
+  mirror: (s, w, rng) => mirrorTask(w, rng, s.level),
 };
 
 export function gramOpen(s: GameState, sys: GramSys): boolean {
