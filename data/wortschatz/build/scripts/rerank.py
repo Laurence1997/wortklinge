@@ -18,6 +18,24 @@ for line in open('../rev/life2.txt',encoding='utf-8'):
         x=by[l]; x['adj']=max(x['adj'],x['adj']*2,floor); x['life']=True; boost+=1
     else:
         x=dict(lemma=l,pos=p,zh=zh,sc=own(l),src='life',film=False,life=True); x['adj']=max(own(l)*2,floor); r.append(x); by[l]=x; new.append(l)
+floor2=adj[3999]
+FORMAL=set('erfolgen beabsichtigen ermöglichen erteilen gewähren verfügen erfordern erzielen erlangen errichten erwerben bezeichnen gestatten veranlassen beinhalten bewirken vollziehen anfertigen speisen erläutern begeben verweisen ergreifen erweisen widmen gewährleisten umsetzen beitragen fungieren erachten ersuchen vernehmen erwidern verzehren zuwenden aushändigen'.split())
+for x in r:
+    if x['lemma'] in FORMAL: x['adj']*=0.4
+for line in open('../rev/verb2.txt',encoding='utf-8'):
+    l,p,zh=line.strip().split('|')
+    if l in by:
+        x=by[l]
+        if x['adj']<floor: x['adj']=max(x['adj']*2,floor)
+    else:
+        x=dict(lemma=l,pos=p,zh=zh,sc=own(l),src='life',film=False,life=False); x['adj']=max(own(l)*2,floor); r.append(x); by[l]=x; new.append(l)
+for line in open('../rev/adj2.txt',encoding='utf-8'):
+    l,p,zh=line.strip().split('|')
+    if l in by:
+        x=by[l]
+        if x['adj']<floor2: x['adj']=max(x['adj']*2,floor2)
+    else:
+        x=dict(lemma=l,pos=p,zh=zh,sc=own(l),src='life',film=False,life=False); x['adj']=max(own(l)*2,floor2); r.append(x); by[l]=x; new.append(l)
 r.sort(key=lambda x:-x['adj'])
 old={x['lemma']:x['rank'] for x in json.load(open('ranked2_orig.json'))}
 for i,x in enumerate(r): x['rank']=i+1

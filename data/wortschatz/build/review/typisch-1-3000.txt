@@ -2940,3 +2940,77 @@ Silvester|An Silvester gibt es um Mitternacht ein Feuerwerk.|除夕午夜有烟�
 Schwimmbad|Im Sommer gehen wir oft ins Schwimmbad.|夏天我们常去游泳馆。
 Fußgängerzone|In der Fußgängerzone gibt es viele Geschäfte.|步行街上有很多商店。
 Ladegerät|Ich habe mein Ladegerät zu Hause vergessen.|我把充电器忘在家里了。
+geizig|Er ist so geizig, er gibt nie Trinkgeld.|他太小气了，从不给小费。
+sparsam|Wir müssen diesen Monat sparsam sein.|这个月我们得省着点。
+verschwenderisch|Es ist verschwenderisch, so viel Essen wegzuwerfen.|扔掉这么多食物太浪费了。
+hilfsbereit|Unsere Nachbarn sind sehr hilfsbereit.|我们的邻居很乐于助人。
+ehrgeizig|Sie ist sehr ehrgeizig und will Chefin werden.|她很有上进心，想当老板。
+gierig|Sei nicht so gierig, lass den anderen auch etwas!|别那么贪心，也给别人留点！
+neidisch|Er ist neidisch auf das neue Auto seines Nachbarn.|他眼红邻居的新车。
+frech|Das Kind war frech zur Lehrerin.|那个孩子对老师没礼貌。
+höflich|In Deutschland sagt man höflich „Sie“.|在德国礼貌地称“您”。
+zuverlässig|Er ist ein sehr zuverlässiger Kollege.|他是个很可靠的同事。
+unzuverlässig|Die Bahn ist im Winter oft unzuverlässig.|冬天火车常常不靠谱。
+unpünktlich|Er ist immer unpünktlich.|他总是不准时。
+geduldig|Die Lehrerin ist sehr geduldig mit uns.|老师对我们很有耐心。
+vergesslich|Mein Opa wird langsam vergesslich.|我爷爷开始健忘了。
+launisch|Vor der Prüfung ist sie oft launisch.|考试前她常常情绪不稳。
+tollpatschig|Ich bin so tollpatschig, schon wieder ist ein Glas kaputt.|我真笨手笨脚，又打碎一个杯子。
+unordentlich|Sein Zimmer ist total unordentlich.|他的房间乱得一塌糊涂。
+verwöhnt|Das Kind ist ziemlich verwöhnt.|这孩子被宠坏了。
+unsicher|Ich bin mir unsicher, ob das richtig ist.|我不确定这是否正确。
+ängstlich|Unser Hund ist sehr ängstlich.|我们的狗很胆小。
+humorvoll|Mein Lehrer ist sehr humorvoll.|我的老师很幽默。
+gelangweilt|Die Kinder sind gelangweilt, weil es regnet.|下雨了，孩子们很无聊。
+gestresst|Vor den Prüfungen bin ich immer gestresst.|考试前我总是压力很大。
+untätig|Wir können nicht einfach untätig herumsitzen.|我们不能就这么无所事事地坐着。
+beschäftigt|Tut mir leid, ich bin gerade beschäftigt.|抱歉，我正忙着。
+aufgeregt|Vor dem ersten Arbeitstag bin ich sehr aufgeregt.|第一天上班前我很紧张。
+überrascht|Ich war überrascht, dass er gekommen ist.|他来了，我很吃惊。
+genervt|Ich bin total genervt von der Baustelle.|施工吵得我烦死了。
+verärgert|Die Kunden sind verärgert über die Verspätung.|顾客对延误很恼火。
+erkältet|Ich bin erkältet und bleibe heute zu Hause.|我感冒了，今天待在家里。
+verletzt|Bei dem Unfall wurde niemand verletzt.|事故中没有人受伤。
+interessiert|Ich bin an dem Kurs sehr interessiert.|我对这门课很感兴趣。
+beleidigt|Warum bist du jetzt beleidigt?|你怎么生气了？
+selbstständig|Sie arbeitet selbstständig als Grafikerin.|她自雇当平面设计师。
+berufstätig|Beide Eltern sind berufstätig.|父母都在工作。
+pleite|Am Ende des Monats bin ich immer pleite.|每到月底我总是没钱。
+vegetarisch|Haben Sie auch etwas Vegetarisches?|你们也有素食吗？
+vegan|Meine Schwester isst vegan.|我姐姐吃纯素。
+unsympathisch|Ich finde den neuen Kollegen unsympathisch.|我不太喜欢新同事。
+unfreundlich|Der Mann am Schalter war sehr unfreundlich.|窗口的那个人很不友善。
+selbstbewusst|Sie wirkt sehr selbstbewusst.|她看起来很自信。
+kapieren|Ich kapiere die Hausaufgabe nicht.|我搞不懂这个作业。
+quatschen|Wir haben stundenlang am Telefon gequatscht.|我们在电话里聊了好几个小时。
+rausfinden|Ich muss rausfinden, wann der Laden aufmacht.|我得查一下这家店几点开门。
+labern|Er labert die ganze Zeit über Fußball.|他一直在瞎扯足球。
+meckern|Mein Vater meckert immer über das Wetter.|我爸爸总是抱怨天气。
+pennen|Ich kann bei dir auf dem Sofa pennen.|我可以在你家沙发上睡。
+chillen|Am Wochenende will ich nur chillen.|周末我只想躺着放松。
+jobben|In den Semesterferien jobbe ich in einem Café.|假期我在咖啡馆打工。
+rumhängen|Wir hängen am Wochenende meistens im Park rum.|周末我们大多在公园里闲待着。
+ausflippen|Meine Mutter flippt aus, wenn sie das sieht.|我妈看到这个会发飙的。
+pinkeln|Ich muss mal pinkeln.|我要去尿个尿。
+anmachen|Mach bitte das Licht an.|请把灯打开。
+rausgehen|Ich gehe kurz raus, frische Luft schnappen.|我出去透透气。
+runtergehen|Ich gehe kurz runter und hole die Post.|我下楼取一下信。
+raufgehen|Geh schon mal rauf, ich komme gleich.|你先上去，我马上来。
+rüberkommen|Komm doch heute Abend rüber!|今晚过来玩吧！
+vorbeikommen|Komm doch morgen mal vorbei!|明天过来坐坐吧！
+reinschauen|Schau mal in den Kühlschrank rein, ob noch Milch da ist.|看看冰箱里还有没有牛奶。
+mitkriegen|Hast du mitgekriegt, dass Anna umzieht?|你听说安娜要搬家了吗？
+hinkriegen|Keine Sorge, das kriegen wir schon hin.|别担心，我们能搞定。
+hinkommen|Wie komme ich am besten zum Bahnhof hin?|我怎么去火车站最方便？
+draufhaben|Beim Kochen hat er echt was drauf.|做饭方面他真有两下子。
+loslegen|Alles da? Dann können wir loslegen.|都到齐了？那我们开始吧。
+losfahren|Wir fahren um acht Uhr los.|我们八点出发。
+dranbleiben|Deutsch ist schwer, aber du musst dranbleiben.|德语很难，但你得坚持下去。
+klarkommen|Kommst du mit dem neuen Handy klar?|你会用新手机了吗？
+zurechtkommen|Ich komme in der neuen Stadt gut zurecht.|我在新城市适应得很好。
+rumlaufen|Die Kinder laufen im Garten rum.|孩子们在花园里跑来跑去。
+rumsitzen|Sitz nicht nur rum, hilf mir mal!|别光坐着，来帮帮我！
+wegwerfen|Wirf die alten Zeitungen nicht weg.|别把旧报纸扔了。
+kaputtgehen|Meine Kopfhörer sind schon wieder kaputtgegangen.|我的耳机又坏了。
+kaputtmachen|Pass auf, mach das Handy nicht kaputt!|小心，别把手机弄坏了！
+saubermachen|Am Samstag machen wir die Wohnung sauber.|星期六我们把房子打扫干净。
