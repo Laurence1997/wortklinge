@@ -51,6 +51,7 @@ import { LINA } from '../data/lina';
 import { WEBER, WEBER_POOL, usesDu } from '../data/weber';
 import { answerExam, BREAK, examPassed, PART_ZH, startExam, startGrammarExam, type Exam } from '../core/breakthrough';
 import { DUNGEON, RULES, type Rule } from '../data/dungeon';
+import { cleared, floorRun, floorsOf, GRAM_DUNGEON, markCleared, type DungeonKind, type Floor } from '../core/gram/dungeons';
 import { SKILLS } from '../data/skills';
 import { fullForm, hasArticleQuestion, WORD_BY_ID, WORDS, zhWithPos } from '../data/words';
 import { initAudio, setBattleMusic, setVolumes, sfx, speak, speechAvailable, hasGermanVoice } from './audio';
@@ -991,6 +992,7 @@ export class Controller {
     this.scene.restyleAll();
     if (this.trial) this.trialNext(won);
     else if (this.dungeon) this.dungeonNext(won);
+    else if (this.gramRun) this.gramRunNext(won);
     if (b.outcome === 'fled' && b.flees && !lost) toast('它抱着铁箱跑了。下次，在它喊「Ich muss los!」之前。');
     this.refresh();
     this.persist();
@@ -1763,6 +1765,87 @@ export class Controller {
     this.persist();
     this.refresh();
     toast(`${it.name} 鉴定好了${f.misses.length ? '' : '：每条词缀都挑了更好的那个'}`, 'gold');
+  }
+
+  // ---- 语法秘境 (0.7–0.8: 变音 24 · 介词 31 · 词族 37), entered from a camp's 「语法秘境」 button -------------------
+  gramRun: { kind: DungeonKind; floor: Floor; words: string[]; i: number } | null = null;
+
+  /** The camp button: pick a dungeon, then a floor. */
+  enterGramDungeon(): void {
+    const s = this.state;
+    if (this.battle || this.boss || this.dungeon || this.gramRun) return;
+    const kinds = (Object.keys(GRAM_DUNGEON.from) as DungeonKind[]).filter((k) => s.level >= GRAM_DUNGEON.from[k] && floorsOf(k, s).length);
+    if (!kinds.length) return say([{ who: SYS, text: `语法秘境的门还关着。（${GRAM_DUNGEON.from.ablaut} 级）` }]);
+    const lines: Line[] = [];
+    if (!s.flags.gramDungeonSeen) {
+      s.flags.gramDungeonSeen = true;
+      lines.push({ who: SYS, text: '【语法秘境】不属于哪个词的规则在这里集中练：每层几只怪，都在你的等级，每一题都考这一层的规则，题目就出在怪自己的词上。打通一层有奖励；变音秘境打通一族后，这一族的动词在野外也会考它的变音。' });
+    }
+    lines.push({ who: SYS, text: '选一个秘境：' });
+    say(lines, undefined, [
+      ...kinds.map((k) => ({ label: GRAM_DUNGEON.name[k], act: () => this.pickGramFloor(k) })),
+      { label: '先不进', act: () => {} },
+    ]);
+  }
+
+  private pickGramFloor(kind: DungeonKind): void {
+    const s = this.state;
+    const done = cleared(s, kind);
+    const floors = floorsOf(kind, s);
+    say([{ who: SYS, text: `${GRAM_DUNGEON.name[kind]}：选一层（✓ 已打通，可以再刷）` }], undefined, [
+      ...floors.map((f) => ({ label: `${done.includes(f.id) ? '✓ ' : ''}${f.label}`, act: () => this.startGramRun(kind, f) })),
+      { label: '回去', act: () => {} },
+    ]);
+  }
+
+  private startGramRun(kind: DungeonKind, floor: Floor): void {
+    this.gramRun = { kind, floor, words: floorRun(floor, this.rng), i: 0 };
+    toast(`${GRAM_DUNGEON.name[kind]} · ${floor.label}：${this.gramRun.words.length} 场`);
+    this.gramFight();
+  }
+
+  private gramFight(): void {
+    const s = this.state;
+    const r = this.gramRun!;
+    const word = WORD_BY_ID[r.words[r.i]];
+    const p = this.scene.player;
+    const m = this.scene.addMonster(word, s.words[word.id] ? 'due' : 'new', word.zone, p.x + 20, p.y, { scripted: 'trial' });
+    this.encounter(m);
+    if (!this.battle) return;
+    const b = this.battle;
+    b.gramDungeon = { kind: r.kind, floor: r.floor.id === 'fam' ? '' : r.floor.id };
+    // Every fight stands at your level, whatever the word's own level (零号站台 frame).
+    const mon = b.monster;
+    const st = monsterStats(s.level, b.stage, b.kind, b.overdue);
+    mon.lvl = s.level;
+    mon.hp = mon.maxHp = st.hp;
+    mon.dmg = st.dmg;
+  }
+
+  private gramRunNext(won: boolean): void {
+    const s = this.state;
+    const r = this.gramRun!;
+    if (!won) {
+      this.gramRun = null;
+      say([{ who: SYS, text: `你被推出了${GRAM_DUNGEON.name[r.kind]}。这一层还在，下次再来。` }]);
+      return;
+    }
+    r.i += 1;
+    if (r.i < r.words.length) {
+      toast(`${GRAM_DUNGEON.name[r.kind]}：还剩 ${r.words.length - r.i} 场`);
+      this.scene.time.delayedCall(500, () => this.gramFight());
+      return;
+    }
+    this.gramRun = null;
+    const first = markCleared(s, r.kind, r.floor.id);
+    const xp = Math.round(xpToNext(s.level) * GRAM_DUNGEON.clearXp * (r.words.length / GRAM_DUNGEON.fights));
+    const lv = addXp(s, xp);
+    banner(`${GRAM_DUNGEON.name[r.kind]} · ${r.floor.label}`, `打通 · ${xp} 经验`);
+    if (first && r.kind === 'ablaut' && r.floor.id !== 'praet') say([{ who: SYS, text: `${r.floor.id} 族打通了：这一族的动词在野外也会考它的变音（du / er 的形式${s.level >= CONFIG.perfekt.irregularFrom ? '、完成时' : ''}）。` }]);
+    if (first) this.gotChest('iron', s.level);
+    for (const l of lv.levels) this.onLevelUp(l);
+    this.persist();
+    this.nextChest();
   }
 
   // ---- 零号站台 地下城 (0.6 第 6 块, 28 级) ----------------------------------------------------

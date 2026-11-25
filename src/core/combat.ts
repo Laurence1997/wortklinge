@@ -27,7 +27,8 @@ import { CLASSES, critRunNeeded, rank, resMax, shieldReflect, wrongHitShare, typ
 import { gradeStorm, stormForms, type StormForm } from './storm';
 import { gradeGram, type GramTask } from './gram/task';
 import { gramFor } from './gram/hook';
-import { markBoard, type ShownBoard } from './gram/boards';
+import { boardDue, markBoard, type ShownBoard } from './gram/boards';
+import { dungeonTask } from './gram/dungeons';
 
 /** A grammar task as a battle question (choice when it has options, typed otherwise). */
 export function gramQuestion(t: GramTask, board: ShownBoard | null = null): Question {
@@ -270,6 +271,8 @@ export interface Battle {
   stormHits?: number;
   /** 齐鸣 (rev 234): mates whose own word was written right this turn (word ids). */
   chorusHits?: string[];
+  /** 语法秘境: every attack question is this floor's grammar on the monster's word. */
+  gramDungeon?: { kind: import('./gram/dungeons').DungeonKind; floor: string };
   /** 语法线: grammar questions asked on this word this fight. */
   gramAsked?: number;
   /** 挑战怪 (rev 342): a word from the scene's challenge pool: your level + 2, ×1.75 XP, opens with a dictation,
@@ -1078,6 +1081,10 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
 
   function ladderQ(): Question {
   if (am === 'attack' && b.saying && !b.sayingDone && !inPack) return sayingQuestion(s, b.saying, rng);
+  if (am === 'attack' && b.gramDungeon) {
+    const t = dungeonTask(s, b.gramDungeon.kind, b.gramDungeon.floor, w, rng, b.step);
+    if (t) return gramQuestion(t, boardDue(s, t.sys));
+  }
   // 场景精英: each part asks only its own layer. ① 认 choice questions; ② 用 cloze (conjugation for verbs,
   // typing when the word has no example); ③ 写 typing (conjugation for verbs).
   if (am === 'attack' && b.elite) {
@@ -1107,7 +1114,7 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
     if (t) return { type: 'pickDe', echo: t, prompt: `回音怪：${t.target} 还是 ${t.partner}？`, focus: t.target, options: echoOptions(t, rng), answer: t.target };
   }
   // 语法线 (0.7–0.8): once a system is open, the word monster sometimes asks it on its own word (first time with its board).
-  if (am === 'attack' && !fresh && !b.tutorial && !b.trial && !b.pluralMon && !b.verify && (b.stage >= 1 || b.kind !== 'new')) {
+  if (am === 'attack' && !fresh && !b.tutorial && !b.trial && !b.pluralMon && !b.verify && !b.gramDungeon && (b.stage >= 1 || b.kind !== 'new')) {
     const g = gramFor(s, w, rng, b.gramAsked ?? 0);
     if (g) return gramQuestion(g.task, g.board);
   }

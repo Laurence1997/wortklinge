@@ -115,3 +115,58 @@ describe('kein stance', () => {
     expect(stancesFor(s.level, b)).toContain('einen');
   });
 });
+
+describe('语法秘境', () => {
+  it('变音秘境 floors per ablaut family, tasks on the monster’s own verb, a cleared family asks its forms in the field', async () => {
+    const { floorsOf, dungeonTask, markCleared, ablautFieldTask } = await import('../src/core/gram/dungeons');
+    const s = newGame('T', 'student', T0);
+    s.level = 24;
+    const fl = floorsOf('ablaut', s);
+    expect(fl.map((f) => f.id)).toContain('e,i-a');
+    const nehmen = byDe('nehmen');
+    const t0 = dungeonTask(s, 'ablaut', 'e,i-a', nehmen, makeRng(1), 0)!;
+    expect(t0.answer).toBe('nimmt');
+    expect(dungeonTask(s, 'ablaut', 'e,i-a', nehmen, makeRng(1), 1)!.answer).toBe('nimmst');
+    expect(dungeonTask(s, 'ablaut', 'e,i-a', nehmen, makeRng(1), 2)!.answer).toBe('hat genommen');
+    expect(ablautFieldTask(s, nehmen, makeRng(1))).toBeNull();
+    markCleared(s, 'ablaut', 'e,i-a');
+    expect(ablautFieldTask(s, nehmen, makeRng(1))).not.toBeNull();
+    expect(floorsOf('ablaut', s).some((f) => f.id === 'praet')).toBe(false);
+    s.level = 81;
+    expect(floorsOf('ablaut', s).some((f) => f.id === 'praet')).toBe(true);
+  });
+  it('介词秘境 chain: lock 1 the preposition, lock 2 the case', async () => {
+    const { floorsOf, prepTask } = await import('../src/core/gram/dungeons');
+    const s = newGame('T', 'student', T0);
+    s.level = 31;
+    const auf = floorsOf('prep', s).find((f) => f.id === 'auf')!;
+    expect(auf.words.length).toBeGreaterThanOrEqual(2);
+    const warten = byDe('warten');
+    const l1 = prepTask(warten, 'auf', 0, makeRng(2))!;
+    expect(l1.answer).toBe('auf');
+    expect(l1.options).toContain('auf');
+    const l2 = prepTask(warten, 'auf', 1, makeRng(2))!;
+    expect(l2.answer).toContain('Akk');
+  });
+  it('词族秘境: family members and suffix genders', async () => {
+    const { floorsOf, wordfamTask } = await import('../src/core/gram/dungeons');
+    const s = newGame('T', 'student', T0);
+    s.level = 37;
+    expect(floorsOf('wordfam', s).length).toBe(2);
+    const t = wordfamTask(byDe('wohnen'), 'suffix', makeRng(1))!;
+    expect(['der', 'die', 'das']).toContain(t.answer);
+    const f = wordfamTask(byDe('wohnen'), '', makeRng(1))!;
+    expect(gradeGram(f, f.answer).ok).toBe(true);
+  });
+  it('a dungeon battle asks only the floor’s grammar', () => {
+    const s = newGame('T', 'student', T0);
+    s.level = 24;
+    s.gram = { boards: Object.keys(BOARDS) };
+    const b = startBattle(s, byDe('nehmen'), makeRng(1));
+    b.gramDungeon = { kind: 'ablaut', floor: 'e,i-a' };
+    for (let i = 0; i < 3; i++) {
+      b.step = i;
+      expect(makeQuestion(s, b, 'attack', makeRng(i)).gram?.sys).toBe('ablaut');
+    }
+  });
+});
