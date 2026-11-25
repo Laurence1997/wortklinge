@@ -8,6 +8,7 @@ import { isRetired, kindOf, pendingToday, reviewMon, verifyOf } from './srs';
 import { now, type GameState } from './state';
 import type { Word, ZoneId } from './types';
 import { has } from './unlocks';
+import { CONFIG } from './config';
 import { WORDS } from '../data/words';
 import { prioritise } from './wordImport';
 import { challengeSlots, pickChallenge } from './challenge';
@@ -117,7 +118,7 @@ export function pickSpawns(s: GameState, zone: ZoneId, count: number, alive: Set
   if (has(s.level, 'plural')) {
     let pl = Math.ceil(room / 3);
     const crowd = (x: Word) => (isRetired(s.words[x.id]) && !verifyOf(s.words[x.id], t)) || (!isRetired(s.words[x.id]) && kindOf(s, x, t) === 'guiming');
-    for (const w of shuffle(rng, local.filter((x) => crowd(x) && !alive.has(x.id) && !taken.has(x.id) && !!x.art && !!x.pl && x.pl !== '-' && !x.plOnly))) {
+    for (const w of shuffle(rng, local.filter((x) => crowd(x) && !alive.has(x.id) && !taken.has(x.id) && !!x.art && !!x.pl && x.pl !== '-' && !x.plOnly && (s.words[x.id]?.plOk ?? 0) < CONFIG.phase.pluralRetire))) {
       if (pl-- <= 0) break;
       add(w, 'shadow');
     }

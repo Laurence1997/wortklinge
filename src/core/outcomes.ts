@@ -40,6 +40,8 @@ export function applyWin(s: GameState, b: Battle, rng: Rng, opts: { heal?: boole
   const wasNew = b.kind === 'new';
   // 残句: a sentence is not a word — nothing goes into the wordbook; its card drops instead.
   const kill: KillOutcome = b.phrase ? { kind: 'new', from: 0, to: 0, guiming: false, needsTypedFinal: false } : recordKill(s, w, b.lastKillTyped, b.slipped, t, { used: b.usedOk, flaw: b.flawed || b.hinted, typed: (b.writeOk ?? 0) > 0, wrongs: b.wrongs });
+  // 审查修订 D3: a plural crowd written out cleanly twice retires too (it stops coming back).
+  if (b.pluralMon && b.lastKillTyped && !b.flawed && !b.hinted && s.words[w.id]) s.words[w.id].plOk = (s.words[w.id].plOk ?? 0) + 1;
   let card: WinResult['card'];
   if (b.phrase?.cardId) {
     s.sayings ??= {};

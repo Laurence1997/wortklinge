@@ -175,7 +175,7 @@ export const CONFIG = {
   map: { nodes: true, slots: 2, hopSec: 1.2, luckyChance: 0.3, veil: 0.35, homeScenes: true, zoneSlots: 12 },
   /** 跟读 (0.5, Lv5+, optional): read the line the monster just said back; sounding right pays XP once per fight, never costs anything. */
   shadow: { xp: 10, match: 0.7 },
-  phase: { wrongArmor: 2, rightRes: 1, softUntil: 5, accFrom: 7, datFrom: 15, pronounChance: 0.3, pluralChance: 0.2, pluralHp: 1.5 },
+  phase: { wrongArmor: 2, rightRes: 1, softUntil: 5, accFrom: 7, datFrom: 15, pronounChance: 0.3, pluralChance: 0.2, pluralHp: 1.5, pluralRetire: 2 },
   pack: { hpMult: 0.6, dmgMult: [0.2, 0.12] as [number, number], strayMult: 0.5, max: 3, max3From: 13, max4: 4, max4From: 81, radiusTiles: 4, fromLevel: 11 },
 
   boss: {

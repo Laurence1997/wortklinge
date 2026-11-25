@@ -22,7 +22,7 @@ import { reportButton } from './report';
 import { logLine } from './gamelog';
 import { canListen, lastConfidence, listenOnce, listening, stopHold, stopListening } from './listen';
 import { isRecording, judgePair, playRecording, pronReady, startRecording, stopRecording } from './phoneme';
-import { ECHO_RETRIES, echoVerdict, notePron } from '../core/pron';
+import { ECHO_RETRIES, echoVerdict, listenSide, notePron } from '../core/pron';
 import { PRON_TIP } from '../data/pairs';
 
 type Phase = 'choose' | 'answer' | 'result';
@@ -102,8 +102,9 @@ export class BattleUI {
   private echoListen(): void {
     const q = this.question;
     if (!q?.echo) return;
-    this.question = { ...q, echo: { ...q.echo, say: false }, options: this.echoOpts, prompt: `${this.b?.pronMon ? '发音怪' : '回音怪'} · 听辨：它读的是 ${this.echoOpts.join(' 还是 ')}？`, focus: '🔊 ？' };
-    this.ctrl.speak(q.echo.target);
+    const e = q.echo.say === false ? q.echo : listenSide(q.echo, Math.random);
+    this.question = { ...q, echo: { ...e, say: false }, answer: e.target, options: this.echoOpts, prompt: `${this.b?.pronMon ? '发音怪' : '回音怪'} · 听辨：它读的是 ${this.echoOpts.join(' 还是 ')}？`, focus: '🔊 ？' };
+    this.ctrl.speak(e.target);
   }
 
   private async echoStart(): Promise<void> {

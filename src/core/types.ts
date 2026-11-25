@@ -98,6 +98,8 @@ export interface WordProgress {
   pend?: number;
   /** 斩杀: time it was retired (退役). Retired words leave the reviews; a 回响 check comes 30 days later. */
   retired?: number;
+  /** 审查修订 D3: clean typed kills of its plural crowd; at CONFIG.phase.pluralRetire the crowd stops coming. */
+  plOk?: number;
   /** 斩杀: the 30-day 回响 check was passed: retired for good. */
   sure?: boolean;
   /** 语境复习 (2026-11-24): context reviews passed since the last 归名 (index into CONFIG.srs.context). */

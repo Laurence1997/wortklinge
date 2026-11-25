@@ -64,6 +64,13 @@ export function echoTask(s: GameState, w: Word, rng: Rng, force?: PronCat[]): Ec
   return { pair: p, cat: p.cat, target: p[t], partner: p[o], ipaT: p[t === 'a' ? 'ipaA' : 'ipaB'], ipaP: p[o === 'a' ? 'ipaA' : 'ipaB'], zhT: p[t === 'a' ? 'zhA' : 'zhB'], zhP: p[o === 'a' ? 'zhA' : 'zhB'], sayable };
 }
 
+/** 审查修订 A7: when a read-aloud pair turns into listening, half the time the game reads the other word,
+ *  so knowing which monster it is doesn't give the answer away. */
+export function listenSide(t: EchoTask, rng: Rng): EchoTask {
+  if (!t.sayable || rng() >= 0.5) return t;
+  return { ...t, target: t.partner, partner: t.target, ipaT: t.ipaP, ipaP: t.ipaT, zhT: t.zhP, zhP: t.zhT };
+}
+
 export function echoOptions(t: EchoTask, rng: Rng): string[] {
   return shuffle(rng, [t.target, t.partner]);
 }

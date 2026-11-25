@@ -357,6 +357,8 @@ export interface Battle {
   notice?: { id: string; i: number };
   /** 镜像怪 (35): every attack question is the reflexive pronoun on this verb. */
   mirror?: boolean;
+  /** 审查修订: an extra-damage question left it at 1 HP; the next attack asks its own word. */
+  finishOwn?: boolean;
   /** 语法线: grammar questions asked on this word this fight. */
   gramAsked?: number;
   /** 挑战怪 (rev 342): a word from the scene's challenge pool: your level + 2, ×1.75 XP, opens with a dictation,
@@ -480,7 +482,7 @@ export function startBattle(
   // 斩杀: a 待验证 word (from an earlier day) or a due 回响 check is verified in this fight.
   const verify = opts.tutorial || opts.trial ? null : verifyOf(s.words[word.id], t);
   if (verify) b.verify = verify;
-  const canPlural = !verify && !!word.art && !!word.pl && word.pl !== '-' && !word.plOnly && has(s.level, 'plural');
+  const canPlural = !verify && !!word.art && !!word.pl && word.pl !== '-' && !word.plOnly && has(s.level, 'plural') && (s.words[word.id]?.plOk ?? 0) < CONFIG.phase.pluralRetire;
   b.pluralDue = kind === 'due' && canPlural && rng() < 1 / 3;
   // 复数怪 (0.5): from Lv11 about one noun monster in five is a crowd of it (die Äpfel): only die is right,
   // its typed questions ask for the plural, and it is half again as tough.
@@ -1320,11 +1322,12 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
 
   function ladderQ(): Question {
   if (am === 'attack' && b.saying && !b.sayingDone && !inPack) return sayingQuestion(s, b.saying, rng);
-  if (am === 'attack' && b.notice) {
+  // 审查修订: once an extra-damage question has brought it to 1 HP, the last blow has to answer its own word.
+  if (am === 'attack' && b.notice && !b.finishOwn) {
     const n = noticeById(b.notice.id);
     if (n) return gramQuestion(noticeTask(n, b.notice.i, rng));
   }
-  if (am === 'attack' && b.mirror) {
+  if (am === 'attack' && b.mirror && !b.finishOwn) {
     const t = mirrorTask(w, rng, s.level);
     if (t) return gramQuestion(t, boardDue(s, t.sys));
   }
@@ -1363,10 +1366,13 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
   }
   if (am === 'attack' && has(s.level, 'pron') && !b.echoDone && !b.tutorial && !b.trial && !fresh && !b.pluralMon) {
     const t = echoTask(s, w, rng);
-    if (t) return { type: 'pickDe', echo: t, prompt: `回音怪：${t.target} 还是 ${t.partner}？`, focus: t.target, options: echoOptions(t, rng), answer: t.target };
+    if (t) {
+      const options = echoOptions(t, rng);
+      return { type: 'pickDe', echo: t, prompt: `回音怪：${options.join(' 还是 ')}？`, focus: t.target, options, answer: t.target };
+    }
   }
   // 结构魔: every other attack question is the weil clause.
-  if (am === 'attack' && b.structMon && b.qIndex % 2 === 0) {
+  if (am === 'attack' && b.structMon && b.qIndex % 2 === 0 && !b.finishOwn) {
     const t = structTasks(w);
     if (t.length) return gramQuestion(t[Math.floor(rng() * t.length)], null);
   }
@@ -2302,6 +2308,13 @@ export function resolveTurn(
         if (intent.kind === 'defend' && !breaking && !wasBroken) log.push({ text: '它缩着。选择题只刮三成，默写才撬得开。', tone: 'info' });
       }
 
+      // 审查修订 (额外伤害): a context-review question, a notice question, the mirror's pronoun and the 结构魔's weil
+      // clause never finish it — at most down to 1 HP; the last blow has to answer its own word.
+      if (m.hp <= 0 && extraHit(q)) {
+        m.hp = 1;
+        b.finishOwn = true;
+        log.push({ text: `${tagOf(b)}只剩一口气：最后一下要答它自己的词。`, tone: 'info' });
+      }
       if (m.hp <= 0) {
         const overkill = -m.hp;
         m.hp = 0;
@@ -2654,6 +2667,11 @@ function irregularQ(b: Battle, q: Question): boolean {
 }
 
 /** 听力题: pick by ear (听整句选意思), 回音怪, 听写. */
+/** 审查修订: damage that doesn't come from answering the monster's own word (语境复习, 告示/信件, 镜像, 结构魔). */
+export function extraHit(q: Question): boolean {
+  return !!q.review || ['notice', 'mirror', 'struct'].includes(q.gram?.sys ?? '');
+}
+
 function listenQ(q: Question): boolean {
   return !!q.echo || !!q.listen || (q.type === 'pickZh' && q.prompt.startsWith('听'));
 }
