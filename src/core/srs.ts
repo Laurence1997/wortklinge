@@ -47,6 +47,7 @@ export function cutStatus(p: WordProgress | undefined, t: number): string {
   if (p.retired) return recheckDue(p, t) ? '回响抽查中' : p.sure ? '已斩杀（永久）' : '已斩杀';
   if (p.pend) return pendingToday(p, t) ? '会写 1/2（明天验证）' : '待验证';
   if (reviewMon(p, t)) return '复发中';
+  if (p.placed) return '推定会（入学测试，等抽查）';
   if (p.stage === 3) {
     if (p.ctxDone) return '归名（不用再复习）';
     const d = Math.ceil((p.due - t) / DAY);
@@ -165,6 +166,14 @@ export function contextFail(s: GameState, w: Word, t = now(s)): void {
  *  passed; a 归名 word not yet due has its due date pushed back by its current gap (rev 51). */
 export function reviewedByWriting(s: GameState, w: Word, t = now(s)): void {
   const p = s.words[w.id];
+  // 入学测试: a 推定会 word written right anywhere is confirmed and retires.
+  if (p?.placed && !p.retired) {
+    delete p.placed;
+    delete p.ctxDone;
+    p.write = (p.write ?? 0) + 1;
+    retire(s, w, t);
+    return;
+  }
   if (!p || p.retired || p.stage !== 3 || p.ctxDone) return;
   if (t >= p.due) contextPass(s, w, t);
   else p.due = Math.max(p.due, t + gapOf(p));

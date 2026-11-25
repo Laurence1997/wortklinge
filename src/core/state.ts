@@ -67,6 +67,8 @@ export interface GameState {
   screen?: import('./screen').ScreenSave;
   /** 词表导入 (2026-11-22): word ids marked 优先 and lemmas the game doesn't have yet (待收录). Optional: absent = none. */
   wordImport?: { ids: string[]; pending: string[] };
+  /** 入学测试 / 分级考核 (2026-11-25): last result and 推定会 spot-check counts. Optional: absent = never taken. */
+  placement?: import('./placement').PlaceSave;
   /** 篝火日记 (2026-11-22): entries written at bonfires (newest last). Optional: absent = none yet. */
   journal?: import('./journal').JournalEntry[];
   /** 回音怪 (2026-11-23): right / wrong per minimal-pair category, for the weak-spot record. */

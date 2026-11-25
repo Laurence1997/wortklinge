@@ -9,7 +9,6 @@ import { has } from '../core/unlocks';
 import { toast } from '../ui/feedback';
 import { needsVerify, stageOf } from '../core/srs';
 import { eligible, fieldCleared } from '../core/spawn';
-import { JUMP } from '../core/duel';
 import type { ZoneId } from '../core/types';
 import { WORD_BY_ID, fullForm } from '../data/words';
 import { AREAS, AREAS_LATER, SCENE_BY_ID, SCENES, neighbours, nearestScene, routeTo, scenesOf, type SceneDef } from '../data/world';
@@ -322,7 +321,7 @@ export class NodeNav {
             'div.sp-sec',
             h('div.muted', mons.length ? '这里的怪（点它或按数字键开打）' : '这里暂时没有怪，去下一个场景'),
             fieldCleared(this.s, sc.zone)
-              ? h('div.small', { style: 'color:var(--gold, #ffcf4a)' }, (this.s.region ?? 1) === 1 && this.s.level < JUMP.toLevel ? '这里的词你大多会了，去下一区吧：主城考官那里可以考「跳区考核」' : '这里的词你大多会了，去下一区吧')
+              ? h('div.small', { style: 'color:var(--gold, #ffcf4a)' }, '这里的词你大多会了，去下一区吧，或者找主城考官考「分级考核」')
               : '',
             ...mons.map((m, i) =>
               h(

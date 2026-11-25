@@ -12,8 +12,10 @@ import { WorldScene } from './game/WorldScene';
 import { showTitle } from './ui/title';
 import { importJson } from './core/state';
 import { toast } from './ui/feedback';
-import { VERSION } from './version';
+import { setReportVersion } from './net/report';
 
+const VERSION = '0.6.11';
+setReportVersion(VERSION);
 const dev = new URLSearchParams(location.search).has('dev');
 
 function boot(state: ReturnType<typeof newGame>) {

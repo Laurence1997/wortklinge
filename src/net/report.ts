@@ -3,7 +3,12 @@
 
 import { sb, cloud } from './cloud';
 import { sentenceHash } from '../core/sentenceId';
-import { VERSION } from '../version';
+
+let version = '';
+/** main.ts passes the game version once at start. */
+export function setReportVersion(v: string): void {
+  version = v;
+}
 
 export type ReportReason = 'wrong' | 'unnatural' | 'translation' | 'grading' | 'other';
 
@@ -35,7 +40,7 @@ export async function sendReport(r: ReportInput): Promise<string | null> {
       reason: r.reason,
       note: r.note?.trim().slice(0, 500) || null,
       context: r.context ?? {},
-      game_version: VERSION,
+      game_version: version || null,
     });
     if (!error) return null;
     if (/too many reports/.test(error.message)) return '今天报告得够多了，明天再来，谢谢！';
