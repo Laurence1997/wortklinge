@@ -38,8 +38,8 @@ export function monKind(cat: string | undefined): MonKind {
   return ZH_KIND[cat] ?? 'abstract';
 }
 
-/** 专属造型 (waiting for Lucas, 2026-11-25): words whose very thing is in the art packs use that tile. */
-export const OWN_LOOKS = false;
+/** 专属造型 (Lucas 2026-11-25): words whose very thing is in the art packs use that tile. */
+export const OWN_LOOKS = true;
 const EYES_ON: Record<string, boolean> = { food: true, item: true, place: true };
 
 export function wordArt(w: { id: string; cat?: string; look?: string }): MonArt {
