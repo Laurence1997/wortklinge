@@ -13,6 +13,7 @@ import { shuffle, type Rng } from './rng';
 import type { GameState } from './state';
 import type { Word } from './types';
 import { hasArticleQuestion, WORDS } from '../data/words';
+import { STAGE_DEF, type Stage } from './stages';
 
 export const BREAK = { from: 30, perPart: 8, pass: 5 };
 
@@ -45,15 +46,18 @@ export interface Exam {
   right: Record<ExamPart, number>;
   /** 补考语法: only the grammar part (saves that passed the three parts before 0.6.x). */
   grammarOnly?: boolean;
+  /** 0.7/0.8: which trial (A1 at 30, A2 at 80, B1 at 120). Missing = A1 (older code paths). */
+  stage?: Stage;
   last?: { ok: boolean; q: ExamQ; input: string };
   over: boolean;
 }
 
 /** Only words you met; taken early (提前考, Lucas 2026-11-25) or with under 40 met, the whole stage's list. */
-function pool(s: GameState): Word[] {
-  const ok = (w: Word) => (w.region ?? 1) <= 3 && w.pos !== 'phr' && !w.digit && !w.tutorial;
+function pool(s: GameState, stage: Stage = 'A1'): Word[] {
+  const [lo, hi] = STAGE_DEF[stage].regions;
+  const ok = (w: Word) => (w.region ?? 1) >= lo && (w.region ?? 1) <= hi && w.pos !== 'phr' && !w.digit && !w.tutorial;
   const met = WORDS.filter((w) => ok(w) && s.words[w.id]);
-  return met.length >= 40 && s.level >= BREAK.from ? met : WORDS.filter(ok);
+  return met.length >= 40 && s.level >= STAGE_DEF[stage].cap ? met : WORDS.filter(ok);
 }
 
 /** 突破试炼可以提前考 (Lucas 2026-11-25): open at the examiner from the level 全量筛选 opens; passing early opens the
@@ -68,8 +72,10 @@ function sentenceOf(w: Word): { de: string; zh: string } | null {
   return null;
 }
 
-export function startExam(s: GameState, rng: Rng): Exam {
-  const words = shuffle(rng, pool(s));
+/** 0.7/0.8: A2 and B1 use the same four parts on their own regions' words (游戏设计 七). Still to come with the
+ *  other systems: each stage's own grammar items, B1's short article in 读 and one AI-graded free sentence in 写. */
+export function startExam(s: GameState, rng: Rng, stage: Stage = 'A1'): Exam {
+  const words = shuffle(rng, pool(s, stage));
   const used = new Set<string>();
   const take = (fits: (w: Word) => boolean) => {
     const w = words.find((x) => !used.has(x.id) && fits(x));
@@ -106,8 +112,8 @@ export function startExam(s: GameState, rng: Rng): Exam {
     if (!w) break;
     qs.push({ part: 'write', word: w, prompt: w.zh, answer: w.de });
   }
-  qs.push(...grammarQs(s, rng));
-  return { qs, at: 0, right: { listen: 0, read: 0, write: 0, grammar: 0 }, over: false };
+  qs.push(...grammarQs(s, rng, STAGE_DEF[stage].regions[1]));
+  return { qs, at: 0, right: { listen: 0, read: 0, write: 0, grammar: 0 }, over: false, stage };
 }
 
 /** 补考语法: the grammar part alone. */
@@ -130,10 +136,10 @@ const datHint = (prep: string | null) => (prep ? `${prep} 后面用第三格（�
 
 /** 语法 (0.6.x): 宾格 2, 与格 2, 变位 2 (one regular, one strong), 完成时 2 (one haben, one sein), all typed into a
  *  sentence, only with words you have met, reusing the battle's case and Perfekt frames. */
-export function grammarQs(s: GameState, rng: Rng): ExamQ[] {
+export function grammarQs(s: GameState, rng: Rng, maxRegion = 3): ExamQ[] {
   const met = (w: Word) => !!s.words[w.id];
-  const nouns = shuffle(rng, WORDS.filter((w) => w.pos === 'n' && (w.region ?? 1) <= 3)).sort((a, b) => Number(met(b)) - Number(met(a)));
-  const verbs = shuffle(rng, WORDS.filter((w) => w.pos === 'v' && (w.region ?? 1) <= 3)).sort((a, b) => Number(met(b)) - Number(met(a)));
+  const nouns = shuffle(rng, WORDS.filter((w) => w.pos === 'n' && (w.region ?? 1) <= maxRegion)).sort((a, b) => Number(met(b)) - Number(met(a)));
+  const verbs = shuffle(rng, WORDS.filter((w) => w.pos === 'v' && (w.region ?? 1) <= maxRegion)).sort((a, b) => Number(met(b)) - Number(met(a)));
   const out: ExamQ[] = [];
   const used = new Set<string>();
   // 宾格: article clozes on accusative slots (den / einen), else ihn / sie / es.

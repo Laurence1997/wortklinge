@@ -9,7 +9,7 @@ import { elitePick, noteEliteWin } from '../src/core/elite';
 import { CONFIG } from '../src/core/config';
 
 // 游戏设计「野外精英：场景精英」 (Lucas 2026-11-23).
-const scene = SCENES.find((sc) => sc.type === 'field' && sc.region === 1 && (sc.words?.length ?? 0) >= 8 && sc.words!.every((id) => WORD_BY_ID[id]?.art))!;
+const scene = SCENES.find((sc) => sc.type === 'field' && sc.region === 1 && (sc.words?.length ?? 0) >= 8 && !!WORD_BY_ID[sc.words![0]]?.art && sc.words!.filter((id) => WORD_BY_ID[id]?.art).length >= 6)!;
 const DAY = 86400000;
 
 function learned(s: GameState, ids: string[], stage: 1 | 2 | 3, due = Date.now() + DAY) {

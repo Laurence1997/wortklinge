@@ -632,7 +632,7 @@ function voiceCases(s: GameState, b: Battle): Case[] {
 /** Re-voice a plain line in the wanted case (a mumble with the name stance when nothing fits and nom is wanted). */
 function voiceIn(b: Battle, want: Case): void {
   const g = genderOf(b.word);
-  const ok = (i: number) => caseOf(g, slotArticle(b.word, i)) === want;
+  const ok = (i: number) => caseOf(g, slotArticle(b.word, i)) === want && !slotArticle(b.word, i)?.startsWith('kein');
   const v = voiceLine(b.word, b.turn, ok);
   if (v && ok(v.idx)) b.intent = { ...b.intent, line: v.line, zh: v.zh, full: v.full, fullZh: v.fullZh, caseArt: slotArticle(b.word, v.idx)! };
   else if (want === 'nom') b.intent = { ...b.intent, line: '… mmh …', zh: '（它含糊地念着什么，听不清。）', full: undefined, fullZh: undefined, caseArt: undefined };
@@ -662,8 +662,9 @@ export function alignPairs(s: GameState, pack: Battle[]): void {
       const lead = lineCase(g[0], g[0].intent);
       want = both.includes(lead) ? lead : both[g[0].turn % Math.max(1, both.length)] ?? 'nom';
     } else if (free.length < g.length) want = 'nom';
+    // A kein line takes only the exact kein stance, so a pair reads plain (non-kein) lines to share one stance.
     for (const x of free) {
-      if (lineCase(x, x.intent) === want) continue;
+      if (lineCase(x, x.intent) === want && !x.intent.caseArt?.startsWith('kein')) continue;
       voiceIn(x, want);
     }
     // Keep a stance pick the case did not change; clear it when it did.

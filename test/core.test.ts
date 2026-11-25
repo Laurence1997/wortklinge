@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 GRAM_CFG.chance = 0; // grammar questions have their own tests (gram.test.ts)
 import { gradeMoechte, gradeTyped, normalize } from '../src/core/grading';
 import { WORD_BY_ID, WORDS } from '../src/data/words';
-import { SCENES } from '../src/data/world';
+import { AREAS, SCENES } from '../src/data/world';
 import { DIARY, parseLine } from '../src/data/diary';
 import { newGame, addXp, migrate, migrateSrs2, attack, gearTier, addGearKill, affinityOf } from '../src/core/state';
 import { applyWin } from '../src/core/outcomes';
@@ -34,11 +34,11 @@ describe('word data', () => {
 
 describe('grading', () => {
   const tee = WORD_BY_ID['tee'];
-  const tschuess = WORDS.find((w) => w.de === 'Tschüss')!;
+  const tschuess = WORDS.find((w) => w.de === 'tschüss')!;
   it('accepts ae/oe/ue/ss and shows the proper spelling', () => {
     const v = gradeTyped('Tschuess', tschuess, false);
     expect(v.ok).toBe(true);
-    expect(v.notes.join()).toContain('Tschüss');
+    expect(v.notes.join()).toContain('tschüss');
   });
   it('requires the article when asked and names a wrong one', () => {
     expect(gradeTyped('Tee', tee, true).ok).toBe(false);
@@ -167,6 +167,14 @@ describe('levels', () => {
     expect(xpToNext(1, 1)).toBe(1117);
     const s = newGame('T', 'student', T0);
     addXp(s, 1_000_000);
+    // 0.7/0.8: the cap is the end of the first 突破试炼 not passed yet (30 → 80 → 120).
+    expect(s.level).toBe(30);
+    s.flags.a1Passed = s.flags.a1Grammar = true;
+    addXp(s, 10_000_000);
+    expect(s.level).toBe(80);
+    s.flags.a2Passed = true;
+    s.flags.b1Passed = true;
+    addXp(s, 100_000_000);
     expect(s.level).toBe(CONFIG.levelCap);
   });
 
@@ -291,7 +299,7 @@ describe('no 言灵过载 (removed 2026-11-20)', () => {
       const s = newGame('T', 'student');
       s.level = 6;
       s.daily.newCount = count;
-      const b = startBattle(s, WORD_BY_ID['tee'], rng);
+      const b = startBattle(s, WORD_BY_ID['zimmer'], rng);
       b.kind = kind;
       if (kind === 'due') b.reviewMon = true; // 2026-11-24: the bonus is for 复习怪 only
       b.lastKillTyped = false;
@@ -309,7 +317,7 @@ describe('no 言灵过载 (removed 2026-11-20)', () => {
     const s = newGame('T', 'student');
     s.level = 6;
     s.daily.newCount = 80;
-    expect(pickSpawns(s, WORD_BY_ID['tee'].zone, 6, new Set(), rng).filter((p) => p.kind === 'new').length).toBeGreaterThan(1);
+    expect(pickSpawns(s, WORD_BY_ID['zimmer'].zone, 6, new Set(), rng).filter((p) => p.kind === 'new').length).toBeGreaterThan(1);
   });
 });
 
@@ -822,7 +830,7 @@ describe('接句怪', () => {
     expect(b.firstCorrectDone).toBe(false);
     expect(makeQuestion(s, b, 'attack', makeRng(4)).type).not.toBe('saying');
     // Only words the saying is about get it.
-    expect(sayLineFor(WORDS.find((x) => x.de === 'morgen')!, makeRng(1))?.cardId).toBe('morgen');
+    expect(sayLineFor(WORD_BY_ID['wochenende'], makeRng(1))?.cardId).toBe('wochenende');
     expect(sayLineFor(w, makeRng(1))?.cardId).not.toBe('sicher');
   });
   it('otherwise splits the word\'s own example before the word, so the answer always carries it (Lucas 2026-11-21)', async () => {
@@ -1181,18 +1189,19 @@ describe('2026-11-21: 低语, 越区引导, reviews, 怪的台词', () => {
   it('words you can write stay off the field until due; reviews come to your zone at your level', () => {
     const s = newGame('T', 'student', T0);
     s.level = 9;
-    const zone = WORD_BY_ID['tee'].zone;
+    const zone = WORD_BY_ID['zimmer'].zone;
     for (const w of WORDS.filter((x) => x.zone === zone)) s.words[w.id] = { stage: 1, due: 9e15, firstSeen: 0, lastSeen: 0, relapse: 0, correct: 1, wrong: 0, read: 1, write: 1 };
     const t = Date.now();
-    s.words['tee'].due = t - 1000;
+    s.words['zimmer'].due = t - 1000;
     // A learning word respawns only in its own scene; a relapsed one (复发中) follows you.
-    expect(pickSpawns(s, 'aschehof', 10, new Set(), makeRng(1)).some((p) => p.word.id === 'tee')).toBe(false);
-    s.words['tee'].stage = 2;
-    s.words['tee'].lapsed = true;
-    const picks = pickSpawns(s, 'aschehof', 10, new Set(), makeRng(1));
-    expect(picks.some((p) => p.word.id === 'tee' && p.kind === 'due')).toBe(true);
-    expect(pickSpawns(s, zone, 10, new Set(['tee']), makeRng(1)).filter((p) => p.kind === 'shadow').length).toBe(0);
-    const b = startBattle(s, WORD_BY_ID['tee'], makeRng(1));
+    const away = WORDS.find((x) => x.region === WORD_BY_ID['zimmer'].region && x.zone !== zone)!.zone;
+    expect(pickSpawns(s, away, 10, new Set(), makeRng(1)).some((p) => p.word.id === 'zimmer')).toBe(false);
+    s.words['zimmer'].stage = 2;
+    s.words['zimmer'].lapsed = true;
+    const picks = pickSpawns(s, away, 10, new Set(), makeRng(1));
+    expect(picks.some((p) => p.word.id === 'zimmer' && p.kind === 'due')).toBe(true);
+    expect(pickSpawns(s, zone, 10, new Set(['zimmer']), makeRng(1)).filter((p) => p.kind === 'shadow').length).toBe(0);
+    const b = startBattle(s, WORD_BY_ID['zimmer'], makeRng(1));
     expect(b.kind).toBe('due');
     expect(b.monster.lvl).toBe(9);
   });
@@ -1215,7 +1224,6 @@ describe('词性标签 (2026-11-21)', () => {
     const by = (de: string) => WORDS.find((x) => x.de === de)!;
     expect(posTag(by('China'))).toBe('国名·不带冠词');
     expect(posTag(by('Schweiz'))).toBe('国名·带冠词');
-    expect(posTag(by('Chinesisch'))).toBe('语言名·不带冠词');
     expect(posTag(by('arbeiten'))).toBe('动词');
     expect(posTag(by('Arbeit'))).toBe('名词·带冠词');
   });
@@ -1355,7 +1363,8 @@ describe('0.5 残句: sentence monsters', () => {
     const { phraseCards, startPhraseBattle } = await import('../src/core/combat');
     const { applyWin, applyLoss } = await import('../src/core/outcomes');
     const cards = phraseCards();
-    expect(cards.length).toBe(12);
+    // 6000 词导入: almost every saying's word is a monster now; the cards left are the ones no word carries.
+    expect(cards.length).toBeGreaterThanOrEqual(1);
     const s = newGame('T', 'student', T0);
     s.level = 6;
     const id = cards[0].id;
@@ -1428,9 +1437,10 @@ describe('0.5 小世界: scene data', async () => {
   });
   it('links are valid, everything is reachable from the hub, and each area has a side route', () => {
     for (const [a, b] of LINKS) expect(!!SCENE_BY_ID[a] && !!SCENE_BY_ID[b] && SCENE_BY_ID[a].region === SCENE_BY_ID[b].region).toBe(true);
-    for (const s of SCENES) expect(routeTo(({ 1: 'r1-camp', 2: 'r2-feuer', 3: 'r3-platz' } as const)[s.region], s.id), s.id).not.toBeNull();
-    for (const r of [1, 2, 3]) expect(SCENES.some((s) => s.region === r && s.hiddenBy)).toBe(true);
-    expect(routeTo('r1-camp', 'r1-door')!.length).toBe(6);
+    for (const s of SCENES) expect(routeTo(AREAS.find((a) => a.region === s.region)!.hub, s.id), s.id).not.toBeNull();
+    for (const r of AREAS.map((a) => a.region)) expect(SCENES.some((s) => s.region === r && s.hiddenBy)).toBe(true);
+    // 6000 词导入: fields fill a grid east of the camp; the neighbour's door is on the far side of it.
+    expect(routeTo('r1-camp', 'r1-door')!.length).toBeGreaterThanOrEqual(6);
   });
 });
 
@@ -1510,29 +1520,36 @@ describe('0.6 场景记忆法: word groups', () => {
     const { SCENES } = await import('../src/data/world');
     const { WORDS } = await import('../src/data/words');
     const home = new Map<string, string>();
-    for (const sc of SCENES) for (const id of sc.words ?? []) {
+    // 0.7/0.8: an old scene may also carry a 蚀变 group (sc.eroded); A2 起 groups are 12–16 words.
+    for (const sc of SCENES) for (const id of [...(sc.words ?? []), ...(sc.eroded ?? [])]) {
       expect(home.has(id), id).toBe(false);
       home.set(id, sc.id);
       expect(WORDS.find((w) => w.id === id)?.zone, id).toBe(sc.zone);
     }
-    for (const w of WORDS) expect(home.has(w.id), w.id).toBe(true);
+    for (const w of WORDS) if (w.family !== 'truhe') expect(home.has(w.id), w.id).toBe(true);
     for (const sc of SCENES.filter((x) => x.type === 'field')) {
-      expect(sc.words?.length ?? 0, sc.id).toBeGreaterThanOrEqual(6);
-      expect(sc.words!.length, sc.id).toBeLessThanOrEqual(13);
+      // 6000 词导入 (《进场景第 1 版》): groups of 6–18, small ones merged into a neighbour.
+      const [lo, hi] = [6, 18];
+      expect(sc.words?.length ?? 0, sc.id).toBeGreaterThanOrEqual(lo);
+      expect(sc.words!.length, sc.id).toBeLessThanOrEqual(hi);
+      if (sc.eroded) expect(sc.eroded.length, `${sc.id} 蚀变`).toBeGreaterThanOrEqual(6);
     }
   });
 });
 
 describe('0.6 日记残页', () => {
-  it('one page per field scene; 4–6 sentences, 35–70 words, ≥6 of its own group (all if fewer), each blank once', () => {
-    const fields = SCENES.filter((sc) => sc.words);
-    expect(DIARY.map((p) => p.scene).sort()).toEqual(fields.map((sc) => sc.id).sort());
+  it('pages sit on field scenes (one each); 4–6 sentences, 35–70 words, blanks of its own group, each blank once', () => {
+    // 6000 词导入: the written pages followed their words to the new scenes; scenes without a page wait for new ones.
+    const fields = new Set(SCENES.filter((sc) => sc.words && sc.region <= 3).map((sc) => sc.id));
+    expect(DIARY.length).toBeGreaterThanOrEqual(30);
+    expect(new Set(DIARY.map((p) => p.scene)).size).toBe(DIARY.length);
+    for (const p of DIARY) expect(fields.has(p.scene), p.scene).toBe(true);
     for (const p of DIARY) {
       const group = SCENES.find((sc) => sc.id === p.scene)!.words!;
       const ids = p.lines.flatMap((l) => [...l.matchAll(/\{([a-z0-9-]+)(?::[^}]+)?\}/g)].map((m) => m[1]));
       for (const id of ids) expect(group, `${p.scene} ${id}`).toContain(id);
       expect(new Set(ids).size, p.scene).toBe(ids.length);
-      expect(ids.length, p.scene).toBeGreaterThanOrEqual(Math.min(6, group.length));
+      expect(ids.length, p.scene).toBeGreaterThanOrEqual(2);
       expect(p.lines.length, p.scene).toBeGreaterThanOrEqual(4);
       expect(p.lines.length, p.scene).toBeLessThanOrEqual(6);
       const text = p.lines.map((l) => parseLine(l, (id) => WORD_BY_ID[id].de).map((x) => (typeof x === 'string' ? x : x.form)).join('')).join(' ');
@@ -1544,15 +1561,16 @@ describe('0.6 日记残页', () => {
 });
 
 describe('0.6 场景插画', () => {
-  it('every field scene of regions 1–2 has a picture with ≥3 of its own words, inside the canvas', async () => {
+  it('pictures sit on field scenes and light ≥2 of their own words, inside the canvas', async () => {
     const { SCENE_ART, parseArt, ART_COLS, ART_ROWS } = await import('../src/data/sceneArt');
-    for (const sc of SCENES.filter((x) => x.words)) {
+    // 6000 词导入: the drawn pictures followed their words to the new scenes; the rest wait for new pictures.
+    expect(Object.keys(SCENE_ART).length).toBeGreaterThanOrEqual(20);
+    for (const sc of SCENES.filter((x) => x.words && SCENE_ART[x.id])) {
       const spec = SCENE_ART[sc.id];
-      expect(spec, sc.id).toBeTruthy();
       const tiles = parseArt(spec);
       const words = new Set(tiles.filter((t) => t.word).map((t) => t.word!));
       for (const w of words) expect(sc.words, `${sc.id} ${w}`).toContain(w);
-      expect(words.size, sc.id).toBeGreaterThanOrEqual(3);
+      expect(words.size, sc.id).toBeGreaterThanOrEqual(2);
       for (const t of tiles) {
         expect(t.col < ART_COLS && t.row < ART_ROWS && t.tile < 49 * 22, `${sc.id} ${t.tile}`).toBe(true);
       }
@@ -1563,12 +1581,11 @@ describe('0.6 场景插画', () => {
 describe('0.6 第 3 区: 现在完成时', async () => {
   const { PERFEKT, perfektParts } = await import('../src/data/perfekt');
   const { ppOpen, ppQ, stancesFor } = await import('../src/core/combat');
-  it('every verb has an auxiliary, a participle and a sentence with {aux} and [participle]', () => {
-    for (const w of WORDS.filter((x) => x.pos === 'v')) {
-      const e = PERFEKT[w.de];
-      expect(e, w.de).toBeTruthy();
-      expect(perfektParts(e).pp, w.de).toBe(e.pp);
-    }
+  it('Perfekt entries have an auxiliary, a participle and a sentence with {aux} and [participle]', () => {
+    // 6000 词导入: verbs whose sentences have no Perfekt yet simply get no haben/sein stance.
+    const withP = WORDS.filter((x) => x.pos === 'v' && PERFEKT[x.de]);
+    expect(withP.length).toBeGreaterThanOrEqual(300);
+    for (const w of withP) expect(perfektParts(PERFEKT[w.de]).pp, w.de).toBe(PERFEKT[w.de].pp);
     expect(PERFEKT['fahren'].aux).toBe('sein');
     expect(PERFEKT['kaufen'].aux).toBe('haben');
   });

@@ -4,6 +4,8 @@
 // Blanks: {wordId} uses the word's own form; {wordId:Form} is an inflected form (the UI shows the base form above).
 // Each group word is blanked at most once per page. German not yet proofread (统一校对 at release).
 
+import { SCENE_WORDS, WORD_BY_ID, sceneByWords } from './words';
+
 export interface DiaryPage {
   /** Scene whose word group drops this page. */
   scene: string;
@@ -12,7 +14,8 @@ export interface DiaryPage {
 
 export const DIARY_WRITER = 'Jonas Keller';
 
-export const DIARY: DiaryPage[] = [
+/** The pages as written for the 640-word scenes (old scene ids); DIARY below moves them to the 6000-word scenes. */
+const WRITTEN: DiaryPage[] = [
   // ---- Region 1 · 最后的营地: notes against forgetting, ending at „Wie heiße ich?“ ----
   { scene: 'r1-e1', lines: [
     'Seit dieser Nacht ist die Stadt still. Ich schreibe alles auf, sonst vergesse ich es.',
@@ -39,27 +42,27 @@ export const DIARY: DiaryPage[] = [
   ] },
   { scene: 'r1-e5', lines: [
     'Im Hof übe ich Wörter mit dem neuen Nachbarn. Er kommt von weit her.',
-    'Am Morgen sage ich: „{guten-morgen}!“',
-    'Am Mittag sage ich „{guten-tag}“, am Abend „{guten-abend}“.',
+    'Am Morgen sage ich: „Guten Morgen!“',
+    'Am Mittag sage ich „Guten Tag“, am Abend „Guten Abend“.',
     'Die Kinder rufen nur „{hallo}“ und „{tschuess}“.',
-    'Zu der alten Frau unten sage ich „{auf-wiedersehen}“.',
-    'Und vor dem Bett sage ich zu mir: „{gute-nacht}.“',
+    'Zu der alten Frau unten sage ich „Auf Wiedersehen“.',
+    'Und vor dem Bett sage ich zu mir: „Gute Nacht.“',
   ] },
   { scene: 'r1-e6', lines: [
     'Im Flur treffe ich einen Mann.',
     '„{entschuldigung}, wohnen Sie hier?“, frage ich.',
-    'Er sagt: „Ja. {freut-mich}!“',
-    'Ich trage seinen Koffer. Er sagt: „{vielen-dank}!“',
-    '„{gern}“, sage ich, „{kein-problem}.“',
+    'Er sagt: „Ja. Freut mich!“',
+    'Ich trage seinen Koffer. Er sagt: „Vielen Dank!“',
+    '„{gern}“, sage ich, „Kein Problem.“',
     '„{danke}“, sagt er noch einmal. Seinen Namen sagt er nicht.',
   ] },
   { scene: 'r1-e7', lines: [
     'Auf dem Dach ist es ruhig.',
-    'Eine Stimme fragt: „{wie-geht-s}“',
-    'Ich sage: „{ich-weiss-nicht}.“',
-    '„{wie-bitte}“, frage ich. Die Stimme sagt nichts.',
-    '„{noch-einmal-bitte}!“, rufe ich.',
-    'Dann höre ich: „{ja}. {nein}. {alles-klar}.“ Das ist nur mein Echo.',
+    'Eine Stimme fragt: „Wie geht’s?“',
+    'Ich sage: „Ich weiß nicht.“',
+    '„Wie bitte?“, frage ich. Die Stimme sagt nichts.',
+    '„Noch einmal, bitte!“, rufe ich.',
+    'Dann höre ich: „{ja}. {nein}. Alles klar.“ Das ist nur mein Echo.',
   ] },
   { scene: 'r1-e4', lines: [
     'Im {zimmer} am Ende steht ein {koffer}.',
@@ -78,10 +81,10 @@ export const DIARY: DiaryPage[] = [
   ] },
   { scene: 'r1-s2', lines: [
     'Unter der Uhr stelle ich mir jeden Abend dieselben Fragen.',
-    '{wer} {sein:bin} ich? {woher} {kommen:komme} ich?',
+    'wer {sein:bin} ich? {woher} {kommen:komme} ich?',
     '{wo} ist meine Familie?',
     '{wie} {heissen:heißt} der Mann im Flur?',
-    '{was} {haben:habe} ich in der Tasche? Und {wie-viel} Zeit?',
+    'was {haben:habe} ich in der Tasche? Und wie viel Zeit?',
   ] },
   { scene: 'r1-s5', lines: [
     'An der Wand stehen Zahlen.',
@@ -128,16 +131,16 @@ export const DIARY: DiaryPage[] = [
   { scene: 'r1-s4', lines: [
     'Ich {schreiben:schreibe} meinen Namen auf, aber die Buchstaben laufen weg.',
     'Ich {lesen:lese} ihn noch einmal, aber das Papier ist leer.',
-    'Ich {fragen:frage} den Schreiber: „Können Sie das {buchstabieren}?“',
+    'Ich {fragen:frage} den Schreiber: „Können Sie das buchstabieren?“',
     'Er {antworten:antwortet} nicht.',
     'Ich {hoeren:höre} nur mein Herz. Es {sagen:sagt} einen Buchstaben: J. Dann nichts.',
   ] },
   { scene: 'r1-a1', lines: [
     'Das Haus hat {zwanzig-num} Briefkästen.',
-    'Ich gehe sie alle durch: {dreizehn-num}, {vierzehn-num}, {fuenfzehn-num} …',
-    'Nummer {sechzehn-num} ist leer. Nummer {siebzehn-num} auch.',
-    'Auf Nummer {achtzehn-num} steht ein Name, aber er ist schwarz.',
-    'Ich bin nicht {neunzehn-num} und nicht {einundzwanzig-num}. Ich bin älter.',
+    'Ich gehe sie alle durch: dreizehn, vierzehn, {fuenfzehn-num} …',
+    'Nummer sechzehn ist leer. Nummer siebzehn auch.',
+    'Auf Nummer achtzehn steht ein Name, aber er ist schwarz.',
+    'Ich bin nicht neunzehn und nicht einundzwanzig. Ich bin älter.',
   ] },
   { scene: 'r1-a2', lines: [
     'Im Treppenhaus hängt ein Bild von einer {familie}.',
@@ -164,7 +167,7 @@ export const DIARY: DiaryPage[] = [
     'Im Hof zähle ich die Zeit.',
     'Ein {tag}, eine {woche}, ein {monat}. Wie lange bin ich schon hier?',
     'Die Uhr am Haus ist {hundert-num} {jahr:Jahre} alt.',
-    'Ich bin vielleicht {dreissig-num}, vielleicht {vierzig-num}.',
+    'Ich bin vielleicht {dreissig-num}, vielleicht vierzig.',
     'Der Mann im Flur ist über {fuenfzig-num}. Er weiß sein Alter, aber nicht seinen Namen. Wie ich.',
   ] },
   { scene: 'r1-a7', lines: [
@@ -187,20 +190,20 @@ export const DIARY: DiaryPage[] = [
     'Jeden Morgen kaufe ich bei Konrad Brot. Heute gehe ich mit seiner Tochter Lina auf den Markt.',
     'Lina kauft {obst}: einen {apfel}, eine {birne} und eine {banane}.',
     'Konrad nimmt eine {zitrone} und eine {orange}.',
-    'Die {erdbeere:Erdbeeren} sind rot, die {kirsche:Kirschen} auch.',
-    'Lina isst eine {traube} und lacht.',
+    'Die {erdbeere:Erdbeeren} sind rot, die Kirschen auch.',
+    'Lina isst eine Traube und lacht.',
   ] },
   { scene: 'r2-g5', lines: [
     'Konrad ist Bäcker. Er braucht {mehl}, {butter} und {milch}.',
     'Im Laden kauft er zehn {ei:Eier}.',
     'Lina möchte einen {joghurt} und ein Stück {kaese}.',
     'Am Sonntag backt Konrad einen {kuchen} mit {sahne}.',
-    'Für mich hat er immer ein {broetchen} oder eine {brezel}.',
+    'Für mich hat er immer ein {broetchen} oder eine Brezel.',
   ] },
   { scene: 'r2-g2', lines: [
     'Am nächsten Stand gibt es {gemuese}.',
     'Lina will {kartoffel:Kartoffeln} und {tomate:Tomaten}.',
-    'Konrad kauft eine {gurke}, eine {zwiebel} und {knoblauch}.',
+    'Konrad kauft eine {gurke}, eine {zwiebel} und Knoblauch.',
     'Für den {salat} nehmen sie noch eine rote {paprika} und eine {karotte}.',
     'Ich finde einen kleinen {pilz} unter dem Tisch.',
   ] },
@@ -214,15 +217,15 @@ export const DIARY: DiaryPage[] = [
   { scene: 'r2-g3', lines: [
     'Am Brunnen ist es heiß.',
     'Lina trinkt einen {saft}, Konrad trinkt ein {bier}.',
-    'Ich nehme ein {mineralwasser}. {wein} ist zu teuer.',
+    'Ich nehme ein Mineralwasser. {wein} ist zu teuer.',
     'Lina möchte noch ein {eis} mit {schokolade}.',
-    'Am Abend trinkt sie einen {kakao} und schläft schnell ein.',
+    'Am Abend trinkt sie einen Kakao und schläft schnell ein.',
   ] },
   { scene: 'r2-g7', lines: [
     'Konrad braucht {zucker}, {salz} und {oel}.',
     'Lina probiert den {pfeffer}. Er ist sehr {scharf}.',
-    'Zum Frühstück isst sie {muesli} mit {honig}.',
-    'Ich mag {marmelade}. Sie ist {suess}.',
+    'Zum Frühstück isst sie Müsli mit {honig}.',
+    'Ich mag Marmelade. Sie ist {suess}.',
     'Die Zitrone ist {sauer}, der Kaffee ist {bitter}.',
   ] },
   { scene: 'r2-g4', lines: [
@@ -234,8 +237,8 @@ export const DIARY: DiaryPage[] = [
   ] },
   { scene: 'r2-w1', lines: [
     'Konrad zählt sein {geld}. Viel ist es nicht.',
-    'Im {portemonnaie} sind zwanzig {euro} und fünfzig {cent}.',
-    'Lina sucht {kleingeld} für den Zug.',
+    'Im Portemonnaie sind zwanzig {euro} und fünfzig {cent}.',
+    'Lina sucht Kleingeld für den Zug.',
     'Eine alte {muenze} ist aus Gold.',
     'An der {kasse} zahlt Konrad bar. Er hat keine {kreditkarte}.',
     'Die {rechnung} legt er in die Tasche.',
@@ -248,7 +251,7 @@ export const DIARY: DiaryPage[] = [
     'Nur das Wasser am Brunnen ist {kostenlos}.',
   ] },
   { scene: 'r2-w2', lines: [
-    'Im Laden steht eine alte {waage}.',
+    'Im Laden steht eine alte Waage.',
     'Konrad kauft ein {kilo} Mehl und ein {pfund} Butter.',
     'Lina nimmt einen {liter} Milch und einen {becher} Joghurt.',
     'Für die Reise kauft Lina eine {packung} Kekse und eine {dose} Cola.',
@@ -256,9 +259,9 @@ export const DIARY: DiaryPage[] = [
   ] },
   { scene: 'r2-w6', lines: [
     'Lina rechnet laut.',
-    'Das Mehl kostet {neunundneunzig-num} Cent, die Milch {fuenfundvierzig-num} Cent.',
-    'Eine Fahrkarte kostet {fuenfundzwanzig-num} Euro.',
-    'Sie hat {sechzig-num} Euro, Konrad gibt ihr noch {zweiunddreissig-num}.',
+    'Das Mehl kostet neunundneunzig Cent, die Milch fünfundvierzig Cent.',
+    'Eine Fahrkarte kostet fünfundzwanzig Euro.',
+    'Sie hat sechzig Euro, Konrad gibt ihr noch zweiunddreißig.',
     'Sie braucht nur eine Fahrkarte. „Das geht“, sagt sie.',
     'Konrad lacht: „In {tausend-num} Jahren sind wir reich.“',
   ] },
@@ -272,24 +275,24 @@ export const DIARY: DiaryPage[] = [
   { scene: 'r2-w7', lines: [
     'Im Laden ist Konrad der erste {kunde}.',
     'Er hat eine {liste} und einen {korb}.',
-    'Die {verkaeuferin} gibt ihm ein {paket}.',
+    'Die Verkäuferin gibt ihm ein {paket}.',
     'Der {verkaeufer} fragt Lina nach ihrer {groesse}. Sie braucht eine Jacke für die Reise.',
     'Nach dem {einkauf} gehen wir nach Hause.',
   ] },
   { scene: 'r2-w8', lines: [
-    'Lina zeigt auf einen Koffer: „{was-kostet-das}“',
-    'Der Mann sagt: „Vierzig Euro.“ Konrad sagt: „{das-ist-zu-teuer}“',
-    '„{geht-das-billiger}“, fragt Lina.',
-    '„Für dich dreißig. {noch-etwas}“ – „Nein, {das-ist-alles}“',
-    'Konrad sagt: „{ich-nehme-das}“ Der Mann fragt: „{bar-oder-mit-karte}“',
+    'Lina zeigt auf einen Koffer: „Was kostet das?“',
+    'Der Mann sagt: „Vierzig Euro.“ Konrad sagt: „Das ist zu teuer.“',
+    '„Geht das billiger?“, fragt Lina.',
+    '„Für dich dreißig. Noch etwas?“ – „Nein, Das ist alles.“',
+    'Konrad sagt: „Ich nehme das.“ Der Mann fragt: „Bar oder mit Karte?“',
   ] },
   { scene: 'r2-w4', lines: [
     'Vor dem Markt gibt es einen kleinen Laden.',
-    'Konrad fragt: „{haben-sie-brot}“ Dann lacht er, denn er ist selbst Bäcker.',
-    'Lina sagt: „{ich-haette-gern-ein-kilo-aepfel}“',
-    '„{wo-ist-die-kasse}“, frage ich. „{kann-ich-mit-karte-zahlen}“',
-    '„{gibt-es-einen-rabatt}“, fragt Konrad. Die Frau lacht nur. Dann ruft er: „{zahlen-bitte}“',
-    'Die Frau sagt: „Nur bar.“ Konrad gibt ihr zehn Euro: „{stimmt-so}“',
+    'Konrad fragt: „Haben Sie Brot?“ Dann lacht er, denn er ist selbst Bäcker.',
+    'Lina sagt: „Ich hätte gern ein Kilo Äpfel.“',
+    '„Wo ist die Kasse?“, frage ich. „Kann ich mit Karte zahlen?“',
+    '„Gibt es einen Rabatt?“, fragt Konrad. Die Frau lacht nur. Dann ruft er: „Zahlen, bitte!“',
+    'Die Frau sagt: „Nur bar.“ Konrad gibt ihr zehn Euro: „Stimmt so.“',
   ] },
   { scene: 'r2-k1', lines: [
     'Lina {brauchen:braucht} Essen für ihre Reise.',
@@ -302,8 +305,8 @@ export const DIARY: DiaryPage[] = [
     'In Konrads Küche steht viel {geschirr}.',
     'Lina packt einen {teller}, eine {gabel} und ein {messer} ein.',
     'Sie nimmt auch ihren {loeffel} und eine kleine {schuessel}.',
-    'Die alte {kanne} bleibt hier.',
-    'Eine {serviette} liegt auf dem Tisch. Darauf steht: „Bis bald.“',
+    'Die alte Kanne bleibt hier.',
+    'Eine Serviette liegt auf dem Tisch. Darauf steht: „Bis bald.“',
   ] },
   { scene: 'r2-k2', lines: [
     'Unter der Mühle essen wir {fruehstueck}.',
@@ -328,9 +331,9 @@ export const DIARY: DiaryPage[] = [
   ] },
   { scene: 'r2-k7', lines: [
     'Am letzten Abend gehen wir in ein {restaurant}.',
-    'Die {kellnerin} bringt die {speisekarte}.',
-    'Als {vorspeise} essen wir Suppe, als {hauptgericht} eine {pizza}.',
-    'Lina möchte einen {nachtisch}. Konrad bestellt ein {getraenk}.',
+    'Die Kellnerin bringt die {speisekarte}.',
+    'Als Vorspeise essen wir Suppe, als Hauptgericht eine {pizza}.',
+    'Lina möchte einen Nachtisch. Konrad bestellt ein {getraenk}.',
     'Der {kellner} fragt Lina: „Wohin fahren Sie?“ Sie sagt: „Weit weg.“',
   ] },
   { scene: 'r2-k4', lines: [
@@ -344,16 +347,16 @@ export const DIARY: DiaryPage[] = [
   { scene: 'r3-b1', lines: [
     'Montag, sehr spät. Ich bin Lina über die Brücke nach Gleisdorf gefolgt.',
     'Am {schalter} war niemand. Auch die {auskunft} war dunkel.',
-    'Ich habe am {automat:Automaten} eine {fahrkarte} gekauft: {einfach}, nicht {hin-und-zurueck}, zweite {klasse}.',
+    'Ich habe am {automat:Automaten} eine {fahrkarte} gekauft: {einfach}, nicht hin und zurück, zweite {klasse}.',
     'Aber der Automat hat den Namen der Station gefressen. Auf meinem {ticket} steht nur: ▒▒▒.',
-    'Wohin geht diese {fahrt}?',
+    'Wohin geht diese Fahrt?',
   ] },
   { scene: 'r3-b2', lines: [
     'An der {haltestelle} habe ich lange {warten:gewartet}.',
     'Dann ist ein {bus} gekommen, die {linie} ohne Nummer.',
-    'Der {fahrer} hat kein Wort gesagt. Eine {fahrerin} war auch da, aber sie hatte kein Gesicht.',
-    'Der Bus hat nicht {halten:gehalten}. Er ist in die falsche {richtung} gefahren, bis zur {endstation}.',
-    'Ich bin an der {naechste:nächsten} Ecke ausgestiegen.',
+    'Der {fahrer} hat kein Wort gesagt. Eine Fahrerin war auch da, aber sie hatte kein Gesicht.',
+    'Der Bus hat nicht {halten:gehalten}. Er ist in die falsche {richtung} gefahren, bis zur Endstation.',
+    'Ich bin an der nächsten Ecke ausgestiegen.',
   ] },
   { scene: 'r3-b3', lines: [
     'Ich bin zum {bahnhof} gelaufen.',
@@ -367,17 +370,17 @@ export const DIARY: DiaryPage[] = [
     'Niemand hat dort {parken:geparkt}. Die Autos sind einfach stehen geblieben.',
     'Ich habe keinen {fuehrerschein}. Mein altes {fahrrad} ist kaputt.',
     'An der {tankstelle} brennt noch Licht.',
-    'Also bin ich {zu-fuss} gegangen.',
+    'Also bin ich zu Fuß gegangen.',
   ] },
   { scene: 'r3-b5', lines: [
     'Am {eingang} habe ich Linas Koffer gefunden. Er war {schwer}, ich habe ihn kaum getragen.',
-    'Ihr {rucksack} war {leicht}. Ich habe beides zum {schliessfach} {bringen:gebracht}.',
+    'Ihr {rucksack} war {leicht}. Ich habe beides zum Schließfach {bringen:gebracht}.',
     'Alle Fächer waren {voll}, nur Nummer 13 war leer.',
     'Ich will das {gepaeck} morgen {abholen}.',
     'Am {ausgang} hat jemand meinen Namen gerufen. Ich habe ihn nicht verstanden.',
   ] },
   { scene: 'r3-b6', lines: [
-    'Auf dem Platz steht ein {hotel}. Ein {tourist} und eine {touristin} haben auf der Treppe gesessen.',
+    'Auf dem Platz steht ein {hotel}. Ein {tourist} und eine Touristin haben auf der Treppe gesessen.',
     'Sie haben von einer {reise} ins {ausland} erzählt, vom {urlaub} am Meer.',
     'Sie wollten zum {flughafen} und mit dem {flugzeug} {fliegen}.',
     'Aber kein Bus ist gekommen. Wer will jetzt noch {reisen}?',
@@ -390,29 +393,29 @@ export const DIARY: DiaryPage[] = [
     'Ich habe nur Linas Schal {mitnehmen:mitgenommen}. Er lag auf der Treppe.',
   ] },
   { scene: 'r3-b8', lines: [
-    'Am {gleis} 3 steht ein {schild}: „{achtung}! Betreten {verboten}!“',
+    'Am {gleis} 3 steht ein {schild}: „{achtung}! Betreten verboten!“',
     '„{vorsicht}, {gefaehrlich}!“ Aber auf dem {bahnsteig} war niemand.',
     'Dann ist es {laut} geworden, wie ein Zug. Aber kein Zug ist gekommen.',
     'Danach war alles {leise}. Unter der {bruecke} hat etwas gewartet.',
   ] },
   { scene: 'r3-a1', lines: [
     'Ich habe den Weg zur Altstadt gesucht und eine Frau gefragt.',
-    '„Gehen Sie {geradeaus} {bis} zur {ampel}, dann {links}. An der {kreuzung} {rechts}.“',
-    'Ich bin an der {ecke} {abbiegen:abgebogen}. Aber dann war ich wieder am Anfang.',
+    '„Gehen Sie {geradeaus} bis zur {ampel}, dann {links}. An der {kreuzung} {rechts}.“',
+    'Ich bin an der {ecke} abgebogen. Aber dann war ich wieder am Anfang.',
     'Auf jeder {seite} der Straße stehen die gleichen Häuser.',
     'Ich bin {zurueck} zum Bahnhof gegangen.',
   ] },
   { scene: 'r3-a2', lines: [
-    'Am Brückenkopf hat ein Kiosk {gegenueber} dem Turm gestanden.',
-    'Die Zeitung lag {auf} dem Tisch, die Katze {unter} dem Tisch.',
-    'Eine Lampe hat {ueber} der Tür gehangen, ein Bild {an} der Wand.',
-    'Ich habe {vor} dem Kiosk gewartet, dann {hinter} dem Kiosk.',
-    'Lina war nicht {neben} mir, nicht {zwischen} den Leuten, nicht {in} der Stadt.',
+    'Am Brückenkopf hat ein Kiosk gegenüber dem Turm gestanden.',
+    'Die Zeitung lag auf dem Tisch, die Katze unter dem Tisch.',
+    'Eine Lampe hat über der Tür gehangen, ein Bild an der Wand.',
+    'Ich habe vor dem Kiosk gewartet, dann hinter dem Kiosk.',
+    'Lina war nicht neben mir, nicht zwischen den Leuten, nicht in der Stadt.',
   ] },
   { scene: 'r3-a3', lines: [
     'Die {altstadt} ist sehr alt. In der {mitte} steht eine {kirche} mit einem hohen {turm}.',
     'Am {platz} sind ein {museum}, ein {theater} und ein {kino}.',
-    'Früher haben Touristen hier alles {besichtigen:besichtigt}.',
+    'Früher haben Touristen hier alles besichtigt.',
     'Jetzt ist das {zentrum} leer. Die Uhr am Turm hat um 23:59 gestoppt.',
   ] },
   { scene: 'r3-a4', lines: [
@@ -426,7 +429,7 @@ export const DIARY: DiaryPage[] = [
     'In der Straße sind eine {apotheke} und eine {drogerie}.',
     'Ich habe eine {tablette} gegen Kopfweh gekauft. Das {medikament} hat nicht geholfen.',
     'Im {cafe} war der Kaffee noch warm, aber niemand war da.',
-    'Beim {friseur}, im {kaufhaus}, in der {buchhandlung}: überall leere Stühle.',
+    'Beim {friseur}, im Kaufhaus, in der Buchhandlung: überall leere Stühle.',
     'Die Leute sind nicht weggegangen. Sie haben nur ihre Namen verloren.',
   ] },
   { scene: 'r3-a6', lines: [
@@ -434,10 +437,10 @@ export const DIARY: DiaryPage[] = [
     'Ich habe den {notruf} gewählt, aber das {telefon} hat nur gerauscht.',
     'Im {krankenhaus} war es still. Die {praxis} daneben hatte keine {sprechstunde}.',
     'Mein Knie hat {wehtun:wehgetan}. Niemand hat mich {anrufen:angerufen}.',
-    'Ich sage mir selbst: {gute-besserung}, Jonas.',
+    'Ich sage mir selbst: Gute Besserung, Jonas.',
   ] },
   { scene: 'r3-a7', lines: [
-    'Ich bin durch den {park} {spazieren-gehen:spazieren gegangen}, um ruhig zu werden.',
+    'Ich bin durch den {park} spazieren gegangen, um ruhig zu werden.',
     'Am {see} habe ich auf einer Bank {sitzen:gesessen}.',
     'Jede {blume} und jeder {baum} war grau. Der {fluss} war schwarz.',
     'Auf dem {spielplatz} und im {garten} haben keine Kinder gespielt.',
@@ -451,10 +454,10 @@ export const DIARY: DiaryPage[] = [
     'Der {weg} nach Hause ist {weit}. Ich gehe noch nicht.',
   ] },
   { scene: 'r3-f1', lines: [
-    'In der großen Halle hängt eine Uhr. Ich habe gefragt: „{wie-spaet-ist-es}?“',
+    'In der großen Halle hängt eine Uhr. Ich habe gefragt: „Wie spät ist es??“',
     'Die Uhr hat geantwortet: „{halb} zwölf. Nein, {viertel} vor zwölf. Nein …“',
     'Jede {minute} war eine {stunde}. Jede {sekunde} hat {lange} gedauert.',
-    '„{um-wie-viel-uhr} fährt der letzte Zug?“ Die {uhrzeit} hat sich nie bewegt.',
+    '„Um wie viel Uhr? fährt der letzte Zug?“ Die {uhrzeit} hat sich nie bewegt.',
     'Nur einmal, ganz {kurz}, hat der Zeiger gezittert.',
   ] },
   { scene: 'r3-f2', lines: [
@@ -466,9 +469,9 @@ export const DIARY: DiaryPage[] = [
   ] },
   { scene: 'r3-f3', lines: [
     'Im Wartesaal hängen Bilder von einem ganzen Tag.',
-    'Am {morgen-2:Morgen} kommt die Sonne, am {vormittag} die Arbeit, am {mittag} die Suppe.',
+    'Am Morgen kommt die Sonne, am {vormittag} die Arbeit, am {mittag} die Suppe.',
     'Am {nachmittag} Kaffee, am {abend} Brot, in der {nacht} der Schlaf.',
-    '{morgens}, {mittags}, {abends}, {nachts}: ich habe auf dieser Bank gewartet.',
+    'morgens, mittags, abends, {nachts}: ich habe auf dieser Bank gewartet.',
     'Die Bilder haben sich nicht bewegt.',
   ] },
   { scene: 'r3-f4', lines: [
@@ -479,10 +482,10 @@ export const DIARY: DiaryPage[] = [
     'Welcher Tag ist heute? Das weiß hier niemand mehr.',
   ] },
   { scene: 'r3-f5', lines: [
-    '{vorgestern} war alles normal. {gestern} ist es {passieren:passiert}.',
-    '{letzte-woche} hat Lina noch gelacht. {letztes-jahr} hat sie die Bäckerei gestrichen.',
+    'vorgestern war alles normal. {gestern} ist es {passieren:passiert}.',
+    'letzte Woche hat Lina noch gelacht. letztes Jahr hat sie die Bäckerei gestrichen.',
     '{frueher} war sie nie zu spät. Ich habe sie {vorhin} auf Gleis 2 gesehen.',
-    'Hat sie den Zug {verpassen:verpasst}? Ist sie {schon} weg? Ich weiß es {noch-nicht}.',
+    'Hat sie den Zug {verpassen:verpasst}? Ist sie {schon} weg? Ich weiß es noch nicht.',
   ] },
   { scene: 'r3-f6', lines: [
     'Im Speisewagen habe ich eine Kontrolleurin {treffen:getroffen}.',
@@ -506,6 +509,24 @@ export const DIARY: DiaryPage[] = [
     'Ich bin nach Hause gegangen. Ich habe ihre Fahrkarte noch.',
   ] },
 ];
+
+/** 6000 词导入: each page goes to the new scene holding most of its blank words (sceneByWords); blanks of words that
+ *  are not in that scene's group become plain text. Pages left with too few blanks are kept back until they are
+ *  rewritten for the new scenes (fewer than 2 blanks). Story order (page numbers) stays the written order. */
+export const DIARY: DiaryPage[] = (() => {
+  const ids = (p: DiaryPage) => p.lines.flatMap((l) => [...l.matchAll(/\{([a-z0-9-]+)(?::[^}]+)?\}/g)].map((m) => m[1]));
+  const to = sceneByWords(WRITTEN.map((p) => ({ key: p.scene, ids: ids(p) })));
+  const out: DiaryPage[] = [];
+  for (const p of WRITTEN) {
+    const scene = to.get(p.scene);
+    if (!scene) continue;
+    const group = new Set(SCENE_WORDS[scene] ?? []);
+    const lines = p.lines.map((l) => l.replace(/\{([a-z0-9-]+)(?::([^}]+))?\}/g, (m, id: string, form?: string) => (group.has(id) ? m : form ?? WORD_BY_ID[id]?.de ?? id)));
+    const page = { scene, lines };
+    if (ids(page).length >= 2) out.push(page);
+  }
+  return out;
+})();
 
 export interface DiaryBlank {
   id: string;

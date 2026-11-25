@@ -18,6 +18,7 @@ import { NPC_TILE, isRestored, wordTile } from '../ui/icons';
 import { sfx } from './audio';
 import { CONFIG } from '../core/config';
 import { NodeNav } from './nodes';
+import { charRamp, mapRamp, mapShades, shadeRamp, type Ramp5 } from './palette';
 
 export interface MonsterEntity {
   uid: number;
@@ -54,6 +55,8 @@ const FONT = '"Courier New", ui-monospace, monospace';
 
 export class WorldScene extends Phaser.Scene {
   ctrl!: Controller;
+  /** 各区色调: this map's 5-step ramp, or null for the classic red (src/game/palette.ts). */
+  ramp: Ramp5 | null = null;
   map!: MapData;
   player!: Phaser.GameObjects.Sprite;
   monsters: MonsterEntity[] = [];
@@ -89,6 +92,7 @@ export class WorldScene extends Phaser.Scene {
   create() {
     const region: RegionId = this.ctrl.state.region ?? 1;
     this.map = generateMap(region);
+    this.ramp = mapRamp(region, this.ctrl.state.flags);
     this.zones = zonesOf(region);
     this.monsters = [];
     this.signTexts = [];
@@ -105,7 +109,7 @@ export class WorldScene extends Phaser.Scene {
     const oldmap = !CONFIG.map.nodes || new URLSearchParams(location.search).has('oldmap');
     const town = !oldmap && this.textures.exists('town') ? (this.textures.get('town').getSourceImage() as HTMLImageElement) : null;
     const hidden = SCENES.filter((x) => x.region === region && x.type === 'hidden').map((x) => x.at);
-    addCanvas('map', renderMapCanvas(this.map, town, hidden));
+    addCanvas('map', renderMapCanvas(this.map, town, hidden, this.ramp ? mapShades(this.ramp) : undefined));
     void tex;
     for (const k of ['hero0', 'hero1']) {
       if (this.textures.exists(k)) this.textures.remove(k);
@@ -144,8 +148,9 @@ export class WorldScene extends Phaser.Scene {
     for (const n of this.map.npcs) {
       // Lina stays a shadow (two darkest steps) until she is freed, like her dialog portrait.
       const shadow = n.id === 'lina' && !isRestored('lina');
-      const nk = `npc-${n.id}${shadow ? '-s' : ''}`;
-      if (!this.textures.exists(nk)) this.textures.addCanvas(nk, dungeonTile(this.dsheet(), NPC_TILE[n.id] ?? 111, shadow ? CHAR_RAMP.slice(0, 2) : CHAR_RAMP));
+      const figure = this.ramp ? charRamp(this.ramp) : CHAR_RAMP;
+      const nk = `npc-${n.id}${shadow ? '-s' : ''}${this.ramp ? `-${this.ramp[3]}` : ''}`;
+      if (!this.textures.exists(nk)) this.textures.addCanvas(nk, dungeonTile(this.dsheet(), NPC_TILE[n.id] ?? 111, shadow ? figure.slice(0, 2) : figure));
       this.add.sprite(n.x * TILE + 8, n.y * TILE + 6, nk).setDepth(n.y * TILE + 8);
       if (this.map.region >= 2 || n.id !== 'hilde')
         this.add
@@ -402,8 +407,8 @@ export class WorldScene extends Phaser.Scene {
     const teeth = this.add.text(0, 1, '', { fontFamily: FONT, fontSize: '5px', color: '#ff3040', resolution: 4 }).setOrigin(0.5, 0);
     const marker = this.add.text(0, -12, '', { fontFamily: FONT, fontSize: '8px', fontStyle: 'bold', color: '#ffcf4a', resolution: 4 }).setOrigin(0.5, 1);
     const shadow = this.add.ellipse(0, 4, 18, 4, 0x000000, 0.6);
-    const bk = `mon-${wordTile(word)}`;
-    if (!this.textures.exists(bk)) this.textures.addCanvas(bk, dungeonTile(this.dsheet(), wordTile(word), SHADE_RAMP));
+    const bk = `mon-${wordTile(word)}${this.ramp ? `-${this.ramp[3]}` : ''}`;
+    if (!this.textures.exists(bk)) this.textures.addCanvas(bk, dungeonTile(this.dsheet(), wordTile(word), this.ramp ? shadeRamp(this.ramp) : SHADE_RAMP));
     const body = this.add.image(0, 5, bk).setOrigin(0.5, 1);
     label.setY(-14);
     teeth.setY(5);

@@ -7,13 +7,16 @@ import { usesDu, weberQuestions } from '../data/weber';
 import { identifyQuestion } from './identify';
 import { boss3Questions, makeBoard, refreshTimeQuestion, type Board } from '../data/boss3';
 import { CONFIG } from './config';
+import { LATER_BOSS } from '../data/bossesLater';
 import { normalize } from './grading';
 import { pick, shuffle, type Rng } from './rng';
 import { maxHp, type GameState } from './state';
 
 export interface BossFight {
   /** 1 = 无名的邻居, 2 = 吞秤者, 3 = 晚点之王, 4 = 幽灵检票员 Lina (elite: a miss is a fine, not damage), 5 = 秩序会登记表 (untimed, no damage), 6 = Mira 的紫装鉴定 (one untimed cloze). */
-  which: 1 | 2 | 3 | 4 | 5 | 6;
+  /** 7 = a region 4–12 boss (0.7/0.8, `region` says which; data in src/data/bossesLater.ts). */
+  which: 1 | 2 | 3 | 4 | 5 | 6 | 7;
+  region?: number;
   /** Lina: her HP is out and she asks «Wie heiße ich?». */
   finalAsked?: boolean;
   /** 晚点之王: the departure board (shifts by ten minutes at half HP). */
@@ -31,9 +34,28 @@ export interface BossFight {
   turn: number;
   outcome: null | 'win' | 'lose';
   misses: Array<{ asked: string; answer: string; model: string }>;
+  /** 驳回书: Frau Weber's help (ready = the next right answer counts twice). */
+  assist?: 'ready' | 'used';
 }
 
-export function startBoss(s: GameState, rng: Rng, which: 1 | 2 | 3 | 4 | 5 | 6 = 1, single?: BossQuestion): BossFight {
+/** 驳回书: du towards an office, or slang. */
+const RUDE = /\b(?:du|dich|dir|dein|deine|deinen|deinem|deiner|hey|hi|ey|krass|bock|alter|digga|nee|noe|quatsch)\b/;
+
+/** First-time and later time limits of the region 4–12 bosses (as 吞秤者 and 晚点之王). */
+export const LATER_BOSS_SECONDS = { first: 45, later: 30 };
+
+export function startBoss(s: GameState, rng: Rng, which: 1 | 2 | 3 | 4 | 5 | 6 | 7 = 1, single?: BossQuestion, region?: number): BossFight {
+  if (which === 7) {
+    const b = LATER_BOSS[region ?? 0];
+    if (!b) throw new Error(`no boss for region ${region}`);
+    const queue = b.questions(rng);
+    const current = queue.shift()!;
+    return {
+      which, region: b.region, hp: b.hp, maxHp: b.hp, queue, current, asked: pick(rng, current.ask),
+      seconds: s.flags[`boss${b.region}Kills`] ? LATER_BOSS_SECONDS.later : LATER_BOSS_SECONDS.first,
+      healing: false, healUsed: false, turn: 1, outcome: null, misses: [],
+    };
+  }
   if (which === 6) {
     const current = single ?? identifyQuestion(s, rng);
     return { which, hp: 1, maxHp: 1, queue: [], current, asked: current.ask[0], seconds: 0, healing: false, healUsed: true, turn: 1, outcome: null, misses: [] };
@@ -164,8 +186,22 @@ export function answerBoss(s: GameState, f: BossFight, input: string, rng: Rng, 
     f.turn += 1;
     return { ok, note, model, damageTaken: 0, healed: false };
   }
+  // 驳回书 (游戏设计 四, row 11): du or slang is stamped 「abgelehnt」 and heals it; a right formal answer cracks the
+  // stamp. Frau Weber steps in once at half HP: the next right answer cracks two pieces.
+  const formal = f.which === 7 && !!LATER_BOSS[f.region ?? 0]?.formal;
+  if (formal && !timedOut && RUDE.test(n)) {
+    s.combo = 0;
+    f.misses.push({ asked: f.asked, answer: input, model });
+    f.hp = Math.min(f.maxHp, f.hp + 1);
+    f.turn += 1;
+    return { ok: false, note: '「Abgelehnt.」它盖了个章，回了血。对机关要用 Sie 和正式说法。', model, damageTaken: 0, healed: true };
+  }
   if (ok) {
-    f.hp -= 1;
+    f.hp -= formal && f.assist === 'ready' ? 2 : 1;
+    if (formal && f.assist === 'ready') {
+      f.assist = 'used';
+      note = 'Frau Weber 在旁边点头：「Genau so.」印章裂开了两块。';
+    }
     s.combo += 1;
   } else {
     s.combo = 0;
@@ -189,12 +225,18 @@ export function answerBoss(s: GameState, f: BossFight, input: string, rng: Rng, 
       f.healing = true;
       f.healUsed = true;
     }
+    if (formal && !f.assist && f.hp <= f.maxHp / 2) {
+      f.assist = 'ready';
+      note = (note ? note + ' ' : '') + 'Frau Weber 从门口走进来：「Ich helfe Ihnen. Bleiben Sie höflich.」下一句答对，印章裂开两块。';
+    }
     // 晚点之王 at half HP: «Der Zug hat zehn Minuten Verspätung.» Every time on the board moves ten minutes on.
     if (f.board && !f.board.delay && f.hp <= f.maxHp / 2) {
       f.board.delay = 10;
       f.delayNow = true;
       f.queue = f.queue.map((x) => refreshTimeQuestion(rng, x, f.board!));
     }
+    // Region 4–12 bosses: a fresh draw without the opening questions (no greeting twice).
+    if (!f.queue.length && f.which === 7) f.queue = LATER_BOSS[f.region!]!.questions(rng).slice(3);
     if (!f.queue.length) f.queue = f.which === 3 ? boss3Questions(rng, f.board!) : f.which === 2 ? boss2Questions(rng, false) : shuffle(rng, BOSS_QUESTIONS.filter((x) => x.id !== 'greet'));
     f.current = f.queue.shift()!;
     f.asked = pick(rng, f.current.ask);

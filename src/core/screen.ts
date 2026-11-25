@@ -12,12 +12,12 @@ import { isRetired, retire, stageOf } from './srs';
 import { addXp, now, type GameState, type LevelUpResult } from './state';
 import type { Word } from './types';
 import { hasArticleQuestion, posTag, WORDS } from '../data/words';
-import { SCENES, SCENE_BY_ID, type SceneDef } from '../data/world';
+import { HOME_SCENE, SCENE_BY_ID, type SceneDef } from '../data/world';
 
 export type ScreenScope = '1' | '2' | '3' | 'all';
 export const SCREEN = { fromLevel: 2 };
 
-const HOME: Record<string, SceneDef> = Object.fromEntries(SCENES.flatMap((sc) => (sc.words ?? []).map((w) => [w, sc] as const)));
+const HOME = HOME_SCENE; // own groups + 蚀变 groups (src/data/world.ts)
 export function homeScene(wordId: string): SceneDef | undefined {
   return HOME[wordId];
 }

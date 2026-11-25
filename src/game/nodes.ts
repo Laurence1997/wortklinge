@@ -13,21 +13,23 @@ import { has } from '../core/unlocks';
 import { toast } from '../ui/feedback';
 import { needsVerify, stageOf } from '../core/srs';
 import { eligible, fieldCleared } from '../core/spawn';
+import { erodeOpen, purified } from '../core/erosion';
 import type { ZoneId } from '../core/types';
 import { WORD_BY_ID, fullForm } from '../data/words';
-import { AREAS, AREAS_LATER, SCENE_BY_ID, SCENES, neighbours, nearestScene, routeTo, scenesOf, type SceneDef } from '../data/world';
+import { AREAS, AREAS_LATER, HOME_SCENE, SCENE_BY_ID, SCENES, neighbours, nearestScene, routeTo, scenesOf, type SceneDef } from '../data/world';
 import { online } from '../net/online';
 import { h } from '../ui/dom';
 import { sfx } from './audio';
 import { ZONES, TILE, type NpcId } from './map';
+import { REGION_DEF, REGION_DEFS, regionLevels } from '../data/zones';
 import type { MonsterEntity, WorldScene } from './WorldScene';
 
 const NPC_ZH: Record<NpcId, string> = { hilde: '守火人 Hilde', greta: '导师 Greta', mira: '商人 Mira', konrad: '面包师傅 Konrad', examiner: '考官', brandt: '站长 Herr Brandt', lina: 'Lina', weber: '秩序会 Frau Weber' };
-const GATE_ZH: Record<number, string> = { 1: '穿过门回余烬营地', 2: '过桥回面包集市', 3: '过铁路桥去铁轨镇' };
+const GATE_ZH: Record<number, string> = { 1: '穿过门回余烬营地', 2: '过桥回面包集市', 3: '过铁路桥去铁轨镇', ...Object.fromEntries(REGION_DEFS.map((d) => [d.region, `去${d.zh}`])) };
 const OFFSETS = [[-28, -6], [28, -6], [0, -24], [-28, 16], [28, 16], [0, -38]];
 
 /** 0.6: each word's home scene (from the scene word groups). */
-const HOME: Record<string, SceneDef> = Object.fromEntries(SCENES.flatMap((sc) => (sc.words ?? []).map((w) => [w, sc] as const)));
+const HOME = HOME_SCENE; // own groups + 蚀变 groups (src/data/world.ts)
 
 export const anchorPx = (sc: SceneDef) => ({ x: sc.at.x * TILE + 8, y: sc.at.y * TILE + 8 });
 
@@ -293,6 +295,15 @@ export class NodeNav {
     this.w.ctrl.encounter(m);
   }
 
+  /** 蚀变 (rev 341): an open 蚀变 scene says so; once all its advanced words are gone it reads 已净化. */
+  private erodeTag(sc: SceneDef): HTMLElement | string {
+    if (!sc.erodeSeg || !erodeOpen(this.s, sc.erodeSeg)) return '';
+    const lv = regionLevels(sc.erodeSeg).join('–');
+    return purified(this.s, sc.eroded, sc.erodeSeg)
+      ? h('span.small', { style: 'color:var(--gold, #ffcf4a)' }, ' · 已净化')
+      : h('span.small', { style: 'color:#c06cff' }, ` · 蚀变 Lv ${lv}`);
+  }
+
   private render(): void {
     const sc = this.here;
     const busy = this.hopping || this.w.ctrl.uiBlocking();
@@ -314,7 +325,7 @@ export class NodeNav {
     if (sc.bonfire && has(this.s.level, 'dailies')) things.push(h('button.btn', { disabled: busy, onclick: () => this.w.ctrl.showDailies() }, '📋 每日委托'));
     const npcs: NpcId[] = [...(sc.npcs ?? []), ...(sc.id === 'r3-platz' && this.s.flags.linaFreed ? (['lina'] as NpcId[]) : [])];
     for (const n of npcs) things.push(h('button.btn', { onclick: ia('npc', n) }, NPC_ZH[n]));
-    if (sc.door) things.push(h('button.btn', { onclick: ia('door') }, this.w.map.region === 3 ? '走上末班站台' : this.w.map.region === 2 ? '推开秤房的门' : '敲门'));
+    if (sc.door) things.push(h('button.btn', { onclick: ia('door') }, REGION_DEF[this.w.map.region] ? REGION_DEF[this.w.map.region]!.doorAct : this.w.map.region === 3 ? '走上末班站台' : this.w.map.region === 2 ? '推开秤房的门' : '敲门'));
     if (sc.gate) things.push(h('button.btn', { onclick: ia('gate', String(sc.gate)) }, GATE_ZH[sc.gate]));
     for (const sg of sc.signs ?? []) things.push(h('button.btn', { onclick: ia('sign', sg) }, stageOf(this.s, WORD_BY_ID[sg]) >= 3 ? `路牌：${fullForm(WORD_BY_ID[sg])}` : '路牌：▒▒▒'));
     const exits = neighbours(sc.id)
@@ -323,7 +334,7 @@ export class NodeNav {
       .map((x) => h('button.btn', { disabled: busy, onclick: () => this.travel(x.id) }, `→ ${x.no} ${x.zh}`));
     const peers = [...online.peers.values()].filter((p) => nearestScene(this.w.map.region, p.x, p.y).id === sc.id).map((p) => p.nick);
     this.panel.replaceChildren(
-      h('div.sp-head', h('b', `${sc.no} · ${sc.zh}`), h('span.muted', zone ? ` ${zone.zh} · ${zone.levels}` : sc.type === 'camp' ? ' 安全区' : '')),
+      h('div.sp-head', h('b', `${sc.no} · ${sc.zh}`), h('span.muted', zone ? ` ${zone.zh} · ${zone.levels}` : sc.type === 'camp' ? ' 安全区' : ''), this.erodeTag(sc)),
       this.claimMsg?.scene === sc.id ? h('div.small', { style: 'color:var(--gold, #ffcf4a)' }, this.claimMsg.text) : '',
       sceneArtCanvas(sc.id, this.s) ?? '',
       sc.zone
@@ -392,7 +403,7 @@ export class NodeNav {
   bigMap(): void {
     if (this.w.ctrl.uiBlocking() || this.hopping) return;
     const s = this.s;
-    const open = (r: number) => r <= this.w.map.region || !!s.flags[`seenArea${r}`] || (r === 2 && !!s.flags.bossKills && s.level >= CONFIG.region2Level) || (r === 3 && !!s.flags.boss2Kills);
+    const open = (r: number) => r <= this.w.map.region || !!s.flags[`seenArea${r}`] || (r === 2 && !!s.flags.bossKills && s.level >= CONFIG.region2Level) || (r === 3 && !!s.flags.boss2Kills) || (r >= 4 && !!s.flags[`boss${r - 1}Kills`]);
     this.w.ctrl.panels.showBigMap(
       h(
         'div.bigmap',

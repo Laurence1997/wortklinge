@@ -4,6 +4,8 @@
 // kind: 'reg' = ge-…-t (Lv21) · 'irr' = strong or mixed (Lv24) · 'pre' = separable, be-/ver-/er-/ge- and -ieren (Lv27).
 // Written by Claude; needs a native-speaker check.
 
+import { LEX_PERFEKT } from './lexicon';
+
 export type Aux = 'haben' | 'sein';
 export type PerfektKind = 'reg' | 'irr' | 'pre';
 
@@ -115,6 +117,13 @@ export const PERFEKT: Record<string, Perfekt> = {
   weggehen: p('sein', 'weggegangen', 'pre', 'Er {ist} ohne ein Wort [weggegangen].|他一句话没说就走了。'),
   schlafen: p('haben', 'geschlafen', 'irr', 'Ich {habe} schlecht [geschlafen].|我没睡好。'),
 };
+
+// 6000 词导入: verbs whose list example (or extra example) is a Perfekt sentence, marked by scripts/build_lexicon.py.
+for (const [inf, spec] of Object.entries(LEX_PERFEKT)) {
+  if (PERFEKT[inf]) continue;
+  const [aux, pp, kind, de, zh] = spec.split('|');
+  PERFEKT[inf] = p(aux as Aux, pp, kind as PerfektKind, `${de}|${zh}`);
+}
 
 export interface PerfektParts {
   before: string;

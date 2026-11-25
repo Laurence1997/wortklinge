@@ -47,6 +47,10 @@ import { checkJournal, JOURNAL_KEEP, JOURNAL_WORDS, JOURNAL_XP_SHARE, journalWor
 import { BOSS } from '../data/boss';
 import { BOSS2 } from '../data/boss2';
 import { BOSS3 } from '../data/boss3';
+import { LATER_BOSS, laterBossGold, laterBossXp } from '../data/bossesLater';
+import { ERODE_DEF, ERODE_DEFS, REGION_DEF } from '../data/zones';
+import { erodeOpen } from '../core/erosion';
+import { levelCapFor, nextStage, STAGE_DEF, stagePassed, trialDue, type Stage } from '../core/stages';
 import { LINA } from '../data/lina';
 import { WEBER, WEBER_POOL, usesDu } from '../data/weber';
 import { answerExam, BREAK, BREAK_EARLY, examPassed, PART_ZH, startExam, startGrammarExam, type Exam } from '../core/breakthrough';
@@ -66,7 +70,7 @@ import { BossUI } from '../ui/boss';
 import { advance, banner, dialogHasChoices, dialogOpen, say, setPrompt, toast, type Line } from '../ui/feedback';
 import { logLine } from '../ui/gamelog';
 import { ACHIEVEMENTS, NOTES } from '../data/achievements';
-import { SCENE_BY_ID } from '../data/world';
+import { AREAS, SCENES, SCENE_BY_ID } from '../data/world';
 import { dropPages, pageNo, pageRegion, readPage, regionRestored, restorePage } from '../core/diary';
 import { SAYING_CFG, SAYINGS } from '../data/sayings';
 import { renderHud } from '../ui/hud';
@@ -349,7 +353,16 @@ export class Controller {
   // ---- Story & tutorials --------------------------------------------------------------
 
   private intro() {
+    // 6000 词导入: the one save reset, explained once to players who were here before.
+    const reset: Line[] = this.state.flags.reset6000
+      ? [
+          { who: SYS, text: '【0.7 + 0.8】词表换成了 6000 词，场景和地图都重排了，旧存档里的词对不上了，所以这一次所有存档从头开始（以后的更新不会再清档）。' },
+          { who: SYS, text: '学过的词会回来得很快：入学测试和「直接叫名」写对就能跳过。' },
+        ]
+      : [];
+    delete this.state.flags.reset6000;
     const lines: Line[] = [
+      ...reset,
       { who: SYS, text: '……心跳恢复。' },
       { who: HILDE, text: '醒了？别动。火边那块面包，刚才咬了我一口。' },
       { who: HILDE, text: '它怕名字。叫它。' },
@@ -950,7 +963,8 @@ export class Controller {
         for (const lv of res.levelUp.levels) this.onLevelUp(lv);
         if (res.levelUp.capped && !s.flags.taughtCapLevel) {
           s.flags.taughtCapLevel = true;
-          say([{ who: SYS, text: `【等级上限 ${CONFIG.levelCap}】经验先存着（最多存一级）。去主城找考官考 A1 突破试炼；A2 的区域 0.7 开放。归名和装备照样涨` }]);
+          const st = trialDue(s.level, s.flags);
+          say([{ who: SYS, text: `【等级上限 ${levelCapFor(s.flags)}】经验先存着（最多存一级）。${st ? `去主城找考官考 ${st} 突破试炼，过了才能继续升级。` : ''}归名和装备照样涨` }]);
         }
       }
     }
@@ -1325,9 +1339,9 @@ export class Controller {
     const text: Record<string, string> = {
       bonfire: '<kbd>E</kbd>在篝火旁休息',
       npc: '<kbd>E</kbd>和守火人 Hilde 说话',
-      door: this.state.region === 3 ? '<kbd>E</kbd>走上末班站台' : this.state.region === 2 ? '<kbd>E</kbd>推开秤房的门' : '<kbd>E</kbd>敲门',
+      door: REGION_DEF[this.state.region] ? `<kbd>E</kbd>${REGION_DEF[this.state.region]!.doorAct}` : this.state.region === 3 ? '<kbd>E</kbd>走上末班站台' : this.state.region === 2 ? '<kbd>E</kbd>推开秤房的门' : '<kbd>E</kbd>敲门',
       sign: '<kbd>E</kbd>看路牌',
-      gate: it.data === '3' ? '<kbd>E</kbd>过铁路桥去铁轨镇' : it.data === '2' ? '<kbd>E</kbd>过桥回面包集市' : '<kbd>E</kbd>回余烬营地',
+      gate: REGION_DEF[Number(it.data)] ? `<kbd>E</kbd>去${REGION_DEF[Number(it.data)]!.zh}` : it.data === '3' ? '<kbd>E</kbd>过铁路桥去铁轨镇' : it.data === '2' ? '<kbd>E</kbd>过桥回面包集市' : '<kbd>E</kbd>回余烬营地',
     };
     const NPC_TEXT: Record<string, string> = {
       hilde: '<kbd>E</kbd>和守火人 Hilde 说话',
@@ -1345,8 +1359,8 @@ export class Controller {
   interact(it: { kind: string; data?: string }): void {
     if (it.kind === 'bonfire') this.rest();
     else if (it.kind === 'npc') this.talkNpc(it.data ?? 'hilde');
-    else if (it.kind === 'door') (this.state.region === 3 ? this.knockRegion3() : this.state.region === 2 ? this.knockRegion2() : this.knock());
-    else if (it.kind === 'gate') this.travel((Number(it.data) || (this.state.region === 3 ? 2 : 1)) as RegionId);
+    else if (it.kind === 'door') this.knockDoor();
+    else if (it.kind === 'gate') this.travel((Number(it.data) || Math.max(1, this.state.region - 1)) as RegionId);
     else if (it.kind === 'sign') {
       const w = WORD_BY_ID[it.data!];
       const st = stageOf(this.state, w);
@@ -1429,6 +1443,7 @@ export class Controller {
     const region = s.region ?? 1;
     if (s.level < SCREEN.fromLevel)
       return say([{ who: '考官', text: `「Noch nicht.」筛选 ${SCREEN.fromLevel} 级再来。不过你要是以前学过德语，可以先考分级考核。` }], undefined, [
+        ...(nextStage(s.flags) === 'A2' || nextStage(s.flags) === 'B1' ? [{ label: `${nextStage(s.flags)} 突破试炼${s.level < STAGE_DEF[nextStage(s.flags)!].cap ? '（提前考）' : ''}`, act: () => this.stageExam(nextStage(s.flags)!) }] : []),
         ...(canPlaceAgain(s) ? [{ label: '分级考核（测你会到哪一级）', act: () => this.openPlacement(true) }] : [{ label: `分级考核（再归名或斩杀 ${placeAgainIn(s)} 个词就能再考）`, act: () => {} }]),
         { label: '先不了', act: () => {} },
       ]);
@@ -1483,9 +1498,11 @@ export class Controller {
   examDone(e: Exam): void {
     const s = this.state;
     if (!examPassed(e)) return;
+    if (e.stage && e.stage !== 'A1') return this.stageExamDone(e.stage);
     if (e.grammarOnly) {
       if (s.flags.a1Grammar) return;
       s.flags.a1Grammar = true;
+      for (const l of addXp(s, 0).levels) this.onLevelUp(l);
       banner('语法补考通过', 'A1 四段全过');
       say([{ who: '考官', text: '「Gut. Jetzt ist alles komplett.」四段都盖章了。' }]);
       this.persist();
@@ -1495,13 +1512,17 @@ export class Controller {
     s.flags.a1Passed = true;
     s.flags.a1Grammar = true;
     s.flags.title = 'A1 突破者';
+    // XP kept at the cap (up to one level) now counts.
+    const lv = addXp(s, 0);
     banner('A1 突破试炼通过', '称号「A1 突破者」');
     say([
       { who: '考官', text: '「Bestanden.」章盖好了。' },
-      { who: SYS, text: s.level >= BREAK.from ? '【A1 突破】这一阶段学完了。A2 的区域在 0.7 开放；在那之前经验替你存着，最多存一级。' : '【A1 突破 · 提前】章先盖上了。到 30 级时上限直接打开，不用再考。' },
-    ]);
-    this.refresh();
-    this.persist();
+      { who: SYS, text: s.level >= BREAK.from ? `【A1 突破】这一阶段学完了。等级上限升到 ${levelCapFor(s.flags)}，打败晚点之王以后，去租屋城的路就开了。` : `【A1 突破 · 提前】章先盖上了。到 ${BREAK.from} 级时上限直接打开，不用再考。` },
+    ], () => {
+      for (const l of lv.levels) this.onLevelUp(l);
+      this.refresh();
+      this.persist();
+    });
   }
 
   // ---- 入学测试 / 分级考核 (2026-11-25) -------------------------------------------------------
@@ -1626,16 +1647,18 @@ export class Controller {
     s.region = to;
     if (to === 2 && startQuest(s, 'main2')) this.questFire('enterMarket');
     if (to === 3) this.enterRegion3();
-    // Arrive next to the door you came through (大地图: at the area's hub).
+    if (REGION_DEF[to]) this.enterLater(to);
+    // Arrive next to the door you came through (大地图: at the area's hub). 0.7/0.8: going up you arrive at the
+    // town, going back down at the road on to the region you came from.
     s.pos =
       arrive ??
-      (to === 3
-        ? { x: 13 * 16 + 8, y: 24 * 16 + 8 }
-        : to === 2
-          ? from === 3
-            ? { x: 67 * 16 + 8, y: 44 * 16 + 8 }
-            : { x: 4 * 16 + 8, y: 24 * 16 + 8 }
-          : { x: 67 * 16 + 8, y: 24 * 16 + 12 });
+      (to > from
+        ? to === 2
+          ? { x: 4 * 16 + 8, y: 24 * 16 + 8 }
+          : { x: 13 * 16 + 8, y: 24 * 16 + 8 }
+        : to === 1
+          ? { x: 67 * 16 + 8, y: 24 * 16 + 12 }
+          : { x: 67 * 16 + 8, y: 44 * 16 + 8 });
     this.persist();
     this.scene.scene.restart({ ctrl: this });
   }
@@ -2282,6 +2305,144 @@ export class Controller {
     void f;
   }
 
+  // ---- 0.7 + 0.8 · regions 4–12 (src/data/zones.ts, src/data/bossesLater.ts) --------------------------------------
+
+  /** First steps into a region 4–12 town. */
+  private enterLater(r: number) {
+    const d = REGION_DEF[r];
+    const s = this.state;
+    if (!d || s.flags[`enteredArea${r}`]) return;
+    s.flags[`enteredArea${r}`] = true;
+    const cap = levelCapFor(s.flags);
+    const lines: Line[] = d.enter.map((t) => ({ who: SYS, text: t }));
+    if (cap < (r - 1) * 10 + 1) lines.push({ who: SYS, text: `【等级上限 ${cap}】这里的怪比你能到的等级高。先去考官那里过突破试炼，才能继续升级。` });
+    window.setTimeout(() => say(lines), 0);
+  }
+
+  /** A boss door. 蚀变 (rev 341): once a segment is open, its boss waits behind an old door (停摆的钟 at 铁轨镇's
+   *  末班站台, 驳回书 in 租屋城's hall), offered next to the door's own boss. */
+  private knockDoor() {
+    const r = this.state.region;
+    const own = () => (REGION_DEF[r] ? this.knockLater(r) : r === 3 ? this.knockRegion3() : r === 2 ? this.knockRegion2() : this.knock());
+    const e = ERODE_DEFS.find((x) => x.bossRegion === r && erodeOpen(this.state, x.seg));
+    if (!e) return own();
+    const b = LATER_BOSS[e.seg]!;
+    say([{ who: SYS, text: `门后有两种声音。一种是你熟悉的，一种是${e.zh}之后才有的。` }], undefined, [
+      { label: `${e.doorAct}（${b.name}）`, act: () => this.knockLater(e.seg) },
+      { label: '找原来的首领', act: own },
+      { label: '先不去', act: () => undefined },
+    ]);
+  }
+
+  /** The boss door of a region 4–12 or a 蚀变 segment (游戏设计 四: shows once 40% of its words are at least 半名). */
+  private knockLater(r: number) {
+    const s = this.state;
+    const b = LATER_BOSS[r];
+    const d = REGION_DEF[r] ?? ERODE_DEF[r];
+    if (!b || !d) return;
+    if (s.level < b.level) {
+      say([{ who: d.doorZh, text: `门后有什么在等你。它还不想见你。（${b.level} 级）` }]);
+      return;
+    }
+    const share = atLeastHalfShare(s, WORDS.filter((w) => w.region === r && w.family !== 'truhe'));
+    if (share < CONFIG.boss.halfNameShare && !this.dev) {
+      say([{ who: d.doorZh, text: `门没动。这一区的词它还不认得你。（打到半名：${Math.round(share * 100)}% / ${Math.round(CONFIG.boss.halfNameShare * 100)}%）` }]);
+      return;
+    }
+    const go = () =>
+      say(
+        b.intro.map((t) => ({ who: b.name, text: t })),
+        () => {
+          this.boss = startBoss(this.state, this.rng, 7, undefined, r);
+          setBattleMusic(true);
+          setPrompt(null);
+          this.bossUI.open(this.boss);
+        },
+      );
+    if (s.hp < maxHp(s) * 0.5) {
+      say([{ who: SYS, text: '你身上的血不到一半。先回火边？' }], undefined, [
+        { label: d.doorAct, act: go },
+        { label: '先去休息', act: () => undefined },
+      ]);
+      return;
+    }
+    go();
+  }
+
+  /** Region 4–12 boss rewards, as 吞秤者 / 晚点之王: gold chest on the first kill each day (iron after), orange +
+   *  title + one more gold chest the first time (Lucas 2026-11-25: replaces the sentence-skill pick); XP ≈ 30% of the
+   *  boss level's level-up (游戏设计 五). */
+  private finishLater(f: BossFight) {
+    const s = this.state;
+    const r = f.region!;
+    const b = LATER_BOSS[r]!;
+    const first = !s.flags[`boss${r}Kills`];
+    s.flags[`boss${r}Kills`] = ((s.flags[`boss${r}Kills`] as number) ?? 0) + 1;
+    const today = dayKey(now(s));
+    const dailyFirst = s.flags[`boss${r}Day`] !== today;
+    s.flags[`boss${r}Day`] = today;
+    const xp = laterBossXp(b.level);
+    const gold = laterBossGold(b.level);
+    const lv = addXp(s, xp);
+    s.gold += gold;
+    this.chestQueue.push({ kind: dailyFirst ? 'gold' : 'iron', ilvl: s.level });
+    if (first) {
+      const o = makeItem(this.rng, s.level, 'orange');
+      if (s.bag.length < CONFIG.loot.bagSize) s.bag.push(o);
+      s.flags.title = b.title;
+      this.chestQueue.push({ kind: 'gold', ilvl: s.level });
+    }
+    sfx.orange();
+    banner(`${b.name}倒下了`, first ? `首杀：传说装备 + 称号「${b.title}」+ 金箱` : dailyFirst ? '金箱' : '铁箱');
+    const lines: Line[] = b.outro.map((t) => ({ who: SYS, text: t }));
+    lines.push({ who: SYS, text: `获得 ${xp} 经验、${gold} 金币和一个${dailyFirst ? '金' : '铁'}箱${first ? '，首杀再加一个金箱' : ''}。` });
+    if (first) lines.push(...this.afterBossLines(r));
+    const after = () => {
+      for (const l of lv.levels) this.onLevelUp(l);
+      this.refresh();
+      this.persist();
+      this.nextChest();
+    };
+    say(lines, after);
+  }
+
+  /** What opens when boss `r` falls for the first time: a 蚀变 segment (7 → 蚀变①, 10 → 蚀变②) or the road on. */
+  private afterBossLines(r: number): Line[] {
+    const e = ERODE_DEFS.find((x) => x.after === r);
+    if (e) return e.open.map((text) => ({ who: SYS, text }));
+    const road = SCENES.find((sc) => sc.openFlag === `boss${r}Kills` && sc.gate);
+    if (!road) return [];
+    const to = AREAS.find((a) => a.region === road.gate);
+    const via = REGION_DEF[road.region] ? `（${REGION_DEF[road.region]!.zh}第三片野外里）` : '';
+    return [{ who: SYS, text: `去${to?.zh ?? '下一区'}的路开了：${road.zh}${via}。` }];
+  }
+
+  /** A2 (80) and B1 (120) 突破试炼: the A1 format on this stage's words (游戏设计 七). */
+  private stageExam(stage: Stage) {
+    say([
+      { who: '考官', text: `「Die Prüfung ${stage}. Hören, Lesen, Schreiben, Grammatik.」听、读、写、语法，各八题。` },
+      { who: SYS, text: `【${stage} 突破试炼】每部分对 ${BREAK.pass} 题算过。不挨打，没过不罚，随时再考` },
+    ], () => this.panels.showExam(startExam(this.state, Math.random, stage)));
+  }
+
+  private stageExamDone(stage: Stage) {
+    const s = this.state;
+    if (stagePassed(s.flags, stage)) return;
+    s.flags[stage === 'A2' ? 'a2Passed' : 'b1Passed'] = true;
+    s.flags.title = STAGE_DEF[stage].title;
+    banner(`${stage} 突破试炼通过`, `称号「${STAGE_DEF[stage].title}」`);
+    // XP kept at the cap (up to one level) now counts.
+    const lv = addXp(s, 0);
+    say([
+      { who: '考官', text: '「Bestanden.」章盖好了。' },
+      { who: SYS, text: stage === 'B1' ? '【B1 突破】第一阶段学完了。B2 的区域以后开放。' : `【${stage} 突破】等级上限升到 ${levelCapFor(s.flags)}。` },
+    ], () => {
+      for (const l of lv.levels) this.onLevelUp(l);
+      this.refresh();
+      this.persist();
+    });
+  }
+
   regionWords(): Word[] {
     return [...zoneWords('echogasse'), ...zoneWords('schilderstrasse'), ...zoneWords('aschehof')];
   }
@@ -2348,7 +2509,9 @@ export class Controller {
     this.bossUI.close();
     setBattleMusic(false);
     this.boss = null;
-    if (f.which === 6) {
+    if (f.which === 7) {
+      if (f.outcome === 'win') this.finishLater(f);
+    } else if (f.which === 6) {
       this.finishIdentify(f);
     } else if (f.which === 5) {
       this.finishWeber(f);

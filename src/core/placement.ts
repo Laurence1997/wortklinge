@@ -53,7 +53,7 @@ export interface PlaceSave {
 
 /** Words the test can ask: no phrases, tutorial or chest words, nothing above the level cap. */
 export function placeWords(): Word[] {
-  return WORDS.filter((w) => !w.tutorial && w.family !== 'truhe' && w.pos !== 'phr' && w.lvl <= CONFIG.levelCap);
+  return WORDS.filter((w) => !w.tutorial && w.family !== 'truhe' && w.pos !== 'phr' && w.lvl <= PLACE_CAP);
 }
 
 export function bandOf(w: Pick<Word, 'lvl'>): number {
@@ -65,13 +65,16 @@ export function bandCount(): number {
 }
 
 export function bandRange(i: number): [number, number] {
-  return [i * PLACE.band + 1, Math.min(CONFIG.levelCap, (i + 1) * PLACE.band)];
+  return [i * PLACE.band + 1, Math.min(PLACE_CAP, (i + 1) * PLACE.band)];
 }
 
 /** Entry level when bands 0..top are passed (top = -1: none). */
 export function levelFor(top: number): number {
-  return top < 0 ? 1 : Math.min(CONFIG.levelCap, bandRange(top)[1] + 1);
+  return top < 0 ? 1 : Math.min(PLACE_CAP, bandRange(top)[1] + 1);
 }
+
+/** 分级考核 only reaches the end of A1 until the 6000-word list is imported (regions 4–12 are stand-ins). */
+export const PLACE_CAP = 30;
 
 /** Region you start in at that level (region 2 from 11, region 3 from 21). */
 export function regionFor(level: number): 1 | 2 | 3 {
