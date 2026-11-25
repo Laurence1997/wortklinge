@@ -17,7 +17,7 @@ for f in sorted(glob.glob(f'{W}/../rev/b0*.txt')):
       c=cand.get(p[0]);rem.append((int(p[0]),c[1] if c else '',RS[p[2]],''))
 rem.sort()
 POS={'n':'名词','v':'动词','adj':'形容词','adv':'副词','prep':'介词','konj':'连词','pron':'代词','art':'冠词','num':'数词','int':'感叹词','part':'小品词'}
-H=['排名','卡片','原形','冠词','复数','属格(仅不规则)','动词三形','比较级(仅不规则)','词性','中文','标签','游戏里已有','例句','例句中文','例句出处','来源','备注','词族','近义词组','语体','先后','情境','功能线','宿主情境','场景','形近词']
+H=['排名','卡片','原形','冠词','复数','属格(仅不规则)','动词三形','比较级(仅不规则)','词性','中文','标签','游戏里已有','例句','例句中文','例句出处','来源','备注','词族','近义词组','语体','先后','情境','功能线','宿主情境','场景','类别','专属造型','形近词']
 import re as _re
 _verbs={o['lemma'] for o in rows if o['pos']=='v'}
 _PRE=sorted(['ab','an','auf','aus','bei','ein','fest','her','hin','los','mit','nach','vor','weg','zu','zurück','zusammen','weiter','vorbei','herum','hinaus','heraus','herein','hinein','fern','frei','hoch','statt','teil','um','durch','über','unter','wieder','fort','heim','dar','be','ver','er','ent','zer','ge','miss','emp','hinter','wider','voll','herunter','hinunter','herauf','hinauf','rüber','raus','rein','runter','entgegen','voran','voraus','dazu','dabei','davon'],key=len,reverse=True)
@@ -60,6 +60,10 @@ def layer(o):
   elif '影视' in o['tags']: p*=1.5
   return '先' if p<=1000 else '中' if p<=3000 else '后'
 LAB={}
+CAT={}
+for r in csv.DictReader(open('/home/user/wortklinge/scripts/wortschatz/out/labels-cat.tsv',encoding='utf-8'),delimiter='\t'): CAT[r['原形']]=r['类别']
+SPR={}
+for r in csv.DictReader(open('/home/user/wortklinge/data/wortschatz/build/review/专属造型-v1.csv',encoding='utf-8')): SPR[r['原形']]=r['素材包']+'#'+r['编号']+('（'+r['说明']+'）' if r['说明'] else '')
 for _lp in ('/home/user/wortklinge/scripts/wortschatz/out/labels-b2.tsv','/home/user/wortklinge/scripts/wortschatz/out/labels.tsv'):  # b2 first: words now ranked >6000 use the B2 scheme
   if os.path.exists(_lp):
     for r in csv.DictReader(open(_lp,encoding='utf-8'),delimiter='\t'):
@@ -75,7 +79,7 @@ BSP={}
 for r in csv.DictReader(open('/home/user/wortklinge/data/wortschatz/beispiele.tsv',encoding='utf-8'),delimiter='\t'): BSP[r['原形']]=r
 def rowv(o):
   b=BSP.get(o['lemma']) or BSP.get(o['lemma'].lower()) or {}
-  return [o['rank'],o['disp'],o['lemma'],o['art'],o['pl'],o['gen'],o['vf'],o['cmp'],POS.get(o['pos'],o['pos']),o['zh'],'、'.join(o['tags']),'是' if o['game'] else '',b.get('例句',''),b.get('例句中文',''),b.get('例句出处',''),o['src'],o['note'],FAM.get(o['lemma'],''),SYN.get(o['lemma'],''),REG.get(o['lemma'],''),layer(o),*LAB.get(o['lemma'],('','','')),'',XING.get(o['lemma'],'')]
+  return [o['rank'],o['disp'],o['lemma'],o['art'],o['pl'],o['gen'],o['vf'],o['cmp'],POS.get(o['pos'],o['pos']),o['zh'],'、'.join(o['tags']),'是' if o['game'] else '',b.get('例句',''),b.get('例句中文',''),b.get('例句出处',''),o['src'],o['note'],FAM.get(o['lemma'],''),SYN.get(o['lemma'],''),REG.get(o['lemma'],''),layer(o),*LAB.get(o['lemma'],('','','')),'',CAT.get(o['lemma'],'抽象'),SPR.get(o['lemma'],''),XING.get(o['lemma'],'')]
 wb=Workbook()
 hf=Font(bold=True,color='FFFFFF');fill=PatternFill('solid',fgColor='7A1F1F')
 def sheet(ws,head,data,widths):
@@ -84,7 +88,7 @@ def sheet(ws,head,data,widths):
   for d in data: ws.append(d)
   ws.freeze_panes='C2' if head is H else 'A2';ws.auto_filter.ref=ws.dimensions
   for i,w in enumerate(widths,1): ws.column_dimensions[get_column_letter(i)].width=w
-WD=[6,42,18,8,16,14,34,22,7,26,18,9,40,30,12,8,16,12,30,8,6,14,12,14,14,24]
+WD=[6,42,18,8,16,14,34,22,7,26,18,9,40,30,12,8,16,12,30,8,6,14,12,14,14,8,18,24]
 top=[o for o in rows if o['rank']<=6000];res=[o for o in rows if 6000<o['rank']<=8000]
 ws=wb.active;ws.title='前6000（游戏用）';sheet(ws,H,[rowv(o) for o in top],WD)
 sheet(wb.create_sheet('6001-8000（备用）'),H,[rowv(o) for o in res],WD)
@@ -94,7 +98,7 @@ info=[('说明',''),('排序','字幕词频（FrequencyWords / OpenSubtitles 201
 ('卡片','名词：冠词 + 单数 + 复数；只有不规则（弱变化等）才写属格。动词：三单现在时 · 过去式 · 完成时。形容词：只有不规则才写比较级。'),
 ('标签','基础=最常用打招呼/功能词；生活=德国生活场景；影视=字幕里偏多、日常少；不规则/可分/sein=动词；弱变化=名词属格不规则；地名；粗口·只需听懂=常见骂人话，游戏里只出认读题，不考拼写和造句。'),
 ('待校','动词变化和名词复数是自动从开源词典生成的，个别会错。'),('例句','大部分来自 Tatoeba 母语者句子（CC BY 2.0 FR，出处列有编号和作者）；前 3000 词缺中文的已自译；找不到合适句子的词是自写（标「自写」）。之后统一过 LanguageTool + DeepSeek 校对。'),
-('词族/近义词组','自动生成的候选：词族=同一个基础动词加前缀（anmachen/ausmachen → machen）；近义词组=词性相同、第一个中文释义相同。分场景时同组的词不放进同一个场景（Lucas 定）。已人工修订（2026-11-25）：无前缀=真近义词，排进阶梯子；「易混：」=只防干扰；「变体：」=同一个词的缩合/拼法/口语形式，当一个词学。可直接改。'),('语体','中性/正式/口语/书面·旧/粗口。口语词不算升级，放对话和文章；正式词是进阶说法的主力。只填前 6000。'),('先后','先/中/后，只是默认学习顺序，不是门槛（不按欧标分级）：沟通优先度=排名，标「生活」或游戏里已有的×0.5，只标「影视」的×1.5；≤1000 先、≤3000 中、其余后。场景需要哪个词就直接放进去。'),('情境/功能线/宿主情境','Luna 标的初稿：情境从生活情境里选一个；「讨论说理」是抽象词，「新闻社会」是犯罪/法律/政治/历史/影视词，这两类和功能线词都有宿主情境（排场景时挂到那里）；纯语法词标「通用」。功能线只给表达类的词（vielleicht、weil、leider…）。可直接改。'),('场景','排场景时再填。'),('形近词','自动生成的候选：拼写只差一个字母（liegen/legen、Stadt/Staat、fühlen/füllen）或只差变音（schon/schön、zahlen/zählen）。同样不放进同一个场景。只查前 6000，可直接改。'),('修改方法','直接在表里改、删行、加行都行（新加的词排名留空或填数字）。改完把 xlsx 发回来，脚本会导回仓库。不要改列名。'),
+('词族/近义词组','自动生成的候选：词族=同一个基础动词加前缀（anmachen/ausmachen → machen）；近义词组=词性相同、第一个中文释义相同。分场景时同组的词不放进同一个场景（Lucas 定）。已人工修订（2026-11-25）：无前缀=真近义词，排进阶梯子；「易混：」=只防干扰；「变体：」=同一个词的缩合/拼法/口语形式，当一个词学。可直接改。'),('语体','中性/正式/口语/书面·旧/粗口。口语词不算升级，放对话和文章；正式词是进阶说法的主力。只填前 6000。'),('先后','先/中/后，只是默认学习顺序，不是门槛（不按欧标分级）：沟通优先度=排名，标「生活」或游戏里已有的×0.5，只标「影视」的×1.5；≤1000 先、≤3000 中、其余后。场景需要哪个词就直接放进去。'),('情境/功能线/宿主情境','Luna 标的初稿：情境从生活情境里选一个；「讨论说理」是抽象词，「新闻社会」是犯罪/法律/政治/历史/影视词，这两类和功能线词都有宿主情境（排场景时挂到那里）；纯语法词标「通用」。功能线只给表达类的词（vielleicht、weil、leider…）。可直接改。'),('场景','排场景时再填。'),('类别','配怪的外形用：食物/物品/动物（含植物）/人物（含身体部位、鬼怪）/地点（含交通工具、天气、地形）/抽象。名词由 Luna 标、人工抽查；非名词一律抽象。可直接改。'),('专属造型','素材里有专门造型的词（Kenney 素材包#编号），由地图线提供。游戏里等 Lucas 点头才用。'),('形近词','自动生成的候选：拼写只差一个字母（liegen/legen、Stadt/Staat、fühlen/füllen）或只差变音（schon/schön、zahlen/zählen）。同样不放进同一个场景。只查前 6000，可直接改。'),('修改方法','直接在表里改、删行、加行都行（新加的词排名留空或填数字）。改完把 xlsx 发回来，脚本会导回仓库。不要改列名。'),
 ('',''),('数据来源和许可',''),
 ('FrequencyWords','hermitdave/FrequencyWords，OpenSubtitles 2018 德语，CC BY-SA 4.0'),
 ('wordfreq','rspeer/wordfreq 数据，CC BY-SA 4.0'),
