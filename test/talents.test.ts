@@ -145,3 +145,44 @@ describe('格位连锁', () => {
     expect(b.chainOffer).toBe(false);
   });
 });
+
+describe('即时战', () => {
+  it("'act' resolves only your answer; 'tick' lets the monster act", async () => {
+    const { TICK_TURN, castMs, realtimeOn } = await import('../src/core/combat');
+    const s = newGame('T', 'student');
+    s.level = 81;
+    s.hp = 99999;
+    const b = startBattle(s, noun, makeRng(1));
+    b.monster.hp = b.monster.maxHp = 99999;
+    expect(realtimeOn(s, b)).toBe(true);
+    b.intent = { ...b.intent, kind: 'attack', hits: 1 };
+    const q = makeQuestion(s, b, 'attack', makeRng(2));
+    const hp0 = s.hp;
+    const r = resolveTurn(s, b, 'attack', q, 'falsch', makeRng(3), [b], 'act');
+    expect(r.monsterDamage).toBe(0);
+    expect(s.hp).toBe(hp0);
+    const t = resolveTurn(s, b, 'item', TICK_TURN, '', makeRng(4), [b], 'tick');
+    expect(t.monsterDamage).toBeGreaterThan(0);
+    b.intent = { ...b.intent, kind: 'charge' };
+    expect(castMs(s, b)).toBeGreaterThanOrEqual(8000);
+    s.settings.realtime = false;
+    expect(realtimeOn(s, b)).toBe(false);
+  });
+
+  it('弹反: a right answer in the parry window catches the next cast', async () => {
+    const { TICK_TURN } = await import('../src/core/combat');
+    const s = newGame('T', 'student');
+    s.level = 81;
+    s.hp = 99999;
+    const b = startBattle(s, noun, makeRng(1));
+    b.monster.hp = b.monster.maxHp = 99999;
+    b.intent = { ...b.intent, kind: 'attack', hits: 1 };
+    const q = { ...makeQuestion(s, b, 'attack', makeRng(2)), parryWindow: true };
+    const r = resolveTurn(s, b, 'attack', q, q.answer!, makeRng(3), [b], 'act');
+    expect(r.correct).toBe(true);
+    expect(b.parryReady).toBe(true);
+    const t = resolveTurn(s, b, 'item', TICK_TURN, '', makeRng(4), [b], 'tick');
+    expect(t.parried).toBe(true);
+    expect(t.monsterDamage).toBe(0);
+  });
+});

@@ -34,6 +34,9 @@ export interface Settings {
   chestAnim: boolean;
   /** 发音训练 (2026-11-23): read 回音怪 pairs aloud with the in-browser phoneme model (opt-in, ~635 MB). */
   pron?: boolean;
+  /** 即时战 (81): false = keep turn-based (no quick-answer bonus); slow = casts ×1.5. */
+  realtime?: boolean;
+  realtimeSlow?: boolean;
 }
 
 export interface GameState {

@@ -1,3 +1,4 @@
+import { TICK_TURN } from '../core/combat';
 import { loadPron, pronCached } from '../ui/phoneme';
 import { icon, setRestored, SLOT_TILE } from '../ui/icons';
 import { answerPlacement, applyPlacement, canPlaceAgain, placeAgainIn, regionFor, startPlacement, stopPlacement, type PlaceRun } from '../core/placement';
@@ -742,6 +743,25 @@ export class Controller {
     return hintOf(this.battle!, q);
   }
 
+  /** 即时战: this fight runs on cast bars (set by the battle screen when it opens). */
+  realtime = false;
+
+  /** 即时战: the target's cast bar ran out — every monster standing acts. */
+  tick(): TurnReport | null {
+    const s = this.state;
+    const b = this.battle;
+    if (!b || b.outcome) return null;
+    const r = resolveTurn(s, b, 'item', TICK_TURN, '', this.rng, this.pack, 'tick');
+    if (r.killer) this.killer = r.killer;
+    if (r.parried) sfx.parry();
+    if (r.monsterDamage > 0) {
+      sfx.hurt();
+      this.scene.shake(0.004);
+    }
+    this.refresh();
+    return r;
+  }
+
   /** 药片 (物品栏): heal, then the monsters act (the turn is spent). Null when there is none or HP is full. */
   useTablet(): { report: TurnReport; heal: number } | null {
     const s = this.state;
@@ -790,7 +810,7 @@ export class Controller {
       this.dungeon.kept = false;
       toast('「Schnell!」超过 10 秒了：这次的规则加成作废了。');
     }
-    const r = resolveTurn(s, b, move, q, input, this.rng, this.pack);
+    const r = resolveTurn(s, b, move, q, input, this.rng, this.pack, this.realtime ? 'act' : undefined);
     if (r.killer) this.killer = r.killer;
     if (r.review) {
       const rv = r.review;

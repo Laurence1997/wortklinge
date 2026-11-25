@@ -1446,9 +1446,9 @@ export class Panels {
   private settings(): HTMLElement {
     const s = this.ctrl.state;
     const wrap = h('div');
-    const toggle = (label: string, key: 'tts' | 'autoZh' | 'chestAnim', note: string) => {
+    const toggle = (label: string, key: 'tts' | 'autoZh' | 'chestAnim' | 'realtime' | 'realtimeSlow', note: string) => {
       const cb = h('input', { type: 'checkbox' }) as HTMLInputElement;
-      cb.checked = s.settings[key] !== false;
+      cb.checked = key === 'realtimeSlow' ? !!s.settings[key] : s.settings[key] !== false;
       cb.onchange = () => {
         s.settings[key] = cb.checked;
         this.ctrl.persist();
@@ -1471,6 +1471,8 @@ export class Panels {
       slider('音乐', 'music'),
       slider('音效', 'sfx'),
     );
+    // 即时战 (81): on by default from 81; turn-based stays available (no quick-answer bonus there).
+    if (s.level >= 81) wrap.append(toggle('即时战', 'realtime', '关掉就回到回合制（拿不到快答加成）'), toggle('即时战慢速', 'realtimeSlow', '怪的读条 ×1.5'));
     // 跟读试音: check the microphone and Chrome's recognition at any level (跟读 itself opens at Lv5).
     const out = h('span.small.muted', canListen() ? '读一句德语，比如「Ich trinke Kaffee.」' : '没检测到麦克风，或者这个网站的麦克风权限被拒绝了');
     const btn = h('button.btn', '试麦克风') as HTMLButtonElement;

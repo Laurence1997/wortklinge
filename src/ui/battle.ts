@@ -2,6 +2,7 @@ import { icon, monsterTile, heroIcon } from './icons';
 import { DEFAULT_LOOK } from '../core/look';
 import type { Battle, Question, TurnReport } from '../core/combat';
 import { count as itemCount, itemsOpen, tabletHeal } from '../core/items';
+import { castMs, gcdMs, parryWindowMs, realtimeOn } from '../core/combat';
 import { availableMoves, chorusMates, canHint, comboTier, effArmor, moveReady, poolReady, needsPhase, phaseOf, resName, shownDe, stancesFor, teachPhase, readTarget, readRecall, readShown, phaseWrongWhy } from '../core/combat';
 import { articleSlip, clarity, shadowOk } from '../core/shadow';
 import { has } from '../core/unlocks';
@@ -52,6 +53,11 @@ export class BattleUI {
   zhShown = false;
   input: HTMLInputElement | null = null;
   private autoTimer = 0;
+  /** 即时战: on for this fight, when the current cast started and how long it is, the 100 ms loop. */
+  private rtOn = false;
+  private castStart = 0;
+  private castLen = 0;
+  private rtLoop = 0;
   private lastValue = '';
   /** 齐鸣 (rev 234): one box per same-stance mate, sent after the target's answer joined with |. */
   private mateBoxes: HTMLInputElement[] = [];
@@ -183,11 +189,15 @@ export class BattleUI {
     this.shadowText = '';
     this.shadowMsg = '';
     $('battle').hidden = false;
+    this.rtSetup();
     this.startTurn();
   }
 
   close(): void {
     window.clearTimeout(this.autoTimer);
+    window.clearInterval(this.rtLoop);
+    this.rtOn = false;
+    this.ctrl.realtime = false;
     stopListening();
     $('battle').hidden = true;
     this.input = null;
@@ -295,6 +305,8 @@ export class BattleUI {
     // 答题用时 (速记 / A2 快答 / 一气呵成): from the question showing to the answer.
     this.question.ms ??= Math.round(performance.now() - this.askedAt);
     this.lastValue = value;
+    const intentBefore = this.b.intent;
+    if (this.rtOn) this.question.parryWindow = this.b.intent.kind === 'attack' && this.castLeft() <= parryWindowMs(this.ctrl.state);
     const voiced = this.b.intent;
     const target = this.b;
     const logFrom = target.log.length;
@@ -313,6 +325,13 @@ export class BattleUI {
     const clean = this.report.correct && !this.report.verdict.notes.length;
     const delay = this.ctrl.fightOver() ? 1600 : clean ? 1000 : 2600;
     window.clearTimeout(this.autoTimer);
+    if (this.rtOn) {
+      // 即时战: an interrupted cast restarts with its next move; the next question comes after the global cooldown
+      // (a wrong choice answer staggers you longer). Time keeps running meanwhile.
+      if (this.b && this.b.intent !== intentBefore) this.startCast();
+      this.autoTimer = window.setTimeout(() => this.continue(), this.ctrl.fightOver() ? 1600 : gcdMs(this.ctrl.state, this.question, this.report.correct));
+      return;
+    }
     // 0.6.x: a wrong cloze waits for Enter, so the correction and its rule can be read.
     if (!this.report.correct && this.question.type === 'cloze' && !this.ctrl.fightOver()) return;
     this.autoTimer = window.setTimeout(() => this.continue(), delay);
@@ -430,6 +449,52 @@ export class BattleUI {
       if ((this.phase as Phase) === 'answer' && q) this.submit(q.answer ?? '');
       return;
     }
+    this.render();
+  }
+
+  // ---- 即时战 (81) ---------------------------------------------------------------------------------
+
+  private rtSetup(): void {
+    window.clearInterval(this.rtLoop);
+    this.rtOn = realtimeOn(this.ctrl.state, this.b);
+    this.ctrl.realtime = this.rtOn;
+    if (!this.rtOn) return;
+    this.startCast();
+    this.rtLoop = window.setInterval(() => this.rtStep(), 100);
+  }
+
+  private startCast(): void {
+    this.castStart = performance.now();
+    this.castLen = castMs(this.ctrl.state, this.b);
+  }
+
+  private castLeft(): number {
+    return Math.max(0, this.castStart + this.castLen - performance.now());
+  }
+
+  private rtStep(): void {
+    if (!this.rtOn || !this.ctrl.battle || this.ctrl.fightOver()) return;
+    const left = this.castLeft();
+    const bar = document.getElementById('rt-cast');
+    if (bar) bar.style.width = `${Math.round((100 * left) / this.castLen)}%`;
+    const lab = document.getElementById('rt-cast-label');
+    if (lab) lab.textContent = `${(left / 1000).toFixed(1)} 秒`;
+    if (left > 0) return;
+    const target = this.b;
+    const from = target.log.length;
+    const r = this.ctrl.tick();
+    if (!r) return;
+    for (const l of target.log.slice(from)) logLine(`  ${l.text}`, l.tone === 'good' ? 'good' : l.tone === 'bad' ? 'bad' : l.tone === 'crit' ? 'gold' : 'info');
+    if (this.ctrl.fightOver()) {
+      this.report = r;
+      this.question = { type: 'steady', prompt: '它出手了', focus: '', item: true };
+      this.phase = 'result';
+      this.render();
+      window.clearTimeout(this.autoTimer);
+      this.autoTimer = window.setTimeout(() => this.continue(), 1600);
+      return;
+    }
+    this.startCast();
     this.render();
   }
 
@@ -640,6 +705,16 @@ export class BattleUI {
         h('div.line', it.line),
         h('div.zh', this.zhShown && this.b.curse !== 'forget' ? plainZh(it.zh) : ''),
         b.queued?.kind === 'charge' ? h('div.zh', { style: 'color:var(--gold, #ffcf4a)' }, '看穿 · 它下回合要蓄力') : '',
+        // 即时战: its cast bar; answer right in the last second of an attack to parry, during a charge to break it.
+        this.rtOn
+          ? h(
+              'div.small',
+              { style: 'margin:4px 0' },
+              h('div', { style: 'height:6px;background:#2a1414;border-radius:3px;overflow:hidden' }, h('div#rt-cast', { style: `height:100%;width:${Math.round((100 * this.castLeft()) / (this.castLen || 1))}%;background:${it.kind === 'charge' ? 'var(--gold, #ffcf4a)' : '#d8333a'}` })),
+              h('span#rt-cast-label.muted', `${(this.castLeft() / 1000).toFixed(1)} 秒`),
+              h('span.muted', it.kind === 'attack' ? ` · 最后 ${parryWindowMs(s) / 1000} 秒答对 = 弹反` : it.kind === 'charge' ? ' · 读条结束前答对就打断' : ''),
+            )
+          : '',
         h(
           'div.ib',
           h('button.btn', { onclick: () => this.ctrl.speak(it.line), title: '再听一遍（V）' }, '🔊 再听'),

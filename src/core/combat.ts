@@ -69,6 +69,10 @@ export interface Question {
   earMs?: number;
   /** 格位连锁: the same noun in another case, asked right after; right → one more hit ×1.5, the monster doesn't act. */
   chain?: boolean;
+  /** 即时战: a cast bar ran out (no answer; the monsters act in full). */
+  tick?: boolean;
+  /** 即时战: answered in the last second of an attack's cast (弹反 window). */
+  parryWindow?: boolean;
   /** conj questions: other accepted forms. */
   alts?: string[];
   /** storm questions: the long word to write. */
@@ -266,6 +270,8 @@ export interface Battle {
   /** 格位连锁: a follow-up question is due now; chainAt = the turn it was last offered (once per 3 turns). */
   chainOffer?: boolean;
   chainAt?: number;
+  /** 即时战 弹反: the next cast that runs out is caught (set by a right answer in its last second). */
+  parryReady?: boolean;
   /** 21 级「时间」进难题预告: turns left until an announced big attack («gleich», «in zwei Runden»). */
   chargeIn?: number;
   /** 现在完成时 (0.6, region 3 Lv21+): a verb monster speaking in the Perfekt; its stance is haben / sein. */
@@ -770,6 +776,8 @@ export function canHint(s: GameState, b: Battle, move: Move, q: Question | null)
 
 /** The placeholder question of a 药片 turn (物品栏): nothing is asked. */
 export const ITEM_TURN: Question = { type: 'steady', prompt: '吃药片', focus: '', item: true };
+/** 即时战: the placeholder for a cast bar running out. */
+export const TICK_TURN: Question = { type: 'steady', prompt: '', focus: '', item: true, tick: true };
 
 /** The hinted version of a question (choice: one wrong option removed; typed: the first letter). */
 export function hintOf(b: Battle, q: Question): Question {
@@ -1825,6 +1833,8 @@ export function resolveTurn(
   input: string,
   rng: Rng,
   pack: Battle[] = [b],
+  /** 即时战 (81): 'act' = your answer only (the monsters act on their own cast bar), 'tick' = a cast bar ran out. */
+  rt?: 'act' | 'tick',
 ): TurnReport {
   if (q.directName) return directTurn(s, b, q, input);
   if (q.chain) return chainTurn(s, b, q, input, rng);
@@ -1988,6 +1998,10 @@ export function resolveTurn(
       s.combo += 1;
       if (readRight && move !== 'skill') s.combo += 1; // 读对意图并出对克制招式，连击额外 +1
       talentOnRight(s, b, q, log, afterWrong);
+      if (rt === 'act' && q.parryWindow && intent.kind === 'attack') {
+        b.parryReady = true;
+        log.push({ text: '弹反架势：它这一下会被你接住。', tone: 'good' });
+      }
       s.bestCombo = Math.max(s.bestCombo, s.combo);
 
       if (move === 'skill' && q.type === 'steady') {
@@ -2025,6 +2039,7 @@ export function resolveTurn(
           if (has(s.level, 'layerElement')) element = ELEMENT_BY_GENDER[genderOf(b.word) ?? 'n'];
         }
         if (q.inscribed) mult *= CONFIG.tech.inscribeMult;
+        if (rt && q.spoken) mult *= REALTIME.spokenMult; // 即时战: 开口说对的攻击伤害 +20%
         if (q.ult) {
           const full = b.ultHits === 2;
           mult *= full ? CONFIG.ultimate.both : CONFIG.ultimate.one;
@@ -2258,14 +2273,20 @@ export function resolveTurn(
     }
   }
 
-  // --- 2. Every monster still standing acts.
+  // --- 2. Every monster still standing acts (即时战: only when its cast bar runs out).
   let monsterDamage = 0;
   let parried = false;
   const target = b;
-  for (const actor of pack) {
-    if (actor.outcome) continue;
-    actAs(actor);
+  if (rt === 'tick' && b.parryReady) {
+    // 弹反: answered right in the last second of its cast — the hit is caught and countered (a crit).
+    blocking = true;
+    b.parryReady = false;
   }
+  if (rt !== 'act')
+    for (const actor of pack) {
+      if (actor.outcome) continue;
+      actAs(actor);
+    }
   function actAs(b: Battle) {
     const m = b.monster;
     const intent = b.intent;
@@ -2302,7 +2323,7 @@ export function resolveTurn(
       case 'attack': {
         let per = m.dmg * dmgMult * chillMult * (monsterCrit ? 1.5 : 1);
         // 多段: a correct answer on this monster stops it after the first hit.
-        const hitsN = ok && b === target && intent.hits > 1 ? 1 : intent.hits;
+        const hitsN = ok && !q.tick && b === target && intent.hits > 1 ? 1 : intent.hits;
         if (hitsN < intent.hits) say({ text: '它只咬到一口。', tone: 'good' });
         for (let i = 0; i < hitsN; i++) {
           if (i === 0 && halfBlock) {
@@ -2376,7 +2397,7 @@ export function resolveTurn(
 
 
   // --- 3. Damage over time and status ticks (every monster still standing; your own statuses once).
-  for (const x of pack) if (!x.outcome) tickMonster(x);
+  if (rt !== 'act') for (const x of pack) if (!x.outcome) tickMonster(x);
   function tickMonster(b: Battle) {
     const m = b.monster;
     const say = (l: LogLine) => log.push(multi ? { ...l, text: `${tagOf(b)}：${l.text}` } : l);
@@ -2395,6 +2416,9 @@ export function resolveTurn(
     if (b !== target || move !== 'sentence' || element !== 'ice') m.chilled = false;
   }
   const strongest = Math.max(...pack.filter((x) => !x.outcome).map((x) => x.monster.dmg), 1);
+  if (rt !== 'act') endOfRound();
+  if (rt !== 'tick') talentEndTurn(s, b, q, ok, interrupted, log);
+  function endOfRound() {
   if (b.fx.burn > 0) {
     const d = Math.max(1, Math.round(strongest * 0.4));
     s.hp -= d;
@@ -2410,7 +2434,6 @@ export function resolveTurn(
   for (const k of Object.keys(b.poolCd) as PoolId[]) if (b.poolCd[k]! > 0) b.poolCd[k]! -= 1;
   if ((b.sealed ?? 0) > 0) b.sealed! -= 1;
   for (const x of pack) if ((x.armorDownT ?? 0) > 0) x.armorDownT! -= 1;
-  talentEndTurn(s, b, q, ok, interrupted, log);
   if ((b.cfx.inscribeCd ?? 0) > 0) b.cfx.inscribeCd! -= 1;
   if (b.chorusCd > 0) b.chorusCd -= 1;
   b.fx.cheap = false;
@@ -2420,6 +2443,7 @@ export function resolveTurn(
     s.flags.wortgewaltUsedAt50 = true;
   }
   if (s.combo < 50) s.flags.wortgewaltUsedAt50 = false;
+  }
 
   for (const x of pack) {
     if (x.outcome || x.monster.hp > 0) continue;
@@ -2436,6 +2460,12 @@ export function resolveTurn(
     killer = lastHitter ?? pack.find((x) => !x.outcome) ?? b;
     for (const x of pack) if (!x.outcome) x.outcome = 'lose';
     log.push({ text: '你倒下了……', tone: 'bad' });
+  } else if (rt === 'act') {
+    // 即时战: your answer alone; an interrupted cast (蓄力 / 回血 / 逃跑) gives way to its next move at once.
+    if (interrupted && !b.outcome) {
+      b.intent = nextIntent(s, b, rng);
+      b.chargeIn = undefined;
+    }
   } else {
     for (const x of pack) {
       if (x.outcome) continue;
@@ -2551,6 +2581,8 @@ export function quickLineMs(q: Question): number {
   return Math.max(1, Math.ceil((q.answer ?? '').replace(/\s+/g, '').length / 3)) * 1000;
 }
 export function isQuick(s: GameState, q: Question): boolean {
+  // From 81 the quick bonus lives in 即时战: turn-based and slow mode don't get it.
+  if (s.level >= REALTIME.from && (s.settings.realtime === false || s.settings.realtimeSlow)) return false;
   return s.level >= QUICK_FROM && q.ms !== undefined && q.ms <= quickLineMs(q) + (q.earMs ?? 0);
 }
 
@@ -2751,4 +2783,50 @@ function chainTurn(s: GameState, b: Battle, q: Question, input: string, rng: Rng
     log.push({ text: `格位连锁：${q.answer}，再打 ${dmg}。`, tone: 'good' });
   } else log.push({ text: `格位连锁没接上：${q.answer}。`, tone: 'info' });
   return finish(s, b, { correct: ok, verdict, playerDamage: dmg, crit: false, newSpell: false, monsterDamage: 0, parried: false, element: null, log, outcome: b.outcome, readRight: false, kills: [], killer: null });
+}
+
+// ---- 即时战 (B1, 81 级; 游戏设计「六、战斗」) ---------------------------------------------------------
+// Time no longer stops: each monster acts when its cast bar runs out (about 6 s, a charge twice as long, longer lines
+// take longer), you answer whenever you like with a 1 s global cooldown, a wrong choice answer staggers you 2 s.
+// A right answer in the cast's last second is a parry (no hit, a counter that counts as a crit); a right answer during
+// a charge / heal / flee breaks it. Slow mode: casts ×1.5. Turn-based stays available as a setting.
+
+export const REALTIME = {
+  from: 81,
+  /** Seconds: base cast, per character of the monster's line, and the bounds. */
+  castBase: 4,
+  castPerChar: 0.06,
+  castMin: 4,
+  castMax: 9,
+  chargeMult: 2,
+  slowMult: 1.5,
+  gcd: 1,
+  stagger: 2,
+  parryWindow: 1,
+  spokenMult: 1.2,
+};
+
+/** Is this fight played in real time? From 81, unless the player picked turn-based; never in tutorials or trials. */
+export function realtimeOn(s: GameState, b: Battle): boolean {
+  return s.level >= REALTIME.from && s.settings.realtime !== false && !b.tutorial && !b.trial && !b.phrase;
+}
+
+/** Cast length (ms) of the monster's current move. */
+export function castMs(s: GameState, b: Battle): number {
+  const line = b.intent.line ?? '';
+  let sec = Math.min(REALTIME.castMax, Math.max(REALTIME.castMin, REALTIME.castBase + REALTIME.castPerChar * line.length));
+  if (b.intent.kind === 'charge') sec *= REALTIME.chargeMult;
+  if (s.settings.realtimeSlow) sec *= REALTIME.slowMult;
+  return Math.round(sec * 1000);
+}
+
+/** Global cooldown after an answer (疾行 −0.2 s per point), and the stagger after a wrong choice answer. */
+export function gcdMs(s: GameState, q: Question, ok: boolean): number {
+  if (!ok && q.options?.length) return REALTIME.stagger * 1000;
+  return Math.round((REALTIME.gcd - 0.2 * rank(s, 'jixing')) * 1000);
+}
+
+/** The parry window at the end of an attack's cast (弹反 talent: 1.5 s). */
+export function parryWindowMs(s: GameState): number {
+  return (rank(s, 'tanfan') ? 1.5 : REALTIME.parryWindow) * 1000;
 }
