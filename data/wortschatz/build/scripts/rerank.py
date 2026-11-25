@@ -40,6 +40,12 @@ for line in open('../rev/contr.txt',encoding='utf-8'):
     l,p,zh=line.strip().split('|')
     if l not in by:
         x=dict(lemma=l,pos=p,zh=zh,sc=own(l),src='freq',film=False,life=False,adj=own(l)); r.append(x); by[l]=x; new.append(l)
+floor3=adj[5499]
+for line in open('../rev/slang.txt',encoding='utf-8'):
+    l,p,zh=line.strip().split('|')
+    if l in by: by[l]['slang']=True; by[l]['zh']=zh
+    else:
+        x=dict(lemma=l,pos=p,zh=zh,sc=own(l),src='freq',film=False,life=False,slang=True,adj=max(own(l),floor3)); r.append(x); by[l]=x; new.append(l)
 r.sort(key=lambda x:-x['adj'])
 old={x['lemma']:x['rank'] for x in json.load(open('ranked2_orig.json'))}
 for i,x in enumerate(r): x['rank']=i+1

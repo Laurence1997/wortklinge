@@ -5,7 +5,7 @@ V=json.load(open(f'{W}/verbparts3.json'));G=json.load(open(f'{W}/../game_words.j
 DROP={'Toto','Strauss','Wiking'}
 r=[x for x in r if x['lemma'] not in DROP]
 for i,x in enumerate(r): x['rank']=i+1; x['oldrank']=i+1
-VFIX={'bestimmen':('bestimmt','bestimmte','hat bestimmt'),'äußern':('äußert','äußerte','hat geäußert'),'stoßen':('stößt','stieß','hat gestoßen'),'schmeißen':('schmeißt','schmiss','hat geschmissen'),'klarkommen':('kommt klar','kam klar','ist klargekommen'),'rumhängen':('hängt rum','hing rum','hat rumgehangen'),'jobben':('jobbt','jobbte','hat gejobbt'),'ausflippen':('flippt aus','flippte aus','ist ausgeflippt'),'pinkeln':('pinkelt','pinkelte','hat gepinkelt'),'runtergehen':('geht runter','ging runter','ist runtergegangen'),'raufgehen':('geht rauf','ging rauf','ist raufgegangen'),'rüberkommen':('kommt rüber','kam rüber','ist rübergekommen'),'reinschauen':('schaut rein','schaute rein','hat reingeschaut'),'draufhaben':('hat drauf','hatte drauf','hat draufgehabt'),'dranbleiben':('bleibt dran','blieb dran','ist drangeblieben'),'rumsitzen':('sitzt rum','saß rum','hat rumgesessen'),'kaputtgehen':('geht kaputt','ging kaputt','ist kaputtgegangen'),'kaputtmachen':('macht kaputt','machte kaputt','hat kaputtgemacht'),'saubermachen':('macht sauber','machte sauber','hat saubergemacht'),'abwaschen':('wäscht ab','wusch ab','hat abgewaschen'),'bügeln':('bügelt','bügelte','hat gebügelt'),'übergeben':('übergibt','übergab','hat übergeben'),'umgeben':('umgibt','umgab','hat umgeben'),
+VFIX={'verarschen':('verarscht','verarschte','hat verarscht'),'kotzen':('kotzt','kotzte','hat gekotzt'),'verpissen':('verpisst','verpisste','hat verpisst'),'bestimmen':('bestimmt','bestimmte','hat bestimmt'),'äußern':('äußert','äußerte','hat geäußert'),'stoßen':('stößt','stieß','hat gestoßen'),'schmeißen':('schmeißt','schmiss','hat geschmissen'),'klarkommen':('kommt klar','kam klar','ist klargekommen'),'rumhängen':('hängt rum','hing rum','hat rumgehangen'),'jobben':('jobbt','jobbte','hat gejobbt'),'ausflippen':('flippt aus','flippte aus','ist ausgeflippt'),'pinkeln':('pinkelt','pinkelte','hat gepinkelt'),'runtergehen':('geht runter','ging runter','ist runtergegangen'),'raufgehen':('geht rauf','ging rauf','ist raufgegangen'),'rüberkommen':('kommt rüber','kam rüber','ist rübergekommen'),'reinschauen':('schaut rein','schaute rein','hat reingeschaut'),'draufhaben':('hat drauf','hatte drauf','hat draufgehabt'),'dranbleiben':('bleibt dran','blieb dran','ist drangeblieben'),'rumsitzen':('sitzt rum','saß rum','hat rumgesessen'),'kaputtgehen':('geht kaputt','ging kaputt','ist kaputtgegangen'),'kaputtmachen':('macht kaputt','machte kaputt','hat kaputtgemacht'),'saubermachen':('macht sauber','machte sauber','hat saubergemacht'),'abwaschen':('wäscht ab','wusch ab','hat abgewaschen'),'bügeln':('bügelt','bügelte','hat gebügelt'),'übergeben':('übergibt','übergab','hat übergeben'),'umgeben':('umgibt','umgab','hat umgeben'),
  'überdenken':('überdenkt','überdachte','hat überdacht'),'überfluten':('überflutet','überflutete','hat überflutet'),
  'überspringen':('überspringt','übersprang','hat übersprungen'),'wiedererkennen':('erkennt wieder','erkannte wieder','hat wiedererkannt'),
  'durchsuchen':('durchsucht','durchsuchte','hat durchsucht'),'weichen':('weicht','wich','ist gewichen'),'ausweichen':('weicht aus','wich aus','ist ausgewichen'),'ertönen':('ertönt','ertönte','hat ertönt'),'scannen':('scannt','scannte','hat gescannt'),
@@ -84,7 +84,7 @@ REM={}
 for w in 'Majestät Hoheit Herrin Fräulein Telegramm Kassette Kutsche Graf Gräfin Fürst Baron Herzog Thron Rüstung Bube Bursche Hauptmann Oberst Indianer'.split(): REM[w]='过时/历史用语'
 for w in 'Paris London Madrid Tokio Hongkong Amsterdam Barcelona Istanbul Stockholm Jerusalem'.split(): REM[w]='外国地名（德语写法和原文一样，没有学习价值）'
 for w in 'oh hey hi ah wow hm ha äh au ähm hmm hä bravo uh nö ey amen haha mhm bla aua och hopp hurra ups herrgott puh pardon oje jaja psst juhu peng boah ahh huch merci bumm uff ooh autsch jep adieu hahaha herrje halleluja ohh pfui hui'.split(): REM[w]='感叹词/拟声词（字幕里多，学习价值低）'
-REM['jawohl']='过时/军队用语'; REM['Weber']='人名（姓）'; REM['Arsch']='粗话'
+REM['jawohl']='过时/军队用语'; REM['Weber']='人名（姓）'
 _seen=set();_r=[]
 for x in r:
   k=(FIXCASE.get(x['lemma'],x['lemma']).lower(),x['pos'])
@@ -117,6 +117,7 @@ for x in r:
   if w in ('na','ach','tja','naja','aha','nee','halt','doch','mal','eben','ja','igitt'): o['tags'].append('语气词')
   if x.get('life'):o['tags'].append('生活')
   if x.get('film'):o['tags'].append('影视')
+  if x.get('slang'):o['tags'].append('粗口·只需听懂')
   g=gm.get(norm(w))
   o['game']=(g['zone'] if g else '');o['game_id']=(g['id'] if g else '')
   o['src']='生活词表' if x['src']=='life' else '词频'
