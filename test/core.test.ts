@@ -1478,8 +1478,8 @@ describe('0.6 日记残页', () => {
   it('pages sit on field scenes (one each); 4–6 sentences, 35–70 words, blanks of its own group, each blank once', () => {
     // 6000 词导入: the written pages followed their words to the new scenes; scenes without a page wait for new ones.
     const fields = new Set(SCENES.filter((sc) => sc.words && sc.region <= 3).map((sc) => sc.id));
-    // The new scene sheet (2026-11-25 re-cut) scatters the old pages' words; new pages per scene are being written.
-    expect(DIARY.length).toBeGreaterThanOrEqual(5);
+    // One page per scene of regions 1–3 (rewritten for the 2026-11-25 scene sheet).
+    expect(DIARY.length).toBeGreaterThanOrEqual(100);
     expect(new Set(DIARY.map((p) => p.scene)).size).toBe(DIARY.length);
     for (const p of DIARY) expect(fields.has(p.scene), p.scene).toBe(true);
     for (const p of DIARY) {
@@ -1502,7 +1502,7 @@ describe('0.6 场景插画', () => {
   it('pictures sit on field scenes and light ≥2 of their own words, inside the canvas', async () => {
     const { SCENE_ART, parseArt, ART_COLS, ART_ROWS } = await import('../src/data/sceneArt');
     // 6000 词导入: the drawn pictures followed their words to the new scenes; the rest wait for new pictures.
-    expect(Object.keys(SCENE_ART).length).toBeGreaterThanOrEqual(5); // re-drawn for the new scenes later
+    expect(Object.keys(SCENE_ART).length).toBeGreaterThanOrEqual(60);
     for (const sc of SCENES.filter((x) => x.words && SCENE_ART[x.id])) {
       const spec = SCENE_ART[sc.id];
       const tiles = parseArt(spec);

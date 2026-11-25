@@ -85,7 +85,8 @@ const DRAWN: Record<string, string> = {
 };
 
 /** 6000 词导入: each picture goes to the new scene holding most of its word tiles (sceneByWords); tiles of words not in
- *  that scene's group stay as dark decoration. A picture needs 2 lit words, else the scene has none until redrawn. */
+ *  that scene's group stay as dark decoration. Scenes left without a picture get one composed from the tiles the old
+ *  pictures drew for their words (each word keeps its tile), on two rows; a picture needs 2 lit words. */
 export const SCENE_ART: Record<string, string> = (() => {
   const words = (spec: string) => [...spec.matchAll(/:([a-z0-9-]+)/g)].map((m) => m[1]);
   const to = sceneByWords(Object.entries(DRAWN).map(([key, spec]) => ({ key, ids: words(spec) })));
@@ -96,6 +97,14 @@ export const SCENE_ART: Record<string, string> = (() => {
     const group = new Set(SCENE_WORDS[scene] ?? []);
     const moved = spec.replace(/:([a-z0-9-]+)/g, (m, id: string) => (group.has(id) ? m : ''));
     if (new Set(words(moved)).size >= 2) out[scene] = moved;
+  }
+  const tile = new Map<string, number>();
+  for (const spec of Object.values(DRAWN)) for (const m of spec.matchAll(/(\d+)@\d+,\d+:([a-z0-9-]+)/g)) if (!tile.has(m[2])) tile.set(m[2], +m[1]);
+  const SLOTS: Array<[number, number]> = [[1, 3], [3, 3], [5, 3], [7, 3], [2, 1], [4, 1], [6, 1], [8, 1], [9, 3]];
+  for (const [scene, ids] of Object.entries(SCENE_WORDS)) {
+    if (out[scene] || +scene.slice(1, scene.indexOf('-')) > 3) continue;
+    const lit = ids.filter((id) => tile.has(id)).slice(0, SLOTS.length);
+    if (lit.length >= 2) out[scene] = lit.map((id, i) => `${tile.get(id)}@${SLOTS[i][0]},${SLOTS[i][1]}:${id}`).join(' ');
   }
   return out;
 })();
