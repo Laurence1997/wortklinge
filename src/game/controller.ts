@@ -495,7 +495,7 @@ export class Controller {
       this.battle = startPhraseBattle(s, m.phrase, this.rng, m.zone);
     } else {
       this.entity = m;
-      this.battle = startBattle(s, m.word, this.rng, { isEcho: m.isEcho, tutorial, trial: opts.trial, rare: m.rare });
+      this.battle = startBattle(s, m.word, this.rng, { isEcho: m.isEcho, tutorial, trial: opts.trial, rare: m.rare, challenge: m.challenge });
       // 斩杀: a word being verified shouts no half sentence (it could show its letters).
       if (!tutorial && !opts.trial && !this.battle.verify) {
         const say = rollSaying(s, m.word, this.rng);
@@ -570,6 +570,8 @@ export class Controller {
   private eliteBattle(pick: ElitePick, seg: number, prev?: Battle): Battle {
     const b = startBattle(this.state, WORD_BY_ID[pick.words[seg]], this.rng, { elite: true });
     b.elite = { scene: pick.scene, words: pick.words, seg, review: pick.review };
+    // 挑战怪 in the 3rd part (rev 342): same elite level, but ×1.75 XP and the quick 斩杀 if written unseen.
+    if (pick.challengeSeg === seg) b.challenge = true;
     b.monster.dmg = Math.max(1, Math.round(b.monster.dmg * CONFIG.elite.dmgMult));
     if (prev) {
       b.fx = prev.fx;
@@ -624,7 +626,7 @@ export class Controller {
     const tut = firstPack ? 'packCharge' : null;
     const lead = this.pack[0];
     for (const o of picked.slice(0, max - 1)) {
-      const ob = startBattle(s, o.word, this.rng, { tutorial: tut });
+      const ob = startBattle(s, o.word, this.rng, { tutorial: tut, challenge: o.challenge });
       // A same-article pair stays a pair: a crowd (复数怪, always die) pairs with a crowd, a single with a single.
       if (o.word.art === m.word.art && !!ob.pluralMon !== !!lead.pluralMon && o.word.pl && o.word.pl !== '-' && !o.word.plOnly && !tut) {
         const k = CONFIG.phase.pluralHp;

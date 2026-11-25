@@ -28,6 +28,8 @@ export interface MonsterEntity {
   scripted?: 'loss' | 'trial';
   /** Rare (gold-rimmed) or 宝箱怪: flees at half HP / turn 3, drops an iron chest. */
   rare?: boolean;
+  /** 挑战怪 (rev 342): from the scene's challenge pool. */
+  challenge?: boolean;
   /** 残句 (0.5): a sentence monster carrying this short saying (no word nameplate). */
   phrase?: string;
   x: number;
@@ -256,6 +258,10 @@ export class WorldScene extends Phaser.Scene {
         }
       }
       const m = this.addMonster(p.word, p.kind, zone, spot.x * TILE + 8, spot.y * TILE + 8);
+      if (p.challenge) {
+        m.challenge = true;
+        this.styleMonster(m);
+      }
       if (p.phrase) this.phraseSlot(m, zone);
     }
     this.maybeRare(zone, picks.length, tiles);
@@ -279,6 +285,10 @@ export class WorldScene extends Phaser.Scene {
       if (!sp) continue;
       const m = this.addMonster(p.word, p.kind, zone, sp.x, sp.y);
       m.node = sp.sc.id;
+      if (p.challenge) {
+        m.challenge = true;
+        this.styleMonster(m);
+      }
       added++;
       if (p.phrase) {
         this.phraseSlot(m, zone);
@@ -306,7 +316,7 @@ export class WorldScene extends Phaser.Scene {
     const taken = this.aliveIds();
     for (const sc of scenesOf(this.map.region)) {
       if (sc.zone !== zone || sc.type !== 'field' || sc === nav.here || !nav.revealed(sc)) continue;
-      const pick = elitePick(s, sc, taken);
+      const pick = elitePick(s, sc, taken, undefined, Math.random);
       if (!pick) continue;
       const sp = nav.spot(zone, true, pick.words[0]);
       if (!sp || sp.sc.id !== sc.id) continue;
@@ -453,10 +463,11 @@ export class WorldScene extends Phaser.Scene {
     m.label.setColor(color);
     m.label.setShadow(0, 0, m.stage === 0 ? '#ff1830' : color, 6, true, true);
     m.teeth.setText('▼'.repeat(m.stage === 0 ? 4 : m.stage === 1 ? 2 : 1));
-    m.marker.setText(m.isEcho ? '回响' : m.elite ? '◈ 精英' : m.rare ? '◆' : m.kind === 'due' ? '!' : '');
+    m.marker.setText(m.isEcho ? '回响' : m.elite ? '◈ 精英' : m.rare ? '◆' : m.challenge ? '▲ 挑战' : m.kind === 'due' ? '!' : '');
     m.marker.setColor(m.isEcho || m.rare ? '#ffcf4a' : m.elite ? '#ff9a3c' : '#ff5a5a');
     if (m.rare) m.label.setShadow(0, 0, '#ffcf4a', 8, true, true);
     if (m.elite) m.label.setShadow(0, 0, '#ff9a3c', 8, true, true);
+    if (m.challenge && !m.elite && !m.rare && !m.isEcho) m.marker.setColor('#7fd4ff');
     this.updateGlyph(m);
     m.container.setScale(m.kind === 'shadow' ? 0.85 : 1);
   }

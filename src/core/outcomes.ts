@@ -1,3 +1,4 @@
+import { CHALLENGE_CFG, noteFirstTry } from './challenge';
 import type { Battle } from './combat';
 import { CONFIG, levelGapMult } from './config';
 import { makeItem, rollQuality } from './loot';
@@ -46,7 +47,10 @@ export function applyWin(s: GameState, b: Battle, rng: Rng, opts: { heal?: boole
   } else {
     flushSkill(s, w, b);
     if (b.hinted && s.words[w.id]) s.words[w.id].hinted = true;
+    // 挑战怪: written right unseen → 待验证 from tomorrow, now that the kill made its entry.
+    if (b.pendOnWin && s.words[w.id] && !s.words[w.id].pend && !s.words[w.id].retired) s.words[w.id].pend = t;
   }
+  if (!b.tutorial && !b.trial && !b.phrase && !b.isEcho) noteFirstTry(s, b.firstTry);
 
   let xp = b.kind === 'new' ? CONFIG.xp.newMonster : b.kind === 'due' ? CONFIG.xp.dueMonster : CONFIG.xp.shadowMonster;
   // 2026-11-24: only 复习怪 pay the review bonus; a learning respawn (认 → 用 → 写, minutes later) pays as due.
@@ -64,6 +68,7 @@ export function applyWin(s: GameState, b: Battle, rng: Rng, opts: { heal?: boole
   if (b.rusty) xp *= CONFIG.rusty.rewardMult;
   // 场景精英: each part pays what its word pays as a normal monster, ×1.2.
   if (b.elite) xp *= CONFIG.elite.rewardMult;
+  if (b.challenge) xp *= CHALLENGE_CFG.xpMult;
   if (b.tutorial === 'loss') xp = 0;
   xp = Math.round(xp);
 

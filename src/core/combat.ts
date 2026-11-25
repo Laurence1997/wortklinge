@@ -26,6 +26,7 @@ import { QTYPES, type QKey } from '../data/questionTypes';
 import { CLASSES, critRunNeeded, rank, resMax, shieldReflect, wrongHitShare, type ClassId } from './classes';
 import { gradeStorm, stormForms, type StormForm } from './storm';
 import { gradeGram, type GramTask } from './gram/task';
+import { CHALLENGE_CFG } from './challenge';
 
 /** callout = 点名 in packs (shout the target's article); conj = write a verb form (Lv12+); plural = write the plural (Lv11+). */
 /** storm = 书写者「墨水风暴」(write 2–3 forms of the target's word); steady = 守护者「稳住」(an easy question on the target's word). */
@@ -260,6 +261,13 @@ export interface Battle {
   stormHits?: number;
   /** 齐鸣 (rev 234): mates whose own word was written right this turn (word ids). */
   chorusHits?: string[];
+  /** 挑战怪 (rev 342): a word from the scene's challenge pool: your level + 2, ×1.75 XP, opens with a dictation,
+   *  and written right before its spelling showed it takes the field's quick 斩杀 even in its first fight. */
+  challenge?: boolean;
+  /** The first written answer of this fight: right by dictation (no spelling seen yet), right, or wrong. */
+  firstTry?: import('./challenge').FirstTry;
+  /** 挑战怪 written right unseen in its first fight: the word goes 待验证 once the kill creates its entry. */
+  pendOnWin?: boolean;
   /** 斩杀 (0.6.x): this fight verifies a 待验证 word ('pend') or a retired word's 30-day 回响 check ('recheck'):
    *  glitched name, first question fixed (typing, no hint). */
   verify?: 'pend' | 'recheck';
@@ -303,7 +311,7 @@ export function startBattle(
   s: GameState,
   word: Word,
   rng: Rng,
-  opts: { isEcho?: boolean; tutorial?: Tutorial; trial?: ClassId; rare?: boolean; elite?: boolean } = {},
+  opts: { isEcho?: boolean; tutorial?: Tutorial; trial?: ClassId; rare?: boolean; elite?: boolean; challenge?: boolean } = {},
 ): Battle {
   const t = now(s);
   const kind = kindOf(s, word, t);
@@ -314,7 +322,8 @@ export function startBattle(
   // A field you chose to enter above your level (越区引导) keeps its monsters' full level.
   // Review monsters (2026-11-21) stand at your level wherever they turn up: old word, current-region monster, full pay.
   const isReview = kind === 'due' && reviewMon(s.words[word.id], t);
-  const lvl = opts.isEcho ? Math.min(word.lvl, s.level) : isReview ? Math.max(word.lvl, s.level) : s.flags[`zoneOk_${word.zone}`] ? word.lvl : Math.min(word.lvl, s.level + CONFIG.monster.maxAbove(s.level));
+  const challenge = !!opts.challenge && !opts.isEcho && !opts.tutorial && !opts.trial;
+  const lvl = challenge ? s.level + CHALLENGE_CFG.levelAbove : opts.isEcho ? Math.min(word.lvl, s.level) : isReview ? Math.max(word.lvl, s.level) : s.flags[`zoneOk_${word.zone}`] ? word.lvl : Math.min(word.lvl, s.level + CONFIG.monster.maxAbove(s.level));
   const overdue = overdueSteps(s, word, t);
   // 锈名 (0.6, 27 级): a review monster 3+ intervals overdue rusts: one level up, ×1.3 HP, double reward.
   const rusty = isReview && overdue >= CONFIG.rusty.overdue && s.level >= CONFIG.rusty.from && !opts.tutorial && !opts.elite;
@@ -330,6 +339,7 @@ export function startBattle(
   const b: Battle = {
     word,
     kind,
+    challenge: challenge || undefined,
     reviewMon: isReview || undefined,
     overdue,
     rusty: rusty || undefined,
@@ -951,6 +961,8 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
   };
   // 斩杀 (0.6.x): a verification fight opens with typing, no hint (nouns with the article).
   if (b.verify && !b.verifyDone && move === 'attack') return { ...typed(), prompt: `${b.verify === 'recheck' ? '回响抽查' : '你昨天会写它'}——不看提示再写一次${isNoun ? '（带冠词）' : ''}` };
+  // 挑战怪 (rev 342): it opens with a dictation, no hint — know it and you can cut it today.
+  if (b.challenge && b.qIndex === 0 && move === 'attack' && canType) return { ...typed(), prompt: `挑战怪：比你高两级的词——看中文，不看提示直接写${isNoun ? '（带冠词）' : ''}` };
   const fresh = b.kind === 'new' && b.stage === 0 && b.step < 2;
   const am: Move = move === 'inscribe' || move === 'whisper' || move === 'chorus' ? 'attack' : move;
 
@@ -1523,7 +1535,13 @@ function cutCheck(s: GameState, b: Battle, q: Question, input: string, ok: boole
       report.cut = 'fail';
       notes.push(b.verify === 'recheck' ? '有点忘了，它回到复习里。' : '还没牢，它会按复习再来。会写 0/2');
     }
-  } else if (plainTyped && (ok || typo) && p && b.kind !== 'new' && !b.spellSeen && !b.verify && !b.pluralMon && !b.tutorial && !p.pend && !p.retired) {
+  } else if (plainTyped && (ok || typo) && b.challenge && b.kind === 'new' && !p && !b.spellSeen && !b.pendOnWin) {
+    // 挑战怪: written right in its first fight, before seeing it → 待验证 tomorrow like any field word.
+    b.pendOnWin = true;
+    report.cut = 'pend';
+    report.cutTypo = typo || undefined;
+    notes.push(typo ? `差一个字母：${fullForm(w)}。算你会，会写 1/2` : '✓ 挑战怪写对了 · 打赢它，明天再写对就能斩杀');
+  } else if (plainTyped && (ok || typo) && p && (b.kind !== 'new' || b.challenge) && !b.spellSeen && !b.verify && !b.pluralMon && !b.tutorial && !p.pend && !p.retired) {
     p.pend = now(s);
     report.cut = 'pend';
     report.cutTypo = typo || undefined;
@@ -1635,6 +1653,8 @@ export function resolveTurn(
       }
       else if (q.type === 'article' || q.type === 'pickDe' || q.type === 'pickZh' || q.type === 'callout' || q.type === 'cloze') b.readOk = (b.readOk ?? 0) + 1;
     }
+    // 挑战怪 share (rev 342): the first written answer of a fight, and whether its spelling had shown before.
+    if (!b.firstTry && !q.review && writtenQ) b.firstTry = !ok || q.whispered ? 'bad' : b.spellSeen ? 'ok' : 'dict';
     if (!q.review) cutFx = cutCheck(s, b, q, input, ok);
     else {
       reviewFx = reviewAnswer(s, b, q, ok);

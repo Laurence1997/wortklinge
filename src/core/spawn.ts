@@ -10,12 +10,15 @@ import type { Word, ZoneId } from './types';
 import { has } from './unlocks';
 import { WORDS } from '../data/words';
 import { prioritise } from './wordImport';
+import { challengeSlots, pickChallenge } from './challenge';
 
 export interface SpawnPick {
   word: Word;
   kind: 'new' | 'due' | 'shadow';
   /** 场景刷空: this slot is for a 残句 (the word only says where it stands). */
   phrase?: boolean;
+  /** 挑战怪 (rev 342): a harder word from the scene's challenge pool (your level + 2, ×1.75 XP). */
+  challenge?: boolean;
 }
 
 export function zoneWords(zone: ZoneId): Word[] {
@@ -76,7 +79,11 @@ export function pickSpawns(s: GameState, zone: ZoneId, count: number, alive: Set
   const prio = new Set(s.wordImport?.ids ?? []);
   if (prio.size) fresh.splice(0, fresh.length, ...prioritise(fresh, prio));
   const newSlots = Math.min(count - out.length, Math.max(1, Math.ceil(count * 0.6)));
-  for (const w of fresh.slice(0, newSlots)) out.push({ word: w, kind: 'new' });
+  // 挑战怪 (rev 342): a share of the new slots (10 / 25 / 40%, by your first-try record) goes to the challenge pool.
+  const nCh = has(s.level, 'typing') ? challengeSlots(s, newSlots, rng) : 0;
+  const ch = nCh ? pickChallenge(s, zone, nCh, alive, rng).filter((w) => eligible(s, w)) : [];
+  for (const w of fresh.slice(0, newSlots - ch.length)) out.push({ word: w, kind: 'new' });
+  for (const w of ch) out.push({ word: w, kind: 'new', challenge: true });
 
   // 越区引导 (2026-11-21): between reviews, practise what you can't write yet: not recognised first, then
   // recognised but not written. Words you can already write stay away until they are due, so a region you
@@ -88,7 +95,7 @@ export function pickSpawns(s: GameState, zone: ZoneId, count: number, alive: Set
     out.push({ word: w, kind: 'shadow' });
   }
   // A brand-new player has few learned words: top up with new ones.
-  for (const w of fresh.slice(newSlots)) {
+  for (const w of fresh.slice(newSlots - ch.length)) {
     if (out.length >= count) break;
     out.push({ word: w, kind: 'new' });
   }
