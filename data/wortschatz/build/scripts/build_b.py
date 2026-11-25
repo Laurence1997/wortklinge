@@ -128,7 +128,7 @@ for x in r:
   if w in ('na','ach','tja','naja','aha','nee','halt','doch','mal','eben','ja','igitt'): o['tags'].append('语气词')
   if x.get('life'):o['tags'].append('生活')
   if x.get('film'):o['tags'].append('影视')
-  if x.get('slang'):o['tags'].append('粗口·只需听懂')
+  if x.get('slang') or w in ('verdammt','verflucht','Idiot','geil','Mist'):o['tags'].append('粗口·只需听懂')  # 后 5 个：分组线程 2026-11-25 放进「只听懂」池
   g=gm.get(norm(w))
   o['game']=(g['zone'] if g else '');o['game_id']=(g['id'] if g else '')
   o['src']='生活词表' if x['src']=='life' else '词频'

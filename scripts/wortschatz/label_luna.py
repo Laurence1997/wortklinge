@@ -71,19 +71,18 @@ rows = list(csv.DictReader(open(os.path.join(ROOT, 'data/wortschatz/wortschatz.t
 done = {}
 if os.path.exists(OUT):
     for r in csv.DictReader(open(OUT, encoding='utf-8'), delimiter='\t'):
-        done[int(r['排名'])] = (r['情境'], r['功能线'], r['宿主情境'])
-todo = [x for x in rows if int(x['排名']) not in done]
+        done[r['原形']] = (r['情境'], r['功能线'], r['宿主情境'])   # keyed by word: ranks shift when words are added
+todo = [x for x in rows if x['原形'] not in done]
 LIMIT = int(os.environ.get('LIMIT', '0') or 0)
 if LIMIT: todo = todo[:LIMIT]
 print(len(rows), 'rows,', len(done), 'already labelled,', len(todo), 'to do', flush=True)
 batches = [todo[i:i + 60] for i in range(0, len(todo), 60)]
 with ThreadPoolExecutor(6) as ex:
     for out in ex.map(call, batches):
-        done.update(out)
+        for k, v in out.items(): done[next(x['原形'] for x in todo if int(x['排名']) == k)] = v
 os.makedirs(os.path.dirname(OUT), exist_ok=True)
 with open(OUT, 'w', encoding='utf-8') as f:
     f.write('排名\t原形\t情境\t功能线\t宿主情境\n')
     for x in rows:
-        k = int(x['排名'])
-        if k in done: f.write(f"{k}\t{x['原形']}\t" + '\t'.join(done[k]) + '\n')
+        if x['原形'] in done: f.write(f"{x['排名']}\t{x['原形']}\t" + '\t'.join(done[x['原形']]) + '\n')
 print('labelled', len(done), 'of', len(rows))
