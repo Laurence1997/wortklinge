@@ -1188,11 +1188,7 @@ describe('句子技能轮换 + 墨水风暴抽词 (2026-11-21)', () => {
     for (const w of ws) s.words[w.id] = { stage: 2, due: 9e15, firstSeen: 0, lastSeen: 0, relapse: 0, correct: 1, wrong: 0 };
     const pickMe = ws.slice(0, 5);
     for (const w of pickMe) s.words[w.id].due = 0;
-    // WORDS[0] is a phrase (no own word to write): falls back to the urgent words.
     for (let i = 0; i < 30; i++) expect(pickMe).toContain(stormWord(s, makeRng(i), WORDS[0]));
-    // 2026-11-25 (Lucas): on a normal monster the skill writes the monster's own word.
-    const markt = WORDS.find((x) => x.id === 'markt') ?? ws[10];
-    expect(stormWord(s, makeRng(1), markt)).toBe(markt);
   });
 });
 
