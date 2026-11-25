@@ -16,10 +16,11 @@ import { online } from '../net/online';
 import { h } from '../ui/dom';
 import { sfx } from './audio';
 import { ZONES, TILE, type NpcId } from './map';
+import { REGION_DEF, REGION_DEFS } from '../data/zones';
 import type { MonsterEntity, WorldScene } from './WorldScene';
 
 const NPC_ZH: Record<NpcId, string> = { hilde: '守火人 Hilde', greta: '导师 Greta', mira: '商人 Mira', konrad: '面包师傅 Konrad', examiner: '考官', brandt: '站长 Herr Brandt', lina: 'Lina', weber: '秩序会 Frau Weber' };
-const GATE_ZH: Record<number, string> = { 1: '穿过门回余烬营地', 2: '过桥回面包集市', 3: '过铁路桥去铁轨镇' };
+const GATE_ZH: Record<number, string> = { 1: '穿过门回余烬营地', 2: '过桥回面包集市', 3: '过铁路桥去铁轨镇', ...Object.fromEntries(REGION_DEFS.map((d) => [d.region, `去${d.zh}`])) };
 const OFFSETS = [[-28, -6], [28, -6], [0, -24], [-28, 16], [28, 16], [0, -38]];
 
 /** 0.6: each word's home scene (from the scene word groups). */
@@ -304,7 +305,7 @@ export class NodeNav {
     if (sc.bonfire && has(this.s.level, 'dailies')) things.push(h('button.btn', { disabled: busy, onclick: () => this.w.ctrl.showDailies() }, '📋 每日委托'));
     const npcs: NpcId[] = [...(sc.npcs ?? []), ...(sc.id === 'r3-platz' && this.s.flags.linaFreed ? (['lina'] as NpcId[]) : [])];
     for (const n of npcs) things.push(h('button.btn', { onclick: ia('npc', n) }, NPC_ZH[n]));
-    if (sc.door) things.push(h('button.btn', { onclick: ia('door') }, this.w.map.region === 3 ? '走上末班站台' : this.w.map.region === 2 ? '推开秤房的门' : '敲门'));
+    if (sc.door) things.push(h('button.btn', { onclick: ia('door') }, REGION_DEF[this.w.map.region] ? REGION_DEF[this.w.map.region]!.doorAct : this.w.map.region === 3 ? '走上末班站台' : this.w.map.region === 2 ? '推开秤房的门' : '敲门'));
     if (sc.gate) things.push(h('button.btn', { onclick: ia('gate', String(sc.gate)) }, GATE_ZH[sc.gate]));
     for (const sg of sc.signs ?? []) things.push(h('button.btn', { onclick: ia('sign', sg) }, stageOf(this.s, WORD_BY_ID[sg]) >= 3 ? `路牌：${fullForm(WORD_BY_ID[sg])}` : '路牌：▒▒▒'));
     const exits = neighbours(sc.id)
@@ -382,7 +383,7 @@ export class NodeNav {
   bigMap(): void {
     if (this.w.ctrl.uiBlocking() || this.hopping) return;
     const s = this.s;
-    const open = (r: number) => r <= this.w.map.region || !!s.flags[`seenArea${r}`] || (r === 2 && !!s.flags.bossKills && s.level >= CONFIG.region2Level) || (r === 3 && !!s.flags.boss2Kills);
+    const open = (r: number) => r <= this.w.map.region || !!s.flags[`seenArea${r}`] || (r === 2 && !!s.flags.bossKills && s.level >= CONFIG.region2Level) || (r === 3 && !!s.flags.boss2Kills) || (r >= 4 && !!s.flags[`boss${r - 1}Kills`]);
     this.w.ctrl.panels.showBigMap(
       h(
         'div.bigmap',

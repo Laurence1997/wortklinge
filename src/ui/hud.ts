@@ -1,4 +1,5 @@
-import { CONFIG, xpToNext } from '../core/config';
+import { xpToNext } from '../core/config';
+import { levelCapFor } from '../core/stages';
 import { comboTier } from '../core/combat';
 import { progressSummary } from '../core/srs';
 import { maxHp, type GameState } from '../core/state';
@@ -12,7 +13,7 @@ export function renderHud(s: GameState): void {
   const p = progressSummary(s, WORDS);
   const zone = zoneAt(s.pos.x, s.pos.y, s.region ?? 1);
   const tier = comboTier(s.combo);
-  const capped = s.level >= CONFIG.levelCap && s.xp >= xpToNext(s.level);
+  const capped = s.level >= levelCapFor(s.flags) && s.xp >= xpToNext(s.level);
   clear(el).append(
     h('div.name', h('span', s.name), h('span', `Lv ${s.level}`)),
     bar('hp', s.hp, maxHp(s), `生命 ${s.hp} / ${maxHp(s)}`),

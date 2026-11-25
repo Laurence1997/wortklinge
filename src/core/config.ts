@@ -50,8 +50,9 @@ export const CONFIG = {
   /** 0.3 提速 (curve 2): Lv1–5 need ×0.7 (was 0.25: sim put Lv5 at ~5 min), Lv6–10 ×0.4 of the base curve; Lv11+ unchanged. */
   earlyXpMult: (level: number) => (level <= 5 ? 0.7 : level <= 10 ? 0.4 : 1),
   xpPerHour: 1000,
-  /** 0.3 ships regions 1–2; the level cap keeps players inside released content. */
-  levelCap: 30,
+  /** Highest level of the released content (0.7 + 0.8: region 12, Lv120, shipped with the 6000-word import). Below it,
+   *  the cap is the end of the first 突破试炼 stage not passed yet (src/core/stages.ts: 30 / 80 / 120). */
+  levelCap: 120,
   /** 终极技能 (30 级, 句型填空版): both blanks right / one right. */
   ultimate: { both: 3, one: 1.5 },
   /** 现在完成时 (0.6 第 5 块): haben/sein stance from 21 (wrong picks free until 22), 填分词 by kind 21/24/27,

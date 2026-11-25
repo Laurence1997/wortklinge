@@ -1,6 +1,7 @@
 import { loadPron, MODEL_MB, pronForget, pronStatus } from './phoneme';
 import { icon, SLOT_TILE, portrait } from './icons';
 import { CONFIG, xpToNext } from '../core/config';
+import { levelCapFor } from '../core/stages';
 import { AFFIX_ZH, itemScore, mainStatText, QUALITY_ZH, requiredLevel, SLOT_ZH } from '../core/loot';
 import { cutStatus, kindOf, progressSummary, reviewMon, stageOf, STAGE_ZH } from '../core/srs';
 import { affinityOf, attack, critChance, dayKey, hintsPerFight, maxHp, now } from '../core/state';
@@ -150,7 +151,7 @@ export class Panels {
       return;
     }
     if (this.open === 'exam' && this.exam) {
-      panel.append(h('h2', h('span', 'A1 突破试炼 · 考官'), h('button.btn.ghost', { onclick: () => this.close() }, this.exam.over ? '离开 Esc' : '放弃 Esc')), this.examBody());
+      panel.append(h('h2', h('span', `${this.exam.stage ?? 'A1'} 突破试炼 · 考官`), h('button.btn.ghost', { onclick: () => this.close() }, this.exam.over ? '离开 Esc' : '放弃 Esc')), this.examBody());
       clear(el).append(panel);
       el.onclick = null;
       window.setTimeout(() => (el.querySelector('input.exam, button.exam-first') as HTMLElement | null)?.focus(), 0);
@@ -364,8 +365,8 @@ export class Panels {
     if (e.over) {
       const ok = examPassed(e);
       wrap.append(
-        h('h3', ok ? (e.grammarOnly ? '语法补考通过。' : 'A1 突破试炼通过。') : '这次没过。'),
-        h('p', ok ? '考官在你的证件上盖了一个章。A2 的路 0.7 开放，经验先替你存着（最多存一级）。' : `每部分要对 ${BREAK.pass} 题。不罚，随时再考，题目会换。`),
+        h('h3', ok ? (e.grammarOnly ? '语法补考通过。' : `${e.stage ?? 'A1'} 突破试炼通过。`) : '这次没过。'),
+        h('p', ok ? '考官在你的证件上盖了一个章。等级上限往上走了，存着的经验接着算。' : `每部分要对 ${BREAK.pass} 题。不罚，随时再考，题目会换。`),
         h('div.row', h('button.btn.primary', { onclick: () => this.close() }, '离开')),
       );
       return wrap;
@@ -1449,7 +1450,7 @@ export class Panels {
     ];
     const wrap = h('div');
     for (const [k, v] of rows) wrap.append(h('div.stat', h('span', { style: 'width:90px;flex:none' }, k), h('span', { style: 'text-align:right' }, v)));
-    wrap.append(h('p.small.muted', `0.5：第 1 区余烬营地（1–10 级）和第 2 区面包集市（11–20 级）。当前 ${s.level} 级，等级上限 ${CONFIG.levelCap}。`));
+    wrap.append(h('p.small.muted', `第 1–12 区（1–120 级）。当前 ${s.level} 级，等级上限 ${levelCapFor(s.flags)}（过突破试炼再往上）。`));
     return wrap;
   }
 }

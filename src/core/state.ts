@@ -4,6 +4,7 @@ import { hpBonus, type ClassId } from './classes';
 import type { Item, RegionNo, Slot, WordProgress } from './types';
 import { convertLegacyAffixes } from './loot';
 import { UNLOCK } from './unlocks';
+import { levelCapFor } from './stages';
 
 export interface DayLog {
   minutes: number;
@@ -241,7 +242,7 @@ export function addXp(s: GameState, amount: number): LevelUpResult {
   s.xp += Math.max(0, Math.round(amount));
   let capped = false;
   while (s.xp >= xpToNext(s.level)) {
-    if (s.level >= CONFIG.levelCap) {
+    if (s.level >= levelCapFor(s.flags)) {
       // At the cap keep at most one level's worth, like a breakthrough trial.
       s.xp = Math.min(s.xp, xpToNext(s.level));
       capped = true;
@@ -329,7 +330,7 @@ export function migrate(raw: unknown): GameState | null {
     let total = s.xp;
     for (let l = 1; l < s.level; l++) total += xpToNext(l, s.xpCurve ?? 1);
     let lvl = 1;
-    while (lvl < CONFIG.levelCap && total >= xpToNext(lvl)) total -= xpToNext(lvl++);
+    while (lvl < levelCapFor(s.flags) && total >= xpToNext(lvl)) total -= xpToNext(lvl++);
     if (lvl > s.level) {
       const gained: number[] = [];
       for (let l = s.level + 1; l <= lvl; l++) gained.push(l);

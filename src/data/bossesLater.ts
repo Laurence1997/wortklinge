@@ -14,6 +14,7 @@ import { numDe } from './boss2';
 import { normalize } from '../core/grading';
 import { pick, shuffle, type Rng } from '../core/rng';
 import type { LaterRegionNo } from '../core/types';
+import { xpToNext } from '../core/config';
 
 export interface LaterBoss {
   region: LaterRegionNo;
@@ -64,7 +65,6 @@ const ROOMS: Array<{ thing: string; art: 'der' | 'die' | 'das'; zh: string; room
 function roomQuestion(rng: Rng): BossQuestion {
   const r = pick(rng, ROOMS);
   const room = normalize(r.room);
-  const thing = normalize(r.thing);
   const nom = { der: 'der', die: 'die', das: 'das' }[r.art];
   const acc = { der: 'den', die: 'die', das: 'das' }[r.art];
   const stand = r.thing === 'Lampe' || r.thing === 'Spiegel' ? 'hängt' : r.thing === 'Bett' || r.thing === 'Sofa' ? 'steht' : 'steht';
@@ -238,7 +238,7 @@ const SHIP = (rng: Rng): BossQuestion[] => {
   return talk(rng, first, rest);
 };
 
-// ---- 7 · 粉笔原 · 小字条款 Das Kleingedruckte (read the contract; passive) ---------------------------------------
+// ---- 7 · 印章城 · 小字条款 Das Kleingedruckte (read the contract; passive) ---------------------------------------
 
 interface Contract {
   kind: string;
@@ -315,18 +315,18 @@ const VERB2 = '(?:war|hatte|habe|bin|konnte|musste|wollte|ging|kam|wohnte|spielt
 const CLOCK = (rng: Rng): BossQuestion[] => {
   const first = [
     q('child', ['Wie war es, als Sie ein Kind waren?', 'Erzählen Sie: Als Sie klein waren …'], '讲你小时候（als ich … war, + 主句动词在前）',
-      [`^als ich (?:ein kind|klein|jung|${S}) war ${VERB2} ich`, `^als ich (?:ein kind|klein|jung) war ich ${VERB2}`], 'Als ich ein Kind war, wohnte ich in Shanghai.',
+      [`^als ich (?:ein kind|klein|jung|${S}) war ${VERB2} \\w+`], 'Als ich ein Kind war, wohnte ich in Shanghai.',
       { traps: [[/^wenn ich (?:ein kind|klein) war/, '小时候是一段过去的时间，只这一次：用 als。'], [/^als ich (?:ein kind|klein) war ich /, 'als 从句后面主句动词在前：Als ich klein war, wohnte ich …']] }),
     q('arrive', ['Was war, als Sie in Deutschland angekommen sind?', 'Und als Sie hier ankamen?'], '讲你刚到德国那次（一次性的过去：als）',
-      [`^als ich (?:in deutschland |hier |nach deutschland )?(?:angekommen bin|ankam|gekommen bin|kam) ${VERB2} ich`], 'Als ich in Deutschland angekommen bin, war alles neu.',
+      [`^als ich (?:in deutschland |hier |nach deutschland )?(?:angekommen bin|ankam|gekommen bin|kam) ${VERB2} \\w+`], 'Als ich in Deutschland angekommen bin, war alles neu.',
       { traps: [[/^wenn ich /, '只发生过一次的过去事用 als，不用 wenn。']] }),
     q('always', ['Was haben Sie immer gemacht, wenn Sie Zeit hatten?', 'Und wenn Sie frei hatten?'], '讲每次有空时你做什么（每次都这样：wenn）',
-      [`^(?:immer )?wenn ich (?:zeit|frei|ferien|urlaub) hatte ${VERB2} ich`], 'Wenn ich Zeit hatte, habe ich gelesen.',
+      [`^(?:immer )?wenn ich (?:zeit|frei|ferien|urlaub) hatte ${VERB2} \\w+`], 'Wenn ich Zeit hatte, habe ich gelesen.',
       { traps: [[/^als ich (?:zeit|frei)/, '每次都这样的过去习惯用 wenn。']] }),
   ];
   const rest = [
     q('rain', ['Und wenn es regnete?', 'Was haben Sie gemacht, wenn es geregnet hat?'], '每次下雨时你做什么（wenn）',
-      [`^wenn es (?:regnete|geregnet hat) ${VERB2} ich`], 'Wenn es regnete, blieb ich zu Hause.',
+      [`^wenn es (?:regnete|geregnet hat) ${VERB2} \\w+`], 'Wenn es regnete, blieb ich zu Hause.',
       { traps: [[/^als es regnete/, '每次下雨都这样：用 wenn。']] }),
     q('yesterday', ['Was haben Sie gestern Abend gemacht?', 'Was haben Sie am Wochenende gemacht?'], '讲昨天晚上 / 周末做了什么（完成时）',
       [`^(?:gestern(?: abend)? |am wochenende )?(?:habe ich|bin ich|ich habe|ich bin) .+`], 'Gestern Abend habe ich gekocht.'),
@@ -366,7 +366,7 @@ const INTERVIEW = (rng: Rng): BossQuestion[] => {
       [`(?:stelle|arbeit|job|firma) (?:die|in der|bei der|wo|bei dem|in dem|der|das) `], 'Ich suche eine Stelle, die mir Spaß macht.',
       { traps: [[/^(?:eine )?(?:gute|interessante) (?:stelle|arbeit)$/, '用一个关系从句说清楚：eine Stelle, die …']] }),
     q('weak', ['Was ist Ihre größte Schwäche?', 'Was möchten Sie noch verbessern?'], '问你的短处',
-      [`^(?:meine (?:groesste )?schwaeche|ich bin manchmal|ich moechte .*verbessern|ich (?:muss|will) noch|mein deutsch)`], 'Manchmal bin ich zu ungeduldig.'),
+      [`^(?:meine (?:groesste )?schwaeche|ich bin manchmal|manchmal bin ich|ich moechte .*verbessern|ich (?:muss|will) noch|mein deutsch)`], 'Manchmal bin ich zu ungeduldig.'),
     q('ask', ['Haben Sie noch Fragen an uns?', 'Möchten Sie noch etwas wissen?'], '面试最后问问题',
       [`(?:wie (?:viele|lange|hoch|ist)|wann|was|gibt es|kann ich|wie viel|wer)`], 'Wie viele Stunden pro Woche arbeitet man?'),
   ];
@@ -480,7 +480,7 @@ export const LATER_BOSSES: LaterBoss[] = [
   {
     region: 7, name: '小字条款', de: 'Das Kleingedruckte', level: 68, hp: 10, title: '读到最后一行的人',
     intro: ['条款密室的墙上写满了字，越往下越小，最后一行小得像蚂蚁。那些蚂蚁在爬。', '「Unterschreiben Sie einfach hier. Das ist nur eine Formalität.」一支笔自己伸到你面前。', '系统：读屏幕上的条款回答问题。它催你签字时，先问清楚、先读完。'],
-    outro: ['最后一行小字被你读出来以后，所有条款都变大了，变得能看清了。', '「… gekündigt.」它说完，合同上的字一行一行褪色。', '系统：粉笔原的格子线淡了。人们开始先读后签。'],
+    outro: ['最后一行小字被你读出来以后，所有条款都变大了，变得能看清了。', '「… gekündigt.」它说完，合同上的字一行一行褪色。', '系统：印章城的章不再乱盖了。人们开始先读后签。'],
     healLine: 'Siehe Anhang B.', healZh: '见附件 B。（它要回血！下一题答对才能打断）',
     questions: SMALLPRINT,
   },
@@ -522,3 +522,13 @@ export const LATER_BOSSES: LaterBoss[] = [
 ];
 
 export const LATER_BOSS: Partial<Record<number, LaterBoss>> = Object.fromEntries(LATER_BOSSES.map((b) => [b.region, b]));
+
+/** First-kill XP ≈ 30% of the boss level's level-up XP (游戏设计 五, same ratio as 晚点之王's 1000 at Lv28). */
+export function laterBossXp(level: number): number {
+  return Math.round((xpToNext(level) * 0.3) / 10) * 10;
+}
+
+/** Gold grows with the level from 晚点之王's 350 at Lv28. */
+export function laterBossGold(level: number): number {
+  return Math.round((350 * level) / 28 / 10) * 10;
+}

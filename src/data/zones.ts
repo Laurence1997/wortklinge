@@ -90,8 +90,8 @@ export const REGION_DEFS: RegionDef[] = [
     enter: ['雾太浓了，连海浪的声音都像是隔着一层布。码头上的船没有名字，也没有方向。', '系统：在这里，要会说去哪里、怎么去、天气怎样、你想做什么。'],
   },
   {
-    region: 7, zh: '粉笔原', de: 'Kreidefeld', theme: '银行、保险、合同', stage: 'A2', look: 1,
-    hubZh: '粉笔原交易所', standZh: '交易所柜台', crossZh: '白线路口', gateCZh: '合同馆入口',
+    region: 7, zh: '印章城', de: 'Stempelstadt', theme: '银行、保险、合同', stage: 'A2', look: 1,
+    hubZh: '印章城交易所', standZh: '交易所柜台', crossZh: '盖章路口', gateCZh: '合同馆入口',
     fields: [
       { zh: '银行街', de: 'Bankstraße', style: 'shops', scenes: ['开户窗口', '取款机', '转账单', '账户流水', '信用卡', '贷款桌', '保险箱', '利息板'] },
       { zh: '保险巷', de: 'Versicherungsgasse', style: 'houses', scenes: ['健康保险', '责任险', '家财险', '车险', '理赔台', '损失报告', '保单柜', '投诉信'] },
@@ -99,7 +99,7 @@ export const REGION_DEFS: RegionDef[] = [
     ],
     doorZh: '条款密室', doorAct: '翻开最后一页',
     hiddenZh: '作废合同的档案柜', onwardZh: '钟声传来的方向',
-    enter: ['白色的粉笔线把这片原野分成一格一格。每一格都写着条款，字越往下越小。', '系统：在这里，读懂了才签字。看不懂就问，问了不丢人。'],
+    enter: ['城里每一面墙上都盖满了印章。每一张纸都写着条款，字越往下越小。', '系统：在这里，读懂了才签字。看不懂就问，问了不丢人。'],
   },
   {
     region: 8, zh: '钟楼城', de: 'Uhrstadt', theme: '作息、爱好、用 als / wenn 讲往事', stage: 'A2', look: 1,

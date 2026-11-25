@@ -65,7 +65,7 @@ const PLAN = {
   a: [{ x: 28, y: 16 }, { x: 28, y: 9 }, { x: 35, y: 9 }, { x: 39, y: 3 }, { x: 44, y: 14 }, { x: 44, y: 22 }, { x: 47, y: 4 }, { x: 35, y: 18 }],
   b: [{ x: 28, y: 33 }, { x: 28, y: 40 }, { x: 35, y: 41 }, { x: 38, y: 27 }, { x: 42, y: 34 }, { x: 35, y: 34 }, { x: 49, y: 35 }, { x: 47, y: 42 }],
   c: [{ x: 56, y: 13 }, { x: 65, y: 13 }, { x: 61, y: 7 }, { x: 56, y: 31 }, { x: 62, y: 19 }, { x: 68, y: 34 }, { x: 56, y: 40 }, { x: 63, y: 40 }],
-  door: { x: 68, y: 24 }, hide: { x: 69, y: 4 }, onward: { x: 67, y: 44 },
+  door: { x: 68, y: 24 }, hide: { x: 69, y: 4 }, onward: { x: 69, y: 44 },
 };
 
 function laterScenes(d: RegionDef): SceneDef[] {
@@ -203,7 +203,7 @@ export const SCENES: SceneDef[] = [
   // 零号站台: drawn on the timetable wall once die Fahrkarte reaches 归名.
   { id: 'r3-hide', region: 3, no: 31, zh: '零号站台', type: 'hidden', zone: 'fahrplanhalle', slots: 2, at: { x: 69, y: 4 }, hiddenBy: 'fahrkarte', lucky: 3 },
   // 0.7: the road on to 租屋城, drawn once 晚点之王 has fallen (like the rail bridge after 吞秤者).
-  { id: 'r3-onward', region: 3, no: 32, zh: '出城的末班车道', type: 'road', at: { x: 67, y: 44 }, gate: 4, openFlag: 'boss3Kills' },
+  { id: 'r3-onward', region: 3, no: 32, zh: '出城的末班车道', type: 'road', at: { x: 69, y: 44 }, gate: 4, openFlag: 'boss3Kills' },
   ...REGION_DEFS.flatMap(laterScenes),
 ];
 

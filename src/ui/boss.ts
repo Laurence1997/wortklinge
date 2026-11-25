@@ -6,6 +6,7 @@ import { BOSS2 } from '../data/boss2';
 import { BOSS3, boardText } from '../data/boss3';
 import { LINA } from '../data/lina';
 import { WEBER } from '../data/weber';
+import { LATER_BOSS } from '../data/bossesLater';
 
 const MIRA_ID = { name: '商人 Mira · 鉴定', de: 'Mira', healLine: '', healZh: '' };
 const GRETA_ENG = { name: '导师 Greta · 刻字', de: 'Greta', healLine: '', healZh: '' };
@@ -40,7 +41,7 @@ export class BossUI {
     const f = this.fight!;
     this.waiting = false;
     this.deadline = f.seconds ? Date.now() + f.seconds * 1000 : Infinity;
-    const meta = f.which === 6 ? single(f) : f.which === 5 ? WEBER : f.which === 4 ? LINA : f.which === 3 ? BOSS3 : f.which === 2 ? BOSS2 : BOSS1;
+    const meta = f.which === 7 ? LATER_BOSS[f.region!]! : f.which === 6 ? single(f) : f.which === 5 ? WEBER : f.which === 4 ? LINA : f.which === 3 ? BOSS3 : f.which === 2 ? BOSS2 : BOSS1;
     this.ctrl.speak(f.delayNow ? `${BOSS3.delayLine} ${f.asked}` : f.healing ? `${meta.healLine} ${f.asked}` : f.asked);
     this.render();
     window.clearInterval(this.tick);
@@ -92,8 +93,8 @@ export class BossUI {
     const f = this.fight!;
     const s = this.ctrl.state;
     const el = $('boss');
-    const BOSS = f.which === 6 ? single(f) : f.which === 5 ? WEBER : f.which === 4 ? LINA : f.which === 3 ? BOSS3 : f.which === 2 ? BOSS2 : BOSS1;
-    const killed = f.which === 6 ? false : f.which === 5 ? s.flags.weberForms : f.which === 3 ? s.flags.boss3Kills : f.which === 2 ? s.flags.boss2Kills : s.flags.bossKills;
+    const BOSS = f.which === 7 ? LATER_BOSS[f.region!]! : f.which === 6 ? single(f) : f.which === 5 ? WEBER : f.which === 4 ? LINA : f.which === 3 ? BOSS3 : f.which === 2 ? BOSS2 : BOSS1;
+    const killed = f.which === 7 ? s.flags[`boss${f.region}Kills`] : f.which === 6 ? false : f.which === 5 ? s.flags.weberForms : f.which === 3 ? s.flags.boss3Kills : f.which === 2 ? s.flags.boss2Kills : s.flags.bossKills;
     const pips = h('div.pips');
     for (let i = 0; i < f.maxHp; i++) pips.append(h(`div.pip${i < f.hp ? '' : '.off'}`));
     const letters = Math.round(((f.maxHp - f.hp) / f.maxHp) * s.name.length);
@@ -131,7 +132,7 @@ export class BossUI {
 
     clear(el).append(
       h('div.who', portrait(BOSS.name) ?? '', `${BOSS.de} · ${BOSS.name}`),
-      f.which >= 5 ? '' : h('div', { style: 'text-align:center' }, h('div.figure', '▓▒█▒▓'), h('div.tagplate', plate || '▒▒▒▒')),
+      f.which === 5 || f.which === 6 ? '' : h('div', { style: 'text-align:center' }, h('div.figure', '▓▒█▒▓'), h('div.tagplate', plate || '▒▒▒▒')),
       pips,
       f.healing && !this.waiting ? h('div', { style: 'color:var(--bad);font-family:var(--mono);font-size:18px' }, `「${BOSS.healLine}」`) : '',
       f.healing && !this.waiting ? h('div.askzh', BOSS.healZh) : '',
@@ -140,7 +141,7 @@ export class BossUI {
       f.delayNow && !this.waiting ? h('div.askzh', BOSS3.delayZh) : '',
       h('div.ask', f.asked),
       f.current.visual
-        ? h('div.tagplate', { style: `font-size:${f.which === 3 ? 18 : 22}px;margin:6px auto;display:inline-block;white-space:pre;text-align:left` }, f.current.visual)
+        ? h('div.tagplate', { style: `font-size:${f.which === 3 || f.which === 7 ? 18 : 22}px;margin:6px auto;display:inline-block;white-space:pre;text-align:left` }, f.current.visual)
         : f.board
           ? h('div.tagplate', { style: 'font-size:16px;margin:6px auto;display:inline-block;white-space:pre;text-align:left;opacity:.7' }, `Abfahrt\n${boardText(f.board)}`)
           : '',

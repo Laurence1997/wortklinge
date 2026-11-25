@@ -4,6 +4,7 @@
 // Generated from fixed seeds so every player walks the same streets. Both maps are 74×48.
 
 import { makeRng } from '../core/rng';
+import { SCENES } from '../data/world';
 import { FIELD_KEYS, REGION_DEF, REGION_DEFS, fieldLevels, type FieldStyle, type RegionDef } from '../data/zones';
 import type { RegionNo, ZoneId } from '../core/types';
 
@@ -561,6 +562,8 @@ function generateLater(d: RegionDef): MapData {
   };
   const fieldZones = zonesOf(d.region).filter((z) => z.monsters);
   d.fields.forEach((f, i) => blocks(fieldZones[i].rect, f.style));
+  // Scenes stand on open ground whatever the field style drew there (the route map sits on these tiles).
+  for (const sc of SCENES) if (sc.region === d.region) set(sc.at.x, sc.at.y, T.Road);
 
   // The town square: ash round the bonfire, a hall north, stalls south.
   const bonfire = { x: 12, y: 24 };

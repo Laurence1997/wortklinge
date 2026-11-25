@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { gradeMoechte, gradeTyped, normalize } from '../src/core/grading';
 import { WORD_BY_ID, WORDS } from '../src/data/words';
-import { SCENES } from '../src/data/world';
+import { AREAS, SCENES } from '../src/data/world';
 import { DIARY, parseLine } from '../src/data/diary';
 import { newGame, addXp, migrate, migrateSrs2, attack, gearTier, addGearKill, affinityOf } from '../src/core/state';
 import { applyWin } from '../src/core/outcomes';
@@ -164,6 +164,14 @@ describe('levels', () => {
     expect(xpToNext(1, 1)).toBe(1117);
     const s = newGame('T', 'student', T0);
     addXp(s, 1_000_000);
+    // 0.7/0.8: the cap is the end of the first 突破试炼 not passed yet (30 → 80 → 120).
+    expect(s.level).toBe(30);
+    s.flags.a1Passed = s.flags.a1Grammar = true;
+    addXp(s, 10_000_000);
+    expect(s.level).toBe(80);
+    s.flags.a2Passed = true;
+    s.flags.b1Passed = true;
+    addXp(s, 100_000_000);
     expect(s.level).toBe(CONFIG.levelCap);
   });
 
@@ -1361,8 +1369,8 @@ describe('0.5 小世界: scene data', async () => {
   });
   it('links are valid, everything is reachable from the hub, and each area has a side route', () => {
     for (const [a, b] of LINKS) expect(!!SCENE_BY_ID[a] && !!SCENE_BY_ID[b] && SCENE_BY_ID[a].region === SCENE_BY_ID[b].region).toBe(true);
-    for (const s of SCENES) expect(routeTo(({ 1: 'r1-camp', 2: 'r2-feuer', 3: 'r3-platz' } as const)[s.region], s.id), s.id).not.toBeNull();
-    for (const r of [1, 2, 3]) expect(SCENES.some((s) => s.region === r && s.hiddenBy)).toBe(true);
+    for (const s of SCENES) expect(routeTo(AREAS.find((a) => a.region === s.region)!.hub, s.id), s.id).not.toBeNull();
+    for (const r of AREAS.map((a) => a.region)) expect(SCENES.some((s) => s.region === r && s.hiddenBy)).toBe(true);
     expect(routeTo('r1-camp', 'r1-door')!.length).toBe(6);
   });
 });
@@ -1458,7 +1466,8 @@ describe('0.6 场景记忆法: word groups', () => {
 
 describe('0.6 日记残页', () => {
   it('one page per field scene; 4–6 sentences, 35–70 words, ≥6 of its own group (all if fewer), each blank once', () => {
-    const fields = SCENES.filter((sc) => sc.words);
+    // Regions 4–12 get their pages with the 6000-word import.
+    const fields = SCENES.filter((sc) => sc.words && sc.region <= 3);
     expect(DIARY.map((p) => p.scene).sort()).toEqual(fields.map((sc) => sc.id).sort());
     for (const p of DIARY) {
       const group = SCENES.find((sc) => sc.id === p.scene)!.words!;
@@ -1479,7 +1488,7 @@ describe('0.6 日记残页', () => {
 describe('0.6 场景插画', () => {
   it('every field scene of regions 1–2 has a picture with ≥3 of its own words, inside the canvas', async () => {
     const { SCENE_ART, parseArt, ART_COLS, ART_ROWS } = await import('../src/data/sceneArt');
-    for (const sc of SCENES.filter((x) => x.words)) {
+    for (const sc of SCENES.filter((x) => x.words && x.region <= 3)) {
       const spec = SCENE_ART[sc.id];
       expect(spec, sc.id).toBeTruthy();
       const tiles = parseArt(spec);
