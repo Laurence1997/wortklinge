@@ -12,6 +12,16 @@ VFIX={'verarschen':('verarscht','verarschte','hat verarscht'),'kotzen':('kotzt',
  'hinzufügen':('fügt hinzu','fügte hinzu','hat hinzugefügt'),'vorbeikommen':('kommt vorbei','kam vorbei','ist vorbeigekommen'),
  'herausstellen':('stellt heraus','stellte heraus','hat herausgestellt'),'vorhersagen':('sagt vorher','sagte vorher','hat vorhergesagt'),
  'herausgeben':('gibt heraus','gab heraus','hat herausgegeben'),'abbiegen':('biegt ab','bog ab','ist abgebogen')}
+# 2026-11-25 地图线/自查：分词或助动词写错
+VFIX.update({'schaffen':('schafft','schaffte','hat geschafft'),'bewegen':('bewegt','bewegte','hat bewegt'),'verwenden':('verwendet','verwendete','hat verwendet'),
+ 'auffallen':('fällt auf','fiel auf','ist aufgefallen'),'einfallen':('fällt ein','fiel ein','ist eingefallen'),'verlaufen':('verläuft','verlief','ist verlaufen'),
+ 'vergehen':('vergeht','verging','ist vergangen'),'entgehen':('entgeht','entging','ist entgangen'),'erfolgen':('erfolgt','erfolgte','ist erfolgt'),
+ 'verbleiben':('verbleibt','verblieb','ist verblieben'),'aussterben':('stirbt aus','starb aus','ist ausgestorben'),'auffliegen':('fliegt auf','flog auf','ist aufgeflogen'),
+ 'entfallen':('entfällt','entfiel','ist entfallen'),'versinken':('versinkt','versank','ist versunken'),'zurückbleiben':('bleibt zurück','blieb zurück','ist zurückgeblieben'),
+ 'widerfahren':('widerfährt','widerfuhr','ist widerfahren'),'hierbleiben':('bleibt hier','blieb hier','ist hiergeblieben'),'einspringen':('springt ein','sprang ein','ist eingesprungen'),
+ 'anfallen':('fällt an','fiel an','ist angefallen'),'entspringen':('entspringt','entsprang','ist entsprungen'),'zurücktreten':('tritt zurück','trat zurück','ist zurückgetreten'),
+ 'beitreten':('tritt bei','trat bei','ist beigetreten'),'austreten':('tritt aus','trat aus','ist ausgetreten'),'wegziehen':('zieht weg','zog weg','ist weggezogen'),
+ 'vorfahren':('fährt vor','fuhr vor','ist vorgefahren'),'einfahren':('fährt ein','fuhr ein','ist eingefahren')})
 for k,(a,b,c) in VFIX.items(): V[k]={'p3':a,'pr':b,'pf':c}
 ART={'m':'der','f':'die','n':'das'}
 # manual nouns: lemma -> (genus or 'pl', plural)
