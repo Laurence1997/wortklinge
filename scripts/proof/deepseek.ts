@@ -6,7 +6,7 @@
 // The key must never be committed or put into web code: locally use an env variable, in CI a repository secret.
 //
 // Results are cached by sentence hash in proof/out/deepseek-cache.json, so a rerun only sends new or changed text.
-// Env: DEEPSEEK_MODEL (default deepseek-chat), DEEPSEEK_LIMIT (max items this run, default all).
+// Env: DEEPSEEK_MODEL (default deepseek-flash), DEEPSEEK_THINKING=1, DEEPSEEK_LIMIT (max items this run, default all).
 
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -21,7 +21,9 @@ if (!KEY) {
   console.log('DEEPSEEK_API_KEY is not set: skipping the DeepSeek cross-check.');
   process.exit(0);
 }
-const MODEL = process.env.DEEPSEEK_MODEL ?? 'deepseek-chat';
+// deepseek-flash, thinking off: cheapest, and a yes/no check doesn't need reasoning. DEEPSEEK_THINKING=1 turns it on.
+const MODEL = process.env.DEEPSEEK_MODEL ?? 'deepseek-flash';
+const THINKING = process.env.DEEPSEEK_THINKING ? 'enabled' : 'disabled';
 const URL = process.env.DEEPSEEK_URL ?? 'https://api.deepseek.com/chat/completions';
 
 const all: Item[] = JSON.parse(readFileSync(join(root, 'proof/out/sentences.json'), 'utf8'));
@@ -61,13 +63,15 @@ async function ask(batch: Item[]): Promise<Map<number, Verdict>> {
         body: JSON.stringify({
           model: MODEL,
           temperature: 0,
+          thinking: { type: THINKING },
           response_format: { type: 'json_object' },
           messages: [{ role: 'system', content: SYSTEM }, { role: 'user', content: user }],
         }),
       });
       if (!r.ok) throw new Error(`DeepSeek ${r.status}: ${(await r.text()).slice(0, 300)}`);
       const j = await r.json();
-      const parsed = JSON.parse(j.choices[0].message.content);
+      const raw: string = j.choices[0].message.content ?? '';
+      const parsed = JSON.parse(raw.replace(/^```(?:json)?\s*|\s*```$/g, ''));
       const out = new Map<number, Verdict>();
       for (const is of parsed.issues ?? []) {
         const n = Number(is.n);
