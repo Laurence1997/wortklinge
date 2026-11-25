@@ -115,14 +115,18 @@ export function reviewMon(p: WordProgress | undefined, t: number): boolean {
 }
 
 /** Put a word at 归名 with its context schedule (clean = only the 30-day spot check). */
-export function setGuiming(p: WordProgress, t: number, clean: boolean): void {
+export function setGuiming(p: WordProgress, t: number, clean: boolean, relapsed = false): void {
+  const a = CONFIG.srs.adaptive;
+  const slips = p.flawN ?? (p.flaw ? 1 : 0);
   p.stage = 3;
   delete p.lapsed;
   delete p.flaw;
+  delete p.flawN;
   delete p.ctxDone;
   const c = CONFIG.srs.context;
+  // ctx = c.length − 1 marks the clean word's one 30-day spot check; 0 = the adaptive schedule.
   p.ctx = clean ? c.length - 1 : 0;
-  p.ivl = clean ? CONFIG.srs.spot : c[0];
+  p.ivl = clean ? CONFIG.srs.spot : relapsed ? a.restart : slips >= 2 ? a.slips : a.oneSlip;
   p.due = t + p.ivl;
 }
 
@@ -136,18 +140,20 @@ export function gapZh(ms: number): string {
 }
 
 /** A context review answered right: the next, longer gap (or done). Returns the next gap, null when done. */
-export function contextPass(s: GameState, w: Word, t = now(s)): number | null {
+export function contextPass(s: GameState, w: Word, t = now(s), quality: 'clean' | 'shaky' = 'clean'): number | null {
   const p = s.words[w.id];
   if (!p || p.stage !== 3) return null;
+  const a = CONFIG.srs.adaptive;
   const c = CONFIG.srs.context;
-  p.ctx = (p.ctx ?? 0) + 1;
   p.lastSeen = t;
-  if (p.ctx >= c.length) {
+  const prev = gapOf(p);
+  // The clean word's spot check, or a clean pass on a gap over 90 days: no more reviews.
+  if ((p.ctx ?? 0) >= c.length - 1 || (quality === 'clean' && prev > a.doneAfter)) {
     p.ctxDone = true;
     p.due = FAR;
     return null;
   }
-  p.ivl = c[p.ctx];
+  p.ivl = Math.round(prev * (quality === 'clean' ? a.clean : a.shaky));
   p.due = t + p.ivl;
   return p.ivl;
 }
@@ -237,7 +243,7 @@ export function canUse(w: Word): boolean {
  * @param opts.flaw a wrong answer or a 低语 on this word in this fight
  * @param opts.typed a typed question on it was answered right (cloze, dictation, conjugation)
  */
-export function recordKill(s: GameState, w: Word, typedFinal: boolean, slipped: boolean, t = now(s), opts: { used?: boolean; flaw?: boolean; typed?: boolean } = {}): KillOutcome {
+export function recordKill(s: GameState, w: Word, typedFinal: boolean, slipped: boolean, t = now(s), opts: { used?: boolean; flaw?: boolean; typed?: boolean; wrongs?: number } = {}): KillOutcome {
   const kind = kindOf(s, w, t);
   const from = stageOf(s, w, t);
   const p = s.words[w.id];
@@ -246,7 +252,7 @@ export function recordKill(s: GameState, w: Word, typedFinal: boolean, slipped: 
   if (kind === 'new' || !p) {
     // rev 52: every question on it right, no 低语, at least one typed → straight to 半名 (2 fights in all).
     const skip = !opts.flaw && !!opts.typed && !w.tutorial;
-    s.words[w.id] = { stage: skip ? 2 : 1, due: t + respawn, firstSeen: t, lastSeen: t, relapse: 0, correct: 0, wrong: 0, ...(opts.flaw ? { flaw: true } : {}) };
+    s.words[w.id] = { stage: skip ? 2 : 1, due: t + respawn, firstSeen: t, lastSeen: t, relapse: 0, correct: 0, wrong: 0, ...(opts.flaw ? { flaw: true } : {}), ...(opts.wrongs ? { flawN: opts.wrongs } : {}) };
     return { kind, from: 0, to: skip ? 2 : 1, guiming: false, needsTypedFinal: false };
   }
   p.lastSeen = t;
@@ -255,6 +261,7 @@ export function recordKill(s: GameState, w: Word, typedFinal: boolean, slipped: 
     return { kind, from, to: from, guiming: false, needsTypedFinal: false };
   }
   if (opts.flaw) p.flaw = true;
+  if (opts.wrongs) p.flawN = (p.flawN ?? 0) + opts.wrongs;
   if (from === 1) {
     if (!opts.used && canUse(w)) {
       p.due = t + respawn;
@@ -278,7 +285,7 @@ export function recordKill(s: GameState, w: Word, typedFinal: boolean, slipped: 
     return { kind, from, to: 2, guiming: false, needsTypedFinal: !typedFinal };
   }
   if (relapsed) p.relapse += 1;
-  setGuiming(p, t, !relapsed && !p.flaw && !p.hinted);
+  setGuiming(p, t, !relapsed && !p.flaw && !p.hinted, relapsed);
   return { kind, from, to: 3, guiming: true, needsTypedFinal: false };
 }
 

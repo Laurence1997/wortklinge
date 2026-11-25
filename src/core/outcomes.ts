@@ -38,7 +38,7 @@ export function applyWin(s: GameState, b: Battle, rng: Rng, opts: { heal?: boole
   const w = b.word;
   const wasNew = b.kind === 'new';
   // 残句: a sentence is not a word — nothing goes into the wordbook; its card drops instead.
-  const kill: KillOutcome = b.phrase ? { kind: 'new', from: 0, to: 0, guiming: false, needsTypedFinal: false } : recordKill(s, w, b.lastKillTyped, b.slipped, t, { used: b.usedOk, flaw: b.flawed || b.hinted, typed: (b.writeOk ?? 0) > 0 });
+  const kill: KillOutcome = b.phrase ? { kind: 'new', from: 0, to: 0, guiming: false, needsTypedFinal: false } : recordKill(s, w, b.lastKillTyped, b.slipped, t, { used: b.usedOk, flaw: b.flawed || b.hinted, typed: (b.writeOk ?? 0) > 0, wrongs: b.wrongs });
   let card: WinResult['card'];
   if (b.phrase?.cardId) {
     s.sayings ??= {};

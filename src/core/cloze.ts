@@ -220,6 +220,9 @@ export function caseClozes(w: Word, want: 'acc' | 'dat'): Array<{ shown: string;
 const COPULA = new Set(['bin', 'bist', 'ist', 'sind', 'seid', 'war', 'warst', 'waren', 'wart', 'sei', 'heiße', 'heißt', 'heißen', 'hieß', 'werde', 'wirst', 'wird', 'werden', 'werdet', 'wurde', 'bleibe', 'bleibst', 'bleibt', 'bleiben']);
 const MIDFIELD = new Set(['bitte', 'hier', 'da', 'dort', 'mal', 'jetzt', 'heute', 'morgen', 'gern', 'gerne', 'auch', 'noch', 'schon', 'immer', 'oft', 'mir', 'dir', 'ihm', 'uns', 'euch', 'ihnen']);
 
+/** A comma (relative clauses always have one) or a subordinating conjunction: a clause the pronoun swap can't handle. */
+const SUBCLAUSE = /,|\b(weil|dass|wenn|ob|obwohl|damit|bevor|nachdem|während|falls|sodass|seitdem)\b/i;
+
 export function pronounClozes(w: Word): Array<{ shown: string; full: string; zh: string; answer: string }> {
   if (!w.art) return [];
   const out: Array<{ shown: string; full: string; zh: string; answer: string }> = [];
@@ -237,6 +240,9 @@ export function pronounClozes(w: Word): Array<{ shown: string; full: string; zh:
     // A pronoun object jumps ahead of adverbs and dative objects («Mach sie bitte an», «Gib ihn mir»),
     // so a slot behind them can't simply be swapped.
     if (MIDFIELD.has(prev)) continue;
+    // 从句和关系从句 (6000-word examples have them): the slot's position rules differ there, so skip any sentence
+    // with a comma or a subordinating word / relative pronoun after a comma.
+    if (SUBCLAUSE.test(`${p.before} ${p.after}`)) continue;
     const plural = noun !== w.de || w.plOnly;
     const pron = art === 'den' && w.art === 'der' && !plural ? 'ihn' : art === 'das' && w.art === 'das' && !plural ? 'es' : art === 'die' && (plural || w.art === 'die') ? 'sie' : null;
     if (!pron) continue;

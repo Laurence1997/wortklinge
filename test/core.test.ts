@@ -87,16 +87,16 @@ describe('归名 (spaced repetition)', () => {
     const t4 = t3 + R;
     expect(recordKill(s, w, true, false, t4).guiming).toBe(true);
     expect(t4 - T0).toBeLessThan(HOUR);
-    // Not clean (a wrong answer on the way): 2 days, 1 week, 1 month, 3 months; never a monster on schedule.
+    // Not clean (one wrong answer on the way): first review after 3 days, then ×3 on a clean pass.
     const p = s.words[w.id];
-    expect(p.due).toBe(t4 + CONFIG.srs.context[0]);
+    expect(p.due).toBe(t4 + CONFIG.srs.adaptive.oneSlip);
     const t5 = p.due + 1000;
     expect(contextDue(p, t5)).toBe(true);
     expect(kindOf(s, w, t5)).toBe('guiming');
     expect(stageOf(s, w, t5)).toBe(3);
-    expect(contextPass(s, w, t5)).toBe(CONFIG.srs.context[1]);
+    expect(contextPass(s, w, t5)).toBe(CONFIG.srs.adaptive.oneSlip * 3);
     // Two gaps overdue: it turns back into a review monster (半名).
-    const t6 = p.due + 2 * CONFIG.srs.context[1];
+    const t6 = p.due + 2 * CONFIG.srs.adaptive.oneSlip * 3;
     expect(kindOf(s, w, t6)).toBe('due');
     expect(stageOf(s, w, t6)).toBe(2);
     expect(reviewMon(p, t6)).toBe(true);
@@ -120,7 +120,7 @@ describe('归名 (spaced repetition)', () => {
     recordKill(s, v, true, false, T0 + 800_000);
     const q = s.words[v.id];
     reviewedByWriting(s, v, T0 + DAY); // not due yet: pushed back by its gap
-    expect(q.due).toBe(T0 + DAY + CONFIG.srs.context[0]);
+    expect(q.due).toBe(T0 + DAY + CONFIG.srs.adaptive.oneSlip); // one wrong answer while learning: 3-day gap
     contextFail(s, v, q.due);
     expect(reviewMon(q, q.due)).toBe(true);
     expect(stageOf(s, v, q.due)).toBe(2);
@@ -1690,7 +1690,7 @@ describe('语境复习 in a fight (2026-11-24)', () => {
     const r = resolveTurn(s, b, 'attack', q, q.answer!, makeRng(4));
     expect(r.review?.ok).toBe(true);
     expect(r.playerDamage).toBeGreaterThan(0);
-    expect(s.words[rv.id].due).toBeGreaterThan(t + CONFIG.srs.context[1] - 60_000);
+    expect(s.words[rv.id].due).toBeGreaterThan(t + CONFIG.srs.context[0] * CONFIG.srs.adaptive.clean - 60_000); // clean pass: gap ×3
     expect(makeQuestion(s, b, 'attack', makeRng(5)).review).toBeUndefined(); // once per fight
     // Wrong in another fight: the word relapses to a 半名 review monster.
     s.words[rv.id].due = t - 1000;

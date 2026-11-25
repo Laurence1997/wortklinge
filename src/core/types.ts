@@ -93,6 +93,8 @@ export interface WordProgress {
   lapsed?: boolean;
   /** Before 归名: a wrong answer or a 低语 on it (a clean 归名 skips the review schedule, rev 51). */
   flaw?: boolean;
+  /** Before 归名: how many answers on it were wrong (sets the first review gap: 1 → 3 days, 2+ → 1 day). */
+  flawN?: number;
 }
 
 export type Quality = 'white' | 'green' | 'purple' | 'orange';

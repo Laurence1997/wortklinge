@@ -312,6 +312,8 @@ export interface Battle {
   reviewMon?: boolean;
   /** A wrong answer or a 低语 on this word in this fight (a clean 归名 skips the review schedule). */
   flawed?: boolean;
+  /** Wrong answers on this word this fight (复习按表现: the first gap after 归名). */
+  wrongs?: number;
   outcome: null | 'win' | 'lose' | 'fled';
   log: LogLine[];
   recap: string[];
@@ -1714,6 +1716,7 @@ export function resolveTurn(
       if (s.words[b.word.id]) delete s.words[b.word.id].hinted;
     }
     if (!q.review && !q.partner && q.type !== 'saying' && (!ok || q.whispered)) b.flawed = true;
+    if (!q.review && !q.partner && q.type !== 'saying' && !ok) b.wrongs = (b.wrongs ?? 0) + 1;
     if (ok && !q.whispered && !q.review && !q.partner && q.type === 'cloze') b.usedOk = true;
     if (ok && !q.whispered && !q.review && !q.partner) {
       if (q.type === 'typed' || q.type === 'conj' || q.type === 'plural' || q.type === 'sentence' || stormAll || (q.type === 'cloze' && q.clozeMode !== 'pick')) {

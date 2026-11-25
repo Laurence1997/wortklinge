@@ -64,7 +64,7 @@ export function showTitle(opts: {
     h(
       'div.form.panel',
       h('label', h('span', '名字（首领会问你「Wie heißt du?」）'), name),
-      h('label', h('span', '出身（第 2 区起，对应主题的怪伤害 +10%）'), origin),
+      h('label', h('span', '出身（只是背景设定，不加数值）'), origin),
       h('label', h('span', '外观（联机时别人看到的样子）'), look.el),
     ),
     h(
