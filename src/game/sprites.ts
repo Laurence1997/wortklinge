@@ -53,6 +53,9 @@ function px(c: Ctx, x: number, y: number, color: string, w = 1, h = 1) {
 function drawTile(c: Ctx, t: number, ox: number, oy: number, seed: number) {
   const r = makeRng(seed);
   const fill = (color: string) => px(c, ox, oy, color, TILE, TILE);
+  // new layout tiles fall back to their nearest classic look on the dark maps
+  if (t === T.Rail) t = T.Road;
+  else if (t === T.Keep) t = T.Wall;
   switch (t) {
     case T.Ground:
       fill(PAL.ground);
@@ -217,6 +220,8 @@ export interface BrightStyle {
   tree: number[];
   crate: number[];
   crop?: number[];
+  /** Castle walls / theatre seats (T.Keep), picked by column. */
+  keep?: number[];
   water?: string;
   /** Light colour grade over the whole map (soft-light), e.g. a cool mist for the harbour. */
   tint?: string;
@@ -231,10 +236,12 @@ const F = (n: number) => 1000 + n;
 const CROPS = [F(5), F(6), F(18), F(30), F(42), F(54), F(17), F(41)];
 const base = { rubble: [43, 5], tree: [4, 16, 28, 5], crate: [130, 131, 106], crop: CROPS, water: '#5ab4dc' };
 export const BRIGHT: Record<number, BrightStyle> = {
-  // 余烬营地 / 面包集市 / 铁轨镇
+  // 余烬营地: a wild meadow camp, red tents, sandy tracks
   1: { ...base, ground: GRASS, road: SAND, ash: [39, 40, 41, 42], roof: 'red', wall: 'wood', rubble: [43, 5, 29], fog: '#e8efe4' },
-  2: { ...base, ground: GRASS, road: SAND, ash: [39, 41], roof: 'red', wall: 'wood', tree: [3, 15, 27, 4], crate: [130, 106, 57], tint: '#ffd27a', tintAlpha: 0.12, fog: '#f3ecd8' },
-  3: { ...base, ground: GRASS, road: STONE, ash: STONE, roof: 'blue', wall: 'stone', tree: [16, 28, 4], fog: '#e6ecef' },
+  // 面包集市: golden wheat light, wooden stalls and red roofs, hay bales
+  2: { ...base, ground: MEADOW, road: SAND, ash: [25, 24, 26], roof: 'red', wall: 'wood', tree: [3, 15, 27, 4], crate: [130, 106, 57, F(96), F(97)], crop: [F(66), F(66), F(67), F(54), F(42)], tint: '#ffcf70', tintAlpha: 0.16, water: '#62c4e0', fog: '#f6eed6' },
+  // 铁轨镇: rust and brick, autumn trees, gravel tracks
+  3: { ...base, ground: GRASS, road: [40, 39, 41], ash: STONE, roof: 'red', wall: 'stone', tree: [3, 15, 27], crate: [130, 131, 107], tint: '#e0905a', tintAlpha: 0.15, fog: '#eee4dc' },
   // 租屋城: stone terraces, blue roofs, cobbled streets
   4: { ...base, ground: GRASS, road: STONE, ash: STONE, roof: 'blue', wall: 'stone', tree: [5, 28, 16], fog: '#eef0f2' },
   // 泉疗镇: flower meadows round the spring, warm pink light
@@ -249,13 +256,18 @@ export const BRIGHT: Record<number, BrightStyle> = {
   10: { ...base, ground: GRASS, road: STONE, ash: STONE, roof: 'blue', wall: 'stone', tree: [16, 28], tint: '#b0a8ff', tintAlpha: 0.12, fog: '#ecebf6' },
   // 心巷: cottages and gardens, soft rose light
   12: { ...base, ground: MEADOW, road: SAND, ash: [39], roof: 'red', wall: 'wood', rubble: [29, F(83)], tree: [4, 5, 15, F(39)], tint: '#ff8fbf', tintAlpha: 0.12, fog: '#f8ecf1' },
-  // B2 (议会堡 石灰蓝, 铸币场 金, 面具剧场 紫红, 档案深处 羊皮纸, 天平庭 冷白, 沉默之心 淡)
-  13: { ...base, ground: GRASS, road: STONE, ash: STONE, roof: 'blue', wall: 'stone', tree: [5, 16, 28], tint: '#9fc3e6', tintAlpha: 0.16, fog: '#e9eff5' },
-  14: { ...base, ground: [39, 39, 40, 39, 41, 39, 42], road: SAND, ash: [41, 42], roof: 'red', wall: 'wood', tree: [3, 27], crate: [130, 106, 57, F(97)], tint: '#ffd36b', tintAlpha: 0.16, fog: '#f4ecd8' },
-  16: { ...base, ground: MEADOW, road: STONE, ash: STONE, roof: 'red', wall: 'stone', tree: [5, 16], tint: '#d58ad8', tintAlpha: 0.15, fog: '#f3eaf4' },
-  17: { ...base, ground: GRASS, road: SAND, ash: [39, 40], roof: 'red', wall: 'wood', tree: [3, 15, 27], tint: '#e8c48f', tintAlpha: 0.2, fog: '#f1eadf' },
-  18: { ...base, ground: GRASS, road: STONE, ash: STONE, roof: 'blue', wall: 'stone', tree: [16, 28], tint: '#dfe8f0', tintAlpha: 0.2, fog: '#f2f5f8' },
-  20: { ...base, ground: GRASS, road: STONE, ash: STONE, roof: 'blue', wall: 'stone', tree: [16, 28, 5], tint: '#c8c8c8', tintAlpha: 0.22, fog: '#efefef' },
+  // 议会堡: limestone blue, castle brick, deep moat
+  13: { ...base, ground: GRASS, road: STONE, ash: STONE, roof: 'blue', wall: 'stone', keep: [126], tree: [16, 28, 4], tint: '#9fc3e6', tintAlpha: 0.2, water: '#3d8fc4', fog: '#e9eff5' },
+  // 铸币场: gold light on canals and merchant houses
+  14: { ...base, ground: [0, 0, 0, 1], road: SAND, ash: [25], roof: 'red', wall: 'wood', tree: [4, 5], crate: [130, 106, 57, F(97)], tint: '#ffd36b', tintAlpha: 0.2, water: '#3fa7c9', fog: '#f4ecd8' },
+  // 面具剧场: magenta evening, wooden benches round the stage, flower gardens
+  16: { ...base, ground: MEADOW, road: SAND, ash: [39, 40], roof: 'red', wall: 'stone', keep: [F(98), F(99)], rubble: [F(83), 29, 2], tree: [5, 16], tint: '#d58ad8', tintAlpha: 0.2, fog: '#f3eaf4' },
+  // 档案深处: parchment brown, hedge rows, ruins
+  17: { ...base, ground: GRASS, road: [40, 39], ash: [41, 42, 39], roof: 'red', wall: 'wood', tree: [5, 5, 5, 4], rubble: [43, 105], tint: '#e8c48f', tintAlpha: 0.25, fog: '#f1eadf' },
+  // 天平庭: cold white marble, pools and columns
+  18: { ...base, ground: GRASS, road: STONE, ash: STONE, roof: 'blue', wall: 'stone', tree: [16, 28], tint: '#dfe8f0', tintAlpha: 0.3, water: '#7cc2df', fog: '#f2f5f8' },
+  // 沉默之心: a pale, almost colourless lake
+  20: { ...base, ground: GRASS, road: [40, 41], ash: STONE, roof: 'blue', wall: 'stone', tree: [16, 28, 5], tint: '#c8c8c8', tintAlpha: 0.35, water: '#9fbfcc', fog: '#efefef' },
 };
 
 function rawTile(town: CanvasImageSource, farm: CanvasImageSource | null, tile: number, c: CanvasRenderingContext2D, x: number, y: number) {
@@ -342,6 +354,20 @@ export function renderBrightMap(m: MapData, town: CanvasImageSource, farm: Canva
           rawTile(town, farm, F(1), c, ox, oy);
           rawTile(town, farm, pick(style.crop ?? CROPS), c, ox, oy);
           break;
+        case T.Rail:
+          rawTile(town, farm, 40, c, ox, oy);
+          c.fillStyle = '#6b4226';
+          for (let k = 1; k < 16; k += 4) c.fillRect(ox + k, oy + 3, 2, 10);
+          c.fillStyle = '#a7adb5';
+          c.fillRect(ox, oy + 5, TILE, 1);
+          c.fillRect(ox, oy + 10, TILE, 1);
+          break;
+        case T.Keep: {
+          const ks = style.keep ?? [126];
+          if (ks[0] >= 1000) ground();
+          rawTile(town, farm, ks[x % ks.length], c, ox, oy);
+          break;
+        }
         case T.Lamp:
           ground();
           c.fillStyle = '#3b3a44';
