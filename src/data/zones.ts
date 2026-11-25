@@ -15,7 +15,7 @@
 // streets and pick the street style.
 //
 // Scene names, field names and boss lines are written by Claude for the docs thread to confirm.
-import type { MapRegionNo, ZoneId } from '../core/types';
+import type { ErodeSeg, MapRegionNo, ZoneId } from '../core/types';
 import { LEX_ERODED, LEX_FIELDS, LEX_SCENES } from './lexicon';
 
 export type FieldStyle = 'shops' | 'houses' | 'platforms' | 'stalls' | 'sheds' | 'docks' | 'grove' | 'yard';
@@ -36,8 +36,8 @@ export interface RegionDef {
   de: string;
   /** 主题. */
   theme: string;
-  /** 大区 (A2 日常 / B1 职场). */
-  stage: 'A2' | 'B1';
+  /** 大区 (A2 日常 / B1 职场 / B2 社会 / C1 回顾). */
+  stage: 'A2' | 'B1' | 'B2' | 'C1';
   /** Kenney Tiny Town tile set of region 1, 2 or 3 (src/game/sprites.ts) the street map borrows. */
   look: 1 | 2 | 3;
   /** Scene names of the town: the square with the bonfire and the market stalls. */
@@ -52,6 +52,8 @@ export interface RegionDef {
   doorAct: string;
   /** Hidden side path (drawn once the first word of field C's second scene is 归名). */
   hiddenZh: string;
+  /** C1 regions have no words of their own: the word whose 归名 draws the hidden path. */
+  hiddenSign?: string;
   /** The road on to the next region (opens once this region's boss has fallen). */
   onwardZh: string;
   /** First steps into the town. */
@@ -147,14 +149,95 @@ export const REGION_DEFS: RegionDef[] = [
       { zh: '冷漠之屋', de: 'Haus der Kälte', style: 'yard' },
     ],
     doorZh: '冷漠之心', doorAct: '走进最后那扇门',
-    hiddenZh: '寄不出去的信', onwardZh: '议会堡的路（B2 以后开放）',
+    hiddenZh: '寄不出去的信', onwardZh: '去议会堡的路',
     enter: ['巷子里的人擦肩而过，谁也不看谁。他们不是忘了词，是不在乎了。', '系统：这里的怪不是物，是感受。说出来，它才会疼。'],
+  },
+  // ---- 121–200 级 (游戏设计 四「121–200 级」, rev 488; Lucas 2026-11-25 agreed the regions, story and bosses) ----
+  // B2 regions: new words only in 文章群怪 (article scenes); C1 regions add no words, their fields spawn review and
+  // challenge monsters from everything learned. Field names are the doc's; scene and town names are Claude's.
+  {
+    region: 13, zh: '议会堡', de: 'Ratsburg', theme: '社会、政治、辩论', stage: 'B2', look: 1,
+    palette: ['#080b0f', '#1f2a36', '#3a4f63', '#8fb0cc', '#e3eef7'],
+    hubZh: '议会堡前庭', standZh: '前庭报摊', crossZh: '辩论路口', gateCZh: '礼堂台阶',
+    fields: [
+      { zh: '市政广场', de: 'Rathausplatz', style: 'yard' },
+      { zh: '报亭街', de: 'Kioskgasse', style: 'shops' },
+      { zh: '大学礼堂', de: 'Aula', style: 'platforms' },
+    ],
+    doorZh: '议事厅', doorAct: '走上议事厅的讲台',
+    hiddenZh: '没人旁听的旁听席', onwardZh: '去铸币场的大道',
+    enter: ['议会堡的钟每小时响一次。钟一停，大厅里就有人站起来讲话，讲了很久，什么也没说。', '系统：从这里开始是 B2。新词藏在文章里；说一件事，要说清楚你怎么看、为什么、举个例子。'],
+  },
+  {
+    region: 14, zh: '铸币场', de: 'Münzhof', theme: '经济、消费、环境', stage: 'B2', look: 3,
+    palette: ['#0d0a03', '#2e2410', '#5a4520', '#c99a3a', '#f7e2a8'],
+    hubZh: '铸币场门廊', standZh: '兑换柜台', crossZh: '行情路口', gateCZh: '垃圾山脚',
+    fields: [
+      { zh: '交易所', de: 'Börse', style: 'shops' },
+      { zh: '商场废墟', de: 'Kaufhausruine', style: 'stalls' },
+      { zh: '垃圾山', de: 'Müllberg', style: 'sheds' },
+    ],
+    doorZh: '金库', doorAct: '推开金库的门',
+    hiddenZh: '停工的旧铸币车间', onwardZh: '穿过林底才到的剧场路',
+    enter: ['铸币场的机器还在压硬币，硬币上没有数字。人们排着队，把手里的东西一样一样换掉。', '系统：在这里，要读懂数字和图表：涨了多少、跌到多少、值不值得。'],
+  },
+  {
+    region: 16, zh: '面具剧场', de: 'Maskentheater', theme: '文化、艺术、科学、教育', stage: 'B2', look: 1,
+    palette: ['#100510', '#361235', '#622460', '#d0559f', '#fbd3ec'],
+    hubZh: '剧场前厅', standZh: '售票窗口', crossZh: '散场路口', gateCZh: '实验室走廊',
+    fields: [
+      { zh: '后台', de: 'Hinterbühne', style: 'houses' },
+      { zh: '博物馆', de: 'Museum', style: 'yard' },
+      { zh: '实验室', de: 'Labor', style: 'platforms' },
+    ],
+    doorZh: '主舞台', doorAct: '拉开主舞台的幕布',
+    hiddenZh: '没演完的那一幕', onwardZh: '剧场地下的档案楼梯',
+    enter: ['剧场里每个人都戴着面具，台词说得很漂亮。你分不清哪一句是真的。', '系统：在这里，要读书评和影评，听出一句话是真话、转述，还是假话。'],
+  },
+  {
+    region: 17, zh: '档案深处', de: 'Archivtiefe', theme: '历史、记忆', stage: 'C1', look: 2,
+    palette: ['#0d0904', '#33261a', '#5e4830', '#c9a878', '#f6e8cc'],
+    hubZh: '档案馆门厅', standZh: '借阅台', crossZh: '卷宗路口', gateCZh: '纪念碑园门口',
+    fields: [
+      { zh: '地下档案室', de: 'Kellerarchiv', style: 'houses' },
+      { zh: '旧报库', de: 'Zeitungsarchiv', style: 'sheds' },
+      { zh: '纪念碑园', de: 'Denkmalgarten', style: 'grove' },
+    ],
+    doorZh: '封存的卷宗室', doorAct: '打开封存的卷宗',
+    hiddenZh: 'Ilse Lehmann 的工作台', hiddenSign: 'archiv', onwardZh: '去天平庭的长廊',
+    enter: ['档案馆的柜子一直排到看不见的地方。有些抽屉是空的，像被人一页一页撕掉了。', '系统：从这里开始是 C1，不再有新词。你已经会的词，要用来读懂一段被抹去的过去。'],
+  },
+  {
+    region: 18, zh: '天平庭', de: 'Richterhof', theme: '法律、论证、哲学', stage: 'C1', look: 1,
+    palette: ['#0a0c0e', '#2a2f35', '#59626b', '#c5ced6', '#f7fafc'],
+    hubZh: '天平庭前厅', standZh: '书记官的桌子', crossZh: '证词路口', gateCZh: '哲学系大门',
+    fields: [
+      { zh: '法庭', de: 'Gerichtssaal', style: 'yard' },
+      { zh: '图书馆', de: 'Bibliothek', style: 'houses' },
+      { zh: '废弃哲学系', de: 'Philosophicum', style: 'platforms' },
+    ],
+    doorZh: '审判庭', doorAct: '走进审判庭',
+    hiddenZh: '没人借过的书架', hiddenSign: 'richter', onwardZh: '走向沉默之心的路',
+    enter: ['天平庭里只有一架天平。左边放证据，右边放话。它一直在晃。', '系统：在这里，光说「我觉得」不够。论点、理由、例子、反驳、结论，一样都不能少。'],
+  },
+  {
+    region: 20, zh: '沉默之心', de: 'Herz der Stille', theme: '回顾、演讲', stage: 'C1', look: 1,
+    palette: ['#050505', '#1c1c1c', '#3d3d3d', '#a8a8a8', '#f2f2f2'],
+    hubZh: '最后的篝火', standZh: '篝火旁的空位', crossZh: '回声路口', gateCZh: '开场的篝火入口',
+    fields: [
+      { zh: '失语的城市', de: 'Stumme Stadt', style: 'houses' },
+      { zh: '回声走廊', de: 'Echogang', style: 'platforms' },
+      { zh: '开场的篝火', de: 'Erstes Feuer', style: 'grove' },
+    ],
+    doorZh: '沉默', doorAct: '开口说话',
+    hiddenZh: '没有名字的那条巷子', hiddenSign: 'name', onwardZh: '',
+    enter: ['这里什么声音都没有。你走过的每一个地方，在这里都只剩下轮廓。', '系统：最后一区。这里的怪都是你学过的词和句子。说给它听。'],
   },
 ];
 
 export const REGION_DEF: Partial<Record<number, RegionDef>> = Object.fromEntries(REGION_DEFS.map((d) => [d.region, d]));
 
-/** 林底 (was region 11) moves past level 120 with 枯林之母 (游戏设计 rev 341). Kept here, not built. */
+/** 林底 (was region 11): since rev 488 it is 蚀变③ on regions 4–7 (ERODE_DEFS), not a map of its own. Kept for reference. */
 export const PARKED_REGIONS: Array<Omit<RegionDef, 'region'> & { region: number }> = [
   {
     region: 11, zh: '林底', de: 'Waldgrund', theme: '自然、环境、动物', stage: 'B1', look: 2,
@@ -182,14 +265,16 @@ export interface ErodeScene {
 }
 
 export interface ErodeDef {
-  seg: 8 | 11;
+  seg: ErodeSeg;
   /** Name shown in banners and the 图鉴. */
   zh: string;
-  stage: 'A2' | 'B1';
+  stage: 'A2' | 'B1' | 'B2' | 'C1';
   /** Opens once this boss has fallen (the last new region before it). */
   after: number;
   /** The old region whose boss door the segment's boss stands behind, with the door's lines. */
-  bossRegion: 1 | 2 | 3 | 4 | 5 | 6 | 7;
+  bossRegion: number;
+  /** The boss stands in this scene of `bossRegion` instead of behind its door (枯林之母 deep in 林底). */
+  scene?: string;
   doorZh: string;
   doorAct: string;
   /** Said when it opens. */
@@ -203,7 +288,7 @@ export interface ErodeDef {
 const ZONE_OF_SCENE = new Map(LEX_SCENES.map(([id, region, field]) => [id, LEX_FIELDS[region][field][0] as ZoneId]));
 /** The old scenes a 蚀变 segment hangs its groups on (picked by scripts/build_lexicon.py: the scene with most of the
  *  group's ladder base words, else one of the same situation, else a free one; each scene carries one layer). */
-function erodeScenes(seg: 8 | 11): ErodeScene[] {
+function erodeScenes(seg: ErodeSeg): ErodeScene[] {
   return LEX_ERODED.filter(([, g]) => g === seg).map(([scene]) => ({ scene, zone: ZONE_OF_SCENE.get(scene)! }));
 }
 
@@ -229,13 +314,37 @@ export const ERODE_DEFS: ErodeDef[] = [
     ],
     scenes: erodeScenes(11),
   },
+  {
+    // 游戏设计 rev 488: 4–7 区旧图, 主城用雾港, plus the hidden area 林底 (r6-linde, drawn once 蚀变③ is open);
+    // B2 words of the 4–7 situations, in article groups on about half the old scenes.
+    seg: 15, zh: '蚀变③「林底」', stage: 'B2', after: 14, bossRegion: 6, scene: 'r6-linde',
+    palette: ['#050904', '#14200f', '#26391c', '#3f5a2c', '#c8f0e8'],
+    doorZh: '林底深处', doorAct: '走进林底深处',
+    open: [
+      '铸币场的金库空了。你回头看，雾港那边的天变成了绿色。',
+      '租屋城、泉疗镇、雾港、印章城……墙缝里长出了苔藓。熟悉的说法换成了报纸和公文里的说法。',
+      '系统：【蚀变③「林底」141–150 级】回 4–7 区。蚀变的场景里藏着 B2 的书面说法，新词在文章里。雾港灯塔栈桥的尽头多了一条路，通向「林底」。首领「枯林之母」在林底深处。',
+    ],
+    scenes: erodeScenes(15),
+  },
+  {
+    // 游戏设计 rev 488: 8–12 区旧图（9、10、12）, 主城用电波塔; no new words (C1), the scenes practise register.
+    seg: 19, zh: '蚀变④「回潮」', stage: 'C1', after: 18, bossRegion: 10,
+    doorZh: '空白的播音间', doorAct: '走进空白的播音间',
+    open: [
+      '天平庭的天平停了。电波塔那边传来很轻的杂音，像有人在把字一个一个抹掉。',
+      '工坊城、电波塔、心巷……同一件事，人们开始用三种说法讲：口语、正式、书面。',
+      '系统：【蚀变④「回潮」181–190 级】回 9–12 区。不加新词，蚀变的场景里练换一种说法。首领「虚无」在电波塔的播音间。',
+    ],
+    scenes: erodeScenes(19),
+  },
 ];
 
 export const ERODE_DEF: Partial<Record<number, ErodeDef>> = Object.fromEntries(ERODE_DEFS.map((e) => [e.seg, e]));
 
-/** The segment after `seg` that has a map (7 → 9, 10 → 12), or null after 12. */
+/** The segment after `seg` that has a map (7 → 9, 10 → 12, 14 → 16, 18 → 20), or null after 20. */
 export function nextMapRegion(seg: number): number | null {
-  for (let r = seg + 1; r <= 12; r++) if (REGION_DEF[r]) return r;
+  for (let r = seg + 1; r <= 20; r++) if (REGION_DEF[r]) return r;
   return null;
 }
 
@@ -245,7 +354,7 @@ export function prevMapRegion(r: number): number {
   return 3;
 }
 
-/** Level band of a region: 4 → 31–40 … 12 → 111–120. */
+/** Level band of a region: 4 → 31–40 … 20 → 191–200. */
 export function regionLevels(region: number): [number, number] {
   return [(region - 1) * 10 + 1, region * 10];
 }

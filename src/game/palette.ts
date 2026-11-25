@@ -4,6 +4,7 @@
 // pale cyan on top. Map tiles, NPCs and map monsters are stretched over the ramp exactly like the red one; the
 // hero keeps the red ramp and hair colours (发色例外).
 
+import type { ErodeSeg } from '../core/types';
 import { ERODE_DEF, REGION_DEF } from '../data/zones';
 
 export type Ramp5 = readonly [string, string, string, string, string];
@@ -11,6 +12,7 @@ export type Ramp5 = readonly [string, string, string, string, string];
 /** 1–3 区 (已上线). */
 export const RED5: Ramp5 = ['#140404', '#4e1616', '#7a1f1f', '#d8333a', '#ffb4a8'];
 const ERODE_TOP: Record<8 | 11, string> = { 8: '#f08a3c', 11: '#c8fff0' };
+const grey = (a: string, t: number) => { const c = hex(a); const l = c[0] * 0.3 + c[1] * 0.59 + c[2] * 0.11; return toHex(c.map((v) => v + (l - v) * t)); };
 
 const hex = (h: string) => [1, 3, 5].map((k) => parseInt(h.slice(k, k + 2), 16));
 const toHex = (c: number[]) => `#${c.map((v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0')).join('')}`;
@@ -20,7 +22,11 @@ const scale = (a: string, f: number) => toHex(hex(a).map((v) => v * f));
 /** The ramp of a map right now, or null for the classic red one (regions 1–3 before any 蚀变). */
 export function mapRamp(region: number, flags: Record<string, unknown>): Ramp5 | null {
   const own = (REGION_DEF[region]?.palette as Ramp5 | undefined) ?? null;
-  const open = (seg: 8 | 11) => !!flags[`boss${ERODE_DEF[seg]!.after}Kills`];
+  const open = (seg: ErodeSeg) => !!ERODE_DEF[seg] && !!flags[`boss${ERODE_DEF[seg]!.after}Kills`];
+  // 121–200 级 (rev 488): 蚀变④ 回潮 drains regions 9–12 of colour; 蚀变③ 林底 turns regions 4–7 moss green, darkened,
+  // with pale cyan on top. The newest open segment of a map wins.
+  if (region >= 9 && region <= 12 && own && open(19)) return own.map((c) => grey(c, 0.8)) as unknown as Ramp5;
+  if (region >= 4 && region <= 7 && open(15)) return (ERODE_DEF[15]!.palette as Ramp5 | undefined) ?? own;
   if (region <= 7 && open(11)) {
     const base = own ?? RED5;
     return [scale(base[0], 0.7), scale(base[1], 0.7), scale(base[2], 0.7), scale(base[3], 0.7), ERODE_TOP[11]];

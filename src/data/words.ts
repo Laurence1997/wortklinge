@@ -4,7 +4,7 @@
 // for 蚀变 ladder words, the base word they are the advanced form of (`after`).
 // The only word outside the list is the 宝箱怪 Truhe (rare spawn, flees with its chest).
 
-import type { Article, FamilyId, Pos, RegionNo, Word, ZoneId } from '../core/types';
+import type { Article, ErodeSeg, FamilyId, Pos, RegionNo, Word, ZoneId } from '../core/types';
 import { LEX_ERODED, LEX_ROWS, LEX_SCENES } from './lexicon';
 
 /** Nouns of these situations work in 「Ich möchte …」 (food, drink and things you can ask for). */
@@ -14,18 +14,19 @@ function build(): Word[] {
   const situation = new Map<string, string>();
   for (const [, , , , sit, ids] of LEX_SCENES) for (const id of ids) situation.set(id, sit);
   const out: Word[] = LEX_ROWS.split('\n').map((line) => {
-    const [id, de, art, pl, zh, pos, family, lvl, zone, scene, region, erode, batch, after, digit, , , , , ex] = line.split('\t');
+    const [id, de, art, pl, zh, pos, family, lvl, zone, scene, region, erode, batch, after, digit, , , , , ex, sit] = line.split('\t');
     const w: Word = { id, de, zh, pos: pos as Pos, family: family as FamilyId, lvl: +lvl, zone: zone as ZoneId, region: +region as RegionNo, scene };
     if (art) w.art = art as Article;
     if (pl === '+') w.plOnly = true;
     else if (pl) w.pl = pl;
-    if (erode) w.erode = +erode as 8 | 11;
+    if (erode) w.erode = +erode as ErodeSeg;
     if (batch) w.batch = 2;
     if (after) w.after = after;
     if (digit) w.digit = digit;
     if (pos === 'num') w.zh = `数字 ${digit}`;
     if (ex) w.ex = ex;
-    if (pos === 'n' && !erode && w.pl && w.pl !== '-' && MOECHTE_SITUATIONS.has(situation.get(id) ?? '')) w.moechte = true;
+    // The word's own situation (列「情境」), else its scene's.
+    if (pos === 'n' && !erode && w.pl && w.pl !== '-' && MOECHTE_SITUATIONS.has(sit || (situation.get(id) ?? ''))) w.moechte = true;
     return w;
   });
   // The opening bread by the bonfire (tutorial respawn) is the list's Brot.
@@ -42,7 +43,7 @@ export const LATER_SCENE_WORDS = SCENE_WORDS;
 /** 蚀变 word groups by old scene id. */
 export const ERODED_SCENE_WORDS: Record<string, string[]> = Object.fromEntries(LEX_ERODED.map(([scene, , ids]) => [scene, ids]));
 /** Segment of each 蚀变 host scene. */
-export const ERODED_SEG: Record<string, 8 | 11> = Object.fromEntries(LEX_ERODED.map(([scene, seg]) => [scene, seg]));
+export const ERODED_SEG: Record<string, ErodeSeg> = Object.fromEntries(LEX_ERODED.map(([scene, seg]) => [scene, seg]));
 
 export const WORDS: Word[] = build();
 export const WORD_BY_ID: Record<string, Word> = Object.fromEntries(WORDS.map((w) => [w.id, w]));

@@ -59,7 +59,16 @@ FIELD_PLAN = {
     ],
 }
 FIELD_KEYS = 'abcde'
-MAP_REGIONS = [1, 2, 3, 4, 5, 6, 7, 9, 10, 12]
+MAP_REGIONS = [1, 2, 3, 4, 5, 6, 7, 9, 10, 12, 13, 14, 16, 17, 18, 20]
+# 121–200 级 (游戏设计 rev 488): B2 regions 13, 14, 16 and 蚀变③ (15) take the 2000 words 6001–8000 (《B2词分区》, one
+# segment and situation per word). New words only come in 文章群怪 (article groups), so each of these regions gets
+# B2_SCENES article scenes. C1 (17, 18, 20 and 蚀变④ 19) adds no words: their scenes are empty and spawn review and
+# challenge monsters from everything learned (src/core/spawn.ts).
+B2_SCENES = 28
+B2_ERODE_GROUP = 10
+C1_SCENES = 28
+C1_ERODE_HOSTS = 46
+ERODE_SEGS = ((8, (1, 2, 3)), (11, (1, 2, 3, 4, 5, 6, 7)), (15, (4, 5, 6, 7)), (19, (9, 10, 12)))
 
 # Monster families (look and a few quests): by region and situation for nouns, by part of speech otherwise.
 NOUN_FAMILY = {
@@ -401,6 +410,45 @@ def main():
     for seg in segs:
         segs[seg] = merge_tiny(cut_articles(segs[seg]))
 
+    # B2 (13–16): words grouped by situation in list order, cut into article scenes (map regions) or 蚀变 groups.
+    b2 = defaultdict(list)
+    for r in read_tsv('b2-v1.tsv'):
+        r['先后'] = '后'
+        b2[int(r['段'])].append(r)
+    for seg, rows in sorted(b2.items()):
+        by_sit = OrderedDict()
+        for x in sorted(rows, key=lambda x: int(x['排名'])):
+            by_sit.setdefault(x['情境'] or '通用', []).append(x)
+        groups = OrderedDict()
+
+        def put(name, chunk):
+            for j, x in enumerate(chunk):
+                x['批次'] = '第1批' if j < FIRST_BATCH else '第2批'
+                x['_art'] = True
+                x['场景'] = name
+            groups[name] = chunk
+        if seg == 15:
+            # 蚀变③: groups of about ten per situation, hung on old scenes of the same situation.
+            for sit, xs in by_sit.items():
+                n = max(1, round(len(xs) / B2_ERODE_GROUP))
+                for k in range(n):
+                    put(f'{sit}·{k + 1}', xs[k * len(xs) // n:(k + 1) * len(xs) // n])
+        else:
+            # New region: B2_SCENES even scenes over the words sorted by situation (a scene may span two).
+            xs = [x for v in by_sit.values() for x in v]
+            n = B2_SCENES
+            count = defaultdict(int)
+            for k in range(n):
+                chunk = xs[k * len(xs) // n:(k + 1) * len(xs) // n]
+                sit = chunk[0]['情境'] or '通用'
+                count[sit] += 1
+                put(f'{sit}·{count[sit]}', chunk)
+        segs[seg] = groups
+    # C1 (17–20): empty scenes; 蚀变④ hosts carry no new words either.
+    for seg in (17, 18, 20):
+        segs[seg] = OrderedDict((f'回顾·{k + 1}', []) for k in range(C1_SCENES))
+    segs[19] = OrderedDict((f'回潮·{k + 1}', []) for k in range(C1_ERODE_HOSTS))
+
     # ---- fields and scene ids of map regions ----
     scene_list = []  # dicts: id, region, field, zone, name, group, rows, situation
     fields_out = {}
@@ -410,9 +458,12 @@ def main():
         if region in FIELD_PLAN:
             plan = FIELD_PLAN[region]
             assigned = [[] for _ in plan]
+            # Lucas 2026-11-25: 4–5 fields of about 8 scenes each. A field takes the groups of its situations until
+            # it is full; the rest go to the emptiest field.
+            cap = -(-len(names) // len(plan))
             for name in names:
                 sit = situation_of(name)
-                fi = next((i for i, f in enumerate(plan) if sit in f[3]), None)
+                fi = next((i for i, f in enumerate(plan) if sit in f[3] and len(assigned[i]) < cap), None)
                 if fi is None:
                     fi = min(range(len(plan)), key=lambda i: len(assigned[i]))
                 assigned[fi].append(name)
@@ -432,7 +483,7 @@ def main():
                 })
 
     # ---- words ----
-    seen = set()
+    seen = {'truhe'}  # the 宝箱怪's own word (src/data/words.ts); the list's Truhe becomes truhe-2
     by_lemma = {}
     words = []
 
@@ -499,7 +550,7 @@ def main():
         m = re.search(r'梯子：(.+?) 的进阶说法', x.get('备注') or '')
         if m:
             w['_ladder'] = m.group(1).strip()
-        sit = r['情境'] or situation_of(x['场景'])
+        sit = r['情境'] or x.get('情境') or situation_of(x['场景'])
         w['situation'] = sit
         fam = NOUN_FAMILY.get((region, sit)) if pos in ('n', 'name') else None
         w['family'] = fam or {'n': 'kram', 'name': 'schild', 'v': 'nachhall', 'adj': 'echo', 'phr': 'echo', 'num': 'zahlwurm', 'q': 'schild'}[pos]
@@ -578,7 +629,7 @@ def main():
             host_of_word[wid] = s['id']
     taken = {}
     eroded_out = []
-    for seg, regions in ((8, (1, 2, 3)), (11, (1, 2, 3, 4, 5, 6, 7))):
+    for seg, regions in ERODE_SEGS:
         lo, hi = (seg - 1) * 10 + 1, seg * 10
         hosts = [s for s in scene_list if s['region'] in regions]
         names = list(segs[seg])
@@ -649,8 +700,11 @@ def main():
 
     wmap = {w['id']: w for w in words}
     for s in scene_list:
+        if not s['words']:
+            s['name'] = s['group']
+            continue
         lead = next((wmap[i] for i in s['words'] if wmap[i]['pos'] in ('n',)), wmap[s['words'][0]])
-        if s['group'].startswith('文章群怪'):
+        if s['group'].startswith('文章群怪') or wmap[s['words'][0]].get('art_pool'):
             s['name'] = f'残页 · {short_zh(lead["zh"])}'
         elif '表达' in s['group']:
             s['name'] = f'{s["situation"]} · 说法'
@@ -662,8 +716,8 @@ def main():
         f = [w['id'], w['de'], w.get('art', ''), '+' if w.get('plOnly') else w.get('pl', ''), w['zh'], w['pos'], w['family'],
              str(w['lvl']), w['zone'], w['scene'], str(w['region']), str(w.get('erode', '')), str(w.get('batch', '')),
              w.get('after', ''), w.get('digit', ''), str(w['order']), str(w['rank']), w.get('reg', ''), '1' if w.get('art_pool') else '',
-             w.get('ex', '')]
-        for v in f[:-1]:
+             w.get('ex', ''), w.get('situation', '')]
+        for v in f:
             assert '\t' not in v, v
         return '\t'.join(v.replace('\t', ' ') for v in f)
 
@@ -682,7 +736,7 @@ def main():
     out.append('];')
     out.append('')
     out.append('/** 蚀变 groups: [host scene id, segment, word ids]. */')
-    out.append('export const LEX_ERODED: Array<[string, 8 | 11, string[]]> = [')
+    out.append('export const LEX_ERODED: Array<[string, 8 | 11 | 15 | 19, string[]]> = [')
     for e in eroded_out:
         out.append('  ' + json.dumps([e['scene'], e['seg'], e['words']], ensure_ascii=False) + ',')
     out.append('];')
@@ -711,7 +765,7 @@ def main():
         for s in sc:
             per[s['field']] += 1
         sizes = [len(s['words']) for s in sc]
-        print(f'  region {region}: {len(sc)} scenes, fields {dict(per)}, words {sum(sizes)} ({min(sizes)}–{max(sizes)} per scene), eroded hosts {sum(1 for s in sc if s["id"] in taken)}')
+        print(f'  region {region}: {len(sc)} scenes, fields {dict(per)}, words {sum(sizes)} ({min(sizes, default=0)}–{max(sizes, default=0)} per scene), eroded hosts {sum(1 for s in sc if s["id"] in taken)}')
 
 
 if __name__ == '__main__':

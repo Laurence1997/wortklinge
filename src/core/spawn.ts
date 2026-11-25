@@ -118,12 +118,23 @@ export function pickSpawns(s: GameState, zone: ZoneId, count: number, alive: Set
   // One 残句 per field at most (WorldScene turns the slot into one); its word only says which scene.
   const anchor = local.find((w) => !gone(w) && kindOf(s, w, t) === 'guiming') ?? local[0];
   if (opts.phraseOk && anchor && room > 0) add(anchor, 'shadow', true);
-  const region = zoneWords(zone)[0]?.region ?? 1;
+  const region = zoneWords(zone)[0]?.region ?? 0;
   for (const w of WORDS) {
-    if (room <= 0) break;
+    if (room <= 0 || !region) break;
     if ((w.region ?? 1) !== region + 1 || alive.has(w.id) || !eligible(s, w) || gone(w)) continue;
     const k = kindOf(s, w, t);
     if (k === 'new' || k === 'due') add(w, k);
+  }
+  // C1 (游戏设计 rev 488): regions 17–20 add no words. Their fields fill with review and challenge monsters from
+  // everything learned, the ones closest to being forgotten (soonest due) first.
+  if (!region) {
+    const known = WORDS.filter((w) => !!s.words[w.id] && !alive.has(w.id) && !taken.has(w.id) && eligible(s, w) && !gone(w));
+    known.sort((a, b) => (s.words[a.id].due ?? 0) - (s.words[b.id].due ?? 0));
+    for (const w of known) {
+      if (out.length >= count) break;
+      out.push({ word: w, kind: kindOf(s, w, t) === 'due' ? 'due' : 'shadow' });
+      taken.add(w.id);
+    }
   }
   return out;
 }
