@@ -840,7 +840,7 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
   if (move === 'cls') {
     if (s.cls === 'guardian') return { type: 'steady', prompt: '稳住：花 3 沉着，挡下这回合的第一击', focus: '稳住', options: ['稳住！'], answer: '稳住！' };
     const lw = stormWord(s, rng, w);
-    return { type: 'storm', prompt: '墨水风暴：默写这个词（名词带冠词），字母越多伤害越高', focus: zhWithPos(lw), withArticle: hasArticleQuestion(lw), answer: fullForm(lw), word: lw };
+    return { type: 'storm', prompt: lw.id === w.id ? '墨水风暴：默写眼前这只怪的词（名词带冠词），字母越多伤害越高' : '墨水风暴：默写这个词（名词带冠词），字母越多伤害越高', focus: zhWithPos(lw), withArticle: hasArticleQuestion(lw), answer: fullForm(lw), word: lw };
   }
   if (move === 'skill') {
     const sk = SKILLS[skillId ?? s.skills[0]];
@@ -906,7 +906,7 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
     if (!canType || b.tutorial || b.trial || fresh) return null;
     if (has(s.level, 'slot') && isNoun && rng() < WRITE_CHANCE.slot) {
       const t = slotTask(w, rng);
-      if (t) return { type: 'cloze', write: 'slot', slot: t, prompt: `槽位造句：它问「${t.ask}」（${t.askZh}）用你单词本里任何合适的名词回答，冠词和格要对；最近用过的 ${SLOT_RECENT} 个词先不算`, focus: `${t.ask}  →  ${t.frame}`, answer: t.answer };
+      if (t) return { type: 'cloze', write: 'slot', slot: t, prompt: `槽位造句：它问「${t.ask}」（${t.askZh}）用眼前这只怪的词回答，冠词和格要对`, focus: `${t.ask}  →  ${t.frame}`, answer: t.answer };
     }
     if (has(s.level, 'wordOrder') && rng() < WRITE_CHANCE.order) {
       const t = orderTask(w, rng);
@@ -1221,6 +1221,9 @@ export function sentencePattern(s: GameState, b: Battle): Pattern | null {
 
 /** A long word you have met (longest few of them), for 墨水风暴. Falls back to the target's word. */
 export function stormWord(s: GameState, rng: Rng, fallback: Word): Word {
+  // 2026-11-25 (Lucas, playtest): the class skill writes the monster's own word, so the skill is about the monster
+  // in front of you. Only a target that can't be written (a phrase, a number) falls back to a long word you know.
+  if (fallback.pos !== 'phr' && fallback.pos !== 'num' && !fallback.digit && !fallback.id.startsWith('say_')) return fallback;
   const known = WORDS.filter((x) => s.words[x.id] && x.pos !== 'phr' && x.pos !== 'num' && !x.digit);
   const byLength = (xs: Word[]) => [...xs].sort((a, b) => letters(b) - letters(a));
   // 2026-11-21: words due within 12 hours or written wrong and seen in the last 3 days come first, so the

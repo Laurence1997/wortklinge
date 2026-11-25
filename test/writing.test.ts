@@ -26,16 +26,17 @@ describe('A1 写作', () => {
     expect(made).toBeGreaterThan(100);
   });
 
-  it('槽位造句: any fitting noun from the wordbook counts, article and case checked, recent nouns refused', () => {
+  it('槽位造句: only the monster\'s own noun counts (rev 219), article and case checked', () => {
     const tee = WORD_BY_ID['tee'];
     const t = slotTask(tee, makeRng(1))!;
     expect(t).toBeTruthy();
     const known = new Set(['brot', 'tasse', 'kaffee', 'stuhl', 'stift', 'lampe', 'tisch']);
     const nouns = slotNouns(t.pattern, (x) => known.has(x.id), tee);
     const other = nouns.find((x) => x.id !== 'tee')!;
-    expect(gradeSlot(expectedSentence(other, t.pattern), t, nouns, [], 'tee').ok).toBe(true);
+    const v = gradeSlot(expectedSentence(other, t.pattern), t, nouns, [], 'tee');
+    expect(v.ok).toBe(false);
+    expect(v.notes[0]).toContain('der Tee');
     expect(gradeSlot(t.answer, t, nouns, [], 'tee').ok).toBe(true);
-    expect(gradeSlot(expectedSentence(other, t.pattern), t, nouns, [other.id], 'tee').repeated).toBe(true);
     expect(gradeSlot('Ich möchte ein Zebra.', t, nouns, [], 'tee').ok).toBe(false);
   });
 

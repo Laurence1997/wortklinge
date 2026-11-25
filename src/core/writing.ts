@@ -123,7 +123,11 @@ export function gradeSlot(input: string, t: SlotTask, nouns: Word[], recent: str
   // Which noun did they mean? The one whose bare form appears in the answer (longest first: Kleingeld before Geld).
   const byLen = [...nouns].sort((a, b) => b.de.length - a.de.length);
   const used = byLen.find((x) => ` ${n} `.includes(` ${key(x.de)} `) || ` ${n} `.includes(` ${key(x.pl ?? '#')} `));
-  if (!used) return { ok: false, notes: [`空里要填你单词本里的、能放进「${t.frame}」的名词，比如：${t.answer}`] };
+  // 2026-11-25 (Lucas, 游戏设计 rev 219): the sentence must use this monster's own word (plural and case forms
+  // count); another noun, however right, does not hit.
+  const own = nouns.find((x) => x.id === ownId);
+  if (own && used?.id !== own.id) return { ok: false, used, notes: [`这只怪是 ${own.art} ${own.de}，句子里要用上它：${t.answer}`] };
+  if (!used) return { ok: false, notes: [`空里要填能放进「${t.frame}」的名词，比如：${t.answer}`] };
   if (recent.includes(used.id) && used.id !== ownId) {
     return { ok: false, used, repeated: true, notes: [`${used.de} 最近刚用过，换一个词试试（最近用过的 ${SLOT_RECENT} 个先不算）`] };
   }
