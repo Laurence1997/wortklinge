@@ -337,9 +337,25 @@ def make_perfekt(inf, three, sentences):
     return None
 
 
+# Added to wortschatz.tsv after 《进场景第 1 版》 was cut (word-list thread, 8f3664c).
+ADDED_AFTER_SHEET = {'morgen'}
+
+
 # ---- build ------------------------------------------------------------------------------------------------------
 def main():
     words_tsv = {r['排名']: r for r in read_tsv('wortschatz.tsv')}
+    # The scene sheet was cut from an older rank order; find each word by its lemma (closest rank wins),
+    # so inserted words (morgen, 2026-11-25) don't shift everything after them.
+    rows_by_lemma = defaultdict(list)
+    for r in words_tsv.values():
+        rows_by_lemma[r['原形'].strip()].append(r)
+    used_ranks = set()
+
+    def row_for(x):
+        cands = rows_by_lemma.get(x['原形'].strip())
+        if not cands:
+            return words_tsv[str(x['排名'])]
+        return min(cands, key=lambda r: (r['排名'] in used_ranks, abs(int(r['排名']) - int(x['排名']))))
     extra = defaultdict(list)
     for r in read_tsv('beispiele.tsv'):
         if r['例句']:
@@ -421,7 +437,10 @@ def main():
     words = []
 
     def card_word(rank, x, region, zone, scene, lvl, erode=None):
-        r = dict(words_tsv[str(rank)])
+        src = row_for(x)
+        used_ranks.add(src['排名'])
+        rank = src['排名']
+        r = dict(src)
         r.update(CORRECTIONS.get(r['原形'].strip(), {}))
         de = r['原形'].strip()
         cat = r['词性']
@@ -526,6 +545,31 @@ def main():
         words.append(w)
         words_by_id[w['id']] = w
         s['words'].append(w['id'])
+
+    # Words added to the list after the scene sheet was cut (the sheet leaves out function words on purpose,
+    # so only these): next to the word ranked just before them, in a scene of the same situation with the fewest words.
+    scene_by_id = {s['id']: s for s in scene_list}
+    rank_scene = {w['rank']: w['scene'] for w in words if w.get('rank')}
+    sheet_lemmas = {x['原形'].strip() for g in segs.values() for rows in g.values() for x in rows}
+    for rk in range(1, 6001):
+        r = words_tsv.get(str(rk))
+        if not r or r['原形'].strip() not in ADDED_AFTER_SHEET or r['原形'].strip() in sheet_lemmas or str(rk) in used_ranks:
+            continue
+        prev = next((rank_scene[q] for q in range(rk - 1, 0, -1) if q in rank_scene), scene_list[0]['id'])
+        region = scene_by_id[prev]['region']
+        sit = r['情境']
+        cands = [s for s in scene_list if s['region'] == region and s['situation'] == sit]
+        if not cands:
+            same = [s for s in scene_list if s['situation'] == sit]
+            cands = [s for s in same if s['region'] == min(t['region'] for t in same)] if same else [scene_by_id[prev]]
+        region = cands[0]['region']
+        s = min(cands, key=lambda c: len(c['words']))
+        lvl = max(words_by_id[i]['lvl'] for i in s['words'])
+        x = {'原形': r['原形'], '排名': rk, '场景': s['group'], '语体': r['语体'], '批次': '第2批' if len(s['words']) >= FIRST_BATCH else '第1批'}
+        w = card_word(rk, x, region, s['zone'], s['id'], lvl)
+        words_by_id[w['id']] = w
+        s['words'].append(w['id'])
+        print('added from list:', r['原形'], '->', s['id'], file=sys.stderr)
 
     # 蚀变: host scenes.
     host_of_word = {}
