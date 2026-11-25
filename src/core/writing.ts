@@ -13,6 +13,7 @@ import { expectedSentence, gradeSentence, PATTERNS, sentenceTags, type Pattern }
 import type { Word } from './types';
 import { LINKS, SUB_LINKS, type LinkRow } from '../data/links';
 import { WORDS } from '../data/words';
+import { CONJ } from '../data/verbs';
 
 /** Share of cloze slots that become 排句 / 槽位造句 once open (the rest stay normal cloze). */
 export const WRITE_CHANCE = { order: 0.25, slot: 0.3, link: 0.35 };
@@ -135,13 +136,15 @@ export function gradeSlot(input: string, t: SlotTask, nouns: Word[], recent: str
   return { ok: v.ok, used, notes: v.ok ? [] : v.notes.length ? v.notes : [`正确写法：${expectedSentence(used, t.pattern)}`] };
 }
 
-/** 连句: a pair for this word (one that mentions it, else any), with only the joining words open at this level. */
+/** 连句: a pair for this word, with only the joining words open at this level. One of the two sentences must use the
+ *  target monster's word (rev 234, Lucas 2026-11-25); with no such pair the finisher stays a normal one (null). */
 export function linkTask(w: Word, rng: Rng, subOpen: boolean): LinkRow | null {
   const open = LINKS.filter((r) => subOpen || !SUB_LINKS.includes(r.conj));
   if (!open.length) return null;
-  const bare = key(w.de);
-  const mine = open.filter((r) => ` ${key(r.a)} ${key(r.b)} `.includes(` ${bare} `));
-  return pick(rng, mine.length ? mine : open);
+  const conj = w.pos === 'v' && CONJ[w.de] ? Object.values(CONJ[w.de].forms) : [];
+  const forms = [w.de, w.pl && w.pl !== '-' ? w.pl : '', ...conj].filter(Boolean).map(key);
+  const mine = open.filter((r) => forms.some((f) => ` ${key(r.a)} ${key(r.b)} `.includes(` ${f} `)));
+  return mine.length ? pick(rng, mine) : null;
 }
 
 export function gradeLink(input: string, r: LinkRow): boolean {
