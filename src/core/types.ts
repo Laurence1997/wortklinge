@@ -104,6 +104,8 @@ export interface WordProgress {
   retired?: number;
   /** 审查修订 B4: 半名 from an article pack (文章群怪): no respawn; a context question written right brings 归名. */
   artHalf?: boolean;
+  /** 词族秘境: words it was mixed up with (易混, a mark only). */
+  mix?: string[];
   /** 审查修订 D3: clean typed kills of its plural crowd; at CONFIG.phase.pluralRetire the crowd stops coming. */
   plOk?: number;
   /** 斩杀: the 30-day 回响 check was passed: retired for good. */

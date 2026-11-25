@@ -2131,7 +2131,7 @@ export class Controller {
     const s = this.state;
     const done = cleared(s, kind);
     const floors = floorsOf(kind, s);
-    say([{ who: SYS, text: `${GRAM_DUNGEON.name[kind]}：选一层（✓ 已打通，可以再刷）` }], undefined, [
+    say([{ who: SYS, text: `${GRAM_DUNGEON.name[kind]}：选一层（✓ 已打通，可以再刷）${kind === 'wordfam' ? '。同根、近义、形近的词，同组有 2 个归名就开一层；每题两句只差这个词，选哪句用哪个。答混了只标「易混」，不退进度' : ''}` }], undefined, [
       ...floors.map((f) => ({ label: `${done.includes(f.id) ? '✓ ' : ''}${f.label}`, act: () => this.startGramRun(kind, f) })),
       { label: '回去', act: () => {} },
     ]);

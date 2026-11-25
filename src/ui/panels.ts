@@ -1360,7 +1360,7 @@ export class Panels {
           h(
             'tr',
             h('td', h(`span${gk ? '.art-' + gk : ''}`, fullForm(w))),
-            h('td', w.zh),
+            h('td', w.zh, p.mix?.length ? h('span.small.muted', { title: '词族秘境里答混过' }, ` · 易混：${p.mix.map((x) => WORD_BY_ID[x]?.de ?? x).join('、')}`) : ''),
             h('td', w.pl && w.pl !== '-' ? `die ${w.pl}` : '—'),
             h('td', p.read ? '✓' : '—'),
             h('td', p.write ? '✓' : '—'),

@@ -2022,6 +2022,11 @@ export function resolveTurn(
     if (q.type === 'sentence') b.sxUsed = (b.sxUsed ?? 0) + 1;
     if (q.gram) b.gramAsked = (b.gramAsked ?? 0) + 1;
     if (q.gram?.sys === 'notice' && b.notice) b.notice.i += 1;
+    // 词族秘境: a mixed-up contrast only marks the word 易混 (审查修订: no progress is taken back).
+    if (q.gram?.mix && !ok && s.words[b.word.id]) {
+      const p = s.words[b.word.id];
+      p.mix = [...new Set([...(p.mix ?? []), q.gram.mix])];
+    }
     if (q.partner) b.partnerDone = true;
     // 复习怪: its opening 句中默写 right → back to 归名 now (the gap restarts at 1 day).
     if (b.reviewMon && q.dict && ok && !q.whispered && b.qIndex === 1) {

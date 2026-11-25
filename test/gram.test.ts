@@ -152,11 +152,27 @@ describe('语法秘境', () => {
     const { floorsOf, wordfamTask } = await import('../src/core/gram/dungeons');
     const s = newGame('T', 'student', T0);
     s.level = 37;
-    expect(floorsOf('wordfam', s).length).toBe(2);
-    const t = wordfamTask(byDe('wohnen'), 'suffix', makeRng(1))!;
+    expect(floorsOf('wordfam', s).map((f) => f.id)).toEqual(['suffix']);
+    const t = wordfamTask(s, byDe('wohnen'), 'suffix', makeRng(1))!;
     expect(['der', 'die', 'das']).toContain(t.answer);
-    const f = wordfamTask(byDe('wohnen'), '', makeRng(1))!;
+    const f = wordfamTask(s, byDe('wohnen'), '', makeRng(1))!;
     expect(gradeGram(f, f.answer).ok).toBe(true);
+  });
+  it('词族秘境 relation layers: open at 2 归名, ask a two-sentence contrast', async () => {
+    const { floorsOf, wordfamTask } = await import('../src/core/gram/dungeons');
+    const s = newGame('T', 'student', T0);
+    s.level = 37;
+    const g = (de: string) => (s.words[byDe(de).id] = { stage: 3, due: T0 + 9e9, firstSeen: 1, lastSeen: 1, relapse: 0, correct: 3, wrong: 0, read: 1 } as never);
+    g('liegen');
+    expect(floorsOf('wordfam', s).some((f) => f.id.startsWith('look:'))).toBe(false);
+    g('legen');
+    const fl = floorsOf('wordfam', s).find((f) => f.id.startsWith('look:') && f.words.includes(byDe('legen').id))!;
+    expect(fl).toBeTruthy();
+    const q = wordfamTask(s, byDe('liegen'), fl.id, makeRng(2))!;
+    expect(q.options).toHaveLength(2);
+    expect(q.options).toContain(q.answer);
+    expect(q.focus).toContain('①');
+    expect(q.mix).toBe(byDe('legen').id);
   });
   it('a dungeon battle asks only the floor’s grammar', () => {
     const s = newGame('T', 'student', T0);

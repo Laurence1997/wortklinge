@@ -797,6 +797,33 @@ def main():
     out.append('')
     out.append('/** Grammar words (taught by grammar play, not as monsters): [de, 词性, 中文]. */')
     out.append('export const LEX_GRAMMAR: Array<[string, string, string]> = ' + json.dumps([[g['原形'], g['词性'], g['中文']] for g in grammar], ensure_ascii=False) + ';')
+    # 词族秘境 (游戏设计 四): 同根 / 近义 / 形近 from relations.tsv (word-list thread), as in-game word ids.
+    rel_path = DATA / 'relations.tsv'
+    rel = {}
+    if rel_path.exists():
+        by_rank = {}
+        by_de = {}
+        for w in words:
+            if w.get('rank'):
+                by_rank.setdefault(str(w['rank']), w['id'])
+            by_de.setdefault(w['de'], w['id'])
+        for r in read_tsv('relations.tsv'):
+            wid = by_rank.get(r['排名']) or by_de.get(r['原形'])
+            if not wid:
+                continue
+            cols = []
+            for c in ('同根', '近义', '形近'):
+                ids = []
+                for lem in (r.get(c) or '').split('|'):
+                    o = by_de.get(lem.strip())
+                    if o and o != wid and o not in ids:
+                        ids.append(o)
+                cols.append(ids)
+            if any(cols):
+                rel[wid] = cols
+    out.append('')
+    out.append('/** 词族秘境: [同根, 近义, 形近] as word ids (relations.tsv). */')
+    out.append('export const LEX_REL: Record<string, [string[], string[], string[]]> = ' + json.dumps(rel, ensure_ascii=False, separators=(',', ':')) + ';')
     OUT.write_text('\n'.join(out) + '\n', encoding='utf-8')
 
     # Report.

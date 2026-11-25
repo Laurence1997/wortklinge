@@ -100,6 +100,8 @@ export interface GramTask {
   keys?: string[][];
   /** Asked by a special monster (B2 怪种): its own hits land in full, other moves graze it. */
   special?: boolean;
+  /** 词族秘境 contrast: the other word of the pair; a wrong answer marks this word 易混 with it. */
+  mix?: string;
 }
 
 const strip = (s: string) =>

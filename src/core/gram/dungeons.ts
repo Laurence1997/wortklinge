@@ -16,6 +16,9 @@ import { STRONG_VERBS } from '../../data/grammar/strongVerbs';
 import { PREP_VERBS, type PrepVerb } from '../../data/grammar/prepVerbs';
 import { SUFFIX_GENDER, WORD_FAMILIES } from '../../data/grammar/wordFamilies';
 import { CONFIG } from '../config';
+import { LEX_REL } from '../../data/lexicon';
+import { WORD_BY_ID } from '../../data/words';
+import { EXAMPLES, parse } from '../cloze';
 import type { GramTask } from './task';
 import { praetFull, strongOf } from './praet';
 
@@ -72,7 +75,94 @@ export function floorsOf(kind: DungeonKind, s: GameState): Floor[] {
     return [...g.entries()].filter(([, ids]) => ids.size >= 2).map(([p, ids]) => ({ id: p, label: `${p} 层`, words: [...ids] }));
   }
   const fam = WORDS.filter((w) => WORD_FAMILIES[w.de]);
-  return fam.length >= 2 ? [{ id: 'fam', label: '词族层 · 从一个词长出一家', words: fam.map((w) => w.id) }, { id: 'suffix', label: '构词层 · 看词尾定性别', words: fam.filter((w) => WORD_FAMILIES[w.de].some((m) => m.art)).map((w) => w.id) }] : [];
+  const out = relFloors(s);
+  if (fam.length >= 2) out.push({ id: 'suffix', label: '构词层 · 看词尾定性别', words: fam.filter((w) => WORD_FAMILIES[w.de].some((m) => m.art)).map((w) => w.id) });
+  return out;
+}
+
+// ---- 词族秘境 relation layers (游戏设计 四, 2026-11-25; data: relations.tsv from the word-list thread) ----------
+// 同根层 (anmachen / ausmachen / aufmachen / zumachen), 近义层 (billig / günstig), 形近层 (liegen / legen). A layer opens
+// once 2 or more of its words are 归名 (审查修订: ≥2, not all). Only words of the same part of speech share a layer,
+// and only those with an example sentence fight in it (the question is always a two-sentence contrast).
+
+export type RelKind = 'root' | 'syn' | 'look';
+export const REL_ZH: Record<RelKind, string> = { root: '同根层', syn: '近义层', look: '形近层' };
+
+const known = (s: GameState, id: string) => {
+  const p = s.words[id];
+  return !!p && (p.stage === 3 || !!p.retired);
+};
+
+/** Every relation group of the word list (members of the same part of speech, 2+), deduplicated. */
+let groupsCache: Array<{ kind: RelKind; base: string; ids: string[] }> | null = null;
+export function relGroups(): Array<{ kind: RelKind; base: string; ids: string[] }> {
+  if (groupsCache) return groupsCache;
+  const seen = new Set<string>();
+  const out: Array<{ kind: RelKind; base: string; ids: string[] }> = [];
+  const kinds: RelKind[] = ['root', 'syn', 'look'];
+  for (const [id, cols] of Object.entries(LEX_REL)) {
+    const w = WORD_BY_ID[id];
+    if (!w) continue;
+    kinds.forEach((k, i) => {
+      let ids = [id, ...cols[i].filter((o) => WORD_BY_ID[o] && WORD_BY_ID[o].pos === w.pos)];
+      // 同根层 by its root word (machen → anmachen / ausmachen …): only members that contain the base itself.
+      if (k === 'root') ids = ids.filter((o) => o === id || WORD_BY_ID[o].de.toLowerCase().includes(w.de.toLowerCase()));
+      if (ids.length < 2) return;
+      const key = `${k}:${[...ids].sort().join(',')}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      out.push({ kind: k, base: id, ids });
+    });
+  }
+  return (groupsCache = out);
+}
+
+/** The relation layers open to this player: 2+ members 归名 with an example sentence. Uncleared first, at most 15. */
+export function relFloors(s: GameState): Floor[] {
+  const done = new Set(cleared(s, 'wordfam'));
+  const out: Floor[] = [];
+  for (const g of relGroups()) {
+    const ids = g.ids.filter((id) => known(s, id) && EXAMPLES_OF(WORD_BY_ID[id]).length);
+    if (ids.length < 2) continue;
+    const id = `${g.kind}:${g.base}`;
+    const names = ids.slice(0, 4).map((x) => WORD_BY_ID[x].de).join(' / ');
+    out.push({ id, label: `${REL_ZH[g.kind]} · ${g.kind === 'root' ? `${WORD_BY_ID[g.base].de} 家：` : ''}${names}${ids.length > 4 ? ' …' : ''}`, words: ids });
+  }
+  out.sort((a, b) => Number(done.has(a.id)) - Number(done.has(b.id)));
+  return out.slice(0, 15);
+}
+
+/** 「这句该用哪个」: two sentences that differ only in this word — which form goes where. */
+export function contrastTask(s: GameState, w: Word, floor: string, rng: Rng): GramTask | null {
+  const [kind, base] = floor.split(':') as [RelKind, string];
+  const g = relGroups().find((x) => x.kind === kind && x.base === base);
+  if (!g) return null;
+  const others = g.ids.filter((id) => id !== w.id && known(s, id) && EXAMPLES_OF(WORD_BY_ID[id]).length);
+  const mine = (EXAMPLES_OF(w));
+  if (!others.length || !mine.length) return null;
+  const o = WORD_BY_ID[pick(rng, others)];
+  const theirs = EXAMPLES_OF(o);
+  const a = pick(rng, mine);
+  const b = pick(rng, theirs);
+  if (!a || !b || a.blank.toLowerCase() === b.blank.toLowerCase()) return null;
+  const answer = `① ${a.blank} · ② ${b.blank}`;
+  return {
+    sys: 'wordfam',
+    prompt: `${REL_ZH[kind]}：这两句该用哪个？（${w.de} / ${o.de}）`,
+    focus: `① ${a.before}___${a.after}\n② ${b.before}___${b.after}`,
+    answer,
+    options: shuffle(rng, [answer, `① ${b.blank} · ② ${a.blank}`]),
+    tier: 0,
+    rule: `${w.art ? `${w.art} ` : ''}${w.de}：${w.zh}；${o.art ? `${o.art} ` : ''}${o.de}：${o.zh}。① ${a.zh} ② ${b.zh}`,
+    full: `${a.before}${a.blank}${a.after}`,
+    zh: a.zh,
+    wordId: w.id,
+    mix: o.id,
+  };
+}
+
+function EXAMPLES_OF(w: Word) {
+  return (EXAMPLES[w.id] ?? []).map(parse).filter((x): x is NonNullable<typeof x> => !!x && !!x.blank.trim());
 }
 
 /** The monsters of one run of this floor (shuffled, at most GRAM_DUNGEON.fights). */
@@ -199,7 +289,8 @@ export function prepTask(w: Word, floor: string, lock: number, rng: Rng): GramTa
 // ---- 词族秘境 ------------------------------------------------------------------------------------
 
 /** 词族层: write a family member from its Chinese (nouns with the article). 构词层: its gender from the suffix. */
-export function wordfamTask(w: Word, floor: string, rng: Rng): GramTask | null {
+export function wordfamTask(s: GameState, w: Word, floor: string, rng: Rng): GramTask | null {
+  if (floor.includes(':')) return contrastTask(s, w, floor, rng);
   const fam = WORD_FAMILIES[w.de];
   if (!fam?.length) return null;
   if (floor === 'suffix') {
@@ -237,5 +328,5 @@ export function wordfamTask(w: Word, floor: string, rng: Rng): GramTask | null {
 export function dungeonTask(s: GameState, kind: DungeonKind, floor: string, w: Word, rng: Rng, step: number): GramTask | null {
   if (kind === 'ablaut') return ablautTask(s, w, floor, rng, step);
   if (kind === 'prep') return prepTask(w, floor, step, rng);
-  return wordfamTask(w, floor, rng);
+  return wordfamTask(s, w, floor, rng);
 }
