@@ -1,0 +1,28 @@
+name: 词表例句 Tatoeba
+on:
+  push:
+    branches: ['claude/project-thread-b10ftm']
+    paths:
+      - 'data/wortschatz/build/scripts/tatoeba_match.py'
+      - '.github/workflows/wortschatz-tatoeba.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  match:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install simplemma
+      - run: bash scripts/proof/tatoeba-download.sh
+      - run: python3 data/wortschatz/build/scripts/tatoeba_match.py
+      - name: Commit results
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/wortschatz/build/tatoeba
+          git diff --cached --quiet || git commit -m "Tatoeba example candidates for word list [skip ci]"
+          git push
