@@ -28,7 +28,12 @@ const URL = process.env.DEEPSEEK_URL ?? 'https://api.deepseek.com/chat/completio
 
 const all: Item[] = JSON.parse(readFileSync(join(root, 'proof/out/sentences.json'), 'utf8'));
 // Single words and verb forms are checked as whole cards instead (gender, plural, meaning, the full table).
-const items: Item[] = all.filter((x) => !['word', 'plural', 'conj'].includes(x.kind));
+// Boss lines carry a task description in Chinese (问你叫什么) and link halves carry the joined sentence's Chinese:
+// neither is a translation, so DeepSeek doesn't see them (it flagged every one of them on the first run).
+const NOT_TRANSLATION = (x: Item) => x.kind === 'boss' || (x.kind === 'link' && !x.id.endsWith(':joined'));
+const items: Item[] = all
+  .filter((x) => !['word', 'plural', 'conj'].includes(x.kind))
+  .map((x) => (NOT_TRANSLATION(x) ? { ...x, zh: undefined, hash: sentenceHash(`noz ${x.text}`) } : x));
 for (const w of WORDS) {
   const de = w.art ? `${w.art} ${w.de}${w.pl && w.pl !== '-' ? `, Plural: die ${w.pl}` : ''}` : w.de;
   items.push({ id: `card:${w.id}`, kind: 'card', text: de, zh: w.zh, src: 'src/data/words*.ts', hash: sentenceHash(`card ${de} ${w.zh}`) });
@@ -48,10 +53,28 @@ const cachePath = join(root, 'proof/out/deepseek-cache.json');
 const cache: Record<string, Verdict> = existsSync(cachePath) ? JSON.parse(readFileSync(cachePath, 'utf8')) : {};
 
 const SYSTEM = `你是德语母语的编辑，在校对一款给中国人学德语的游戏（A1–A2 难度）里的德语。
-每行一条，格式「序号 [类型] 德语 ‖ 中文」。类型：ex/diary/perfekt 等是句子；card 是词卡（冠词、复数、中文义）；conjrow 是现在时变位表；pattern 是程序生成的句子。
+每行一条，格式「序号 [类型] 德语 ‖ 中文」。类型：ex/diary/perfekt 等是句子；card 是词卡（冠词、复数、中文义）；conjrow 是现在时变位表；pattern 是程序生成的句子；tsv 是词表数据里的例句，中文部分若写了「搭配：…」，还要检查句子是否真的用了这个搭配和格。
 只挑出真正有问题的：语法或拼写错误、冠词/复数/格/变位错误、德国人不会这样说的不自然说法、中文翻译和德语意思不符。
-不要挑：风格偏好、可以接受的多种说法、口语化但正确的说法、人名和游戏里编的地名（Gleisdorf、Brotmarkt、Altstadt 等）、故事里的奇幻内容。拿不准就不报。
+不要挑：风格偏好、可以接受的多种说法、口语化但正确的说法、人名和游戏里编的地名（Gleisdorf、Brotmarkt、Altstadt 等）、故事里的奇幻内容。拿不准就不报。觉得没问题的句子不要写进 issues（不要写「不算错」「不报」之类的条目）。
+标准德语里正确的说法不算错（例如 hat gelegen、hat geschlossen、Mein Knie hat wehgetan），不要用南德/奥地利用法去改。
 只输出 JSON：{"issues":[{"n":序号,"severity":"error|unnatural|translation","problem":"用中文一句话说明","fix":"改好的德语（翻译问题就给改好的中文）"}]}。全部没问题就输出 {"issues":[]}。`;
+
+/** The first complete {...} in the reply: the model sometimes adds a note after the JSON. */
+function firstJson(raw: string): { issues?: any[] } {
+  const start = raw.indexOf('{');
+  let depth = 0;
+  let inStr = false;
+  for (let i = start; i >= 0 && i < raw.length; i++) {
+    const c = raw[i];
+    if (inStr) {
+      if (c === '\\') i++;
+      else if (c === '"') inStr = false;
+    } else if (c === '"') inStr = true;
+    else if (c === '{') depth++;
+    else if (c === '}' && --depth === 0) return JSON.parse(raw.slice(start, i + 1));
+  }
+  throw new Error(`no JSON in reply: ${raw.slice(0, 120)}`);
+}
 
 async function ask(batch: Item[]): Promise<Map<number, Verdict>> {
   const user = batch.map((x, i) => `${i + 1} [${x.kind}] ${x.text}${x.zh ? ` ‖ ${x.zh}` : ''}`).join('\n');
@@ -71,7 +94,7 @@ async function ask(batch: Item[]): Promise<Map<number, Verdict>> {
       if (!r.ok) throw new Error(`DeepSeek ${r.status}: ${(await r.text()).slice(0, 300)}`);
       const j = await r.json();
       const raw: string = j.choices[0].message.content ?? '';
-      const parsed = JSON.parse(raw.replace(/^```(?:json)?\s*|\s*```$/g, ''));
+      const parsed = firstJson(raw);
       const out = new Map<number, Verdict>();
       for (const is of parsed.issues ?? []) {
         const n = Number(is.n);
@@ -92,7 +115,14 @@ console.log(`${items.length} items, ${items.length - todo.length} cached, sendin
 const SIZE = 40;
 for (let i = 0; i < run.length; i += SIZE) {
   const batch = run.slice(i, i + SIZE);
-  const res = await ask(batch);
+  let res: Map<number, Verdict>;
+  try {
+    res = await ask(batch);
+  } catch (e) {
+    // One bad batch must not lose the rest: leave it uncached, the next run sends it again.
+    console.log(`\nbatch ${i / SIZE + 1} skipped: ${(e as Error).message.slice(0, 200)}`);
+    continue;
+  }
   batch.forEach((x, k) => (cache[x.hash] = res.get(k) ?? { ok: true }));
   writeFileSync(cachePath, JSON.stringify(cache));
   process.stdout.write(`\rDeepSeek ${Math.min(i + SIZE, run.length)}/${run.length}`);
@@ -120,6 +150,11 @@ for (const sev of ['error', 'translation', 'unnatural']) {
 writeFileSync(join(root, 'proof/out/deepseek.md'), lines.join('\n'));
 writeFileSync(join(root, 'proof/out/deepseek.json'), JSON.stringify(flagged.map((x) => ({ ...x, ...cache[x.hash] })), null, 1));
 console.log(`${flagged.length} suspicious → proof/out/deepseek.md`);
+// The full list in the log too, so it can be read without downloading the artifact.
+for (const x of flagged) {
+  const v = cache[x.hash];
+  console.log(`[${v.severity ?? 'error'}] ${x.id} | ${x.text}${x.zh ? ` | ${x.zh}` : ''} | ${v.problem ?? ''}${v.fix ? ` → ${v.fix}` : ''}`);
+}
 if (process.env.GITHUB_STEP_SUMMARY) {
   const sum = [`### 德语校对：DeepSeek`, `${items.length} 条，${flagged.length} 条可疑。完整名单见 artifact proof-report。`, ''];
   for (const x of flagged.slice(0, 30)) sum.push(`- \`${x.id}\` ${x.text} — ${cache[x.hash].problem ?? ''}${cache[x.hash].fix ? ` → ${cache[x.hash].fix}` : ''}`);
