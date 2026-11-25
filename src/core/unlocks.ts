@@ -86,3 +86,25 @@ export const UNLOCK_TEXT: Record<number, string[]> = {
   28: ['零号站台：铁轨镇里隐藏的站台，进门前读一张德语规则卡，5 场加一个小首领，守住规则奖励更多'],
   30: ['A1 突破试炼：主城考官那里考听、读、写、语法四段，各 8 题对 5 题算过', '终极技能：每场第一次终结技变成句型填空，给好句型，两个空填进你学过的词，全对 ×3，对一个 ×1.5'],
 };
+
+// 0.7–0.8 语法线和新系统 (游戏设计 十六): appended to the level-up banner of their level.
+const GRAM_UNLOCK_TEXT: Record<number, string[]> = {
+  5: ['否定 kein / nicht：怪有时会让你把它的句子改成否定（第一次会先贴一张规则看板）'],
+  6: ['物主冠词 mein / dein：词尾和 ein 一样'],
+  8: ['情态动词：muss / kann / möchte 放第二位，另一个动词放句尾'],
+  10: ['时间介词：am Montag、um acht Uhr、im Mai'],
+  12: ['可分动词：Ich stehe um sieben Uhr auf.'],
+  14: ['命令式：Geben Sie mir bitte …'],
+  15: ['与格代词 mir / dir：helfen、gefallen、schmecken、gehören', '告示怪 / 信件怪：有的怪身上贴着告示或信，读懂才打得中'],
+  21: ['过去式 war / hatte：说过去的状态'],
+  24: ['语法秘境 · 变音秘境：营地的「语法秘境」，按元音变化分族练强变化动词；打通一族，这一族在野外也会考变音'],
+  31: ['介词秘境：锁链怪，先填介词再选格（warten auf + 第四格）'],
+  33: ['情态动词过去式：konnte、musste、wollte'],
+  35: ['镜像怪：反身代词 mich / dich / sich'],
+  37: ['词族秘境：一个词根长出一家（die Fahrt、der Fahrer），构词层看词尾定性别'],
+  40: ['决斗场（AI 对话）：营地里和 AI 用德语办事；篝火日记有 AI 批改（要登录，每天有次数）'],
+  41: ['形容词词尾：ein guter Tee、das gute Brot'],
+  43: ['复习伙伴：带一个归名的词一起打，答对它的例句题它就和你一起出手'],
+  81: ['过去式（所有动词）、变音秘境过去式层、镜像怪第三格（Ich wasche mir die Hände）、文章群怪'],
+};
+for (const [lv, lines] of Object.entries(GRAM_UNLOCK_TEXT)) UNLOCK_TEXT[Number(lv)] = [...(UNLOCK_TEXT[Number(lv)] ?? []), ...lines];
