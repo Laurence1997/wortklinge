@@ -20,15 +20,19 @@ SYSTEM = f"""你在给一个德语学习游戏的词表分组。玩家是在德�
    - 选「这个词第一次真正用得上」的情境：Kartoffel→吃喝，Miete→住房家具，Rezept→身体看病（若例句是菜谱也可吃喝，以中文释义第一义为准）。
    - 数词、Uhr、Minute 等：数字或时间日期。动物、植物、天气、风景：旅行天气自然。情感、恋爱、吵架、朋友：人际情感。
    - 犯罪、警察、法律、政治、历史、宗教这类：如果是办事会碰到的（Polizei、Gesetz）可放办手续，新闻里才见的放媒体科技。
-   - 只有虚词、很抽象、哪里都用的词（sein、haben、machen、Sache、gut）才标「通用」。尽量少用通用。
+   - 按词本身的意思判断，不要看它碰巧出现在什么句子里。
+   - 语法词一律标「通用」：冠词、代词、物主词、介词（及 im/zum 这类缩合）、并列连词 und/oder、助动词和情态动词（sein、haben、werden、können、müssen…）、疑问词。
+   - 意思很宽、哪个情境都常用的普通词（machen、geben、sagen、Sache、Ding、gut、groß、neu）也标「通用」。
+   - 有具体生活场合的词才给具体情境：Termin→身体看病或办手续，Wasser→吃喝，Stadt→方向和城里的地方，Schule→自我介绍家庭。
 2. f（功能线）：只给「表达类」的词填：副词、连词、语气词、感叹词、表达观点/推测/评价/请求的动词或形容词（meinen、glauben、vermuten、bitten、wahrscheinlich、leider、trotzdem、weil、falls）。
    从这 10 条里选一条：{'、'.join(FUN)}。具体名词、动作动词、普通形容词、介词、代词、数词一律留空 ""。
-3. h（宿主情境）：只在 f 非空时填，从情境列表里选这个词最自然先用到的一个（不能是「通用」），例如 vielleicht→时间日期（约时间），leider→问候客套（婉拒），weil→作息爱好（讲经历）。f 为空时 h 为空。
+3. h（宿主情境）：只在 f 非空时填，从情境列表里选这个词最自然先用到的一个（不能是「通用」），例如 vielleicht→时间日期（约时间），leider→问候客套（婉拒），weil→作息爱好（讲经历），bitte→吃喝（点餐），trotzdem→旅行天气自然（下雨也出门），sehr→问候客套（Danke sehr）。f 为空时 h 为空。f 非空时 s 填「通用」。
+   情态动词、助动词不算表达类（f 留空）。
 只回 JSON：{{"r": [{{"i": 排名, "s": "...", "f": "...", "h": "..."}}, ...]}}，每个输入词一条，不要解释。"""
 
 
 def call(batch):
-    user = '\n'.join(f"{x['排名']}\t{x['原形']}\t{x['词性']}\t{x['中文']}\t{x['例句']}" for x in batch)
+    user = '\n'.join(f"{x['排名']}\t{x['原形']}\t{x['词性']}\t{x['中文']}" for x in batch)
     body = json.dumps({'model': MODEL, 'reasoning_effort': 'low', 'response_format': {'type': 'json_object'},
                        'messages': [{'role': 'system', 'content': SYSTEM}, {'role': 'user', 'content': user}]}).encode()
     for attempt in range(5):
