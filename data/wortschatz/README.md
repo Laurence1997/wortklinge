@@ -14,6 +14,6 @@ This data is licensed **CC BY-SA 4.0** (https://creativecommons.org/licenses/by-
 - FrequencyWords by Hermit Dave (OpenSubtitles 2018, German), CC BY-SA 4.0: https://github.com/hermitdave/FrequencyWords
 - wordfreq by Robyn Speer, data CC BY-SA 4.0: https://github.com/rspeer/wordfreq
 - german-nouns by gambolputty (from Wiktionary), CC BY-SA 4.0: https://github.com/gambolputty/german-nouns
-- german-verbs / german-verbs-dict (based on german-pos-dict): https://github.com/ludan/german-verbs-dict
+- german-verbs / german-verbs-dict from RosaeNLG (Apache-2.0; dictionary based on german-pos-dict, CC BY-SA 4.0): https://github.com/RosaeNLG/rosaenlg
 
 Chinese glosses, the life-in-Germany word list and the example sentences in `verben-praeposition.tsv` were written for this project.
