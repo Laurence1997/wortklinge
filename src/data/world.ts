@@ -2,8 +2,10 @@
 // Each scene sits on a tile of the old 0.4 map (`at`), so saved positions, echoes, packs (same scene = within
 // CONFIG.pack.radiusTiles) and the online presence all keep working with tile coordinates.
 // Fields keep the 0.4 word pools (zone); a 0.4 field of 10 monsters became 4 scenes × CONFIG.map.slots.
-import type { ZoneId } from '../core/types';
+import type { LaterRegionNo, ZoneId } from '../core/types';
 import type { NpcId, RegionId } from '../game/map';
+import { FIELD_KEYS, REGION_DEFS, regionLevels, type RegionDef } from './zones';
+import { LATER_SCENE_WORDS } from './words';
 
 export type SceneType = 'camp' | 'field' | 'road' | 'door' | 'hidden';
 
@@ -48,10 +50,60 @@ export const AREAS: AreaDef[] = [
   { region: 1, zh: '最后的营地', de: 'Glutheim', levels: 'Lv 1–10', hub: 'r1-camp' },
   { region: 2, zh: '面包集市', de: 'Brotmarkt', levels: 'Lv 11–20', hub: 'r2-feuer' },
   { region: 3, zh: '铁轨镇', de: 'Gleisdorf', levels: 'Lv 21–30', hub: 'r3-platz' },
+  // 0.7 + 0.8 (src/data/zones.ts).
+  ...REGION_DEFS.map((d) => ({ region: d.region, zh: d.zh, de: d.de, levels: `Lv ${regionLevels(d.region).join('–')}`, hub: `r${d.region}-hub` })),
 ];
 
-/** Areas not built yet, shown greyed out on the big map. */
-export const AREAS_LATER = ['租屋城 · A2', '旧城区 · A2', '河港 · A2', '图书馆 · B1'];
+/** Areas not built yet, shown greyed out on the big map (游戏设计 四, regions 13–20). */
+export const AREAS_LATER = ['议会堡 · B2', '铸币场 · B2', '观星台 · B2', '面具剧场 · B2', '档案深处 · C1', '天平庭 · C1', '荒原 · C1', '沉默之心 · C1'];
+
+// ---- 0.7 + 0.8 · regions 4–12, generated from src/data/zones.ts on the region-3 street plan ----------------
+
+/** Region-3 positions (tiles) reused by every later region: field A north, B south, C east. */
+const PLAN = {
+  hub: { x: 13, y: 24 }, stand: { x: 15, y: 30 }, x: { x: 22, y: 24 }, cx: { x: 51, y: 22 },
+  a: [{ x: 28, y: 16 }, { x: 28, y: 9 }, { x: 35, y: 9 }, { x: 39, y: 3 }, { x: 44, y: 14 }, { x: 44, y: 22 }, { x: 47, y: 4 }, { x: 35, y: 18 }],
+  b: [{ x: 28, y: 33 }, { x: 28, y: 40 }, { x: 35, y: 41 }, { x: 38, y: 27 }, { x: 42, y: 34 }, { x: 35, y: 34 }, { x: 49, y: 35 }, { x: 47, y: 42 }],
+  c: [{ x: 56, y: 13 }, { x: 65, y: 13 }, { x: 61, y: 7 }, { x: 56, y: 31 }, { x: 62, y: 19 }, { x: 68, y: 34 }, { x: 56, y: 40 }, { x: 63, y: 40 }],
+  door: { x: 68, y: 24 }, hide: { x: 69, y: 4 }, onward: { x: 67, y: 44 },
+};
+
+function laterScenes(d: RegionDef): SceneDef[] {
+  const r = d.region as LaterRegionNo;
+  const p = `r${r}`;
+  const out: SceneDef[] = [
+    { id: `${p}-hub`, region: r, no: 1, zh: d.hubZh, type: 'camp', at: PLAN.hub, npcs: ['hilde', 'examiner'], bonfire: true, gate: (r - 1) as RegionId },
+    { id: `${p}-stand`, region: r, no: 2, zh: d.standZh, type: 'camp', at: PLAN.stand, npcs: ['mira', 'greta'] },
+    { id: `${p}-x`, region: r, no: 3, zh: d.crossZh, type: 'road', at: PLAN.x },
+  ];
+  let no = 4;
+  d.fields.forEach((f, fi) => {
+    const k = FIELD_KEYS[fi];
+    if (k === 'c') out.push({ id: `${p}-cx`, region: r, no: no++, zh: d.gateCZh, type: 'road', at: PLAN.cx });
+    f.scenes.forEach((name, si) => {
+      const id = `${p}-${k}${si + 1}`;
+      out.push({ id, region: r, no: no++, zh: `${f.zh}${si === 0 ? '口' : si === 7 ? '尽头' : ''} · ${name}`, type: 'field', zone: `${p}${k}` as ZoneId, at: PLAN[k][si], words: LATER_SCENE_WORDS[id] ?? [] });
+    });
+  });
+  out.push({ id: `${p}-door`, region: r, no: no++, zh: d.doorZh, type: 'door', at: PLAN.door, door: true });
+  out.push({ id: `${p}-hide`, region: r, no: no++, zh: d.hiddenZh, type: 'hidden', zone: `${p}c` as ZoneId, slots: 2, at: PLAN.hide, hiddenBy: (LATER_SCENE_WORDS[`${p}-c2`] ?? [])[0], lucky: 3 });
+  if (r < 12) out.push({ id: `${p}-onward`, region: r, no: no++, zh: d.onwardZh, type: 'road', at: PLAN.onward, gate: (r + 1) as RegionId, openFlag: `boss${r}Kills` });
+  return out;
+}
+
+/** Same paths as region 3 (hub → crossroads → three fields, door behind C, hidden path off C2, onward off C7). */
+function laterLinks(r: number): Array<[string, string]> {
+  const p = `r${r}`;
+  const L: Array<[string, string]> = [
+    ['hub', 'stand'], ['hub', 'x'],
+    ['x', 'a1'], ['a1', 'a2'], ['a2', 'a3'], ['a3', 'a4'], ['a4', 'a7'], ['a3', 'a5'], ['a1', 'a8'], ['a8', 'a6'], ['a5', 'a6'], ['a5', 'a7'],
+    ['x', 'b1'], ['b1', 'b4'], ['b1', 'b6'], ['b1', 'b2'], ['b2', 'b3'], ['b6', 'b5'], ['b4', 'b5'], ['b3', 'b8'], ['b5', 'b7'], ['b7', 'b8'],
+    ['x', 'cx'], ['cx', 'c1'], ['c1', 'c3'], ['c3', 'c2'], ['c1', 'c5'], ['c2', 'c5'], ['cx', 'c4'], ['c4', 'c6'], ['c4', 'c7'], ['c7', 'c8'], ['c6', 'c8'],
+    ['c8', 'door'], ['c5', 'door'], ['c2', 'hide'],
+  ];
+  if (r < 12) L.push(['c7', 'onward']);
+  return L.map(([a, b]) => [`${p}-${a}`, `${p}-${b}`]);
+}
 
 export const SCENES: SceneDef[] = [
   // ---- Region 1 · 最后的营地 ----
@@ -150,6 +202,9 @@ export const SCENES: SceneDef[] = [
   { id: 'r3-door', region: 3, no: 30, zh: '末班站台', type: 'door', at: { x: 68, y: 24 }, door: true },
   // 零号站台: drawn on the timetable wall once die Fahrkarte reaches 归名.
   { id: 'r3-hide', region: 3, no: 31, zh: '零号站台', type: 'hidden', zone: 'fahrplanhalle', slots: 2, at: { x: 69, y: 4 }, hiddenBy: 'fahrkarte', lucky: 3 },
+  // 0.7: the road on to 租屋城, drawn once 晚点之王 has fallen (like the rail bridge after 吞秤者).
+  { id: 'r3-onward', region: 3, no: 32, zh: '出城的末班车道', type: 'road', at: { x: 67, y: 44 }, gate: 4, openFlag: 'boss3Kills' },
+  ...REGION_DEFS.flatMap(laterScenes),
 ];
 
 /** Paths between scenes (both ways). */
@@ -176,7 +231,8 @@ export const LINKS: Array<[string, string]> = [
   ['r3-a4', 'r3-a5'], ['r3-a3', 'r3-a8'], ['r3-a5', 'r3-a7'], ['r3-a7', 'r3-a8'],
   ['r3-x', 'r3-fx'], ['r3-fx', 'r3-f1'], ['r3-f1', 'r3-f3'], ['r3-f3', 'r3-f2'], ['r3-f1', 'r3-f5'], ['r3-f2', 'r3-f5'],
   ['r3-fx', 'r3-f4'], ['r3-f4', 'r3-f6'], ['r3-f4', 'r3-f7'], ['r3-f7', 'r3-f8'], ['r3-f6', 'r3-f8'],
-  ['r3-f8', 'r3-door'], ['r3-f5', 'r3-door'], ['r3-f2', 'r3-hide'],
+  ['r3-f8', 'r3-door'], ['r3-f5', 'r3-door'], ['r3-f2', 'r3-hide'], ['r3-f7', 'r3-onward'],
+  ...REGION_DEFS.flatMap((d) => laterLinks(d.region)),
 ];
 
 export const SCENE_BY_ID: Record<string, SceneDef> = Object.fromEntries(SCENES.map((s) => [s.id, s]));

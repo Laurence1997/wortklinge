@@ -4,7 +4,8 @@
 // Generated from fixed seeds so every player walks the same streets. Both maps are 74×48.
 
 import { makeRng } from '../core/rng';
-import type { ZoneId } from '../core/types';
+import { FIELD_KEYS, REGION_DEF, REGION_DEFS, fieldLevels, type FieldStyle, type RegionDef } from '../data/zones';
+import type { RegionNo, ZoneId } from '../core/types';
 
 export const TILE = 16;
 export const MAP_W = 74;
@@ -34,7 +35,7 @@ export interface Rect {
   h: number;
 }
 
-export type RegionId = 1 | 2 | 3;
+export type RegionId = RegionNo;
 export type NpcId = 'hilde' | 'greta' | 'mira' | 'konrad' | 'examiner' | 'brandt' | 'lina' | 'weber';
 
 export interface ZoneDef {
@@ -60,7 +61,25 @@ export const ZONES: ZoneDef[] = [
   { id: 'bahnhofstrasse', region: 3, zh: '站前街', de: 'Bahnhofstraße', rect: { x: 24, y: 3, w: 26, h: 19 }, levels: 'Lv 21–24', monsters: 10 },
   { id: 'altstadt', region: 3, zh: '老城路口', de: 'Altstadt', rect: { x: 24, y: 27, w: 26, h: 18 }, levels: 'Lv 24–27', monsters: 10 },
   { id: 'fahrplanhalle', region: 3, zh: '时刻表大厅', de: 'Fahrplanhalle', rect: { x: 52, y: 6, w: 17, h: 36 }, levels: 'Lv 27–30', monsters: 10 },
+  // 0.7 + 0.8: regions 4–12 on the region-3 plan (src/data/zones.ts).
+  ...REGION_DEFS.flatMap(laterZones),
 ];
+
+function laterZones(d: RegionDef): ZoneDef[] {
+  const rects = [{ x: 24, y: 3, w: 26, h: 19 }, { x: 24, y: 27, w: 26, h: 18 }, { x: 52, y: 6, w: 17, h: 36 }];
+  return [
+    { id: `r${d.region}hub` as ZoneId, region: d.region, zh: d.hubZh, de: d.de, rect: { x: 4, y: 13, w: 18, h: 23 }, levels: '主城', monsters: 0 },
+    ...d.fields.map((f, i) => ({
+      id: `r${d.region}${FIELD_KEYS[i]}` as ZoneId,
+      region: d.region,
+      zh: f.zh,
+      de: f.de,
+      rect: rects[i],
+      levels: `Lv ${fieldLevels(d.region, i as 0 | 1 | 2).join('–')}`,
+      monsters: 10,
+    })),
+  ];
+}
 
 export function zonesOf(region: RegionId): ZoneDef[] {
   return ZONES.filter((z) => z.region === region);
@@ -85,6 +104,8 @@ export function idx(x: number, y: number): number {
 }
 
 export function generateMap(region: RegionId = 1): MapData {
+  const later = REGION_DEF[region];
+  if (later) return generateLater(later);
   return region === 3 ? generateRegion3() : region === 2 ? generateRegion2() : generateRegion1();
 }
 
@@ -455,6 +476,9 @@ function generateRegion3(): MapData {
     { id: 'greta', x: 18, y: 18 },
   ];
   for (const n of npcs) set(n.x, n.y, T.Ground);
+  // 0.7: the road on to region 4 (south-east, opens after 晚点之王). No rng calls, so the town stays as it was.
+  for (let x = 60; x < 72; x++) set(x, 44, T.Road);
+  for (let y = 40; y < 45; y++) set(61, y, T.Road);
 
   return {
     region: 3,
@@ -467,6 +491,135 @@ function generateRegion3(): MapData {
     start: { x: 4, y: 24 },
     lamps,
     signs,
+  };
+}
+
+/** Regions 4–12: the region-3 street plan (rail road west → east, two cross streets, town west, boss door east, gate
+ *  back west, road on south-east), each field built in its own style. Seeded per region so everyone walks the same map. */
+function generateLater(d: RegionDef): MapData {
+  const rng = makeRng(20261200 + d.region);
+  const tiles = new Uint8Array(MAP_W * MAP_H).fill(T.Ground);
+  const set = (x: number, y: number, t: T) => {
+    if (x >= 0 && y >= 0 && x < MAP_W && y < MAP_H) tiles[idx(x, y)] = t;
+  };
+  const get = (x: number, y: number) => tiles[idx(x, y)];
+
+  for (let y = 0; y < MAP_H; y++)
+    for (let x = 0; x < MAP_W; x++) {
+      const edge = Math.min(x, y, MAP_W - 1 - x, MAP_H - 1 - y);
+      if (edge < 2 || (edge < 3 && rng() < 0.5)) set(x, y, T.Fog);
+    }
+  for (let x = 2; x < 70; x++) for (let dy = 0; dy < 2; dy++) set(x, 24 + dy, T.Road);
+  for (let y = 4; y < 45; y++) for (let dx = 0; dx < 2; dx++) set(22 + dx, y, T.Road);
+  for (let y = 4; y < 45; y++) for (let dx = 0; dx < 2; dx++) set(50 + dx, y, T.Road);
+
+  const blocks = (r: Rect, style: FieldStyle) => {
+    const step = style === 'platforms' || style === 'docks' ? 6 : style === 'sheds' ? 8 : 7;
+    for (let y = r.y; y < r.y + r.h; y++)
+      for (let x = r.x; x < r.x + r.w; x++) {
+        if (get(x, y) === T.Fog) continue;
+        const lx = x - r.x;
+        const ly = y - r.y;
+        if (lx % step === 0 || ly % step === 0) {
+          set(x, y, T.Road);
+          continue;
+        }
+        const bx = lx % step;
+        const by = ly % step;
+        const inner = bx >= 2 && bx <= step - 2 && by >= 2 && by <= step - 2;
+        const edgeB = bx === 2 || bx === step - 2 || by === 2 || by === step - 2;
+        if (!inner) {
+          if (rng() < (style === 'grove' ? 0.18 : 0.03)) set(x, y, T.Tree);
+          else if (rng() < 0.03) set(x, y, style === 'platforms' ? T.Lamp : T.Crate);
+          continue;
+        }
+        if (style === 'grove') {
+          if (rng() < 0.55) set(x, y, T.Tree);
+          else if (rng() < 0.1) set(x, y, T.Rubble);
+        } else if (style === 'stalls') {
+          if (by === 2 && bx !== 4) set(x, y, T.Crate);
+          else if (by === 5 && rng() < 0.3) set(x, y, T.Rubble);
+        } else if (style === 'docks') {
+          // Piers: water (fog) between wooden walkways, crates stacked on the quay.
+          if (by === 3 || by === 4) set(x, y, bx === 3 ? T.Ground : T.Fog);
+          else if (rng() < 0.3) set(x, y, T.Crate);
+        } else if (style === 'platforms') {
+          if (by === 2 && bx !== 3) set(x, y, T.Wall);
+          else if (rng() < 0.15) set(x, y, T.Crate);
+        } else if (style === 'yard') {
+          // Office blocks round a paved yard: walls with a gate, an open middle.
+          if (edgeB) set(x, y, by === step - 2 && bx === 4 ? T.Ground : T.Wall);
+          else if (rng() < 0.08) set(x, y, T.Crate);
+        } else if (style === 'sheds') {
+          if (edgeB) set(x, y, by === step - 2 && bx === 4 ? T.Ground : T.Wall);
+          else if (rng() < 0.35) set(x, y, T.Crate);
+        } else {
+          if (edgeB) set(x, y, rng() < (style === 'houses' ? 0.2 : 0.1) ? T.Rubble : T.Wall);
+          else set(x, y, T.Roof);
+        }
+      }
+  };
+  const fieldZones = zonesOf(d.region).filter((z) => z.monsters);
+  d.fields.forEach((f, i) => blocks(fieldZones[i].rect, f.style));
+
+  // The town square: ash round the bonfire, a hall north, stalls south.
+  const bonfire = { x: 12, y: 24 };
+  for (let y = 14; y < 35; y++)
+    for (let x = 4; x < 22; x++) {
+      if (get(x, y) === T.Fog) continue;
+      const dd = Math.hypot(x - bonfire.x, (y - bonfire.y) * 0.9);
+      if (dd < 4) set(x, y, T.Ash);
+      else if (get(x, y) !== T.Road) set(x, y, T.Ground);
+    }
+  for (let y = 14; y <= 18; y++)
+    for (let x = 5; x <= 11; x++) {
+      const edgeB = x === 5 || x === 11 || y === 14 || y === 18;
+      set(x, y, edgeB ? (y === 18 && x === 8 ? T.Ground : T.Wall) : T.Roof);
+    }
+  for (let x = 14; x <= 19; x++) set(x, 31, T.Crate);
+  set(18, 17, T.Tent);
+  for (let x = 4; x < 22; x++) for (let dy = 0; dy < 2; dy++) set(x, 24 + dy, T.Road);
+
+  const door = { x: 70, y: 24 };
+  for (let y = 18; y < 31; y++) {
+    set(71, y, T.Wall);
+    if (y !== 24 && y !== 25) set(70, y, T.Wall);
+  }
+  set(door.x, 24, T.Door);
+  set(door.x, 25, T.Door);
+  const gate = { x: 2, y: 24 };
+  set(1, 24, T.Door);
+  set(1, 25, T.Door);
+  set(2, 24, T.Road);
+  set(2, 25, T.Road);
+  // The road on to the next region (south-east), like the rail bridge in region 2.
+  for (let x = 60; x < 72; x++) set(x, 44, T.Road);
+  for (let y = 40; y < 45; y++) set(61, y, T.Road);
+
+  const lamps = [
+    { x: 21, y: 23 }, { x: 30, y: 26 }, { x: 44, y: 23 }, { x: 49, y: 26 }, { x: 60, y: 23 }, { x: 68, y: 26 }, { x: 4, y: 23 },
+  ];
+  for (const l of lamps) set(l.x, l.y, T.Lamp);
+
+  const npcs: MapData['npcs'] = [
+    { id: 'hilde', x: 14, y: 26 },
+    { id: 'examiner', x: 12, y: 22 },
+    { id: 'mira', x: 16, y: 30 },
+    { id: 'greta', x: 18, y: 18 },
+  ];
+  for (const n of npcs) set(n.x, n.y, T.Ground);
+
+  return {
+    region: d.region,
+    tiles,
+    bonfire,
+    npcs,
+    gates: [{ x: gate.x, y: gate.y, to: (d.region - 1) as RegionId }, { x: gate.x, y: gate.y + 1, to: (d.region - 1) as RegionId }],
+    sign: { x: bonfire.x, y: bonfire.y - 5 },
+    door,
+    start: { x: 4, y: 24 },
+    lamps,
+    signs: [],
   };
 }
 

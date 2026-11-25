@@ -4,6 +4,7 @@ import { HAIR_COLORS, type Look } from '../core/look';
 
 import { makeRng } from '../core/rng';
 import { MAP_H, MAP_W, TILE, T, type MapData, idx } from './map';
+import { REGION_DEF } from '../data/zones';
 
 export const PAL = {
   void: '#07040a',
@@ -203,7 +204,7 @@ export function renderMapCanvas(m: MapData, sheet?: CanvasImageSource | null, hi
   cv.height = MAP_H * TILE;
   const c = cv.getContext('2d')!;
   c.imageSmoothingEnabled = false;
-  const set = TOWN[(m.region ?? 1) as 1 | 2 | 3] ?? TOWN[1];
+  const set = TOWN[(REGION_DEF[m.region]?.look ?? m.region ?? 1) as 1 | 2 | 3] ?? TOWN[1];
   for (let y = 0; y < MAP_H; y++)
     for (let x = 0; x < MAP_W; x++) {
       const t = m.tiles[idx(x, y)];

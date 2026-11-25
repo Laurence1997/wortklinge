@@ -25,15 +25,21 @@ export interface Word {
   digit?: string;
   /** Tutorial words respawn fast. */
   tutorial?: boolean;
-  /** Region the word belongs to (1 = 余烬营地, 2 = 面包集市). */
-  region?: 1 | 2 | 3;
+  /** Region the word belongs to (1 = 余烬营地, 2 = 面包集市 … 12 = 心巷). */
+  region?: RegionNo;
+  /** 0.7/0.8 placeholder (src/data/zoneWords.ts): the region 1–3 word this stand-in copies (examples are shared). */
+  base?: string;
   /** Short example sentence shown in the 图鉴 card once 归名. */
   ex?: string;
 }
 
 export type FamilyId = 'zahnding' | 'echo' | 'zahlwurm' | 'sippe' | 'schild' | 'krume' | 'muenzling' | 'kram' | 'gier' | 'truhe' | 'fahrzeug' | 'nachhall' | 'wegweiser' | 'uhrwerk';
 /** Region 1: camp, echogasse, schilderstrasse, aschehof. Region 2 (面包集市): markt (city), gemuesegasse, waagegasse, kornspeicher. */
-export type ZoneId = 'camp' | 'echogasse' | 'schilderstrasse' | 'aschehof' | 'markt' | 'gemuesegasse' | 'waagegasse' | 'kornspeicher' | 'gleisdorf' | 'bahnhofstrasse' | 'altstadt' | 'fahrplanhalle';
+export type ZoneId = 'camp' | 'echogasse' | 'schilderstrasse' | 'aschehof' | 'markt' | 'gemuesegasse' | 'waagegasse' | 'kornspeicher' | 'gleisdorf' | 'bahnhofstrasse' | 'altstadt' | 'fahrplanhalle' | LaterZoneId;
+/** 0.7/0.8 regions 4–12 (src/data/zones.ts): r4hub is the town, r4a / r4b / r4c its three fields. */
+export type LaterZoneId = `r${LaterRegionNo}${'hub' | 'a' | 'b' | 'c'}`;
+export type LaterRegionNo = 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
+export type RegionNo = 1 | 2 | 3 | LaterRegionNo;
 
 /** flee = 宝箱怪 / rare monster shouting 「Ich muss los!」: kill it this turn or it runs. */
 export type IntentKind = 'attack' | 'defend' | 'charge' | 'heal' | 'wait' | 'flee';

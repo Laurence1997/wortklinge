@@ -14,6 +14,8 @@ import { genderOf, WORDS } from '../data/words';
 export type ClozeMode = 'pick' | 'base' | 'form';
 
 export const EXAMPLES: Record<string, string[]> = { ...EX1, ...EX2, ...EX3, ...EX4 };
+// 0.7/0.8 stand-in words (regions 4–12 before the 6000-word import) share the sentences of the word they copy.
+for (const w of WORDS) if (w.base && !EXAMPLES[w.id] && EXAMPLES[w.base]) EXAMPLES[w.id] = EXAMPLES[w.base];
 
 export interface Cloze {
   /** Sentence with ___ where the answer goes. */

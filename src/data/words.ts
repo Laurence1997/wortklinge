@@ -9,6 +9,8 @@
 import type { Article, FamilyId, Pos, Word, ZoneId } from '../core/types';
 import { REGION2_GROUPS } from './words2';
 import { REGION3_GROUPS } from './words3';
+import { FIELD_KEYS, REGION_DEFS, fieldLevels } from './zones';
+import { PLACEHOLDER_PER_SCENE, SCENE_ROWS } from './zoneWords';
 
 interface Group {
   family: FamilyId;
@@ -372,7 +374,78 @@ function build(): Word[] {
       out.push(w);
     });
   }
+  out.push(...buildLater(out, seen));
   return out;
+}
+
+/** 0.7/0.8: word ids of each region 4–12 scene (r4-a1 …), filled by buildLater. */
+export const LATER_SCENE_WORDS: Record<string, string[]> = {};
+
+const POS_FAMILY: Partial<Record<Pos, FamilyId>> = { n: 'kram', v: 'nachhall', adj: 'echo', phr: 'echo', num: 'zahlwurm', q: 'schild', name: 'schild' };
+
+/** Regions 4–12 (src/data/zones.ts): each scene's rows from zoneWords.ts, or ten stand-in nouns from regions 1–3
+ *  (`ph<region>-<id>`, `base` = the copied word) until the 6000-word list is imported. Levels spread over the field's
+ *  band in route order, like regions 1–3. */
+function buildLater(early: Word[], seen: Set<string>): Word[] {
+  const out: Word[] = [];
+  // Stand-ins: nouns with a plural and an example-ready id, region 3 first (closest in level and topic), rotating.
+  const pool = [...early.filter((w) => w.region === 3), ...early.filter((w) => w.region === 2), ...early.filter((w) => w.region === 1)].filter(
+    (w) => w.pos === 'n' && !!w.art && !!w.pl && w.pl !== '-' && !w.plOnly && !w.tutorial && w.family !== 'truhe',
+  );
+  let next = 0;
+  for (const d of REGION_DEFS) {
+    d.fields.forEach((f, fi) => {
+      const [lo, hi] = fieldLevels(d.region, fi as 0 | 1 | 2);
+      const zone = `r${d.region}${FIELD_KEYS[fi]}` as ZoneId;
+      f.scenes.forEach((_, si) => {
+        const scene = `r${d.region}-${FIELD_KEYS[fi]}${si + 1}`;
+        const rows = SCENE_ROWS[scene];
+        const ids: string[] = [];
+        // Scene si of 8 covers its share of the band; rows inside it climb within that share.
+        const lvlAt = (i: number, n: number) => Math.round(lo + (hi - lo) * ((si + (n > 1 ? i / (n - 1) : 0)) / 8));
+        if (rows?.length) {
+          rows.forEach((row, i) => {
+            const w = parseLaterRow(row, zone, lvlAt(i, rows.length));
+            if (!w) return;
+            w.region = d.region;
+            while (seen.has(w.id)) w.id += '-2';
+            seen.add(w.id);
+            ids.push(w.id);
+            out.push(w);
+          });
+        } else {
+          for (let i = 0; i < PLACEHOLDER_PER_SCENE && pool.length; i++) {
+            const b = pool[next++ % pool.length];
+            let id = `ph${d.region}-${b.id}`;
+            while (seen.has(id)) id += '-2';
+            seen.add(id);
+            ids.push(id);
+            out.push({ ...b, id, base: b.id, zone, region: d.region, lvl: lvlAt(i, PLACEHOLDER_PER_SCENE), moechte: undefined, ex: undefined });
+          }
+        }
+        LATER_SCENE_WORDS[scene] = ids;
+      });
+    });
+  }
+  return out;
+}
+
+/** One zoneWords.ts row → a Word ('n: die Wohnung | Wohnungen | 公寓', 'v: umziehen | 搬家' …). */
+export function parseLaterRow(row: string, zone: ZoneId, lvl: number): Word | null {
+  const m = /^\s*(n|v|adj|phr|num|q|name)\s*:\s*(.+)$/.exec(row);
+  if (!m) return null;
+  const pos = m[1] as Pos;
+  const parts = m[2].split('|').map((p) => p.trim());
+  const family = POS_FAMILY[pos] ?? 'kram';
+  if (pos === 'n') {
+    const [head, pl, zh] = parts;
+    const a = /^(der|die|das) (.+)$/.exec(head ?? '');
+    if (!a || !zh) return null;
+    return { id: slug(a[2]), de: a[2], art: a[1] as Article, pl: pl === 'pl' ? undefined : pl, plOnly: pl === 'pl' || undefined, zh, pos, family, lvl, zone };
+  }
+  const [de, zh] = parts;
+  if (!de || !zh) return null;
+  return { id: slug(de) + (pos === 'num' ? '-num' : ''), de, zh: pos === 'num' ? `数字 ${zh}` : zh, digit: pos === 'num' ? zh : undefined, pos, family, lvl, zone };
 }
 
 export const WORDS: Word[] = build();
