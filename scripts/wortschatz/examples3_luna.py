@@ -8,7 +8,7 @@ Example 1 is the one already in data/wortschatz/beispiele.tsv. Examples 2 and 3:
 Every kept sentence gets a natural simplified-Chinese translation (Tatoeba's Chinese is often missing or traditional).
 
 Input:  data/wortschatz/build/zonen-1-3.tsv (word → zone; from 6000词进场景-第1版.xlsx), beispiele.tsv, candidates.tsv
-Output: data/wortschatz/beispiele-mehr.tsv (原形, 序号, 例句, 例句中文, 例句出处). The proofread workflow reads it
+Output: data/wortschatz/build/beispiele-mehr.tsv (原形, 序号, 例句, 例句中文, 例句出处). The proofread workflow reads it
         automatically (column 例句), so LanguageTool and the Luna cross-check run on it like on everything else.
 Resumable: words already in the output are skipped. Env: OPENAI_API_KEY, LIMIT (0 = all), MODEL (gpt-6-luna).
 Licence: Tatoeba sentences CC BY 2.0 FR, the source column keeps sentence id and author.
@@ -23,7 +23,7 @@ if not KEY:
     print('OPENAI_API_KEY is not set: skipping.'); sys.exit(0)
 MODEL = os.environ.get('MODEL', 'gpt-6-luna')
 LIMIT = int(os.environ.get('LIMIT') or 0)
-OUT = os.path.join(D, 'beispiele-mehr.tsv')
+OUT = os.path.join(D, 'build', 'beispiele-mehr.tsv')
 
 def tsv(p): return list(csv.DictReader(open(p, encoding='utf-8'), delimiter='\t'))
 zone = tsv(os.path.join(D, 'build', 'zonen-1-3.tsv'))

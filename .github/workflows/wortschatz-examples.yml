@@ -1,10 +1,12 @@
-name: 词表例句补到 3 句 (more example sentences)
+name: 词表例句补充 (more example sentences)
 
-# Fills data/wortschatz/beispiele-mehr.tsv (examples 2 and 3 per word: Tatoeba first, then Luna) and commits it
-# back to the same branch. Runs on a push that changes the script or this file. Costs a few cents per run.
+# 1. examples3_luna.py: examples 2 and 3 per word (Tatoeba first, then Luna) → data/wortschatz/build/beispiele-mehr.tsv
+# 2. tatoeba_pool.py + examples_senses_luna.py: tag every sentence with 义项/搭配 and give verbs and words with several
+#    senses one sentence per sense and per verb + preposition pattern → data/wortschatz/beispiele-1-3.tsv
+# Commits the results back to the same branch. Runs on a push that changes a script or this file. Costs cents.
 on:
   push:
-    paths: ['scripts/wortschatz/examples3_luna.py', '.github/workflows/wortschatz-examples.yml']
+    paths: ['scripts/wortschatz/examples3_luna.py', 'scripts/wortschatz/tatoeba_pool.py', 'scripts/wortschatz/examples_senses_luna.py', '.github/workflows/wortschatz-examples.yml']
 
 permissions:
   contents: write
@@ -16,19 +18,31 @@ concurrency:
 jobs:
   examples:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
     steps:
       - uses: actions/checkout@v4
-      - name: Examples
-        env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          LIMIT: '0'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install simplemma
+      - name: Examples 2 and 3
         run: python3 scripts/wortschatz/examples3_luna.py
+      - name: Tatoeba pools
+        run: |
+          bash scripts/proof/tatoeba-download.sh
+          python3 scripts/wortschatz/tatoeba_pool.py
+      - name: Senses and collocations
+        env:
+          LIMIT: '40'
+        run: python3 scripts/wortschatz/examples_senses_luna.py
       - name: Commit
+        if: always()
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898233+github-actions[bot]@users.noreply.github.com'
-          git add data/wortschatz/beispiele-mehr.tsv
+          git add data/wortschatz/build/beispiele-mehr.tsv data/wortschatz/build/tatoeba/pool-1-3.tsv data/wortschatz/beispiele-1-3.tsv data/wortschatz/build/yixiang-1-3.tsv 2>/dev/null || true
           git diff --cached --quiet && exit 0
-          git commit -m 'Wortschatz: examples 2 and 3 (Tatoeba + Luna)'
+          git commit -m 'Wortschatz: examples with senses and collocations (Tatoeba + Luna)'
           git pull --rebase -q && git push
