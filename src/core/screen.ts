@@ -27,6 +27,8 @@ export interface ScreenSave {
   pending: Record<string, string[]>;
   /** Last word answered per scope (the next one follows it in word-list order). */
   cursor: Partial<Record<ScreenScope, string>>;
+  /** 审查修订 C2: words whose answer the screen showed (wrong or skipped): written right later → only 待验证. */
+  shown?: Record<string, number>;
 }
 
 export function screenSave(s: GameState): ScreenSave {
@@ -45,7 +47,7 @@ const learned = (s: GameState, w: Word) => stageOf(s, w) === 3 && !s.words[w.id]
 
 /** Words this scope can still ask: everything but learned, tutorial and chest words. */
 export function screenPool(s: GameState, scope: ScreenScope): Word[] {
-  return WORDS.filter((w) => inScope(w, scope) && !w.tutorial && w.family !== 'truhe' && !learned(s, w));
+  return WORDS.filter((w) => inScope(w, scope) && !w.tutorial && w.family !== 'truhe' && !learned(s, w) && !s.words[w.id]?.pend);
 }
 
 /** Words of a region still to learn (not 归名), for the summary line. */
@@ -64,7 +66,7 @@ export interface ScreenRun {
   wrong: number;
   /** Asked this session (a round ends after one pass through the pool). */
   asked: Set<string>;
-  last?: { ok: boolean; skipped: boolean; word: Word; wrote?: Word; verdict?: Verdict; input: string; scene?: SceneDef; placed?: boolean };
+  last?: { ok: boolean; skipped: boolean; word: Word; wrote?: Word; verdict?: Verdict; input: string; scene?: SceneDef; placed?: boolean; pend?: boolean };
   over: boolean;
 }
 
@@ -119,8 +121,10 @@ export function answerScreen(s: GameState, run: ScreenRun, input: string, skip =
   if (!w || run.over) return;
   run.asked.add(w.id);
   screenSave(s).cursor[run.scope] = w.id;
+  const shown = (screenSave(s).shown ??= {});
   if (skip) {
     run.skipped += 1;
+    shown[w.id] = now(s);
     run.last = { ok: false, skipped: true, word: w, input: '' };
   } else {
     // Words with the same Chinese (brackets aside, same part-of-speech tag) all count; the one written retires.
@@ -135,13 +139,23 @@ export function answerScreen(s: GameState, run: ScreenRun, input: string, skip =
         break;
       }
     }
-    if (hit) {
+    if (hit && shown[hit.id] && !isRetired(s.words[hit.id])) {
+      // The screen showed this answer before: written right now it is only 待验证 (checked in the field tomorrow).
+      const t0 = now(s);
+      const p = (s.words[hit.id] ??= { stage: 2, due: t0, firstSeen: t0, lastSeen: t0, relapse: 0, correct: 0, wrong: 0, read: 0, write: 0 });
+      p.correct += 1;
+      p.write = (p.write ?? 0) + 1;
+      p.lastSeen = t0;
+      p.pend = t0;
+      run.last = { ok: true, skipped: false, word: w, wrote: hit, verdict, input: input.trim(), pend: true };
+    } else if (hit) {
       const placed = !!s.words[hit.id]?.placed && !isRetired(s.words[hit.id]);
       const scene = isRetired(s.words[hit.id]) ? undefined : screenRetire(s, hit);
       run.cut.push(hit);
       run.last = { ok: true, skipped: false, word: w, wrote: hit, verdict, input: input.trim(), scene, placed };
     } else {
       run.wrong += 1;
+      shown[w.id] = now(s);
       run.last = { ok: false, skipped: false, word: w, verdict, input: input.trim() };
     }
   }

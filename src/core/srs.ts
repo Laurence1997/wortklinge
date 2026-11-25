@@ -106,6 +106,7 @@ export function overdueMon(p: WordProgress | undefined, t: number): boolean {
 
 /** Its context question is due now (and it has not gone overdue into a monster). */
 export function contextDue(p: WordProgress | undefined, t: number): boolean {
+  if (p?.artHalf && p.stage === 2 && !p.retired) return t >= p.due;
   return !!p && p.stage === 3 && !p.retired && !p.ctxDone && t >= p.due && !overdueMon(p, t);
 }
 
@@ -200,6 +201,8 @@ export function kindOf(s: GameState, w: Word, t = now(s)): Kind {
   if (!p) return 'new';
   if (p.retired) return 'guiming';
   if (p.stage === 3) return overdueMon(p, t) ? 'due' : 'guiming';
+  // 文章群怪 半名: it doesn't come back as a monster; its context question brings 归名.
+  if (p.artHalf) return 'shadow';
   return t >= p.due ? 'due' : 'shadow';
 }
 

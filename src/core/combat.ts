@@ -1890,6 +1890,18 @@ function reviewAnswer(s: GameState, b: Battle, q: Question, ok: boolean): TurnRe
     if (ok) p.correct += 1;
     else p.wrong += 1;
   }
+  if (ok && p?.artHalf && p.stage === 2) {
+    // 文章群怪 半名 written right in a new sentence: 归名 (with the normal context schedule).
+    delete p.artHalf;
+    setGuiming(p, now(s), false);
+    addGearKill(s, w.region ?? 1, 1, 1);
+    s.flags.ctxDropBoost = ((s.flags.ctxDropBoost as number) ?? 0) + 1;
+    return { word: w, ok, next: p.due - now(s) };
+  }
+  if (!ok && p?.artHalf && p.stage === 2) {
+    p.due = now(s) + CONFIG.srs.respawn;
+    return { word: w, ok, next: null };
+  }
   if (ok) {
     const next = contextPass(s, w);
     // 审查修订: the review rewards live here now — an extra shard, and the next kill's drop chance ×1.5.
@@ -1990,10 +2002,12 @@ export function resolveTurn(
       b.hinted = false;
       if (s.words[b.word.id]) delete s.words[b.word.id].hinted;
     }
-    if (!q.review && !q.partner && q.type !== 'saying' && (!ok || q.whispered)) b.flawed = true;
-    if (!q.review && !q.partner && q.type !== 'saying' && !ok) b.wrongs = (b.wrongs ?? 0) + 1;
+    // 审查修订: the 先教后考 turn (the answer was on screen) is teaching only: not 认得, not part of 全对跳阶.
+    const taughtNow = !!b.phaseTaught && b.phaseTaught === b.turn;
+    if (!taughtNow && !q.review && !q.partner && q.type !== 'saying' && (!ok || q.whispered)) b.flawed = true;
+    if (!taughtNow && !q.review && !q.partner && q.type !== 'saying' && !ok) b.wrongs = (b.wrongs ?? 0) + 1;
     if (ok && !q.whispered && !q.review && !q.partner && q.type === 'cloze') b.usedOk = true;
-    if (ok && !q.whispered && !q.review && !q.partner) {
+    if (ok && !q.whispered && !q.review && !q.partner && !taughtNow) {
       if (q.voiced) b.readOk = (b.readOk ?? 0) + 1; // 开口作答: 认得, not 会写
       else if (q.type === 'typed' || q.type === 'conj' || q.type === 'plural' || q.type === 'sentence' || stormAll || (q.type === 'cloze' && q.clozeMode !== 'pick')) {
         b.writeOk = (b.writeOk ?? 0) + 1;

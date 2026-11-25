@@ -799,7 +799,8 @@ export class Panels {
       const fb = h(`div.feedback.${l.ok ? 'ok' : 'no'}`);
       if (l.ok) {
         const w = l.wrote ?? l.word;
-        fb.append(h('b', `✓ 斩杀 · ${fullForm(w)}`), h('span.note', l.scene ? `经验存在「${l.scene.zh}」，到那里领` : l.placed ? '入学测试推定你会，这下确认了（等级已经按它给过，不另存经验）' : '它已经斩杀过了'));
+        if (l.pend) fb.append(h('b', `✓ 写对了 · ${fullForm(w)}`), h('span.note', '之前在这里看过它的答案，所以先记「待验证」：明天在野外再写对一次就斩杀'));
+        else fb.append(h('b', `✓ 斩杀 · ${fullForm(w)}`), h('span.note', l.scene ? `经验存在「${l.scene.zh}」，到那里领` : l.placed ? '入学测试推定你会，这下确认了（等级已经按它给过，不另存经验）' : '它已经斩杀过了'));
         for (const n of l.verdict?.notes ?? []) fb.append(h('span.note', n));
       } else if (l.skipped) fb.append(h('b', '这个留到野外学。'));
       else

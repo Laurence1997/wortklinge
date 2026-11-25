@@ -12,6 +12,7 @@ import { has } from './unlocks';
 import { rollItemDrops, type Consumable } from './items';
 import { CONJ } from '../data/verbs';
 import { CHEST_RATE, type ChestKind } from './chest';
+import { noticeById } from './gram/notice';
 
 export interface WinResult {
   xp: number;
@@ -40,6 +41,15 @@ export function applyWin(s: GameState, b: Battle, rng: Rng, opts: { heal?: boole
   const wasNew = b.kind === 'new';
   // 残句: a sentence is not a word — nothing goes into the wordbook; its card drops instead.
   const kill: KillOutcome = b.phrase ? { kind: 'new', from: 0, to: 0, guiming: false, needsTypedFinal: false } : recordKill(s, w, b.lastKillTyped, b.slipped, t, { used: b.usedOk, flaw: b.flawed || b.hinted, typed: (b.writeOk ?? 0) > 0, wrongs: b.wrongs });
+  // 审查修订 B4: an article-pack word ends at 半名; its 归名 comes from a context question written right later.
+  if (b.notice && noticeById(b.notice.id)?.kind === 'article' && !b.phrase && s.words[w.id] && !s.words[w.id].retired && (kill.guiming || s.words[w.id].stage < 2)) {
+    const p = s.words[w.id];
+    p.stage = 2;
+    p.artHalf = true;
+    p.due = t + CONFIG.srs.respawn;
+    kill.to = 2;
+    kill.guiming = false;
+  }
   // 审查修订 D3: a plural crowd written out cleanly twice retires too (it stops coming back).
   if (b.pluralMon && b.lastKillTyped && !b.flawed && !b.hinted && s.words[w.id]) s.words[w.id].plOk = (s.words[w.id].plOk ?? 0) + 1;
   let card: WinResult['card'];
