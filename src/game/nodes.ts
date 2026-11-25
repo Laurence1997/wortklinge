@@ -1,3 +1,4 @@
+import { RIFT } from '../core/rift';
 // 0.5 小世界: point-and-click scenes on top of the 0.4 map. The world scene keeps drawing the map, monsters and
 // other players; this class owns where you stand (a scene), moving along the route, where monsters spawn
 // (3 per field scene, never refilling the scene you stand in) and the scene panel on the right.
@@ -317,6 +318,7 @@ export class NodeNav {
     if (sc.bonfire) things.push(h('button.btn', { onclick: ia('bonfire') }, '🔥 篝火休息'));
     if (sc.id === 'r3-hide' && this.s.level >= DUNGEON.from) things.push(h('button.btn.primary', { disabled: busy, onclick: () => this.w.ctrl.enterDungeon() }, '🚪 进入零号站台（规则表地下城）'));
     // 语法秘境 (0.7–0.8): entered from a region's camp.
+    if (sc.type === 'camp' && sc.bonfire && this.s.level >= RIFT.from) things.push(h('button.btn', { disabled: busy, onclick: () => this.w.ctrl.enterRift() }, '🌀 裂隙（白板 roguelite）'));
     if (sc.type === 'camp' && sc.bonfire && this.s.level >= DUEL.from) things.push(h('button.btn', { disabled: busy, onclick: () => this.w.ctrl.openDuel() }, '⚔ 决斗场（AI 对话）'));
     if (sc.type === 'camp' && sc.bonfire && this.s.level >= AI_TUTOR.grade) things.push(h('button.btn', { disabled: busy, onclick: () => this.w.ctrl.openAiSentence() }, '✎ AI 批改造句'));
     if (sc.type === 'camp' && sc.bonfire && this.s.level >= AI_TUTOR.essay) things.push(h('button.btn', { disabled: busy, onclick: () => this.w.ctrl.openEssay() }, '📝 小作文（AI 批改）'));

@@ -23,7 +23,9 @@ export function itemsOpen(s: GameState): boolean {
   return has(s.level, 'whisper');
 }
 
+/** 裂隙 白板进入: only what this run found counts (药片 picked up inside; no 纸条 from outside). */
 export function count(s: GameState, k: Consumable): number {
+  if (s.rift) return k === 'tablet' ? s.rift.pills : 0;
   return (s.flags[FLAG[k]] as number) || 0;
 }
 
@@ -34,6 +36,11 @@ export function cap(s: GameState, k: Consumable): number {
 
 /** Adds up to the cap; returns how many were actually added. */
 export function addItem(s: GameState, k: Consumable, n = 1): number {
+  if (s.rift) {
+    if (k !== 'tablet') return 0;
+    s.rift.pills += n;
+    return n;
+  }
   const have = count(s, k);
   const add = Math.max(0, Math.min(n, cap(s, k) - have));
   s.flags[FLAG[k]] = have + add;
@@ -43,6 +50,10 @@ export function addItem(s: GameState, k: Consumable, n = 1): number {
 export function useItem(s: GameState, k: Consumable): boolean {
   const have = count(s, k);
   if (have <= 0) return false;
+  if (s.rift) {
+    s.rift.pills -= 1;
+    return true;
+  }
   s.flags[FLAG[k]] = have - 1;
   return true;
 }

@@ -2,6 +2,7 @@ import type { Look } from './look';
 import { CONFIG, monsterHpAt, playerBaseHp, XP_CURVE, xpToNext } from './config';
 import { hpBonus, type ClassId } from './classes';
 import type { Item, RegionNo, Slot, WordProgress } from './types';
+import type { RiftRun } from './rift';
 import { convertLegacyAffixes } from './loot';
 import { UNLOCK } from './unlocks';
 import { levelCapFor } from './stages';
@@ -90,6 +91,8 @@ export interface GameState {
   classes: ClassId[];
   /** 天赋树（共用一棵）: ranks under `shared` (old per-class keys are ignored). */
   talents: Record<string, Record<string, number>>;
+  /** 裂隙 run in progress (0.8, 91 级): gear counts for nothing while it is set. */
+  rift?: RiftRun;
   /** 技能池: skills given beyond the level schedule (optional) and the skills taken into battle (optional). */
   pool?: import('./skillPool').PoolId[];
   loadout?: import('./skillPool').PoolId[];
@@ -170,16 +173,20 @@ export function todayLog(s: GameState): DayLog {
 
 // ---- Derived player stats -------------------------------------------------
 
+/** 裂隙 白板进入: no gear inside the rift. */
+export const gear = (s: Pick<GameState, 'equipped' | 'rift'>) => (s.rift ? {} : s.equipped) as GameState['equipped'];
+const blessed = (s: Pick<GameState, 'rift'>, id: string) => s.rift?.bless.filter((x) => x === id).length ?? 0;
+
 export function maxHp(s: GameState): number {
-  const coat = s.equipped.coat?.main ?? 0;
+  const coat = gear(s).coat?.main ?? 0;
   // 0.4: the coat's HP counts as a percentage (+0.5% per point); the gear tier does the heavy lifting.
-  return Math.round(playerBaseHp(s.level) * (1 + coat * 0.005) * (1 + hpBonus(s)) * (1 + CONFIG.gear.hp * gearTier(s)) * (1 + affixTotal(s, 'hp')));
+  return Math.round(playerBaseHp(s.level) * (1 + coat * 0.005) * (1 + hpBonus(s)) * (1 + CONFIG.gear.hp * gearTier(s)) * (1 + affixTotal(s, 'hp')) * (1 + 0.2 * blessed(s, 'hp')));
 }
 
 /** 0.4 伤害: half a same-level monster's HP, × (1 + 0.18 × gear tier); the pen adds +1% per attack point. */
 export function attack(s: GameState): number {
-  const pen = s.equipped.pen?.main ?? 0;
-  return CONFIG.playerDmgShare * monsterHpAt(s.level) * (1 + CONFIG.gear.dmg * gearTier(s)) * (1 + pen * 0.01) * (1 + affixTotal(s, 'dmg'));
+  const pen = gear(s).pen?.main ?? 0;
+  return CONFIG.playerDmgShare * monsterHpAt(s.level) * (1 + CONFIG.gear.dmg * gearTier(s)) * (1 + pen * 0.01) * (1 + affixTotal(s, 'dmg')) * (1 + 0.15 * blessed(s, 'atk'));
 }
 
 /** Tier reached in one region: tier n after 40 × n² shards there (1 per kill), at most 8. */
@@ -189,7 +196,8 @@ export function regionTier(s: Pick<GameState, 'gearKills'>, region: number): num
 }
 
 /** The tier that counts now: this region's, or half the previous region's while you still wear that gear. */
-export function gearTier(s: Pick<GameState, 'gearKills' | 'region'>): number {
+export function gearTier(s: Pick<GameState, 'gearKills' | 'region'> & { rift?: RiftRun }): number {
+  if (s.rift) return 0;
   const r = s.region ?? 1;
   return Math.max(regionTier(s, r), r > 1 ? Math.floor(regionTier(s, r - 1) / 2) : 0);
 }
@@ -225,21 +233,21 @@ export function addGearKill(s: GameState, region: number, roll = 1, shards = 1):
 }
 
 export function critChance(s: GameState): number {
-  return CONFIG.player.baseCrit + (s.equipped.amulet?.main ?? 0);
+  return CONFIG.player.baseCrit + (gear(s).amulet?.main ?? 0) + 0.08 * blessed(s, 'crit');
 }
 
 export function hintsPerFight(s: GameState): number {
-  return s.equipped.dict?.main ?? 0;
+  return gear(s).dict?.main ?? 0;
 }
 
 /** 刻字 (0.6, 25 级): how many worn items carry this particle. */
 export function engraved(s: GameState, word: 'auch' | 'denn'): number {
-  return Object.values(s.equipped).filter((it) => it && !it.unidentified && it.socket === word).length;
+  return Object.values(gear(s)).filter((it) => it && !it.unidentified && it.socket === word).length;
 }
 
 export function affixTotal(s: GameState, key: string): number {
   let t = 0;
-  for (const it of Object.values(s.equipped)) if (!it?.unidentified) for (const a of it?.affixes ?? []) if (a.key === key) t += a.value;
+  for (const it of Object.values(gear(s))) if (!it?.unidentified) for (const a of it?.affixes ?? []) if (a.key === key) t += a.value;
   return t;
 }
 

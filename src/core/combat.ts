@@ -8,7 +8,7 @@ import { between, makeRng, pick, shuffle, type Rng } from './rng';
 import { contextDueWords, contextFail, contextPass, gapZh, reviewedByWriting, reviewMon, failVerify, retire, setGuiming, kindOf, stageOf, overdueSteps, verifyOf, type Kind, type Stage } from './srs';
 import { typoOk } from './cut';
 import { placedCheck, placedPick } from './placement';
-import { addGearKill, affinityOf, affixTotal, attack, engraved, critChance, gearPen, hintsPerFight, maxHp, now, type GameState } from './state';
+import { addGearKill, gear, affinityOf, affixTotal, attack, engraved, critChance, gearPen, hintsPerFight, maxHp, now, type GameState } from './state';
 import type { Element, Intent, Move, Word } from './types';
 import { gradeCompose } from './aiPractice';
 import { clozeModeAt, noteCloze } from './adaptive';
@@ -2104,7 +2104,7 @@ export function resolveTurn(
           const gain = aff ? CONFIG.gear.affinityRes : CONFIG.phase.rightRes;
           if (resMax(s) && move !== 'sentence') cfx.res = Math.min(resMax(s), cfx.res + gain);
           if (has(s.level, 'layerElement')) element = ELEMENT_BY_GENDER[b.pluralMon ? 'pl' : genderOf(b.word) ?? 'n'] ?? element;
-          if (Object.values(s.equipped).some((it) => it?.legendary === 'articleJudgement')) b.judgement = true;
+          if (Object.values(gear(s)).some((it) => it?.legendary === 'articleJudgement')) b.judgement = true;
           log.push({ text: `${b.phase} 相打中弱点：护甲降一档${resMax(s) && move !== 'sentence' ? `，${resName(s)} +${gain}${aff ? `（护符亲和 ${affinityOf(s)} 共鸣）` : ''}` : ''}。`, tone: 'good' });
         } else if (phaseFx === 'wrong') log.push({ text: `${b.phase ?? '无'} 相被抵抗：${phaseWrongWhy(b)}。护甲翻倍。`, tone: 'bad' });
         else if (phaseFx === 'soft') log.push({ text: `${b.phase ? `${b.phase} 相不对` : '没选相'}：这里要 ${ph}${b.pluralMon ? '（复数一律 die）' : phaseCase(b) === 'acc' ? '（第四格）' : phaseCase(b) === 'dat' ? '（第三格）' : ''}。这一级还不罚，选对了护甲降一档。`, tone: 'sys' });
@@ -2114,7 +2114,7 @@ export function resolveTurn(
           mult *= 2;
           b.judgement = false;
         }
-        if (q.type === 'article' && Object.values(s.equipped).some((it) => it?.legendary === 'articleJudgement')) b.judgement = true;
+        if (q.type === 'article' && Object.values(gear(s)).some((it) => it?.legendary === 'articleJudgement')) b.judgement = true;
 
         const charging = intent.kind === 'charge';
         if (intent.kind === 'defend' && !breaking && !wasBroken) mult *= CONFIG.damage.vsDefend;
@@ -2224,6 +2224,10 @@ export function resolveTurn(
         cfx.guard! -= 1;
         guarded = true;
         log.push({ text: `稳住护着你：这次答错不扣血、连击还在${cfx.guard ? `（还能护 ${cfx.guard} 次）` : ''}。`, tone: 'info' });
+      } else if (s.rift?.calmLeft) {
+        s.rift.calmLeft = false;
+        guarded = true;
+        log.push({ text: '裂隙祝福「定」：这一层第一次答错，不扣血、连击还在。', tone: 'info' });
       } else if (rank(s, 'buhuang') || starOf(s, q)) {
         s.combo = Math.floor(s.combo / 2);
         if (s.combo) log.push({ text: `${rank(s, 'buhuang') ? '不慌' : '星位'}：连击只减半（${s.combo}）。`, tone: 'info' });
@@ -2336,7 +2340,7 @@ export function resolveTurn(
           break;
         }
         // 眼镜 (0.6, 23 级): the charged hit lands this much softer.
-        const heavy = m.dmg * dmgMult * chillMult * CONFIG.monster.chargeMult * (monsterCrit ? 1.5 : 1) * (1 - (s.equipped.glasses?.main ?? 0));
+        const heavy = m.dmg * dmgMult * chillMult * CONFIG.monster.chargeMult * (monsterCrit ? 1.5 : 1) * (1 - (gear(s).glasses?.main ?? 0));
         if (blocking || halfBlock) {
           hitPlayer(blocking ? heavy / 2 : heavy * 0.75);
           say({ text: `你挡下一半大招，受到 ${monsterDamage} 点伤害。`, tone: 'bad' });

@@ -16,6 +16,7 @@ import { playChest } from '../ui/chestFx';
 import { gradeTyped } from '../core/grading';
 import { buy as buyItem, openShop, refresh as refreshShop, sell as sellItem } from '../core/shop';
 import { rank, resMax, respec, respecCost, spent } from '../core/classes';
+import { BLESSINGS, blessCount, bossFloor, canDescend, descend, endRift, offerBlessings, RIFT, riftAct, riftItemLevel, riftOpen, riftWord, silenceLeft, startRift, takeBlessing } from '../core/rift';
 import { makeItem } from '../core/loot';
 import { applyLoss, applyWin, postFightHeal } from '../core/outcomes';
 import { defaultRng, type Rng } from '../core/rng';
@@ -104,6 +105,11 @@ export class Controller {
     setRestored((who) => (who === 'lina' ? !!this.state.flags.linaFreed : !!this.state.flags.bossKills));
     this.state = state;
     this.dev = dev;
+    // 裂隙: a run cut off by closing the page ends there (gold already banked stays; blessings and pills are gone).
+    if (state.rift) {
+      const depth = endRift(state);
+      window.setTimeout(() => toast(`上次的裂隙之行在第 ${depth} 层断了：祝福和药片留在了里面`), 1500);
+    }
     // Levels gained when an old save was re-levelled on the faster curve: play their lessons once.
     const catchUp = String(state.flags.catchUpLevels ?? '');
     if (catchUp) {
@@ -1003,13 +1009,14 @@ export class Controller {
       sfx.death();
       const km = ents[pack.indexOf(b)] ?? m;
       const at = { x: km.x, y: km.y };
-      const loss = applyLoss(s, b, at);
+      const loss = this.inRift ? { newEcho: null, lostEcho: null } as unknown as ReturnType<typeof applyLoss> : applyLoss(s, b, at);
+      if (this.inRift) s.hp = maxHp(s); // 裂隙: death ends the run (riftNext), nothing is lost on the main line
       if (b.tutorial === 'loss') s.flags.pendingLoss = false;
       pack.forEach((x, i) => { if (!x.settled) this.scene.removeMonster(ents[i], 'flee'); });
       this.scene.teleportToBonfire();
       this.scene.spawnAll();
       const lines: Line[] = [{ who: SYS, text: '火光。焦味。你又回来了。' }];
-      if (has(s.level, 'echo')) {
+      if (has(s.level, 'echo') && !this.inRift) {
         lines.push(
           { who: SYS, text: '记住的名字还在。这个，它们拿不走。' },
           { who: SYS, text: `【回响】${loss.newEcho?.gold ?? 0} 金币和 ${loss.newEcho?.xp ?? 0} 经验留在了「${fullForm(b.word)}」身上。打败它就能拿回；再死一次，就没了` },
@@ -1025,6 +1032,7 @@ export class Controller {
     this.scene.restyleAll();
     if (this.dungeon) this.dungeonNext(won);
     else if (this.gramRun) this.gramRunNext(won);
+    else if (this.inRift) this.riftNext(won, lost);
     if (b.outcome === 'fled' && b.flees && !lost) toast('它抱着铁箱跑了。下次，在它喊「Ich muss los!」之前。');
     this.refresh();
     this.persist();
@@ -1955,6 +1963,143 @@ export class Controller {
     for (const l of lv.levels) this.onLevelUp(l);
     this.persist();
     this.nextChest();
+  }
+
+  // ---- 裂隙 (0.8, 91 级) ------------------------------------------------------------------------
+  /** A rift fight is under way (s.rift holds the run itself, so a reload can close it). */
+  inRift = false;
+
+  /** The camp button. */
+  enterRift(): void {
+    const s = this.state;
+    if (this.battle || this.boss || this.dungeon || this.gramRun) return;
+    if (!riftOpen(s)) return say([{ who: SYS, text: `裂隙还没向你张开。（${RIFT.from} 级）` }]);
+    const lines: Line[] = [];
+    if (!s.flags.riftSeen) {
+      s.flags.riftSeen = true;
+      lines.push({ who: SYS, text: `【裂隙】白板进入：装备不算数，只算你会的德语（技能和天赋照旧）。每层 ${RIFT.fights} 只怪、${RIFT.chests} 个宝箱，抽的是你见过的词（半名和到期的为主）。每层走完选一个临时祝福。在一层里待太久，静默会吞过来，每多做一件事掉血。每 ${RIFT.bossEvery} 层一个首领，打倒后可以带着出口宝箱离开。死了这一局就结束，但首领宝箱、掉落和金币都带得回去。` });
+    }
+    lines.push({ who: SYS, text: s.flags.riftBest ? `你最深到过第 ${s.flags.riftBest} 层。` : '裂隙在篝火后面嗡嗡作响。' });
+    say(lines, undefined, [{ label: '进入裂隙', act: () => { startRift(s); this.persist(); this.riftFloor(); } }, { label: '先不', act: () => {} }]);
+  }
+
+  private riftFloor(note?: string): void {
+    const s = this.state;
+    const r = s.rift;
+    if (!r) return;
+    const left = silenceLeft(r);
+    const head = `裂隙第 ${r.floor} 层${bossFloor(r) ? '（首领层）' : ''} · 生命 ${s.hp}/${maxHp(s)} · ${left > 0 ? `静默还有 ${left} 步才到` : '静默已经漫进来，每一步都掉血'}${r.bless.length ? ` · 祝福：${r.bless.map((b) => BLESSINGS[b].zh).join('')}` : ''}`;
+    const opts: Array<{ label: string; act: () => void }> = [];
+    if (r.fightsLeft > 0) opts.push({ label: bossFloor(r) ? '迎战首领' : `打一只怪（这层还剩 ${r.fightsLeft}）`, act: () => this.riftFight() });
+    if (r.chestsLeft > 0) opts.push({ label: '开宝箱（药片或金币）', act: () => this.riftChest() });
+    if (canDescend(r)) opts.push({ label: '下楼', act: () => this.riftDescend() });
+    opts.push({ label: '离开裂隙（这一局结束）', act: () => this.riftLeave(false) });
+    say([...(note ? [{ who: SYS, text: note }] : []), { who: SYS, text: head }], undefined, opts);
+  }
+
+  private riftSilence(): string {
+    const d = riftAct(this.state, maxHp(this.state));
+    return d ? `静默啃了你一口：−${d}。` : '';
+  }
+
+  private riftFight(): void {
+    const s = this.state;
+    const r = s.rift!;
+    const word = riftWord(s, this.rng);
+    if (!word) return this.riftFloor('这里没有你见过的词可抽了。');
+    const bite = this.riftSilence();
+    if (bite) toast(bite);
+    const p = this.scene.player;
+    const m = this.scene.addMonster(word, s.words[word.id] ? 'due' : 'new', word.zone, p.x + 20, p.y, { scripted: 'trial' });
+    this.inRift = true;
+    this.encounter(m);
+    if (!this.battle) {
+      this.inRift = false;
+      return this.riftFloor();
+    }
+    const b = this.battle;
+    const mon = b.monster;
+    const boss = bossFloor(r);
+    const lvl = s.level + (boss ? RIFT.bossLvl : 0);
+    const st = monsterStats(lvl, b.stage, b.kind, b.overdue);
+    mon.lvl = lvl;
+    mon.hp = mon.maxHp = Math.round(st.hp * (boss ? RIFT.bossHp : 1));
+    mon.dmg = Math.round(st.dmg * (boss ? 1.2 : 1));
+    if (boss) toast(`第 ${r.floor} 层的首领站了起来`);
+  }
+
+  private riftNext(won: boolean, lost: boolean): void {
+    const s = this.state;
+    this.inRift = false;
+    const r = s.rift;
+    if (!r) return;
+    if (lost || !won) {
+      if (lost) return this.riftLeave(true);
+      return this.riftFloor('它跑了。');
+    }
+    r.fightsLeft -= 1;
+    const mend = blessCount(s, 'mend');
+    if (mend) s.hp = Math.min(maxHp(s), s.hp + Math.round(maxHp(s) * 0.1 * mend));
+    if (bossFloor(r) && r.fightsLeft === 0) {
+      // 首领宝箱 comes home whatever happens next.
+      const il = riftItemLevel(s, s.level);
+      this.gotChest(s.level >= RIFT.deepFrom && r.floor >= 10 ? 'gold' : 'iron', il);
+      this.persist();
+      return say([{ who: SYS, text: `第 ${r.floor} 层的首领倒下了，掉下一只宝箱。` }], undefined, [
+        { label: '带着出口宝箱离开', act: () => this.riftLeave(false, true) },
+        { label: '继续往下', act: () => this.riftDescend() },
+      ]);
+    }
+    this.persist();
+    this.riftFloor();
+  }
+
+  private riftChest(): void {
+    const s = this.state;
+    const r = s.rift!;
+    const bite = this.riftSilence();
+    r.chestsLeft -= 1;
+    let got: string;
+    if (this.rng() < 0.5) {
+      r.pills += 1;
+      got = '一片药片（这一局用）';
+    } else {
+      const g = Math.round(CONFIG.gold.perKill(s.level) * 3);
+      r.gold += g;
+      s.gold += g;
+      got = `${g} 金币（带得回去）`;
+    }
+    this.persist();
+    this.riftFloor(`${bite}箱子里：${got}。`);
+  }
+
+  private riftDescend(): void {
+    const s = this.state;
+    const offer = offerBlessings(s, this.rng);
+    say([{ who: SYS, text: '下楼之前，裂隙递给你三样东西，只能拿一样（出了裂隙就没了）：' }], undefined, offer.map((id) => ({
+      label: `${BLESSINGS[id].zh}：${BLESSINGS[id].about}`,
+      act: () => {
+        takeBlessing(s, id);
+        descend(s);
+        if (id === 'hp') s.hp = Math.min(maxHp(s), s.hp + Math.round(maxHp(s) * 0.2));
+        this.persist();
+        this.riftFloor();
+      },
+    })));
+  }
+
+  private riftLeave(dead: boolean, exitChest = false): void {
+    const s = this.state;
+    const r = s.rift;
+    if (!r) return;
+    const il = riftItemLevel(s, s.level);
+    const gold = r.gold;
+    const depth = endRift(s);
+    if (exitChest) this.gotChest('gold', il);
+    s.hp = Math.min(s.hp, maxHp(s));
+    this.persist();
+    this.refresh();
+    say([{ who: SYS, text: `${dead ? '你倒在了裂隙里。' : '你从裂隙里走了出来。'}这一局到第 ${depth} 层${gold ? `，带回 ${gold} 金币` : ''}${exitChest ? '和出口宝箱' : ''}。祝福和药片都留在了里面。` }]);
   }
 
   // ---- 零号站台 地下城 (0.6 第 6 块, 28 级) ----------------------------------------------------
