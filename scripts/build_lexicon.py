@@ -93,6 +93,9 @@ def slug(s):
     return re.sub(r'^-|-$', '', re.sub(r'[^a-z0-9]+', '-', s))
 
 
+# Hand-written names for regions 1–3 (游戏设计: 场景名可改，主题不改), matching their diary pages (src/data/diary.ts).
+SCENE_NAMES = {'r1-a1': '搬家日', 'r1-a2': '新公寓', 'r1-a3': '浴室灯', 'r1-a4': '周末报纸', 'r1-a5': '空冰箱', 'r1-a6': '停运地铁', 'r1-a7': '无人图书馆', 'r1-b1': '门铃', 'r1-b2': '敞开的门', 'r1-b3': '面条晚餐', 'r1-b4': '车站超市', 'r1-b5': '警察局', 'r1-b6': '黑色信件', 'r1-b7': '小村来客', 'r1-b8': '空药店', 'r1-c1': '街角摊位', 'r1-c2': '雪中篝火', 'r1-c3': '无人驾驶的公交', 'r1-c4': '楼梯间', 'r1-c5': '数人头', 'r1-c6': '无声电影', 'r1-d1': '第一个消失的词', 'r1-d2': '寻照片', 'r1-d3': '空集市', 'r1-d4': '窗前烛光', 'r1-d5': '门口的陌生人', 'r1-d6': '低垂的太阳', 'r1-d7': '新房客', 'r1-d8': '市政厅门口', 'r1-e1': '发烧', 'r1-e2': '无名包裹', 'r1-e3': '教堂前老树', 'r1-e4': '空办公室', 'r1-e5': '加油站', 'r1-e6': '每页签名', 'r1-e7': '无人敲的钟', 'r1-e8': '镜子前', 'r2-a1': '面包房', 'r2-a2': '黄围裙', 'r2-a3': '生日蛋糕', 'r2-a4': '新时刻表', 'r2-a5': '莉娜的秘密', 'r2-a6': '冷咖啡', 'r2-a7': '照常营业', 'r2-b1': '取面包', 'r2-b2': '服装店', 'r2-b3': '集市摊', 'r2-b4': '试衣间镜子', 'r2-b5': '一公斤苹果', 'r2-b6': '肉铺', 'r2-b7': '药妆店', 'r2-c1': '土耳其小店', 'r2-c2': '半夜晾衣', 'r2-c3': '院墙记号', 'r2-c4': '小酒馆', 'r2-c5': '满屋客人', 'r2-c6': '不发车的站', 'r2-c7': '派对录像', 'r2-d1': '空出的楼下', 'r2-d2': '站前怪光', 'r2-d3': '半个站名', 'r2-d4': '窗帘后', 'r2-d5': '正午甜点', 'r2-d6': '旧相机', 'r2-e1': '冷卧室', 'r2-e2': '路上的面包', 'r2-e3': '站台守望', 'r2-e4': '藏起的车票', 'r2-e5': '父亲的话', 'r2-e6': '开演之前', 'r2-e7': '冰河桥', 'r3-a1': '纸做的火车', 'r3-a2': '旧票展览', 'r3-a3': '轨间戒指', 'r3-a4': '吞名售票机', 'r3-a5': '热隧道', 'r3-a6': '地下室电话', 'r3-b1': '停电城区', 'r3-b2': '低语时刻表', 'r3-b3': '无名来信', 'r3-b4': '售票窗口', 'r3-b5': '站台法官', 'r3-b6': '失窃照片', 'r3-c1': '看守人', 'r3-c2': '跳蚤市场', 'r3-c3': '停摆的钟', 'r3-c4': '车站办公室', 'r3-c5': '无名印章', 'r3-c6': '不变的红灯', 'r3-c7': '红裙', 'r3-c8': '冷炉', 'r3-d1': '候车下午', 'r3-d2': '候车室电脑', 'r3-d3': '查票员', 'r3-d4': '被拿走的箱子', 'r3-d5': '车站诊所', 'r3-d6': '名单', 'r3-d7': '白衬衫', 'r3-d8': '不动的钟', 'r3-e1': '逃出医院', 'r3-e2': '脏咖啡馆', 'r3-e3': '学生证', 'r3-e4': '站台琴声', 'r3-e5': '站台边营地', 'r3-e6': '往南', 'r3-e7': '白发', 'r3-e8': '烟味之夜'}
+
 def read_tsv(name):
     with open(DATA / name, newline='', encoding='utf-8') as f:
         return list(csv.DictReader(f, delimiter='\t'))
@@ -693,6 +696,23 @@ def main():
             if p:
                 perf[w['de']] = p
 
+    # Perfekt sentences written for verbs whose list examples have none (data/wortschatz/perfekt-v1.tsv, regions 1–3).
+    # The list's three forms give aux and participle, except where they are wrong (PERFEKT_FIX).
+    PERFEKT_FIX = {'schaffen': 'hat geschafft', 'auffallen': 'ist aufgefallen', 'bewegen': 'hat bewegt', 'verwenden': 'hat verwendet'}
+    verbs = {w['de']: w for w in words if w['pos'] == 'v'}
+    for r in read_tsv('perfekt-v1.tsv'):
+        w = verbs.get(r['原形'])
+        if not w or w['de'] in perf:
+            continue
+        three = w.get('three', '')
+        if w['de'] in PERFEKT_FIX:
+            three = ' · '.join([*(x.strip() for x in three.split('·')[:-1]), PERFEKT_FIX[w['de']]])
+        p = make_perfekt(w['de'], three, [(r['例句'], r['中文'])])
+        if p:
+            perf[w['de']] = p
+        else:
+            print('  perfekt-v1: no match for', w['de'], three)
+
     # ---- scene names ----
     def short_zh(zh):
         z = re.sub(r'（.*?）|\(.*?\)', '', zh).split('；')[0].split('，')[0].strip()
@@ -710,6 +730,8 @@ def main():
             s['name'] = f'{s["situation"]} · 说法'
         else:
             s['name'] = f'{s["situation"]} · {short_zh(lead["zh"])}'
+        if s['id'] in SCENE_NAMES:
+            s['name'] = SCENE_NAMES[s['id']]
 
     # ---- write ----
     def row(w):
