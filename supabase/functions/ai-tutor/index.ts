@@ -16,7 +16,7 @@ function cors(origin: string | null): Record<string, string> {
   return {
     'Access-Control-Allow-Origin': o,
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'content-type, apikey, authorization',
+    'Access-Control-Allow-Headers': 'content-type, apikey, authorization, x-client-info',
     Vary: 'Origin',
   };
 }
@@ -44,7 +44,8 @@ const norm = (s: string) => s.toLowerCase().replace(/ä/g, 'ae').replace(/ö/g, 
 
 async function takeQuota(auth: string, kind: 'grade' | 'duel'): Promise<boolean | 'unauth'> {
   const url = Deno.env.get('SUPABASE_URL')!;
-  const anon = Deno.env.get('SUPABASE_ANON_KEY')!;
+  // The publishable key is public (it is in the web client too); used when the legacy anon key is not set.
+  const anon = Deno.env.get('SUPABASE_ANON_KEY') || 'sb_publishable_ZP1aefkKlLhCNvaiGG3ZcA_gz46eEON';
   const r = await fetch(`${url}/rest/v1/rpc/ai_take`, {
     method: 'POST',
     headers: { apikey: anon, Authorization: auth, 'Content-Type': 'application/json' },
