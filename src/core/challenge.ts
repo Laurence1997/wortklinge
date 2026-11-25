@@ -1,10 +1,10 @@
 // 挑战怪 (游戏设计 四「词怎么分层、蚀变和挑战怪」, Lucas 2026-11-25): every field scene mixes in words from a
 // challenge pool, so a strong player meets harder words early (能力到了就不卡时间).
-//   Pool, in order: the same 情境's next layer, the layer after → the same 功能线's higher-layer words → the next
-//   region's words. Never a 近义词 / 同根词 / 形近词 of a word of this scene not yet written right.
+//   Pool, in order: the same 情境's next layer, the layer after → the same 功能线's higher-layer words → earlier
+//   regions' words never met (审查修订 B6) → the next region's words. Never a 近义词 / 同根词 / 形近词 of a word of this scene not yet written right.
 //   Share: from the last 20 monsters' 「第一次就写对」 rate: 10%; 80%+ → 25%; 90%+ and mostly by dictation → 40%;
 //   a player who wrote many words right in 分级考核 / 全量筛选 starts at 25%.
-//   Stats: level = your level + 2 (armor by that), XP ×1.75 for the hard word plus the usual level-gap bonus.
+//   Stats: level = your level + 2 (your level until Lv5, 审查修订 B2; armor by that), XP ×1.75 for the hard word plus the usual level-gap bonus.
 //   Written right once (no spelling seen) → the field's quick 斩杀 (verified tomorrow, then retired).
 // The 6000-word list brings 情境 / 层 / 功能线 / related words (optional Word fields below); until then only the
 // next region's words are in the pool.
@@ -104,7 +104,9 @@ export function challengePool(s: GameState, zone: ZoneId, alive: Set<string>): W
   // 2. Same 功能线, higher layers.
   const flines = new Set(local.map((w) => w.fline).filter(Boolean));
   push(all.filter((w) => w.fline && flines.has(w.fline) && w.layer && LAYERS.indexOf(w.layer) > top));
-  // 3. The next region's words, easiest first.
+  // 3. 审查修订 B6: earlier regions' words never met yet, most useful first (so unlearned words follow you).
+  push(all.filter((w) => (w.region ?? 1) < region && !s.words[w.id]).sort((a, b) => a.lvl - b.lvl));
+  // 4. The next region's words, easiest first.
   push(all.filter((w) => (w.region ?? 1) === region + 1).sort((a, b) => a.lvl - b.lvl));
   return out;
 }

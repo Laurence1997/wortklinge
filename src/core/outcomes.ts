@@ -32,7 +32,7 @@ export interface WinResult {
   card?: { id: string; first: boolean };
 }
 
-export function applyWin(s: GameState, b: Battle, rng: Rng, opts: { heal?: boolean } = {}): WinResult {
+export function applyWin(s: GameState, b: Battle, rng: Rng, opts: { heal?: boolean; pack?: boolean } = {}): WinResult {
   rollDay(s);
   const t = now(s);
   const log = todayLog(s);
@@ -72,6 +72,8 @@ export function applyWin(s: GameState, b: Battle, rng: Rng, opts: { heal?: boole
   // 场景精英: each part pays what its word pays as a normal monster, ×1.2.
   if (b.elite) xp *= CONFIG.elite.rewardMult;
   if (b.challenge) xp *= CHALLENGE_CFG.xpMult;
+  // 审查修订 C7: a pack member pays ×0.7 of a lone monster (less HP each, and 齐鸣 hits two).
+  if (opts.pack && !b.elite) xp *= CONFIG.pack.xpMult;
   xp *= quickFightXp(s, b); // 天赋「一气呵成」
   if (b.tutorial === 'loss') xp = 0;
   xp = Math.round(xp);

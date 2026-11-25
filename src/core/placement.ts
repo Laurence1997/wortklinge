@@ -19,6 +19,8 @@ import { maxHp, now, type GameState } from './state';
 import type { Word, WordProgress } from './types';
 import { hasArticleQuestion, WORDS } from '../data/words';
 import { sameMeaning } from './screen';
+import { GLASSES_FROM, itemScore, makeItem } from './loot';
+import { tierIlvl } from './forge';
 
 export const PLACE = {
   /** Monster levels per band. */
@@ -354,6 +356,17 @@ export function applyPlacement(s: GameState, run: PlaceRun, t = now(s), _opts: {
   }
   const region = regionFor(level);
   for (let r = 2; r <= region; r++) s.flags[`seenArea${r}`] = true;
+  // 审查修订 C4: a jump into a new region brings a white tier-0 set of that region (once); better pieces stay on.
+  if (gained.length && region > 1 && !s.flags[`entryKit_${region}`]) {
+    s.flags[`entryKit_${region}`] = true;
+    const ilvl = tierIlvl(region, 0);
+    for (const slot of (ilvl >= GLASSES_FROM ? ['pen', 'coat', 'amulet', 'dict', 'glasses'] : ['pen', 'coat', 'amulet', 'dict']) as Array<'pen' | 'coat' | 'amulet' | 'dict' | 'glasses'>) {
+      const it = makeItem(Math.random, ilvl, 'white', slot);
+      const cur = s.equipped[slot];
+      if (!cur || itemScore(cur) < itemScore(it)) s.equipped[slot] = it;
+    }
+    s.hp = maxHp(s);
+  }
   const prev = s.placement;
   s.placement = { at: t, level: levelFor(top), top: Math.max(top, prev?.top ?? -1), checks: prev?.checks ?? {} };
   s.flags.placeKnown = learnedCount(s);

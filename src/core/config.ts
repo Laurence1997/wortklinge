@@ -176,11 +176,16 @@ export const CONFIG = {
   /** 跟读 (0.5, Lv5+, optional): read the line the monster just said back; sounding right pays XP once per fight, never costs anything. */
   shadow: { xp: 10, match: 0.7 },
   phase: { wrongArmor: 2, rightRes: 1, softUntil: 5, accFrom: 7, datFrom: 15, pronounChance: 0.3, pluralChance: 0.2, pluralHp: 1.5, pluralRetire: 2 },
-  pack: { hpMult: 0.6, dmgMult: [0.2, 0.12] as [number, number], strayMult: 0.5, max: 3, max3From: 13, max4: 4, max4From: 81, radiusTiles: 4, fromLevel: 11 },
+  pack: { hpMult: 0.6, xpMult: 0.7, dmgMult: [0.2, 0.12] as [number, number], strayMult: 0.5, max: 3, max3From: 13, max4: 4, max4From: 81, radiusTiles: 4, fromLevel: 11 },
+
+  /** 审查修订 C8: AI sessions (AI 对话) that pay XP and gold each day; later ones only count the reviews. */
+  aiPaidPerDay: 5,
 
   boss: {
     /** Share of region words that must be at least 半名 before the boss appears. */
     halfNameShare: 0.4,
+    /** 审查修订 C5: chests for the first N boss kills a day (first gold, then iron). */
+    chestsPerDay: 3,
     minLevel: 8,
     hp: 6,
     firstTimeSeconds: 60,

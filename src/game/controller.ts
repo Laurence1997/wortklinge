@@ -19,7 +19,7 @@ import { buy as buyItem, openShop, refresh as refreshShop, sell as sellItem } fr
 import { rank, resMax, respec, respecCost, spent } from '../core/classes';
 import { noteVisit } from '../core/redname';
 import { BLESSINGS, blessCount, blessScale, bossFloor, canDescend, descend, endRift, offerBlessings, RIFT, riftAct, riftItemLevel, riftOpen, riftWord, silenceLeft, startRift, takeBlessing } from '../core/rift';
-import { GLASSES_FROM, makeItem, QUALITY_ZH, SLOT_ZH } from '../core/loot';
+import { GLASSES_FROM, makeItem, QUALITY_ZH, rollQuality, SLOT_ZH } from '../core/loot';
 import { applyLoss, applyWin, postFightHeal } from '../core/outcomes';
 import { defaultRng, type Rng } from '../core/rng';
 import { atLeastHalfShare, flushSkill, gapZh, instantGuiming, kindOf, recordAnswer, reviewedByWriting, stageOf } from '../core/srs';
@@ -1000,7 +1000,7 @@ export class Controller {
     const s = this.state;
     {
       const isBread = b.word.id === 'brot' && !s.flags.brotDone;
-      const res = applyWin(s, b, this.rng, { heal: !inPack });
+      const res = applyWin(s, b, this.rng, { heal: !inPack, pack: inPack });
       if (isBread) {
         instantGuiming(s, b.word);
         s.flags.brotDone = true;
@@ -1735,6 +1735,7 @@ export class Controller {
     sfx.levelUp();
     const heads = o.gained.map((l) => ((UNLOCK_TEXT[l] ?? [])[0] ? `${l} 级 ${(UNLOCK_TEXT[l] ?? [])[0].split(/[：:，,]/)[0]}` : '')).filter(Boolean);
     const lines: Line[] = [{ who: SYS, text: `【跳到 ${o.level} 级】这一路的功能都开了，每样第一次出现时还会提示。按 H 能看怎么玩。` }];
+    if (o.region > 1) lines.push({ who: SYS, text: `入学礼：一套第 ${o.region} 区的白色 0 档装备（比身上的好才换上）。之后靠碎片在篝火换档。` });
     for (let i = 0; i < heads.length; i += 8) lines.push({ who: SYS, text: heads.slice(i, i + 8).join(' · ') });
     say(lines, next);
   }
@@ -1938,10 +1939,14 @@ export class Controller {
       if (r.done || turns >= run.turns) {
         if (r.done) {
           const today = dayKey(now(s));
-          const gold = Math.round(DUEL.goldPerLevel * s.level * (1 + 0.1 * rank(s, 'jiantan') * run.clean));
+          // 审查修订 C8: AI sessions pay XP and gold for the first 5 a day; after that only the reviews count.
+          if (s.flags.aiPayDay !== today) (s.flags.aiPayDay = today), (s.flags.aiPayN = 0);
+          s.flags.aiPayN = ((s.flags.aiPayN as number) ?? 0) + 1;
+          const paid = (s.flags.aiPayN as number) <= CONFIG.aiPaidPerDay;
+          const gold = paid ? Math.round(DUEL.goldPerLevel * s.level * (1 + 0.1 * rank(s, 'jiantan') * run.clean)) : 0;
           s.gold += gold;
-          logLine(`决斗场「${d.title}」：金币 +${gold}`, 'good');
-          if (s.flags.duelDay !== today) {
+          logLine(paid ? `决斗场「${d.title}」：金币 +${gold}` : `决斗场「${d.title}」：今天前 ${CONFIG.aiPaidPerDay} 场的奖励已领完，这场只算复习`, paid ? 'good' : 'info');
+          if (paid && s.flags.duelDay !== today) {
             s.flags.duelDay = today;
             this.diaryXp(Math.max(1, Math.round(xpToNext(s.level) * DUEL.xpShare)), `决斗场「${d.title}」办成了`);
           }
@@ -2508,19 +2513,37 @@ export class Controller {
     go();
   }
 
+  /** 审查修订 C5: a boss pays a chest for the first 3 kills of a day (the first one gold, then iron); after that it
+   *  drops like a normal monster. Returns the chest kind, or null and maybe pushes one normal drop. */
+  private bossChest(key: string): 'gold' | 'iron' | null {
+    const s = this.state;
+    const today = dayKey(now(s));
+    if (s.flags[`${key}Day`] !== today) {
+      s.flags[`${key}Day`] = today;
+      s.flags[`${key}DayN`] = 0;
+    }
+    const n = ((s.flags[`${key}DayN`] as number) ?? 0) + 1;
+    s.flags[`${key}DayN`] = n;
+    if (n <= CONFIG.boss.chestsPerDay) return n === 1 ? 'gold' : 'iron';
+    if (this.rng() < CONFIG.loot.smallDropRate && s.bag.length < CONFIG.loot.bagSize) {
+      const it = makeItem(this.rng, s.level, rollQuality(this.rng, has(s.level, 'purple') ? 'orange' : 'green'));
+      s.bag.push(it);
+      toast(`掉落：${QUALITY_ZH[it.quality]}${SLOT_ZH[it.slot]}（今天的首领宝箱已经领完 ${CONFIG.boss.chestsPerDay} 次）`);
+    } else toast(`今天的首领宝箱已经领完 ${CONFIG.boss.chestsPerDay} 次，之后掉落同普通怪`);
+    return null;
+  }
+
   /** 晚点之王 rewards (as 吞秤者): gold chest on the first kill each day, orange + title 「准点者」 the first time,
    *  then one of its three sentences as a skill. */
   private finishBoss3() {
     const s = this.state;
     const first = !s.flags.boss3Kills;
     s.flags.boss3Kills = ((s.flags.boss3Kills as number) ?? 0) + 1;
-    const today = dayKey(now(s));
-    const dailyFirst = s.flags.boss3Day !== today;
-    s.flags.boss3Day = today;
+    const chest = this.bossChest('boss3');
     const lv = addXp(s, CONFIG.boss3.xp);
     s.gold += CONFIG.boss3.gold;
     this.questFire('boss3');
-    this.chestQueue.push({ kind: dailyFirst ? 'gold' : 'iron', ilvl: s.level });
+    if (chest) this.chestQueue.push({ kind: chest, ilvl: s.level });
     this.bossRedDrop();
     if (first) {
       const o = makeItem(this.rng, s.level, 'orange');
@@ -2528,9 +2551,9 @@ export class Controller {
       s.flags.title = '准点者';
     }
     sfx.orange();
-    banner('晚点之王倒下了', first ? '首杀：传说装备 + 称号「准点者」' : dailyFirst ? '金箱' : '铁箱');
+    banner('晚点之王倒下了', first ? '首杀：传说装备 + 称号「准点者」' : chest === 'gold' ? '金箱' : chest ? '铁箱' : '今天的宝箱已领完');
     const lines: Line[] = BOSS3.outro.map((t) => ({ who: SYS, text: t }));
-    lines.push({ who: SYS, text: `获得 ${CONFIG.boss3.xp} 经验、${CONFIG.boss3.gold} 金币和一个${dailyFirst ? '金' : '铁'}箱。` });
+    lines.push({ who: SYS, text: `获得 ${CONFIG.boss3.xp} 经验、${CONFIG.boss3.gold} 金币${chest ? `和一个${chest === 'gold' ? '金' : '铁'}箱` : ''}。` });
     const after = () => {
       for (const l of lv.levels) this.onLevelUp(l);
       this.refresh();
@@ -2571,13 +2594,11 @@ export class Controller {
     const s = this.state;
     const first = !s.flags.boss2Kills;
     s.flags.boss2Kills = ((s.flags.boss2Kills as number) ?? 0) + 1;
-    const today = dayKey(now(s));
-    const dailyFirst = s.flags.boss2Day !== today;
-    s.flags.boss2Day = today;
+    const chest = this.bossChest('boss2');
     const lv = addXp(s, CONFIG.boss2.xp);
     s.gold += CONFIG.boss2.gold;
     this.questFire('boss2');
-    this.chestQueue.push({ kind: dailyFirst ? 'gold' : 'iron', ilvl: s.level });
+    if (chest) this.chestQueue.push({ kind: chest, ilvl: s.level });
     this.bossRedDrop();
     if (first) {
       const o = makeItem(this.rng, s.level, 'orange');
@@ -2585,9 +2606,9 @@ export class Controller {
       s.flags.title = 'Preisbrecher';
     }
     sfx.orange();
-    banner('吞秤者倒下了', first ? '首杀：传说装备 + 称号「Preisbrecher」' : dailyFirst ? '金箱' : '铁箱');
+    banner('吞秤者倒下了', first ? '首杀：传说装备 + 称号「Preisbrecher」' : chest === 'gold' ? '金箱' : chest ? '铁箱' : '今天的宝箱已领完');
     const lines: Line[] = BOSS2.outro.map((t) => ({ who: SYS, text: t }));
-    lines.push({ who: SYS, text: `获得 ${CONFIG.boss2.xp} 经验、${CONFIG.boss2.gold} 金币和一个${dailyFirst ? '金' : '铁'}箱。` });
+    lines.push({ who: SYS, text: `获得 ${CONFIG.boss2.xp} 经验、${CONFIG.boss2.gold} 金币${chest ? `和一个${chest === 'gold' ? '金' : '铁'}箱` : ''}。` });
     const after = () => {
       for (const l of lv.levels) this.onLevelUp(l);
       this.refresh();
@@ -2676,14 +2697,12 @@ export class Controller {
     const b = LATER_BOSS[r]!;
     const first = !s.flags[`boss${r}Kills`];
     s.flags[`boss${r}Kills`] = ((s.flags[`boss${r}Kills`] as number) ?? 0) + 1;
-    const today = dayKey(now(s));
-    const dailyFirst = s.flags[`boss${r}Day`] !== today;
-    s.flags[`boss${r}Day`] = today;
+    const chest = this.bossChest(`boss${r}`);
     const xp = laterBossXp(b.level);
     const gold = laterBossGold(b.level);
     const lv = addXp(s, xp);
     s.gold += gold;
-    this.chestQueue.push({ kind: dailyFirst ? 'gold' : 'iron', ilvl: s.level });
+    if (chest) this.chestQueue.push({ kind: chest, ilvl: s.level });
     this.bossRedDrop();
     if (first) {
       const o = makeItem(this.rng, s.level, 'orange');
@@ -2692,9 +2711,9 @@ export class Controller {
       this.chestQueue.push({ kind: 'gold', ilvl: s.level });
     }
     sfx.orange();
-    banner(`${b.name}倒下了`, first ? `首杀：传说装备 + 称号「${b.title}」+ 金箱` : dailyFirst ? '金箱' : '铁箱');
+    banner(`${b.name}倒下了`, first ? `首杀：传说装备 + 称号「${b.title}」+ 金箱` : chest === 'gold' ? '金箱' : chest ? '铁箱' : '今天的宝箱已领完');
     const lines: Line[] = b.outro.map((t) => ({ who: SYS, text: t }));
-    lines.push({ who: SYS, text: `获得 ${xp} 经验、${gold} 金币和一个${dailyFirst ? '金' : '铁'}箱${first ? '，首杀再加一个金箱' : ''}。` });
+    lines.push({ who: SYS, text: `获得 ${xp} 经验、${gold} 金币${chest ? `和一个${chest === 'gold' ? '金' : '铁'}箱` : ''}${first ? '，首杀再加一个金箱' : ''}。` });
     if (first) lines.push(...this.afterBossLines(r));
     const after = () => {
       for (const l of lv.levels) this.onLevelUp(l);
@@ -2833,21 +2852,22 @@ export class Controller {
     } else if (f.outcome === 'win') {
       const first = !s.flags.bossKills;
       s.flags.bossKills = ((s.flags.bossKills as number) ?? 0) + 1;
-      const today = String(now(s) - (now(s) % 86400000));
-      const dailyFirst = s.flags.bossDay !== today;
-      s.flags.bossDay = today;
+      const chest = this.bossChest('boss');
+      const dailyFirst = chest === 'gold';
       const lv = addXp(s, CONFIG.xp.boss);
       s.gold += 120;
       // 金箱 (first kill of the day): ≥1 purple; first kill ever: an orange too. Otherwise an iron chest.
       const drops = dailyFirst
         ? [makeItem(this.rng, 9, 'purple'), makeItem(this.rng, 9, 'green'), makeItem(this.rng, 9, this.rng() < 0.3 ? 'purple' : 'green')]
-        : [makeItem(this.rng, 9, 'green'), makeItem(this.rng, 9, 'white')];
+        : chest === 'iron'
+          ? [makeItem(this.rng, 9, 'green'), makeItem(this.rng, 9, 'white')]
+          : [];
       if (first) drops.unshift(makeItem(this.rng, 9, 'orange'));
       const red = bossRed(s, this.rng);
       if (red) drops.unshift(red);
       for (const d of drops) if (s.bag.length < CONFIG.loot.bagSize) s.bag.push(d);
       sfx.orange();
-      banner('首领被唤醒', first ? '首杀：传说装备 + 称号「被记住的人」' : dailyFirst ? '金箱' : '铁箱');
+      banner('首领被唤醒', first ? '首杀：传说装备 + 称号「被记住的人」' : dailyFirst ? '金箱' : chest ? '铁箱' : '今天的宝箱已领完');
       const lines: Line[] = BOSS.outro.map((t) => ({ who: SYS, text: t }));
       lines.push({ who: SYS, text: `获得 ${CONFIG.xp.boss} 经验、120 金币和 ${drops.length} 件装备（按 C 查看）。` });
       const after = () => {

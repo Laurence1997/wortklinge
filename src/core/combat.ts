@@ -429,7 +429,8 @@ export function startBattle(
   // Review monsters (2026-11-21) stand at your level wherever they turn up: old word, current-region monster, full pay.
   const isReview = kind === 'due' && reviewMon(s.words[word.id], t);
   const challenge = !!opts.challenge && !opts.isEcho && !opts.tutorial && !opts.trial;
-  const lvl = challenge ? s.level + CHALLENGE_CFG.levelAbove : opts.isEcho ? Math.min(word.lvl, s.level) : isReview ? Math.max(word.lvl, s.level) : s.flags[`zoneOk_${word.zone}`] ? word.lvl : Math.min(word.lvl, s.level + CONFIG.monster.maxAbove(s.level));
+  // 审查修订 B2: Lv1–5 a challenge monster is your level (the 1–5 cap of 0 above), +2 from Lv6.
+  const lvl = challenge ? s.level + (s.level <= 5 ? 0 : CHALLENGE_CFG.levelAbove) : opts.isEcho ? Math.min(word.lvl, s.level) : isReview ? Math.max(word.lvl, s.level) : s.flags[`zoneOk_${word.zone}`] ? word.lvl : Math.min(word.lvl, s.level + CONFIG.monster.maxAbove(s.level));
   const overdue = overdueSteps(s, word, t);
   // 锈名 (0.6, 27 级): a review monster 3+ intervals overdue rusts: one level up, ×1.3 HP, double reward.
   const rusty = isReview && overdue >= CONFIG.rusty.overdue && s.level >= CONFIG.rusty.from && !opts.tutorial && !opts.elite;
@@ -1362,7 +1363,10 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
   // 回音怪 (2026-11-23): a word with a minimal-pair partner sometimes asks the pair instead (once per fight).
   if (am === 'attack' && b.pronMon) {
     const t = echoTask(s, w, rng, PRON_MON.cats);
-    if (t) return { type: 'pickDe', echo: t, prompt: `发音怪：${t.target} 还是 ${t.partner}？`, focus: t.target, options: echoOptions(t, rng), answer: t.target };
+    if (t) {
+      const options = echoOptions(t, rng);
+      return { type: 'pickDe', echo: t, prompt: `发音怪：${options.join(' 还是 ')}？`, focus: t.target, options, answer: t.target };
+    }
   }
   if (am === 'attack' && has(s.level, 'pron') && !b.echoDone && !b.tutorial && !b.trial && !fresh && !b.pluralMon) {
     const t = echoTask(s, w, rng);
@@ -2619,8 +2623,9 @@ export function pickHint(b: Battle, q: Question): string | null {
   if (!q.answer || b.hintsLeft <= 0) return null;
   b.hintsLeft -= 1;
   const a = q.answer;
-  if (q.withArticle && b.word.art) return `${b.word.art} ${b.word.de[0]}…`;
-  return `${a[0]}…`;
+  // 审查修订 A14: the first letter of the word only, never the article.
+  const bare = a.replace(/^(der|die|das|den|dem|des|ein|eine|einen|einem|einer|eines)\s+/i, '');
+  return `${(q.withArticle && b.word.art ? b.word.de : bare)[0]}…`;
 }
 
 export function randomFrom<T>(rng: Rng, arr: T[]): T {
