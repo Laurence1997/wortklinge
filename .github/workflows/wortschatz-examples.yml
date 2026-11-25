@@ -6,7 +6,7 @@ name: 词表例句补充 (more example sentences)
 # Commits the results back to the same branch. Runs on a push that changes a script or this file. Costs cents.
 on:
   push:
-    paths: ['scripts/wortschatz/examples3_luna.py', 'scripts/wortschatz/tatoeba_pool.py', 'scripts/wortschatz/examples_senses_luna.py', '.github/workflows/wortschatz-examples.yml']
+    paths: ['scripts/wortschatz/examples3_luna.py', 'scripts/wortschatz/tatoeba_pool.py', 'scripts/wortschatz/examples_senses_luna.py', 'scripts/wortschatz/examples_fill_luna.py', '.github/workflows/wortschatz-examples.yml']
 
 permissions:
   contents: write
@@ -37,6 +37,8 @@ jobs:
         env:
           LIMIT: '0'
         run: python3 scripts/wortschatz/examples_senses_luna.py
+      - name: Fill gaps and missing Chinese
+        run: python3 scripts/wortschatz/examples_fill_luna.py
       - name: Commit
         if: always()
         run: |
