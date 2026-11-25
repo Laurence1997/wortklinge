@@ -14,8 +14,8 @@ def lev1(a,b):
   while i<len(a) and a[i]==b[i]: i+=1
   return a[i:]==b[i+1:]
 UM=str.maketrans('äöü','aou')
-def xing(rows,FAM):
-  top=[o for o in rows if o['rank']<=6000 and len(o['lemma'])>=4]
+def xing(rows,FAM,upto=6000):
+  top=[o for o in rows if o['rank']<=upto and len(o['lemma'])>=4]
   L=[(o['lemma'],o['lemma'].lower()) for o in top]
   by=defaultdict(list)
   for w,l in L: by[len(l)].append((w,l))
