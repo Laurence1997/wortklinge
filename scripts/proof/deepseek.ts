@@ -53,6 +53,23 @@ const SYSTEM = `你是德语母语的编辑，在校对一款给中国人学德�
 不要挑：风格偏好、可以接受的多种说法、口语化但正确的说法、人名和游戏里编的地名（Gleisdorf、Brotmarkt、Altstadt 等）、故事里的奇幻内容。拿不准就不报。
 只输出 JSON：{"issues":[{"n":序号,"severity":"error|unnatural|translation","problem":"用中文一句话说明","fix":"改好的德语（翻译问题就给改好的中文）"}]}。全部没问题就输出 {"issues":[]}。`;
 
+/** The first complete {...} in the reply: the model sometimes adds a note after the JSON. */
+function firstJson(raw: string): { issues?: any[] } {
+  const start = raw.indexOf('{');
+  let depth = 0;
+  let inStr = false;
+  for (let i = start; i >= 0 && i < raw.length; i++) {
+    const c = raw[i];
+    if (inStr) {
+      if (c === '\\') i++;
+      else if (c === '"') inStr = false;
+    } else if (c === '"') inStr = true;
+    else if (c === '{') depth++;
+    else if (c === '}' && --depth === 0) return JSON.parse(raw.slice(start, i + 1));
+  }
+  throw new Error(`no JSON in reply: ${raw.slice(0, 120)}`);
+}
+
 async function ask(batch: Item[]): Promise<Map<number, Verdict>> {
   const user = batch.map((x, i) => `${i + 1} [${x.kind}] ${x.text}${x.zh ? ` ‖ ${x.zh}` : ''}`).join('\n');
   for (let attempt = 0; ; attempt++) {
@@ -71,7 +88,7 @@ async function ask(batch: Item[]): Promise<Map<number, Verdict>> {
       if (!r.ok) throw new Error(`DeepSeek ${r.status}: ${(await r.text()).slice(0, 300)}`);
       const j = await r.json();
       const raw: string = j.choices[0].message.content ?? '';
-      const parsed = JSON.parse(raw.replace(/^```(?:json)?\s*|\s*```$/g, ''));
+      const parsed = firstJson(raw);
       const out = new Map<number, Verdict>();
       for (const is of parsed.issues ?? []) {
         const n = Number(is.n);
@@ -92,7 +109,14 @@ console.log(`${items.length} items, ${items.length - todo.length} cached, sendin
 const SIZE = 40;
 for (let i = 0; i < run.length; i += SIZE) {
   const batch = run.slice(i, i + SIZE);
-  const res = await ask(batch);
+  let res: Map<number, Verdict>;
+  try {
+    res = await ask(batch);
+  } catch (e) {
+    // One bad batch must not lose the rest: leave it uncached, the next run sends it again.
+    console.log(`\nbatch ${i / SIZE + 1} skipped: ${(e as Error).message.slice(0, 200)}`);
+    continue;
+  }
   batch.forEach((x, k) => (cache[x.hash] = res.get(k) ?? { ok: true }));
   writeFileSync(cachePath, JSON.stringify(cache));
   process.stdout.write(`\rDeepSeek ${Math.min(i + SIZE, run.length)}/${run.length}`);
