@@ -15,7 +15,7 @@ import { clozeModeAt, noteCloze } from './adaptive';
 import { gradeLink, gradeOrder, gradeSlot, linkTask, orderTask, SLOT_RECENT, slotNouns, slotTask, WRITE_CHANCE, type SlotTask } from './writing';
 import type { LinkRow } from '../data/links';
 import { has } from './unlocks';
-import { echoOptions, echoTask, notePron, type EchoTask } from './pron';
+import { echoOptions, echoTask, notePron, PRON_MON, pronMonOk, type EchoTask } from './pron';
 import { count } from './items';
 import { fullForm, genderOf, hasArticleQuestion, WORD_BY_ID, WORDS, zhWithPos } from '../data/words';
 import { canTarget, collocOf, gradeSplit, loadout, MULT, POOL, SEAL_TURNS, splitOf, type PoolId, type SplitTask } from './skillPool';
@@ -331,6 +331,8 @@ export interface Battle {
   sayingDone?: boolean;
   /** 回音怪: the pair question was answered this fight (once per fight). */
   echoDone?: boolean;
+  /** 发音怪 (83): every attack question is its sound pair. */
+  pronMon?: boolean;
   /** Sentence attacks used on this monster this fight (each pattern once, in tag order). */
   sxUsed?: number;
   /** 终极技能 (30 级): used this fight; how many of its two blanks were right. */
@@ -507,6 +509,11 @@ export function startBattle(
   if (!b.perfekt && !b.notice && !b.mirror && !tutorial && !opts.trial && !opts.elite && s.level >= STRUCT.from && kind !== 'new' && word.pos === 'v' && structTasks(word).length && (opts.struct || rng() < STRUCT.chance)) {
     b.structMon = true;
     b.log.push({ text: `结构魔：weil 蠕虫缠在 ${word.de} 上，把动词拖到了句尾。用从句语序回答（…, weil ich … 动词），别的招式只刮掉一半。`, tone: 'info' });
+  }
+  // 发音怪 (83): a word on a hard sound pair sometimes comes as one.
+  if (!b.perfekt && !b.notice && !b.mirror && !b.structMon && !tutorial && !opts.trial && !opts.elite && !opts.isEcho && s.level >= PRON_MON.from && kind !== 'new' && pronMonOk(word) && rng() < PRON_MON.chance) {
+    b.pronMon = true;
+    b.log.push({ text: `发音怪：${word.de} 只认清楚的发音——每一击都要分清它和它的近音词。别的招式只擦过它。`, tone: 'info' });
   }
   b.intent = nextIntent(s, b, rng);
   perfektGuard(s, b);
@@ -1318,6 +1325,10 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
   // 半名 and due: the killing blow must be typed, so offer typing.
   if (b.stage === 2 && b.kind === 'due' && canType) return typed();
   // 回音怪 (2026-11-23): a word with a minimal-pair partner sometimes asks the pair instead (once per fight).
+  if (am === 'attack' && b.pronMon) {
+    const t = echoTask(s, w, rng, PRON_MON.cats);
+    if (t) return { type: 'pickDe', echo: t, prompt: `发音怪：${t.target} 还是 ${t.partner}？`, focus: t.target, options: echoOptions(t, rng), answer: t.target };
+  }
   if (am === 'attack' && has(s.level, 'pron') && !b.echoDone && !b.tutorial && !b.trial && !fresh && !b.pluralMon) {
     const t = echoTask(s, w, rng);
     if (t) return { type: 'pickDe', echo: t, prompt: `回音怪：${t.target} 还是 ${t.partner}？`, focus: t.target, options: echoOptions(t, rng), answer: t.target };
@@ -2151,6 +2162,7 @@ export function resolveTurn(
         else if (phaseFx === 'soft') log.push({ text: `${b.phase ? `${b.phase} 相不对` : '没选相'}：这里要 ${ph}${b.pluralMon ? '（复数一律 die）' : phaseCase(b) === 'acc' ? '（第四格）' : phaseCase(b) === 'dat' ? '（第三格）' : ''}。这一级还不罚，选对了护甲降一档。`, tone: 'sys' });
         mult *= talentDamage(s, b, q, { typedLike, clozeTyped, tier, phaseRight: phaseFx === 'right', broken: wasBroken || tier === 2, log });
         if (b.structMon && q.gram?.sys !== 'struct') mult *= STRUCT.otherMult;
+        if (b.pronMon && !q.echo) mult *= PRON_MON.otherMult;
         const judged = b.judgement;
         if (judged) {
           mult *= 2;

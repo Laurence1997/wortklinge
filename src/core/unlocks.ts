@@ -147,3 +147,4 @@ GRAM_UNLOCK_TEXT[81] = [...(GRAM_UNLOCK_TEXT[81] ?? []), '即时战：时间不�
 GRAM_UNLOCK_TEXT[81] = [...(GRAM_UNLOCK_TEXT[81] ?? []), '红名怪：野外出现红名的结构魔，看到你就扑上来。被它抓到先来一道先手检定，答对它扑空，答错先挨一口。离开超过 3 天回来的第一天，红名都在沉睡'];
 GRAM_UNLOCK_TEXT[141] = [...(GRAM_UNLOCK_TEXT[141] ?? []), '语法星位（天赋页最下面）：每个星位一条语法，过试炼（8 题对 6，随时重考）后花 1 点点亮，这条语法的题伤害 +10%、答错连击只减半'];
 for (const [lv, lines] of Object.entries(GRAM_UNLOCK_TEXT)) UNLOCK_TEXT[Number(lv)] = [...(UNLOCK_TEXT[Number(lv)] ?? []), ...lines];
+GRAM_UNLOCK_TEXT[83] = [...(GRAM_UNLOCK_TEXT[83] ?? []), '发音怪：专打难发的音（r 和 l、ü 和 ö、ich 和 sch），每一击都要分清它和它的近音词；开了发音训练就要读出来，没开就听辨，别的招式只擦过它'];

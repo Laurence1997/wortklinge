@@ -34,3 +34,18 @@ describe('红名怪', () => {
     expect(redAsleep(s, t + 6 * 86400000)).toBe(false);
   });
 });
+
+describe('发音怪', () => {
+  it('from 83, a word on a hard sound pair asks its pair every attack', async () => {
+    const { pairsFor, PRON_MON } = await import('../src/core/pron');
+    const { makeQuestion } = await import('../src/core/combat');
+    const w = WORDS.find((x) => pairsFor(x).some((p) => PRON_MON.cats.includes(p.p.cat)))!;
+    const s = newGame('T', 'student');
+    s.level = 83;
+    s.words[w.id] = { stage: 2, due: Date.now() + 9e9, firstSeen: 1, lastSeen: 1, relapse: 0, correct: 2, wrong: 0, read: 1 } as never;
+    let b = startBattle(s, w, makeRng(1));
+    for (let i = 2; !b.pronMon && i < 60; i++) b = startBattle(s, w, makeRng(i));
+    expect(b.pronMon).toBe(true);
+    for (let i = 0; i < 3; i++) expect(makeQuestion(s, b, 'attack', makeRng(10 + i)).echo).toBeTruthy();
+  });
+});

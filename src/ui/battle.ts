@@ -95,14 +95,14 @@ export class BattleUI {
     this.echoTries = 0;
     this.echoMsg = '';
     if (q.echo.sayable && this.ctrl.state.settings.pron && pronReady()) {
-      this.question = { ...q, echo: { ...q.echo, say: true }, options: undefined, prompt: '回音怪 · 读出来：按住空格（或按住下面的按钮）读这个词，松开就判', focus: `${q.echo.target}   /${q.echo.ipaT.replace(/ /g, '')}/` };
+      this.question = { ...q, echo: { ...q.echo, say: true }, options: undefined, prompt: `${this.b?.pronMon ? '发音怪' : '回音怪'} · 读出来：按住空格（或按住下面的按钮）读这个词，松开就判`, focus: `${q.echo.target}   /${q.echo.ipaT.replace(/ /g, '')}/` };
     } else this.echoListen();
   }
 
   private echoListen(): void {
     const q = this.question;
     if (!q?.echo) return;
-    this.question = { ...q, echo: { ...q.echo, say: false }, options: this.echoOpts, prompt: `回音怪 · 听辨：它读的是 ${this.echoOpts.join(' 还是 ')}？`, focus: '🔊 ？' };
+    this.question = { ...q, echo: { ...q.echo, say: false }, options: this.echoOpts, prompt: `${this.b?.pronMon ? '发音怪' : '回音怪'} · 听辨：它读的是 ${this.echoOpts.join(' 还是 ')}？`, focus: '🔊 ？' };
     this.ctrl.speak(q.echo.target);
   }
 
