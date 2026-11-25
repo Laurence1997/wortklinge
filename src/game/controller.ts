@@ -59,7 +59,8 @@ import { LINA } from '../data/lina';
 import { WEBER, WEBER_POOL, usesDu } from '../data/weber';
 import { answerExam, BREAK, BREAK_EARLY, examPassed, PART_ZH, startExam, startGrammarExam, type Exam } from '../core/breakthrough';
 import { DUNGEON, RULES, type Rule } from '../data/dungeon';
-import { AI_TUTOR, aiEssay, aiGrade, aiGradeText, duelTurn, knownWords, type AiGrade } from '../net/aiTutor';
+import { OPINION, opinionRule, pickClaim } from '../core/opinion';
+import { aiOpinion, AI_TUTOR, aiEssay, aiGrade, aiGradeText, duelTurn, knownWords, type AiGrade } from '../net/aiTutor';
 import { DUEL, DUEL_SCENES, duelTurns, type DuelScene } from '../data/grammar/duels';
 import { drawPractice } from '../core/aiPractice';
 import { noticeById } from '../core/gram/notice';
@@ -520,6 +521,46 @@ export class Controller {
       }
     };
     say([{ who: SYS, text: `【红名】${'▒'.repeat(Math.min(8, w.de.length))} 扑了上来！先手检定：它的名字是什么意思？` }], undefined, opts.map((o) => ({ label: o, act: () => go(o === w.zh) })));
+  }
+
+  /** 开口表达观点 (121): the monster throws out a claim before the fight. A sound answer (rule check, then the AI when
+   *  logged in) starts the fight with it at half health; a weak one lets it strike first. */
+  opinion(m: MonsterEntity): void {
+    if (this.battle || this.ambushing) return;
+    this.ambushing = true;
+    const s = this.state;
+    const c = pickClaim(this.rng);
+    m.opinion = false;
+    this.milestone('m_opinion');
+    const go = (ok: boolean, lines: Line[]) => {
+      this.ambushing = false;
+      const start = () => {
+        this.encounter(m);
+        const b = this.battle;
+        if (!b) return;
+        if (ok) {
+          b.monster.hp = Math.max(1, Math.round(b.monster.hp * (1 - OPINION.hpCut)));
+          b.log.push({ text: '开口表达观点：说得通，它的气势弱了一半。', tone: 'good' });
+        } else {
+          const d = Math.max(1, b.monster.dmg);
+          s.hp = Math.max(1, s.hp - d);
+          b.log.push({ text: `开口表达观点：没说服它，它先动手了（−${d}）。`, tone: 'bad' });
+        }
+      };
+      if (lines.length) say(lines, start);
+      else start();
+    };
+    this.panels.ask('开口表达观点', `「${c.de}」\n（${c.zh}）\n用观点句式回应它：表态 + 理由（Ich bin der Ansicht, dass … weil …）。可以赞成也可以反对。`, (text: string) => {
+      const t = text.trim();
+      const rule = opinionRule(t);
+      if (!rule.ok) return go(false, [{ who: SYS, text: rule.why! }]);
+      if (!s.owner) return go(true, [{ who: SYS, text: '句式和理由都有（没登录，这次不请 AI 判）。' }]);
+      void aiOpinion(c.de, t, s.level, knownWords(s)).then((r) => {
+        if ('error' in r) return go(true, [{ who: SYS, text: r.error === 'model' ? 'AI 暂时不可用，这次先按规则判：句式和理由都有。' : `${aiErrorZh(r.error)}这次先按规则判：句式和理由都有。` }]);
+        const lines: Line[] = [{ who: '裁判', text: r.note || (r.ok ? '说得通。' : '说不通。') }, ...r.errors.map((x) => ({ who: '批改', text: x.bad ? `「${x.bad}」→「${x.fix}」：${x.why}` : x.why })), ...(r.better ? [{ who: '批改', text: `可以这样说：${r.better}` }] : [])];
+        go(r.ok, lines);
+      });
+    });
   }
 
   encounter(m: MonsterEntity, opts: { trial?: string; struct?: boolean } = {}): void {

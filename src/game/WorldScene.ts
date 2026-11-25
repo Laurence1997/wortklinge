@@ -1,5 +1,6 @@
 import { SCENES, scenesOf } from '../data/world';
 import { RED, redAsleep, redEligible } from '../core/redname';
+import { OPINION, opinionEligible } from '../core/opinion';
 import { elitePick, type ElitePick } from '../core/elite';
 import Phaser from 'phaser';
 import { needsVerify, stageOf, type Stage } from '../core/srs';
@@ -50,6 +51,8 @@ export interface MonsterEntity {
   elite?: ElitePick;
   /** 红名怪 (81): rushes you on sight; `chasing` while it runs at you (contact then is an ambush). */
   red?: boolean;
+  /** 开口表达观点 (121): throws out a claim before the fight. */
+  opinion?: boolean;
   chasing?: boolean;
 }
 
@@ -439,6 +442,8 @@ export class WorldScene extends Phaser.Scene {
     };
     // 红名怪 (81): some met verbs in the field come as born red-name 结构魔.
     if (!opts.isEcho && !opts.scripted && kind !== 'shadow' && redEligible(this.ctrl.state, word) && Math.random() < RED.chance) m.red = true;
+    // 开口表达观点 (121): some monsters you have met open with a claim.
+    else if (!opts.isEcho && !opts.scripted && kind !== 'shadow' && !m.elite && opinionEligible(this.ctrl.state, word) && Math.random() < OPINION.chance) m.opinion = true;
     this.styleMonster(m);
     this.monsters.push(m);
     this.nodes?.touch();
@@ -473,7 +478,7 @@ export class WorldScene extends Phaser.Scene {
     m.label.setColor(color);
     m.label.setShadow(0, 0, m.stage === 0 ? '#ff1830' : color, 6, true, true);
     m.teeth.setText('▼'.repeat(m.stage === 0 ? 4 : m.stage === 1 ? 2 : 1));
-    m.marker.setText(m.isEcho ? '回响' : m.elite ? '◈ 精英' : m.rare ? '◆' : m.red ? (redAsleep(s) ? '红名 · 沉睡' : '红名') : m.challenge ? '▲ 挑战' : m.kind === 'due' ? '!' : '');
+    m.marker.setText(m.isEcho ? '回响' : m.elite ? '◈ 精英' : m.rare ? '◆' : m.red ? (redAsleep(s) ? '红名 · 沉睡' : '红名') : m.opinion ? '❝ 观点' : m.challenge ? '▲ 挑战' : m.kind === 'due' ? '!' : '');
     m.marker.setColor(m.isEcho || m.rare ? '#ffcf4a' : m.elite ? '#ff9a3c' : '#ff5a5a');
     if (m.rare) m.label.setShadow(0, 0, '#ffcf4a', 8, true, true);
     if (m.elite) m.label.setShadow(0, 0, '#ff9a3c', 8, true, true);
@@ -782,6 +787,7 @@ export class WorldScene extends Phaser.Scene {
       for (const m of this.monsters) {
         if (Math.abs(m.x - px) < 11 && Math.abs(m.y - py) < 11) {
           if (m.red && m.chasing) return this.ctrl.ambush(m);
+          if (m.opinion) return this.ctrl.opinion(m);
           this.ctrl.encounter(m);
           return;
         }

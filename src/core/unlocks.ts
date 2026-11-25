@@ -135,7 +135,7 @@ const GRAM_UNLOCK_TEXT: Record<number, string[]> = {
   43: ['复习伙伴：带一个归名的词一起打，答对它的例句题它就和你一起出手'],
   81: ['过去式（所有动词）、变音秘境过去式层、镜像怪第三格（Ich wasche mir die Hände）、文章群怪'],
   // B2–C1 (游戏设计 四「121–200 级」): grammar line and the new monster kinds.
-  121: ['第一虚拟式：转述别人的话（Er sagte, er sei krank.）', '转述怪：把它的话用第一虚拟式转述出来'],
+  121: ['第一虚拟式：转述别人的话（Er sagte, er sei krank.）', '转述怪：把它的话用第一虚拟式转述出来', '开口表达观点：标着「❝ 观点」的怪先抛出一个说法，用观点句式加理由回应它（登录后 AI 判说得通不通）'],
   125: ['功能动词结构：eine Entscheidung treffen、Rücksicht nehmen'],
   131: ['不用 werden 的被动：sein + zu、sich lassen、-bar', '数字怪：读图表，说清涨了多少（um）、涨到多少（auf）'],
   135: ['书面介词：aufgrund、infolge、angesichts、mithilfe'],

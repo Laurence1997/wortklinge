@@ -77,3 +77,15 @@ export function aiEssay(text: string, words: Word[], task: string, level: number
 export function aiGradeText(text: string, words: Word[], task: string, level: number, known: string[] = []) {
   return call<AiGrade>({ mode: 'grade', sentence: text, forms: words.flatMap(wordForms), task, level, known });
 }
+
+export interface AiOpinion {
+  ok: boolean;
+  note: string;
+  errors: Array<{ bad: string; fix: string; why: string }>;
+  better: string;
+}
+
+/** 开口表达观点 (121): does the reply take a position on the claim with a reason that holds? */
+export function aiOpinion(claim: string, reply: string, level: number, known: string[] = []) {
+  return call<AiOpinion>({ mode: 'opinion', claim, reply, level, known });
+}

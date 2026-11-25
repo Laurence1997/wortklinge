@@ -56,6 +56,15 @@ interface DuelReq {
   known?: string[];
 }
 
+interface OpinionReq {
+  mode: 'opinion';
+  /** The monster's claim (German). */
+  claim: string;
+  reply: string;
+  level?: number;
+  known?: string[];
+}
+
 const clip = (s: unknown, n: number) => String(s ?? '').slice(0, n);
 const norm = (s: string) => s.toLowerCase().replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss');
 
@@ -139,6 +148,13 @@ const DUEL_SYS = `你在一款学德语的游戏里扮演场景里的人物，�
 每次只说一两句，自然、口语化，推动对话往场景目标走；玩家还没用上的「要用的词」，用提问自然地引他说出来，但你自己不要先说出这些词。玩家的德语有错时，在 note 里用中文简短指出最重要的一处（没有错就留空）。
 只输出 JSON：{"de":"你说的德语","zh":"中文翻译","note":"对玩家上一句的纠错，中文，可为空","done":true|false（场景目标完成时为 true）,"bad":["「要用的词」里玩家上一句用错了的词，照给的写法，没有就空数组"]}`;
 
+// 开口表达观点 (121): does the answer take a position on the claim with a reason that holds? Language errors are noted
+// but do not decide the verdict.
+const OPINION_SYS = `你在一款学德语的游戏里当辩论裁判。怪物说了一个观点（德语），玩家用德语回应（B1–B2 水平）。
+判断：玩家是否明确表态（赞成、反对或部分同意），并给出至少一个和这个说法相关、说得通的理由或例子。离题、只重复对方的话、理由和结论对不上，都算说不通。
+德语错误不影响判定，但在 errors 里指出最重要的最多 2 处，用中文简短说明。
+只输出 JSON：{"ok":true|false,"note":"中文一句话：为什么说得通或说不通","errors":[{"bad":"错的部分","fix":"改法","why":"中文一句话"}],"better":"更好的一两句德语回应（简短，只用玩家学过的词）"}`;
+
 let lastPing = 0;
 let lastPingOk = false;
 
@@ -166,7 +182,7 @@ Deno.serve(async (req) => {
     return Response.json({ ok: r.ok, status: r.status, model: MODEL, why }, { headers: h });
   }
   if (!auth.startsWith('Bearer ')) return Response.json({ error: 'login' }, { status: 401, headers: h });
-  let body: GradeReq | DuelReq | EssayReq;
+  let body: GradeReq | DuelReq | EssayReq | OpinionReq;
   try {
     body = await req.json();
   } catch {
@@ -226,5 +242,19 @@ Deno.serve(async (req) => {
     const bad = new Set((Array.isArray(out.json.bad) ? out.json.bad : []).map((x: unknown) => bare(clip(x, 60))));
     return Response.json({ de: clip(out.json.de, 400), zh: clip(out.json.zh, 400), note: clip(out.json.note, 300), done: !!out.json.done, used: used.filter((id) => !bad.has(bare(targets.find((t) => t.id === id)!.de))), model: out.model }, { headers: h });
   }
+  if (body.mode === 'opinion') {
+    const reply = clip(body.reply, 600).trim();
+    const claim = clip(body.claim, 300).trim();
+    if (!reply || !claim) return Response.json({ error: 'empty' }, { status: 400, headers: h });
+    // The rule part (opener, reason, length) runs in the game first; the quota is the grading one.
+    const q = await takeQuota(auth, 'grade');
+    if (q === 'unauth') return Response.json({ error: 'login' }, { status: 401, headers: h });
+    if (!q) return Response.json({ error: 'quota' }, { status: 429, headers: h });
+    const user = `怪物的说法：${claim}\n玩家等级：${Number(body.level) || 121}\n${knownLine(body.known)}\n玩家的回应：${reply}`;
+    const out = await chat(OPINION_SYS, user);
+    if (!out) return Response.json({ error: 'model' }, { status: 502, headers: h });
+    return Response.json({ ok: !!out.json.ok, note: clip(out.json.note, 300), errors: (out.json.errors ?? []).slice(0, 2), better: clip(out.json.better, 400), model: out.model }, { headers: h });
+  }
+
   return Response.json({ error: 'mode' }, { status: 400, headers: h });
 });

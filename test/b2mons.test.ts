@@ -117,3 +117,15 @@ describe('高级盲盒摊、言灵精通', () => {
     expect(affixTotal(s, 'dmg')).toBeCloseTo(before + MASTERY.dmg.per);
   });
 });
+
+import { opinionRule, CLAIMS } from '../src/core/opinion';
+describe('开口表达观点', () => {
+  it('needs an opinion opener, a reason and enough words', () => {
+    expect(opinionRule('Nein.').ok).toBe(false);
+    expect(opinionRule('Ich finde das gut.').ok).toBe(false);
+    expect(opinionRule('Das stimmt nicht, weil Kinder lernen müssen.').ok).toBe(false);
+    expect(opinionRule('Ich bin der Ansicht, dass Handys nützlich sind, weil man damit schnell etwas nachschlagen kann.').ok).toBe(true);
+    expect(opinionRule('Meiner Meinung nach ist das falsch, denn viele Leute brauchen ein Auto.').ok).toBe(true);
+    expect(CLAIMS.length).toBeGreaterThanOrEqual(20);
+  });
+});
