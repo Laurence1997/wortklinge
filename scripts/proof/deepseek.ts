@@ -6,7 +6,7 @@
 // The key must never be committed or put into web code: locally use an env variable, in CI a repository secret.
 //
 // Results are cached by sentence hash in proof/out/deepseek-cache.json, so a rerun only sends new or changed text.
-// Env: DEEPSEEK_MODEL (default deepseek-flash), DEEPSEEK_THINKING=1, DEEPSEEK_LIMIT (max items this run, default all).
+// Env: DEEPSEEK_MODEL (workflow default gpt-6-luna; deepseek-flash when unset), DEEPSEEK_THINKING=1, DEEPSEEK_LIMIT (max items this run, default all).
 
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -103,8 +103,10 @@ async function ask(batch: Item[]): Promise<Map<number, Verdict>> {
           continue;
         }
         if (/insufficient_quota|billing/i.test(t)) {
+          // Exit code 3 tells the workflow to fall back to DeepSeek.
           console.log(`\n${MODEL}: the account has no balance (${t.slice(0, 200)}). Top up under Billing.`);
-          process.exit(1);
+          if (process.env.GITHUB_STEP_SUMMARY) writeFileSync(process.env.GITHUB_STEP_SUMMARY, `### ⚠️ ${MODEL} 余额用完，这次改用 DeepSeek\n`, { flag: 'a' });
+          process.exit(3);
         }
         throw new Error(`${MODEL} ${r.status}: ${t.slice(0, 300)}`);
       }
