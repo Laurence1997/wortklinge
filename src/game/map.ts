@@ -5,7 +5,7 @@
 
 import { makeRng } from '../core/rng';
 import { SCENES } from '../data/world';
-import { REGION_DEF, REGION_DEFS, fieldLevels, type FieldStyle, type RegionDef } from '../data/zones';
+import { REGION_DEF, REGION_DEFS, fieldLevels, type RegionDef } from '../data/zones';
 import { LEX_FIELDS } from '../data/lexicon';
 import type { RegionNo, ZoneId } from '../core/types';
 
@@ -26,9 +26,13 @@ export const enum T {
   Tent = 9,
   Crate = 10,
   Roof = 11,
+  /** Ponds, canals and the sea (各区布局). */
+  Water = 12,
+  /** Vegetable beds (Tiny Farm). */
+  Crop = 13,
 }
 
-const BLOCKING = new Set<number>([T.Wall, T.Rubble, T.Tree, T.Fog, T.Lamp, T.Tent, T.Crate, T.Roof, T.Door]);
+const BLOCKING = new Set<number>([T.Wall, T.Rubble, T.Tree, T.Fog, T.Lamp, T.Tent, T.Crate, T.Roof, T.Door, T.Water, T.Crop]);
 
 export interface Rect {
   x: number;
@@ -498,58 +502,12 @@ function generateLater(d: RegionDef): MapData {
       const edge = Math.min(x, y, MAP_W - 1 - x, MAP_H - 1 - y);
       if (edge < 2 || (edge < 3 && rng() < 0.5)) set(x, y, T.Fog);
     }
-  for (let x = 2; x < 70; x++) for (let dy = 0; dy < 2; dy++) set(x, 24 + dy, T.Road);
-  for (let y = 4; y < 45; y++) for (let dx = 0; dx < 2; dx++) set(22 + dx, y, T.Road);
-  for (let y = 4; y < 45; y++) for (let dx = 0; dx < 2; dx++) set(50 + dx, y, T.Road);
-
-  const blocks = (r: Rect, style: FieldStyle) => {
-    const step = style === 'platforms' || style === 'docks' ? 6 : style === 'sheds' ? 8 : 7;
-    for (let y = r.y; y < r.y + r.h; y++)
-      for (let x = r.x; x < r.x + r.w; x++) {
-        if (get(x, y) === T.Fog) continue;
-        const lx = x - r.x;
-        const ly = y - r.y;
-        if (lx % step === 0 || ly % step === 0) {
-          set(x, y, T.Road);
-          continue;
-        }
-        const bx = lx % step;
-        const by = ly % step;
-        const inner = bx >= 2 && bx <= step - 2 && by >= 2 && by <= step - 2;
-        const edgeB = bx === 2 || bx === step - 2 || by === 2 || by === step - 2;
-        if (!inner) {
-          if (rng() < (style === 'grove' ? 0.18 : 0.03)) set(x, y, T.Tree);
-          else if (rng() < 0.03) set(x, y, style === 'platforms' ? T.Lamp : T.Crate);
-          continue;
-        }
-        if (style === 'grove') {
-          if (rng() < 0.55) set(x, y, T.Tree);
-          else if (rng() < 0.1) set(x, y, T.Rubble);
-        } else if (style === 'stalls') {
-          if (by === 2 && bx !== 4) set(x, y, T.Crate);
-          else if (by === 5 && rng() < 0.3) set(x, y, T.Rubble);
-        } else if (style === 'docks') {
-          // Piers: water (fog) between wooden walkways, crates stacked on the quay.
-          if (by === 3 || by === 4) set(x, y, bx === 3 ? T.Ground : T.Fog);
-          else if (rng() < 0.3) set(x, y, T.Crate);
-        } else if (style === 'platforms') {
-          if (by === 2 && bx !== 3) set(x, y, T.Wall);
-          else if (rng() < 0.15) set(x, y, T.Crate);
-        } else if (style === 'yard') {
-          // Office blocks round a paved yard: walls with a gate, an open middle.
-          if (edgeB) set(x, y, by === step - 2 && bx === 4 ? T.Ground : T.Wall);
-          else if (rng() < 0.08) set(x, y, T.Crate);
-        } else if (style === 'sheds') {
-          if (edgeB) set(x, y, by === step - 2 && bx === 4 ? T.Ground : T.Wall);
-          else if (rng() < 0.35) set(x, y, T.Crate);
-        } else {
-          if (edgeB) set(x, y, rng() < (style === 'houses' ? 0.2 : 0.1) ? T.Rubble : T.Wall);
-          else set(x, y, T.Roof);
-        }
-      }
-  };
-  const fieldZones = zonesOf(d.region).filter((z) => z.monsters);
-  d.fields.forEach((f, i) => blocks(fieldZones[i].rect, f.style));
+  // 各区布局 (Lucas 2026-11-25): every region past 3 gets its own street plan east of the town square.
+  layoutFields(d, set, get, rng);
+  // A scene never stands in water: a little jetty of road round it.
+  for (const sc of SCENES)
+    if (sc.region === d.region)
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (get(sc.at.x + dx, sc.at.y + dy) === T.Water) set(sc.at.x + dx, sc.at.y + dy, T.Road);
   // Scenes stand on open ground whatever the field style drew there (the route map sits on these tiles).
   for (const sc of SCENES) if (sc.region === d.region) set(sc.at.x, sc.at.y, T.Road);
 
@@ -590,7 +548,9 @@ function generateLater(d: RegionDef): MapData {
   const lamps = [
     { x: 21, y: 23 }, { x: 30, y: 26 }, { x: 44, y: 23 }, { x: 49, y: 26 }, { x: 60, y: 23 }, { x: 68, y: 26 }, { x: 4, y: 23 },
   ];
-  for (const l of lamps) set(l.x, l.y, T.Lamp);
+  // Lamps stand on open ground only (the layouts put water and houses where the old grid had streets).
+  const lampsHere = lamps.filter((l) => [T.Ground, T.Road, T.Ash].includes(get(l.x, l.y)));
+  for (const l of lampsHere) set(l.x, l.y, T.Lamp);
 
   const npcs: MapData['npcs'] = [
     { id: 'hilde', x: 14, y: 26 },
@@ -609,9 +569,192 @@ function generateLater(d: RegionDef): MapData {
     sign: { x: bonfire.x, y: bonfire.y - 5 },
     door,
     start: { x: 4, y: 24 },
-    lamps,
+    lamps: lampsHere,
     signs: [],
   };
+}
+
+type SetT = (x: number, y: number, t: T) => void;
+type GetT = (x: number, y: number) => number;
+export type LayoutKind = 'blocks' | 'spa' | 'harbour' | 'boulevard' | 'works' | 'ring' | 'garden';
+/** Street plan of each region east of its town square (4–12 each their own; the B2 regions reuse one with their own seed). */
+export const LAYOUT: Partial<Record<number, LayoutKind>> = {
+  4: 'blocks', 5: 'spa', 6: 'harbour', 7: 'boulevard', 9: 'works', 10: 'ring', 12: 'garden',
+  13: 'boulevard', 14: 'works', 16: 'ring', 17: 'garden', 18: 'blocks', 20: 'spa',
+};
+
+/** The field area (x 24–69): roads, houses, water and greenery for the region's layout. Scenes are set to road
+ *  afterwards, the town square and the boss door are drawn over it by the caller. */
+function layoutFields(d: RegionDef, set: SetT, get: GetT, rng: () => number) {
+  const X0 = 24;
+  const X1 = 69;
+  const Y0 = 3;
+  const Y1 = 44;
+  const open = (x: number, y: number) => get(x, y) !== T.Fog;
+  const put = (x: number, y: number, t: T) => {
+    if (x >= X0 - 2 && x <= X1 && y >= Y0 && y <= Y1 && open(x, y)) set(x, y, t);
+  };
+  const hroad = (y: number, xa: number, xb: number, w = 2) => {
+    for (let x = xa; x <= xb; x++) for (let k = 0; k < w; k++) put(x, y + k, T.Road);
+  };
+  const vroad = (x: number, ya: number, yb: number, w = 2) => {
+    for (let y = ya; y <= yb; y++) for (let k = 0; k < w; k++) put(x + k, y, T.Road);
+  };
+  /** A house seen from the front: roof rows over one row of wall (Tiny Town style). */
+  const house = (x: number, y: number, w: number, h: number) => {
+    for (let yy = y; yy < y + h; yy++)
+      for (let xx = x; xx < x + w; xx++) {
+        if (get(xx, yy) === T.Road) continue;
+        put(xx, yy, yy === y + h - 1 ? T.Wall : T.Roof);
+      }
+  };
+  const fits = (x: number, y: number, w: number, h: number) => {
+    for (let yy = y - 1; yy <= y + h; yy++)
+      for (let xx = x - 1; xx <= x + w; xx++) {
+        if (xx < X0 - 1 || xx > X1 || yy < Y0 || yy > Y1) return false;
+        const inside = xx >= x && xx < x + w && yy >= y && yy < y + h;
+        const t = get(xx, yy);
+        if (inside ? t !== T.Ground : t !== T.Ground && t !== T.Road) return false;
+      }
+    return true;
+  };
+  /** Houses packed into a rectangle (gaps of one tile, a little garden left over). */
+  const street = (x: number, y: number, w: number, h: number, hw: [number, number], hh: [number, number]) => {
+    for (let yy = y; yy < y + h; ) {
+      const rowH = hh[0] + Math.floor(rng() * (hh[1] - hh[0] + 1));
+      for (let xx = x; xx < x + w; ) {
+        const bw = hw[0] + Math.floor(rng() * (hw[1] - hw[0] + 1));
+        if (xx + bw <= x + w && yy + rowH <= y + h && rng() < 0.85 && fits(xx, yy, bw, rowH)) house(xx, yy, bw, rowH);
+        else if (rng() < 0.4) put(xx + 1, yy + 1, rng() < 0.5 ? T.Tree : T.Crate);
+        xx += bw + 1;
+      }
+      yy += rowH + 2;
+    }
+  };
+  const scatter = (t: T, p: number, xa = X0, xb = X1, ya = Y0, yb = Y1) => {
+    for (let y = ya; y <= yb; y++) for (let x = xa; x <= xb; x++) if (get(x, y) === T.Ground && rng() < p) put(x, y, t);
+  };
+  const water = (cx: number, cy: number, rx: number, ry: number) => {
+    for (let y = cy - ry; y <= cy + ry; y++)
+      for (let x = cx - rx; x <= cx + rx; x++) if (((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 <= 1 + (rng() - 0.5) * 0.15) put(x, y, T.Water);
+  };
+  const kind = LAYOUT[d.region] ?? 'blocks';
+
+  if (kind === 'blocks') {
+    // 租屋城: a regular grid of terraced houses, courtyard trees.
+    hroad(24, X0 - 2, X1);
+    for (const x of [24, 34, 44, 54, 64]) vroad(x, Y0 + 1, Y1 - 1);
+    for (const y of [9, 17, 31, 38]) hroad(y, X0, X1 - 2);
+    for (const x of [26, 36, 46, 56])
+      for (const [y, h] of [[4, 5], [11, 6], [19, 5], [26, 5], [33, 5], [40, 4]] as const) street(x, y, 8, h, [3, 4], [3, 3]);
+    scatter(T.Tree, 0.05);
+  } else if (kind === 'spa') {
+    // 泉疗镇: a big spring pond with a path round it, cottages in flower meadows, a park of bushes.
+    hroad(24, X0 - 2, 34);
+    water(47, 23, 9, 7);
+    for (let a = 0; a < Math.PI * 2; a += 0.02) {
+      const x = Math.round(47 + Math.cos(a) * 12);
+      const y = Math.round(23 + Math.sin(a) * 10);
+      put(x, y, T.Road);
+      put(x + 1, y, T.Road);
+    }
+    hroad(24, 58, X1);
+    vroad(46, Y0 + 1, 13);
+    vroad(46, 33, Y1 - 1);
+    for (const [x, y] of [[26, 4], [33, 6], [27, 30], [34, 36], [58, 4], [63, 9], [57, 34], [63, 38], [26, 15], [62, 28]] as const) if (fits(x, y, 5, 3)) house(x, y, 5, 3);
+    scatter(T.Tree, 0.07, X0, X1, Y0, 11);
+    scatter(T.Tree, 0.07, X0, X1, 37, Y1);
+    scatter(T.Rubble, 0.03);
+  } else if (kind === 'harbour') {
+    // 雾港: the sea in the south, wooden piers out into it, warehouses on the quay, the old town up north.
+    for (let x = X0 - 2; x <= X1; x++) for (let y = 34 + Math.round(Math.sin(x / 4) * 0.8); y <= Y1; y++) put(x, y, T.Water);
+    hroad(31, X0 - 2, X1);
+    hroad(24, X0 - 2, X1);
+    for (const x of [30, 41, 52, 63]) {
+      for (let y = 33; y <= 42; y++) put(x, y, T.Road);
+      put(x - 1, 42, T.Road);
+      put(x + 1, 42, T.Road);
+      put(x + 1, 37, T.Crate);
+    }
+    for (let x = X0; x <= X1 - 6; x += 9) if (fits(x, 27, 7, 3)) house(x, 27, 7, 3);
+    for (const x of [27, 45, 60]) vroad(x, Y0 + 1, 23);
+    street(X0, 4, 46, 18, [4, 6], [3, 4]);
+    scatter(T.Crate, 0.04, X0, X1, 26, 32);
+  } else if (kind === 'boulevard') {
+    // 印章城: a wide tree-lined boulevard, big formal buildings round two squares.
+    hroad(23, X0 - 2, X1, 4);
+    for (let x = X0; x <= X1; x += 3) {
+      put(x, 22, T.Tree);
+      put(x, 27, T.Tree);
+    }
+    for (const cx of [36, 57]) {
+      for (let y = 8; y <= 16; y++) for (let x = cx - 5; x <= cx + 5; x++) put(x, y, T.Ash);
+      for (let y = 31; y <= 39; y++) for (let x = cx - 5; x <= cx + 5; x++) put(x, y, T.Ash);
+      water(cx, 12, 1, 1);
+      water(cx, 35, 1, 1);
+      vroad(cx, 17, 22);
+      vroad(cx, 27, 30);
+      house(cx - 4, 3, 9, 4);
+      house(cx - 4, 41, 9, 3);
+    }
+    for (const x of [26, 44, 64]) {
+      if (fits(x, 8, 5, 5)) house(x, 8, 5, 5);
+      if (fits(x, 32, 5, 5)) house(x, 32, 5, 5);
+    }
+    scatter(T.Tree, 0.03);
+  } else if (kind === 'works') {
+    // 工坊城: long workshop halls, sandy yards stacked with crates, a canal with two bridges.
+    for (let y = Y0; y <= Y1; y++) for (let x = 45; x <= 47; x++) put(x, y, T.Water);
+    hroad(24, X0 - 2, X1);
+    hroad(12, X0, X1);
+    hroad(36, X0, X1);
+    for (const [x, y] of [[26, 4], [26, 15], [26, 27], [26, 39], [50, 4], [50, 15], [50, 27], [50, 39]] as const) {
+      house(x, y, 14, 4);
+      for (let xx = x; xx < x + 14; xx++) for (let yy = y + 4; yy < y + 7; yy++) if (get(xx, yy) === T.Ground) put(xx, yy, T.Ash);
+    }
+    scatter(T.Crate, 0.08, X0, X1, Y0, Y1);
+  } else if (kind === 'ring') {
+    // 电波塔: a ring road round the tower square, spokes out, houses outside the ring.
+    const cx = 47;
+    const cy = 24;
+    for (let a = 0; a < Math.PI * 2; a += 0.015) {
+      for (const r of [11, 12]) put(Math.round(cx + Math.cos(a) * r * 1.3), Math.round(cy + Math.sin(a) * r), T.Road);
+    }
+    for (let y = cy - 5; y <= cy + 5; y++) for (let x = cx - 7; x <= cx + 7; x++) put(x, y, T.Ash);
+    house(cx - 2, cy - 4, 5, 6);
+    hroad(24, X0 - 2, cx - 8);
+    hroad(24, cx + 8, X1);
+    vroad(cx, Y0 + 1, cy - 6);
+    vroad(cx, cy + 6, Y1 - 1);
+    for (const [x, y] of [[25, 3], [31, 3], [58, 3], [64, 3], [25, 40], [31, 40], [58, 40], [64, 40], [25, 10], [64, 10], [25, 33], [64, 33]] as const) if (fits(x, y, 4, 3)) house(x, y, 4, 3);
+    scatter(T.Tree, 0.05);
+  } else {
+    // 心巷: lanes that wind between cottages and vegetable gardens.
+    let y = 24;
+    for (let x = X0 - 2; x <= X1; x++) {
+      if (rng() < 0.3) y += rng() < 0.5 ? -1 : 1;
+      y = Math.max(20, Math.min(28, y));
+      put(x, y, T.Road);
+      put(x, y + 1, T.Road);
+    }
+    for (const sx of [30, 44, 58]) {
+      let x = sx;
+      for (let yy = Y0 + 1; yy <= Y1 - 1; yy++) {
+        if (rng() < 0.3) x += rng() < 0.5 ? -1 : 1;
+        put(x, yy, T.Road);
+      }
+    }
+    for (let i = 0; i < 40; i++) {
+      const x = X0 + Math.floor(rng() * (X1 - X0 - 5));
+      const yy = Y0 + Math.floor(rng() * (Y1 - Y0 - 4));
+      if (fits(x, yy, 4, 3)) {
+        house(x, yy, 4, 3);
+        // a vegetable bed beside the cottage
+        for (let k = 0; k < 3; k++) if (get(x + 4 + 1, yy + k) === T.Ground) put(x + 5, yy + k, T.Crop);
+      }
+    }
+    scatter(T.Tree, 0.06);
+  }
 }
 
 export function isBlocked(m: MapData, tx: number, ty: number): boolean {
