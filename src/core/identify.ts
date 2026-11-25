@@ -1,9 +1,12 @@
-// 紫装德语鉴定 (0.6 第 6 块 细则二, 23 级): purple drops and chest items come unidentified (slot and main stat
-// shown, affixes hidden and inactive, can still be worn). Mira identifies them with one cloze on a word you have
-// met: right = every affix is rolled twice and keeps the better value; wrong = revealed as is. Free, no limit.
+// 言灵锁 (审查修订 2026-11-25): every gear action — 紫装鉴定, 宝箱言灵锁, 刻字 — asks one question on your most overdue
+// word; right = the roll is made twice and the better kept, wrong = it still happens, rolled once.
+// 紫装德语鉴定 (23 级): purple drops and chest items come unidentified (slot and main stat shown, affixes hidden and
+// inactive, can still be worn). Mira identifies them with the lock question: right = every affix rolled twice.
 
 import type { BossQuestion } from '../data/boss';
-import { WORD_BY_ID } from '../data/words';
+import { WORD_BY_ID, WORDS } from '../data/words';
+import { now } from './state';
+import type { Word } from './types';
 import { makeCloze } from './cloze';
 import { normalize } from './grading';
 import { AFFIX_RANGE } from './loot';
@@ -46,11 +49,31 @@ export function identify(it: Item, right: boolean, rng: Rng): void {
   delete it.unidentified;
 }
 
-/** Mira's cloze: an example sentence of a word you have already met, the word's form blanked. */
+/** The 言灵锁 word: the most overdue word you know, else the one seen longest ago. */
+export function lockWord(s: GameState, fallback: Word): Word {
+  const t = now(s);
+  let best: Word | null = null;
+  let bestScore = -Infinity;
+  for (const [id, p] of Object.entries(s.words)) {
+    const w = WORD_BY_ID[id];
+    if (!w || w.pos === 'phr' || w.digit) continue;
+    const score = t - p.due; // most overdue first; not-yet-due words score negative
+    if (score > bestScore) {
+      bestScore = score;
+      best = w;
+    }
+  }
+  return best ?? fallback ?? WORDS[0];
+}
+
+/** The 言灵锁 question: an example sentence of your most overdue word (the next ones if it has none), form blanked. */
 export function identifyQuestion(s: GameState, rng: Rng): BossQuestion {
-  const met = Object.keys(s.words).map((id) => WORD_BY_ID[id]).filter((w) => !!w);
-  for (let i = 0; i < 40 && met.length; i++) {
-    const w = met[Math.floor(rng() * met.length)];
+  const met = Object.keys(s.words)
+    .map((id) => WORD_BY_ID[id])
+    .filter((w) => !!w && w.pos !== 'phr' && !w.digit)
+    .sort((a, b) => s.words[a.id].due - s.words[b.id].due);
+  for (let i = 0; i < Math.min(40, met.length); i++) {
+    const w = met[i];
     const c = makeCloze(w, 'form', rng);
     if (!c) continue;
     const ans = normalize(c.answer);

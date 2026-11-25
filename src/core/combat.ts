@@ -2153,6 +2153,14 @@ export function resolveTurn(
         }
         // 刻字 denn (0.6, 25 级): a hard question answered right hits +20% per engraved item.
         if (tier === 2 && engraved(s, 'denn')) mult *= 1 + CONFIG.engrave.bonus * engraved(s, 'denn');
+        // 语气词孔 mal / doch (45): a right 终结技 that uses the engraved particle in its pattern.
+        if (isFinisher(q)) {
+          const pb = particleBonus(s, input);
+          if (pb) {
+            mult *= 1 + pb.add;
+            log.push({ text: `语气词 ${pb.word}：+${Math.round(pb.add * 100)}%${pb.varied ? '（连用三个不同的小词）' : ''}。`, tone: 'good' });
+          }
+        }
 
         const breaking = intent.kind === 'defend' && writtenQ;
         const g = genderOf(b.word);
@@ -2648,6 +2656,32 @@ export function randomFrom<T>(rng: Rng, arr: T[]): T {
 /** 终结技: the finisher in any of its shapes (整句, 连句, und 句, 句型填空). */
 export function isFinisher(q: Question): boolean {
   return q.type === 'sentence';
+}
+
+/** 语气词 in a typed sentence: mal only in a request (imperative, bitte, kannst du / können Sie …), doch anywhere. */
+export function particleIn(input: string): Array<'mal' | 'doch'> {
+  const t = ` ${input.toLowerCase().replace(/[.,!?;:]/g, ' ')} `;
+  const out: Array<'mal' | 'doch'> = [];
+  const request = /!\s*$/.test(input.trim()) || /\b(bitte|kannst du|können sie|könnten sie|könntest du|würden sie|würdest du)\b/i.test(input) || /^\s*[a-zäöü]+(e|t|en)?\s+(mal|doch)\b/i.test(input);
+  if (/ mal /.test(t) && request) out.push('mal');
+  if (/ doch /.test(t)) out.push('doch');
+  return out;
+}
+
+/** The engraved mal / doch bonus for this sentence, with the repeat decay over the last 5 sentences (state). */
+export function particleBonus(s: GameState, input: string): { word: 'mal' | 'doch'; add: number; varied: boolean } | null {
+  if (s.level < CONFIG.engrave.particleFrom) return null;
+  const used = particleIn(input).filter((p) => engraved(s, p) > 0);
+  const hist = String(s.flags.particleHist ?? '').split(',').filter(Boolean);
+  const word = used[0];
+  const next = [...hist, word ?? '-'].slice(-5);
+  s.flags.particleHist = next.join(',');
+  if (!word) return null;
+  const rep = hist.filter((x) => x === word).length;
+  const decay = CONFIG.engrave.decay[Math.min(rep, CONFIG.engrave.decay.length - 1)];
+  const last3 = next.slice(-3);
+  const varied = last3.length === 3 && !last3.includes('-') && new Set(last3).size === 3;
+  return { word, add: CONFIG.engrave.bonus * engraved(s, word) * decay + (varied ? CONFIG.engrave.varied : 0), varied };
 }
 
 /** 变形题: plural, conjugation, or a cloze that wants the form the sentence needs. */

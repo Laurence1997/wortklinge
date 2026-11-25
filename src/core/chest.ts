@@ -8,9 +8,8 @@ import { makeItem } from './loot';
 import { pityOrange } from './forge';
 import { markUnidentified } from './identify';
 import { weighted, type Rng } from './rng';
-import { now, type GameState } from './state';
-import type { Item, Quality, Word } from './types';
-import { WORD_BY_ID, WORDS } from '../data/words';
+import type { GameState } from './state';
+import type { Item, Quality } from './types';
 
 export type ChestKind = 'wood' | 'iron' | 'gold' | 'forgotten';
 
@@ -45,22 +44,7 @@ function rollQ(rng: Rng, def: ChestDef, min: Quality): Quality {
   return ORDER.indexOf(q) < ORDER.indexOf(min) ? min : q;
 }
 
-/** The 言灵锁 word: the most overdue word you know, else the one seen longest ago. */
-export function lockWord(s: GameState, fallback: Word): Word {
-  const t = now(s);
-  let best: Word | null = null;
-  let bestScore = -Infinity;
-  for (const [id, p] of Object.entries(s.words)) {
-    const w = WORD_BY_ID[id];
-    if (!w || w.pos === 'phr' || w.digit) continue;
-    const score = t - p.due; // most overdue first; not-yet-due words score negative
-    if (score > bestScore) {
-      bestScore = score;
-      best = w;
-    }
-  }
-  return best ?? fallback ?? WORDS[0];
-}
+export { lockWord } from './identify';
 
 export interface ChestResult {
   items: Item[];

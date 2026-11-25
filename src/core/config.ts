@@ -201,7 +201,10 @@ export const CONFIG = {
   /** 锈名 (0.6 第 6 块, 27 级). */
   rusty: { from: 27, overdue: 3, hpMult: 1.3, rewardMult: 2, shards: 1 },
   /** 刻字孔 (0.6 第 6 块, 25 级). */
-  engrave: { from: 25, bonus: 0.2 },
+  /** 语气词孔: auch / denn from 25; mal / doch from 45 (暂定: +20% on a right 终结技 whose sentence uses the particle in
+   *  its pattern — mal in a request, doch anywhere; repeats in the last 5 sentences pay 100/70/50/30%, three different
+   *  particles in the last 3 sentences +15%). */
+  engrave: { from: 25, bonus: 0.2, particleFrom: 45, decay: [1, 0.7, 0.5, 0.3], varied: 0.15 },
   /** 怪物诅咒 (0.6, 25 级): share of monsters, reward. */
   curse: { from: 25, chance: 0.1, xpMult: 1.3, shards: 1 },
   /** 野外精英 · 场景精英 (2026-11-23, 9 级): half of a scene group at 半名 → one elite; returns when `due` group words are due. */

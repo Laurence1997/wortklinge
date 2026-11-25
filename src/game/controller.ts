@@ -24,7 +24,7 @@ import { applyLoss, applyWin, postFightHeal } from '../core/outcomes';
 import { defaultRng, type Rng } from '../core/rng';
 import { atLeastHalfShare, flushSkill, gapZh, instantGuiming, kindOf, recordAnswer, reviewedByWriting, stageOf } from '../core/srs';
 import { dailyBoard, dailyKill, dailyText } from '../core/dailies';
-import { engraveQuestion, identify, socketItems, unidentifiedItems } from '../core/identify';
+import { identify, socketItems, unidentifiedItems } from '../core/identify';
 import { pickSpawns, zoneMinLevel, zoneWords } from '../core/spawn';
 import {
   addXp,
@@ -1396,23 +1396,23 @@ export class Controller {
       say([{ who: GRETA, text: `太嫩。${CONFIG.region2Level} 级再来。` }]);
       return;
     }
-    // 刻字孔 (0.6, 25 级): Greta engraves auch / denn into a socket (again any time, one cloze each).
+    // 语气词孔 (25 级; mal / doch from 45): Greta engraves a particle into a socket (again any time, one 言灵锁 each).
     const sockets = s.level >= CONFIG.engrave.from && s.flags.gretaMet ? socketItems(s) : [];
     if (sockets.length && !this.gretaPlain) {
       const intro: Line[] = s.flags.engraveSeen
         ? [{ who: GRETA, text: '要刻字？挑一件，再挑一个词。' }]
         : [
             { who: GRETA, text: '这几件带孔。孔里能刻一个小词，德国人天天挂在嘴边的那种。' },
-            { who: SYS, text: '【刻字孔】auch（也）：齐鸣打到的其他怪伤害 +20%。denn（呢、到底）：难题答对伤害 +20%。刻字要答对一道把这个词挖掉的填空；想换随时来，再答一次。' },
+            { who: SYS, text: `【语气词孔】auch（也）：齐鸣打到的其他怪伤害 +20%。denn（呢、到底）：难题答对伤害 +20%。${s.level >= CONFIG.engrave.particleFrom ? 'mal：终结技整句里在请求句用上 mal +20%。doch：终结技整句里用上 doch +20%（同一个词最近 5 句重复用，加成递减）。' : '45 级起还能刻 mal 和 doch。'}刻字时答一道言灵锁（最该复习的词）；想换随时来。` },
           ];
       s.flags.engraveSeen = true;
       say(intro, undefined, [
         ...sockets.slice(0, 3).flatMap((it) =>
-          (['auch', 'denn'] as const).map((w) => ({
+          ((s.level >= CONFIG.engrave.particleFrom ? ['auch', 'denn', 'mal', 'doch'] : ['auch', 'denn']) as Array<'auch' | 'denn' | 'mal' | 'doch'>).map((w) => ({
             label: `「${it.name}」${it.socket ? `（现在：${it.socket}）` : ''}刻 ${w}`,
             act: () => {
               this.singleTask = { kind: 'engrave', itemId: it.id, word: w };
-              this.boss = startBoss(s, this.rng, 6, engraveQuestion(w, this.rng));
+              this.boss = startBoss(s, this.rng, 6); // 言灵锁: the most overdue word
               setPrompt(null);
               this.bossUI.open(this.boss);
             },
@@ -1852,7 +1852,7 @@ export class Controller {
   /** 幽灵检票员 Lina: entering a timetable-hall scene may bring her (Lv25+, after Konrad's quest). */
   private gretaPlain = false;
   /** The one-question task the which-6 conversation is for (Mira's 鉴定 or Greta's 刻字). */
-  singleTask: { kind: 'identify' | 'engrave'; itemId: string; word?: 'auch' | 'denn' } | null = null;
+  singleTask: { kind: 'identify' | 'engrave'; itemId: string; word?: 'auch' | 'denn' | 'mal' | 'doch' } | null = null;
 
   private finishIdentify(f: BossFight) {
     const s = this.state;
@@ -1861,10 +1861,9 @@ export class Controller {
     if (task?.kind === 'engrave') {
       const it = socketItems(s).find((x) => x.id === task.itemId);
       if (!it) return;
-      if (!f.misses.length) {
-        it.socket = task.word!;
-        toast(`「${it.name}」刻上了 ${task.word}`, 'gold');
-      } else toast('没刻上。再来一次就行。');
+      // 言灵锁: the engraving happens either way; the question is the overdue word's review.
+      it.socket = task.word!;
+      toast(`「${it.name}」刻上了 ${task.word}${f.misses.length ? '' : '（言灵锁答对）'}`, 'gold');
       this.persist();
       this.refresh();
       return;

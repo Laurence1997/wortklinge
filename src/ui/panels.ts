@@ -1195,7 +1195,7 @@ export class Panels {
       h('div.small', mainStatText(it)),
       it.tier ? h('div.small', { style: 'color:var(--gold, #ffcf4a)' }, `第 ${it.tier} 档（${it.region ?? '?'} 区）${it.slot === 'pen' ? `：伤害 +${Math.round(it.tier * CONFIG.gear.dmg * 100)}%` : it.slot === 'coat' ? `：生命 +${Math.round(it.tier * CONFIG.gear.hp * 100)}%` : it.slot === 'amulet' ? `：穿透 +${Math.round(it.tier * CONFIG.gear.pen * 100)}%` : ''}（在下一区减半，再往后不算）`) : '',
       ...(it.unidentified ? [h('div.aff', { style: 'color:var(--muted)' }, `未鉴定：${it.affixes.length} 条词缀还没生效（找 Mira 鉴定）`)] : it.affixes.map((a) => h('div.aff', AFFIX_ZH[a.key](a.value)))),
-      it.socket === undefined ? '' : h('div.aff', { style: 'color:var(--gold, #ffcf4a)' }, it.socket === '' ? '刻字孔：空的（找导师 Greta 刻 auch 或 denn）' : it.socket === 'auch' ? '刻字 auch：齐鸣打到的其他怪伤害 +20%' : '刻字 denn：难题答对伤害 +20%'),
+      it.socket === undefined ? '' : h('div.aff', { style: 'color:var(--gold, #ffcf4a)' }, it.socket === '' ? '语气词孔：空的（找导师 Greta 刻 auch、denn，45 级起 mal、doch）' : it.socket === 'auch' ? '语气词 auch：齐鸣打到的其他怪伤害 +20%' : it.socket === 'denn' ? '语气词 denn：难题答对伤害 +20%' : it.socket === 'mal' ? '语气词 mal：终结技整句在请求句里用上 mal，伤害 +20%' : '语气词 doch：终结技整句里用上 doch，伤害 +20%'),
       it.legendary ? h('div.aff', { style: 'color:var(--q-orange)' }, '传说：冠词审判——答对一道冠词题后，下一击伤害翻倍') : '',
     );
   }

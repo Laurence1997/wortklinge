@@ -155,8 +155,8 @@ export interface Item {
   legendary?: 'articleJudgement';
   /** 紫装德语鉴定 (0.6, 23 级): affixes hidden and inactive until Mira identifies it. */
   unidentified?: boolean;
-  /** 刻字孔 (0.6, 25 级): '' = an open socket; auch / denn once engraved. */
-  socket?: '' | 'auch' | 'denn';
+  /** 语气词孔 (审查修订: 刻字孔 and the mal/doch slot are one): '' = open; auch / denn from 25, mal / doch from 45. */
+  socket?: '' | 'auch' | 'denn' | 'mal' | 'doch';
   /** 主题套装 (101 级): the region whose set this piece belongs to. */
   set?: number;
   /** 碎片换档 (九, 2026-11-25 暂定): the gear tier this piece carries and the region it is from. Its tier counts in

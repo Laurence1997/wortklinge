@@ -273,7 +273,7 @@ export function hintsPerFight(s: GameState): number {
 }
 
 /** 刻字 (0.6, 25 级): how many worn items carry this particle. */
-export function engraved(s: GameState, word: 'auch' | 'denn'): number {
+export function engraved(s: GameState, word: 'auch' | 'denn' | 'mal' | 'doch'): number {
   return Object.values(gear(s)).filter((it) => it && !it.unidentified && it.socket === word).length;
 }
 
