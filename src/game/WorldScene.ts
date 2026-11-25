@@ -14,7 +14,8 @@ import { DEFAULT_LOOK, lookKey, type Look } from '../core/look';
 import { myBubble, online } from '../net/online';
 import { generateMap, isBlocked, MAP_H, MAP_W, TILE, walkableTilesIn, zonesOf, zoneAt, type MapData, type NpcId, type RegionId, type ZoneDef } from './map';
 import { GLITCH, heroFramesKenney, dungeonTile, SHADE_RAMP, CHAR_RAMP, makeTextures, renderMapCanvas, PAL, BRIGHT, renderBrightMap, rawFigure } from './sprites';
-import { NPC_TILE, isRestored, wordTile } from '../ui/icons';
+import { NPC_TILE, isRestored, wordArt } from '../ui/icons';
+import { artKey, monsterCanvas, type SheetId } from './monsterArt';
 import { sfx } from './audio';
 import { CONFIG } from '../core/config';
 import { NodeNav } from './nodes';
@@ -87,6 +88,7 @@ export class WorldScene extends Phaser.Scene {
   preload() {
     if (!this.textures.exists('town')) this.load.image('town', './art/kenney-tiny-town.png');
     if (!this.textures.exists('farm')) this.load.image('farm', './art/kenney-tiny-farm.png');
+    if (!this.textures.exists('battle')) this.load.image('battle', './art/kenney-tiny-battle.png');
     if (!this.textures.exists('dungeon')) this.load.image('dungeon', './art/kenney-tiny-dungeon.png');
   }
 
@@ -404,8 +406,12 @@ export class WorldScene extends Phaser.Scene {
     const teeth = this.add.text(0, 1, '', { fontFamily: FONT, fontSize: '5px', color: '#ff3040', resolution: 4 }).setOrigin(0.5, 0);
     const marker = this.add.text(0, -12, '', { fontFamily: FONT, fontSize: '8px', fontStyle: 'bold', color: '#ffcf4a', resolution: 4 }).setOrigin(0.5, 1);
     const shadow = this.add.ellipse(0, 4, 18, 4, 0x000000, 0.6);
-    const bk = `mon-${wordTile(word)}${this.ramp ? `-${this.ramp[3]}` : ''}`;
-    if (!this.textures.exists(bk)) this.textures.addCanvas(bk, dungeonTile(this.dsheet(), wordTile(word), this.ramp ? shadeRamp(this.ramp) : SHADE_RAMP));
+    // 怪物美术: the word's look, own colours on bright maps, the map's dark ramp on 蚀变 maps.
+    const art = wordArt(word);
+    const bk = `mon-${artKey(art)}${this.bright ? '-raw' : this.ramp ? `-${this.ramp[3]}` : ''}`;
+    const sheetKey: Record<SheetId, string> = { d: 'dungeon', t: 'town', f: 'farm', b: 'battle' };
+    if (!this.textures.exists(bk) && this.textures.exists(sheetKey[art.sheet]))
+      this.textures.addCanvas(bk, monsterCanvas(this.textures.get(sheetKey[art.sheet]).getSourceImage() as HTMLImageElement, art, this.bright ? null : this.ramp ? shadeRamp(this.ramp) : SHADE_RAMP));
     const body = this.add.image(0, 5, bk).setOrigin(0.5, 1);
     label.setY(-14);
     teeth.setY(5);

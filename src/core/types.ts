@@ -16,6 +16,10 @@ export interface Word {
   zh: string;
   pos: Pos;
   family: FamilyId;
+  /** 类别 for the monster's look (食物、物品、动物、人物、地点、抽象; filled by the word list). */
+  cat?: string;
+  /** 专属造型: the art pack tile of this very thing ('f8' = Tiny Farm 8), used when the art packs have it. */
+  look?: string;
   /** Monster level = recommended level of the field it lives in. */
   lvl: number;
   zone: ZoneId;

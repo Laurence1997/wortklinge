@@ -14,7 +14,7 @@ function build(): Word[] {
   const situation = new Map<string, string>();
   for (const [, , , , sit, ids] of LEX_SCENES) for (const id of ids) situation.set(id, sit);
   const out: Word[] = LEX_ROWS.split('\n').map((line) => {
-    const [id, de, art, pl, zh, pos, family, lvl, zone, scene, region, erode, batch, after, digit, , , , , ex, sit] = line.split('\t');
+    const [id, de, art, pl, zh, pos, family, lvl, zone, scene, region, erode, batch, after, digit, , , , , ex, sit, cat, look] = line.split('\t');
     const w: Word = { id, de, zh, pos: pos as Pos, family: family as FamilyId, lvl: +lvl, zone: zone as ZoneId, region: +region as RegionNo, scene };
     if (art) w.art = art as Article;
     if (pl === '+') w.plOnly = true;
@@ -25,6 +25,8 @@ function build(): Word[] {
     if (digit) w.digit = digit;
     if (pos === 'num') w.zh = `数字 ${digit}`;
     if (ex) w.ex = ex;
+    if (cat) w.cat = cat;
+    if (look) w.look = look;
     // The word's own situation (列「情境」), else its scene's.
     if (pos === 'n' && !erode && w.pl && w.pl !== '-' && MOECHTE_SITUATIONS.has(sit || (situation.get(id) ?? ''))) w.moechte = true;
     return w;
