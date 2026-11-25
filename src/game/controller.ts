@@ -18,6 +18,7 @@ import { gradeTyped } from '../core/grading';
 import { buy as buyItem, openShop, refresh as refreshShop, sell as sellItem } from '../core/shop';
 import { rank, resMax, respec, respecCost, spent } from '../core/classes';
 import { bossRed } from '../core/forge';
+import { noteVisit } from '../core/redname';
 import { BLESSINGS, blessCount, bossFloor, canDescend, descend, endRift, offerBlessings, RIFT, riftAct, riftItemLevel, riftOpen, riftWord, silenceLeft, startRift, takeBlessing } from '../core/rift';
 import { makeItem } from '../core/loot';
 import { applyLoss, applyWin, postFightHeal } from '../core/outcomes';
@@ -108,6 +109,8 @@ export class Controller {
     this.state = state;
     this.dev = dev;
     // 裂隙: a run cut off by closing the page ends there (gold already banked stays; blessings and pills are gone).
+    // 红名怪: back after more than 3 days, they all sleep through the first day.
+    noteVisit(state);
     if (state.rift) {
       const depth = endRift(state);
       window.setTimeout(() => toast(`上次的裂隙之行在第 ${depth} 层断了：祝福和药片留在了里面`), 1500);
@@ -493,7 +496,33 @@ export class Controller {
 
   // ---- Encounters ----------------------------------------------------------------------
 
-  encounter(m: MonsterEntity, opts: { trial?: string } = {}): void {
+  /** 红名怪 caught you (先手检定): a quick pick of its meaning. Right cancels its first strike; wrong, it lands. */
+  ambush(m: MonsterEntity): void {
+    if (this.battle || this.ambushing) return;
+    this.ambushing = true;
+    const s = this.state;
+    const w = m.word;
+    const others = WORDS.filter((x) => x.id !== w.id && x.pos === w.pos && s.words[x.id] && x.zh !== w.zh);
+    const pickN = (n: number) => [...others].sort(() => this.rng() - 0.5).slice(0, n).map((x) => x.zh);
+    const opts = [w.zh, ...pickN(2)].sort(() => this.rng() - 0.5);
+    this.milestone('m_ambush');
+    const go = (ok: boolean) => {
+      this.ambushing = false;
+      m.chasing = false;
+      this.encounter(m, { struct: true });
+      const b = this.battle;
+      if (!b) return;
+      if (ok) b.log.push({ text: '先手检定：答对了，它扑空了。', tone: 'good' });
+      else {
+        const d = Math.max(1, b.monster.dmg);
+        s.hp = Math.max(1, s.hp - d);
+        b.log.push({ text: `先手检定：没答上，它先咬了你一口（−${d}）。`, tone: 'bad' });
+      }
+    };
+    say([{ who: SYS, text: `【红名】${'▒'.repeat(Math.min(8, w.de.length))} 扑了上来！先手检定：它的名字是什么意思？` }], undefined, opts.map((o) => ({ label: o, act: () => go(o === w.zh) })));
+  }
+
+  encounter(m: MonsterEntity, opts: { trial?: string; struct?: boolean } = {}): void {
     if (this.battle) return;
     const s = this.state;
     rollDay(s);
@@ -524,7 +553,7 @@ export class Controller {
       this.battle = startPhraseBattle(s, m.phrase, this.rng, m.zone);
     } else {
       this.entity = m;
-      this.battle = startBattle(s, m.word, this.rng, { isEcho: m.isEcho, tutorial, trial: opts.trial, rare: m.rare, challenge: m.challenge });
+      this.battle = startBattle(s, m.word, this.rng, { isEcho: m.isEcho, tutorial, trial: opts.trial, rare: m.rare, challenge: m.challenge, struct: opts.struct || m.red });
       // 斩杀: a word being verified shouts no half sentence (it could show its letters).
       if (!tutorial && !opts.trial && !this.battle.verify) {
         const say = rollSaying(s, m.word, this.rng);
@@ -746,6 +775,8 @@ export class Controller {
 
   /** 即时战: this fight runs on cast bars (set by the battle screen when it opens). */
   realtime = false;
+  /** 红名怪 先手检定 dialog open. */
+  ambushing = false;
 
   /** 即时战: the target's cast bar ran out — every monster standing acts. */
   tick(): TurnReport | null {

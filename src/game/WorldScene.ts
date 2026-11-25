@@ -1,4 +1,5 @@
 import { SCENES, scenesOf } from '../data/world';
+import { RED, redAsleep, redEligible } from '../core/redname';
 import { elitePick, type ElitePick } from '../core/elite';
 import Phaser from 'phaser';
 import { needsVerify, stageOf, type Stage } from '../core/srs';
@@ -47,6 +48,9 @@ export interface MonsterEntity {
   node?: string;
   /** 野外精英 · 场景精英 (2026-11-23): the scene quiz it carries (its word is the first part's). */
   elite?: ElitePick;
+  /** 红名怪 (81): rushes you on sight; `chasing` while it runs at you (contact then is an ambush). */
+  red?: boolean;
+  chasing?: boolean;
 }
 
 const SPEED = 72;
@@ -433,6 +437,8 @@ export class WorldScene extends Phaser.Scene {
       reveal,
       stage: stageOf(this.ctrl.state, word),
     };
+    // 红名怪 (81): some met verbs in the field come as born red-name 结构魔.
+    if (!opts.isEcho && !opts.scripted && kind !== 'shadow' && redEligible(this.ctrl.state, word) && Math.random() < RED.chance) m.red = true;
     this.styleMonster(m);
     this.monsters.push(m);
     this.nodes?.touch();
@@ -467,10 +473,11 @@ export class WorldScene extends Phaser.Scene {
     m.label.setColor(color);
     m.label.setShadow(0, 0, m.stage === 0 ? '#ff1830' : color, 6, true, true);
     m.teeth.setText('▼'.repeat(m.stage === 0 ? 4 : m.stage === 1 ? 2 : 1));
-    m.marker.setText(m.isEcho ? '回响' : m.elite ? '◈ 精英' : m.rare ? '◆' : m.challenge ? '▲ 挑战' : m.kind === 'due' ? '!' : '');
+    m.marker.setText(m.isEcho ? '回响' : m.elite ? '◈ 精英' : m.rare ? '◆' : m.red ? (redAsleep(s) ? '红名 · 沉睡' : '红名') : m.challenge ? '▲ 挑战' : m.kind === 'due' ? '!' : '');
     m.marker.setColor(m.isEcho || m.rare ? '#ffcf4a' : m.elite ? '#ff9a3c' : '#ff5a5a');
     if (m.rare) m.label.setShadow(0, 0, '#ffcf4a', 8, true, true);
     if (m.elite) m.label.setShadow(0, 0, '#ff9a3c', 8, true, true);
+    if (m.red) (m.label.setColor('#ff4a4a'), m.label.setShadow(0, 0, '#ff1830', 10, true, true), m.marker.setColor('#ff4a4a'));
     if (m.challenge && !m.elite && !m.rare && !m.isEcho) m.marker.setColor('#7fd4ff');
     this.updateGlyph(m);
     m.container.setScale(m.kind === 'shadow' ? 0.85 : 1);
@@ -716,6 +723,25 @@ export class WorldScene extends Phaser.Scene {
     for (const m of this.monsters) {
       m.container.setDepth(m.y);
       if (m.isEcho || m.scripted) continue;
+      // 红名怪: sees you within RED.sight and runs at you (asleep after a long absence).
+      if (m.red && !redAsleep(this.ctrl.state) && !this.ctrl.uiBlocking()) {
+        const px = this.player.x - m.x;
+        const py = this.player.y - m.y;
+        const pd = Math.hypot(px, py);
+        if (pd < RED.sight && pd > 1) {
+          m.chasing = true;
+          const st = Math.min(pd, RED.speed * dt);
+          const nx = m.x + (px / pd) * st;
+          const ny = m.y + (py / pd) * st;
+          if (!isBlocked(this.map, Math.floor(nx / TILE), Math.floor(ny / TILE))) {
+            m.x = m.tx = nx;
+            m.y = m.ty = ny;
+            m.container.setPosition(m.x, m.y);
+          }
+          continue;
+        }
+        m.chasing = false;
+      }
       m.wait -= dt;
       if (m.wait > 0) continue;
       const dx = m.tx - m.x;
@@ -755,6 +781,7 @@ export class WorldScene extends Phaser.Scene {
     if (this.time.now > this.graceUntil) {
       for (const m of this.monsters) {
         if (Math.abs(m.x - px) < 11 && Math.abs(m.y - py) < 11) {
+          if (m.red && m.chasing) return this.ctrl.ambush(m);
           this.ctrl.encounter(m);
           return;
         }

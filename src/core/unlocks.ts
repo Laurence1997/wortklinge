@@ -144,5 +144,6 @@ GRAM_UNLOCK_TEXT[34] = [...(GRAM_UNLOCK_TEXT[34] ?? []), '开口作答（可选�
 GRAM_UNLOCK_TEXT[81] = [...(GRAM_UNLOCK_TEXT[81] ?? []), '新技能「听写」：听它喊出例句，打出被挖掉的词，伤害 ×1.3'];
 GRAM_UNLOCK_TEXT[31] = [...(GRAM_UNLOCK_TEXT[31] ?? []), '快答：仍是回合制，答得快（选择 2 秒内、默写约每 3 个字母 1 秒）有天赋加成，慢了不罚', '天赋点改成每 2 级 1 点'];
 GRAM_UNLOCK_TEXT[81] = [...(GRAM_UNLOCK_TEXT[81] ?? []), '即时战：时间不再停。怪按自己的读条出手（约 6 秒，蓄力两倍），你随时答题，每招后 1 秒冷却，选择题答错僵直 2 秒。读条最后 1 秒答对是弹反（不挨打、反击算暴击），蓄力时答对就打断。设置里可以换回回合制或开慢速（读条 ×1.5），只是拿不到快答加成'];
+GRAM_UNLOCK_TEXT[81] = [...(GRAM_UNLOCK_TEXT[81] ?? []), '红名怪：野外出现红名的结构魔，看到你就扑上来。被它抓到先来一道先手检定，答对它扑空，答错先挨一口。离开超过 3 天回来的第一天，红名都在沉睡'];
 GRAM_UNLOCK_TEXT[141] = [...(GRAM_UNLOCK_TEXT[141] ?? []), '语法星位（天赋页最下面）：每个星位一条语法，过试炼（8 题对 6，随时重考）后花 1 点点亮，这条语法的题伤害 +10%、答错连击只减半'];
 for (const [lv, lines] of Object.entries(GRAM_UNLOCK_TEXT)) UNLOCK_TEXT[Number(lv)] = [...(UNLOCK_TEXT[Number(lv)] ?? []), ...lines];
