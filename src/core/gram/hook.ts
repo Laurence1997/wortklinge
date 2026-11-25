@@ -7,6 +7,7 @@ import { pick, type Rng } from '../rng';
 import type { GameState } from '../state';
 import type { Word } from '../types';
 import type { GramSys, GramTask } from './task';
+import { LINE_GENS, LINE_LV } from './lines';
 import { impTask, keinTask, meinTask, modalTask, sepTask } from './a1';
 import { datPronTask, nichtTask, timePrepTask } from './a1b';
 import { praetModalTask, praetSeinTask, praetTask } from './praet';
@@ -32,6 +33,7 @@ export const GRAM_LV: Partial<Record<GramSys, number>> = {
   mirror: 35,
   /** 变音秘境: only verbs whose family floor is cleared. */
   ablaut: 24,
+  ...LINE_LV,
 };
 
 export const GRAM_CFG = { chance: 0.25, perFight: 2 };
@@ -55,6 +57,7 @@ const GENS: Partial<Record<GramSys, Gen>> = {
   praet: (_s, w, rng) => praetTask(w, rng),
   ablaut: (s, w, rng) => ablautFieldTask(s, w, rng),
   mirror: (s, w, rng) => mirrorTask(w, rng, s.level),
+  ...Object.fromEntries(Object.entries(LINE_GENS).map(([k, g]) => [k, (_s: GameState, w: Word, rng: Rng) => g!(w, rng)])),
 };
 
 export function gramOpen(s: GameState, sys: GramSys): boolean {

@@ -14,6 +14,11 @@ import type { GameState } from './state';
 import type { Word } from './types';
 import { hasArticleQuestion, WORDS } from '../data/words';
 import { STAGE_DEF, type Stage } from './stages';
+import { LINE_GENS } from './gram/lines';
+import { adjTask } from './gram/adj';
+import { mirrorTask } from './gram/mirror';
+import { praetModalTask, praetTask } from './gram/praet';
+import type { GramTask } from './gram/task';
 
 export const BREAK = { from: 30, perPart: 8, pass: 5 };
 
@@ -72,8 +77,8 @@ function sentenceOf(w: Word): { de: string; zh: string } | null {
   return null;
 }
 
-/** 0.7/0.8: A2 and B1 use the same four parts on their own regions' words (游戏设计 七). Still to come with the
- *  other systems: each stage's own grammar items, B1's short article in 读 and one AI-graded free sentence in 写. */
+/** 0.7/0.8: A2 and B1 use the same four parts on their own regions' words (游戏设计 七), the grammar part asks the
+ *  stage's own items (stageGrammarQs). Still to come: B1's short article in 读 and one AI-graded free sentence in 写. */
 export function startExam(s: GameState, rng: Rng, stage: Stage = 'A1'): Exam {
   const words = shuffle(rng, pool(s, stage));
   const used = new Set<string>();
@@ -112,7 +117,7 @@ export function startExam(s: GameState, rng: Rng, stage: Stage = 'A1'): Exam {
     if (!w) break;
     qs.push({ part: 'write', word: w, prompt: w.zh, answer: w.de });
   }
-  qs.push(...grammarQs(s, rng, STAGE_DEF[stage].regions[1]));
+  qs.push(...(stage === 'A1' ? grammarQs(s, rng, STAGE_DEF[stage].regions[1]) : stageGrammarQs(s, rng, stage, words)));
   return { qs, at: 0, right: { listen: 0, read: 0, write: 0, grammar: 0 }, over: false, stage };
 }
 
@@ -216,6 +221,43 @@ export function answerExam(e: Exam, input: string): void {
   e.last = { ok, q, input };
   e.at += 1;
   if (e.at >= e.qs.length) e.over = true;
+}
+
+/** A2 / B1 语法段 (游戏设计 七): this stage's own grammar, one question per item until eight, from the words of the
+ *  trial's pool. A2: 形容词词尾、双向介词、反身代词、情态过去式、第二虚拟式、关系从句、被动、过去完成时.
+ *  B1: 其余过去式、被动过去式、属格、属格介词、与格反身、n 变化名词 (two items get a second question). */
+type ItemGen = (w: Word, rng: Rng) => GramTask | null;
+const L = (k: keyof typeof LINE_GENS): ItemGen => (w, rng) => LINE_GENS[k]!(w, rng);
+export const STAGE_GRAMMAR: Record<'A2' | 'B1', ItemGen[]> = {
+  A2: [(w, rng) => adjTask(w, rng, 80), L('twoway'), (w, rng) => mirrorTask(w, rng, 80), praetModalTask, L('k2'), L('relative'), L('passive'), L('plq')],
+  B1: [praetTask, L('passPast'), L('genitive'), L('genPrep'), (w, rng) => (w.pos === 'v' ? mirrorTask(w, rng, 120) : null), L('nDecl'), praetTask, L('genitive')],
+};
+
+export function stageGrammarQs(s: GameState, rng: Rng, stage: 'A2' | 'B1', words: Word[]): ExamQ[] {
+  const out: ExamQ[] = [];
+  const used = new Set<string>();
+  // Items with no fitting sentence among this pool fall back to any word in the list.
+  const all = shuffle(rng, WORDS.filter((w) => w.pos !== 'phr' && !w.digit));
+  for (const gen of STAGE_GRAMMAR[stage]) {
+    let t: GramTask | null = null;
+    let w: Word | undefined;
+    for (const src of [words, all]) {
+      for (const x of src) {
+        if (used.has(x.id)) continue;
+        t = gen(x, rng);
+        if (t) {
+          w = x;
+          break;
+        }
+      }
+      if (t) break;
+    }
+    if (!t || !w) continue;
+    used.add(w.id);
+    out.push({ part: 'grammar', word: w, prompt: t.focus, answer: t.answer, options: t.options, blanks: t.options ? undefined : [t.answer], alts: t.options ? undefined : [t.answer, ...(t.alts ?? [])], full: t.full, hint: t.rule, zh: t.zh ?? t.prompt });
+  }
+  void s;
+  return out;
 }
 
 /** Parts this exam asks (all four, or grammar alone for 补考). */

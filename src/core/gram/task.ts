@@ -29,7 +29,32 @@ export type GramSys =
   | 'adj'
   | 'notice'
   | 'article'
-  | 'struct';
+  | 'struct'
+  | 'twoway'
+  | 'woher'
+  | 'posVerb'
+  | 'dblObj'
+  | 'artSuffix'
+  | 'compare'
+  | 'connAdv'
+  | 'negAdv'
+  | 'k2'
+  | 'future'
+  | 'relative'
+  | 'passive'
+  | 'zuInf'
+  | 'alsWenn'
+  | 'plq'
+  | 'nachdem'
+  | 'indirect'
+  | 'lassen'
+  | 'passPast'
+  | 'genitive'
+  | 'genPrep'
+  | 'nDecl'
+  | 'nomAdj'
+  | 'dblConj'
+  | 'tempClause';
 
 export interface GramTask {
   sys: GramSys;

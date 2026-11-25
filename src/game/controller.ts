@@ -332,7 +332,7 @@ export class Controller {
   }
 
   uiBlocking(): boolean {
-    return !!this.battle || !!this.boss || dialogOpen() || !$('modal').hidden || !$('title').hidden || document.activeElement?.id === 'chat-input';
+    return !!this.battle || !!this.boss || dialogOpen() || !$('modal').hidden || !$('title').hidden;
   }
 
   refresh(): void {

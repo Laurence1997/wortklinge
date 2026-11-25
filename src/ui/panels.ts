@@ -383,6 +383,13 @@ export class Panels {
     if (q.part === 'listen') {
       wrap.append(h('p', '听，选出意思。'), h('div.row', h('button.btn', { onclick: () => this.ctrl.speak(q.say!) }, '🔊 再听一遍')));
     } else if (q.part === 'read') wrap.append(h('p', '选出空里的词。'), h('div.focus', { style: 'font-size:22px;margin:10px 0' }, q.prompt));
+    if (q.part === 'grammar' && q.options) {
+      // A2 / B1 语法段: some items are a contrast to choose (stellen / stehen, wegen / trotz …).
+      const row = h('div.choices');
+      q.options.forEach((o, i) => row.append(h(`button.btn${i === 0 ? '.exam-first' : ''}`, { onclick: () => go(o) }, `${i + 1}. ${o}`)));
+      wrap.append(h('p', '选出空里的词。'), h('div.focus', { style: 'font-size:22px;margin:10px 0' }, q.prompt), q.zh ? h('div.small.muted', q.zh) : '', row);
+      return wrap;
+    }
     if (q.part === 'grammar') {
       // 语法: type into the sentence; the Perfekt has two blanks (auxiliary, participle), sent as "a|b".
       const boxes = (q.blanks ?? ['']).map(() => h('input.exam', { type: 'text', autocomplete: 'off', spellcheck: 'false', placeholder: '填空' }) as HTMLInputElement);
@@ -1367,7 +1374,7 @@ export class Panels {
     }
     if (!s.look) {
       const pick = lookPicker();
-      wrap.append(h('h3', '选一个外观'), h('p.small.muted', '联机时别人看到的样子。之后在篝火旁可以免费改。'), pick.el, h('button.btn.primary', { onclick: () => { this.ctrl.setLook(pick.value()); this.render(); } }, '就这样'));
+      wrap.append(h('h3', '选一个外观'), h('p.small.muted', '你在地图上的样子。之后在篝火旁可以免费改。'), pick.el, h('button.btn.primary', { onclick: () => { this.ctrl.setLook(pick.value()); this.render(); } }, '就这样'));
       return wrap;
     }
     const st = { off: '未同步', syncing: '同步中…', ok: `已同步${cloud.lastSync ? `（${new Date(cloud.lastSync).toLocaleTimeString().slice(0, 5)}）` : ''}`, offline: '连不上服务器，先存在本地，联网后自动同步' }[cloud.status];

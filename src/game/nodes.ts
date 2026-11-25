@@ -18,7 +18,6 @@ import { erodeOpen, purified } from '../core/erosion';
 import type { ZoneId } from '../core/types';
 import { WORD_BY_ID, fullForm } from '../data/words';
 import { AREAS, AREAS_LATER, HOME_SCENE, SCENE_BY_ID, SCENES, neighbours, nearestScene, routeTo, scenesOf, type SceneDef } from '../data/world';
-import { online } from '../net/online';
 import { h } from '../ui/dom';
 import { sfx } from './audio';
 import { ZONES, TILE, type NpcId } from './map';
@@ -334,7 +333,6 @@ export class NodeNav {
       .map((id) => SCENE_BY_ID[id])
       .filter(this.revealed)
       .map((x) => h('button.btn', { disabled: busy, onclick: () => this.travel(x.id) }, `→ ${x.no} ${x.zh}`));
-    const peers = [...online.peers.values()].filter((p) => nearestScene(this.w.map.region, p.x, p.y).id === sc.id).map((p) => p.nick);
     this.panel.replaceChildren(
       h('div.sp-head', h('b', `${sc.no} · ${sc.zh}`), h('span.muted', zone ? ` ${zone.zh} · ${zone.levels}` : sc.type === 'camp' ? ' 安全区' : ''), this.erodeTag(sc)),
       this.claimMsg?.scene === sc.id ? h('div.small', { style: 'color:var(--gold, #ffcf4a)' }, this.claimMsg.text) : '',
@@ -361,7 +359,6 @@ export class NodeNav {
           : '',
       things.length ? h('div.sp-sec', h('div.muted', '这里有'), ...things) : '',
       h('div.sp-sec', h('div.muted', this.hopping ? '赶路中……' : '出口（也可以点地图上的圆点，远处去过的会自动走过去）'), ...exits),
-      peers.length ? h('div.sp-sec.muted', `同场景：${peers.join('、')}`) : '',
       h('div.sp-sec', h('button.btn.ghost', { onclick: () => this.bigMap() }, '🗺 大地图（M）')),
     );
   }

@@ -10,8 +10,7 @@ import { phraseCards, phraseWord } from '../core/combat';
 import { SAYING_CFG, SAYINGS } from '../data/sayings';
 import { FAMILIES } from '../data/families';
 import type { Controller } from './controller';
-import { DEFAULT_LOOK, lookKey, type Look } from '../core/look';
-import { myBubble, online } from '../net/online';
+import { DEFAULT_LOOK } from '../core/look';
 import { generateMap, isBlocked, MAP_H, MAP_W, TILE, walkableTilesIn, zonesOf, zoneAt, type MapData, type NpcId, type RegionId, type ZoneDef } from './map';
 import { GLITCH, heroFramesKenney, dungeonTile, SHADE_RAMP, CHAR_RAMP, makeTextures, renderMapCanvas, PAL } from './sprites';
 import { NPC_TILE, isRestored, wordTile } from '../ui/icons';
@@ -604,7 +603,6 @@ export class WorldScene extends Phaser.Scene {
 
   update(_t: number, dtMs: number) {
     const dt = Math.min(0.05, dtMs / 1000);
-    this.updatePeers(dt);
     this.jitterTimer += dtMs;
     if (this.jitterTimer > 110) {
       this.jitterTimer = 0;
@@ -701,57 +699,6 @@ export class WorldScene extends Phaser.Scene {
       t.context.drawImage(frames[i], 0, 0);
       t.refresh();
     });
-  }
-
-  // ---- 联机第一档: other players in this region --------------------------------------------------
-  private peerViews = new Map<string, { c: Phaser.GameObjects.Container; spr: Phaser.GameObjects.Sprite; bubble: Phaser.GameObjects.Text; fight: Phaser.GameObjects.Text; key: string }>();
-  private myBubble: Phaser.GameObjects.Text | null = null;
-
-  private peerTexture(look: Look): string {
-    const key = `peer-${lookKey(look)}`;
-    if (!this.textures.exists(`${key}-0`)) heroFramesKenney(look, this.dsheet()).forEach((cv, i) => this.textures.addCanvas(`${key}-${i}`, cv));
-    if (!this.anims.exists(`${key}-walk`)) this.anims.create({ key: `${key}-walk`, frames: [{ key: `${key}-0` }, { key: `${key}-1` }], frameRate: 6, repeat: -1 });
-    return key;
-  }
-
-  private updatePeers(dt: number) {
-    const txt = (y: number, color: string, size = '6px') =>
-      this.add.text(0, y, '', { fontFamily: FONT, fontSize: size, color, resolution: 4, align: 'center', wordWrap: { width: 90, useAdvancedWrap: true } }).setOrigin(0.5, 1);
-    const now = Date.now();
-    for (const [id, v] of this.peerViews) if (!online.peers.has(id)) (v.c.destroy(), this.peerViews.delete(id));
-    for (const p of online.peers.values()) {
-      let v = this.peerViews.get(p.id);
-      const key = this.peerTexture(p.look);
-      if (!v) {
-        const spr = this.add.sprite(0, 0, `${key}-0`).setOrigin(0.5, 0.85).setAlpha(0.85);
-        const name = txt(-15, '#bfb0a4').setText(p.nick);
-        const fight = txt(-21, '#ff6a5a').setText('⚔ 战斗中');
-        const bubble = txt(-22, '#f2e6da', '7px');
-        const c = this.add.container(p.x, p.y, [spr, name, fight, bubble]);
-        v = { c, spr, bubble, fight, key };
-        this.peerViews.set(p.id, v);
-      }
-      if (v.key !== key) (v.spr.setTexture(`${key}-0`), (v.key = key));
-      const dx = p.x - v.c.x;
-      const dy = p.y - v.c.y;
-      const far = Math.hypot(dx, dy);
-      if (far > 200) v.c.setPosition(p.x, p.y);
-      else if (far > 1) {
-        const step = Math.min(far, Math.max(70, far / 2.5) * dt); // positions come every 3 s: glide there
-        v.c.x += (dx / far) * step;
-        v.c.y += (dy / far) * step;
-        if (Math.abs(dx) > 1) v.spr.setFlipX(dx < 0);
-        if (!v.spr.anims.isPlaying) v.spr.play(`${key}-walk`);
-      } else if (v.spr.anims.isPlaying) (v.spr.anims.stop(), v.spr.setTexture(`${key}-0`));
-      v.c.setDepth(v.c.y);
-      v.fight.setVisible(p.fighting);
-      const showBubble = !!p.bubble && (p.bubbleUntil ?? 0) > now;
-      v.bubble.setVisible(showBubble).setText(showBubble ? p.bubble! : '').setY(p.fighting ? -28 : -22);
-    }
-    // Your own chat bubble.
-    if (!this.myBubble) this.myBubble = this.add.text(0, 0, '', { fontFamily: FONT, fontSize: '7px', color: '#f2e6da', resolution: 4, align: 'center', wordWrap: { width: 90, useAdvancedWrap: true } }).setOrigin(0.5, 1);
-    const mb = myBubble && myBubble.until > now ? myBubble.text : '';
-    this.myBubble.setText(mb).setVisible(!!mb).setPosition(this.player.x, this.player.y - 16).setDepth(this.player.y + 1000);
   }
 
   canStand(x: number, y: number): boolean {

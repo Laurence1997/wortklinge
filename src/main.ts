@@ -3,9 +3,8 @@ import './ui/style.css';
 import { load, newGame, save, saveRaw, setSaveHook } from './core/state';
 import { cloud, initCloud, mustChangePassword, needsNickname, push, schedulePush, syncOnBoot } from './net/cloud';
 import { loginView } from './ui/account';
-import { mountChat } from './ui/chat';
 import { $ } from './ui/dom';
-import { joinRegion, leave, update } from './net/online';
+import { mountLogBox } from './ui/logbox';
 import { h } from './ui/dom';
 import { Controller } from './game/controller';
 import { WorldScene } from './game/WorldScene';
@@ -21,18 +20,8 @@ const dev = new URLSearchParams(location.search).has('dev');
 function boot(state: ReturnType<typeof newGame>) {
   const ctrl = new Controller(state, dev);
   (window as unknown as { wk: Controller }).wk = ctrl; // handy for debugging in the console
-  // 联机第一档: about once a second, join the region room and send your position if it changed.
-  const chat = mountChat();
-  window.setInterval(() => {
-    const st = ctrl.state;
-    const ready = !!cloud.session && !mustChangePassword();
-    chat.setVisible(ready && $('title').hidden);
-    if (!ready) return leave();
-    if (!st.look) return;
-    const me = { name: st.name, region: st.region ?? 1, look: st.look, x: st.pos.x, y: st.pos.y, fighting: !!ctrl.battle || !!ctrl.boss };
-    joinRegion(me);
-    update(me);
-  }, 1000);
+  const logBox = mountLogBox();
+  window.setInterval(() => logBox.setVisible($('title').hidden), 1000);
   if (cloud.session && !mustChangePassword() && (!cloud.profile || !state.look)) window.setTimeout(() => ctrl.panels.show('account'), 2500);
   new Phaser.Game({
     type: Phaser.AUTO,
