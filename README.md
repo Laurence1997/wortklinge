@@ -175,4 +175,4 @@ German content is AI-drafted and rule-checked; native-speaker corrections are ve
 
 ## License
 
-MIT
+Code: MIT. Word-list data in `data/wortschatz/` is CC BY-SA 4.0 (derived from FrequencyWords, wordfreq and german-nouns); see `data/wortschatz/README.md`.

@@ -1,0 +1,311 @@
+1||到达（某人处）|Wann kommst du bei uns an?|你什么时候到我们这儿？
+2||回答（问题/来信）|Bitte antworte auf meine Nachricht.|请回复我的消息。
+3||当（职业）工作|Sie arbeitet als Krankenschwester.|她当护士。
+4||做（某项工作/项目）|Ich arbeite gerade an meiner Hausarbeit.|我正在写学期论文。
+5||在（某公司）工作|Er arbeitet bei Siemens.|他在西门子工作。
+6||想到，惦记|Ich denke oft an meine Familie.|我常想念家人。
+7|weak|乘（交通工具）|Wir fahren mit dem Bus.|我们坐公交车去。
+8||谈论（话题）|Wir sprechen über das Wetter.|我们聊天气。
+9||谈到，说起|Er spricht oft von seiner Reise.|他常说起他的旅行。
+10||和……说话|Kann ich mit Frau Weber sprechen?|我能和韦伯女士通话吗？
+11||等待|Ich warte auf den Bus.|我在等公交。
+12||开始做……|Wir fangen mit dem Unterricht an.|我们开始上课。
+13||在……登记/报名|Du musst dich beim Bürgeramt anmelden.|你得去市民局登记。
+14|weak|打电话到（某处）|Ruf doch mal bei der Hotline an.|你给客服热线打个电话吧。
+15||停止做……|Hör bitte mit dem Lärm auf!|别吵了！
+16||照看，注意|Kannst du auf meine Tasche aufpassen?|你能帮我看一下包吗？
+17||在……上花钱|Ich gebe viel Geld für Miete aus.|我在房租上花很多钱。
+18||向某人道谢|Ich bedanke mich bei dir.|我谢谢你。
+19||为……道谢|Wir bedanken uns für die Einladung.|谢谢邀请。
+20||以……开始|Der Kurs beginnt mit einem Test.|课程以一次测试开始。
+21||向……投诉|Ich beschwere mich beim Vermieter.|我向房东投诉。
+22||抱怨，投诉（某事）|Die Nachbarn beschweren sich über den Lärm.|邻居投诉噪音。
+23||由……组成|Das Team besteht aus fünf Leuten.|团队由五人组成。
+24||讨论|Wir diskutieren über das Problem.|我们讨论这个问题。
+25||散发……的香味|Die Küche duftet nach Kuchen.|厨房里飘着蛋糕香。
+26||邀请某人参加|Ich lade dich zu meiner Party ein.|我邀请你来我的派对。
+27||决定选……|Ich habe mich für das blaue Kleid entschieden.|我决定要那条蓝裙子。
+28||决定不要……|Sie entscheidet sich gegen den Umzug.|她决定不搬家。
+29||记得，回想起|Erinnerst du dich an unseren Urlaub?|你还记得我们的假期吗？
+30|weak|流经|Der Rhein fließt durch Köln.|莱茵河流经科隆。
+31||打听，问起|Er fragt nach dem Weg.|他问路。
+32||期待（将来的事）|Ich freue mich auf das Wochenende.|我期待周末。
+33||为（已有的事）高兴|Sie freut sich über das Geschenk.|她为礼物高兴。
+34||害怕|Das Kind fürchtet sich vor dem Hund.|孩子怕那条狗。
+35||涉及，关于（es geht um）|Worum geht es in dem Film?|这部电影讲什么？
+36||习惯于|Ich habe mich an das Wetter gewöhnt.|我已经习惯这里的天气了。
+37||祝贺某人（某事）|Wir gratulieren dir zum Geburtstag.|祝你生日快乐。
+38||帮某人做……|Kannst du mir beim Umzug helfen?|你能帮我搬家吗？
+39||听从|Hör auf deine Mutter!|听你妈妈的！
+40||对……感兴趣|Interessierst du dich für Fußball?|你对足球感兴趣吗？
+41||集中精力于|Ich muss mich auf die Prüfung konzentrieren.|我得专心准备考试。
+42||为……而斗争|Sie kämpfen für bessere Löhne.|他们为提高工资而斗争。
+43||与……作斗争|Er kämpft gegen die Krankheit.|他在和疾病抗争。
+44||与（困难）较劲|Ich kämpfe noch mit der Grammatik.|我还在和语法较劲。
+45||争夺|Die Teams kämpfen um den Pokal.|两队争夺奖杯。
+46||嘲笑，因……发笑|Alle lachen über den Witz.|大家都被笑话逗笑了。
+47||思考，考虑|Ich denke über dein Angebot nach.|我考虑一下你的提议。
+48||谈论|Lass uns über etwas anderes reden.|我们聊点别的吧。
+49||说起|Er redet immer von seinem Auto.|他老是说他的车。
+50||闻起来有……味|Hier riecht es nach Kaffee.|这里有咖啡味。
+51||呼喊，叫（某人来）|Das Kind ruft nach seiner Mutter.|孩子喊妈妈。
+52|weak|用（工具）写|Schreib bitte mit einem Kuli.|请用圆珠笔写。
+53||写信给|Ich schreibe eine E-Mail an die Uni.|我给大学写邮件。
+54||写关于……的|Sie schreibt über ihre Zeit in Berlin.|她写她在柏林的日子。
+55||保护某人免受|Die Creme schützt die Haut vor der Sonne.|这面霜防晒。
+56||死于（疾病）|Er ist an Krebs gestorben.|他死于癌症。
+57||发出……的臭味|Der Müll stinkt nach Fisch.|垃圾有股鱼臭味。
+58||为……争吵|Die Kinder streiten sich um das Spielzeug.|孩子们为玩具吵架。
+59||寻找|Ich suche nach meinem Schlüssel.|我在找钥匙。
+60||把……分成|Teil die Pizza in vier Stücke.|把披萨分成四块。
+61||和某人分享|Ich teile die Wohnung mit zwei Freunden.|我和两个朋友合租。
+62||参加|Ich nehme an dem Kurs teil.|我参加这门课。
+63||和……通电话|Ich telefoniere jeden Sonntag mit meinen Eltern.|我每周日和父母通电话。
+64||和……分开|Sie hat sich von ihrem Freund getrennt.|她和男朋友分手了。
+65||梦见，梦想|Ich träume von einem eigenen Haus.|我梦想有自己的房子。
+66||换算成|Rechne die Preise in Euro um.|把价格换算成欧元。
+67||向……告别|Wir verabschieden uns von den Gästen.|我们和客人告别。
+68||把……与……比较|Vergleich die Preise mit anderen Läden.|和别的店比比价格。
+69||爱上|Er hat sich in seine Kollegin verliebt.|他爱上了女同事。
+70||把……藏起来不让……看到|Sie versteckt die Schokolade vor den Kindern.|她把巧克力藏起来不让孩子看到。
+71||驾车经过|Wir fahren an der Kirche vorbei.|我们开车经过教堂。
+72||走过，经过|Ich gehe jeden Tag an der Bäckerei vorbei.|我每天路过面包店。
+73||顺道去（某人处）|Komm doch morgen bei mir vorbei!|明天来我这儿坐坐吧！
+74||为……做准备|Ich bereite mich auf das Vorstellungsgespräch vor.|我在准备面试。
+75||警告某人提防|Die Polizei warnt vor Taschendieben.|警察提醒小心扒手。
+76||与……相撞|Das Auto ist mit einem Bus zusammengestoßen.|汽车和公交车撞了。
+77||修改（某物）|Ich muss noch etwas an dem Text ändern.|我还得改一下这篇文章。
+78||对……生气|Ich ärgere mich über die Verspätung.|我为晚点生气。
+79||取决于|Das hängt vom Wetter ab.|这取决于天气。
+80||注意|Achte auf die Rechtschreibung!|注意拼写！
+81||取决于，关键在于（es kommt auf … an）|Es kommt auf den Preis an.|关键看价格。
+82||适应|Er hat sich schnell an die neue Stadt angepasst.|他很快适应了新城市。
+83|weak|为……排队|Wir stehen für Tickets an.|我们排队买票。
+84||要求，号召某人做……|Der Lehrer fordert die Schüler zur Ruhe auf.|老师让学生安静。
+85||对……激动生气|Reg dich nicht über jede Kleinigkeit auf!|别为每件小事生气！
+86||熟悉（某领域/地方）|Kennst du dich in Hamburg aus?|你熟悉汉堡吗？
+87||对……产生影响|Stress wirkt sich auf die Gesundheit aus.|压力会影响健康。
+88|drop|重复||
+89||赶紧做完……|Beeil dich mit dem Essen!|快点吃！
+90|weak|做……时赶紧|Beeil dich beim Anziehen!|穿衣服快点！
+91||从……中挣脱|Er konnte sich aus dem Auto befreien.|他从车里挣脱出来。
+92|weak|把……用于|Ich benutze die App für meine Arbeit.|我用这个应用工作。
+93||报道|Die Zeitung berichtet über den Streik.|报纸报道罢工。
+94||讲述，报告（经历）|Sie berichtet von ihrer Reise.|她讲述她的旅行。
+95||从事，研究|Ich beschäftige mich mit deutscher Geschichte.|我在研究德国历史。
+96||坚持要求|Er besteht auf einer Erklärung.|他坚持要一个解释。
+97||向（公司）求职|Ich bewerbe mich bei der Telekom.|我向德国电信求职。
+98|weak|申请（某职位，口语）|Sie bewirbt sich für die Stelle.|她申请这个职位。
+99||申请，争取（职位/奖学金）|Ich bewerbe mich um ein Stipendium.|我申请奖学金。
+100||应聘（某招聘广告）|Ich bewerbe mich auf Ihre Anzeige.|我应聘贵司的招聘。
+101||涉及，参照|Ich beziehe mich auf Ihre E-Mail vom Montag.|关于您周一的邮件……
+102||请求某人给予|Darf ich Sie um Hilfe bitten?|能请您帮忙吗？
+103||为……感谢某人|Ich danke Ihnen für Ihre Hilfe.|谢谢您的帮助。
+104||除以|Zehn dividiert durch zwei ist fünf.|十除以二等于五。
+105||熟悉（新工作）|Ich muss mich in das Programm einarbeiten.|我得熟悉这个程序。
+106||把……分成|Wir teilen die Klasse in Gruppen ein.|我们把全班分成小组。
+107||登记，签名到（名单）|Trag dich bitte in die Liste ein.|请在名单上登记。
+108||对……感到恶心|Ich ekle mich vor Spinnen.|我觉得蜘蛛恶心。
+109||向某人道歉|Ich entschuldige mich bei dir.|我向你道歉。
+110||为……道歉|Er entschuldigt sich für die Verspätung.|他为迟到道歉。
+111||从……中恢复|Ich muss mich von der Woche erholen.|我得从这一周里缓过来。
+112||凭……认出|Ich habe dich an der Stimme erkannt.|我听声音认出了你。
+113||向某人打听|Erkundige dich beim Hausmeister.|去问问管理员。
+114||打听（某事）|Sie erkundigt sich nach den Öffnungszeiten.|她打听营业时间。
+115||以……为食|Er ernährt sich nur von Gemüse.|他只吃蔬菜。
+116||用……取代|Die Lampe wurde durch eine neue ersetzt.|灯换成新的了。
+117||给某人讲……|Erzähl mir von deinem Urlaub!|给我讲讲你的假期！
+118||逃离，躲避|Viele Menschen fliehen vor dem Krieg.|很多人逃离战争。
+119||属于（群体的一员）|Er gehört zu meinen besten Freunden.|他是我最好的朋友之一。
+120||相信（存在/能力）|Ich glaube an dich.|我相信你。
+121||伸手去拿|Das Baby greift nach dem Ball.|宝宝伸手抓球。
+122||与……接壤|Deutschland grenzt an Polen.|德国和波兰接壤。
+123||为……负责（赔偿）|Eltern haften für ihre Kinder.|父母对孩子负责。
+124||遵守|Bitte halte dich an die Regeln.|请遵守规则。
+125||向某人挑战|Er fordert ihn zu einem Duell heraus.|他向对方挑战决斗。
+126||不介入|Halt dich aus dem Streit heraus!|别掺和这场争吵！
+127||提醒某人注意|Ich weise Sie auf die Frist hin.|我提醒您注意截止日期。
+128||希望，盼望|Wir hoffen auf gutes Wetter.|我们盼着好天气。
+129||听说，得到消息|Ich habe lange nichts von ihm gehört.|我很久没有他的消息了。
+130||了解，打听|Informier dich über die Kosten.|先了解一下费用。
+131||看错（某人/某事）|Da irrst du dich in ihm.|你看错他了。
+132||抱怨，发牢骚|Er jammert immer über das Wetter.|他总抱怨天气。
+133||照顾，处理|Wer kümmert sich um den Hund?|谁来照顾狗？
+134||靠……生活|Sie lebt von ihrem Gehalt.|她靠工资生活。
+135||患有（疾病）|Er leidet an Diabetes.|他患糖尿病。
+136||受……之苦|Viele leiden unter der Hitze.|很多人被高温折磨。
+137||与……相配|Die Schuhe passen gut zu deinem Kleid.|鞋和你的裙子很配。
+138||为……抗议（示威支持）|Sie protestieren für mehr Klimaschutz.|他们示威要求加强气候保护。
+139||抗议，反对|Die Studenten protestieren gegen die Gebühren.|学生抗议收费。
+140||对……作出反应|Wie hat er auf die Nachricht reagiert?|他对这消息有什么反应？
+141||向某人报复|Er will sich an seinem Feind rächen.|他想向敌人报复。
+142|weak|对……说（评价），表态|Was sagst du zu meinem Plan?|你觉得我的计划怎么样？
+143||责骂某人|Die Mutter schimpft mit dem Kind.|妈妈骂孩子。
+144||尝起来有……味|Der Tee schmeckt nach Zitrone.|茶有柠檬味。
+145||为……感到羞愧|Ich schäme mich für meinen Fehler.|我为我的错误感到羞愧。
+146||赞成|Ich bin für eine Pause.|我赞成休息一下。
+147||反对|Die meisten sind gegen den Plan.|大多数人反对这个计划。
+148||为……而赌/比赛|Wir spielen um Geld.|我们赌钱玩。
+149||代表，象征|Die Farbe Rot steht für Liebe.|红色代表爱情。
+150||投票赞成|Die Mehrheit stimmt für das Gesetz.|多数人投票赞成该法律。
+151||投票反对|Zehn Leute stimmen gegen den Vorschlag.|十人投票反对该提议。
+152||在某人做……时打扰|Störe mich nicht beim Lernen!|我学习时别打扰我！
+153||除以|Zwölf geteilt durch drei ist vier.|十二除以三等于四。
+154||回头看某人|Er dreht sich nach ihr um.|他回头看她。
+155||和……聊天|Ich unterhalte mich gern mit meinen Nachbarn.|我喜欢和邻居聊天。
+156||聊（某话题）|Wir unterhalten uns über Filme.|我们聊电影。
+157||和某人约好|Ich habe mich mit Anna verabredet.|我和安娜约好了。
+158||约好去做……|Wir verabreden uns zum Essen.|我们约了吃饭。
+159||依靠，信赖|Du kannst dich auf mich verlassen.|你可以信赖我。
+160||和……合得来|Ich verstehe mich gut mit meiner Mitbewohnerin.|我和室友处得很好。
+161||违反|Das verstößt gegen die Hausordnung.|这违反了住户守则。
+162||和……相处融洽|Die Katze verträgt sich nicht mit dem Hund.|猫和狗处不来。
+163||把……变成|Die Hexe verwandelt den Prinzen in einen Frosch.|女巫把王子变成青蛙。
+164||放弃，不要|Ich verzichte auf Zucker.|我不吃糖。
+165||经过|Auf dem Weg kommen wir an einem See vorbei.|路上我们经过一个湖。
+166||抵抗，反抗|Sie wehrt sich gegen die Vorwürfe.|她反驳那些指责。
+167||求助于，找（某人）|Wenden Sie sich bitte an die Rezeption.|请找前台。
+168||（某人）后来成了……|Was ist aus ihm geworden?|他后来怎么样了？
+169||了解（关于……的知识）|Was weißt du über Deutschland?|你对德国了解多少？
+170||知道（某事）|Ich weiß nichts von dem Treffen.|我不知道有这个会。
+171||对……感到惊讶|Ich wundere mich über seine Antwort.|他的回答让我惊讶。
+172||怀疑|Ich zweifle an seiner Ehrlichkeit.|我怀疑他是否诚实。
+173||强迫某人做……|Niemand zwingt dich zu etwas.|没人逼你做什么。
+174||劝说某人做……|Sie hat mich zu einem Kaffee überredet.|她劝我去喝杯咖啡。
+175||译成（某语言）|Kannst du das ins Deutsche übersetzen?|你能把这个译成德语吗？
+176||接受，认命|Ich habe mich mit der Situation abgefunden.|我已经接受现状了。
+177|A|上缴（税款等）|Die Firma führt Steuern an das Finanzamt ab.|公司向税务局缴税。
+178|A|呼吁|Die Regierung appelliert an die Bürger.|政府呼吁市民。
+179||从（梦/昏迷）中醒来|Er ist aus dem Koma aufgewacht.|他从昏迷中醒来了。
+180||以……为出发点，认定|Ich gehe davon aus, dass du kommst.|我默认你会来。
+181||凑合，和……相处|Wir kommen mit dem Geld gut aus.|我们的钱够用。
+182||表态支持|Der Minister spricht sich für die Reform aus.|部长表态支持改革。
+183|reflexiv|表态反对|Viele sprechen sich gegen das Projekt aus.|很多人表态反对这个项目。
+184||为……担忧|Wir bangen um sein Leben.|我们为他的生命担忧。
+185||基于|Der Film basiert auf einer wahren Geschichte.|电影改编自真实故事。
+186||研究，处理|Der Bericht befasst sich mit dem Klimawandel.|报告探讨气候变化。
+187||使某人摆脱|Die Tabletten befreien dich von den Schmerzen.|药片能帮你止痛。
+188||热衷于|Er begeistert sich für Musik.|他热衷音乐。
+189||限制在|Die Teilnehmerzahl ist auf 20 begrenzt.|参加人数限 20 人。
+190||坚持（意见）|Sie beharrt auf ihrer Meinung.|她坚持自己的意见。
+191||为……作贡献|Jeder kann zum Umweltschutz beitragen.|每个人都能为环保出力。
+192|A|咬（一口）|Er beißt in den Apfel.|他咬了一口苹果。
+193||承认，公开支持|Er bekennt sich zu seinen Fehlern.|他承认自己的错误。
+194||向某人诉苦|Sie beklagt sich bei ihrem Chef.|她向老板诉苦。
+195||抱怨|Er beklagt sich über die Arbeit.|他抱怨工作。
+196||因……抱怨|Die Gäste beklagen sich wegen des Lärms.|客人因噪音抱怨。
+197||努力争取|Ich bemühe mich um einen Termin.|我在争取约到时间。
+198||羡慕某人的……|Ich beneide dich um deinen Job.|我羡慕你的工作。
+199||局限于|Ich beschränke mich auf das Wichtigste.|我只讲最重要的。
+200|D|在于|Das Problem besteht in der Finanzierung.|问题在于资金。
+201|D|参与|Alle beteiligen sich an den Kosten.|大家一起分担费用。
+202||自称为|Er bezeichnet sich als Künstler.|他自称艺术家。
+203||使某人失去……|Der Lärm bringt mich um den Schlaf.|噪音让我睡不着。
+204||担保|Ich bürge für ihn.|我为他担保。
+205||与……划清界限|Die Partei distanziert sich von dem Politiker.|该党和这位政客划清界限。
+206||适合于|Das Buch eignet sich für Anfänger.|这本书适合初学者。
+207||回应，考虑（意见）|Der Lehrer geht auf jede Frage ein.|老师回应每个问题。
+208||致力于，支持|Sie setzt sich für Flüchtlinge ein.|她为难民奔走。
+209|A|加入（组织）|Ich bin in einen Sportverein eingetreten.|我加入了一个体育俱乐部。
+210||积极支持|Er engagiert sich für den Tierschutz.|他积极参与动物保护。
+211||积极反对|Viele engagieren sich gegen Rassismus.|许多人积极反对种族主义。
+212||对……作出决定|Das Gericht entscheidet über den Fall.|法院裁决此案。
+213||发展成为|Die Stadt hat sich zu einem Zentrum entwickelt.|这座城市发展成了一个中心。
+214|D|患上（疾病）|Sie ist an Grippe erkrankt.|她得了流感。
+215||把某人培养成|Sie erziehen ihre Kinder zur Selbstständigkeit.|他们培养孩子独立。
+216|D|缺少（es fehlt an）|Es fehlt an Lehrern.|缺老师。
+217||继……之后|Auf den Winter folgt der Frühling.|冬去春来。
+218|D|研究（某课题）|Sie forscht an einem neuen Impfstoff.|她在研究新疫苗。
+219||导致|Zu viel Stress führt zu Krankheiten.|压力太大会导致疾病。
+220||适用于|Die Regel gilt für alle.|规则对所有人都适用。
+221||被视为|Er gilt als bester Spieler.|他被认为是最好的球员。
+222||为……负责|Du musst für deine Fehler geradestehen.|你得为自己的错误负责。
+223|A|（偶然）碰上（某人）|Da bist du an den Falschen geraten.|你可找错人了。
+224|A|陷入|Wir sind in einen Stau geraten.|我们遇上了堵车。
+225||把……当作|Ich halte ihn für ehrlich.|我认为他很诚实。
+226||对……有看法|Was hältst du von der Idee?|你觉得这个主意怎么样？
+227||讲述（es handelt von，书/电影内容）|Das Buch handelt von einer Familie.|这本书讲一个家庭的故事。
+228||结果是（bei … herauskommen）|Was ist bei dem Gespräch herausgekommen?|谈话有什么结果？
+229||统治|Der König herrscht über das Land.|国王统治这个国家。
+230|D|依恋，舍不得|Sie hängt sehr an ihrer Heimat.|她很眷恋故乡。
+231||提防|Hüte dich vor falschen Freunden!|提防假朋友！
+232||竞选（职位）|Sie kandidiert für das Amt der Bürgermeisterin.|她竞选市长。
+233||与……竞选|Er kandidiert gegen den Präsidenten.|他与总统竞选。
+234||抱怨（病痛等）|Der Patient klagt über Kopfschmerzen.|病人说头疼。
+235||因……起诉|Er klagt wegen Betrugs.|他以诈骗为由起诉。
+236|A|把……送到|Wir liefern die Ware an Ihre Adresse.|我们把货送到您的地址。
+237|D|原因在于（es liegt an）|Es liegt an dir.|这取决于你。/原因在你。
+238||使成为|Das hat ihn zum Star gemacht.|这让他成了明星。
+239|D|缺少（es mangelt an）|Es mangelt an Geld.|缺钱。
+240|D|查阅|Schlag das Wort im Wörterbuch nach.|在词典里查这个词。
+241|D|啃|Der Hund nagt an einem Knochen.|狗在啃骨头。
+242|D|抿一口|Sie nippt an ihrem Wein.|她抿了一口酒。
+243||不在乎|Ich pfeife auf seine Meinung.|我才不在乎他怎么想。
+244||劝某人做……|Ich rate dir zu einem Arzt.|我建议你去看医生。
+245||预计到，指望|Wir rechnen mit Regen.|我们估计会下雨。
+246||以……为准|Wir richten uns nach dem Fahrplan.|我们按时刻表走。
+247|D|在……上失败|Das Projekt scheiterte am Geld.|项目因缺钱失败。
+248||迷恋|Sie schwärmt für den Sänger.|她迷恋那个歌手。
+249||渴望，思念|Ich sehne mich nach Ruhe.|我渴望清静。
+250||为……担心|Die Eltern sorgen sich um ihren Sohn.|父母为儿子担心。
+251||来自|Meine Familie stammt aus Bayern.|我家来自巴伐利亚。
+252||追求|Jeder strebt nach Glück.|人人追求幸福。
+253||哀悼|Sie trauert um ihren Vater.|她在哀悼父亲。
+254|D|看错|Ich habe mich in ihm getäuscht.|我看错他了。
+255||拥有，支配|Das Hotel verfügt über 100 Zimmer.|酒店有 100 间客房。
+256||与……谈判|Die Gewerkschaft verhandelt mit der Firma.|工会和公司谈判。
+257||就……谈判|Wir verhandeln über den Preis.|我们谈价格。
+258||向某人要求|Das kannst du nicht von mir verlangen.|你不能这样要求我。
+259|D|丧失（价值等）|Der Euro verliert an Wert.|欧元在贬值。
+260||承诺，有义务|Ich verpflichte mich zur Zahlung.|我承诺付款。
+261||为……投保|Ich habe mein Fahrrad gegen Diebstahl versichert.|我给自行车上了防盗险。
+262||向某人供应|Die Stadt versorgt alle mit Wasser.|城市为大家供水。
+263||把……理解为|Was verstehst du unter Freiheit?|你怎么理解自由？
+264||懂（某领域）|Er versteht viel von Autos.|他很懂车。
+265||与……和解|Sie hat sich mit ihrer Schwester versöhnt.|她和姐姐和好了。
+266|A|沉浸于|Er vertieft sich in sein Buch.|他沉浸在书里。
+267||判某人……刑|Er wurde zu drei Jahren Haft verurteilt.|他被判三年监禁。
+268||因……发抖|Sie zittert vor Kälte.|她冻得发抖。
+269||走向|Er geht auf die Tür zu.|他朝门走去。
+270||归因于|Der Unfall ist auf einen Fehler zurückzuführen.|事故归因于一个失误。
+271||回到（话题）|Ich komme auf Ihre Frage zurück.|我回到您的问题上。
+272||指望|Ich zähle auf dich.|我指望你了。
+273||放弃，不予考虑|Wir sehen von einer Strafe ab.|我们不予处罚。
+274||影射|Worauf spielst du an?|你在暗指什么？
+275||激励某人做……|Der Trainer spornt das Team zu Höchstleistungen an.|教练激励球队全力以赴。
+276|A|演变成（坏事）|Die Diskussion artete in einen Streit aus.|讨论演变成争吵。
+277||援引|Er beruft sich auf das Gesetz.|他援引法律。
+278||基于|Die Geschichte beruht auf Tatsachen.|故事基于事实。
+279||促使某人做……|Der Witz brachte alle zum Lachen.|笑话让大家都笑了。
+280||辩论|Das Parlament debattiert über das Gesetz.|议会辩论该法律。
+281||逃避|Er drückt sich vor der Arbeit.|他逃避工作。
+282||卷入，答应|Lass dich nicht auf so etwas ein!|别掺和这种事！
+283||做好……的准备|Stell dich auf eine lange Wartezeit ein.|做好久等的准备。
+284|weak|决定选（通常 sich entschließen zu）|Er hat sich für das Angebot entschlossen.|他决定接受这个提议。
+285|weak|决定不要|Sie entschloss sich gegen eine Operation.|她决定不做手术。
+286||由……得出|Daraus ergibt sich ein Problem.|由此产生一个问题。
+287||宣布（某人）为……（+形容词）|Der Arzt erklärte ihn für gesund.|医生宣布他健康。
+288||宣布（某人）为……（+名词）|Man erklärte ihn zum Sieger.|他被宣布为获胜者。
+289||任命某人为|Sie wurde zur Direktorin ernannt.|她被任命为主任。
+290|D|增加（重要性等）|Das Thema gewinnt an Bedeutung.|这个话题越来越重要。
+291||涉及，是关于（es handelt sich um）|Es handelt sich um ein Missverständnis.|这是个误会。
+292||强迫某人做……|Niemand hat ihn zu der Aussage genötigt.|没人逼他作那个供述。
+293||由……产生|Die Probleme resultieren aus Zeitmangel.|问题源于时间不够。
+294||从……推断|Aus seiner Reaktion schließe ich, dass er sauer ist.|从他的反应我推断他生气了。
+295||负责，照料，确保|Wer sorgt für die Getränke?|谁负责饮料？
+296||（夸张）……得要死|Ich sterbe vor Hunger!|我饿死了！
+297||与……不同|Das Original unterscheidet sich von der Kopie.|原件和复印件不一样。
+298||为……担保|Ich verbürge mich für seine Ehrlichkeit.|我担保他诚实。
+299||帮某人获得|Der Anwalt verhalf ihm zu seinem Recht.|律师帮他讨回了公道。
+300|A|出卖给|Er hat das Geheimnis an die Presse verraten.|他把秘密泄露给媒体。
+301||在（保险公司）投保|Ich bin bei der AOK versichert.|我在 AOK 投保。
+302|A|卷入|Er hat sich in Widersprüche verstrickt.|他说话自相矛盾。
+303||选某人为|Sie wurde zur Vorsitzenden gewählt.|她被选为主席。
+304||因……颤抖|Er bebt vor Wut.|他气得发抖。
+305||使有权做……|Die Karte berechtigt zum Eintritt.|凭卡可入场。
+306||用作|Der Raum dient zur Lagerung.|这间屋用作仓库。
+307||（偶然）谈到/走上|Wie bist du auf die Idee geraten?|你怎么想到这主意的？
+308||采用，诉诸|In der Not greift er zur Flasche.|一有难事他就借酒浇愁。
+309|A|向某人提出（问题/请求）|Bitte richten Sie Ihre Fragen an das Sekretariat.|问题请向秘书处提出。
+310||依据……判断|Man sollte nicht nach dem Äußeren urteilen.|不应以貌取人。
+311||证明，显示出|Seine Antwort zeugt von Mut.|他的回答显示出勇气。
