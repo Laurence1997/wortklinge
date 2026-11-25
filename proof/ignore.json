@@ -1,0 +1,11 @@
+{
+  "_readme": "False positives. rules: off everywhere. rulesByKind: off for one kind of item (word = dictionary form, not a sentence). accepted: one finding judged fine, by sentence hash + rule id; add a note saying why.",
+  "rules": ["GERMAN_WORD_REPEAT_BEGINNING_RULE"],
+  "rulesByKind": {
+    "word": ["UPPERCASE_SENTENCE_START", "ANREDE_KOMMA_2", "PUNCTUATION_PARAGRAPH_END"],
+    "plural": ["UPPERCASE_SENTENCE_START", "PUNCTUATION_PARAGRAPH_END"],
+    "conj": ["UPPERCASE_SENTENCE_START", "PUNCTUATION_PARAGRAPH_END"],
+    "saying": ["PUNCTUATION_PARAGRAPH_END"]
+  },
+  "accepted": []
+}

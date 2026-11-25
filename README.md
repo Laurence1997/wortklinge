@@ -97,6 +97,7 @@
 - **Phaser 3** 负责地图、角色和特效；背包、对话和打字作答用网页元素叠在画面上（中文输入法和 ä ö ü 更好处理）。
 - **纯 TypeScript 的规则核心**（`src/core`）和画面完全分开：战斗、归名、判题、掉落都能单独测试和模拟。
 - **素材**：篝火、路牌、光效和标记在代码里画；0.6 起每个场景的小插画用 [Kenney](https://www.kenney.nl) 的 1-Bit Pack 图块拼成（CC0，`public/art/`，许可见 `public/art/kenney-1bit-LICENSE.txt`）；主角、NPC、怪物（地图和战斗）、对话头像和装备图标用 Kenney 的 Tiny Dungeon（CC0，许可见 `public/art/kenney-tiny-dungeon-LICENSE.txt`），统一染成红色，只有主角的头发保留玩家选的颜色；0.6.x 起小世界地图的地面、墙和树用 Kenney 的 Tiny Town 图块铺（CC0，许可见 `public/art/kenney-tiny-town-LICENSE.txt`），压暗成红黑色调；音乐是 Web Audio 实时合成的低沉氛围音和心跳；台词用浏览器自带的德语语音。
+- **德语校对**：所有德语句子每次改动都自动过 [LanguageTool](https://languagetool.org)，可选再让 DeepSeek 复查；母语例句候选来自 [Tatoeba](https://tatoeba.org)（CC BY 2.0 FR，采用的句子保留编号和作者）；玩家可在答题后点「这句有问题？」报错。详见 `proof/README.md`。
 - 存档在浏览器本地，可导出、导入；没有服务器，没有账号。
 
 ```
@@ -171,7 +172,7 @@ npm install && npm run dev    # add ?dev=1 for debug buttons
 npm test
 ```
 
-German content is AI-drafted and rule-checked; native-speaker corrections are very welcome as issues.
+German content is AI-drafted and checked automatically (LanguageTool on every change, optional DeepSeek cross-check, native example candidates from [Tatoeba](https://tatoeba.org), CC BY 2.0 FR; see `proof/README.md`). Players can flag a sentence in game; native-speaker corrections are very welcome as issues.
 
 ## License
 
