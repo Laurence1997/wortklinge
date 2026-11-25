@@ -231,8 +231,8 @@ const L = (k: keyof typeof LINE_GENS): ItemGen => (w, rng) => LINE_GENS[k]!(w, r
 export const STAGE_GRAMMAR: Record<'A2' | 'B1' | 'B2', ItemGen[]> = {
   A2: [(w, rng) => adjTask(w, rng, 80), L('twoway'), (w, rng) => mirrorTask(w, rng, 80), praetModalTask, L('k2'), L('relative'), L('passive'), L('plq')],
   B1: [praetTask, L('passPast'), L('genitive'), L('genPrep'), (w, rng) => (w.pos === 'v' ? mirrorTask(w, rng, 120) : null), L('nDecl'), praetTask, L('genitive')],
-  // B2 (160): until the B2 grammar is in, the B1 items plus the 101–111 ones (暂定).
-  B2: [L('nomAdj'), L('dblConj'), L('tempClause'), L('nDecl'), L('passPast'), L('genPrep'), L('relative'), L('plq')],
+  // B2 (160): the 121–141 rules opened by then, plus two from 101–111 while the B2 sentences are few (暂定).
+  B2: [L('k1'), L('passAlt'), L('hinHer'), L('fvg'), L('nomPrep'), L('passAlt'), L('k1'), L('dblConj')],
 };
 
 export function stageGrammarQs(s: GameState, rng: Rng, stage: 'A2' | 'B1' | 'B2', words: Word[]): ExamQ[] {

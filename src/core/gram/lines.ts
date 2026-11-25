@@ -1,4 +1,4 @@
-// A2 / B1 语法线 (游戏设计 十六「语法线」, 32–111 级): each rule is asked on the word monster in front of you, from that
+// A2 / B1 / B2 语法线 (游戏设计 十六「语法线」32–111 级; 四「121–200 级」121–171): each rule is asked on the word monster in front of you, from that
 // word's own example sentences (语法教学统一框架: the sentence was seen before as 初印象, now the rule is tested in it).
 // A rule whose sentence form the word's examples don't show simply doesn't come up on that word.
 //
@@ -473,6 +473,152 @@ const TEMP_CLAUSE: Spec = {
   options: (a) => [a.toLowerCase().startsWith('seitdem') ? 'seitdem' : 'seit', 'während', 'bis'].map((o) => (o === 'seit' && a.toLowerCase() === 'seitdem' ? 'seitdem' : o)),
 };
 
+// ---- B2 (121–171) -------------------------------------------------------------------------------------------
+// 游戏设计 四「121–200 级」语法表. The example corpus is thin here (B1 sentences, few reported-speech or nominal-style
+// lines), so each rule comes up on few words until the B2 regions' article sentences are in.
+
+// 121 第一虚拟式（间接引语）: after a reporting verb, er/sie/es/man + K1. Choice against the indicative and K2.
+const K1_SET: Record<string, [string, string]> = { sei: ['ist', 'wäre'], habe: ['hat', 'hätte'], werde: ['wird', 'würde'], könne: ['kann', 'könnte'], müsse: ['muss', 'müsste'], solle: ['soll', 'sollte'], wolle: ['will', 'wollte'], dürfe: ['darf', 'dürfte'] };
+const K1: Spec = {
+  sys: 'k1',
+  re: /\b(?:sagt|sagte|meint|meinte|dachte|denkt|erzählt|erzählte|behauptet|behauptete|berichtet|berichtete|schreibt|schrieb|erklärt|erklärte|hört|heißt)\b[^.!?]*, (?:er|sie|es|man|der [A-ZÄÖÜ][a-zäöüß]+|die [A-ZÄÖÜ][a-zäöüß]+|das [A-ZÄÖÜ][a-zäöüß]+) (?:[a-zäöüß]+ )*?(sei|habe|werde|könne|müsse|solle|wolle|dürfe)\b/,
+  group: 1,
+  prompt: '间接引语（书面）：选第一虚拟式',
+  rule: '转述别人的话（书面、新闻）用第一虚拟式：er sei, er habe, er könne, er werde（Er sagte, er sei krank.）。第一虚拟式和直陈式一样时（wir haben）才换成第二虚拟式。',
+  options: (a) => [a, ...K1_SET[a]],
+};
+
+// 125 功能动词结构: the noun fixes the verb (eine Entscheidung treffen, Rücksicht nehmen …). Infinitives and
+// participles only, so the options share one form.
+const FVG_VERB: Record<string, string> = { Entscheidung: 'treffen', Rücksicht: 'nehmen', Anspruch: 'nehmen', Kauf: 'nehmen', Verfügung: 'stellen', Frage: 'stellen', Ausdruck: 'bringen', Sprache: 'bringen', Betracht: 'ziehen', Kenntnis: 'nehmen', Abschied: 'nehmen', Bescheid: 'geben', Antwort: 'geben', Mühe: 'geben' };
+const FVG_INF = ['treffen', 'nehmen', 'stellen', 'bringen', 'ziehen', 'geben'];
+const FVG_PART = ['getroffen', 'genommen', 'gestellt', 'gebracht', 'gezogen', 'gegeben'];
+const FVG: Spec = {
+  sys: 'fvg',
+  re: new RegExp(`\\b(${Object.keys(FVG_VERB).join('|')})\\b[^.!?,]*?\\b(${[...FVG_INF, ...FVG_PART].join('|')})\\b`),
+  group: 2,
+  prompt: '功能动词结构：这个名词配哪个动词？',
+  rule: '功能动词结构是固定搭配，名词定动词：eine Entscheidung treffen, Rücksicht nehmen, zur Verfügung stellen, zum Ausdruck bringen, in Betracht ziehen, Bescheid geben。要整块记。',
+  skip: (m) => {
+    const inf = FVG_INF.includes(m[2]) ? m[2] : FVG_INF[FVG_PART.indexOf(m[2])];
+    return FVG_VERB[m[1]] !== inf;
+  },
+  options: (a) => {
+    const pool = FVG_INF.includes(a) ? FVG_INF : FVG_PART;
+    const i = pool.indexOf(a);
+    return [a, pool[(i + 1) % pool.length], pool[(i + 3) % pool.length]];
+  },
+};
+
+// 131 被动的替代形式: sein + zu + 不定式（ist … zu erreichen）against haben + zu（hat … zu tun = 必须）;
+// sich lassen + 不定式; -bar 形容词.
+const SEIN_HABEN: Record<string, string> = { ist: 'hat', sind: 'haben', war: 'hatte', waren: 'hatten' };
+const SEIN_ZU: Spec = {
+  sys: 'passAlt',
+  re: /\b(ist|sind|war|waren)\b ([^.!?,]*?) zu ([a-zäöüß]+en)([.!?,])/,
+  group: 1,
+  prompt: '被动的替代：sein + zu（能被 / 必须被）还是 haben + zu（必须做）？',
+  rule: 'sein + zu + 不定式 = 能被 / 必须被（Der Bahnhof ist nur über den Seiteneingang zu erreichen.），主语是被做的东西；haben + zu + 不定式 = 必须做（Ich habe viel zu tun.），主语是做事的人。',
+  skip: (m, de) =>
+    /^(trocken|offen|eigen|golden|seltsam)$/.test(m[3]) ||
+    /\b(gewillt|bereit|Pflicht|froh|dabei)\b/.test(m[2]) ||
+    // Es ist + adjective + zu-infinitive (Es ist ungefährlich, Fisch zu essen) is not sein + zu.
+    (/^Es (ist|war) [a-zäöüß]+ /.test(de) && /^[a-zäöüß]+ [A-ZÄÖÜ]/.test(m[2])) ||
+    (m[4] === ',' && /^, (was|wie|wo|ob|dass)\b/.test(de.slice(m.index + m[0].length - 1))),
+  options: (a) => [a, SEIN_HABEN[a]],
+};
+const LASSEN_SICH: Spec = {
+  sys: 'passAlt',
+  re: /\b(?:lässt|lassen) (sich) (?:[^.!?,]* )?[a-zäöüß]+en[.!?,]/,
+  group: 1,
+  prompt: 'sich lassen + 不定式（= 能被……）：填缺的词',
+  rule: 'sich lassen + 不定式 = 能被……（Das lässt sich reparieren. = Das kann repariert werden.）。',
+  options: () => ['sich', 'es', 'man'],
+};
+const BAR_VERB: Record<string, string> = { liefer: 'liefern', bezahl: 'bezahlen', erneuer: 'erneuern', sicht: 'sehen', verfüg: 'verfügen', ess: 'essen', trink: 'trinken', mach: 'machen', erreich: 'erreichen', les: 'lesen', wasch: 'waschen', vermeid: 'vermeiden', vergleich: 'vergleichen', erkenn: 'erkennen', halt: 'halten', brauch: 'brauchen', denk: 'denken', zahl: 'zahlen', trag: 'tragen', heil: 'heilen', erklär: 'erklären', bewohn: 'bewohnen', befahr: 'befahren', verwend: 'verwenden', kontrollier: 'kontrollieren' };
+const BAR: Spec = {
+  sys: 'passAlt',
+  re: new RegExp(`\\b((?:un)?(?:${Object.keys(BAR_VERB).join('|')})bar)(?:e|en|er|es|em)?\\b`),
+  group: 1,
+  prompt: '-bar 形容词：能被……的',
+  rule: '动词词干 + -bar = 能被……的（lesen → lesbar 能读的，bezahlen → bezahlbar 付得起的）；un- 表示「不能」（unvermeidbar）。',
+  hint: (a) => {
+    const stem = a.replace(/^un/, '').replace(/bar$/, '');
+    if (!BAR_VERB[stem]) return null;
+    return `${a.startsWith('un') ? '不' : ''}能被 ${BAR_VERB[stem]} 的`;
+  },
+};
+
+// 135 书面介词: aufgrund, infolge, angesichts, mithilfe, anhand … (all with the genitive). Typed, with the meaning.
+const NOM_PREP_ZH: Record<string, string> = { aufgrund: '由于', infolge: '由于……的结果', angesichts: '鉴于', mithilfe: '借助', anhand: '根据、凭借', bezüglich: '关于', hinsichtlich: '关于', mittels: '借助' };
+const NOM_PREP: Spec = {
+  sys: 'nomPrep',
+  re: new RegExp(`\\b(${Object.keys(NOM_PREP_ZH).map((x) => `${cap(x)}|${x}`).join('|')})\\b`),
+  group: 1,
+  prompt: '书面介词',
+  rule: '书面语常用介词，后面多跟属格：aufgrund（由于）、infolge（由于……的结果）、angesichts（鉴于）、mithilfe（借助）、anhand（根据）、bezüglich / hinsichtlich（关于）。aufgrund 后面没有冠词时用 von（aufgrund von Regen）。',
+  hint: (a) => NOM_PREP_ZH[a.toLowerCase()],
+  alts: (a) => (/^(bezüglich|hinsichtlich)$/i.test(a) ? ['bezüglich', 'hinsichtlich'] : []),
+};
+
+// 141 hin / her: her = 朝说话人, hin = 离开说话人. Only directional compounds (herein / hinaus, herkommen / hingehen).
+const HIN_HER: Spec = {
+  sys: 'hinHer',
+  re: /\b([Hh]er|[Hh]in)(?:ein|aus|auf|unter|über|ab|kommen|komm|kommt|kam|gekommen|gehen|geh|geht|ging|gegangen|fahren|fährt|fuhr|gefahren|bringen|bringt|gebracht|setzen|legen|gelegt|gesetzt)(?![a-zäöüß])/,
+  group: 1,
+  prompt: 'hin 还是 her？',
+  rule: 'her = 朝说话人这边来（Komm herein! 进来！），hin = 从说话人这边去（Geh hinaus! 出去！）。口语里常缩成 rein、raus、rauf、runter。',
+  // Directional only: a motion verb in the sentence, and not the fixed frames (aus einem Impuls heraus, er ist hinüber).
+  skip: (m, de) =>
+    /^her(ein|aus)?ge(stellt|geben)/i.test(m[0]) ||
+    (/^(her|hin)(ein|aus|auf|unter|über|ab)$/i.test(m[0]) && !/\b(komm|kam|geh|ging|gegangen|lauf|lief|fahr|fuhr|fall|fiel|kletter|steig|stieg|renn|rann|hastet|eil|setz|leg|stell|trag|zieh|zog)/i.test(de)) ||
+    /Impuls heraus/.test(de),
+  options: (a) => (a[0] === 'H' ? ['Hin', 'Her'] : ['hin', 'her']),
+};
+
+// 161 第二虚拟式过去时: hätte / wäre + 第二分词; als ob + 第二虚拟式.
+const K2_PAST_PAIR: Record<string, string> = { hätte: 'wäre', wäre: 'hätte', hätten: 'wären', wären: 'hätten', hättest: 'wärst', wärst: 'hättest', Hätte: 'Wäre', Wäre: 'Hätte' };
+const K2_PAST: Spec = {
+  sys: 'k2Past',
+  re: /\b([Hh]ätte|hätten|hättest|[Ww]äre|wären|wärst)\b[^.!?,]* ((?:[a-zäöüß]+)?ge[a-zäöüß]+(?:t|en))\b/,
+  group: 1,
+  prompt: '第二虚拟式过去时：hätte 还是 wäre？',
+  rule: '过去没发生的事：hätte / wäre + 第二分词（Ich hätte dich angerufen. Ich wäre gekommen.）；用 sein 构成完成时的动词（kommen, gehen, fallen …）用 wäre。',
+  skip: (m) => /^(gegen|genug|gestern|gern|gerne|gegenüber)$/.test(m[2]),
+  options: (a) => [a, K2_PAST_PAIR[a]],
+};
+const ALS_OB: Spec = {
+  sys: 'k2Past',
+  re: /\bals (?:ob|wenn)\b[^.!?]*?\b(wäre|wären|hätte|hätten|würde|würden|könnte|könnten)\b[.!?,]/,
+  group: 1,
+  prompt: 'als ob（好像）后面用第二虚拟式：填动词',
+  rule: 'als ob / als wenn = 好像（其实不是），后面用第二虚拟式，动词放末尾（Er tut so, als ob er nichts wüsste.）。',
+};
+
+// 165 sofern / indem / soweit / wohingegen.
+const B2_CONJ: Spec = {
+  sys: 'b2Conj',
+  re: /(?:^|, )(Sofern|sofern|Indem|indem|Soweit|soweit|Wohingegen|wohingegen)\b/,
+  group: 1,
+  prompt: 'sofern（只要、如果）/ indem（通过……方式）/ soweit（就……而言）/ wohingegen（而）',
+  rule: 'sofern = 只要、如果（条件）；indem = 通过……（方式：Man lernt, indem man spricht.）；soweit = 就……而言（Soweit ich weiß …）；wohingegen = 而（对比）。都是从句连词，动词放末尾。',
+  options: (a) => (a[0] === a[0].toUpperCase() ? ['Sofern', 'Indem', 'Soweit', 'Wohingegen'] : ['sofern', 'indem', 'soweit', 'wohingegen']),
+};
+
+// 171 让步、对比: zwar … aber, einerseits … andererseits.
+function concessTask(w: Word): GramTask[] {
+  const out: GramTask[] = [];
+  for (const { de, zh } of lines(w)) {
+    const m = /\b(zwar|[Ee]inerseits)\b[^.!?]*?(?:, | )(aber|doch|andererseits)\b/.exec(de);
+    if (!m || /\bund zwar\b/.test(de)) continue;
+    const ans = m[2];
+    const at = m.index + m[0].length - ans.length;
+    const options = ans === 'andererseits' ? ['andererseits', 'außerdem', 'deshalb'] : [ans, 'sondern', 'oder'];
+    out.push({ sys: 'concess', prompt: `${m[1].toLowerCase()} … ___ · ${zh}`, focus: `${de.slice(0, at)}___${de.slice(at + ans.length)}`, answer: ans, alts: ans === 'aber' ? ['doch'] : ans === 'doch' ? ['aber'] : undefined, options, tier: 0, rule: 'zwar …, aber …（虽然……但是），einerseits …, andererseits …（一方面……另一方面），wenngleich（尽管，从句）。zwar 后面不用 sondern。', full: de, zh, wordId: w.id });
+  }
+  return out;
+}
+
 // ---- the generators, one per system -------------------------------------------------------------------------
 
 type Gen = (w: Word, rng: Rng) => GramTask | null;
@@ -504,6 +650,14 @@ export const LINE_GENS: Partial<Record<GramSys, Gen>> = {
   nomAdj: one(NOM_ADJ),
   dblConj: (w, rng) => pickOne(rng, dblConjTask(w)),
   tempClause: one(TEMP_CLAUSE),
+  k1: one(K1),
+  fvg: one(FVG),
+  passAlt: one(SEIN_ZU, LASSEN_SICH, BAR),
+  nomPrep: one(NOM_PREP),
+  hinHer: one(HIN_HER),
+  k2Past: one(K2_PAST, ALS_OB),
+  b2Conj: one(B2_CONJ),
+  concess: (w, rng) => pickOne(rng, concessTask(w)),
 };
 
 /** Opening level of each line rule (十六「语法线」; 十五 wins where they differ). */
@@ -533,14 +687,23 @@ export const LINE_LV: Partial<Record<GramSys, number>> = {
   nomAdj: 101,
   dblConj: 111,
   tempClause: 111,
+  k1: 121,
+  fvg: 125,
+  passAlt: 131,
+  nomPrep: 135,
+  hinHer: 141,
+  k2Past: 161,
+  b2Conj: 165,
+  concess: 171,
 };
 
 /** For tests and the dev panel: every task one system can make on one word. */
 export function allLineTasks(w: Word, sys: GramSys): GramTask[] {
-  const specs: Record<string, Spec[]> = { twoway: [TWOWAY], woher: [WOHER], posVerb: [POS_VERB], negAdv: [NEG_ADV], k2: [K2], future: [FUTURE], relative: [RELATIVE], passive: [PASSIVE], zuInf: [ZU_INF, CONNECTOR], alsWenn: [ALS_WENN], plq: [PLQ], nachdem: [NACHDEM], lassen: [LASSEN], passPast: [PASS_PAST], genitive: [GENITIVE], genPrep: [GEN_PREP], nDecl: [N_DECL], nomAdj: [NOM_ADJ], tempClause: [TEMP_CLAUSE], compare: [COMP, SUP], indirect: [OB] };
+  const specs: Record<string, Spec[]> = { twoway: [TWOWAY], woher: [WOHER], posVerb: [POS_VERB], negAdv: [NEG_ADV], k2: [K2], future: [FUTURE], relative: [RELATIVE], passive: [PASSIVE], zuInf: [ZU_INF, CONNECTOR], alsWenn: [ALS_WENN], plq: [PLQ], nachdem: [NACHDEM], lassen: [LASSEN], passPast: [PASS_PAST], genitive: [GENITIVE], genPrep: [GEN_PREP], nDecl: [N_DECL], nomAdj: [NOM_ADJ], tempClause: [TEMP_CLAUSE], compare: [COMP, SUP], indirect: [OB], k1: [K1], fvg: [FVG], passAlt: [SEIN_ZU, LASSEN_SICH, BAR], nomPrep: [NOM_PREP], hinHer: [HIN_HER], k2Past: [K2_PAST, ALS_OB], b2Conj: [B2_CONJ] };
   const out = (specs[sys] ?? []).flatMap((sp) => build(w, sp));
   if (sys === 'compare') out.push(...alsWieTask(w));
   if (sys === 'dblConj') out.push(...dblConjTask(w));
+  if (sys === 'concess') out.push(...concessTask(w));
   if (sys === 'dblObj') out.push(...orderTask(w, 'dblObj', '', '', dblObjWrong));
   if (sys === 'connAdv') out.push(...orderTask(w, 'connAdv', '', '', connWrong));
   if (sys === 'indirect') out.push(...orderTask(w, 'indirect', '', '', indirectWrong));

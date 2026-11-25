@@ -23,7 +23,8 @@ describe('语法线 A2 / B1', () => {
   it('each rule finds sentences, and every task is its own sentence with the answer put back', () => {
     for (const sys of systems) {
       const ts = WORDS.flatMap((w) => allLineTasks(w, sys));
-      expect(ts.length, sys).toBeGreaterThan(4);
+      // B2 (121+) rules: the corpus is still B1, so a few sentences each until the B2 article lines come in.
+      expect(ts.length, sys).toBeGreaterThan((LINE_LV[sys] ?? 0) > 120 ? 2 : 4);
       for (const t of ts) {
         if (t.focus.includes('___') && sys !== 'artSuffix') expect(t.focus.replace('___', t.answer), sys).toBe(t.full);
         if (t.options) expect(t.options, sys).toContain(t.answer);

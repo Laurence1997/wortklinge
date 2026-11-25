@@ -54,7 +54,15 @@ export type GramSys =
   | 'nDecl'
   | 'nomAdj'
   | 'dblConj'
-  | 'tempClause';
+  | 'tempClause'
+  | 'k1'
+  | 'fvg'
+  | 'passAlt'
+  | 'nomPrep'
+  | 'hinHer'
+  | 'k2Past'
+  | 'b2Conj'
+  | 'concess';
 
 export interface GramTask {
   sys: GramSys;
