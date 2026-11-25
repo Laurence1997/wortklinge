@@ -28,10 +28,19 @@ OUT = os.path.join(D, 'beispiele-mehr.tsv')
 def tsv(p): return list(csv.DictReader(open(p, encoding='utf-8'), delimiter='\t'))
 zone = tsv(os.path.join(D, 'build', 'zonen-1-3.tsv'))
 ex1 = {r['原形']: r for r in tsv(os.path.join(D, 'beispiele.tsv'))}
-cands = {}
+# Every sentence is used for one word only. A Tatoeba sentence that is already somebody's example 1 is dropped;
+# one that is a candidate for several words goes to the word with the fewest candidates (it needs it most).
+used = {r['例句'] for r in ex1.values()}
+want = {r['原形'] for r in zone}
+pool = {}
 for r in tsv(os.path.join(D, 'build', 'tatoeba', 'candidates.tsv')):
-    if r['例句'] != ex1.get(r['原形'], {}).get('例句'):
-        cands.setdefault(r['原形'], []).append(r)
+    if r['原形'] in want and r['例句'] not in used:
+        pool.setdefault(r['原形'], []).append(r)
+cands = {}
+for w in sorted(pool, key=lambda w: (len(pool[w]), -int(pool[w][0]['排名']))):
+    for r in pool[w]:
+        if r['例句'] not in used:
+            used.add(r['例句']); cands.setdefault(w, []).append(r)
 done = {r['原形'] for r in tsv(OUT)} if os.path.exists(OUT) else set()
 todo = [r for r in zone if r['原形'] not in done]
 if LIMIT: todo = todo[:LIMIT]
@@ -40,7 +49,7 @@ print(f'{len(zone)} words in zones 1–3, {len(done)} done, sending {len(todo)}'
 SYSTEM = """你是德语母语的编辑，给一款教在德国的中国人学德语的游戏挑选和编写例句。玩家在 1–3 区（A1，1–30 级），句子要简单、日常、德国生活里真的会说。
 每个词已经有「例句1」。你要给出例句2和例句3：
 1. 先从 Tatoeba 母语者候选句（编号 t1、t2…）里挑。只挑同时满足这些的：标准德语、地道；用的是词卡给的意思；是这个词最常见的日常用法之一；和例句1以及彼此用法明显不同（换人称、换格、换搭配、换场合都算）；不超过 10 个词、没有生僻词；内容不阴暗、不奇怪。宁缺毋滥。
-2. 候选不够两句，就自己写，补满两句。自己写的：4–9 个词，只用常用词，要体现这个词另一种常见用法或常见搭配，和德国日常生活有关，不要和例句1重复句型。名词尽量换一个格或用复数，动词尽量换人称或用现在完成时。
+2. 候选不够两句，就自己写，补满两句。自己写的：4–9 个词，只用常用词，要体现这个词另一种常见用法或常见搭配，和德国日常生活有关，不要和例句1重复句型。话题要多样（家、工作、朋友、天气、吃饭、购物、出行、学习都行），不要老用公交车、超市、冰箱。名词尽量换一个格或用复数，动词尽量换人称或用现在完成时。
 3. 每句都给自然的简体中文翻译（意思准确，不逐字硬译）。
 只输出 JSON：{"r":[{"w":"原形","s":[{"t":"t1 或 new","de":"德语句子","zh":"中文"},{"t":"…","de":"…","zh":"…"}]}]}。每个词正好 2 句，顺序：先 Tatoeba 后自写。"""
 

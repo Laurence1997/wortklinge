@@ -22,7 +22,7 @@ jobs:
       - name: Examples
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          LIMIT: '60'
+          LIMIT: '0'
         run: python3 scripts/wortschatz/examples3_luna.py
       - name: Commit
         run: |
