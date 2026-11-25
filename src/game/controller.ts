@@ -53,6 +53,7 @@ import { answerExam, BREAK, examPassed, PART_ZH, startExam, startGrammarExam, ty
 import { DUNGEON, RULES, type Rule } from '../data/dungeon';
 import { AI_TUTOR, aiGradeText, duelTurn } from '../net/aiTutor';
 import { DUEL, DUEL_SCENES, type DuelScene } from '../data/grammar/duels';
+import { noticeById } from '../core/gram/notice';
 import { partnerChoices, partnerOf, setPartner } from '../core/gram/partner';
 import { cleared, floorRun, floorsOf, GRAM_DUNGEON, markCleared, type DungeonKind, type Floor } from '../core/gram/dungeons';
 import { SKILLS } from '../data/skills';
@@ -639,6 +640,8 @@ export class Controller {
     const lead = this.pack[0];
     for (const o of picked.slice(0, max - 1)) {
       const ob = startBattle(s, o.word, this.rng, { tutorial: tut, challenge: o.challenge });
+      // 文章群怪 (81): the whole pack carries the lead's article, each asking from the next question.
+      if (lead.notice && noticeById(lead.notice.id)?.kind === 'article') (ob.notice = { id: lead.notice.id, i: this.pack.length }), (ob.mirror = undefined);
       // A same-article pair stays a pair: a crowd (复数怪, always die) pairs with a crowd, a single with a single.
       if (o.word.art === m.word.art && !!ob.pluralMon !== !!lead.pluralMon && o.word.pl && o.word.pl !== '-' && !o.word.plOnly && !tut) {
         const k = CONFIG.phase.pluralHp;

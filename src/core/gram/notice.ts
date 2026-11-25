@@ -2,10 +2,10 @@
 // above every question, and its attack questions ask what the text says (choice). Damage as usual.
 
 import { shuffle, type Rng } from '../rng';
-import { NOTICES, type Notice } from '../../data/grammar/notices';
+import { ARTICLES, NOTICES, type Notice } from '../../data/grammar/notices';
 import type { GramTask } from './task';
 
-export const NOTICE_CFG = { from: 15, chance: 0.12 };
+export const NOTICE_CFG = { from: 15, chance: 0.12, articleFrom: 81, articleChance: 0.08 };
 
 export function noticeFor(zone: string, rng: Rng): Notice | null {
   const ns = NOTICES.filter((n) => n.zone === zone);
@@ -13,15 +13,22 @@ export function noticeFor(zone: string, rng: Rng): Notice | null {
 }
 
 export function noticeById(id: string): Notice | undefined {
-  return NOTICES.find((n) => n.id === id);
+  return NOTICES.find((n) => n.id === id) ?? ARTICLES.find((n) => n.id === id);
 }
+
+/** 文章群怪 (81): an article for a pack (each member asks from its own starting question). */
+export function articleFor(rng: Rng): Notice | null {
+  return ARTICLES.length ? ARTICLES[Math.floor(rng() * ARTICLES.length)] : null;
+}
+
+export const KIND_ZH = { notice: '告示怪', letter: '信件怪', article: '文章群怪' } as const;
 
 /** Question `i` (cycling) of a notice. */
 export function noticeTask(n: Notice, i: number, rng: Rng): GramTask {
   const q = n.qs[i % n.qs.length];
   return {
     sys: 'notice',
-    prompt: `${n.kind === 'letter' ? '信件怪' : '告示怪'}：读上面的${n.kind === 'letter' ? '信' : '告示'}，回答 · ${q.q}`,
+    prompt: `${KIND_ZH[n.kind]}：读上面的${n.kind === 'letter' ? '信' : n.kind === 'article' ? '文章' : '告示'}，回答 · ${q.q}`,
     focus: n.title,
     answer: q.answer,
     options: shuffle(rng, q.options),

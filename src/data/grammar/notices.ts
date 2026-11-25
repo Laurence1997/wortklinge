@@ -12,7 +12,7 @@ export interface NoticeQ {
 export interface Notice {
   id: string;
   zone: string;
-  kind: 'notice' | 'letter';
+  kind: 'notice' | 'letter' | 'article';
   title: string;
   text: string;
   qs: NoticeQ[];
@@ -111,6 +111,27 @@ export const NOTICES: Notice[] = [
       { q: '去汉堡的车晚多久？', options: ['5 分钟', '20 分钟', '3 分钟'], answer: '20 分钟' },
       { q: '它从几站台开？', options: ['3 站台', '5 站台', '20 站台'], answer: '5 站台' },
       { q: '去科隆的车怎么了？', options: ['取消了', '提前了', '换站台了'], answer: '取消了' },
+    ],
+  },
+];
+
+/** 文章群怪 (81 级, framework + one sample): a pack shares one short article; each monster asks one question on it. */
+export const ARTICLES: Notice[] = [
+  {
+    id: 'artikel-fahrrad',
+    zone: '*',
+    kind: 'article',
+    title: 'Immer mehr Menschen fahren Rad',
+    text:
+      'In vielen deutschen Städten fahren heute mehr Menschen mit dem Fahrrad als vor zehn Jahren. ' +
+      'Der wichtigste Grund ist nicht das Wetter, sondern das Geld: Ein Fahrrad kostet wenig, und man braucht keinen Parkplatz. ' +
+      'Viele Städte bauen deshalb neue Radwege. Kritiker sagen aber, dass die Wege oft zu schmal sind und dass es im Winter gefährlich ist. ' +
+      'Trotzdem wollen die meisten Radfahrer nicht zurück zum Auto.',
+    qs: [
+      { q: '文章说骑车的人变多的最主要原因是什么？', options: ['天气好', '省钱', '更快'], answer: '省钱' },
+      { q: '很多城市因此做了什么？', options: ['修新的自行车道', '建停车场', '降低车票价格'], answer: '修新的自行车道' },
+      { q: '批评者说什么？', options: ['车道太窄、冬天危险', '自行车太贵', '骑车的人太少'], answer: '车道太窄、冬天危险' },
+      { q: '大多数骑车的人怎么想？', options: ['想换回汽车', '不想回到开车', '想坐公交'], answer: '不想回到开车' },
     ],
   },
 ];

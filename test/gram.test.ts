@@ -222,3 +222,14 @@ describe('复习伙伴', () => {
     expect(makeQuestion(s, b, 'attack', makeRng(2)).partner).toBeUndefined();
   });
 });
+
+describe('文章群怪', () => {
+  it('an article rides on the question with its own text', async () => {
+    const { noticeById, noticeTask } = await import('../src/core/gram/notice');
+    const a = noticeById('artikel-fahrrad')!;
+    const t = noticeTask(a, 1, makeRng(1));
+    expect(t.prompt).toContain('文章群怪');
+    expect(t.passage).toContain('Fahrrad');
+    expect(t.options).toContain(t.answer);
+  });
+});
