@@ -142,7 +142,7 @@
 141	weg	通用		
 142	Moment	时间日期		
 143	Kind	问候和自我介绍		
-144	Polizei	办手续		
+144	Polizei	新闻社会		办手续
 145	unter	通用		
 146	Mensch	通用		
 147	nie	通用	程度与频率	作息爱好
@@ -303,7 +303,7 @@
 302	rein	通用		
 303	Glaube	新闻社会		旅行天气自然
 304	lieb	人际情感		
-305	Wort	媒体科技		
+305	Wort	通用		
 306	fast	通用	程度与频率	
 307	holen	日常物品		
 308	letzt	时间日期	时间先后	时间日期
@@ -410,7 +410,7 @@
 409	leicht	讨论说理		求职职场
 410	Unfall	交通		
 411	Kontrolle	办手续		
-412	Kirche	旅行天气自然		
+412	Kirche	方向和城里的地方		
 413	schließlich	通用	时间先后	作息爱好
 414	gern	通用	观点与评价	作息爱好
 415	bedeuten	讨论说理		求职职场
@@ -498,7 +498,7 @@
 497	verletzt	身体看病		
 498	wohnen	住房家具		
 499	Million	数字		
-500	verschwinden	讨论说理		媒体科技
+500	verschwinden	日常物品		
 501	bereit	作息爱好		
 502	heiß	旅行天气自然		
 503	Ticket	交通		
@@ -577,7 +577,7 @@
 576	lieben	人际情感		
 577	völlig	通用	程度与频率	问候和自我介绍
 578	Anfang	时间日期		
-579	Paket	办手续		
+579	Paket	日常物品		
 580	fangen	作息爱好		
 581	wahrscheinlich	通用	推测与可能	时间日期
 582	einsteigen	交通		
@@ -599,7 +599,7 @@
 598	persönlich	人际情感		
 599	Vergleich	讨论说理		求职职场
 600	normal	讨论说理		求职职场
-601	Baby	问候和自我介绍		
+601	Baby	人际情感		
 602	Decke	住房家具		
 603	sechs	数字		
 604	vorstellen	问候和自我介绍		
@@ -683,7 +683,7 @@
 682	lügen	人际情感		
 683	Luft	旅行天气自然		
 684	zuerst	通用	时间先后	作息爱好
-685	Tat	办手续		
+685	Tat	新闻社会		办手续
 686	Gehalt	求职职场		
 687	Schiff	旅行天气自然		
 688	tatsächlich	通用	观点与评价	人际情感
@@ -749,7 +749,7 @@
 748	Anruf	媒体科技		
 749	Firma	求职职场		
 750	Apfel	吃喝		
-751	Gesetz	办手续		
+751	Gesetz	新闻社会		办手续
 752	pro	通用		
 753	Student	问候和自我介绍		
 754	runter	通用		
@@ -883,19 +883,19 @@
 882	Kontakt	人际情感		
 883	schneiden	吃喝		
 884	Witz	人际情感		
-885	stehlen	办手续		
+885	stehlen	新闻社会		购物付钱
 886	hübsch	通用	观点与评价	人际情感
 887	ergeben	讨论说理		求职职场
-888	englisch	作息爱好		
+888	englisch	媒体科技		
 889	Pferd	旅行天气自然		
 890	gelingen	讨论说理		求职职场
 891	Test	求职职场		
-892	Gericht	办手续		
+892	Gericht	新闻社会		办手续
 893	Tee	吃喝		
 894	unterstützen	人际情感		
 895	schaden	身体看病		
 896	zwingen	人际情感		
-897	Studium	问候和自我介绍		
+897	Studium	求职职场		
 898	Ehe	人际情感		
 899	wunderbar	通用	观点与评价	问候和自我介绍
 900	erledigen	办手续		
@@ -905,7 +905,7 @@
 904	Gebäude	方向和城里的地方		
 905	Ergebnis	讨论说理		求职职场
 906	gesamt	讨论说理		求职职场
-907	Hausaufgabe	问候和自我介绍		
+907	Hausaufgabe	求职职场		
 908	wachsen	旅行天气自然		
 909	beenden	讨论说理		求职职场
 910	Supermarkt	购物付钱		
@@ -946,7 +946,7 @@
 945	Berg	旅行天气自然		
 946	irgendwann	通用	时间先后	时间日期
 947	Einsatz	求职职场		
-948	Polizist	办手续		
+948	Polizist	新闻社会		交通
 949	wechseln	购物付钱		
 950	irgendein	通用		
 951	weder	通用	同意与反对	人际情感
@@ -979,7 +979,7 @@
 978	selten	通用	程度与频率	作息爱好
 979	bestätigen	办手续		
 980	dadurch	通用	原因与结果	作息爱好
-981	Note	问候和自我介绍		
+981	Note	讨论说理		求职职场
 982	Reihe	办手续		
 983	Geschenk	人际情感		
 984	Druck	求职职场		
@@ -1009,7 +1009,7 @@
 1008	packen	旅行天气自然		
 1009	erfolgreich	求职职场		
 1010	hinaus	通用		
-1011	Kindergarten	问候和自我介绍		
+1011	Kindergarten	方向和城里的地方		
 1012	entweder	通用	条件与假设	作息爱好
 1013	springen	作息爱好		
 1014	wohin	通用		
@@ -1089,7 +1089,7 @@
 1088	schwach	身体看病		
 1089	Apotheke	身体看病		
 1090	Mittel	讨论说理		办手续
-1091	Richter	办手续		
+1091	Richter	新闻社会		办手续
 1092	Kreis	方向和城里的地方		
 1093	Maschine	日常物品		
 1094	einziehen	住房家具		
@@ -1116,7 +1116,7 @@
 1115	Ohr	身体看病		
 1116	ans	通用		
 1117	gewiss	通用	推测与可能	时间日期
-1118	Zeuge	办手续		
+1118	Zeuge	新闻社会		办手续
 1119	rund	通用	程度与频率	时间日期
 1120	Frieden	新闻社会		媒体科技
 1121	schrecklich	通用	观点与评价	人际情感
@@ -1223,7 +1223,7 @@
 1222	Schaden	银行保险合同		
 1223	empfangen	问候和自我介绍		
 1224	Gegend	方向和城里的地方		
-1225	Toilette	日常物品		
+1225	Toilette	方向和城里的地方		
 1226	daraus	通用		
 1227	Bestand	讨论说理		银行保险合同
 1228	Ecke	方向和城里的地方		
@@ -1316,7 +1316,7 @@
 1315	davor	通用	时间先后	时间日期
 1316	erhöhen	讨论说理		求职职场
 1317	Getränk	吃喝		
-1318	praktisch	讨论说理		日常物品
+1318	praktisch	日常物品		
 1319	Doktor	求职职场		
 1320	hundert	数字		
 1321	Wechsel	讨论说理		银行保险合同
@@ -1353,7 +1353,7 @@
 1352	vermissen	人际情感		
 1353	England	旅行天气自然		
 1354	Bürgermeister	新闻社会		方向和城里的地方
-1355	bereiten	吃喝		
+1355	bereiten	通用		
 1356	geheim	人际情感		
 1357	Schicksal	人际情感		
 1358	zuletzt	通用	时间先后	作息爱好
@@ -1387,7 +1387,7 @@
 1386	Nachmittag	时间日期		
 1387	hinterlassen	旅行天气自然		
 1388	Tatsache	讨论说理		办手续
-1389	Urteil	办手续		
+1389	Urteil	新闻社会		办手续
 1390	irgendwelcher	通用		
 1391	immerhin	通用	转折与让步	作息爱好
 1392	befreien	讨论说理		人际情感
@@ -1421,7 +1421,7 @@
 1420	Schwierigkeit	讨论说理		办手续
 1421	Gebühr	办手续		
 1422	Beweis	办手续		
-1423	aufbauen	住房家具		
+1423	aufbauen	讨论说理		求职职场
 1424	beantragen	办手续		
 1425	Kilometer	数字		
 1426	beteiligen	求职职场		
@@ -1443,7 +1443,7 @@
 1442	Eis	吃喝		
 1443	durchführen	讨论说理		求职职场
 1444	eröffnen	求职职场		
-1445	wachen	作息爱好		
+1445	wachen	求职职场		
 1446	überleben	旅行天气自然		
 1447	Wolf	旅行天气自然		
 1448	sauer	吃喝		
@@ -1466,7 +1466,7 @@
 1465	schweigen	人际情感		
 1466	fair	通用	观点与评价	人际情感
 1467	Spitze	旅行天气自然		
-1468	absehen	讨论说理		办手续
+1468	absehen	通用		
 1469	Ton	媒体科技		
 1470	Vorteil	讨论说理		住房家具
 1471	Theater	作息爱好		
@@ -1486,7 +1486,7 @@
 1485	füllen	办手续		
 1486	Anteil	银行保险合同		
 1487	drohen	人际情感		
-1488	Diebstahl	办手续		
+1488	Diebstahl	新闻社会		办手续
 1489	notwendig	讨论说理		办手续
 1490	doppelt	数字		
 1491	September	时间日期		
@@ -1497,12 +1497,12 @@
 1496	Achtung	交通		
 1497	Radio	媒体科技		
 1498	auftauchen	讨论说理		媒体科技
-1499	verteidigen	办手续		
+1499	verteidigen	新闻社会		办手续
 1500	Künstler	作息爱好		
 1501	Juli	时间日期		
 1502	überzeugt	通用	观点与评价	人际情感
 1503	landen	旅行天气自然		
-1504	vermisst	人际情感		
+1504	vermisst	新闻社会		办手续
 1505	zurückkehren	旅行天气自然		
 1506	schwimmen	作息爱好		
 1507	hell	住房家具		
@@ -1516,7 +1516,7 @@
 1515	freiwillig	求职职场		
 1516	verursachen	讨论说理		身体看病
 1517	löschen	媒体科技		
-1518	klauen	办手续		
+1518	klauen	新闻社会		购物付钱
 1519	Arbeitgeber	求职职场		
 1520	Sport	作息爱好		
 1521	seitdem	通用	时间先后	作息爱好
@@ -1550,12 +1550,12 @@
 1549	Kaution	住房家具		
 1550	angeblich	通用	推测与可能	媒体科技
 1551	unterschiedlich	讨论说理		求职职场
-1552	fliehen	办手续		
+1552	fliehen	新闻社会		旅行天气自然
 1553	Amerikaner	问候和自我介绍		
 1554	nackt	身体看病		
 1555	ersetzen	日常物品		
 1556	anschauen	作息爱好		
-1557	Unterricht	问候和自我介绍		
+1557	Unterricht	作息爱好		
 1558	Gehirn	身体看病		
 1559	Engel	人际情感		
 1560	Ausländer	办手续		
@@ -1619,7 +1619,7 @@
 1618	verzichten	讨论说理		吃喝
 1619	Modell	购物付钱		
 1620	anscheinend	通用	推测与可能	作息爱好
-1621	schuldig	办手续		
+1621	schuldig	新闻社会		办手续
 1622	Aufmerksamkeit	讨论说理		求职职场
 1623	Technik	媒体科技		
 1624	Ausbildung	求职职场		
@@ -1684,7 +1684,7 @@
 1683	live	媒体科技		
 1684	Wien	方向和城里的地方		
 1685	angenehm	通用	观点与评价	问候和自我介绍
-1686	Mühe	作息爱好		
+1686	Mühe	讨论说理		作息爱好
 1687	November	时间日期		
 1688	Wissenschaft	新闻社会		媒体科技
 1689	Blut	身体看病		
@@ -1702,7 +1702,7 @@
 1701	Wesen	旅行天气自然		
 1702	Strecke	交通		
 1703	geschlossen	住房家具		
-1704	Strafe	办手续		
+1704	Strafe	新闻社会		办手续
 1705	Behandlung	身体看病		
 1706	Verfahren	办手续		
 1707	Leiter	求职职场		
@@ -1728,7 +1728,7 @@
 1727	klingeln	住房家具		
 1728	Stau	交通		
 1729	Probe	作息爱好		
-1730	Ehemann	问候和自我介绍		
+1730	Ehemann	人际情感		
 1731	ran	通用		
 1732	dankbar	通用	情绪反应	人际情感
 1733	normalerweise	通用	程度与频率	作息爱好
@@ -1738,17 +1738,17 @@
 1737	durchaus	通用	推测与可能	人际情感
 1738	Basis	讨论说理		求职职场
 1739	Motor	交通		
-1740	zerstören	住房家具		
+1740	zerstören	新闻社会		住房家具
 1741	Stil	讨论说理		媒体科技
 1742	Direktor	求职职场		
 1743	Stoff	日常物品		
 1744	aufregen	人际情感		
 1745	Osten	方向和城里的地方		
-1746	diskutieren	人际情感		
+1746	diskutieren	讨论说理		人际情感
 1747	ober	方向和城里的地方		
 1748	Strand	旅行天气自然		
 1749	übergeben	办手续		
-1750	gestehen	办手续		
+1750	gestehen	新闻社会		办手续
 1751	schnappen	身体看病		
 1752	stattfinden	求职职场		
 1753	wecken	作息爱好		
@@ -1759,20 +1759,20 @@
 1758	Vorname	办手续		
 1759	kompliziert	讨论说理		办手续
 1760	irgendetwas	通用		
-1761	besprechen	人际情感		
+1761	besprechen	讨论说理		求职职场
 1762	Kommentar	媒体科技		
 1763	Schild	方向和城里的地方		
 1764	Version	媒体科技		
 1765	Grippe	身体看病		
 1766	zentral	方向和城里的地方		
-1767	illegal	办手续		
+1767	illegal	新闻社会		办手续
 1768	Abteilung	求职职场		
 1769	Abschluss	问候和自我介绍		
 1770	Veränderung	讨论说理		求职职场
 1771	Gegenteil	讨论说理		求职职场
 1772	München	方向和城里的地方		
 1773	Prinzessin	媒体科技		
-1774	unschuldig	办手续		
+1774	unschuldig	新闻社会		办手续
 1775	erfinden	媒体科技		
 1776	klassisch	作息爱好		
 1777	pflegen	身体看病		
@@ -1791,7 +1791,7 @@
 1790	erstmal	通用	时间先后	作息爱好
 1791	entspannen	作息爱好		
 1792	Trick	作息爱好		
-1793	Jugend	问候和自我介绍		
+1793	Jugend	新闻社会		媒体科技
 1794	lediglich	通用	程度与频率	购物付钱
 1795	unbekannt	媒体科技		
 1796	Knie	身体看病		
@@ -1806,7 +1806,7 @@
 1805	historisch	新闻社会		媒体科技
 1806	ungewöhnlich	通用	观点与评价	作息爱好
 1807	reisen	旅行天气自然		
-1808	betrunken	作息爱好		
+1808	betrunken	吃喝		
 1809	Verhältnis	人际情感		
 1810	herrschen	新闻社会		媒体科技
 1811	Messe	求职职场		
@@ -1826,7 +1826,7 @@
 1825	spenden	银行保险合同		
 1826	Diskussion	人际情感		
 1827	drüber	通用		
-1828	beten	作息爱好		
+1828	beten	新闻社会		作息爱好
 1829	rüber	通用		
 1830	Bevölkerung	新闻社会		媒体科技
 1831	versichern	银行保险合同		
@@ -1872,7 +1872,7 @@
 1871	Unterlagen	办手续		
 1872	Mauer	住房家具		
 1873	Lokal	吃喝		
-1874	Monster	作息爱好		
+1874	Monster	新闻社会		作息爱好
 1875	Medizin	身体看病		
 1876	Not	讨论说理		办手续
 1877	ums	通用		
@@ -1981,7 +1981,7 @@
 1980	einverstanden	通用	同意与反对	人际情感
 1981	träumen	作息爱好		
 1982	gewöhnlich	讨论说理		人际情感
-1983	außen	住房家具		
+1983	außen	通用		
 1984	Januar	时间日期		
 1985	besetzen	求职职场		
 1986	Verkauf	购物付钱		
@@ -1995,7 +1995,7 @@
 1994	Flur	住房家具		
 1995	Schulden	银行保险合同		
 1996	wahnsinnig	通用	程度与频率	问候和自我介绍
-1997	ermitteln	办手续		
+1997	ermitteln	新闻社会		办手续
 1998	Tanz	作息爱好		
 1999	Feier	作息爱好		
 2000	Fremde	人际情感		
@@ -2003,7 +2003,7 @@
 2002	Forschung	新闻社会		媒体科技
 2003	Socke	日常物品		
 2004	spinnen	人际情感		
-2005	belegen	办手续		
+2005	belegen	讨论说理		办手续
 2006	ausfüllen	办手续		
 2007	Tradition	作息爱好		
 2008	Hamburg	方向和城里的地方		
@@ -2047,7 +2047,7 @@
 2046	Riese	旅行天气自然		
 2047	Kritik	人际情感		
 2048	reißen	日常物品		
-2049	bestrafen	办手续		
+2049	bestrafen	新闻社会		办手续
 2050	Dokument	办手续		
 2051	mitmachen	作息爱好		
 2052	aufstellen	讨论说理		求职职场
@@ -2078,8 +2078,8 @@
 2077	Welle	旅行天气自然		
 2078	korrekt	讨论说理		办手续
 2079	ausführen	求职职场		
-2080	schießen	办手续		
-2081	beibringen	问候和自我介绍		
+2080	schießen	新闻社会		办手续
+2081	beibringen	求职职场		
 2082	daneben	方向和城里的地方		
 2083	weltweit	新闻社会		媒体科技
 2084	jederzeit	时间日期	时间先后	时间日期
@@ -2088,7 +2088,7 @@
 2087	Widerstand	新闻社会		媒体科技
 2088	Maus	旅行天气自然		
 2089	Single	人际情感		
-2090	nieder	新闻社会		媒体科技
+2090	nieder	通用		
 2091	auslösen	讨论说理		身体看病
 2092	befürchten	通用	情绪反应	人际情感
 2093	beliebt	人际情感		
@@ -2212,7 +2212,7 @@
 2211	erzeugen	讨论说理		媒体科技
 2212	Lippe	身体看病		
 2213	Grab	旅行天气自然		
-2214	Opa	问候和自我介绍		
+2214	Opa	人际情感		
 2215	prima	通用	观点与评价	问候和自我介绍
 2216	aufmachen	日常物品		
 2217	Journalist	新闻社会		媒体科技
@@ -2220,7 +2220,7 @@
 2219	erben	银行保险合同		
 2220	elf	数字		
 2221	investieren	银行保险合同		
-2222	Identität	问候和自我介绍		
+2222	Identität	办手续		
 2223	Treppenhaus	住房家具		
 2224	Chaos	讨论说理		住房家具
 2225	Institut	求职职场		
@@ -2264,7 +2264,7 @@
 2263	Ausland	旅行天气自然		
 2264	aussetzen	讨论说理		旅行天气自然
 2265	rechtzeitig	通用	时间先后	时间日期
-2266	Unrecht	办手续		
+2266	Unrecht	讨论说理		办手续
 2267	kritisch	通用	观点与评价	求职职场
 2268	Dutzend	数字		
 2269	körperlich	身体看病		
@@ -2275,7 +2275,7 @@
 2274	Notruf	身体看病		
 2275	Kiste	日常物品		
 2276	krass	通用	情绪反应	人际情感
-2277	vertreiben	讨论说理		办手续
+2277	vertreiben	新闻社会		办手续
 2278	emotional	人际情感		
 2279	genial	通用	观点与评价	作息爱好
 2280	Vorhang	住房家具		
@@ -2429,13 +2429,13 @@
 2428	täuschen	人际情感		
 2429	Schande	人际情感		
 2430	Blödsinn	讨论说理		人际情感
-2431	Verteidigung	办手续		
+2431	Verteidigung	新闻社会		办手续
 2432	herein	方向和城里的地方		
 2433	Album	媒体科技		
 2434	eventuell	通用	推测与可能	时间日期
 2435	stabil	讨论说理		住房家具
 2436	Brille	身体看病		
-2437	Gefängnis	办手续		
+2437	Gefängnis	新闻社会		办手续
 2438	Leidenschaft	人际情感		
 2439	Hauptbahnhof	交通		
 2440	Standort	方向和城里的地方		
@@ -2484,7 +2484,7 @@
 2483	intensiv	讨论说理		身体看病
 2484	irgendjemand	通用		
 2485	heil	身体看病		
-2486	Argument	人际情感		
+2486	Argument	讨论说理		人际情感
 2487	Brand	新闻社会		住房家具
 2488	Konflikt	人际情感		
 2489	Schicht	求职职场		
@@ -2577,14 +2577,14 @@
 2576	beschützen	人际情感		
 2577	ausprobieren	作息爱好		
 2578	Front	新闻社会		媒体科技
-2579	missbrauchen	办手续		
+2579	missbrauchen	人际情感		
 2580	Katastrophe	旅行天气自然		
 2581	außergewöhnlich	通用	观点与评价	作息爱好
 2582	relativ	通用	程度与频率	购物付钱
 2583	anschließend	通用	时间先后	时间日期
 2584	Kopie	办手续		
 2585	dreckig	日常物品		
-2586	Kita	问候和自我介绍		
+2586	Kita	方向和城里的地方		
 2587	Mütze	日常物品		
 2588	traditionell	作息爱好		
 2589	anständig	人际情感	观点与评价	人际情感
@@ -2599,7 +2599,7 @@
 2598	vermitteln	人际情感		
 2599	massiv	讨论说理		住房家具
 2600	brutal	讨论说理		人际情感
-2601	Stipendium	求职职场		
+2601	Stipendium	办手续		
 2602	Maßnahme	办手续		
 2603	Lob	人际情感		
 2604	Bewohner	住房家具		
@@ -2637,7 +2637,7 @@
 2636	anmachen	日常物品		
 2637	logisch	通用	观点与评价	求职职场
 2638	ausschalten	日常物品		
-2639	Bibel	讨论说理		人际情感
+2639	Bibel	新闻社会		作息爱好
 2640	feuern	求职职场		
 2641	auflösen	讨论说理		办手续
 2642	Strich	日常物品		
@@ -2668,10 +2668,10 @@
 2667	Werkzeug	日常物品		
 2668	global	讨论说理		媒体科技
 2669	Fischer	求职职场		
-2670	stinken	吃喝		
-2671	Betrug	办手续		
+2670	stinken	日常物品		
+2671	Betrug	新闻社会		银行保险合同
 2672	explodieren	新闻社会		媒体科技
-2673	Alarm	办手续		
+2673	Alarm	日常物品		
 2674	ahnen	通用	推测与可能	人际情感
 2675	Meldung	媒体科技		
 2676	Struktur	讨论说理		媒体科技
@@ -2747,7 +2747,7 @@
 2746	Cousin	问候和自我介绍		
 2747	kritisieren	通用	观点与评价	人际情感
 2748	südlich	旅行天气自然		
-2749	angreifen	办手续		
+2749	angreifen	新闻社会		旅行天气自然
 2750	nördlich	旅行天气自然		
 2751	Ware	购物付钱		
 2752	saugen	住房家具		
@@ -2762,7 +2762,7 @@
 2761	Formel	求职职场		
 2762	jährlich	时间日期		
 2763	Spannung	人际情感		
-2764	einsperren	办手续		
+2764	einsperren	新闻社会		办手续
 2765	Unglück	人际情感		
 2766	künstlich	讨论说理		媒体科技
 2767	Anmeldung	办手续		
@@ -2793,10 +2793,10 @@
 2792	Hitze	旅行天气自然		
 2793	ausreichend	讨论说理		办手续
 2794	nochmals	通用	时间先后	办手续
-2795	Friedhof	旅行天气自然		
+2795	Friedhof	方向和城里的地方		
 2796	blockieren	交通		
 2797	Treue	人际情感		
-2798	Missbrauch	办手续		
+2798	Missbrauch	新闻社会		办手续
 2799	Silber	购物付钱		
 2800	Bach	旅行天气自然		
 2801	entspannt	作息爱好		
@@ -2836,7 +2836,7 @@
 2835	Hirn	身体看病		
 2836	biegen	交通		
 2837	Berliner	问候和自我介绍		
-2838	beschuldigen	办手续		
+2838	beschuldigen	新闻社会		办手续
 2839	Beschwerde	办手续		
 2840	kühl	旅行天气自然		
 2841	anerkennen	办手续		
@@ -2928,7 +2928,7 @@
 2927	Scheibe	日常物品		
 2928	erforderlich	办手续		
 2929	Kellner	吃喝		
-2930	Angehörige	问候和自我介绍		
+2930	Angehörige	人际情感		
 2931	Verwaltung	办手续		
 2932	Auswirkung	讨论说理		求职职场
 2933	wiegen	购物付钱		
@@ -2959,7 +2959,7 @@
 2958	Vorstand	求职职场		
 2959	durchsetzen	讨论说理		求职职场
 2960	Bock	作息爱好		
-2961	Schriftsteller	作息爱好		
+2961	Schriftsteller	媒体科技		
 2962	versammeln	人际情感		
 2963	Effekt	讨论说理		媒体科技
 2964	Burg	旅行天气自然		
@@ -2975,7 +2975,7 @@
 2974	beurteilen	通用	观点与评价	求职职场
 2975	krachen	交通		
 2976	erschaffen	作息爱好		
-2977	sprengen	旅行天气自然		
+2977	sprengen	新闻社会		交通
 2978	Datum	时间日期		
 2979	fügen	讨论说理		办手续
 2980	losgehen	交通		
@@ -3017,7 +3017,7 @@
 3016	Bürgeramt	办手续		
 3017	Ausländerbehörde	办手续		
 3018	Aufenthaltstitel	办手续		
-3019	Rundfunkbeitrag	银行保险合同		
+3019	Rundfunkbeitrag	办手续		
 3020	Nebenkosten	住房家具		
 3021	Pfand	购物付钱		
 3022	Restmüll	住房家具		
@@ -3049,7 +3049,7 @@
 3048	Löffel	日常物品		
 3049	Seife	日常物品		
 3050	rumlaufen	作息爱好		
-3051	Friseur	日常物品		
+3051	Friseur	购物付钱		
 3052	hinkriegen	求职职场		
 3053	Ostern	时间日期		
 3054	Päckchen	日常物品		
@@ -3078,7 +3078,7 @@
 3077	Apotheker	身体看病		
 3078	Mikrowelle	住房家具		
 3079	losfahren	交通		
-3080	mitkriegen	媒体科技		
+3080	mitkriegen	通用		
 3081	Putzfrau	住房家具		
 3082	rumhängen	作息爱好		
 3083	Staubsauger	住房家具		
@@ -3106,7 +3106,7 @@
 3105	Toilettenpapier	住房家具		
 3106	Bauchschmerzen	身体看病		
 3107	Halsschmerzen	身体看病		
-3108	Deutschkurs	问候和自我介绍		
+3108	Deutschkurs	办手续		
 3109	Fußgängerzone	方向和城里的地方		
 3110	Ladegerät	媒体科技		
 3111	jobben	求职职场		
@@ -3122,7 +3122,7 @@
 3121	kaputtgehen	日常物品		
 3122	kaputtmachen	日常物品		
 3123	saubermachen	住房家具		
-3124	verhaften	办手续		
+3124	verhaften	新闻社会		办手续
 3125	Wurzel	旅行天气自然		
 3126	Lebensmittel	吃喝		
 3127	profitieren	讨论说理		求职职场
@@ -3154,7 +3154,7 @@
 3153	unsichtbar	媒体科技		
 3154	Aufzeichnung	媒体科技		
 3155	Tempo	交通		
-3156	Philosophie	作息爱好		
+3156	Philosophie	讨论说理		作息爱好
 3157	klettern	作息爱好		
 3158	Landschaft	旅行天气自然		
 3159	Märchen	作息爱好		
@@ -3165,9 +3165,9 @@
 3164	zurzeit	通用	时间先后	时间日期
 3165	mehrfach	通用	程度与频率	作息爱好
 3166	theoretisch	通用	推测与可能	求职职场
-3167	Flotte	旅行天气自然		
+3167	Flotte	新闻社会		交通
 3168	Einbruch	新闻社会		住房家具
-3169	GmbH	银行保险合同		
+3169	GmbH	求职职场		
 3170	kontaktieren	人际情感		
 3171	Schädel	身体看病		
 3172	ruhen	作息爱好		
@@ -3191,7 +3191,7 @@
 3190	Quote	媒体科技		
 3191	pleite	银行保险合同		
 3192	analysieren	求职职场		
-3193	Gemälde	旅行天气自然		
+3193	Gemälde	作息爱好		
 3194	Transport	交通		
 3195	ledig	问候和自我介绍		
 3196	abschalten	媒体科技		
@@ -3259,7 +3259,7 @@
 3258	Hinsicht	讨论说理		求职职场
 3259	Skandal	新闻社会		媒体科技
 3260	Agent	新闻社会		作息爱好
-3261	aufklären	办手续		
+3261	aufklären	新闻社会		媒体科技
 3262	Tiger	旅行天气自然		
 3263	Turnier	作息爱好		
 3264	Design	求职职场		
@@ -3292,7 +3292,7 @@
 3291	Umwelt	旅行天气自然		
 3292	ausländisch	办手续		
 3293	loslassen	作息爱好		
-3294	Episode	新闻社会		作息爱好
+3294	Episode	媒体科技		
 3295	vorgeben	人际情感		
 3296	zerbrechen	日常物品		
 3297	einschalten	媒体科技		
@@ -3348,8 +3348,8 @@
 3347	Werkstatt	交通		
 3348	Industrie	求职职场		
 3349	infizieren	身体看病		
-3350	verbünden	人际情感		
-3351	eindringen	办手续		
+3350	verbünden	新闻社会		媒体科技
+3351	eindringen	新闻社会		住房家具
 3352	qualifizieren	求职职场		
 3353	Stadion	方向和城里的地方		
 3354	verschlossen	住房家具		
@@ -3358,7 +3358,7 @@
 3357	schlicht	讨论说理		住房家具
 3358	vertragen	吃喝		
 3359	Türkei	旅行天气自然		
-3360	Versammlung	办手续		
+3360	Versammlung	新闻社会		求职职场
 3361	Händler	购物付钱		
 3362	anrichten	讨论说理		住房家具
 3363	Hausarbeit	住房家具		
@@ -3376,7 +3376,7 @@
 3375	Chor	作息爱好		
 3376	durchschnittlich	讨论说理		求职职场
 3377	Muskel	身体看病		
-3378	Kommissar	办手续		
+3378	Kommissar	新闻社会		办手续
 3379	Erlebnis	作息爱好		
 3380	Level	作息爱好		
 3381	Software	媒体科技		
@@ -3504,7 +3504,7 @@
 3503	zögern	讨论说理		人际情感
 3504	düster	旅行天气自然		
 3505	langweilen	作息爱好		
-3506	Akademie	问候和自我介绍		
+3506	Akademie	求职职场		
 3507	befreundet	人际情感		
 3508	dazwischen	通用		
 3509	Fuchs	旅行天气自然		
@@ -3528,9 +3528,9 @@
 3527	beispielsweise	通用		
 3528	Bundestag	新闻社会		媒体科技
 3529	östlich	旅行天气自然		
-3530	begehen	办手续		
+3530	begehen	新闻社会		媒体科技
 3531	genervt	通用	情绪反应	人际情感
-3532	Täter	办手续		
+3532	Täter	新闻社会		媒体科技
 3533	Resultat	讨论说理		求职职场
 3534	Provinz	旅行天气自然		
 3535	schleppen	日常物品		
@@ -3560,9 +3560,9 @@
 3559	Platte	吃喝		
 3560	Kurve	交通		
 3561	platzieren	日常物品		
-3562	Intelligenz	人际情感		
+3562	Intelligenz	讨论说理		求职职场
 3563	egoistisch	通用	观点与评价	人际情感
-3564	ausbrechen	办手续		
+3564	ausbrechen	新闻社会		办手续
 3565	Vermutung	讨论说理		求职职场
 3566	Nebel	旅行天气自然		
 3567	Biene	旅行天气自然		
@@ -3611,9 +3611,9 @@
 3610	Architekt	求职职场		
 3611	Verzicht	讨论说理		吃喝
 3612	Futter	旅行天气自然		
-3613	Chemie	身体看病		
+3613	Chemie	讨论说理		求职职场
 3614	verwunden	身体看病		
-3615	Erfindung	新闻社会		媒体科技
+3615	Erfindung	媒体科技		
 3616	Spaziergang	作息爱好		
 3617	Depression	身体看病		
 3618	Käufer	购物付钱		
@@ -3634,7 +3634,7 @@
 3633	Mahlzeit	吃喝		
 3634	naiv	通用	观点与评价	人际情感
 3635	daraufhin	通用	时间先后	作息爱好
-3636	Schuss	办手续		
+3636	Schuss	新闻社会		媒体科技
 3637	Ansatz	讨论说理		求职职场
 3638	beleidigen	人际情感		
 3639	Kompliment	人际情感		
@@ -3658,7 +3658,7 @@
 3657	Großmutter	问候和自我介绍		
 3658	Ernte	旅行天气自然		
 3659	Speicher	媒体科技		
-3660	Clown	新闻社会		作息爱好
+3660	Clown	作息爱好		
 3661	Wunde	身体看病		
 3662	CD	媒体科技		
 3663	mitspielen	作息爱好		
@@ -3671,7 +3671,7 @@
 3670	einbrechen	新闻社会		住房家具
 3671	kratzen	身体看病		
 3672	elegant	通用	观点与评价	作息爱好
-3673	Produzent	新闻社会		作息爱好
+3673	Produzent	媒体科技		
 3674	Impfung	身体看病		
 3675	zart	吃喝		
 3676	Sau	旅行天气自然		
@@ -3702,7 +3702,7 @@
 3701	Beobachtung	讨论说理		媒体科技
 3702	verärgern	人际情感		
 3703	hetzen	作息爱好		
-3704	gläubig	人际情感		
+3704	gläubig	新闻社会		人际情感
 3705	nutzlos	通用	观点与评价	购物付钱
 3706	Logik	讨论说理		求职职场
 3707	Zürich	方向和城里的地方		
@@ -3746,7 +3746,7 @@
 3745	begehren	人际情感		
 3746	beschleunigen	交通		
 3747	fließen	旅行天气自然		
-3748	eilig	作息爱好		
+3748	eilig	时间日期		
 3749	Drache	旅行天气自然		
 3750	kurzfristig	时间日期		
 3751	Pilz	吃喝		
@@ -3761,7 +3761,7 @@
 3760	herunter	方向和城里的地方		
 3761	Umfeld	讨论说理		求职职场
 3762	tippen	媒体科技		
-3763	Alien	新闻社会		作息爱好
+3763	Alien	作息爱好		
 3764	Abo	媒体科技		
 3765	Verbrauch	银行保险合同		
 3766	Etage	住房家具		
@@ -3789,7 +3789,7 @@
 3788	Mönch	新闻社会		媒体科技
 3789	Maler	作息爱好		
 3790	Aufruf	新闻社会		媒体科技
-3791	Überzeugung	人际情感		
+3791	Überzeugung	讨论说理		求职职场
 3792	Fläche	旅行天气自然		
 3793	künstlerisch	作息爱好		
 3794	Beleidigung	人际情感		
@@ -3859,7 +3859,7 @@
 3858	Umfrage	新闻社会		媒体科技
 3859	zuverlässig	通用	观点与评价	求职职场
 3860	betroffen	讨论说理		办手续
-3861	Erziehung	问候和自我介绍		
+3861	Erziehung	人际情感		
 3862	mitbekommen	媒体科技		
 3863	eklig	通用	情绪反应	吃喝
 3864	realistisch	通用	观点与评价	作息爱好
@@ -3871,7 +3871,7 @@
 3870	ausdrücklich	通用	程度与频率	办手续
 3871	Substanz	身体看病		
 3872	Bonus	求职职场		
-3873	Abstimmung	办手续		
+3873	Abstimmung	新闻社会		办手续
 3874	indisch	吃喝		
 3875	Scheck	银行保险合同		
 3876	kotzen	身体看病		
@@ -3881,7 +3881,7 @@
 3880	aufeinander	通用	同意与反对	人际情感
 3881	schüchtern	通用	观点与评价	人际情感
 3882	verkehren	交通		
-3883	Lektion	问候和自我介绍		
+3883	Lektion	作息爱好		
 3884	Auflage	媒体科技		
 3885	Rückzug	新闻社会		媒体科技
 3886	erbärmlich	通用	观点与评价	人际情感
@@ -3892,7 +3892,7 @@
 3891	beitreten	办手续		
 3892	Zahlung	购物付钱		
 3893	fies	通用	观点与评价	人际情感
-3894	Gebot	办手续		
+3894	Gebot	新闻社会		作息爱好
 3895	ordnen	日常物品		
 3896	Regie	新闻社会		媒体科技
 3897	Fußgänger	交通		
@@ -3969,7 +3969,7 @@
 3968	liebevoll	人际情感		
 3969	Geste	人际情感		
 3970	Nachweis	办手续		
-3971	Justiz	办手续		
+3971	Justiz	新闻社会		办手续
 3972	verabreden	人际情感		
 3973	Medaille	作息爱好		
 3974	Eigentümer	住房家具		
@@ -4003,18 +4003,18 @@
 4002	verstärken	讨论说理		求职职场
 4003	schwitzen	身体看病		
 4004	Berechnung	讨论说理		求职职场
-4005	Plattform	交通		
+4005	Plattform	媒体科技		
 4006	Variante	讨论说理		媒体科技
 4007	keineswegs	通用	同意与反对	人际情感
 4008	vornehm	讨论说理		人际情感
 4009	Mittelpunkt	方向和城里的地方		
 4010	geschäftlich	求职职场		
-4011	Armut	银行保险合同		
+4011	Armut	新闻社会		银行保险合同
 4012	winken	问候和自我介绍		
 4013	Frühjahr	旅行天气自然		
 4014	Großstadt	方向和城里的地方		
 4015	Anhang	媒体科技		
-4016	Wache	办手续		
+4016	Wache	新闻社会		办手续
 4017	Schale	吃喝		
 4018	Straßenverkehr	交通		
 4019	Fülle	讨论说理		购物付钱
@@ -4025,10 +4025,10 @@
 4024	Kennzeichen	办手续		
 4025	ertrinken	旅行天气自然		
 4026	unfair	通用	观点与评价	人际情感
-4027	Festung	旅行天气自然		
+4027	Festung	新闻社会		旅行天气自然
 4028	notieren	办手续		
 4029	Lizenz	办手续		
-4030	Stadtrat	办手续		
+4030	Stadtrat	新闻社会		办手续
 4031	Schwert	新闻社会		媒体科技
 4032	vollenden	讨论说理		求职职场
 4033	schmal	日常物品		
@@ -4063,7 +4063,7 @@
 4062	ausleihen	日常物品		
 4063	schmelzen	旅行天气自然		
 4064	Eisen	日常物品		
-4065	aufziehen	问候和自我介绍		
+4065	aufziehen	人际情感		
 4066	ehrgeizig	通用	观点与评价	求职职场
 4067	ungeduldig	通用	观点与评价	人际情感
 4068	verwöhnt	通用	观点与评价	人际情感
@@ -4108,7 +4108,7 @@
 4107	via	通用		
 4108	Jahreszeit	旅行天气自然		
 4109	Mandant	办手续		
-4110	Physik	作息爱好		
+4110	Physik	讨论说理		作息爱好
 4111	anfragen	办手续		
 4112	Quartier	旅行天气自然		
 4113	Division	求职职场		
@@ -4148,7 +4148,7 @@
 4147	Trost	人际情感		
 4148	anfühlen	日常物品		
 4149	Zirkus	作息爱好		
-4150	Mutti	问候和自我介绍		
+4150	Mutti	人际情感		
 4151	identisch	讨论说理		办手续
 4152	Widerspruch	办手续		
 4153	Impuls	讨论说理		人际情感
@@ -4157,16 +4157,16 @@
 4156	Bezahlung	购物付钱		
 4157	konservativ	新闻社会		媒体科技
 4158	verloben	人际情感		
-4159	überfallen	办手续		
+4159	überfallen	新闻社会		方向和城里的地方
 4160	Überblick	讨论说理		求职职场
 4161	Nacken	身体看病		
 4162	Luxus	购物付钱		
 4163	ausführlich	讨论说理		办手续
 4164	individuell	讨论说理		人际情感
-4165	läuten	作息爱好		
+4165	läuten	日常物品		
 4166	Mitteilung	办手续		
 4167	Schlag	身体看病		
-4168	Bulle	办手续		
+4168	Bulle	新闻社会		交通
 4169	Aufwand	讨论说理		求职职场
 4170	Sensor	媒体科技		
 4171	Schwangerschaft	身体看病		
@@ -4179,7 +4179,7 @@
 4178	Alltag	作息爱好		
 4179	Fassung	人际情感		
 4180	stumm	身体看病		
-4181	freilassen	办手续		
+4181	freilassen	新闻社会		办手续
 4182	demonstrieren	新闻社会		媒体科技
 4183	seither	通用	时间先后	时间日期
 4184	einlegen	办手续		
@@ -4232,21 +4232,21 @@
 4231	überaus	通用	程度与频率	问候和自我介绍
 4232	verfluchen	人际情感		
 4233	abreißen	住房家具		
-4234	kriminell	办手续		
+4234	kriminell	新闻社会		办手续
 4235	Echo	旅行天气自然		
 4236	Honig	吃喝		
-4237	mysteriös	新闻社会		媒体科技
+4237	mysteriös	讨论说理		媒体科技
 4238	blicken	方向和城里的地方		
 4239	gnädig	通用	观点与评价	人际情感
 4240	charmant	通用	观点与评价	人际情感
 4241	Apparat	日常物品		
 4242	Favorit	作息爱好		
 4243	verziehen	住房家具		
-4244	Ermittlung	办手续		
+4244	Ermittlung	新闻社会		办手续
 4245	Spezialist	求职职场		
 4246	wiederkommen	旅行天气自然		
 4247	entnehmen	办手续		
-4248	erlassen	办手续		
+4248	erlassen	新闻社会		办手续
 4249	Wettkampf	作息爱好		
 4250	DVD	媒体科技		
 4251	aufsuchen	人际情感		
@@ -4259,7 +4259,7 @@
 4258	reiben	日常物品		
 4259	wischen	日常物品		
 4260	Rhythmus	作息爱好		
-4261	Nichte	问候和自我介绍		
+4261	Nichte	人际情感		
 4262	Bezeichnung	讨论说理		办手续
 4263	werben	媒体科技		
 4264	ernähren	吃喝		
@@ -4276,17 +4276,17 @@
 4275	tödlich	身体看病		
 4276	Kabine	旅行天气自然		
 4277	Dschungel	旅行天气自然		
-4278	Bewährung	办手续		
-4279	Sarg	身体看病		
+4278	Bewährung	新闻社会		办手续
+4279	Sarg	新闻社会		身体看病
 4280	integrieren	人际情感		
 4281	Trend	媒体科技		
 4282	widmen	讨论说理		作息爱好
 4283	Kapital	银行保险合同		
 4284	Unternehmer	求职职场		
 4285	allmählich	通用	时间先后	作息爱好
-4286	unzählig	讨论说理		数字
+4286	unzählig	数字		
 4287	stopfen	日常物品		
-4288	Kapelle	旅行天气自然		
+4288	Kapelle	方向和城里的地方		
 4289	solide	日常物品		
 4290	grinsen	人际情感		
 4291	Qual	人际情感		
@@ -4297,7 +4297,7 @@
 4296	Zauberer	作息爱好		
 4297	Privatsphäre	媒体科技		
 4298	Unruhe	人际情感		
-4299	Tatort	办手续		
+4299	Tatort	新闻社会		办手续
 4300	herauskommen	方向和城里的地方		
 4301	einschränken	讨论说理		银行保险合同
 4302	Enttäuschung	人际情感		
@@ -4305,8 +4305,8 @@
 4304	Knoten	日常物品		
 4305	Kritiker	新闻社会		媒体科技
 4306	objektiv	通用	观点与评价	媒体科技
-4307	damalig	讨论说理		时间日期
-4308	Geständnis	办手续		
+4307	damalig	时间日期		
+4308	Geständnis	新闻社会		办手续
 4309	Laster	交通		
 4310	siegen	作息爱好		
 4311	Tennis	作息爱好		
@@ -4319,7 +4319,7 @@
 4318	Dresden	方向和城里的地方		
 4319	Outfit	购物付钱		
 4320	gefälligst	通用	请求与礼貌	办手续
-4321	weglaufen	作息爱好		
+4321	weglaufen	新闻社会		办手续
 4322	filmen	媒体科技		
 4323	Erfüllung	讨论说理		求职职场
 4324	Gunst	人际情感		
@@ -4336,7 +4336,7 @@
 4335	Recherche	新闻社会		求职职场
 4336	Orchester	作息爱好		
 4337	dreißig	数字		
-4338	Weihnachtsmann	旅行天气自然		
+4338	Weihnachtsmann	作息爱好		
 4339	Befragung	办手续		
 4340	grundlegend	讨论说理		办手续
 4341	nervig	通用	观点与评价	人际情感
@@ -4372,11 +4372,11 @@
 4371	Nation	新闻社会		媒体科技
 4372	Sandwich	吃喝		
 4373	Sonnenuntergang	旅行天气自然		
-4374	Aufsatz	问候和自我介绍		
+4374	Aufsatz	讨论说理		求职职场
 4375	Jahrgang	时间日期		
 4376	samt	通用		
 4377	Fell	旅行天气自然		
-4378	Verfolgung	办手续		
+4378	Verfolgung	新闻社会		媒体科技
 4379	Gramm	数字		
 4380	erneuern	银行保险合同		
 4381	offenbaren	新闻社会		媒体科技
@@ -4394,7 +4394,7 @@
 4393	generell	讨论说理		求职职场
 4394	Ausführung	讨论说理		求职职场
 4395	Kompromiss	人际情感		
-4396	Versorgung	办手续		
+4396	Versorgung	日常物品		
 4397	hinauf	通用		
 4398	Sicherung	住房家具		
 4399	Behauptung	讨论说理		求职职场
@@ -4413,7 +4413,7 @@
 4412	apropos	通用	转折与让步	人际情感
 4413	Bude	住房家具		
 4414	beunruhigen	人际情感		
-4415	Grundschule	问候和自我介绍		
+4415	Grundschule	方向和城里的地方		
 4416	Scheune	住房家具		
 4417	Aufführung	作息爱好		
 4418	Anliegen	办手续		
@@ -4428,7 +4428,7 @@
 4427	trösten	人际情感		
 4428	aufschreiben	办手续		
 4429	Anwesen	住房家具		
-4430	Leine	旅行天气自然		
+4430	Leine	日常物品		
 4431	Anfänger	作息爱好		
 4432	riskant	通用	观点与评价	求职职场
 4433	anstelle	通用		
@@ -4440,7 +4440,7 @@
 4439	Kaninchen	旅行天气自然		
 4440	schlank	身体看病		
 4441	Jazz	作息爱好		
-4442	Haustier	问候和自我介绍		
+4442	Haustier	作息爱好		
 4443	verdrängen	人际情感		
 4444	freigeben	媒体科技		
 4445	Gleichgewicht	身体看病		
@@ -4489,9 +4489,9 @@
 4488	jedermann	通用		
 4489	kostbar	通用	观点与评价	购物付钱
 4490	Eisenbahn	交通		
-4491	Gymnasium	问候和自我介绍		
+4491	Gymnasium	求职职场		
 4492	verhungern	吃喝		
-4493	Privileg	办手续		
+4493	Privileg	讨论说理		办手续
 4494	Gründer	求职职场		
 4495	Flohmarkt	购物付钱		
 4496	gegenwärtig	时间日期		
@@ -4575,7 +4575,7 @@
 4574	fällig	银行保险合同		
 4575	Reihenfolge	办手续		
 4576	hupen	交通		
-4577	Hochschule	问候和自我介绍		
+4577	Hochschule	求职职场		
 4578	Diät	身体看病		
 4579	Flut	旅行天气自然		
 4580	Finanzierung	银行保险合同		
@@ -4610,14 +4610,14 @@
 4609	Hannover	方向和城里的地方		
 4610	Bemerkung	讨论说理		求职职场
 4611	Dosis	身体看病		
-4612	Unschuld	办手续		
+4612	Unschuld	新闻社会		办手续
 4613	auffinden	日常物品		
 4614	beheben	媒体科技		
 4615	staunen	人际情感		
 4616	annähernd	通用	程度与频率	数字
 4617	durchkommen	办手续		
 4618	Einblick	讨论说理		求职职场
-4619	festnehmen	办手续		
+4619	festnehmen	新闻社会		办手续
 4620	begeben	交通		
 4621	Schuppen	住房家具		
 4622	Reinigung	日常物品		
@@ -4679,7 +4679,7 @@
 4678	Forum	媒体科技		
 4679	himmlisch	通用	观点与评价	吃喝
 4680	blühen	旅行天气自然		
-4681	Knast	办手续		
+4681	Knast	新闻社会		办手续
 4682	Schweiß	身体看病		
 4683	Ast	旅行天气自然		
 4684	verständigen	人际情感		
@@ -4723,16 +4723,16 @@
 4722	gleichen	讨论说理		求职职场
 4723	vorüber	通用	时间先后	时间日期
 4724	wiederherstellen	媒体科技		
-4725	Campus	问候和自我介绍		
+4725	Campus	方向和城里的地方		
 4726	Strahlung	新闻社会		旅行天气自然
 4727	Asien	旅行天气自然		
 4728	erstaunt	通用	情绪反应	人际情感
 4729	Vorurteil	人际情感		
 4730	hinsichtlich	通用		
 4731	Portion	吃喝		
-4732	betteln	人际情感		
+4732	betteln	新闻社会		方向和城里的地方
 4733	Leinwand	媒体科技		
-4734	lauern	旅行天气自然		
+4734	lauern	新闻社会		媒体科技
 4735	Redaktion	新闻社会		媒体科技
 4736	Schachtel	日常物品		
 4737	Potenzial	求职职场		
@@ -4749,7 +4749,7 @@
 4748	Säule	日常物品		
 4749	Anfall	身体看病		
 4750	spezifisch	讨论说理		求职职场
-4751	Krone	旅行天气自然		
+4751	Krone	新闻社会		媒体科技
 4752	Kaufmann	求职职场		
 4753	Wirt	吃喝		
 4754	Gegenzug	讨论说理		银行保险合同
@@ -4795,11 +4795,11 @@
 4794	Jobcenter	求职职场		
 4795	Sozialversicherung	银行保险合同		
 4796	Schwarzfahren	交通		
-4797	Klausur	问候和自我介绍		
+4797	Klausur	求职职场		
 4798	Mensa	吃喝		
 4799	Immatrikulation	办手续		
-4800	Studentenausweis	问候和自我介绍		
-4801	Sprachkurs	问候和自我介绍		
+4800	Studentenausweis	办手续		
+4801	Sprachkurs	办手续		
 4802	Zertifikat	办手续		
 4803	Postleitzahl	办手续		
 4804	Handyvertrag	银行保险合同		
@@ -4845,7 +4845,7 @@
 4844	renovieren	住房家具		
 4845	Wahrnehmung	讨论说理		身体看病
 4846	kombinieren	讨论说理		作息爱好
-4847	Verteidiger	办手续		
+4847	Verteidiger	新闻社会		媒体科技
 4848	verschreiben	身体看病		
 4849	Architektur	住房家具		
 4850	durchbrechen	讨论说理		求职职场
@@ -4858,7 +4858,7 @@
 4857	Feuerwerk	旅行天气自然		
 4858	rauswerfen	住房家具		
 4859	Anhörung	办手续		
-4860	beschlagnahmen	办手续		
+4860	beschlagnahmen	新闻社会		办手续
 4861	unterhalb	通用		
 4862	ausreichen	讨论说理		购物付钱
 4863	aufdecken	新闻社会		媒体科技
@@ -4902,7 +4902,7 @@
 4901	hoffnungslos	通用	情绪反应	人际情感
 4902	klarstellen	讨论说理		办手续
 4903	Glanz	日常物品		
-4904	verdächtigen	办手续		
+4904	verdächtigen	新闻社会		办手续
 4905	Besserung	身体看病		
 4906	Auszeit	作息爱好		
 4907	Nachbarin	住房家具		
@@ -4925,7 +4925,7 @@
 4924	Gottesdienst	新闻社会		作息爱好
 4925	Behinderung	身体看病		
 4926	Elite	新闻社会		求职职场
-4927	Anklage	办手续		
+4927	Anklage	新闻社会		办手续
 4928	Sponsor	求职职场		
 4929	gestatten	办手续		
 4930	abbauen	讨论说理		求职职场
@@ -4955,7 +4955,7 @@
 4954	verspäten	时间日期		
 4955	Studentin	问候和自我介绍		
 4956	Notwendigkeit	讨论说理		办手续
-4957	adoptieren	问候和自我介绍		
+4957	adoptieren	办手续		
 4958	Differenz	讨论说理		购物付钱
 4959	Genosse	新闻社会		人际情感
 4960	schimpfen	人际情感		
@@ -4964,7 +4964,7 @@
 4963	Materie	旅行天气自然		
 4964	lebenslang	讨论说理		银行保险合同
 4965	frieren	旅行天气自然		
-4966	absolvieren	问候和自我介绍		
+4966	absolvieren	求职职场		
 4967	verzweifeln	人际情感		
 4968	feierlich	人际情感		
 4969	Format	媒体科技		
@@ -5015,7 +5015,7 @@
 5014	Begleiter	旅行天气自然		
 5015	erfordern	讨论说理		求职职场
 5016	erwerben	购物付钱		
-5017	Hauch	旅行天气自然		
+5017	Hauch	讨论说理		日常物品
 5018	bewusstlos	身体看病		
 5019	bewältigen	讨论说理		求职职场
 5020	Umfang	讨论说理		求职职场
@@ -5042,7 +5042,7 @@
 5041	begeistern	人际情感		
 5042	überwiegen	讨论说理		购物付钱
 5043	kommentieren	媒体科技		
-5044	Einbrecher	办手续		
+5044	Einbrecher	新闻社会		住房家具
 5045	Korn	吃喝		
 5046	wertlos	通用	观点与评价	购物付钱
 5047	befriedigen	讨论说理		人际情感
@@ -5110,7 +5110,7 @@
 5109	Kontext	讨论说理		媒体科技
 5110	Aufstellung	作息爱好		
 5111	Öffnung	日常物品		
-5112	unauffällig	讨论说理		人际情感
+5112	unauffällig	人际情感		
 5113	Qualifikation	求职职场		
 5114	Terrasse	住房家具		
 5115	Käfer	旅行天气自然		
@@ -5140,14 +5140,14 @@
 5139	Klimaanlage	住房家具		
 5140	Torte	吃喝		
 5141	zurückbringen	日常物品		
-5142	Pistole	办手续		
+5142	Pistole	新闻社会		办手续
 5143	zusammensetzen	日常物品		
 5144	Verzögerung	交通		
 5145	zusammenfassen	讨论说理		求职职场
-5146	Fälschung	办手续		
+5146	Fälschung	新闻社会		办手续
 5147	inmitten	通用		
 5148	Versuchung	人际情感		
-5149	Philosoph	作息爱好		
+5149	Philosoph	讨论说理		作息爱好
 5150	vorhersagen	通用	推测与可能	旅行天气自然
 5151	pressen	日常物品		
 5152	Zulassung	办手续		
@@ -5165,35 +5165,35 @@
 5164	arrangieren	求职职场		
 5165	Rippe	身体看病		
 5166	buchstäblich	通用	程度与频率	媒体科技
-5167	Kulisse	作息爱好		
+5167	Kulisse	新闻社会		作息爱好
 5168	zusammenhalten	人际情感		
 5169	tierisch	通用	程度与频率	作息爱好
 5170	Bestie	旅行天气自然		
 5171	hiervon	通用		
 5172	bunkern	购物付钱		
-5173	belangen	办手续		
+5173	belangen	新闻社会		办手续
 5174	rassistisch	媒体科技	观点与评价	媒体科技
 5175	Exzellenz	问候和自我介绍		
 5176	königlich	新闻社会		媒体科技
 5177	erstklassig	通用	观点与评价	购物付钱
 5178	gewaltsam	新闻社会		媒体科技
-5179	Schwager	问候和自我介绍		
+5179	Schwager	人际情感		
 5180	beanspruchen	办手续		
 5181	Einschränkung	身体看病		
 5182	rocken	作息爱好		
 5183	Transporter	交通		
 5184	zugrunde	通用		
-5185	Hauptrolle	作息爱好		
+5185	Hauptrolle	新闻社会		作息爱好
 5186	Visier	作息爱好		
 5187	Zwischenfall	新闻社会		交通
 5188	Minderheit	新闻社会		媒体科技
 5189	Hirsch	旅行天气自然		
 5190	Landkreis	方向和城里的地方		
-5191	Tugend	人际情感		
+5191	Tugend	讨论说理		人际情感
 5192	Rückstand	讨论说理		求职职场
 5193	Deckel	日常物品		
 5194	Butler	住房家具		
-5195	Zeugin	办手续		
+5195	Zeugin	新闻社会		办手续
 5196	Asyl	办手续		
 5197	langjährig	求职职场		
 5198	Untergrund	方向和城里的地方		
@@ -5214,7 +5214,7 @@
 5213	Eifersucht	人际情感		
 5214	vollbringen	讨论说理		求职职场
 5215	dänisch	旅行天气自然		
-5216	Selbstmord	身体看病		
+5216	Selbstmord	新闻社会		身体看病
 5217	unverändert	讨论说理		住房家具
 5218	Vormittag	时间日期		
 5219	Strick	日常物品		
@@ -5236,7 +5236,7 @@
 5235	entlasten	求职职场		
 5236	Genf	旅行天气自然		
 5237	Komponente	媒体科技		
-5238	Evolution	旅行天气自然		
+5238	Evolution	讨论说理		旅行天气自然
 5239	bohren	住房家具		
 5240	Matratze	住房家具		
 5241	Südamerika	旅行天气自然		
@@ -5309,7 +5309,7 @@
 5308	circa	通用	程度与频率	时间日期
 5309	Beobachter	新闻社会		媒体科技
 5310	Rücktritt	求职职场		
-5311	Menschlichkeit	人际情感		
+5311	Menschlichkeit	讨论说理		人际情感
 5312	Sattel	日常物品		
 5313	Joint	作息爱好		
 5314	verhelfen	讨论说理		求职职场
@@ -5363,7 +5363,7 @@
 5362	Athen	旅行天气自然		
 5363	Herrschaft	新闻社会		媒体科技
 5364	Komponist	作息爱好		
-5365	rauben	办手续		
+5365	rauben	新闻社会		购物付钱
 5366	Expedition	旅行天气自然		
 5367	unterirdisch	方向和城里的地方		
 5368	beichten	新闻社会		作息爱好
@@ -5377,7 +5377,7 @@
 5376	anderthalb	数字		
 5377	ablösen	求职职场		
 5378	scannen	媒体科技		
-5379	attackieren	办手续		
+5379	attackieren	新闻社会		人际情感
 5380	vorig	时间日期		
 5381	Radar	交通		
 5382	Strömung	旅行天气自然		
@@ -5385,7 +5385,7 @@
 5384	ungut	通用	观点与评价	人际情感
 5385	verdorben	吃喝		
 5386	abmachen	时间日期		
-5387	Alibi	办手续		
+5387	Alibi	新闻社会		办手续
 5388	unruhig	人际情感		
 5389	übermorgen	通用	时间先后	时间日期
 5390	nobel	住房家具		
@@ -5393,7 +5393,7 @@
 5392	umsetzen	求职职场		
 5393	Ehrlichkeit	人际情感		
 5394	Bilanz	银行保险合同		
-5395	dastehen	作息爱好		
+5395	dastehen	通用		
 5396	Ankündigung	媒体科技		
 5397	stürmen	旅行天气自然		
 5398	schmücken	住房家具		
@@ -5433,14 +5433,14 @@
 5432	verpacken	购物付钱		
 5433	vergeblich	通用	观点与评价	作息爱好
 5434	ansagen	交通		
-5435	Insasse	办手续		
+5435	Insasse	新闻社会		办手续
 5436	Moschee	新闻社会		方向和城里的地方
 5437	zerfallen	旅行天气自然		
 5438	mithalten	作息爱好		
 5439	Pulver	日常物品		
-5440	Verbrecher	办手续		
+5440	Verbrecher	新闻社会		办手续
 5441	altmodisch	日常物品		
-5442	niederschlagen	办手续		
+5442	niederschlagen	新闻社会		办手续
 5443	Kragen	日常物品		
 5444	Übereinstimmung	讨论说理		办手续
 5445	Erzähler	新闻社会		媒体科技
@@ -5462,18 +5462,18 @@
 5461	Diesel	交通		
 5462	Rechner	日常物品		
 5463	Boom	新闻社会		媒体科技
-5464	Kollektiv	人际情感		
+5464	Kollektiv	讨论说理		求职职场
 5465	unentschieden	作息爱好		
 5466	Anmerkung	求职职场		
 5467	denkbar	通用	推测与可能	
 5468	allmächtig	新闻社会		媒体科技
 5469	bewirken	讨论说理		求职职场
 5470	Triumph	作息爱好		
-5471	Indiz	办手续		
+5471	Indiz	新闻社会		办手续
 5472	Zuneigung	人际情感		
 5473	Stichwort	媒体科技		
 5474	Astronaut	旅行天气自然		
-5475	Auffassung	人际情感		
+5475	Auffassung	讨论说理		求职职场
 5476	Milde	人际情感		
 5477	Abmachung	银行保险合同		
 5478	Manuskript	媒体科技		
@@ -5499,21 +5499,21 @@
 5498	verpissen	人际情感		
 5499	Fonds	银行保险合同		
 5500	Psychiatrie	身体看病		
-5501	Kämpfer	作息爱好		
-5502	Bestrafung	办手续		
+5501	Kämpfer	新闻社会		作息爱好
+5502	Bestrafung	新闻社会		办手续
 5503	hinnehmen	讨论说理		人际情感
 5504	behilflich	通用	请求与礼貌	办手续
 5505	Republik	新闻社会		媒体科技
 5506	Ausgleich	讨论说理		求职职场
 5507	zerlegen	日常物品		
-5508	schmuggeln	办手续		
+5508	schmuggeln	新闻社会		交通
 5509	sonnig	旅行天气自然		
 5510	heikel	通用	观点与评价	求职职场
 5511	Jahrestag	时间日期		
 5512	Punk	作息爱好		
 5513	Armband	日常物品		
 5514	anstecken	身体看病		
-5515	Rektor	问候和自我介绍		
+5515	Rektor	求职职场		
 5516	exotisch	旅行天气自然		
 5517	Bekanntschaft	人际情感		
 5518	Schildkröte	旅行天气自然		
@@ -5533,7 +5533,7 @@
 5532	distanzieren	人际情感		
 5533	Konkurrent	求职职场		
 5534	Schloss	住房家具		
-5535	erziehen	问候和自我介绍		
+5535	erziehen	人际情感		
 5536	umstellen	媒体科技		
 5537	Kiefer	身体看病		
 5538	involvieren	讨论说理		求职职场
@@ -5557,7 +5557,7 @@
 5556	Poesie	作息爱好		
 5557	Referenz	求职职场		
 5558	schnarchen	身体看病		
-5559	Klischee	作息爱好		
+5559	Klischee	讨论说理		媒体科技
 5560	Gespenst	新闻社会		媒体科技
 5561	Protein	吃喝		
 5562	Meisterwerk	作息爱好		
@@ -5600,10 +5600,10 @@
 5599	Ablehnung	人际情感		
 5600	Prediger	新闻社会		作息爱好
 5601	vermeintlich	通用	推测与可能	媒体科技
-5602	Abitur	问候和自我介绍		
+5602	Abitur	求职职场		
 5603	Ameise	旅行天气自然		
 5604	Periode	身体看病		
-5605	wörtlich	媒体科技		
+5605	wörtlich	讨论说理		媒体科技
 5606	Auslöser	讨论说理		身体看病
 5607	Kopfhörer	媒体科技		
 5608	korrupt	通用	观点与评价	办手续
@@ -5675,7 +5675,7 @@
 5674	erfreulich	通用	观点与评价	人际情感
 5675	Rezeption	旅行天气自然		
 5676	Kappe	日常物品		
-5677	Nachwuchs	问候和自我介绍		
+5677	Nachwuchs	人际情感		
 5678	reinlegen	人际情感		
 5679	Geige	作息爱好		
 5680	Durchmesser	日常物品		
@@ -5725,10 +5725,10 @@
 5724	blank	日常物品		
 5725	Vernichtung	新闻社会		媒体科技
 5726	Wanne	住房家具		
-5727	Schlägerei	人际情感		
+5727	Schlägerei	新闻社会		办手续
 5728	umwerfen	日常物品		
 5729	Retter	身体看病		
-5730	Haft	办手续		
+5730	Haft	新闻社会		办手续
 5731	abhören	新闻社会		媒体科技
 5732	ausscheiden	求职职场		
 5733	Takt	作息爱好		
@@ -5751,7 +5751,7 @@
 5750	Helikopter	交通		
 5751	Neid	人际情感		
 5752	unterwerfen	讨论说理		人际情感
-5753	Betreuung	问候和自我介绍		
+5753	Betreuung	身体看病		
 5754	überführen	交通		
 5755	basteln	作息爱好		
 5756	verlässlich	通用	观点与评价	求职职场
@@ -5759,7 +5759,7 @@
 5758	forschen	求职职场		
 5759	Neigung	人际情感		
 5760	Sonde	旅行天气自然		
-5761	flüchten	旅行天气自然		
+5761	flüchten	新闻社会		交通
 5762	würgen	身体看病		
 5763	gesellen	人际情感		
 5764	Stier	旅行天气自然		
@@ -5779,10 +5779,10 @@
 5778	Todesursache	身体看病		
 5779	anderswo	方向和城里的地方		
 5780	Snack	吃喝		
-5781	Polizistin	办手续		
+5781	Polizistin	新闻社会		办手续
 5782	Spender	身体看病		
 5783	skeptisch	通用	观点与评价	人际情感
-5784	Blondine	问候和自我介绍		
+5784	Blondine	人际情感		
 5785	Kanzlerin	新闻社会		媒体科技
 5786	vorbehalten	银行保险合同		
 5787	anvertrauen	人际情感		
@@ -5806,10 +5806,10 @@
 5805	zerren	日常物品		
 5806	Athlet	作息爱好		
 5807	Eule	旅行天气自然		
-5808	angeklagt	办手续		
+5808	angeklagt	新闻社会		办手续
 5809	Statement	新闻社会		媒体科技
 5810	freilich	通用	同意与反对	问候和自我介绍
-5811	Staatsanwalt	办手续		
+5811	Staatsanwalt	新闻社会		办手续
 5812	Bedienung	吃喝		
 5813	schöpfen	吃喝		
 5814	Beleuchtung	住房家具		
@@ -5918,7 +5918,7 @@
 5917	Gegenleistung	银行保险合同		
 5918	sichten	旅行天气自然		
 5919	Pärchen	人际情感		
-5920	abdrücken	媒体科技		
+5920	abdrücken	新闻社会		媒体科技
 5921	Homepage	媒体科技		
 5922	Autofahrer	交通		
 5923	Ausschau	旅行天气自然		
@@ -5929,7 +5929,7 @@
 5928	Flöte	作息爱好		
 5929	Popcorn	吃喝		
 5930	Brocken	日常物品		
-5931	klonen	新闻社会		媒体科技
+5931	klonen	媒体科技		
 5932	entsetzlich	通用	情绪反应	人际情感
 5933	Verleger	求职职场		
 5934	einstufen	讨论说理		办手续
@@ -5958,7 +5958,7 @@
 5957	Ballett	作息爱好		
 5958	Muschel	旅行天气自然		
 5959	Sonnenbrille	日常物品		
-5960	hinsehen	作息爱好		
+5960	hinsehen	通用		
 5961	weiterleiten	媒体科技		
 5962	Sammler	作息爱好		
 5963	insofern	通用	原因与结果	求职职场
