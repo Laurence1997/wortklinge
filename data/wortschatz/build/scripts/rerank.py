@@ -36,6 +36,10 @@ for line in open('../rev/adj2.txt',encoding='utf-8'):
         if x['adj']<floor2: x['adj']=max(x['adj']*2,floor2)
     else:
         x=dict(lemma=l,pos=p,zh=zh,sc=own(l),src='life',film=False,life=False); x['adj']=max(own(l)*2,floor2); r.append(x); by[l]=x; new.append(l)
+for line in open('../rev/extra.txt',encoding='utf-8'):   # 漏掉的词（morgen 副词被并进了 Morgen）
+    l,p,zh=line.strip().split('|')
+    if l not in by:
+        x=dict(lemma=l,pos=p,zh=zh,sc=own(l),src='freq',film=False,life=False,adj=own(l)); r.append(x); by[l]=x; new.append(l)
 for line in open('../rev/contr.txt',encoding='utf-8'):
     l,p,zh=line.strip().split('|')
     if l not in by:

@@ -33,6 +33,7 @@ ADJ={'gut':'besser, am besten','viel':'mehr, am meisten','gern':'lieber, am lieb
  'teuer':'teurer, am teuersten','sauer':'saurer, am sauersten','rot':'röter, am rötesten','schwarz':'schwärzer, am schwärzesten','fromm':'frommer/frömmer, am frommsten',
  'heiß':'heißer, am heißesten','süß':'süßer, am süßesten','laut':'lauter, am lautesten','leise':'leiser, am leisesten','spät':'später, am spätesten'}
 TOPO=lambda pos:'Toponym' in pos or 'Eigenname' in pos
+NM['China']=('n','','topo')  # 2026-11-25: China 无冠词（中性），不是 die
 def noun(x):
   w=x['lemma'];d=N.get(w) or NX.get(w);m=NM.get(w)
   if m:
