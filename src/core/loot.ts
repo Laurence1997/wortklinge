@@ -172,7 +172,9 @@ export function mainStatText(it: Item): string {
 /** Rough power score to compare items in the bag. */
 export function itemScore(it: Item): number {
   const base = it.slot === 'pen' ? it.main * 3 : it.slot === 'coat' ? it.main : it.slot === 'amulet' ? it.main * 300 : it.slot === 'glasses' ? it.main * 200 : it.main * 6;
-  return base + it.affixes.reduce((s, a) => s + a.value * 60, 0);
+  // 碎片换档: a pen / coat / amulet tier is worth far more than its main stat.
+  const tier = ['pen', 'coat', 'amulet'].includes(it.slot) ? (it.tier ?? 0) * 40 : 0;
+  return base + tier + it.affixes.reduce((s, a) => s + a.value * 60, 0);
 }
 
 export function requiredLevel(it: Item): number {

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { attack, critChance, maxHp, newGame } from '../src/core/state';
 import { makeRng } from '../src/core/rng';
+import { makeItem } from '../src/core/loot';
 import { WORDS } from '../src/data/words';
 import { addItem, count, useItem } from '../src/core/items';
 import { bossFloor, canDescend, descend, endRift, offerBlessings, RIFT, riftAct, riftItemLevel, riftWord, silenceLeft, startRift, takeBlessing } from '../src/core/rift';
@@ -12,6 +13,7 @@ describe('裂隙', () => {
     s.level = 95;
     s.gearKills = { '10': 99999 };
     s.region = 10 as never;
+    s.equipped.pen = { ...makeItem(makeRng(1), 95, 'white', 'pen'), tier: 8, region: 10 };
     const atk0 = attack(s);
     const hp0 = maxHp(s);
     startRift(s);

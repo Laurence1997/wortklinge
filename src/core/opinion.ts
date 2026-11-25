@@ -3,7 +3,7 @@
 // The rule check runs first and alone when the AI can't be reached (offline, not logged in, out of credit).
 //
 // 暂定 (not in the doc): how often a monster opens with a claim, and what the verdict does — a sound answer starts the
-// fight with the monster at half health, a weak one lets it strike first (as the 红名怪 先手检定).
+// fight with the monster at half health, a weak one lets it strike first.
 
 import type { GameState } from './state';
 import type { Word } from './types';

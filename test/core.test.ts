@@ -6,12 +6,13 @@ import { gradeMoechte, gradeTyped, normalize } from '../src/core/grading';
 import { WORD_BY_ID, WORDS } from '../src/data/words';
 import { AREAS, SCENES } from '../src/data/world';
 import { DIARY, parseLine } from '../src/data/diary';
-import { newGame, addXp, migrate, migrateSrs2, attack, gearTier, addGearKill, affinityOf } from '../src/core/state';
+import { newGame, addXp, migrate, migrateSrs2, attack, gearTier, addGearKill, affinityOf, stampTiers } from '../src/core/state';
 import { applyWin } from '../src/core/outcomes';
 import { recordKill, kindOf, stageOf, contextDue, contextPass, contextFail, reviewMon, reviewedByWriting } from '../src/core/srs';
 import { CONFIG, DAY, HOUR, monsterHpAt, xpToNext } from '../src/core/config';
 import { startBattle, makeQuestion, resolveTurn, spillStorm, effArmor, affinityMatch, qTier, linkPack, moveReady, phaseOf, phaseRight, chorusMates, availableMoves, alignPairs } from '../src/core/combat';
 import { makeRng } from '../src/core/rng';
+import { makeItem } from '../src/core/loot';
 import { answerBoss, startBoss } from '../src/core/boss';
 import { BOSS_QUESTIONS } from '../src/data/boss';
 import { pickSpawns } from '../src/core/spawn';
@@ -1009,7 +1010,7 @@ describe('0.4 战斗修正版', () => {
   });
   it('相亲和: attuned amulet keeps the 4%/tier pen and gives +2 resource on a matching gender with the right stance', () => {
     const s = lvl15();
-    s.gearKills = { '2': 40 * 16 }; // tier 4
+    s.equipped.amulet = { ...makeItem(makeRng(1), 15, 'white', 'amulet'), tier: 4, region: 2 }; // a tier-4 amulet
     const w = WORDS.find((x) => x.lvl <= 15 && x.art === 'der')!;
     const b = startBattle(s, w, makeRng(1));
     b.monster.lvl = 17;
@@ -1031,16 +1032,22 @@ describe('0.4 战斗修正版', () => {
     s.level = 8; // locked below Lv9: plain amulet
     expect(affinityOf(s)).toBeNull();
   });
-  it('gear tiers come from shards: tier n at 40 × n², damage +18% per tier', () => {
+  it('碎片换档: shards unlock tier n at 40 × n²; the worn pen\'s tier gives +18% damage, half in the next region', () => {
     const s = lvl15();
     const base = attack(s);
     s.gearKills = { '2': 159 };
     expect(gearTier(s)).toBe(1);
     expect(addGearKill(s, 2)).toBe(2);
+    expect(attack(s)).toBeCloseTo(base); // unlocking alone adds nothing now
+    s.equipped.pen = { ...s.equipped.pen!, tier: 2, region: 2 };
     expect(attack(s) / base).toBeCloseTo(1.36);
+    s.equipped.pen = { ...s.equipped.pen!, tier: 4, region: 1 };
+    expect(attack(s) / base).toBeCloseTo(1.36); // a region-1 tier 4 counts half here
     s.gearKills = { '1': 640 };
-    expect(gearTier(s)).toBe(2); // half of region-1 tier 4 while you still wear it
     expect(addGearKill(s, 2, 0)).toBe(1); // a whole piece drops
+    s.bag.push(makeItem(makeRng(3), 15, 'white', 'coat'));
+    stampTiers(s);
+    expect(s.bag[s.bag.length - 1]).toMatchObject({ tier: 1, region: 2 }); // new pieces take the tier unlocked here
   });
   it('techniques change the next question: 铭刻 harder, 低语 gives the first letter', () => {
     const s = lvl15();

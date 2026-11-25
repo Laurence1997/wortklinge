@@ -1,8 +1,8 @@
 // 装备掉落规则 (游戏设计 九): 红装 (111 级: 首领 1%、满级后裂隙第 10 层以上首领 3%, 连续 60 个首领没红下一个必红),
 // 橙装保底 150 件, 主题套装 (101 级, 2 件和 4 件各有奖励).
-// 铁匠打造和拓印 were cut (Lucas 2026-11-25, 「按推荐」): 碎片换装备 at the bonfire instead (九「碎片换装备」): reaching
-// 40 × n² shards in a region lets you pick a slot and take that slot's tier-n piece of the region, quality and
-// affixes rolled as a drop; unwanted gear can be broken back into about 3 shards of the region you are in.
+// 铁匠打造和拓印 were cut (Lucas 2026-11-25, 「按推荐」): 碎片换装备 at the bonfire instead (九「碎片换装备」): the
+// shard 累计 unlocks tier n at 40 × n², the 余额 pays (first trade of a tier free, then 10 × n); quality and affixes
+// rolled as a drop; unwanted gear can be broken back into about 3 shards of the region you are in.
 // How set pieces are obtained waits for the docs thread. Numbers marked 暂定 are not in the doc yet.
 
 import { hourGold } from './classes';
@@ -54,16 +54,29 @@ export interface ForgeResult {
 
 // ---- 碎片换装备 ----------------------------------------------------------------------------------------------
 
-/** 暂定 (九 says 「一件约 3 片」). One trade per tier reached (暂定: the doc doesn't say whether a tier trades again). */
-export const SHARD = { salvage: 3 };
+/** 碎片换档 (九, 2026-11-25 暂定 in the doc): the 累计 (gearKills, only grows) unlocks tier n at 40 × n²; the 余额
+ *  (shardBal) pays. The first trade after each new tier is free, so 「4 下变 3 下」 happens at once; after that any slot
+ *  again, 10 × n shards each. Opens at level 3 (the first tier comes around then). 分解 gives about 3 shards. */
+export const SHARD = { salvage: 3, from: 3, costPerTier: 10 };
 
-const tradedKey = (region: number) => `shardTrade_${region}`;
+const freeKey = (region: number) => `shardTrade_${region}`;
+/** Highest tier of this region whose free trade was taken. */
 export function tradedTier(s: GameState, region: number): number {
-  return (s.flags[tradedKey(region)] as number) ?? 0;
+  return (s.flags[freeKey(region)] as number) ?? 0;
 }
-/** Tiers reached in this region that have not been traded yet. */
+export function shardBalance(s: GameState, region: number): number {
+  return s.shardBal?.[String(region)] ?? 0;
+}
+/** What a trade in this region gives and costs now. */
+export function tradeInfo(s: GameState, region: number): { tier: number; cost: number; can: boolean; free: boolean } {
+  const tier = regionTier(s, region);
+  const free = tier > tradedTier(s, region);
+  const cost = free ? 0 : SHARD.costPerTier * tier;
+  return { tier, cost, free, can: s.level >= SHARD.from && tier > 0 && shardBalance(s, region) >= cost };
+}
+/** Free trades waiting in this region (one per tier unlocked and not yet traded). */
 export function tradesOpen(s: GameState, region: number): number {
-  return Math.max(0, regionTier(s, region) - tradedTier(s, region));
+  return s.level >= SHARD.from ? Math.max(0, regionTier(s, region) - tradedTier(s, region)) : 0;
 }
 
 /** Item level of a region's tier n: the region's first level + n (九「换装节奏和物品等级」). */
@@ -72,17 +85,20 @@ export function tierIlvl(region: number, tier: number): number {
   return start + tier;
 }
 
-/** Trade the next untraded tier of this region for a piece in the chosen slot. */
-export function tradeShards(s: GameState, region: number, slot: Slot, rng: Rng, bagSize = CONFIG.loot.bagSize): ForgeResult & { item?: Item } {
-  if (!tradesOpen(s, region)) return { ok: false, why: '这一区还没攒够下一档的碎片。' };
+/** Trade for a piece of the chosen slot at the tier unlocked in this region. */
+export function tradeShards(s: GameState, region: number, slot: Slot, rng: Rng, bagSize = CONFIG.loot.bagSize): ForgeResult & { item?: Item; cost?: number } {
+  const i = tradeInfo(s, region);
+  if (s.level < SHARD.from) return { ok: false, why: `${SHARD.from} 级开放碎片换档。` };
+  if (!i.tier) return { ok: false, why: '这一区还没攒够第 1 档的碎片（40 片）。' };
+  if (!i.can) return { ok: false, why: `余额不够：这一档每次 ${i.cost} 片，你有 ${shardBalance(s, region)} 片。` };
   if (s.bag.length >= bagSize) return { ok: false, why: '背包满了，先卖掉或分解一些。' };
-  const tier = tradedTier(s, region) + 1;
   const maxQ: Quality = has(s.level, 'purple') ? 'orange' : 'green';
   const q = pityOrange(s, rollQuality(rng, maxQ), maxQ);
-  const it = makeItem(rng, tierIlvl(region, tier), q, slot);
-  s.flags[tradedKey(region)] = tier;
+  const it: Item = { ...makeItem(rng, tierIlvl(region, i.tier), q, slot), tier: i.tier, region };
+  if (i.free) s.flags[freeKey(region)] = tradedTier(s, region) + 1; // one free trade per tier unlocked
+  else (s.shardBal ??= {})[String(region)] = shardBalance(s, region) - i.cost;
   s.bag.push(it);
-  return { ok: true, item: it };
+  return { ok: true, item: it, cost: i.cost };
 }
 
 /** Break a bag item into shards of the region you are in. */

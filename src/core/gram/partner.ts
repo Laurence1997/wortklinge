@@ -1,6 +1,6 @@
-// 复习伙伴 (43 级, 游戏设计 十六): a 归名 word of yours fights along. Once per fight, on your second attack, it asks a
-// context question on its own word (cloze); answer it right and it strikes with you (×1.5 on that hit). No schedule
-// change for the partner word: it is company, not a test. Picked at a camp; the newest 归名 word by default.
+// 复习伙伴 (43 级, 游戏设计 十六): a 归名 word of yours keeps you company. 审查修订 (2026-11-25): it is only the skin of
+// 语境复习 — the partner brings the due word's context question (no question on itself, no extra hit). Picked at a
+// camp; the newest 归名 word by default.
 
 import type { GameState } from '../state';
 import { isRetired, kindOf } from '../srs';

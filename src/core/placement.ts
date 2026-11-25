@@ -361,7 +361,7 @@ export function applyPlacement(s: GameState, run: PlaceRun, t = now(s), _opts: {
     s.flags[`entryKit_${region}`] = true;
     const ilvl = tierIlvl(region, 0);
     for (const slot of (ilvl >= GLASSES_FROM ? ['pen', 'coat', 'amulet', 'dict', 'glasses'] : ['pen', 'coat', 'amulet', 'dict']) as Array<'pen' | 'coat' | 'amulet' | 'dict' | 'glasses'>) {
-      const it = makeItem(Math.random, ilvl, 'white', slot);
+      const it = { ...makeItem(Math.random, ilvl, 'white', slot), tier: 0, region };
       const cur = s.equipped[slot];
       if (!cur || itemScore(cur) < itemScore(it)) s.equipped[slot] = it;
     }

@@ -7,7 +7,9 @@
 // Run: npx vite-node scripts/simProg.ts      Knobs: TYPE=grind|balance|learn (default all), HPD=<hours a day>
 import { makeRng } from '../src/core/rng';
 import { CONFIG, DAY, HOUR } from '../src/core/config';
-import { newGame, maxHp, type GameState } from '../src/core/state';
+import { newGame, maxHp, itemTier, stampTiers, type GameState } from '../src/core/state';
+import { tradeInfo, tradeShards } from '../src/core/forge';
+import { itemScore } from '../src/core/loot';
 import { bonfireRefill, count as itemCount, grantStarter, rollItemDrops } from '../src/core/items';
 import { canHint, hintOf, ITEM_TURN, makeQuestion, moveReady, needsPhase, phaseOf, qTier, resolveTurn, startBattle, type Question } from '../src/core/combat';
 import { applyWin } from '../src/core/outcomes';
@@ -15,7 +17,7 @@ import { pickSpawns, zoneWords, type SpawnPick } from '../src/core/spawn';
 import { stageOf } from '../src/core/srs';
 import { WORDS } from '../src/data/words';
 import { zonesOf, type RegionId } from '../src/game/map';
-import type { Article, Move, Word } from '../src/core/types';
+import type { Article, Item, Move, Word } from '../src/core/types';
 
 type T = 'grind' | 'balance' | 'learn';
 const TYPES: Record<T, { acc: [number, number, number]; tm: [number, number, number]; inscribe: boolean; whisper: boolean; pa: number }> = {
@@ -141,7 +143,29 @@ function fight(s: GameState, w: Word, P: (typeof TYPES)[T], rng: () => number) {
   }
   const won = b.outcome === 'win';
   if (won) applyWin(s, b, rng);
+  if (won) simGear(s, rng);
   return { won, sec: sec + (won ? 0 : DEATH), qs };
+}
+
+/** 碎片换档 (2026-11-25): strength comes from worn pieces' tiers. The sim takes every free trade and pays for one when
+ *  a pen / coat / amulet is behind the tier unlocked here; better drops are worn. */
+function simGear(s: GameState, rng: () => number) {
+  stampTiers(s);
+  const r = s.region ?? 1;
+  const eff = (it: Item | undefined) => itemTier(it, r) * 40 + (it ? itemScore({ ...it, tier: 0 }) : 0);
+  for (const it of [...s.bag]) {
+    if (eff(it) > eff(s.equipped[it.slot])) (s.equipped[it.slot] = it), s.bag.splice(s.bag.indexOf(it), 1);
+  }
+  s.bag.length = Math.min(s.bag.length, 5);
+  for (let i = 0; i < 3; i++) {
+    const info = tradeInfo(s, r);
+    const slot = (['pen', 'coat', 'amulet'] as const).slice().sort((a, b) => itemTier(s.equipped[a], r) - itemTier(s.equipped[b], r))[0];
+    if (!info.can || itemTier(s.equipped[slot], r) >= info.tier) break;
+    const got = tradeShards(s, r, slot, rng);
+    if (!got.ok) break;
+    s.equipped[slot] = got.item!;
+    s.bag.pop();
+  }
 }
 
 const types: T[] = process.env.TYPE ? [process.env.TYPE as T] : ['grind', 'balance', 'learn'];

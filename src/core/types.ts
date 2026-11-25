@@ -159,4 +159,8 @@ export interface Item {
   socket?: '' | 'auch' | 'denn';
   /** 主题套装 (101 级): the region whose set this piece belongs to. */
   set?: number;
+  /** 碎片换档 (九, 2026-11-25 暂定): the gear tier this piece carries and the region it is from. Its tier counts in
+   *  full in that region, half in the next one, not further on (as the old 「上一区档位减半」). */
+  tier?: number;
+  region?: number;
 }

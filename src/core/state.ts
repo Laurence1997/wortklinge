@@ -91,6 +91,8 @@ export interface GameState {
   pron?: Partial<Record<import('../data/pairs').PronCat, { ok: number; miss: number }>>;
   /** 0.4 装备档位: kills per region ("1", "2"); the tier follows from them. */
   gearKills?: Record<string, number>;
+  /** 碎片 余额 per region (九, 2026-11-25 暂定): what trades spend; gearKills is the 累计 that unlocks tiers. */
+  shardBal?: Record<string, number>;
   recentNouns: string[];
   /** Which map you stand on (1 = 余烬营地, 2 = 面包集市). */
   region: RegionNo;
@@ -134,6 +136,7 @@ export function newGame(name: string, origin: string, t = Date.now()): GameState
     version: 3,
     lexicon: LEXICON,
     gearKills: {},
+    shardBal: {},
     createdAt: t,
     name,
     origin,
@@ -187,16 +190,26 @@ export const gear = (s: Pick<GameState, 'equipped' | 'rift'>) => (s.rift ? {} : 
 const blessed = (s: Pick<GameState, 'rift' | 'level'>, id: string) =>
   (s.rift?.bless.filter((x) => x === id).length ?? 0) * (s.rift && s.level >= CONFIG.levelCap ? 1 + 0.02 * s.rift.floor : 1);
 
+/** 碎片换档 (九, 2026-11-25): strength comes from the worn piece's own tier, no longer from shards directly.
+ *  A piece counts in full in its region, half (rounded down) in the next one, nothing further on. 暂定: which slot
+ *  carries which part of the old tier bonus — pen → damage, coat → HP, amulet → armor penetration. */
+export function itemTier(it: Item | undefined, region: number): number {
+  if (!it?.tier) return 0;
+  const r = it.region ?? region;
+  return r === region ? it.tier : r === region - 1 ? Math.floor(it.tier / 2) : 0;
+}
+const slotTier = (s: Pick<GameState, 'equipped' | 'rift' | 'region'>, slot: 'pen' | 'coat' | 'amulet') => itemTier(gear(s)[slot], s.region ?? 1);
+
 export function maxHp(s: GameState): number {
   const coat = gear(s).coat?.main ?? 0;
-  // 0.4: the coat's HP counts as a percentage (+0.5% per point); the gear tier does the heavy lifting.
-  return Math.round(playerBaseHp(s.level) * (1 + coat * 0.005) * (1 + hpBonus(s)) * (1 + CONFIG.gear.hp * gearTier(s)) * (1 + affixTotal(s, 'hp')) * (1 + 0.2 * blessed(s, 'hp')));
+  // 0.4: the coat's HP counts as a percentage (+0.5% per point); the coat's tier does the heavy lifting.
+  return Math.round(playerBaseHp(s.level) * (1 + coat * 0.005) * (1 + hpBonus(s)) * (1 + CONFIG.gear.hp * slotTier(s, 'coat')) * (1 + affixTotal(s, 'hp')) * (1 + 0.2 * blessed(s, 'hp')));
 }
 
-/** 0.4 伤害: half a same-level monster's HP, × (1 + 0.18 × gear tier); the pen adds +1% per attack point. */
+/** 0.4 伤害: half a same-level monster's HP, × (1 + 0.18 × the pen's tier); the pen adds +1% per attack point. */
 export function attack(s: GameState): number {
   const pen = gear(s).pen?.main ?? 0;
-  return CONFIG.playerDmgShare * monsterHpAt(s.level) * (1 + CONFIG.gear.dmg * gearTier(s)) * (1 + pen * 0.01) * (1 + affixTotal(s, 'dmg')) * (1 + 0.15 * blessed(s, 'atk'));
+  return CONFIG.playerDmgShare * monsterHpAt(s.level) * (1 + CONFIG.gear.dmg * slotTier(s, 'pen')) * (1 + pen * 0.01) * (1 + affixTotal(s, 'dmg')) * (1 + 0.15 * blessed(s, 'atk'));
 }
 
 /** Tier reached in one region: tier n after 40 × n² shards there (1 per kill), at most 8. */
@@ -205,11 +218,18 @@ export function regionTier(s: Pick<GameState, 'gearKills'>, region: number): num
   return Math.min(CONFIG.gear.tiers, Math.floor(Math.sqrt(k / CONFIG.gear.shardsPerTierSq) + 1e-9));
 }
 
-/** The tier that counts now: this region's, or half the previous region's while you still wear that gear. */
+/** The tier unlocked in the region you are in (what a trade or a drop there carries). */
 export function gearTier(s: Pick<GameState, 'gearKills' | 'region'> & { rift?: RiftRun }): number {
   if (s.rift) return 0;
+  return regionTier(s, s.region ?? 1);
+}
+
+/** New pieces (drops, chests, bosses, shop) take the tier unlocked in the region you are in when they reach you. */
+export function stampTiers(s: GameState): void {
+  if (s.rift) return;
   const r = s.region ?? 1;
-  return Math.max(regionTier(s, r), r > 1 ? Math.floor(regionTier(s, r - 1) / 2) : 0);
+  const t = regionTier(s, r);
+  for (const it of [...Object.values(s.equipped ?? {}), ...(s.bag ?? [])]) if (it && it.tier === undefined) (it.tier = t), (it.region = r);
 }
 
 /** Kills needed in this region for the next tier (null at the top). */
@@ -226,17 +246,19 @@ export function affinityOf(s: Pick<GameState, 'flags' | 'level'>): Affinity | nu
   return s.level >= UNLOCK.affinity && (a === 'der' || a === 'die' || a === 'das') ? a : null;
 }
 
-/** Armor penetration from gear: 4% per tier (an attuned amulet keeps it; 相亲和 only adds its resource). */
-export function gearPen(s: Pick<GameState, 'gearKills' | 'region'>): number {
-  return CONFIG.gear.pen * gearTier(s);
+/** Armor penetration from gear: 4% per tier of the amulet (an attuned amulet keeps it; 相亲和 only adds its resource). */
+export function gearPen(s: Pick<GameState, 'equipped' | 'rift' | 'region'>): number {
+  return CONFIG.gear.pen * slotTier(s, 'amulet');
 }
 
 /** A kill drops gear shards (1, or 2 for a due review) for the monster's region, and rarely the next tier whole. Returns the new tier when it went up. */
 export function addGearKill(s: GameState, region: number, roll = 1, shards = 1): number | null {
   s.gearKills ??= {};
+  s.shardBal ??= {};
   const before = regionTier(s, region);
   const key = String(region);
   s.gearKills[key] = (s.gearKills[key] ?? 0) + shards;
+  s.shardBal[key] = (s.shardBal[key] ?? 0) + shards;
   if (roll < CONFIG.gear.wholeChance && before < CONFIG.gear.tiers) s.gearKills[key] = Math.max(s.gearKills[key], CONFIG.gear.shardsPerTierSq * (before + 1) ** 2);
   const after = regionTier(s, region);
   return after > before ? after : null;
@@ -382,6 +404,14 @@ export function migrate(raw: unknown): GameState | null {
     s.gearKills = s.level <= 10 ? { '1': k } : { '1': Math.round(k / 2), '2': k - Math.round(k / 2) };
   }
   (s as { version: number }).version = 3;
+  // 碎片换档 (2026-11-25): a 余额 next to the 累计 (nothing was spent before), and worn / bagged pieces take the tier
+  // the old global bonus gave, so nobody gets weaker on the update.
+  if (!s.shardBal) {
+    s.shardBal = { ...(s.gearKills ?? {}) };
+    const r = s.region ?? 1;
+    const old = Math.max(regionTier(s, r), r > 1 ? Math.floor(regionTier(s, r - 1) / 2) : 0);
+    for (const it of [...Object.values(s.equipped ?? {}), ...(s.bag ?? [])]) if (it && it.tier === undefined && old) (it.tier = old), (it.region = r);
+  }
   // 提速 (curve 2): recompute the level from total XP; only ever up, never down.
   if ((s.xpCurve ?? 1) < XP_CURVE) {
     let total = s.xp;

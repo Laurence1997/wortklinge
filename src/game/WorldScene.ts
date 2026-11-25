@@ -50,7 +50,7 @@ export interface MonsterEntity {
   node?: string;
   /** 野外精英 · 场景精英 (2026-11-23): the scene quiz it carries (its word is the first part's). */
   elite?: ElitePick;
-  /** 红名怪 (81): rushes you on sight; `chasing` while it runs at you (contact then is an ambush). */
+  /** 红名怪 (81): rushes you on sight; `chasing` while it runs at you (contact starts the fight with its 结构魔). */
   red?: boolean;
   /** 开口表达观点 (121): throws out a claim before the fight. */
   opinion?: boolean;
@@ -793,7 +793,7 @@ export class WorldScene extends Phaser.Scene {
     if (this.time.now > this.graceUntil) {
       for (const m of this.monsters) {
         if (Math.abs(m.x - px) < 11 && Math.abs(m.y - py) < 11) {
-          if (m.red && m.chasing) return this.ctrl.ambush(m);
+          if (m.red && m.chasing) return this.ctrl.redCatch(m);
           if (m.opinion) return this.ctrl.opinion(m);
           this.ctrl.encounter(m);
           return;

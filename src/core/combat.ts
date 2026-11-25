@@ -33,7 +33,7 @@ import { gramFor } from './gram/hook';
 import { boardDue, markBoard, type ShownBoard } from './gram/boards';
 import { dungeonTask } from './gram/dungeons';
 import { hasMirror, mirrorTask, MIRROR } from './gram/mirror';
-import { partnerOf, PARTNER } from './gram/partner';
+import { partnerOf } from './gram/partner';
 import { articleFor, KIND_ZH, noticeById, noticeFor, noticeTask, NOTICE_CFG } from './gram/notice';
 
 /** A grammar task as a battle question (choice when it has options, typed otherwise). */
@@ -1016,7 +1016,9 @@ export function contextQuestion(s: GameState, b: Battle, rng: Rng): Question | n
   const id = due ?? placedPick(s, rng, b.word.id);
   if (!id || !WORD_BY_ID[id]) return null;
   const rw = WORD_BY_ID[id];
-  const tag = due ? '语境复习' : '抽查（入学测试推定你会）';
+  // 审查修订: 复习伙伴 is the skin of 语境复习 — your partner word brings the due word's question.
+  const pw = due ? partnerOf(s) : null;
+  const tag = due ? (pw ? `复习伙伴 ${fullForm(pw)} · 语境复习` : '语境复习') : '抽查（入学测试推定你会）';
   const c = makeCloze(rw, 'form', rng);
   if (c) return { type: 'cloze', review: id, prompt: `${tag}：打出这里要的形式（名词带冠词，动词变位）· ${c.zh}`, focus: c.shown, answer: c.answer, clozeMode: 'form', full: c.full, clozeZh: c.zh };
   return { type: 'typed', review: id, prompt: `${tag}：${hasArticleQuestion(rw) ? '默写，带上冠词' : '默写这个词'}`, focus: zhWithPos(rw), withArticle: hasArticleQuestion(rw), answer: fullForm(rw) };
@@ -1298,12 +1300,6 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
     return { type: 'sentence', prompt: '终结技：看中文，写整句', focus: ws.zh, answer: ws.answer };
   }
   let q = ladderQ();
-  // 复习伙伴 (43): once per fight, on your second attack, the partner asks a cloze on its own word.
-  const pw = am === 'attack' && !b.partnerDone && b.qIndex === PARTNER.atQuestion && !b.tutorial && !b.trial && !b.gramDungeon ? partnerOf(s) : null;
-  if (pw && pw.id !== w.id) {
-    const pc = clozeQ(s, pw, rng, 'pick');
-    if (pc) q = { ...pc, prompt: `复习伙伴 ${fullForm(pw)}：${pc.prompt}（答对它和你一起出手）`, partner: pw.id };
-  }
   // 难题就是预告 (0.4): a charging monster asks the hardest question (Lv11+ form cloze, before that typing);
   // a multi-hit one asks one step harder. A word you have never answered keeps its usual question.
   if (am === 'attack' && q.type !== 'saying' && q.type !== 'callout' && !q.echo && !b.tutorial && !fresh && canType) {
@@ -1949,7 +1945,9 @@ export function resolveTurn(
   const clozeTyped = q.type === 'cloze' && q.clozeMode !== 'pick';
   // 墨水风暴 with every form right counts as written (rev 234: it can be the 归名 blow).
   const stormAll = q.type === 'storm' && !!q.forms && verdict.word?.id === b.word.id;
-  const typedQ = !q.voiced && (q.type === 'typed' || q.type === 'sentence' || q.type === 'conj' || q.type === 'plural' || clozeTyped || stormAll);
+  // 审查修订 A6/A11: 排句 and 连句 show the words on screen: copying them is not 会写, 用过 or the 归名 blow.
+  const shownWords = q.write === 'order' || q.write === 'link';
+  const typedQ = !q.voiced && !shownWords && (q.type === 'typed' || q.type === 'sentence' || q.type === 'conj' || q.type === 'plural' || clozeTyped || stormAll);
   const kills: Battle[] = [];
   let lastHitter: Battle | null = null;
   let playerDamage = 0;
@@ -2006,9 +2004,9 @@ export function resolveTurn(
     const taughtNow = !!b.phaseTaught && b.phaseTaught === b.turn;
     if (!taughtNow && !q.review && !q.partner && q.type !== 'saying' && (!ok || q.whispered)) b.flawed = true;
     if (!taughtNow && !q.review && !q.partner && q.type !== 'saying' && !ok) b.wrongs = (b.wrongs ?? 0) + 1;
-    if (ok && !q.whispered && !q.review && !q.partner && q.type === 'cloze') b.usedOk = true;
+    if (ok && !q.whispered && !q.review && !q.partner && q.type === 'cloze' && !shownWords) b.usedOk = true;
     if (ok && !q.whispered && !q.review && !q.partner && !taughtNow) {
-      if (q.voiced) b.readOk = (b.readOk ?? 0) + 1; // 开口作答: 认得, not 会写
+      if (q.voiced || shownWords) b.readOk = (b.readOk ?? 0) + 1; // 开口作答 / 抄词块: 认得, not 会写
       else if (q.type === 'typed' || q.type === 'conj' || q.type === 'plural' || q.type === 'sentence' || stormAll || (q.type === 'cloze' && q.clozeMode !== 'pick')) {
         b.writeOk = (b.writeOk ?? 0) + 1;
         if (!b.phrase) reviewedByWriting(s, verdict.word ?? b.word); // 写对就算复习 (rev 51)
@@ -2159,10 +2157,6 @@ export function resolveTurn(
         const breaking = intent.kind === 'defend' && writtenQ;
         const g = genderOf(b.word);
         mult *= comboMult(s.combo);
-        if (q.partner) {
-          mult *= PARTNER.mult;
-          log.push({ text: `复习伙伴 ${fullForm(WORD_BY_ID[q.partner])} 和你一起出手！`, tone: 'good' });
-        }
 
         // Crits: forced ones first (接句怪, 初识暴击), then the random roll.
         if (q.type === 'saying') {

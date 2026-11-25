@@ -198,8 +198,9 @@ describe('镜像怪 and 告示怪', () => {
 });
 
 describe('复习伙伴', () => {
-  it('on the second attack the partner asks its cloze; right → ×1.5 hit, nothing on the records', async () => {
+  it('is the skin of 语境复习: the partner brings the due word\'s context question, no question on itself', async () => {
     const { setPartner } = await import('../src/core/gram/partner');
+    const { contextQuestion } = await import('../src/core/combat');
     const s = newGame('T', 'student', T0);
     s.level = 43;
     s.hp = 999;
@@ -207,19 +208,17 @@ describe('复习伙伴', () => {
     const p = WORDS.find((x) => x.art && EXAMPLES[x.id]?.length && x.id !== 'tisch')!;
     s.words[p.id] = { stage: 3, due: 9e15, firstSeen: 0, lastSeen: 0, relapse: 0, correct: 3, wrong: 0, read: 1, write: 2 };
     setPartner(s, p.id);
-    const w = WORDS.find((x) => x.art && x.id !== p.id)!;
+    const d = WORDS.find((x) => x.art && EXAMPLES[x.id]?.length && x.id !== p.id && x.id !== 'tisch')!;
+    s.words[d.id] = { stage: 3, due: T0 - 1000, ivl: 7 * 86400000, ctx: 0, firstSeen: 0, lastSeen: 0, relapse: 0, correct: 3, wrong: 0, read: 1, write: 2 };
+    const w = WORDS.find((x) => x.art && x.id !== p.id && x.id !== d.id)!;
     s.words[w.id] = { stage: 1, due: 9e15, firstSeen: 0, lastSeen: 0, relapse: 0, correct: 1, wrong: 0, read: 1, write: 1 };
     const b = startBattle(s, w, makeRng(1));
-    b.notice = undefined;
-    b.mirror = undefined;
+    b.turn = 2;
     b.qIndex = 1;
-    const q = makeQuestion(s, b, 'attack', makeRng(1));
-    expect(q.partner).toBe(p.id);
-    const before = { ...s.words[p.id] };
-    resolveTurn(s, b, 'attack', q, q.answer!, makeRng(1));
-    expect(b.partnerDone).toBe(true);
-    expect(s.words[p.id].stage).toBe(before.stage);
-    expect(makeQuestion(s, b, 'attack', makeRng(2)).partner).toBeUndefined();
+    const q = contextQuestion(s, b, makeRng(1))!;
+    expect(q.review).toBe(d.id);
+    expect(q.prompt).toContain('复习伙伴');
+    for (let i = 0; i < 4; i++) expect(makeQuestion(s, b, 'attack', makeRng(i)).partner).toBeUndefined();
   });
 });
 

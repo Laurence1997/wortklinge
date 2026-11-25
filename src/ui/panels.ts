@@ -1013,7 +1013,7 @@ export class Panels {
         ),
       );
     }
-    wrap.append(h('h3', `卖掉或分解背包里的东西（卖价是买价的五分之一；分解得 3 片本区碎片）`));
+    wrap.append(h('h3', `卖掉或分解背包里的东西（卖价是买价的五分之一；分解得 3 片本区碎片，本区余额 ${s.shardBal?.[String(s.region ?? 1)] ?? 0} 片，在篝火换档）`));
     const bag = h('div.bag');
     for (const it of s.bag) {
       bag.append(h(`div.item.${it.quality}`, h('div', this.itemBody(it)), h('div.acts', h('button.btn.ghost', { onclick: () => this.ctrl.shopSell(it.id) }, `卖 ${sellPrice(s, it)}`), h('button.btn.ghost', { title: '分解成本区碎片', onclick: () => this.ctrl.salvageItem(it.id) }, '分解'))));
@@ -1193,6 +1193,7 @@ export class Panels {
       { style: 'flex:1' },
       h(`div.item-name.${it.quality}`, icon(SLOT_TILE[it.slot], 1, false, `slot-icon q-${it.quality}`), `${it.name}`, h('span.small.muted', `  ${QUALITY_ZH[it.quality]} · ${SLOT_ZH[it.slot]} · 物品等级 ${it.ilvl}`)),
       h('div.small', mainStatText(it)),
+      it.tier ? h('div.small', { style: 'color:var(--gold, #ffcf4a)' }, `第 ${it.tier} 档（${it.region ?? '?'} 区）${it.slot === 'pen' ? `：伤害 +${Math.round(it.tier * CONFIG.gear.dmg * 100)}%` : it.slot === 'coat' ? `：生命 +${Math.round(it.tier * CONFIG.gear.hp * 100)}%` : it.slot === 'amulet' ? `：穿透 +${Math.round(it.tier * CONFIG.gear.pen * 100)}%` : ''}（在下一区减半，再往后不算）`) : '',
       ...(it.unidentified ? [h('div.aff', { style: 'color:var(--muted)' }, `未鉴定：${it.affixes.length} 条词缀还没生效（找 Mira 鉴定）`)] : it.affixes.map((a) => h('div.aff', AFFIX_ZH[a.key](a.value)))),
       it.socket === undefined ? '' : h('div.aff', { style: 'color:var(--gold, #ffcf4a)' }, it.socket === '' ? '刻字孔：空的（找导师 Greta 刻 auch 或 denn）' : it.socket === 'auch' ? '刻字 auch：齐鸣打到的其他怪伤害 +20%' : '刻字 denn：难题答对伤害 +20%'),
       it.legendary ? h('div.aff', { style: 'color:var(--q-orange)' }, '传说：冠词审判——答对一道冠词题后，下一击伤害翻倍') : '',

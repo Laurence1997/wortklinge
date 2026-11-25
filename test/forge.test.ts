@@ -24,25 +24,38 @@ describe('drop pity', () => {
   });
 });
 
-import { salvage, tierIlvl, tradedTier, tradeShards, tradesOpen } from '../src/core/forge';
-describe('碎片换装备', () => {
-  it('each tier reached in a region trades once for a piece of the chosen slot; salvage gives shards back', () => {
+import { salvage, shardBalance, tierIlvl, tradeInfo, tradeShards, tradesOpen } from '../src/core/forge';
+import { addGearKill } from '../src/core/state';
+describe('碎片换档', () => {
+  it('累计 unlocks tiers, 余额 pays: the first trade of each tier is free, then 10 × n; salvage refills both', () => {
     const s = newGame('T', 'student');
     s.level = 40;
     s.region = 4 as never;
     expect(tradesOpen(s, 4)).toBe(0);
-    s.gearKills = { '4': 40 * 4 }; // tier 2
-    expect(tradesOpen(s, 4)).toBe(2);
+    addGearKill(s, 4, 1, 40 * 4); // tier 2 unlocked, 160 in the balance
+    expect(tradesOpen(s, 4)).toBe(2); // one free trade per tier unlocked
     const r = tradeShards(s, 4, 'coat', makeRng(1));
     expect(r.ok).toBe(true);
-    expect(r.item!.slot).toBe('coat');
-    expect(r.item!.ilvl).toBe(tierIlvl(4, 1));
-    expect(tradedTier(s, 4)).toBe(1);
-    expect(tradesOpen(s, 4)).toBe(1);
+    expect(r.item).toMatchObject({ slot: 'coat', tier: 2, region: 4, ilvl: tierIlvl(4, 2) });
+    expect(r.cost).toBe(0);
     tradeShards(s, 4, 'pen', makeRng(2));
-    expect(tradeShards(s, 4, 'pen', makeRng(3)).ok).toBe(false);
-    const before = s.gearKills!['4'];
+    expect(tradesOpen(s, 4)).toBe(0);
+    expect(tradeInfo(s, 4)).toMatchObject({ tier: 2, cost: 20, free: false, can: true });
+    expect(tradeShards(s, 4, 'pen', makeRng(3)).cost).toBe(20);
+    expect(shardBalance(s, 4)).toBe(140);
+    expect(s.gearKills!['4']).toBe(160); // 累计 never goes down
+    s.shardBal!['4'] = 5;
+    expect(tradeShards(s, 4, 'pen', makeRng(4)).ok).toBe(false);
     expect(salvage(s, s.bag[0].id).ok).toBe(true);
-    expect(s.gearKills!['4']).toBe(before + 3);
+    expect(shardBalance(s, 4)).toBe(8);
+    expect(s.gearKills!['4']).toBe(163);
+  });
+  it('opens at level 3', () => {
+    const s = newGame('T', 'student');
+    s.level = 2;
+    addGearKill(s, 1, 1, 40);
+    expect(tradeShards(s, 1, 'pen', makeRng(1)).ok).toBe(false);
+    s.level = 3;
+    expect(tradeShards(s, 1, 'pen', makeRng(1)).ok).toBe(true);
   });
 });

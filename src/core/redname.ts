@@ -1,8 +1,8 @@
 // 红名怪 (游戏设计 六「后期战斗」, B1 起 81 级): white-name monsters leave you alone until you touch them; red-name ones
 // rush you on sight. From B1 the fields have born red-name monsters (结构魔: a verb you have met, wrapped in a weil
-// worm). Caught by one, you first get a quick question (先手检定): right cancels its first strike, wrong lets it land.
+// worm). Caught by one, the fight starts (审查修订 2026-11-25: the 先手检定 question is cut, the red look stays).
 // A player away for more than 3 days finds every red-name asleep on the first day back. Whole families never turn red
-// (the most diligent player should not be ambushed the most).
+// (the most diligent player should not be chased the most).
 
 import { structTasks } from './combat';
 import type { GameState } from './state';

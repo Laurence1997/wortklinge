@@ -59,8 +59,8 @@ import { WEBER, WEBER_POOL, usesDu } from '../data/weber';
 import { answerExam, BREAK, BREAK_EARLY, examPassed, PART_ZH, startExam, startGrammarExam, type Exam } from '../core/breakthrough';
 import { DUNGEON, RULES, type Rule } from '../data/dungeon';
 import { OPINION, opinionRule, pickClaim } from '../core/opinion';
-import { addGearKill } from '../core/state';
-import { bossRed, salvage, tierIlvl, tradedTier, tradeShards, tradesOpen } from '../core/forge';
+import { addGearKill, stampTiers } from '../core/state';
+import { bossRed, salvage, shardBalance, tierIlvl, tradeInfo, tradeShards, tradesOpen } from '../core/forge';
 import { aiOpinion, AI_TUTOR, aiEssay, aiGrade, aiGradeText, duelTurn, knownWords, type AiGrade } from '../net/aiTutor';
 import { DUEL, DUEL_SCENES, duelTurns, type DuelScene } from '../data/grammar/duels';
 import { drawPractice } from '../core/aiPractice';
@@ -346,6 +346,7 @@ export class Controller {
   }
 
   persist(): void {
+    stampTiers(this.state);
     save(this.state);
   }
 
@@ -498,30 +499,11 @@ export class Controller {
 
   // ---- Encounters ----------------------------------------------------------------------
 
-  /** 红名怪 caught you (先手检定): a quick pick of its meaning. Right cancels its first strike; wrong, it lands. */
-  ambush(m: MonsterEntity): void {
+  /** 红名怪 caught you: the fight starts at once (审查修订: the 先手检定 question is cut; the red look stays). */
+  redCatch(m: MonsterEntity): void {
     if (this.battle || this.ambushing) return;
-    this.ambushing = true;
-    const s = this.state;
-    const w = m.word;
-    const others = WORDS.filter((x) => x.id !== w.id && x.pos === w.pos && s.words[x.id] && x.zh !== w.zh);
-    const pickN = (n: number) => [...others].sort(() => this.rng() - 0.5).slice(0, n).map((x) => x.zh);
-    const opts = [w.zh, ...pickN(2)].sort(() => this.rng() - 0.5);
-    this.milestone('m_ambush');
-    const go = (ok: boolean) => {
-      this.ambushing = false;
-      m.chasing = false;
-      this.encounter(m, { struct: true });
-      const b = this.battle;
-      if (!b) return;
-      if (ok) b.log.push({ text: '先手检定：答对了，它扑空了。', tone: 'good' });
-      else {
-        const d = Math.max(1, b.monster.dmg);
-        s.hp = Math.max(1, s.hp - d);
-        b.log.push({ text: `先手检定：没答上，它先咬了你一口（−${d}）。`, tone: 'bad' });
-      }
-    };
-    say([{ who: SYS, text: `【红名】${'▒'.repeat(Math.min(8, w.de.length))} 扑了上来！先手检定：它的名字是什么意思？` }], undefined, opts.map((o) => ({ label: o, act: () => go(o === w.zh) })));
+    m.chasing = false;
+    this.encounter(m, { struct: true });
   }
 
   /** 开口表达观点 (121): the monster throws out a claim before the fight. A sound answer (rule check, then the AI when
@@ -827,7 +809,7 @@ export class Controller {
 
   /** 即时战: this fight runs on cast bars (set by the battle screen when it opens). */
   realtime = false;
-  /** 红名怪 先手检定 dialog open. */
+  /** A pre-fight dialog (开口表达观点) is open. */
   ambushing = false;
 
   /** 即时战: the target's cast bar ran out — every monster standing acts. */
@@ -1368,20 +1350,21 @@ export class Controller {
     this.panels.render();
   }
 
-  /** 碎片换装备 at the bonfire: pick a slot for the next tier reached in this region. */
+  /** 碎片换档 at the bonfire: pick a slot for a piece at the tier unlocked in this region. */
   private shardTrade(): void {
     const s = this.state;
     const region = s.region ?? 1;
-    const tier = tradedTier(s, region) + 1;
+    const i = tradeInfo(s, region);
     const slots: Slot[] = s.level >= GLASSES_FROM ? ['pen', 'coat', 'amulet', 'dict', 'glasses'] : ['pen', 'coat', 'amulet', 'dict'];
-    say([{ who: SYS, text: `【碎片换装备】本区第 ${tier} 档（物品等级 ${tierIlvl(region, tier)}）。换哪个部位？品质和副词缀随机。` }], undefined, [
+    const price = i.free ? '这次免费（新解锁的档）' : `花 ${i.cost} 片碎片（余额 ${shardBalance(s, region)}）`;
+    say([{ who: SYS, text: `【碎片换档】本区第 ${i.tier} 档（物品等级 ${tierIlvl(region, i.tier)}），${price}。换哪个部位？笔的档加伤害，外套的档加生命，护符的档加穿透；品质和副词缀随机。` }], undefined, [
       ...slots.map((sl) => ({
         label: SLOT_ZH[sl],
         act: () => {
           const r = tradeShards(s, region, sl, this.rng);
           if (!r.ok) return say([{ who: SYS, text: r.why! }]);
-          banner('碎片换装备', r.item!.name);
-          logLine(`碎片换装备：${r.item!.name}（${QUALITY_ZH[r.item!.quality]}），放进了背包`, 'good');
+          banner('碎片换档', r.item!.name);
+          logLine(`碎片换档：${r.item!.name}（${QUALITY_ZH[r.item!.quality]} · 第 ${r.item!.tier} 档）${r.cost ? `，花了 ${r.cost} 片` : ''}，放进了背包`, 'good');
           this.refresh();
           this.persist();
         },
@@ -1558,9 +1541,11 @@ export class Controller {
     // 篝火日记 (Lv16+, 2026-11-22): once a day, write a few sentences with words fought today.
     const jw = this.journalOffer();
     // 碎片换装备 (九): a tier reached in this region can be traded for a piece here.
-    const trades = tradesOpen(s, region);
-    if (trades) lines.push({ who: SYS, text: `【碎片换装备】本区碎片够换 ${trades} 件了（第 ${tradedTier(s, region) + 1} 档起）。` });
-    const tradeOpt = trades ? [{ label: '碎片换装备', act: () => this.shardTrade() }] : [];
+    const free = tradesOpen(s, region);
+    const ti = tradeInfo(s, region);
+    if (free) lines.push({ who: SYS, text: `【碎片换档】本区解锁了第 ${ti.tier} 档：这次换一件免费${free > 1 ? `（还有 ${free} 次免费）` : ''}。` });
+    const trades = ti.can;
+    const tradeOpt = trades ? [{ label: free ? '碎片换档（免费）' : `碎片换档（${ti.cost} 片）`, act: () => this.shardTrade() }] : [];
     if (jw) {
       lines.push({ who: SYS, text: `【篝火日记】今天打过 ${jw.map((w) => w.de).join('、')}。用它们写两三句话？不判对错，只提示查得出的错。` });
       say(lines, undefined, [{ label: '写日记', act: () => this.panels.showJournal(jw) }, ...tradeOpt, { label: '今天不写', act: () => undefined }]);
@@ -2026,7 +2011,7 @@ export class Controller {
     const lines: Line[] = [];
     if (!s.flags.partnerSeen) {
       s.flags.partnerSeen = true;
-      lines.push({ who: SYS, text: '【复习伙伴】带一个已经归名的词一起打。每场你第二次出手时，它出一道它自己的例句题；答对，它和你一起出手（这一下 ×1.5）。答错也不会让它掉回复习。' });
+      lines.push({ who: SYS, text: '【复习伙伴】选一个已经归名的词陪你打：语境复习的题由它来出（只是换个样子，规则和奖励都不变）。' });
     }
     lines.push({ who: SYS, text: cur ? `现在的伙伴：${fullForm(cur)}（${cur.zh}）。换一个？` : '还没有归名的词可以当伙伴。' });
     say(lines, undefined, [...list.map((w) => ({ label: `${fullForm(w)} · ${w.zh}`, act: () => (setPartner(s, w.id), toast(`复习伙伴：${fullForm(w)}`), this.persist()) })), { label: '不换', act: () => {} }]);
