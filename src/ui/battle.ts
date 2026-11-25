@@ -2,6 +2,7 @@ import { monsterArt, monsterIcon, heroIcon } from './icons';
 import { DEFAULT_LOOK } from '../core/look';
 import type { Battle, Question, TurnReport } from '../core/combat';
 import { count as itemCount, itemsOpen, tabletHeal } from '../core/items';
+import { CHARM, equippedCharms } from '../core/charms';
 import { bestHeard, plateZh, castMs, gcdMs, parryWindowMs, realtimeOn, voiceOpen } from '../core/combat';
 import { availableMoves, chorusMates, canHint, comboTier, effArmor, moveReady, poolReady, needsPhase, phaseOf, resName, stancesFor, teachPhase, readTarget, readRecall, readShown, phaseWrongWhy } from '../core/combat';
 import { articleSlip, clarity, shadowOk } from '../core/shadow';
@@ -70,6 +71,8 @@ export class BattleUI {
   private shadowMsg = '';
   private renderedQ: Question | null = null;
   private phaseNag = false;
+  /** 秘术栏: the charm being shouted (its input row is open). */
+  private charmId: string | null = null;
   // 回音怪 (2026-11-23): the pair's two options, re-reads used, the last message, a judgement in progress.
   private echoOpts: string[] = [];
   private echoTries = 0;
@@ -272,6 +275,64 @@ export class BattleUI {
     this.phase = 'answer';
     this.askedAt = performance.now();
     this.render();
+  }
+
+  /** 秘术栏: type the whole sentence; before 33 it spends the turn like a tablet. */
+  shout(id: string, input: string): void {
+    if (this.phase !== 'choose') return;
+    const target = this.b;
+    const from = target.log.length;
+    const r = this.ctrl.shoutCharm(id, input);
+    this.charmId = null;
+    if (!r) return;
+    logLine(`秘术：${r.res.text}`, r.res.ok && !r.res.backfire ? 'good' : 'bad');
+    if (!r.report) {
+      this.render();
+      return;
+    }
+    stopListening();
+    this.report = r.report;
+    this.question = { type: 'steady', prompt: '喊出秘术', focus: r.res.text, item: true };
+    this.move = 'item';
+    this.phase = 'result';
+    this.lastValue = '';
+    this.voicedFull = '';
+    this.shadowText = '';
+    if (r.report.monsterDamage) logLine(`  它出手：你受到 ${r.report.monsterDamage} 伤害`, 'bad');
+    for (const l of target.log.slice(from + 1)) logLine(`  ${l.text}`, l.tone === 'good' ? 'good' : l.tone === 'bad' ? 'bad' : l.tone === 'crit' ? 'gold' : 'info');
+    this.render();
+    window.clearTimeout(this.autoTimer);
+    this.autoTimer = window.setTimeout(() => this.continue(), this.ctrl.fightOver() ? 1600 : 1400);
+  }
+
+  private charmRow(): HTMLElement | string {
+    const s = this.ctrl.state;
+    const b = this.b;
+    const list = equippedCharms(s);
+    if (!list.length || b.tutorial) return '';
+    const used = b.fx.charm?.used ?? [];
+    const row = h('div.hud-row.small');
+    for (const c of list) {
+      row.append(h('button.btn.ghost.small', {
+        disabled: this.phase !== 'choose' || used.includes(c.id),
+        onclick: () => { this.charmId = this.charmId === c.id ? null : c.id; this.render(); },
+        title: `${c.zh}：${c.fx}${c.kind === 'slang' ? `（只对${(c as { when?: string }).when}）` : ''}。打出整句生效，每场一次；${s.level < CHARM.bonusFrom ? '占一回合（33 级起不占回合）' : '附赠动作，不占回合'}`,
+      }, used.includes(c.id) ? `秘术 ✓ ${c.zh}` : `秘术 · ${c.zh}`));
+    }
+    if (this.charmId && this.phase === 'choose') {
+      const c = list.find((x) => x.id === this.charmId);
+      if (c) {
+        const inp = h('input.charm-in', { placeholder: `打出整句：${c.zh}`, autocomplete: 'off', spellcheck: false }) as HTMLInputElement;
+        inp.addEventListener('keydown', (e) => {
+          e.stopPropagation();
+          if (e.key === 'Enter' && inp.value.trim()) this.shout(c.id, inp.value);
+          if (e.key === 'Escape') { this.charmId = null; this.render(); }
+        });
+        row.append(inp, h('button.btn.small', { onclick: () => inp.value.trim() && this.shout(c.id, inp.value) }, '喊出'));
+        window.setTimeout(() => inp.focus(), 0);
+      }
+    }
+    return row;
   }
 
   /** 药片 (物品栏): heal and spend the turn; the monsters act. */
@@ -787,6 +848,7 @@ export class BattleUI {
             }, h('kbd', 'H'), `药片 ×${itemCount(s, 'tablet')}`),
           )
         : '',
+      this.charmRow(),
       h('div.hud-row', h('button.btn.ghost.small', { onclick: () => this.ctrl.flee(), title: '撤退：连击清零' }, '撤退')),
     );
 

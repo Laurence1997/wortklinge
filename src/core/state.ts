@@ -73,6 +73,10 @@ export interface GameState {
   skillUses: Record<string, number>;
   /** 接句怪: short-saying cards collected (id → times). */
   sayings?: Record<string, number>;
+  /** 秘术栏 (3 级; 2 slots from 81): equipped short-card / slang ids. */
+  charms?: string[];
+  /** 俚语秘术 (50 级): owned slang lines. */
+  slang?: Record<string, number>;
   /** 主城全量筛选 (0.6.x): XP waiting in scenes (待领) and the cursor per scope. */
   screen?: import('./screen').ScreenSave;
   /** 词表导入 (2026-11-22): word ids marked 优先 and lemmas the game doesn't have yet (待收录). Optional: absent = none. */

@@ -85,12 +85,14 @@ export function applyWin(s: GameState, b: Battle, rng: Rng, opts: { heal?: boole
   // 审查修订 C7: a pack member pays ×0.7 of a lone monster (less HP each, and 齐鸣 hits two).
   if (opts.pack && !b.elite) xp *= CONFIG.pack.xpMult;
   xp *= quickFightXp(s, b); // 天赋「一气呵成」
+  xp *= 1 + (b.fx.charm?.xp ?? 0); // 秘术 Übung macht den Meister.
   if (b.tutorial === 'loss') xp = 0;
   xp = Math.round(xp);
 
   let gold = CONFIG.gold.perKill(b.monster.lvl);
   gold = Math.round(gold * overdueMult * (b.elite ? CONFIG.elite.rewardMult : 1));
   if (b.fx.stimmt) gold *= 2;
+  gold = Math.round(gold * (1 + (b.fx.charm?.gold ?? 0))); // 秘术 Zeit ist Geld.
   if (b.fx.nextHalt) s.flags.nextHalt = true;
   let echoRecovered: WinResult['echoRecovered'] = null;
   if (s.echo && s.echo.wordId === w.id) {
@@ -111,7 +113,7 @@ export function applyWin(s: GameState, b: Battle, rng: Rng, opts: { heal?: boole
   log.kills += 1;
   s.stats.kills += 1;
   // 碎片 count from Lv1, but a tier-up is only announced once gear opens (Lv3, 节奏表).
-  const gearUpRaw = b.tutorial === 'loss' ? null : addGearKill(s, b.phrase ? s.region ?? 1 : w.region ?? 1, rng(), 1 + (b.cursed ? CONFIG.curse.shards : 0));
+  const gearUpRaw = b.tutorial === 'loss' ? null : addGearKill(s, b.phrase ? s.region ?? 1 : w.region ?? 1, rng(), 1 + (b.cursed ? CONFIG.curse.shards : 0) + (b.fx.charm?.shard ?? 0));
   const gearUp = has(s.level, 'gear') ? gearUpRaw : null;
 
   // Drops: 20% from small monsters once gear is unlocked; the first one is a guaranteed green (Lv5 lesson).
@@ -120,6 +122,11 @@ export function applyWin(s: GameState, b: Battle, rng: Rng, opts: { heal?: boole
   if (has(s.level, 'gear') && b.tutorial !== 'loss') {
     const firstGreen = !s.flags.firstGreen;
     let rate = CONFIG.loot.smallDropRate * (1 + Math.min(1, affixTotal(s, 'dropRate')));
+    rate *= 1 + (b.fx.charm?.drop ?? 0); // 秘术 Viel Glück!
+    if (s.flags.schweinNext) {
+      rate *= 2; // 俚语 Schwein gehabt!: this monster's drop doubled
+      delete s.flags.schweinNext;
+    }
     if (((s.flags.ctxDropBoost as number) ?? 0) > 0) {
       rate *= 1.5;
       s.flags.ctxDropBoost = (s.flags.ctxDropBoost as number) - 1;
@@ -144,7 +151,7 @@ export function applyWin(s: GameState, b: Battle, rng: Rng, opts: { heal?: boole
   // 场景精英 (9 级): its last part brings an iron chest (always the first time, else 30%), even before Lv11.
   let chest: ChestKind | null = null;
   if (b.elite && b.elite.seg === b.elite.words.length - 1 && b.tutorial !== 'loss') {
-    if (!b.elite.review || rng() < CONFIG.elite.repeatChest) chest = 'iron';
+    if (!b.elite.review || rng() < CONFIG.elite.repeatChest * (b.fx.charm?.ironChest ?? 1)) chest = 'iron';
   } else if (has(s.level, 'chests') && b.tutorial !== 'loss' && !b.trial) {
     if (b.elite) chest = null; // 场景精英: no wood chest per part; the elite's iron chest comes with the last part
     else if (b.flees) chest = 'iron';
@@ -154,6 +161,7 @@ export function applyWin(s: GameState, b: Battle, rng: Rng, opts: { heal?: boole
 
   // 战后喘口气 (packs heal once, after the whole fight)
   if (opts.heal !== false) postFightHeal(s);
+  if (b.fx.charm?.afterHeal) s.hp = Math.min(maxHp(s), s.hp + Math.round(maxHp(s) * b.fx.charm.afterHeal)); // 秘术 Gute Besserung!
   // 物品栏 (2026-11-22): rolled last, so the earlier rolls keep their order.
   const items = b.tutorial === 'loss' ? [] : rollItemDrops(s, rng);
   return { xp, gold, kill, levelUp, drop, items, bagFull, echoRecovered, review: rv, chest, gearUp, card };

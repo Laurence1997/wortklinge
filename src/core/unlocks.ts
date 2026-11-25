@@ -157,5 +157,10 @@ GRAM_UNLOCK_TEXT[31] = [...(GRAM_UNLOCK_TEXT[31] ?? []), '快答：仍是回合�
 GRAM_UNLOCK_TEXT[81] = [...(GRAM_UNLOCK_TEXT[81] ?? []), '即时战：时间不再停。怪按自己的读条出手（约 6 秒，蓄力两倍），你随时答题，每招后 1 秒冷却，选择题答错僵直 2 秒。读条最后 1 秒答对是弹反（不挨打、反击算暴击），蓄力时答对就打断。设置里可以换回回合制或开慢速（读条 ×1.5），只是拿不到快答加成'];
 GRAM_UNLOCK_TEXT[81] = [...(GRAM_UNLOCK_TEXT[81] ?? []), '红名怪：野外出现红名的结构魔，看到你就扑上来。被它追上就直接开打。离开超过 3 天回来的第一天，红名都在沉睡'];
 GRAM_UNLOCK_TEXT[141] = [...(GRAM_UNLOCK_TEXT[141] ?? []), '语法星位（天赋页最下面）：每个星位一条语法，过试炼（8 题对 6，随时重考）后花 1 点点亮，这条语法的题伤害 +10%、答错连击只减半'];
-for (const [lv, lines] of Object.entries(GRAM_UNLOCK_TEXT)) UNLOCK_TEXT[Number(lv)] = [...(UNLOCK_TEXT[Number(lv)] ?? []), ...lines];
 GRAM_UNLOCK_TEXT[83] = [...(GRAM_UNLOCK_TEXT[83] ?? []), '发音怪：专打难发的音（r 和 l、ü 和 ö、ich 和 sch），每一击都要分清它和它的近音词；开了发音训练就要读出来，没开就听辨，别的招式只擦过它'];
+// 秘术栏 (游戏设计 九「短句卡和俚语秘术」).
+GRAM_UNLOCK_TEXT[3] = [...(GRAM_UNLOCK_TEXT[3] ?? []), '秘术栏 1 格：收到的短句卡可以在词汇本里「带上」，战斗中点「秘术」打出整句就生效（每场一次，先占一回合）'];
+GRAM_UNLOCK_TEXT[33] = [...(GRAM_UNLOCK_TEXT[33] ?? []), '附赠动作：喊秘术不再占回合，喊完还能出一招'];
+GRAM_UNLOCK_TEXT[50] = [...(GRAM_UNLOCK_TEXT[50] ?? []), '俚语秘术：俚语只对写明的场合管用，用错会反噬。NPC 支线最后一环和商店的流浪商人卷轴给俚语'];
+GRAM_UNLOCK_TEXT[81] = [...(GRAM_UNLOCK_TEXT[81] ?? []), '秘术栏 +1（共 2 格）'];
+for (const [lv, lines] of Object.entries(GRAM_UNLOCK_TEXT)) UNLOCK_TEXT[Number(lv)] = [...(UNLOCK_TEXT[Number(lv)] ?? []), ...lines];

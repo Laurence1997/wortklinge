@@ -11,6 +11,7 @@ import { BLIND_FROM, blindBoxes, boxLabel, boxPrice, buyBox } from '../core/blin
 import { FAMILIES } from '../data/families';
 import { loadout, owned, POOL, POOL_FROM, POOL_ORDER, slotCount, toggleLoadout } from '../core/skillPool';
 import { phraseCards } from '../core/combat';
+import { CHARM, CHARM_BY_ID, charmSlots, equipCharm, equippedCharms, SLANG } from '../core/charms';
 import { SAYINGS, SAYING_CFG } from '../data/sayings';
 import { MASTERY, masteryFree, masteryIn, masteryPts, spendMastery, type MasteryTrack } from '../core/mastery';
 import { BRANCHES, canLearn, canLight, learn, learned, lightStar, litStars, ROW_GATE, spent, spentIn, STARS, STARS_FROM, starsPassed, talentPoints, TALENT_FROM_LEVEL, TALENT_TREE, type Branch } from '../core/classes';
@@ -1020,6 +1021,16 @@ export class Panels {
     }
     if (!s.bag.length) bag.append(h('p.muted.small', '背包是空的。'));
     wrap.append(bag);
+    // 流浪商人的俚语卷轴 (50 级; 行商团 merged into the shop).
+    if (s.level >= CHARM.slangFrom) {
+      const price = this.ctrl.slangPrice();
+      const list = h('div.bag');
+      for (const x of SLANG.filter((y) => y.source.includes('商人'))) {
+        const have = !!s.slang?.[x.id];
+        list.append(h('div.item', h('div', h('b', have ? x.de : '俚语卷轴'), h('div.small', `${x.when} · ${x.fx}`)), h('div.acts', have ? h('span.small.muted', '已学会') : h('button.btn.ghost', { disabled: s.gold < price, onclick: () => { this.ctrl.buySlang(x.id); this.render(); } }, `买 ${price}`))));
+      }
+      wrap.append(h('h3', '俚语卷轴（流浪商人）'), h('p.small.muted', '买下就学会这句俚语，可以放进秘术栏。只对写明的场合管用。'), list);
+    }
     return wrap;
   }
 
@@ -1371,12 +1382,24 @@ export class Panels {
       const got = SAYINGS.filter((x) => s.sayings?.[x.id]);
       const phraseIds = new Set(phraseCards().map((x) => x.id));
       const tb = h('table.log');
-      tb.append(h('tr', h('th', '短句'), h('th', '中文'), h('th', '什么时候说')));
+      tb.append(h('tr', h('th', '短句'), h('th', '中文'), h('th', '什么时候说'), h('th', '秘术效果'), h('th', '')));
+      const on = new Set(equippedCharms(s).map((c) => c.id));
+      const equipBtn = (id: string) => h('button.btn.small' + (on.has(id) ? '.primary' : ''), { onclick: () => { equipCharm(s, id); this.ctrl.persist(); this.render(); } }, on.has(id) ? '已带上' : '带上');
       for (const x of SAYINGS) {
         const have = !!s.sayings?.[x.id];
-        tb.append(h('tr', h('td', have ? `${x.a} ${x.b}` : `${x.a} ……`), h('td', have ? x.zh : '？'), h('td', have ? x.when : (phraseIds.has(x.id) ? '野外金色的「残句」怪：接上、听懂、写出整句就能收下' : '在野外遇到喊这句的接句怪，接上下半句就能收下'))));
+        const c = CHARM_BY_ID[x.id];
+        tb.append(h('tr', h('td', have ? `${x.a} ${x.b}` : `${x.a} ……`), h('td', have ? x.zh : '？'), h('td', have ? x.when : (phraseIds.has(x.id) ? '野外金色的「残句」怪：接上、听懂、写出整句就能收下' : '在野外遇到喊这句的接句怪，接上下半句就能收下')), h('td.small', c ? c.fx : ''), h('td', have && c ? equipBtn(x.id) : '')));
       }
-      wrap.append(h('h3', `短句卡（${got.length} / ${SAYINGS.length}）`), h('p.small.muted', '大部分卡从野外金色的「残句」怪身上掉；怪的词正好在这句里时，接句怪也会喊它。卡只用来收集，没有战斗效果。'), tb);
+      wrap.append(h('h3', `短句卡（${got.length} / ${SAYINGS.length}）`), h('p.small.muted', `大部分卡从野外金色的「残句」怪身上掉；怪的词正好在这句里时，接句怪也会喊它。秘术栏 ${charmSlots(s.level)} 格（81 级起 2 格），短句卡和俚语共用：战斗里点「秘术」打出整句生效，每场一次；${s.level < CHARM.bonusFrom ? '33 级前喊一次占一回合' : '不占回合（附赠动作）'}。`), tb);
+      if (s.level >= CHARM.slangFrom) {
+        const st = h('table.log');
+        st.append(h('tr', h('th', '俚语'), h('th', '中文'), h('th', '场合'), h('th', '效果'), h('th', '')));
+        for (const x of SLANG) {
+          const have = !!s.slang?.[x.id];
+          st.append(h('tr', h('td', have ? x.de : '……'), h('td', have ? x.zh : '？'), h('td', x.when ?? ''), h('td.small', have ? x.fx : x.source), h('td', have ? equipBtn(x.id) : '')));
+        }
+        wrap.append(h('h3', `俚语秘术（${SLANG.filter((x) => s.slang?.[x.id]).length} / ${SLANG.length}）`), h('p.small.muted', '只对写明的场合管用；用错场合会反噬：不生效，本场下一次答错伤害 +50%。'), st);
+      }
     }
     if (!Object.keys(s.words).length) wrap.append(h('p', '还没有见过的词。出去打几只怪吧。'));
     return wrap;

@@ -11,12 +11,12 @@ import { answerBoss, startBoss, type BossFight } from '../core/boss';
 import { bonfireRefill, grantStarter, tabletHeal, useItem, CONSUMABLE, count as itemCount, buyConsumable, type Consumable } from '../core/items';
 import { alignPairs, canHint, hintOf, ITEM_TURN, linkPack, phraseCards, startPhraseBattle, makeQuestion, monsterStats, pickHint, resetClassFx, resolveTurn, rollSaying, shoutLine, startBattle, type Battle, type Question, type TurnReport, type Tutorial } from '../core/combat';
 import { CONFIG, xpToNext } from '../core/config';
-import { favour, FAVOUR, KONRAD_WORDS, QUESTS, questEvent, questState, startQuest, type QuestEvent } from '../core/quests';
+import { favour, FAVOUR, KONRAD_WORDS, QUESTS, questEvent, questState, startQuest, type QuestEvent, type QuestId } from '../core/quests';
 import { CHEST_ZH, CHESTS, lockWord, openChest, type ChestKind } from '../core/chest';
 import { playChest } from '../ui/chestFx';
 import { gradeTyped } from '../core/grading';
 import { buy as buyItem, openShop, refresh as refreshShop, sell as sellItem } from '../core/shop';
-import { rank, resMax, respec, respecCost, spent } from '../core/classes';
+import { hourGold, rank, resMax, respec, respecCost, spent } from '../core/classes';
 import { noteVisit } from '../core/redname';
 import { BLESSINGS, blessCount, blessScale, bossFloor, canDescend, descend, endRift, offerBlessings, RIFT, riftAct, riftItemLevel, riftOpen, riftWord, silenceLeft, startRift, takeBlessing } from '../core/rift';
 import { GLASSES_FROM, makeItem, QUALITY_ZH, rollQuality, SLOT_ZH } from '../core/loot';
@@ -66,6 +66,7 @@ import { DUEL, DUEL_SCENES, duelTurns, type DuelScene } from '../data/grammar/du
 import { drawPractice } from '../core/aiPractice';
 import { noticeById } from '../core/gram/notice';
 import { partnerChoices, partnerOf, setPartner } from '../core/gram/partner';
+import { berlinHour, CHARM, CHARM_BY_ID, equippedCharms, grantSlang, shoutCharm, SLANG, slangOwed, type ShoutResult } from '../core/charms';
 import { cleared, floorRun, floorsOf, GRAM_DUNGEON, markCleared, type DungeonKind, type Floor } from '../core/gram/dungeons';
 import { fullForm, hasArticleQuestion, WORD_BY_ID, WORDS, zhWithPos } from '../data/words';
 import { initAudio, setBattleMusic, setVolumes, sfx, speak, speechAvailable, hasGermanVoice } from './audio';
@@ -426,6 +427,7 @@ export class Controller {
       sfx.levelUp();
       banner(`Lv ${level}`, (UNLOCK_TEXT[level] ?? [])[0] ?? '');
     }
+    if (level === CHARM.slangFrom) this.grantOwedSlang();
     const unlocked = UNLOCK_TEXT[level] ?? [];
     const lines: Line[] = unlocked.map((t) => ({ who: SYS, text: `【新能力】${t}` }));
     if (grantStarter(s)) lines.push({ who: SYS, text: `【物品栏】送你 ${itemCount(s, 'hint')} 张低语纸条和 ${itemCount(s, 'tablet')} 片药片。${CONSUMABLE.hint.zh}：${CONSUMABLE.hint.use}。${CONSUMABLE.tablet.zh}：${CONSUMABLE.tablet.use}。篝火休息会把纸条补到 3 张。` });
@@ -849,6 +851,28 @@ export class Controller {
     return { report: r, heal };
   }
 
+  /** 秘术栏: shout an equipped charm. Before 33 it spends the turn (the monsters act); from 33 it is a bonus action. */
+  shoutCharm(id: string, input: string): { res: ShoutResult; report: TurnReport | null } | null {
+    const s = this.state;
+    const b = this.battle;
+    if (!b || b.outcome || b.tutorial || !equippedCharms(s).some((c) => c.id === id)) return null;
+    const res = shoutCharm(s, b.fx, id, input, { struct: !!b.structMon, cursed: !!b.curse, pack: this.pack.filter((x) => !x.outcome).length > 1, red: !!b.structMon, challenge: !!b.challenge, elite: !!b.elite, hour: berlinHour() });
+    if (res.special === 'curse') delete b.curse;
+    b.log.push({ text: res.text, tone: res.ok && !res.backfire ? 'good' : 'bad' });
+    let report: TurnReport | null = null;
+    if (res.turn) {
+      report = resolveTurn(s, b, 'item', ITEM_TURN, '', this.rng, this.pack);
+      if (report.killer) this.killer = report.killer;
+      if (report.monsterDamage > 0) {
+        sfx.hurt();
+        this.scene.shake(0.004);
+      }
+    } else if (res.ok && !res.backfire) sfx.loot();
+    this.refresh();
+    this.persist();
+    return { res, report };
+  }
+
   buyConsumable(k: Consumable, sentence: string) {
     const r = buyConsumable(this.state, k, sentence);
     if (r.ok) sfx.loot();
@@ -1184,6 +1208,34 @@ export class Controller {
       else toast(`任务：${def.steps[a.finished].zh} ✓  下一步：${def.steps[a.finished + 1].zh}`, 'gold');
       if (a.id === 'konrad') toast(`Konrad 好感：${FAVOUR[favour(this.state)]}`);
     }
+    this.grantOwedSlang();
+  }
+
+  /** 俚语秘术 (50 级): side-quest finales hand out their slang; finished before 50, it comes at 50 (补发). */
+  private grantOwedSlang(): void {
+    const s = this.state;
+    for (const id of slangOwed(s, (q) => !!questState(s, q as QuestId)?.done)) {
+      grantSlang(s, id);
+      const c = CHARM_BY_ID[id];
+      toast(`俚语秘术「${c.de}」：${c.zh}。到词汇本最下面带上它。`, 'gold');
+    }
+  }
+
+  /** 流浪商人的俚语卷轴 (暂定 price: 0.3 一小时金币). */
+  slangPrice(): number {
+    return Math.max(50, Math.round(hourGold(this.state) * 0.3));
+  }
+
+  buySlang(id: string): boolean {
+    const s = this.state;
+    const price = this.slangPrice();
+    if (s.level < CHARM.slangFrom || s.slang?.[id] || s.gold < price || !SLANG.some((x) => x.id === id && x.source.includes('商人'))) return false;
+    s.gold -= price;
+    grantSlang(s, id);
+    sfx.loot();
+    this.refresh();
+    this.persist();
+    return true;
   }
 
   private talkKonrad() {

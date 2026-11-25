@@ -191,6 +191,8 @@ export interface PlayerFx {
   nextHalt?: boolean;
   /** 「Könnten Sie das bitte wiederholen?」 (秩序会): one later question may be swapped for another of the same kind. */
   swap?: boolean;
+  /** 秘术栏: what this fight's shouts set. */
+  charm?: import('./charms').CharmFx;
 }
 
 /** Class resource for one fight (shared by a whole pack, like PlayerFx). */
@@ -1797,6 +1799,29 @@ export function packDamageMult(alive: number): number {
 }
 
 /** Pack-wide values live on every member; copy them from the one that acted. */
+/** 秘术: damage effects of this fight's shouts. */
+function charmDamage(s: GameState, b: Battle, typedLike: boolean): number {
+  const f = b.fx.charm;
+  if (!f) return 1;
+  let m = 1 + (f.dmg ?? 0);
+  if (f.firstQ && b.qIndex === 1) m *= f.firstQ;
+  if (f.firstThree && b.qIndex <= 3) m *= 1 + f.firstThree;
+  if (f.vsReview && b.reviewMon) m *= 1 + f.vsReview;
+  if (f.vsHigher && b.monster.lvl > s.level) m *= 1 + f.vsHigher;
+  if (f.typed && typedLike) m *= 1 + f.typed;
+  return m;
+}
+
+/** 秘术: hits taken (Schon gut, slang −20/25%, Sicher ist sicher on the first wrong, backfire +50%). */
+function charmTaken(b: Battle, ok: boolean): number {
+  const f = b.fx.charm;
+  if (!f) return 1;
+  let m = 1 - Math.min(0.5, f.taken ?? 0);
+  if (!ok && f.firstWrongHalf && !f.firstWrongDone) m *= 0.5;
+  if (!ok && f.backfire) m *= 1.5;
+  return m;
+}
+
 function syncShared(from: Battle, pack: Battle[]) {
   for (const o of pack) {
     if (o === from) continue;
@@ -2054,6 +2079,7 @@ export function resolveTurn(
     // 静听: this question had 2 s more on its quick line (the answer before was a right listening one).
     if (tf.earNext) q.earMs = 2000;
     tf.earNext = false;
+    if (b.fx.charm?.quickMs) q.earMs = (q.earMs ?? 0) + b.fx.charm.quickMs; // 秘术 Alles klar.
     if (q.whispered) tf.whispered = true;
     if (!ok || q.ms === undefined || q.ms >= 8000) tf.slow = true;
     // 铭刻 has no cooldown (Lucas 2026-11-20: encourage it); a miss on an inscribed question costs 1 resource.
@@ -2167,6 +2193,7 @@ export function resolveTurn(
         const breaking = intent.kind === 'defend' && writtenQ;
         const g = genderOf(b.word);
         mult *= comboMult(s.combo);
+        mult *= charmDamage(s, b, typedLike);
 
         // Crits: forced ones first (接句怪, 初识暴击), then the random roll.
         if (q.type === 'saying') {
@@ -2184,7 +2211,7 @@ export function resolveTurn(
           crit = true;
           cfx.critReady = false;
         } else {
-          const chance = Math.min(CONFIG.player.critCap, critChance(s) + (tf.sharp ?? 0) + quickCritBonus(s, q));
+          const chance = Math.min(CONFIG.player.critCap, critChance(s) + (tf.sharp ?? 0) + quickCritBonus(s, q) + (b.fx.charm?.crit ?? 0));
           crit = rng() < chance;
         }
         if (q.type !== 'saying') b.firstCorrectDone = true;
@@ -2362,6 +2389,9 @@ export function resolveTurn(
         s.rift.calmLeft = false;
         guarded = true;
         log.push({ text: '裂隙祝福「定」：这一层第一次答错，不扣血、连击还在。', tone: 'info' });
+      } else if (b.fx.charm?.keepCombo) {
+        b.fx.charm.keepCombo = false;
+        log.push({ text: '「Keine Ahnung.」——这次答错，连击还在。', tone: 'info' });
       } else if (rank(s, 'buhuang') || starOf(s, q)) {
         s.combo = Math.floor(s.combo / 2);
         if (s.combo) log.push({ text: `${rank(s, 'buhuang') ? '不慌' : '星位'}：连击只减半（${s.combo}）。`, tone: 'info' });
@@ -2417,7 +2447,7 @@ export function resolveTurn(
   const chillMult = (m.chilled ? CONFIG.status.iceDamageMult : 1) * (1 + CONFIG.armor.monsterDmgPerLevelBelow * Math.max(0, m.lvl - s.level));
 
   const hitPlayer = (raw: number) => {
-    let d = Math.max(1, Math.round(raw * (1 - wrongReduce) * (ok ? 1 : wrongHitShare(s)) * (b.fx.cheap ? 0.5 : 1) * takenMult));
+    let d = Math.max(1, Math.round(raw * (1 - wrongReduce) * (ok ? 1 : wrongHitShare(s)) * (b.fx.cheap ? 0.5 : 1) * takenMult * charmTaken(target, ok)));
     if (guarded) d = 0;
     const tfx = target.cfx.tf;
     if (d > 0 && tfx?.voiceShield) {
@@ -2434,7 +2464,11 @@ export function resolveTurn(
     if (d > 0) lastHitter = b;
   };
 
-  if ((interrupted && b === target) || chorusStopped.has(b)) {
+  const cf = b.fx.charm;
+  if (b === target && (cf?.delay ?? 0) > 0 && !b.outcome && intent.kind !== 'wait' && intent.kind !== 'defend' && !interrupted) {
+    cf!.delay! -= 1;
+    say({ text: '它被你那句话拖住了，这回合没出手。', tone: 'good' });
+  } else if ((interrupted && b === target) || chorusStopped.has(b)) {
     // 「Wie bitte?」 cancels silently; a charge (on the target, or a mate hit by 齐鸣) says it broke.
     if (intent.kind === 'charge') say({ text: '打断了！它憋的那口气散了。', tone: 'good' });
   } else {
@@ -2480,7 +2514,12 @@ export function resolveTurn(
           break;
         }
         // 眼镜 (0.6, 23 级): the charged hit lands this much softer.
-        const heavy = m.dmg * dmgMult * chillMult * CONFIG.monster.chargeMult * (monsterCrit ? 1.5 : 1) * (1 - (gear(s).glasses?.main ?? 0));
+        let heavy = m.dmg * dmgMult * chillMult * CONFIG.monster.chargeMult * (monsterCrit ? 1.5 : 1) * (1 - (gear(s).glasses?.main ?? 0));
+        if (b.fx.charm?.chargeHalf) {
+          heavy /= 2;
+          b.fx.charm.chargeHalf = false;
+          say({ text: '「Na und?」——大招只砸下来一半。', tone: 'good' });
+        }
         if (blocking || halfBlock) {
           hitPlayer(blocking ? heavy / 2 : heavy * 0.75);
           say({ text: `你挡下一半大招，受到 ${monsterDamage} 点伤害。`, tone: 'bad' });
@@ -2538,6 +2577,17 @@ export function resolveTurn(
   if (rt !== 'act') endOfRound();
   if (rt !== 'tick') talentEndTurn(s, b, q, ok, interrupted, log);
   function endOfRound() {
+  const cfe = b.fx.charm;
+  if (cfe?.lowHeal && s.hp > 0 && s.hp < maxHp(s) * 0.3) {
+    cfe.lowHeal = false;
+    const before = s.hp;
+    s.hp = Math.min(maxHp(s), s.hp + Math.round(maxHp(s) * 0.25));
+    log.push({ text: `「Kopf hoch!」——回了 ${s.hp - before} 点生命。`, tone: 'good' });
+  }
+  if (!ok && !itemTurn && cfe) {
+    cfe.firstWrongDone = true;
+    cfe.backfire = false;
+  }
   if (b.fx.burn > 0) {
     const d = Math.max(1, Math.round(strongest * 0.4));
     s.hp -= d;
