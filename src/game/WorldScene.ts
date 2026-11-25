@@ -86,6 +86,7 @@ export class WorldScene extends Phaser.Scene {
 
   preload() {
     if (!this.textures.exists('town')) this.load.image('town', './art/kenney-tiny-town.png');
+    if (!this.textures.exists('farm')) this.load.image('farm', './art/kenney-tiny-farm.png');
     if (!this.textures.exists('dungeon')) this.load.image('dungeon', './art/kenney-tiny-dungeon.png');
   }
 
@@ -109,10 +110,10 @@ export class WorldScene extends Phaser.Scene {
     const oldmap = !CONFIG.map.nodes || new URLSearchParams(location.search).has('oldmap');
     const town = !oldmap && this.textures.exists('town') ? (this.textures.get('town').getSourceImage() as HTMLImageElement) : null;
     const hidden = SCENES.filter((x) => x.region === region && x.type === 'hidden').map((x) => x.at);
-    // 明亮地图 (预览, ?bright): everyday maps in their own colours; 蚀变 maps keep their dark ramp.
+    // 明亮地图 (Lucas 2026-11-25): everyday maps in their own colours; 蚀变 maps keep their dark ramp (?dark = old look).
     const eroded = this.ramp !== ((REGION_DEF[region]?.palette as Ramp5 | undefined) ?? null);
-    this.bright = !!town && new URLSearchParams(location.search).has('bright') && !eroded && !!BRIGHT[region];
-    addCanvas('map', this.bright ? renderBrightMap(this.map, town!, hidden, BRIGHT[region]) : renderMapCanvas(this.map, town, hidden, this.ramp ? mapShades(this.ramp) : undefined));
+    this.bright = !!town && !new URLSearchParams(location.search).has('dark') && !eroded && !!BRIGHT[region];
+    addCanvas('map', this.bright ? renderBrightMap(this.map, town!, this.textures.exists('farm') ? (this.textures.get('farm').getSourceImage() as HTMLImageElement) : null, hidden, BRIGHT[region]) : renderMapCanvas(this.map, town, hidden, this.ramp ? mapShades(this.ramp) : undefined));
     void tex;
     for (const k of ['hero0', 'hero1']) {
       if (this.textures.exists(k)) this.textures.remove(k);
@@ -689,7 +690,7 @@ export class WorldScene extends Phaser.Scene {
   }
 
   applyLook(): void {
-    const frames = heroFramesKenney(this.ctrl.state.look ?? DEFAULT_LOOK, this.dsheet(), true);
+    const frames = heroFramesKenney(this.ctrl.state.look ?? DEFAULT_LOOK, this.dsheet(), true, this.bright);
     ['hero0', 'hero1'].forEach((k, i) => {
       const t = this.textures.get(k) as Phaser.Textures.CanvasTexture;
       t.context.clearRect(0, 0, 16, 16);

@@ -115,6 +115,14 @@ function drawTile(c: Ctx, t: number, ox: number, oy: number, seed: number) {
       fill(PAL.fog);
       for (let i = 0; i < 10; i++) px(c, ox + Math.floor(r() * 16), oy + Math.floor(r() * 16), PAL.fogHi, 2, 1);
       break;
+    case T.Water:
+      fill(PAL.void);
+      for (let i = 0; i < 4; i++) px(c, ox + Math.floor(r() * 13), oy + Math.floor(r() * 16), PAL.fogHi, 3, 1);
+      break;
+    case T.Crop:
+      fill(PAL.ground);
+      for (let i = 0; i < 3; i++) px(c, ox + 3 + i * 4, oy + 5, PAL.groundDot, 2, 7);
+      break;
     case T.Lamp:
       fill(PAL.road);
       px(c, ox + 7, oy + 4, PAL.lampPost, 2, 12);
@@ -196,72 +204,178 @@ function townTile(sheet: CanvasImageSource, tile: number, ramp: number[], palett
   return cv;
 }
 
-// 明亮地图 (Lucas 2026-11-25, 预览): everyday regions show the Kenney Tiny Town tiles in their own colours, each region
-// with its own tile set and a light colour grade; red-black stays for 蚀变 maps, bosses and 零号站台.
+// 明亮地图 (Lucas 2026-11-25): everyday regions show the Kenney Tiny Town / Tiny Farm tiles in their own colours, each
+// region with its own tile choice and a light colour grade; red-black stays for 蚀变 maps, bosses and 零号站台.
+// Tile numbers from 1000 up are Tiny Farm tiles (1000 + index in its sheet).
 export interface BrightStyle {
-  set: Partial<Record<number, number[]>>;
+  ground: number[];
+  road: number[];
+  ash: number[];
+  roof: 'red' | 'blue';
+  wall: 'wood' | 'stone';
+  rubble: number[];
+  tree: number[];
+  crate: number[];
+  crop?: number[];
+  water?: string;
   /** Light colour grade over the whole map (soft-light), e.g. a cool mist for the harbour. */
   tint?: string;
   tintAlpha?: number;
   fog: string;
 }
 const GRASS = [0, 0, 0, 0, 0, 1, 0, 2];
+const MEADOW = [0, 2, 0, 1, 0, 2, 0, 0];
+const SAND = [25, 25, 25, 24, 26];
+const STONE = [109];
+const F = (n: number) => 1000 + n;
+const CROPS = [F(5), F(6), F(18), F(30), F(42), F(54), F(17), F(41)];
+const base = { rubble: [43, 5], tree: [4, 16, 28, 5], crate: [130, 131, 106], crop: CROPS, water: '#5ab4dc' };
 export const BRIGHT: Record<number, BrightStyle> = {
-  // 回声巷: wooden houses, red roofs, sandy lanes
-  1: { set: { [T.Ground]: GRASS, [T.Ash]: [39, 40, 41, 42], [T.Road]: [25, 25, 24, 26, 37], [T.Wall]: [72, 73, 75, 72, 84, 85], [T.Roof]: [52, 53, 54], [T.Rubble]: [43, 5, 29], [T.Tree]: [4, 16, 28, 5], [T.Crate]: [130, 106] }, fog: '#e8efe4' },
-  2: { set: { [T.Ground]: [0, 0, 0, 2, 1], [T.Ash]: [39, 41], [T.Road]: [25, 24, 26], [T.Wall]: [72, 73, 75, 85, 86], [T.Roof]: [52, 53, 54, 64], [T.Rubble]: [43], [T.Tree]: [3, 15, 27, 4], [T.Crate]: [130, 106, 57] }, tint: '#ffd27a', tintAlpha: 0.12, fog: '#f3ecd8' },
-  3: { set: { [T.Ground]: GRASS, [T.Ash]: [109], [T.Road]: [109], [T.Wall]: [76, 77, 79, 88, 77], [T.Roof]: [48, 49, 50], [T.Rubble]: [43], [T.Tree]: [16, 28, 4], [T.Crate]: [130, 131] }, fog: '#e6ecef' },
-  // 租屋城: stone blocks, blue roofs, plaza stone streets
-  4: { set: { [T.Ground]: [0, 0, 1, 0], [T.Ash]: [109], [T.Road]: [109], [T.Wall]: [76, 77, 79, 88, 89, 90], [T.Roof]: [48, 49, 50, 60], [T.Rubble]: [43], [T.Tree]: [5, 28, 16], [T.Crate]: [130, 131, 57] }, fog: '#eef0f2' },
-  // 泉疗镇: flower meadows, warm sun
-  5: { set: { [T.Ground]: [0, 2, 0, 1, 0, 2], [T.Ash]: [39, 40], [T.Road]: [25, 24, 26, 13], [T.Wall]: [76, 77, 79, 89], [T.Roof]: [52, 53, 54], [T.Rubble]: [43, 29], [T.Tree]: [5, 16, 28, 29], [T.Crate]: [131, 130] }, tint: '#ffb3c8', tintAlpha: 0.14, fog: '#fbeff2' },
-  // 雾港: sandy quays, autumn trees, cool sea mist
-  6: { set: { [T.Ground]: [25, 24, 26, 39, 40, 25], [T.Ash]: [41, 42], [T.Road]: [109], [T.Wall]: [72, 73, 75, 84], [T.Roof]: [48, 49, 50], [T.Rubble]: [43], [T.Tree]: [3, 15, 27], [T.Crate]: [130, 106, 107] }, tint: '#8fc6ff', tintAlpha: 0.22, fog: '#dfeaf2' },
-  7: { set: { [T.Ground]: GRASS, [T.Ash]: [109], [T.Road]: [109], [T.Wall]: [76, 77, 79, 100, 101], [T.Roof]: [52, 53, 54, 64], [T.Rubble]: [43], [T.Tree]: [5, 16], [T.Crate]: [131, 130] }, tint: '#ffe08a', tintAlpha: 0.1, fog: '#f2efe4' },
-  9: { set: { [T.Ground]: [39, 40, 0, 41], [T.Ash]: [42], [T.Road]: [25, 24, 26], [T.Wall]: [72, 73, 75, 74], [T.Roof]: [52, 53, 54], [T.Rubble]: [43, 105], [T.Tree]: [3, 27], [T.Crate]: [130, 106, 57] }, tint: '#ff9e5c', tintAlpha: 0.12, fog: '#efe6dc' },
-  10: { set: { [T.Ground]: GRASS, [T.Ash]: [109], [T.Road]: [109], [T.Wall]: [76, 77, 79, 88, 102], [T.Roof]: [48, 49, 50], [T.Rubble]: [43], [T.Tree]: [16, 28], [T.Crate]: [131, 130] }, tint: '#b0a8ff', tintAlpha: 0.12, fog: '#ecebf6' },
-  12: { set: { [T.Ground]: [0, 2, 0, 0, 1], [T.Ash]: [39], [T.Road]: [25, 24, 26], [T.Wall]: [72, 73, 75, 85], [T.Roof]: [52, 53, 54, 64], [T.Rubble]: [29], [T.Tree]: [4, 5, 15], [T.Crate]: [130] }, tint: '#ff8fbf', tintAlpha: 0.12, fog: '#f8ecf1' },
+  // 余烬营地 / 面包集市 / 铁轨镇
+  1: { ...base, ground: GRASS, road: SAND, ash: [39, 40, 41, 42], roof: 'red', wall: 'wood', rubble: [43, 5, 29], fog: '#e8efe4' },
+  2: { ...base, ground: GRASS, road: SAND, ash: [39, 41], roof: 'red', wall: 'wood', tree: [3, 15, 27, 4], crate: [130, 106, 57], tint: '#ffd27a', tintAlpha: 0.12, fog: '#f3ecd8' },
+  3: { ...base, ground: GRASS, road: STONE, ash: STONE, roof: 'blue', wall: 'stone', tree: [16, 28, 4], fog: '#e6ecef' },
+  // 租屋城: stone terraces, blue roofs, cobbled streets
+  4: { ...base, ground: GRASS, road: STONE, ash: STONE, roof: 'blue', wall: 'stone', tree: [5, 28, 16], fog: '#eef0f2' },
+  // 泉疗镇: flower meadows round the spring, warm pink light
+  5: { ...base, ground: MEADOW, road: SAND, ash: [39, 40], roof: 'red', wall: 'stone', rubble: [43, 29, F(83)], tree: [5, 16, 28, F(39)], tint: '#ffb3c8', tintAlpha: 0.14, water: '#62c4e0', fog: '#fbeff2' },
+  // 雾港: sandy quays, autumn trees, cool sea air
+  6: { ...base, ground: [25, 24, 26, 39, 40, 25], road: STONE, ash: [41, 42], roof: 'blue', wall: 'wood', tree: [3, 15, 27], crate: [130, 106, 107, F(85)], tint: '#8fc6ff', tintAlpha: 0.2, water: '#3f9fd0', fog: '#dfeaf2' },
+  // 印章城: formal stone, red roofs, golden light on the squares
+  7: { ...base, ground: GRASS, road: STONE, ash: STONE, roof: 'red', wall: 'stone', tree: [5, 16], tint: '#ffe08a', tintAlpha: 0.12, fog: '#f2efe4' },
+  // 工坊城: sandy yards, wooden halls, orange evening
+  9: { ...base, ground: [39, 39, 40, 39, 41, 39, 42], road: SAND, ash: [41, 42, 39], roof: 'red', wall: 'wood', rubble: [43, 105, F(96)], tree: [3, 27], crate: [130, 106, 57, F(96), F(97)], tint: '#ff9e5c', tintAlpha: 0.12, water: '#4aa6cf', fog: '#efe6dc' },
+  // 电波塔: cool stone, blue roofs, violet glow
+  10: { ...base, ground: GRASS, road: STONE, ash: STONE, roof: 'blue', wall: 'stone', tree: [16, 28], tint: '#b0a8ff', tintAlpha: 0.12, fog: '#ecebf6' },
+  // 心巷: cottages and gardens, soft rose light
+  12: { ...base, ground: MEADOW, road: SAND, ash: [39], roof: 'red', wall: 'wood', rubble: [29, F(83)], tree: [4, 5, 15, F(39)], tint: '#ff8fbf', tintAlpha: 0.12, fog: '#f8ecf1' },
+  // B2 (议会堡 石灰蓝, 铸币场 金, 面具剧场 紫红, 档案深处 羊皮纸, 天平庭 冷白, 沉默之心 淡)
+  13: { ...base, ground: GRASS, road: STONE, ash: STONE, roof: 'blue', wall: 'stone', tree: [5, 16, 28], tint: '#9fc3e6', tintAlpha: 0.16, fog: '#e9eff5' },
+  14: { ...base, ground: [39, 39, 40, 39, 41, 39, 42], road: SAND, ash: [41, 42], roof: 'red', wall: 'wood', tree: [3, 27], crate: [130, 106, 57, F(97)], tint: '#ffd36b', tintAlpha: 0.16, fog: '#f4ecd8' },
+  16: { ...base, ground: MEADOW, road: STONE, ash: STONE, roof: 'red', wall: 'stone', tree: [5, 16], tint: '#d58ad8', tintAlpha: 0.15, fog: '#f3eaf4' },
+  17: { ...base, ground: GRASS, road: SAND, ash: [39, 40], roof: 'red', wall: 'wood', tree: [3, 15, 27], tint: '#e8c48f', tintAlpha: 0.2, fog: '#f1eadf' },
+  18: { ...base, ground: GRASS, road: STONE, ash: STONE, roof: 'blue', wall: 'stone', tree: [16, 28], tint: '#dfe8f0', tintAlpha: 0.2, fog: '#f2f5f8' },
+  20: { ...base, ground: GRASS, road: STONE, ash: STONE, roof: 'blue', wall: 'stone', tree: [16, 28, 5], tint: '#c8c8c8', tintAlpha: 0.22, fog: '#efefef' },
 };
-for (const r of [13, 14, 16, 17, 18, 20]) BRIGHT[r] = BRIGHT[[4, 9, 12, 3, 7, 10][[13, 14, 16, 17, 18, 20].indexOf(r)]];
 
-function rawTile(sheet: CanvasImageSource, tile: number, c: CanvasRenderingContext2D, x: number, y: number) {
-  c.drawImage(sheet, (tile % TOWN_COLS) * 16, Math.floor(tile / TOWN_COLS) * 16, 16, 16, x, y, 16, 16);
+function rawTile(town: CanvasImageSource, farm: CanvasImageSource | null, tile: number, c: CanvasRenderingContext2D, x: number, y: number) {
+  const sheet = tile >= 1000 ? farm : town;
+  if (!sheet) return;
+  const n = tile >= 1000 ? tile - 1000 : tile;
+  c.drawImage(sheet, (n % TOWN_COLS) * 16, Math.floor(n / TOWN_COLS) * 16, 16, 16, x, y, 16, 16);
 }
 
-/** The bright map: tiles in their own colours; hidden side paths dimmed; fog drawn as pale mist. */
-export function renderBrightMap(m: MapData, sheet: CanvasImageSource, hidden: Array<{ x: number; y: number }>, style: BrightStyle): HTMLCanvasElement {
+/** The bright map: tiles in their own colours, roofs and walls joined into houses; hidden side paths dimmed; fog
+ *  drawn as pale mist, water as a shaded pond. */
+export function renderBrightMap(m: MapData, town: CanvasImageSource, farm: CanvasImageSource | null, hidden: Array<{ x: number; y: number }>, style: BrightStyle): HTMLCanvasElement {
   const cv = document.createElement('canvas');
   cv.width = MAP_W * TILE;
   cv.height = MAP_H * TILE;
   const c = cv.getContext('2d')!;
   c.imageSmoothingEnabled = false;
-  const set = style.set;
+  const at = (x: number, y: number) => (x < 0 || y < 0 || x >= MAP_W || y >= MAP_H ? -1 : m.tiles[idx(x, y)]);
+  const roofBase = style.roof === 'red' ? 52 : 48;
+  const wallBase = style.wall === 'wood' ? 72 : 76;
   for (let y = 0; y < MAP_H; y++)
     for (let x = 0; x < MAP_W; x++) {
       const t = m.tiles[idx(x, y)];
       const seed = x * 7349 + y * 1931;
-      const pick = (xs: number[]) => xs[(seed >>> 3) % xs.length];
+      let hsh = Math.imul(x, 374761393) + Math.imul(y, 668265263);
+      hsh = Math.imul(hsh ^ (hsh >>> 13), 1274126177);
+      hsh = (hsh ^ (hsh >>> 16)) >>> 0;
+      const pick = (xs: number[]) => xs[hsh % xs.length];
       const ox = x * TILE;
       const oy = y * TILE;
-      if (t === T.Fog) {
-        c.fillStyle = style.fog;
-        c.fillRect(ox, oy, TILE, TILE);
-        continue;
+      const ground = () => rawTile(town, farm, pick(style.ground), c, ox, oy);
+      switch (t) {
+        case T.Fog:
+          c.fillStyle = style.fog;
+          c.fillRect(ox, oy, TILE, TILE);
+          break;
+        case T.Water: {
+          c.fillStyle = style.water ?? '#5ab4dc';
+          c.fillRect(ox, oy, TILE, TILE);
+          c.fillStyle = 'rgba(255,255,255,0.35)';
+          const r = makeRng(seed);
+          for (let i = 0; i < 2; i++) c.fillRect(ox + Math.floor(r() * 12), oy + Math.floor(r() * 14), 3 + Math.floor(r() * 3), 1);
+          // a pale shore line where the water meets land above / left
+          c.fillStyle = 'rgba(225,245,255,0.8)';
+          if (at(x, y - 1) !== T.Water && at(x, y - 1) !== T.Fog) c.fillRect(ox, oy, TILE, 2);
+          if (at(x - 1, y) !== T.Water && at(x - 1, y) !== T.Fog) c.fillRect(ox, oy, 2, TILE);
+          break;
+        }
+        case T.Roof: {
+          const l = at(x - 1, y) === T.Roof;
+          const rr = at(x + 1, y) === T.Roof;
+          const top = at(x, y - 1) !== T.Roof;
+          const col = !l ? 0 : !rr ? 2 : 1;
+          rawTile(town, farm, roofBase + (top ? 0 : 12) + col, c, ox, oy);
+          break;
+        }
+        case T.Wall: {
+          const l = at(x - 1, y) === T.Wall;
+          const rr = at(x + 1, y) === T.Wall;
+          let tile = wallBase + 1;
+          if (!l && rr) tile = wallBase;
+          else if (l && !rr) tile = wallBase + 3;
+          else if (l && rr) {
+            const v = (hsh >>> 8) % 6;
+            tile = v === 0 ? wallBase + 13 : v === 1 ? wallBase + 12 : wallBase + 1;
+          }
+          rawTile(town, farm, tile, c, ox, oy);
+          break;
+        }
+        case T.Road:
+          rawTile(town, farm, pick(style.road), c, ox, oy);
+          break;
+        case T.Ash:
+          rawTile(town, farm, pick(style.ash), c, ox, oy);
+          break;
+        case T.Tree:
+        case T.Rubble:
+        case T.Crate:
+          ground();
+          rawTile(town, farm, pick(t === T.Tree ? style.tree : t === T.Rubble ? style.rubble : style.crate), c, ox, oy);
+          break;
+        case T.Crop:
+          ground();
+          rawTile(town, farm, F(1), c, ox, oy);
+          rawTile(town, farm, pick(style.crop ?? CROPS), c, ox, oy);
+          break;
+        case T.Lamp:
+          ground();
+          c.fillStyle = '#3b3a44';
+          c.fillRect(ox + 7, oy + 4, 2, 12);
+          c.fillRect(ox + 5, oy + 1, 6, 2);
+          c.fillStyle = '#ffd36b';
+          c.fillRect(ox + 6, oy + 3, 4, 2);
+          break;
+        case T.Tent:
+          ground();
+          for (let yy = 0; yy < 13; yy++) {
+            const w = Math.round((yy + 1) * 1.15);
+            c.fillStyle = '#e07a3c';
+            c.fillRect(ox + 8 - Math.floor(w / 2), oy + 2 + yy, w, 1);
+            c.fillStyle = '#ffb36b';
+            c.fillRect(ox + 8 - Math.floor(w / 2), oy + 2 + yy, 1, 1);
+          }
+          c.fillStyle = '#5a2a14';
+          c.fillRect(ox + 7, oy + 9, 2, 6);
+          break;
+        case T.Ground:
+          ground();
+          break;
+        default:
+          drawTile(c, t, ox, oy, seed);
       }
-      const list = set[t];
-      if (!list) {
-        drawTile(c, t, ox, oy, seed);
-        continue;
+      if (t === T.Road || t === T.Ash) {
+        // the pale plaza stone would glare next to grass: give it a warm cobble shade
+        if (pick(t === T.Road ? style.road : style.ash) === 109) {
+          c.fillStyle = 'rgba(150,120,90,0.28)';
+          c.fillRect(ox, oy, TILE, TILE);
+        }
       }
-      if (OVERLAY.has(t) || t === T.Rubble) rawTile(sheet, pick(set[T.Ground]!), c, ox, oy);
-      const tile = pick(list);
-      rawTile(sheet, tile, c, x * TILE, y * TILE);
-      // the pale plaza stone would glare next to grass: give it a warm cobble shade
-      if (tile === 109) {
-        c.fillStyle = 'rgba(150,120,90,0.28)';
-        c.fillRect(ox, oy, TILE, TILE);
-      }
-      if (hidden.some((h) => Math.abs(h.x - x) <= 4 && Math.abs(h.y - y) <= 4)) {
+      if (t !== T.Fog && hidden.some((h) => Math.abs(h.x - x) <= 4 && Math.abs(h.y - y) <= 4)) {
         c.fillStyle = 'rgba(20,30,40,0.45)';
         c.fillRect(ox, oy, TILE, TILE);
       }
@@ -374,8 +488,8 @@ export const heroTile = (look: Look): number => (look.gender ? 99 : 98);
 
 /** 主角 (画风统一): a Tiny Dungeon person with the hair pixels (Kenney's hair browns, top 10 rows)
  *  recoloured to your hair colour, everything else on the red ramp. */
-export function heroTinyCanvas(tile: number, color: number, sheet: CanvasImageSource): HTMLCanvasElement {
-  const red = dungeonTile(sheet, tile, CHAR_RAMP);
+export function heroTinyCanvas(tile: number, color: number, sheet: CanvasImageSource, raw = false): HTMLCanvasElement {
+  const red = raw ? rawFigure(sheet, tile) : dungeonTile(sheet, tile, CHAR_RAMP);
   const cv = document.createElement('canvas');
   cv.width = cv.height = 16;
   const ctx = cv.getContext('2d', { willReadFrequently: true })!;
@@ -398,8 +512,8 @@ export function heroTinyCanvas(tile: number, color: number, sheet: CanvasImageSo
 
 /** Hero figure: Tiny Dungeon 98 (男) / 99 (女) with your hair colour (体型 and 发型 no longer change the look); `mark` adds a
  *  thin light outline so you find yourself among NPCs (only your own hero). */
-export function heroFramesKenney(look: Look, dungeon: CanvasImageSource, mark = false): HTMLCanvasElement[] {
-  const fig = heroTinyCanvas(heroTile(look), look.color, dungeon);
+export function heroFramesKenney(look: Look, dungeon: CanvasImageSource, mark = false, raw = false): HTMLCanvasElement[] {
+  const fig = heroTinyCanvas(heroTile(look), look.color, dungeon, raw);
   if (mark) {
     const c = fig.getContext('2d', { willReadFrequently: true })!;
     const img = c.getImageData(0, 0, 16, 16);
