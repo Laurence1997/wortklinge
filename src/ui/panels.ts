@@ -1438,7 +1438,7 @@ export class Panels {
         const err = await setNickname(s, nick.value);
         msg.textContent = err ?? '';
       };
-      wrap.append(h('h3', '起个昵称'), h('p.small.muted', '排行榜只显示昵称、等级和归名数，不显示邮箱。'), h('div.row', nick, h('button.btn.primary', { onclick: () => void saveNick() }, '保存')), msg);
+      wrap.append(h('h3', '起个昵称'), h('p.small.muted', '排行榜和聊天只显示昵称和等级，不显示邮箱。'), h('div.row', nick, h('button.btn.primary', { onclick: () => void saveNick() }, '保存')), msg);
       return wrap;
     }
     wrap.append(h('h3', `排行榜 · 你是 ${cloud.profile.nickname}`));
