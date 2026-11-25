@@ -1,8 +1,8 @@
 name: 词表例句补充 (more example sentences)
 
 # 1. examples3_luna.py: examples 2 and 3 per word (Tatoeba first, then Luna) → data/wortschatz/build/beispiele-mehr.tsv
-# 2. tatoeba_pool.py + examples_senses_luna.py: tag every sentence with 义项/搭配 and give verbs and words with several
-#    senses one sentence per sense and per verb + preposition pattern → data/wortschatz/beispiele-1-3.tsv
+# 2. tatoeba_pool.py + examples_senses_luna.py: tag every sentence with 义项/搭配 and give verbs and words with several (top 6000)
+#    senses one sentence per sense and per verb + preposition pattern → data/wortschatz/beispiele-6000.tsv
 # Commits the results back to the same branch. Runs on a push that changes a script or this file. Costs cents.
 on:
   push:
@@ -35,7 +35,7 @@ jobs:
           python3 scripts/wortschatz/tatoeba_pool.py
       - name: Senses and collocations
         env:
-          LIMIT: '40'
+          LIMIT: '0'
         run: python3 scripts/wortschatz/examples_senses_luna.py
       - name: Commit
         if: always()

@@ -1,19 +1,22 @@
 """Sense and collocation pass over the example sentences (Lucas 2026-11-25: important words get more examples).
 
-Plain words keep 3 examples. Verbs and words with several common senses get extra sentences so that
+Rules (Lucas 2026-11-25, all of the top 6000): plain words have 2 examples (zones 1–3 keep the 3 they already have).
+Verbs and words with several common senses get extra sentences so that
   - every common sense (义项) has at least one sentence, and
   - every verb + preposition pattern in data/wortschatz/verben-praeposition.tsv has at least one sentence
     (Luna may add up to 2 more very common ones that the table lacks).
+Prepositions and small words (da, ja, schon…) keep 1 example, unless their uses differ a lot (nach, für, bei…):
+then one sentence per use.
 Every sentence, the first 3 included, is tagged with its 义项 and, where there is one, its 搭配, so the game can
 ask by sense and by collocation.
 
-Sources for new sentences, in this order: Tatoeba native sentences (build/tatoeba/pool-1-3.tsv), the example of the
+Sources for new sentences, in this order: Tatoeba native sentences (build/tatoeba/pool-6000.tsv), the example of the
 verb + preposition table, then Luna writes one.
 
-Input:  build/zonen-1-3.tsv, beispiele.tsv (example 1), build/beispiele-mehr.tsv (examples 2–3), verben-praeposition.tsv,
-        build/tatoeba/pool-1-3.tsv
-Output: data/wortschatz/beispiele-1-3.tsv (all examples of zones 1–3: 原形, 序号, 例句, 例句中文, 例句出处, 义项, 搭配)
-        data/wortschatz/build/yixiang-1-3.tsv (原形, 重要, 义项列表)
+Input:  wortschatz.tsv (top 6000), beispiele.tsv (example 1), build/beispiele-mehr.tsv (examples 2–3), verben-praeposition.tsv,
+        build/tatoeba/pool-6000.tsv
+Output: data/wortschatz/beispiele-6000.tsv (all examples of the top 6000: 原形, 序号, 例句, 例句中文, 例句出处, 义项, 搭配)
+        data/wortschatz/build/yixiang-6000.tsv (原形, 重要, 义项列表)
 Resumable: words already in the output are skipped. Env: OPENAI_API_KEY, LIMIT (0 = all), MODEL (gpt-6-luna).
 """
 import csv, json, os, sys, time, urllib.request, urllib.error
@@ -26,12 +29,15 @@ if not KEY:
     print('OPENAI_API_KEY is not set: skipping.'); sys.exit(0)
 MODEL = os.environ.get('MODEL', 'gpt-6-luna')
 LIMIT = int(os.environ.get('LIMIT') or 0)
-OUT = os.path.join(D, 'beispiele-1-3.tsv')
-SENSES = os.path.join(D, 'build', 'yixiang-1-3.tsv')
+OUT = os.path.join(D, 'beispiele-6000.tsv')
+SENSES = os.path.join(D, 'build', 'yixiang-6000.tsv')
 COLS = ['原形', '序号', '例句', '例句中文', '例句出处', '义项', '搭配']
 
 def tsv(p): return list(csv.DictReader(open(p, encoding='utf-8'), delimiter='\t')) if os.path.exists(p) else []
-zone = tsv(os.path.join(D, 'build', 'zonen-1-3.tsv'))
+zone, seen = [], set()
+for r in tsv(os.path.join(D, 'wortschatz.tsv')):
+    if int(r['排名']) <= 6000 and r['原形'] not in seen:
+        seen.add(r['原形']); zone.append(r)
 ex = {}
 for r in tsv(os.path.join(D, 'beispiele.tsv')):
     ex.setdefault(r['原形'], [{'例句': r['例句'], '例句中文': r['例句中文'], '例句出处': r['例句出处']}])
@@ -41,27 +47,31 @@ vp = {}
 for r in tsv(os.path.join(D, 'verben-praeposition.tsv')):
     vp.setdefault(r['动词'], []).append(r)
 pool = {}
-for r in tsv(os.path.join(D, 'build', 'tatoeba', 'pool-1-3.tsv')):
+for r in tsv(os.path.join(D, 'build', 'tatoeba', 'pool-6000.tsv')):
     pool.setdefault(r['原形'], []).append(r)
 done = {r['原形'] for r in tsv(OUT)}
 todo = [r for r in zone if r['原形'] not in done and r['原形'] in ex]
 if LIMIT: todo = todo[:LIMIT]
 print(f'{len(zone)} words, {len(done)} done, sending {len(todo)}')
 
-SYSTEM = """你是德语母语的编辑，给一款教在德国的中国人学德语的游戏整理例句。玩家在 1–3 区（A1，1–30 级）。
+SYSTEM = """你是德语母语的编辑，给一款教在德国的中国人学德语的游戏整理例句。每个词标了词频排名：排名越靠前越基础（1–1000 约 A1，1001–3000 约 A2，3001–6000 约 B1）。
 每个词给了词卡、已有例句（e1、e2…），动词还给了动介搭配表里的搭配（v1、v2…，带表里的例句），以及 Tatoeba 母语者候选句（p1、p2…）。
 你要做三件事：
 1. 列出这个词在日常德语里常用的义项（最多 4 个，用简短中文，尽量沿用词卡的中文说法）。只有一个常用义项就只列一个。
 2. 给每句已有例句标「义项」（从你列的义项里选）和「搭配」（例如 warten auf + Akk.、sich freuen über + Akk.、Angst haben vor + Dat.；没有特别搭配就留空）。
-3. 判断这个词是否「重要」：动词都算重要；有两个以上常用义项的词也算重要。重要的词要补句子，直到：每个常用义项至少 1 句；动介搭配表里给的每个搭配至少 1 句；动词再补最多 2 个表里没有、但非常常用的介词或格搭配（各 1 句）。不重要的词不补。每个词最多补 6 句。已有例句覆盖了的就不要重复补。
-补句来源顺序：先从 p 候选里挑（必须地道、用法对得上、不超过 12 个词、内容不阴暗不奇怪）；没有合适的，用 v 搭配表里的例句；都没有才自己写（4–10 个词，常用词，德国日常生活，话题多样）。每句都给自然的简体中文翻译。
+3. 按词的类型补句（已有例句覆盖了的不要重复补，每个词最多补 6 句）：
+   - 动词（重要）：每个常用义项至少 1 句；动介搭配表里给的每个搭配至少 1 句；再补最多 2 个表里没有、但非常常用的介词或格搭配（各 1 句）。
+   - 有两个以上常用义项的名词、形容词、副词（重要）：每个常用义项至少 1 句。
+   - 介词、连词、代词、冠词、小品词、语气词（da、ja、schon 这类）：一般不补；只有用法差别很大的（比如 nach 表方向/时间/依据，für，bei）才每种用法补 1 句（这时算重要）。
+   - 其他普通词（不重要）：总共有 2 句就够；只有 1 句就补 1 句，已经有 2 句或以上就不补。
+补句来源顺序：先从 p 候选里挑（必须地道、用法对得上、不超过 12 个词、内容不阴暗不奇怪）；没有合适的，用 v 搭配表里的例句；都没有才自己写（排名 1–1000：4–9 个词；1001–3000：6–12 个词；3001 以后：8–14 个词。用比这个词更常用的词，德国日常生活，话题多样，内容不阴暗不奇怪）。每句都给自然的简体中文翻译。
 只输出 JSON：{"r":[{"w":"原形","senses":["义项1","义项2"],"important":true,"tags":[{"e":1,"sense":"…","colloc":"…"}],"add":[{"t":"p3 或 v1 或 new","de":"德语","zh":"中文","sense":"…","colloc":"…"}]}]}"""
 
 def prompt(batch):
     out = []
     for r in batch:
         w = r['原形']
-        out.append(f"## {w} | 词卡：{r['卡片']} | {r['词性']} | {r['中文']}")
+        out.append(f"## {w} | 排名 {r['排名']} | 词卡：{r['卡片']} | {r['词性']} | {r['中文']}")
         for i, e in enumerate(ex[w], 1): out.append(f"e{i}：{e['例句']}")
         for i, v in enumerate(vp.get(w, []), 1): out.append(f"v{i}：{v['搭配']}（{v['中文']}）例：{v['例句']}")
         for i, p in enumerate(pool.get(w, [])[:12], 1): out.append(f"p{i}：{p['例句']}")
