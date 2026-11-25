@@ -5,7 +5,7 @@ V=json.load(open(f'{W}/verbparts3.json'));G=json.load(open(f'{W}/../game_words.j
 DROP={'Toto','Strauss','Wiking'}
 r=[x for x in r if x['lemma'] not in DROP]
 for i,x in enumerate(r): x['rank']=i+1; x['oldrank']=i+1
-VFIX={'übergeben':('übergibt','übergab','hat übergeben'),'umgeben':('umgibt','umgab','hat umgeben'),
+VFIX={'abwaschen':('wäscht ab','wusch ab','hat abgewaschen'),'bügeln':('bügelt','bügelte','hat gebügelt'),'übergeben':('übergibt','übergab','hat übergeben'),'umgeben':('umgibt','umgab','hat umgeben'),
  'überdenken':('überdenkt','überdachte','hat überdacht'),'überfluten':('überflutet','überflutete','hat überflutet'),
  'überspringen':('überspringt','übersprang','hat übersprungen'),'wiedererkennen':('erkennt wieder','erkannte wieder','hat wiedererkannt'),
  'durchsuchen':('durchsucht','durchsuchte','hat durchsucht'),'weichen':('weicht','wich','ist gewichen'),'ausweichen':('weicht aus','wich aus','ist ausgewichen'),'ertönen':('ertönt','ertönte','hat ertönt'),'scannen':('scannt','scannte','hat gescannt'),
@@ -15,7 +15,7 @@ VFIX={'übergeben':('übergibt','übergab','hat übergeben'),'umgeben':('umgibt'
 for k,(a,b,c) in VFIX.items(): V[k]={'p3':a,'pr':b,'pf':c}
 ART={'m':'der','f':'die','n':'das'}
 # manual nouns: lemma -> (genus or 'pl', plural)
-NM={'Beamte':('m','Beamten','adj'),'Polizeibeamte':('m','Polizeibeamten','adj'),'Bürgeramt':('n','Bürgerämter',''),
+NM={'Bauchschmerzen':('pl','',''),'Halsschmerzen':('pl','',''),'Paprika':('f','Paprikas',''),'Beamte':('m','Beamten','adj'),'Polizeibeamte':('m','Polizeibeamten','adj'),'Bürgeramt':('n','Bürgerämter',''),
  'Handyvertrag':('m','Handyverträge',''),'Kundennummer':('f','Kundennummern',''),'Versichertenkarte':('f','Versichertenkarten',''),
  'Öffnungszeiten':('pl','',''),'Unterlagen':('pl','',''),'Finanzen':('pl','',''),'Zinsen':('pl','',''),'Klamotten':('pl','',''),
  'Kopfschmerzen':('pl','',''),'Dreharbeiten':('pl','',''),'Handschellen':('pl','',''),'Streitkräfte':('pl','',''),

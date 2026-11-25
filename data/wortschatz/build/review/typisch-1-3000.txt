@@ -2874,3 +2874,69 @@ legal|Ist das überhaupt legal?|这到底合不合法？
 überstehen|Wir haben den Winter gut überstanden.|我们顺利熬过了冬天。
 Spielzeug|Räum bitte dein Spielzeug auf!|把你的玩具收拾好！
 Zeichnung|Das sind die Zeichnungen meines Sohnes.|这些是我儿子画的画。
+Bäcker|Ich hole schnell Brötchen beim Bäcker.|我去面包店买点小面包。
+Metzger|Beim Metzger kaufe ich frisches Hackfleisch.|我在肉店买新鲜肉馅。
+Metzgerei|Die Metzgerei hat auch einen Mittagstisch.|这家肉店中午也供应饭菜。
+Friseur|Ich habe morgen einen Termin beim Friseur.|我明天约了理发。
+Hausarzt|Bei Fieber gehe ich zuerst zum Hausarzt.|发烧时我先去看家庭医生。
+Kassierer|Der Kassierer fragt: „Mit Karte oder bar?“|收银员问：“刷卡还是现金？”
+Verkäufer|Fragen Sie doch den Verkäufer, ob es die Hose in M gibt.|问问售货员这条裤子有没有 M 码。
+Kellner|Der Kellner bringt uns die Speisekarte.|服务员给我们拿来菜单。
+Handwerker|Morgen kommt ein Handwerker und repariert die Heizung.|明天有工人来修暖气。
+Elektriker|Die Steckdose ist kaputt, wir brauchen einen Elektriker.|插座坏了，我们需要电工。
+Klempner|Das Waschbecken ist verstopft, ich rufe den Klempner.|洗手池堵了，我叫水管工。
+Briefträger|Der Briefträger kommt jeden Tag gegen elf Uhr.|邮递员每天十一点左右来。
+Krankenschwester|Die Krankenschwester misst mein Fieber.|护士给我量体温。
+Krankenpfleger|Der Krankenpfleger hilft dem Patienten beim Aufstehen.|护理员帮病人起床。
+Apotheker|Der Apotheker erklärt mir, wie ich das Medikament nehmen soll.|药剂师给我讲怎么吃这个药。
+Kinderarzt|Mit dem Baby gehen wir zum Kinderarzt.|我们带宝宝去看儿科医生。
+Frauenarzt|Sie hat einen Termin beim Frauenarzt.|她约了妇科医生。
+Tierarzt|Unsere Katze muss zum Tierarzt.|我们的猫得去看兽医。
+Busfahrer|Beim Busfahrer kann man auch ein Ticket kaufen.|也可以在公交司机那里买票。
+Putzfrau|Einmal pro Woche kommt eine Putzfrau.|每周来一次清洁工。
+Mitbewohner|Mein Mitbewohner kocht oft für uns alle.|我的室友常给我们大家做饭。
+Drogerie|Shampoo und Zahnpasta kaufe ich in der Drogerie.|洗发水和牙膏我在日化店买。
+Kiosk|Am Kiosk kann man auch sonntags etwas kaufen.|周日也可以在小卖部买东西。
+Pfand|Auf die Flasche sind 25 Cent Pfand.|这个瓶子有 25 分押金。
+Quittung|Kann ich bitte eine Quittung haben?|可以给我一张收据吗？
+Öffnungszeit|Die Öffnungszeiten stehen an der Tür.|营业时间写在门上。
+Orange|Ich presse mir morgens frische Orangen.|我早上给自己榨新鲜橙汁。
+Paprika|Ich schneide eine rote Paprika für den Salat.|我切一个红甜椒做沙拉。
+Schweinefleisch|Ich esse kein Schweinefleisch.|我不吃猪肉。
+Joghurt|Zum Frühstück esse ich Joghurt mit Obst.|早餐我吃酸奶配水果。
+Quark|Für den Kuchen brauchen wir 500 Gramm Quark.|做蛋糕我们需要 500 克夸克奶酪。
+Topf|Die Kartoffeln kochen im Topf.|土豆在锅里煮着。
+Ofen|Die Pizza ist schon im Ofen.|比萨已经在烤箱里了。
+Backofen|Heize den Backofen auf 200 Grad vor.|把烤箱预热到 200 度。
+Trockner|Der Pullover darf nicht in den Trockner.|这件毛衣不能放进烘干机。
+Altpapier|Kartons gehören ins Altpapier.|纸箱属于废纸类。
+Wäsche|Am Sonntag mache ich die Wäsche.|星期天我洗衣服。
+abwaschen|Ich koche, du wäschst ab.|我做饭，你洗碗。
+aufräumen|Räum bitte dein Zimmer auf!|把你的房间收拾一下！
+bügeln|Ich muss noch mein Hemd bügeln.|我还得熨衬衫。
+braten|Ich brate die Eier in der Pfanne.|我在平底锅里煎鸡蛋。
+Flur|Die Schuhe stehen im Flur.|鞋放在走廊里。
+Balkon|Im Sommer frühstücken wir auf dem Balkon.|夏天我们在阳台上吃早餐。
+Steckdose|Wo ist hier eine Steckdose?|这里哪儿有插座？
+Lampe|Kannst du bitte die Lampe anmachen?|你能把灯打开吗？
+Glühbirne|Die Glühbirne im Bad ist kaputt.|浴室的灯泡坏了。
+Vorhang|Mach bitte den Vorhang zu.|请把窗帘拉上。
+Shampoo|Das Shampoo ist fast leer.|洗发水快用完了。
+Zahnpasta|Wir brauchen neue Zahnpasta.|我们需要新牙膏。
+Toilettenpapier|Kauf bitte noch Toilettenpapier.|请再买点卫生纸。
+Nebenkosten|Die Miete beträgt 600 Euro plus Nebenkosten.|房租 600 欧元，另加杂费。
+Praxis|Die Praxis ist am Mittwochnachmittag geschlossen.|诊所周三下午不开门。
+Bauchschmerzen|Nach dem Essen habe ich Bauchschmerzen.|饭后我肚子疼。
+Halsschmerzen|Ich habe Halsschmerzen und Schnupfen.|我嗓子疼还流鼻涕。
+Schnupfen|Ich habe einen leichten Schnupfen.|我有点流鼻涕。
+Verband|Die Ärztin macht mir einen Verband um die Hand.|医生给我的手缠上绷带。
+Pflaster|Hast du ein Pflaster? Ich habe mich geschnitten.|你有创可贴吗？我割伤了。
+Straßenbahn|Ich fahre mit der Straßenbahn zur Arbeit.|我坐有轨电车上班。
+Briefmarke|Eine Briefmarke für einen Brief nach China, bitte.|请给我一张寄往中国的邮票。
+Deutschkurs|Ich besuche abends einen Deutschkurs.|我晚上上德语课。
+Mütze|Zieh eine Mütze an, es ist kalt.|戴顶帽子，天冷。
+Schal|Im Winter trage ich immer einen Schal.|冬天我总围着围巾。
+Silvester|An Silvester gibt es um Mitternacht ein Feuerwerk.|除夕午夜有烟花。
+Schwimmbad|Im Sommer gehen wir oft ins Schwimmbad.|夏天我们常去游泳馆。
+Fußgängerzone|In der Fußgängerzone gibt es viele Geschäfte.|步行街上有很多商店。
+Ladegerät|Ich habe mein Ladegerät zu Hause vergessen.|我把充电器忘在家里了。
