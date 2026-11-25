@@ -10,6 +10,7 @@ import { typoOk } from './cut';
 import { placedCheck, placedPick } from './placement';
 import { addGearKill, affinityOf, affixTotal, attack, engraved, critChance, gearPen, hintsPerFight, maxHp, now, type GameState } from './state';
 import type { Element, Intent, Move, Word } from './types';
+import { gradeCompose } from './aiPractice';
 import { gradeLink, gradeOrder, gradeSlot, linkTask, orderTask, SLOT_RECENT, slotNouns, slotTask, WRITE_CHANCE, type SlotTask } from './writing';
 import type { LinkRow } from '../data/links';
 import { has } from './unlocks';
@@ -92,7 +93,7 @@ export interface Question {
   /** 终极技能: the German frame with two ___. */
   frame?: string;
   /** A1 写作 (2026-11-22): 排句 / 槽位造句 (on a cloze slot) or 连句 (a finisher). */
-  write?: 'order' | 'slot' | 'link';
+  write?: 'order' | 'slot' | 'link' | 'compose';
   /** 槽位造句: the frame and the monster's own sentence. */
   slot?: SlotTask;
   /** 连句: the pair and its answer. */
@@ -914,6 +915,12 @@ function exampleOf(w: Word, rng: Rng): string | null {
   return `${p.before}${p.blank}${p.after}`.replace(/\s+/g, ' ').trim();
 }
 
+/** 造句 (场景精英 ③): write a short sentence of your own with the word. `answer` is only the word, for 低语 and notes. */
+function composeQ(w: Word): Question {
+  const name = w.art ? `${w.art} ${w.de}` : w.de;
+  return { type: 'cloze', write: 'compose', prompt: `造句：用 ${name}（${w.zh}）写一句你自己的短句`, focus: `${name} · ${w.zh}`, answer: name };
+}
+
 /** 句中默写 (练中学, rev 425): the word's slot blanked in one of its examples, the whole Chinese given, no letters.
  *  Nouns only from slots that carry the article (einen Tee), so the answer shows the article and case. */
 export function dictQ(w: Word, rng: Rng): Question | null {
@@ -1186,7 +1193,10 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
       return rec[b.step % rec.length]();
     }
     if (b.elite.seg === 1) return (hasExamples(w) ? clozeQ(s, w, rng) : null) ?? (canConj ? conj() : typed());
-    return canConj && b.step % 2 === 0 ? conj() : typed();
+    // ③ 写 (rev 425/459): a short sentence of your own with the word, every other attack; rule-checked here, and from
+    // level 10 a logged-in player's sentence also goes to the AI teacher (the controller shows its note).
+    if (b.step % 2 === 0) return composeQ(w);
+    return canConj ? conj() : typed();
   }
   if (am === 'attack' && inPack && isNoun && !b.named && b.stage === 0 && !needsPhase(b)) return callout();
   // 防御 (Lv7+): a written answer breaks the guard. A word not yet at the typing step gets its usual choice question (×0.3).
@@ -1269,6 +1279,7 @@ function whisperOf(q: Question, w: Word): Question {
   const a = q.answer ?? '';
   let hint = `${a[0] ?? ''}…`;
   if (q.write === 'order') hint = `${a.split(' ').slice(0, 2).join(' ')} …`;
+  else if (q.write === 'compose') hint = `${a} …（随便一句，比如 Ich habe … / Das ist …）`;
   else if (q.write === 'slot' && q.slot) hint = `${PATTERNS[q.slot.pattern].lead} …（比如眼前这只怪）`;
   else if (q.write === 'link' && q.link) hint = `… ${q.link.conj} ${q.answer!.split(` ${q.link.conj} `)[1]?.split(' ')[0] ?? ''} …`;
   else if (q.type === 'sentence' && q.pattern) hint = `${PATTERNS[q.pattern].lead} …`;
@@ -1459,6 +1470,10 @@ export function gradeQuestion(s: GameState, b: Battle, q: Question, input: strin
       if (q.write === 'order') {
         const ok = gradeOrder(input, q.answer!);
         return { ok, notes: ok ? [] : [`正确语序：${q.answer}`], correct: q.answer! };
+      }
+      if (q.write === 'compose') {
+        const v = gradeCompose(input, b.word);
+        return { ok: v.ok, notes: v.notes, correct: v.ok ? input.trim() : q.answer!, word: v.ok ? b.word : undefined };
       }
       if (q.write === 'slot' && q.slot) {
         const recent = String(s.flags.slotRecent ?? '').split(',').filter(Boolean);

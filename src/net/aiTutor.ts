@@ -1,12 +1,16 @@
-// AI 批改造句 + 决斗场 (40 级): client side of the `ai-tutor` edge function (supabase/functions/ai-tutor).
+// AI 批改造句 + 决斗场 (10 级) + 小作文 (20 级) (游戏设计 rev 459): client side of the `ai-tutor` edge function (supabase/functions/ai-tutor).
 // Logged-in players only; the function holds the model keys and the daily cap. Offline or over the cap → null,
 // and the game keeps its own rule-based grading.
 
 import { sb } from './cloud';
 import { CONJ, PERSONS } from '../data/verbs';
 import type { Word } from '../core/types';
+import type { GameState } from '../core/state';
+import { WORD_BY_ID } from '../data/words';
 
-export const AI_TUTOR = { from: 40 };
+/** Open levels (rev 459). Daily caps live in the database (public.ai_settings, NULL = unlimited) and per account
+ *  (public.ai_user_caps); this side only knows the levels. */
+export const AI_TUTOR = { from: 10, grade: 10, duel: 10, essay: 20, elite: 10 };
 
 export interface AiGrade {
   ok: boolean;
@@ -20,6 +24,8 @@ export interface DuelLine {
   zh: string;
   note: string;
   done: boolean;
+  /** Target word ids this reply used right. */
+  used?: string[];
 }
 
 /** The forms of a word a sentence may use (Tee, Tees; trinken, trinke, trinkst …). */
@@ -29,6 +35,15 @@ export function wordForms(w: Word): string[] {
   const c = CONJ[w.de];
   if (c) for (const p of PERSONS) out.add(c.forms[p]);
   return [...out];
+}
+
+/** The player's learned words (seen at least once), newest first, for the model to stay inside. */
+export function knownWords(s: GameState, max = 500): string[] {
+  return Object.entries(s.words)
+    .sort((a, b) => (b[1].lastSeen ?? 0) - (a[1].lastSeen ?? 0))
+    .map(([id]) => WORD_BY_ID[id]?.de)
+    .filter((x): x is string => !!x)
+    .slice(0, max);
 }
 
 async function call<T>(body: Record<string, unknown>): Promise<T | { error: string }> {
@@ -44,15 +59,20 @@ async function call<T>(body: Record<string, unknown>): Promise<T | { error: stri
   }
 }
 
-export function aiGrade(sentence: string, w: Word, task: string, level: number) {
-  return call<AiGrade>({ mode: 'grade', sentence, forms: wordForms(w), task, level });
+export function aiGrade(sentence: string, w: Word, task: string, level: number, known: string[] = []) {
+  return call<AiGrade>({ mode: 'grade', sentence, forms: wordForms(w), task, level, known });
 }
 
-export function duelTurn(scene: string, history: Array<{ who: 'npc' | 'me'; de: string }>, reply: string, level: number) {
-  return call<DuelLine>({ mode: 'duel', scene, history, reply, level });
+export function duelTurn(scene: string, history: Array<{ who: 'npc' | 'me'; de: string }>, reply: string, level: number, targets: Word[] = [], known: string[] = []) {
+  return call<DuelLine>({ mode: 'duel', scene, history, reply, level, known, targets: targets.map((w) => ({ id: w.id, de: w.de, forms: wordForms(w) })) });
+}
+
+/** 小作文 (20 级): 3–5 sentences with the given words. `missing` = given words the text did not use. */
+export function aiEssay(text: string, words: Word[], task: string, level: number, known: string[] = []) {
+  return call<AiGrade & { missing?: string[] }>({ mode: 'essay', text, words: words.map(wordForms), task, level, known });
 }
 
 /** Several words at once (篝火日记): the text must use at least one of them. */
-export function aiGradeText(text: string, words: Word[], task: string, level: number) {
-  return call<AiGrade>({ mode: 'grade', sentence: text, forms: words.flatMap(wordForms), task, level });
+export function aiGradeText(text: string, words: Word[], task: string, level: number, known: string[] = []) {
+  return call<AiGrade>({ mode: 'grade', sentence: text, forms: words.flatMap(wordForms), task, level, known });
 }

@@ -51,8 +51,9 @@ import { LINA } from '../data/lina';
 import { WEBER, WEBER_POOL, usesDu } from '../data/weber';
 import { answerExam, BREAK, examPassed, PART_ZH, startExam, startGrammarExam, type Exam } from '../core/breakthrough';
 import { DUNGEON, RULES, type Rule } from '../data/dungeon';
-import { AI_TUTOR, aiGradeText, duelTurn } from '../net/aiTutor';
-import { DUEL, DUEL_SCENES, type DuelScene } from '../data/grammar/duels';
+import { AI_TUTOR, aiEssay, aiGrade, aiGradeText, duelTurn, knownWords, type AiGrade } from '../net/aiTutor';
+import { DUEL, DUEL_SCENES, duelTurns, type DuelScene } from '../data/grammar/duels';
+import { drawPractice } from '../core/aiPractice';
 import { noticeById } from '../core/gram/notice';
 import { partnerChoices, partnerOf, setPartner } from '../core/gram/partner';
 import { cleared, floorRun, floorsOf, GRAM_DUNGEON, markCleared, type DungeonKind, type Floor } from '../core/gram/dungeons';
@@ -208,11 +209,11 @@ export class Controller {
     const xp = first ? Math.max(1, Math.round(xpToNext(s.level) * JOURNAL_XP_SHARE)) : 0;
     if (xp) this.diaryXp(xp, '写了篝火日记');
     this.persist();
-    // AI 批改 (40 级): logged-in players get a teacher's note on the entry; offline or over the cap, nothing changes.
-    if (s.level >= AI_TUTOR.from && s.owner) {
-      void aiGradeText(text.trim(), words, '篝火日记：用今天打过的词写两三句话', s.level).then((r) => {
+    // AI 批改 (10 级): logged-in players get a teacher's note on the entry; offline or over the cap, nothing changes.
+    if (s.level >= AI_TUTOR.grade && s.owner) {
+      void aiGradeText(text.trim(), words, '篝火日记：用今天打过的词写两三句话', s.level, knownWords(s)).then((r) => {
         if ('error' in r) return r.error === 'quota' ? toast('今天的 AI 批改次数用完了') : undefined;
-        const lines: Line[] = r.ok && !r.errors.length ? [{ who: '批改', text: `写得对。${r.better ? `更自然的说法：${r.better}` : ''}` }] : [...r.errors.map((x) => ({ who: '批改', text: `「${x.bad}」→「${x.fix}」：${x.why}` })), ...(r.better ? [{ who: '批改', text: `改好的句子：${r.better}` }] : [])];
+        const lines = gradeLines(r);
         if (lines.length) say(lines);
       });
     }
@@ -809,6 +810,20 @@ export class Controller {
     }
     recordAnswer(s, b.word, r.correct);
     flushSkill(s, b.word, b);
+    // 场景精英 ③ 造句 (rev 459): from level 10 a logged-in player's sentence also goes to the AI teacher. The rule check
+    // already decided the hit; when the AI finds a real mistake the rule missed, the word gets a slip (shorter review gap).
+    if (q.write === 'compose' && input.trim() && s.level >= AI_TUTOR.elite && s.owner) {
+      const w = b.word;
+      void aiGrade(input.trim(), w, `场景精英：用 ${w.de}（${w.zh}）写一句短句`, s.level, knownWords(s)).then((g) => {
+        if ('error' in g) return g.error === 'quota' ? toast('今天的 AI 批改次数用完了') : undefined;
+        if (!g.ok && r.correct) {
+          const p = s.words[w.id];
+          if (p) p.flawN = (p.flawN ?? 0) + 1;
+          this.persist();
+        }
+        for (const l of gradeLines(g)) logLine(`${l.who}：${l.text}`, g.ok ? 'good' : 'bad');
+      });
+    }
     if (r.correct) this.checkDiary();
     const log = todayLog(s);
     if (r.correct) log.correct += 1;
@@ -1781,7 +1796,7 @@ export class Controller {
     toast(`${it.name} 鉴定好了${f.misses.length ? '' : '：每条词缀都挑了更好的那个'}`, 'gold');
   }
 
-  // ---- 决斗场 · AI 对话 (40) -----------------------------------------------------------------------
+  // ---- 决斗场 · AI 对话 (10, rev 459) ----------------------------------------------------------------
   openDuel(): void {
     const s = this.state;
     if (s.level < DUEL.from) return;
@@ -1789,33 +1804,117 @@ export class Controller {
     const lines: Line[] = [];
     if (!s.flags.duelSeen) {
       s.flags.duelSeen = true;
-      lines.push({ who: SYS, text: '【决斗场】和 AI 扮演的人用德语把一件事办完：点单、约医生、看房、去市政厅……每次回答它会指出你最重要的一处错。每天有次数上限；每天第一次办成给一点经验。' });
+      lines.push({ who: SYS, text: '【决斗场】和 AI 扮演的人用德语把一件事办完：点单、约医生、看房、去市政厅……每场给你 3–5 个还没完全记牢的词，要在对话里用上；用对一个，算它复习了一次。每次回答它会指出你最重要的一处错。办成给金币，每天第一次办成再给经验。' });
     }
     lines.push({ who: SYS, text: '选一个场景：' });
-    say(lines, undefined, [...DUEL_SCENES.map((d) => ({ label: d.title, act: () => this.duelStep(d, [], '') })), { label: '先不', act: () => {} }]);
+    say(lines, undefined, [...DUEL_SCENES.map((d) => ({ label: d.title, act: () => this.startDuel(d) })), { label: '先不', act: () => {} }]);
   }
 
-  private duelStep(d: DuelScene, history: Array<{ who: 'npc' | 'me'; de: string }>, reply: string): void {
+  private startDuel(d: DuelScene): void {
     const s = this.state;
+    const [a, b] = DUEL.words;
+    const targets = drawPractice(s, a + Math.floor(this.rng() * (b - a + 1)), this.rng);
+    const run = { d, turns: duelTurns(s.level, this.rng), targets, used: new Set<string>(), known: knownWords(s) };
+    if (targets.length) say([{ who: SYS, text: `这场要用上的词：${targets.map((w) => `${w.art ? `${w.art} ` : ''}${w.de}（${w.zh}）`).join('、')}。最多 ${run.turns} 轮。` }], () => this.duelStep(run, [], ''));
+    else this.duelStep(run, [], '');
+  }
+
+  private duelStep(run: { d: DuelScene; turns: number; targets: Word[]; used: Set<string>; known: string[] }, history: Array<{ who: 'npc' | 'me'; de: string }>, reply: string): void {
+    const s = this.state;
+    const d = run.d;
     toast('……');
-    void duelTurn(d.scene, history, reply, s.level).then((r) => {
+    const left = run.targets.filter((w) => !run.used.has(w.id));
+    void duelTurn(d.scene, history, reply, s.level, left, run.known).then((r) => {
       if ('error' in r) return say([{ who: SYS, text: r.error === 'quota' ? '今天的决斗场次数用完了，明天再来。' : r.error === 'login' ? '登录过期了，重新登录后再来。' : '连不上决斗场（网络或服务出错），稍后再试。' }]);
+      const lines: Line[] = [];
+      // Each target word used right counts as a context review (写对就算复习).
+      for (const id of r.used ?? []) {
+        const w = run.targets.find((x) => x.id === id);
+        if (!w || run.used.has(id)) continue;
+        run.used.add(id);
+        reviewedByWriting(s, w);
+        lines.push({ who: SYS, text: `✓ 用上了 ${w.art ? `${w.art} ` : ''}${w.de}（算复习一次）` });
+      }
+      if (r.used?.length) this.persist();
       const h2 = [...history, ...(reply ? [{ who: 'me' as const, de: reply }] : []), { who: 'npc' as const, de: r.de }];
       const turns = h2.filter((x) => x.who === 'me').length;
-      const lines: Line[] = [...(r.note ? [{ who: '纠错', text: r.note }] : []), { who: d.npc, text: `${r.de}\n（${r.zh}）` }];
-      if (r.done || turns >= d.turns) {
-        const today = dayKey(now(s));
-        const first = r.done && s.flags.duelDay !== today;
-        if (first) {
-          s.flags.duelDay = today;
-          this.diaryXp(Math.max(1, Math.round(xpToNext(s.level) * DUEL.xpShare)), `决斗场「${d.title}」办成了`);
+      lines.push(...(r.note ? [{ who: '纠错', text: r.note }] : []), { who: d.npc, text: `${r.de}\n（${r.zh}）` });
+      if (r.done || turns >= run.turns) {
+        if (r.done) {
+          const today = dayKey(now(s));
+          const gold = DUEL.goldPerLevel * s.level;
+          s.gold += gold;
+          logLine(`决斗场「${d.title}」：金币 +${gold}`, 'good');
+          if (s.flags.duelDay !== today) {
+            s.flags.duelDay = today;
+            this.diaryXp(Math.max(1, Math.round(xpToNext(s.level) * DUEL.xpShare)), `决斗场「${d.title}」办成了`);
+          }
           this.persist();
+          this.refresh();
         }
-        lines.push({ who: SYS, text: r.done ? `「${d.title}」办成了。` : '时间到了，这次先到这里。' });
+        const miss = run.targets.filter((w) => !run.used.has(w.id));
+        lines.push({ who: SYS, text: `${r.done ? `「${d.title}」办成了。` : '时间到了，这次先到这里。'}${run.targets.length ? ` 用上了 ${run.used.size}/${run.targets.length} 个词${miss.length ? `；没用上：${miss.map((w) => w.de).join('、')}` : ''}。` : ''}` });
         return say(lines);
       }
-      say(lines, () => this.panels.ask(d.npc, r.de, (text: string) => (text.trim() ? this.duelStep(d, h2, text.trim()) : say([{ who: SYS, text: '你转身走了。' }]))));
+      const need = run.targets.filter((w) => !run.used.has(w.id)).map((w) => w.de);
+      say(lines, () => this.panels.ask(d.npc, `${r.de}${need.length ? `\n（还要用上：${need.join('、')}；第 ${turns + 1}/${run.turns} 轮）` : `\n（第 ${turns + 1}/${run.turns} 轮）`}`, (text: string) => (text.trim() ? this.duelStep(run, h2, text.trim()) : say([{ who: SYS, text: '你转身走了。' }]))));
     });
+  }
+
+  // ---- AI 批改造句 (10) · 小作文 (20), rev 459 --------------------------------------------------------
+  /** Write one sentence with a learned-but-not-mastered word; the AI only corrects (no score). Right = reviewed. */
+  openAiSentence(): void {
+    const s = this.state;
+    if (s.level < AI_TUTOR.grade) return;
+    if (!s.owner) return say([{ who: SYS, text: 'AI 批改要登录才能用（在云端）。' }]);
+    const w = drawPractice(s, 1, this.rng)[0];
+    if (!w) return say([{ who: SYS, text: '现在没有需要练的词（半名或到期的词）。去野外打几只再来。' }]);
+    const name = `${w.art ? `${w.art} ` : ''}${w.de}`;
+    this.panels.ask('AI 批改造句', `用 ${name}（${w.zh}）写一句你自己的话。AI 只改错、不打分；写对算它复习一次。`, (text) => {
+      if (!text.trim()) return;
+      toast('批改中……');
+      void aiGrade(text.trim(), w, `用 ${name}（${w.zh}）写一句话`, s.level, knownWords(s)).then((r) => {
+        if ('error' in r) return say([{ who: SYS, text: aiErrorZh(r.error) }]);
+        const lines = gradeLines(r);
+        if (r.ok) {
+          reviewedByWriting(s, w);
+          this.persist();
+          lines.push({ who: SYS, text: `${name} 算复习了一次。` });
+        }
+        say(lines);
+      });
+    });
+  }
+
+  /** 小作文 (20): 3–5 sentences with 3 learned-but-not-mastered words. Each word used in a text judged right = reviewed. */
+  openEssay(): void {
+    const s = this.state;
+    if (s.level < AI_TUTOR.essay) return;
+    if (!s.owner) return say([{ who: SYS, text: '小作文要登录才能用（AI 批改在云端）。' }]);
+    const words = drawPractice(s, 3, this.rng);
+    if (words.length < 2) return say([{ who: SYS, text: '现在需要练的词不够（半名或到期的词）。去野外打几只再来。' }]);
+    const list = words.map((w) => `${w.art ? `${w.art} ` : ''}${w.de}（${w.zh}）`).join('、');
+    this.panels.ask('小作文', `用 ${list} 写 3–5 句，题目随你（今天、周末、你住的地方……）。AI 只改错、不打分。`, (text) => {
+      if (!text.trim()) return;
+      toast('批改中……');
+      void aiEssay(text.trim(), words, '小作文：用给的词写 3–5 句', s.level, knownWords(s)).then((r) => {
+        if ('error' in r) return say([{ who: SYS, text: aiErrorZh(r.error) }]);
+        const lines = gradeLines(r);
+        if (r.ok) {
+          const missing = new Set(r.missing ?? []);
+          const done = words.filter((w) => !missing.has(w.de));
+          for (const w of done) reviewedByWriting(s, w);
+          const today = dayKey(now(s));
+          if (s.flags.essayDay !== today) {
+            s.flags.essayDay = today;
+            this.diaryXp(Math.max(1, Math.round(xpToNext(s.level) * JOURNAL_XP_SHARE)), '写了小作文');
+          }
+          this.persist();
+          if (done.length) lines.push({ who: SYS, text: `${done.map((w) => w.de).join('、')} 算复习了一次。` });
+        }
+        say(lines);
+      });
+    }, true);
   }
 
   // ---- 复习伙伴 (43) -----------------------------------------------------------------------------
@@ -2553,3 +2652,14 @@ export class Controller {
 export function freshState(name: string, origin: string): GameState {
   return newGame(name, origin);
 }
+
+/** The AI teacher's verdict as dialogue lines. */
+function gradeLines(r: AiGrade): Line[] {
+  if (r.ok && !r.errors.length) return [{ who: '批改', text: `写得对。${r.better ? `更自然的说法：${r.better}` : ''}` }];
+  return [...r.errors.map((x) => ({ who: '批改', text: x.bad ? `「${x.bad}」→「${x.fix}」：${x.why}` : x.why })), ...(r.better ? [{ who: '批改', text: `改好的：${r.better}` }] : [])];
+}
+
+function aiErrorZh(e: string): string {
+  return e === 'quota' ? '今天的 AI 批改次数用完了，明天再来。' : e === 'login' ? '登录过期了，重新登录后再来。' : '连不上 AI 批改（网络或服务出错），稍后再试。';
+}
+

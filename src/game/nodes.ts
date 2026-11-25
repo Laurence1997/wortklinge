@@ -5,6 +5,7 @@ import { DUNGEON } from '../data/dungeon';
 import { GRAM_DUNGEON } from '../core/gram/dungeons';
 import { PARTNER } from '../core/gram/partner';
 import { DUEL } from '../data/grammar/duels';
+import { AI_TUTOR } from '../net/aiTutor';
 import { sceneArtCanvas } from '../ui/sceneArt';
 import Phaser from 'phaser';
 import { CONFIG } from '../core/config';
@@ -306,6 +307,8 @@ export class NodeNav {
     if (sc.id === 'r3-hide' && this.s.level >= DUNGEON.from) things.push(h('button.btn.primary', { disabled: busy, onclick: () => this.w.ctrl.enterDungeon() }, '🚪 进入零号站台（规则表地下城）'));
     // 语法秘境 (0.7–0.8): entered from a region's camp.
     if (sc.type === 'camp' && sc.bonfire && this.s.level >= DUEL.from) things.push(h('button.btn', { disabled: busy, onclick: () => this.w.ctrl.openDuel() }, '⚔ 决斗场（AI 对话）'));
+    if (sc.type === 'camp' && sc.bonfire && this.s.level >= AI_TUTOR.grade) things.push(h('button.btn', { disabled: busy, onclick: () => this.w.ctrl.openAiSentence() }, '✎ AI 批改造句'));
+    if (sc.type === 'camp' && sc.bonfire && this.s.level >= AI_TUTOR.essay) things.push(h('button.btn', { disabled: busy, onclick: () => this.w.ctrl.openEssay() }, '📝 小作文（AI 批改）'));
     if (sc.type === 'camp' && sc.bonfire && this.s.level >= PARTNER.from) things.push(h('button.btn', { disabled: busy, onclick: () => this.w.ctrl.choosePartner() }, '🤝 复习伙伴'));
     if (sc.type === 'camp' && sc.bonfire && this.s.level >= GRAM_DUNGEON.from.ablaut) things.push(h('button.btn', { disabled: busy, onclick: () => this.w.ctrl.enterGramDungeon() }, '📜 语法秘境'));
     if (sc.bonfire && has(this.s.level, 'dailies')) things.push(h('button.btn', { disabled: busy, onclick: () => this.w.ctrl.showDailies() }, '📋 每日委托'));

@@ -3,7 +3,7 @@ import { newGame, type GameState } from '../src/core/state';
 import { makeRng } from '../src/core/rng';
 import { WORD_BY_ID } from '../src/data/words';
 import { SCENES } from '../src/data/world';
-import { makeQuestion, qTier, startBattle } from '../src/core/combat';
+import { makeQuestion, qTier, resolveTurn, startBattle } from '../src/core/combat';
 import { applyWin } from '../src/core/outcomes';
 import { elitePick, noteEliteWin } from '../src/core/elite';
 import { CONFIG } from '../src/core/config';
@@ -85,6 +85,21 @@ describe('场景精英: how it fights', () => {
     expect([...parts(0).tiers]).toEqual([0]);
     const p3 = parts(2);
     expect([...p3.types].every((t) => t === 'typed' || t === 'conj' || t === 'cloze')).toBe(true); // 句中默写 is a typed cloze (rev 425)
+  });
+
+  it('part 3 asks a sentence of your own every other attack, rule-checked (rev 425/459)', () => {
+    const { b } = parts(2);
+    const s = newGame('T', 'student');
+    s.level = 9;
+    b.step = 0;
+    const q = makeQuestion(s, b, 'attack', makeRng(1));
+    expect(q.write).toBe('compose');
+    const w = b.word;
+    const ok = resolveTurn(s, b, 'attack', q, `Ich sehe ${w.art === 'der' ? 'den' : w.art} ${w.de}.`, makeRng(1));
+    expect(ok.correct).toBe(true);
+    b.step = 0;
+    const q2 = makeQuestion(s, b, 'attack', makeRng(1));
+    expect(resolveTurn(s, b, 'attack', q2, 'Ich bin müde.', makeRng(1)).correct).toBe(false);
   });
 
   it('part 2 asks cloze (or typing when there is no example)', () => {

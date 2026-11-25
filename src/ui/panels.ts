@@ -158,7 +158,9 @@ export class Panels {
     }
     if (this.open === 'ask' && this.asking) {
       const a = this.asking;
-      const input = h('input.ask', { type: 'text', autocomplete: 'off', spellcheck: 'false', placeholder: 'Ich …' }) as HTMLInputElement;
+      const input = (a.multi
+        ? h('textarea.ask', { rows: 6, autocomplete: 'off', spellcheck: 'false', placeholder: 'Ich …（Ctrl + Enter 交）', style: 'width:100%;font-size:18px' })
+        : h('input.ask', { type: 'text', autocomplete: 'off', spellcheck: 'false', placeholder: 'Ich …' })) as HTMLInputElement;
       const go = () => {
         if (!input.value.trim()) return;
         this.asking = null;
@@ -166,13 +168,13 @@ export class Panels {
         a.onAnswer(input.value);
       };
       input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
+        if (e.key === 'Enter' && (!a.multi || e.ctrlKey || e.metaKey)) {
           e.preventDefault();
           e.stopPropagation();
           go();
-        }
+        } else if (a.multi) e.stopPropagation();
       });
-      panel.append(h('h2', h('span', a.title), h('button.btn.ghost', { onclick: () => this.close() }, '不回答 Esc')), h('p', a.prompt), h('div.typing', input, umlautButtons(input), h('button.btn.primary', { onclick: go }, '说 ↵')));
+      panel.append(h('h2', h('span', a.title), h('button.btn.ghost', { onclick: () => this.close() }, '不回答 Esc')), h('p', a.prompt), h('div.typing', input, umlautButtons(input), h('button.btn.primary', { onclick: go }, a.multi ? '交 Ctrl+↵' : '说 ↵')));
       clear(el).append(panel);
       el.onclick = null;
       window.setTimeout(() => input.focus(), 0);
@@ -420,11 +422,11 @@ export class Panels {
     return wrap;
   }
 
-  private asking: { title: string; prompt: string; onAnswer: (text: string) => void } | null = null;
+  private asking: { title: string; prompt: string; onAnswer: (text: string) => void; multi?: boolean } | null = null;
 
-  /** One free-text answer (the night guard's formal question in 零号站台). */
-  ask(title: string, prompt: string, onAnswer: (text: string) => void): void {
-    this.asking = { title, prompt, onAnswer };
+  /** One free-text answer (the night guard's formal question in 零号站台). `multi`: a few sentences (小作文). */
+  ask(title: string, prompt: string, onAnswer: (text: string) => void, multi = false): void {
+    this.asking = { title, prompt, onAnswer, multi };
     this.show('ask');
   }
 
