@@ -6,7 +6,7 @@
 // The key must never be committed or put into web code: locally use an env variable, in CI a repository secret.
 //
 // Results are cached by sentence hash in proof/out/deepseek-cache.json, so a rerun only sends new or changed text.
-// Env: DEEPSEEK_MODEL (default deepseek-flash), DEEPSEEK_THINKING=1, DEEPSEEK_LIMIT (max items this run, default all).
+// Env: DEEPSEEK_MODEL (workflow default gpt-6-luna; deepseek-flash when unset), DEEPSEEK_THINKING=1, DEEPSEEK_LIMIT (max items this run, default all).
 
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -16,15 +16,22 @@ import { WORDS } from '../../src/data/words';
 import { sentenceHash } from '../../src/core/sentenceId';
 
 const root = join(__dirname, '../..');
-const KEY = process.env.DEEPSEEK_API_KEY;
+// deepseek-flash, thinking off: cheapest, and a yes/no check doesn't need reasoning. DEEPSEEK_THINKING=1 turns it on.
+// A gpt-* model goes to OpenAI instead (key OPENAI_API_KEY), with the lowest reasoning effort; used to compare models.
+const MODEL = process.env.DEEPSEEK_MODEL ?? 'deepseek-flash';
+const OPENAI = MODEL.startsWith('gpt-');
+const KEY = OPENAI ? process.env.OPENAI_API_KEY : process.env.DEEPSEEK_API_KEY;
 if (!KEY) {
-  console.log('DEEPSEEK_API_KEY is not set: skipping the DeepSeek cross-check.');
+  console.log(`${OPENAI ? 'OPENAI_API_KEY' : 'DEEPSEEK_API_KEY'} is not set: skipping the AI cross-check.`);
   process.exit(0);
 }
-// deepseek-flash, thinking off: cheapest, and a yes/no check doesn't need reasoning. DEEPSEEK_THINKING=1 turns it on.
-const MODEL = process.env.DEEPSEEK_MODEL ?? 'deepseek-flash';
 const THINKING = process.env.DEEPSEEK_THINKING ? 'enabled' : 'disabled';
-const URL = process.env.DEEPSEEK_URL ?? 'https://api.deepseek.com/chat/completions';
+const URL = OPENAI ? 'https://api.openai.com/v1/chat/completions' : (process.env.DEEPSEEK_URL ?? 'https://api.deepseek.com/chat/completions');
+// OpenAI models may reject a parameter; when one does, it is dropped for the rest of the run.
+const params: Record<string, unknown> = OPENAI
+  ? { reasoning_effort: process.env.OPENAI_EFFORT ?? 'low', response_format: { type: 'json_object' } }
+  : { temperature: 0, thinking: { type: THINKING }, response_format: { type: 'json_object' } };
+const usage = { prompt: 0, cached: 0, completion: 0 };
 
 const all: Item[] = JSON.parse(readFileSync(join(root, 'proof/out/sentences.json'), 'utf8'));
 // Single words and verb forms are checked as whole cards instead (gender, plural, meaning, the full table).
@@ -49,7 +56,8 @@ export interface Verdict {
   problem?: string;
   fix?: string;
 }
-const cachePath = join(root, 'proof/out/deepseek-cache.json');
+// One cache per model, so trying another model re-checks everything.
+const cachePath = join(root, MODEL === 'deepseek-flash' ? 'proof/out/deepseek-cache.json' : `proof/out/deepseek-cache-${MODEL}.json`);
 const cache: Record<string, Verdict> = existsSync(cachePath) ? JSON.parse(readFileSync(cachePath, 'utf8')) : {};
 
 const SYSTEM = `你是德语母语的编辑，在校对一款给中国人学德语的游戏（A1–A2 难度）里的德语。
@@ -83,16 +91,29 @@ async function ask(batch: Item[]): Promise<Map<number, Verdict>> {
       const r = await fetch(URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${KEY}` },
-        body: JSON.stringify({
-          model: MODEL,
-          temperature: 0,
-          thinking: { type: THINKING },
-          response_format: { type: 'json_object' },
-          messages: [{ role: 'system', content: SYSTEM }, { role: 'user', content: user }],
-        }),
+        body: JSON.stringify({ model: MODEL, ...params, messages: [{ role: 'system', content: SYSTEM }, { role: 'user', content: user }] }),
       });
-      if (!r.ok) throw new Error(`DeepSeek ${r.status}: ${(await r.text()).slice(0, 300)}`);
+      if (!r.ok) {
+        const t = await r.text();
+        const bad = Object.keys(params).find((k) => r.status === 400 && t.includes(k));
+        if (bad) {
+          console.log(`\n${MODEL} does not accept ${bad}: dropping it`);
+          delete params[bad];
+          attempt--;
+          continue;
+        }
+        if (/insufficient_quota|billing/i.test(t)) {
+          // Exit code 3 tells the workflow to fall back to DeepSeek.
+          console.log(`\n${MODEL}: the account has no balance (${t.slice(0, 200)}). Top up under Billing.`);
+          if (process.env.GITHUB_STEP_SUMMARY) writeFileSync(process.env.GITHUB_STEP_SUMMARY, `### ⚠️ ${MODEL} 余额用完，这次改用 DeepSeek\n`, { flag: 'a' });
+          process.exit(3);
+        }
+        throw new Error(`${MODEL} ${r.status}: ${t.slice(0, 300)}`);
+      }
       const j = await r.json();
+      usage.prompt += j.usage?.prompt_tokens ?? 0;
+      usage.cached += j.usage?.prompt_tokens_details?.cached_tokens ?? j.usage?.prompt_cache_hit_tokens ?? 0;
+      usage.completion += j.usage?.completion_tokens ?? 0;
       const raw: string = j.choices[0].message.content ?? '';
       const parsed = firstJson(raw);
       const out = new Map<number, Verdict>();
@@ -128,11 +149,12 @@ for (let i = 0; i < run.length; i += SIZE) {
   process.stdout.write(`\rDeepSeek ${Math.min(i + SIZE, run.length)}/${run.length}`);
 }
 process.stdout.write('\n');
+console.log(`tokens: input ${usage.prompt} (cached ${usage.cached}), output ${usage.completion}`);
 
 const flagged = items.filter((x) => cache[x.hash] && !cache[x.hash].ok);
 const ZH = { error: '错误', unnatural: '不自然', translation: '翻译不符' } as Record<string, string>;
 const lines = [
-  '# DeepSeek 交叉复查结果',
+  `# DeepSeek 交叉复查结果（${MODEL}）`,
   '',
   `复查了 ${items.length} 条（句子、词卡、变位表），${flagged.length} 条被认为可疑。AI 也会误报：这里只是「值得看一眼」的名单。`,
   '',
@@ -147,7 +169,7 @@ for (const sev of ['error', 'translation', 'unnatural']) {
   }
   lines.push('');
 }
-writeFileSync(join(root, 'proof/out/deepseek.md'), lines.join('\n'));
+writeFileSync(join(root, `proof/out/deepseek${MODEL === 'deepseek-flash' ? '' : '-' + MODEL}.md`), lines.join('\n'));
 writeFileSync(join(root, 'proof/out/deepseek.json'), JSON.stringify(flagged.map((x) => ({ ...x, ...cache[x.hash] })), null, 1));
 console.log(`${flagged.length} suspicious → proof/out/deepseek.md`);
 // The full list in the log too, so it can be read without downloading the artifact.

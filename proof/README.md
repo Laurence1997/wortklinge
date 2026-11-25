@@ -7,7 +7,7 @@ changes game data by itself; they produce lists for a person to decide on.
 |---|---|---|---|
 | 1 | `scripts/proof/extract.ts` collects every German item with an id and a hash (examples, diary, bosses, verb tables, generated sentences, German in game code) | everywhere | — |
 | 2 | `scripts/proof/languagetool.ts`: LanguageTool (open source) grammar and spelling check | GitHub Action on every change to German text; locally with Docker | free |
-| 3 | `scripts/proof/deepseek.ts`: DeepSeek reads sentences + Chinese and lists only suspicious ones | same Action, started by hand (Actions → 德语校对 → Run workflow, DeepSeek ticked); needs the `DEEPSEEK_API_KEY` secret | cents per full run; cached, reruns only send changed text |
+| 3 | `scripts/proof/deepseek.ts`: a second AI reads sentences + Chinese and lists only suspicious ones. Default GPT-6 Luna (best of four compared on 2026-11-25: 53 flagged, about half real); when the OpenAI balance runs out the run switches to deepseek-flash by itself | same Action, started by hand (Actions → 德语校对 → Run workflow, first box ticked); needs the `OPENAI_API_KEY` and `DEEPSEEK_API_KEY` secrets | about 0.02 USD per full run with Luna; cached, reruns only send changed text |
 | 4 | `scripts/proof/tatoeba.ts`: which of our sentences a native speaker already wrote on Tatoeba, and native example candidates (with audio / Chinese) for every word | Action, run by hand ("Run workflow" → tick Tatoeba) | free |
 
 Plus the in-game 「这句有问题？」 link under answer feedback (`src/ui/report.ts`), which writes to the Supabase table
@@ -30,8 +30,8 @@ scripts/proof/tatoeba-download.sh && npx vite-node scripts/proof/tatoeba.ts   # 
 - `allow-words.txt`: names and words LanguageTool's dictionary does not know.
 - `baseline.json`: findings already known, so the Action only warns about new ones. Refresh with `LT_WRITE_BASELINE=1`.
 
-The DeepSeek key never goes into the repo or the web page: locally an environment variable, in CI the
-repository secret `DEEPSEEK_API_KEY` (Settings → Secrets and variables → Actions).
+The API keys never go into the repo or the web page: locally an environment variable, in CI the
+repository secrets `OPENAI_API_KEY` and `DEEPSEEK_API_KEY` (Settings → Secrets and variables → Actions).
 
 Tatoeba sentences are CC BY 2.0 FR: anything taken keeps its sentence id and author (the report lists both),
 and the README credits Tatoeba.
