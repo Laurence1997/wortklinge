@@ -4,9 +4,9 @@ name: 德语校对 (German proofreading)
 # and in the "proof-report" artifact. It never blocks a deploy.
 on:
   push:
-    paths: ['src/data/**', 'src/core/**', 'src/ui/**', 'src/game/**', 'scripts/proof/**', 'proof/**', '.github/workflows/proofread.yml']
+    paths: ['src/data/**', 'src/core/**', 'src/ui/**', 'src/game/**', 'data/**', 'scripts/proof/**', 'proof/**', '.github/workflows/proofread.yml']
   pull_request:
-    paths: ['src/data/**', 'src/core/**', 'src/ui/**', 'src/game/**', 'scripts/proof/**', 'proof/**']
+    paths: ['src/data/**', 'src/core/**', 'src/ui/**', 'src/game/**', 'data/**', 'scripts/proof/**', 'proof/**']
   workflow_dispatch:
     inputs:
       deepseek:

@@ -53,7 +53,7 @@ const cachePath = join(root, 'proof/out/deepseek-cache.json');
 const cache: Record<string, Verdict> = existsSync(cachePath) ? JSON.parse(readFileSync(cachePath, 'utf8')) : {};
 
 const SYSTEM = `你是德语母语的编辑，在校对一款给中国人学德语的游戏（A1–A2 难度）里的德语。
-每行一条，格式「序号 [类型] 德语 ‖ 中文」。类型：ex/diary/perfekt 等是句子；card 是词卡（冠词、复数、中文义）；conjrow 是现在时变位表；pattern 是程序生成的句子。
+每行一条，格式「序号 [类型] 德语 ‖ 中文」。类型：ex/diary/perfekt 等是句子；card 是词卡（冠词、复数、中文义）；conjrow 是现在时变位表；pattern 是程序生成的句子；tsv 是词表数据里的例句，中文部分若写了「搭配：…」，还要检查句子是否真的用了这个搭配和格。
 只挑出真正有问题的：语法或拼写错误、冠词/复数/格/变位错误、德国人不会这样说的不自然说法、中文翻译和德语意思不符。
 不要挑：风格偏好、可以接受的多种说法、口语化但正确的说法、人名和游戏里编的地名（Gleisdorf、Brotmarkt、Altstadt 等）、故事里的奇幻内容。拿不准就不报。觉得没问题的句子不要写进 issues（不要写「不算错」「不报」之类的条目）。
 标准德语里正确的说法不算错（例如 hat gelegen、hat geschlossen、Mein Knie hat wehgetan），不要用南德/奥地利用法去改。
