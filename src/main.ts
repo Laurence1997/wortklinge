@@ -5,6 +5,7 @@ import { cloud, initCloud, mustChangePassword, needsNickname, push, schedulePush
 import { loginView } from './ui/account';
 import { $ } from './ui/dom';
 import { mountLogBox } from './ui/logbox';
+import { joinWorld } from './net/social';
 import { h } from './ui/dom';
 import { Controller } from './game/controller';
 import { WorldScene } from './game/WorldScene';
@@ -21,6 +22,7 @@ function boot(state: ReturnType<typeof newGame>) {
   const ctrl = new Controller(state, dev);
   (window as unknown as { wk: Controller }).wk = ctrl; // handy for debugging in the console
   const logBox = mountLogBox();
+  joinWorld(() => ({ level: ctrl.state.level, hidden: !!ctrl.state.settings.hideBoard }));
   window.setInterval(() => logBox.setVisible($('title').hidden), 1000);
   if (cloud.session && !mustChangePassword() && (!cloud.profile || !state.look)) window.setTimeout(() => ctrl.panels.show('account'), 2500);
   new Phaser.Game({

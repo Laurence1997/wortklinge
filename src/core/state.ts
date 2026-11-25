@@ -38,6 +38,8 @@ export interface Settings {
   /** 即时战 (81): false = keep turn-based (no quick-answer bonus); slow = casts ×1.5. */
   realtime?: boolean;
   realtimeSlow?: boolean;
+  /** 排行榜隐身: off the boards and out of the online count. */
+  hideBoard?: boolean;
   /** 安静模式: no speaking asked; spoken-only tasks wait as 口语委托. */
   quiet?: boolean;
 }
@@ -91,6 +93,8 @@ export interface GameState {
   challenge?: import('./challenge').ChallengeSave;
   /** 语法线 (0.7–0.8): boards seen, dungeon floors cleared, review partner. Optional: absent = nothing yet. */
   gram?: import('./gram/boards').GramSave;
+  /** 排行榜 counters (optional; refreshed before each save). */
+  board?: import('./board').BoardSave;
   /** 红装 / 橙装保底 counters and 套装 materials (optional, old saves have none). */
   forge?: import('./forge').ForgeSave;
   /** 篝火日记 (2026-11-22): entries written at bonfires (newest last). Optional: absent = none yet. */

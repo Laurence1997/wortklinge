@@ -239,8 +239,18 @@ export function schedulePush(s: GameState): void {
   }, 30_000);
 }
 
-export async function leaderboard(): Promise<Profile[]> {
-  const { data, error } = await sb.from('profiles').select('nickname, level, cls, named').order('level', { ascending: false }).order('named', { ascending: false }).limit(50);
+export interface BoardRow {
+  pos: number;
+  nickname: string;
+  level: number;
+  score: number;
+  extra: number;
+  me: boolean;
+}
+
+/** 排行榜 (每日榜 / 总榜 / 语法榜): ranked on the server from the saved counters; hidden players are left out. */
+export async function leaderboard(kind: 'daily' | 'total' | 'gram'): Promise<BoardRow[]> {
+  const { data, error } = await withTimeout(sb.rpc('leaderboard', { kind, lim: 30 }));
   if (error) throw error;
-  return (data ?? []) as Profile[];
+  return (data ?? []) as BoardRow[];
 }

@@ -28,6 +28,8 @@ import { playChest } from './chestFx';
 import { favour, FAVOUR, QUESTS, type QuestId } from '../core/quests';
 import { gradeTyped } from '../core/grading';
 import { recordAnswer, reviewedByWriting } from '../core/srs';
+import { track } from '../net/social';
+import { BOARD, BOARD_ZH, type BoardKind } from '../core/board';
 import { cloud, leaderboard, mustChangePassword, push, setNickname, signOut } from '../net/cloud';
 import { loginView } from './account';
 import { toast } from './feedback';
@@ -1440,18 +1442,40 @@ export class Panels {
       return wrap;
     }
     wrap.append(h('h3', `排行榜 · 你是 ${cloud.profile.nickname}`));
+    const kinds: BoardKind[] = ['daily', 'total', 'gram'];
+    const HEAD: Record<BoardKind, [string, string]> = { daily: ['今天答对', ''], total: ['已归名', '等级'], gram: ['语法试炼', '语法正确率'] };
+    const NOTE: Record<BoardKind, string> = {
+      daily: '今天（柏林时间）答对的题数，零点清零。只比学习量。',
+      total: '归名（或考核里写对直接毕业）的词数。',
+      gram: `通过的语法星位试炼和阶段突破数；答过 ${BOARD.gramMin} 道语法题才上榜，旁边是语法题正确率。`,
+    };
     const table = h('table.log');
-    table.append(h('tr', h('td', { colspan: 4 }, '加载中…')));
-    wrap.append(table, h('p.small.muted', '按等级排，同级比已归名的词数。数据在你同步存档时更新。'));
-    leaderboard()
-      .then((rows) => {
-        clear(table).append(h('tr', h('th', '#'), h('th', '昵称'), h('th', '等级'), h('th', '已归名')));
-        rows.forEach((r, i) => {
-          const me = r.nickname === cloud.profile?.nickname;
-          table.append(h(`tr${me ? '.me' : ''}`, h('td', i + 1), h('td', me ? `${r.nickname}（你）` : r.nickname), h('td', r.level), h('td', r.named)));
-        });
-      })
-      .catch(() => clear(table).append(h('tr', h('td', { colspan: 4 }, '排行榜加载失败，可能是断网了。'))));
+    const note = h('p.small.muted');
+    const tabs = h('div.row');
+    const load = (k: BoardKind) => {
+      tabs.replaceChildren(...kinds.map((x) => h(`button.btn.small${x === k ? '.primary' : ''}`, { onclick: () => load(x) }, BOARD_ZH[x])));
+      note.textContent = NOTE[k] + ' 数据在你同步存档时更新（最多晚半分钟）。';
+      clear(table).append(h('tr', h('td', { colspan: 4 }, '加载中…')));
+      leaderboard(k)
+        .then((rows) => {
+          const [a1, a2] = HEAD[k];
+          clear(table).append(h('tr', h('th', '#'), h('th', '昵称'), h('th', a1), a2 ? h('th', a2) : null));
+          if (!rows.length) table.append(h('tr', h('td', { colspan: 4 }, '还没有人上榜。')));
+          for (const r of rows)
+            table.append(h(`tr${r.me ? '.me' : ''}`, h('td', r.pos), h('td', `${r.nickname} Lv${r.level}${r.me ? '（你）' : ''}`), h('td', r.score), a2 ? h('td', k === 'gram' ? `${r.extra}%` : r.extra) : null));
+        })
+        .catch(() => clear(table).append(h('tr', h('td', { colspan: 4 }, '排行榜加载失败，可能是断网了。'))));
+    };
+    const hide = h('input', { type: 'checkbox' }) as HTMLInputElement;
+    hide.checked = !!s.settings.hideBoard;
+    hide.onchange = () => {
+      s.settings.hideBoard = hide.checked;
+      this.ctrl.persist();
+      void track();
+      void push(s);
+    };
+    wrap.append(tabs, table, note, h('label.toggle', hide, h('span', '隐身'), h('span.small.muted', '不上排行榜，也不算进「当前在线」；聊天照样能看能说')));
+    load('daily');
     return wrap;
   }
 

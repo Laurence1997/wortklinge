@@ -1,3 +1,5 @@
+import { track } from '../net/social';
+import { noteGram, stampBoard } from '../core/board';
 import { TICK_TURN } from '../core/combat';
 import { loadPron, pronCached } from '../ui/phoneme';
 import { icon, setRestored, SLOT_TILE } from '../ui/icons';
@@ -352,6 +354,7 @@ export class Controller {
 
   persist(): void {
     stampTiers(this.state);
+    stampBoard(this.state);
     save(this.state);
   }
 
@@ -425,6 +428,7 @@ export class Controller {
   /** Lessons tied to a level (游戏设计 › 新手引导). */
   /** `quiet` (入学测试 jumps): set the level's flags and gifts but say nothing; the caller shows one summary. */
   private onLevelUp(level: number, quiet = false) {
+    void track();
     const s = this.state;
     this.milestone(`lv${level}`);
     if (!quiet) {
@@ -1028,6 +1032,7 @@ export class Controller {
     const log = todayLog(s);
     if (r.correct) log.correct += 1;
     else if (!free) log.wrong += 1;
+    if (q.gram && move !== 'item') noteGram(s, r.correct);
     // Feedback.
     if (r.correct) (r.crit ? sfx.crit : sfx.correct)();
     else sfx.wrong();
