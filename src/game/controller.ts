@@ -59,6 +59,7 @@ import { WEBER, WEBER_POOL, usesDu } from '../data/weber';
 import { answerExam, BREAK, BREAK_EARLY, examPassed, PART_ZH, startExam, startGrammarExam, type Exam } from '../core/breakthrough';
 import { DUNGEON, RULES, type Rule } from '../data/dungeon';
 import { OPINION, opinionRule, pickClaim } from '../core/opinion';
+import { addGearKill } from '../core/state';
 import { bossRed, salvage, tierIlvl, tradedTier, tradeShards, tradesOpen } from '../core/forge';
 import { aiOpinion, AI_TUTOR, aiEssay, aiGrade, aiGradeText, duelTurn, knownWords, type AiGrade } from '../net/aiTutor';
 import { DUEL, DUEL_SCENES, duelTurns, type DuelScene } from '../data/grammar/duels';
@@ -967,6 +968,8 @@ export class Controller {
     b.monster.hp = 0;
     b.outcome = 'win';
     b.lastKillTyped = true;
+    // 审查修订: 斩杀 and 直接叫名 pay 3 shards (the kill's own 1 + 2), so learning fast never means weaker gear.
+    addGearKill(this.state, b.word.region ?? 1, 1, 2);
     sfx.crit();
     this.milestone('cut');
     if (this.pack.length > 1 && !this.fightOver()) {

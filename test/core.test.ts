@@ -109,7 +109,8 @@ describe('归名 (spaced repetition)', () => {
     const t1 = T0 + CONFIG.srs.respawn;
     expect(recordKill(s, w, true, false, t1).guiming).toBe(true);
     const p = s.words[w.id];
-    expect(p.due).toBe(t1 + CONFIG.srs.spot);
+    // 审查修订: back once after 2–3 days; the second clean pass ends its reviews.
+    expect(p.due).toBe(t1 + CONFIG.srs.cleanFirst);
     expect(contextPass(s, w, p.due)).toBeNull();
     expect(p.ctxDone).toBe(true);
     // A wrong context answer relapses it to a 半名 review monster; one 归名一击 names it again.
@@ -296,7 +297,7 @@ describe('sentence input', () => {
 });
 
 describe('no 言灵过载 (removed 2026-11-20)', () => {
-  it('pays the same for new words however many you met today, and extra for due reviews', () => {
+  it('pays the same for new words however many you met today, and the same for review monsters (审查修订)', () => {
     const rng = makeRng(7);
     const run = (count: number, kind: 'new' | 'due') => {
       const s = newGame('T', 'student');
@@ -314,8 +315,8 @@ describe('no 言灵过载 (removed 2026-11-20)', () => {
     expect(many.res.gold).toBe(fresh.res.gold);
     const due = run(80, 'due');
     expect(due.res.review).toBe(true);
-    expect(due.res.xp).toBe(Math.round(CONFIG.xp.dueMonster * CONFIG.xp.dueBonus));
-    expect(due.s.gearKills?.['1']).toBe(2); // one extra shard
+    expect(due.res.xp).toBe(CONFIG.xp.dueMonster);
+    expect(due.s.gearKills?.['1']).toBe(1); // no extra shard: that moved to context reviews
     // New words keep spawning.
     const s = newGame('T', 'student');
     s.level = 6;

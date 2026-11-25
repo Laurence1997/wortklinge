@@ -90,7 +90,7 @@ export function failVerify(s: GameState, w: Word, t = now(s)): void {
 // Before 归名: 3 defeats (认 / 用 / 写), the word respawning in its own scene ~6 minutes after each.
 // After 归名 it never spawns on a schedule: a context question (its example sentence, typed) is put into
 // whatever fight you are in after 2 days, 1 week, 1 month, 3 months. A clean 归名 (no wrong answer, no 低语)
-// gets one 30-day spot check only. Wrong → 复发 (半名 review monster); 2 gaps overdue → review monster too.
+// comes back once after 2–3 days (审查修订), and a second clean pass ends its reviews. Wrong → 复发 (半名 review monster); 2 gaps overdue → review monster too.
 
 const FAR = 9e15;
 
@@ -126,7 +126,7 @@ export function setGuiming(p: WordProgress, t: number, clean: boolean, relapsed 
   const c = CONFIG.srs.context;
   // ctx = c.length − 1 marks the clean word's one 30-day spot check; 0 = the adaptive schedule.
   p.ctx = clean ? c.length - 1 : 0;
-  p.ivl = clean ? CONFIG.srs.spot : relapsed ? a.restart : slips >= 2 ? a.slips : a.oneSlip;
+  p.ivl = clean ? CONFIG.srs.cleanFirst : relapsed ? a.restart : slips >= 2 ? a.slips : a.oneSlip;
   p.due = t + p.ivl;
 }
 
@@ -147,12 +147,14 @@ export function contextPass(s: GameState, w: Word, t = now(s), quality: 'clean' 
   const c = CONFIG.srs.context;
   p.lastSeen = t;
   const prev = gapOf(p);
-  // The clean word's spot check, or a clean pass on a gap over 90 days: no more reviews.
-  if ((p.ctx ?? 0) >= c.length - 1 || (quality === 'clean' && prev > a.doneAfter)) {
+  // 审查修订: a word passed in one go still comes back once after 2–3 days; a second clean pass ends its reviews
+  // (a shaky one puts it on the adaptive schedule). Also a clean pass on a gap over 90 days ends them.
+  if (quality === 'clean' && ((p.ctx ?? 0) >= c.length - 1 || prev > a.doneAfter)) {
     p.ctxDone = true;
     p.due = FAR;
     return null;
   }
+  if ((p.ctx ?? 0) >= c.length - 1) p.ctx = 0;
   p.ivl = Math.round(prev * (quality === 'clean' ? a.clean : a.shaky));
   p.due = t + p.ivl;
   return p.ivl;

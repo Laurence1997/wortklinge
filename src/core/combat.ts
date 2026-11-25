@@ -1882,7 +1882,9 @@ function reviewAnswer(s: GameState, b: Battle, q: Question, ok: boolean): TurnRe
   }
   if (ok) {
     const next = contextPass(s, w);
+    // 审查修订: the review rewards live here now — an extra shard, and the next kill's drop chance ×1.5.
     addGearKill(s, w.region ?? 1, 1, 1);
+    s.flags.ctxDropBoost = ((s.flags.ctxDropBoost as number) ?? 0) + 1;
     return { word: w, ok, next };
   }
   contextFail(s, w);

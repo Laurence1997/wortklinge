@@ -55,9 +55,10 @@ export function applyWin(s: GameState, b: Battle, rng: Rng, opts: { heal?: boole
 
   let xp = b.kind === 'new' ? CONFIG.xp.newMonster : b.kind === 'due' ? CONFIG.xp.dueMonster : CONFIG.xp.shadowMonster;
   // 2026-11-24: only 复习怪 pay the review bonus; a learning respawn (认 → 用 → 写, minutes later) pays as due.
+  // 审查修订: 复习怪 pay like normal monsters (the bonus moved to context reviews answered on time); 越久越肥 only
+  // adds HP, not reward.
   const rv = b.kind === 'due' && !!b.reviewMon;
-  if (rv) xp *= CONFIG.xp.dueBonus;
-  const overdueMult = 1 + CONFIG.monster.overdueRewardStep * b.overdue;
+  const overdueMult = 1;
   xp *= overdueMult;
   if (b.lastKillTyped) xp *= CONFIG.xp.typedKillMult;
   // Strong verbs (nehmen → nimmt) are harder to conjugate: ×1.3 once conjugation is unlocked.
@@ -66,7 +67,6 @@ export function applyWin(s: GameState, b: Battle, rng: Rng, opts: { heal?: boole
   xp = gap === 0 ? 1 : xp * gap;
   xp *= 1 + Math.min(0.3, affixTotal(s, 'xp'));
   if (b.cursed) xp *= CONFIG.curse.xpMult;
-  if (b.rusty) xp *= CONFIG.rusty.rewardMult;
   // 场景精英: each part pays what its word pays as a normal monster, ×1.2.
   if (b.elite) xp *= CONFIG.elite.rewardMult;
   if (b.challenge) xp *= CHALLENGE_CFG.xpMult;
@@ -75,7 +75,7 @@ export function applyWin(s: GameState, b: Battle, rng: Rng, opts: { heal?: boole
   xp = Math.round(xp);
 
   let gold = CONFIG.gold.perKill(b.monster.lvl);
-  gold = Math.round(gold * overdueMult * (b.rusty ? CONFIG.rusty.rewardMult : 1) * (b.elite ? CONFIG.elite.rewardMult : 1));
+  gold = Math.round(gold * overdueMult * (b.elite ? CONFIG.elite.rewardMult : 1));
   if (b.fx.stimmt) gold *= 2;
   if (b.fx.nextHalt) s.flags.nextHalt = true;
   let echoRecovered: WinResult['echoRecovered'] = null;
@@ -97,7 +97,7 @@ export function applyWin(s: GameState, b: Battle, rng: Rng, opts: { heal?: boole
   log.kills += 1;
   s.stats.kills += 1;
   // 碎片 count from Lv1, but a tier-up is only announced once gear opens (Lv3, 节奏表).
-  const gearUpRaw = b.tutorial === 'loss' ? null : addGearKill(s, b.phrase ? s.region ?? 1 : w.region ?? 1, rng(), (rv ? 1 + CONFIG.xp.dueShards : 1) + (b.cursed ? CONFIG.curse.shards : 0) + (b.rusty ? CONFIG.rusty.shards : 0));
+  const gearUpRaw = b.tutorial === 'loss' ? null : addGearKill(s, b.phrase ? s.region ?? 1 : w.region ?? 1, rng(), 1 + (b.cursed ? CONFIG.curse.shards : 0));
   const gearUp = has(s.level, 'gear') ? gearUpRaw : null;
 
   // Drops: 20% from small monsters once gear is unlocked; the first one is a guaranteed green (Lv5 lesson).
@@ -106,12 +106,15 @@ export function applyWin(s: GameState, b: Battle, rng: Rng, opts: { heal?: boole
   if (has(s.level, 'gear') && b.tutorial !== 'loss') {
     const firstGreen = !s.flags.firstGreen;
     let rate = CONFIG.loot.smallDropRate * (1 + Math.min(1, affixTotal(s, 'dropRate')));
-    if (rv) rate *= 1.5;
+    if (((s.flags.ctxDropBoost as number) ?? 0) > 0) {
+      rate *= 1.5;
+      s.flags.ctxDropBoost = (s.flags.ctxDropBoost as number) - 1;
+    }
     if (firstGreen || rng() < rate) {
       const maxQ = has(s.level, 'purple') ? 'orange' : 'green';
       // 学习加成: typed kills and due words raise purple/orange odds.
       let q = rollQuality(rng, maxQ, firstGreen ? 'green' : undefined);
-      if (q === 'white' && (b.lastKillTyped || rv) && rng() < 0.15) q = 'green';
+      if (q === 'white' && b.lastKillTyped && rng() < 0.15) q = 'green';
       q = pityOrange(s, q, maxQ);
       drop = makeItem(rng, b.monster.lvl, q, firstGreen ? 'pen' : undefined);
       markUnidentified(s, drop);

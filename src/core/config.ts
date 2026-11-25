@@ -19,6 +19,8 @@ export const CONFIG = {
     tutorialInterval: 3 * MINUTE,
     /** 语境复习: after 归名 a context question is due after 2 days, 1 week, 1 month and 3 months, once each. */
     context: [2 * DAY, 7 * DAY, 30 * DAY, 90 * DAY],
+    /** 审查修订: a clean 归名 comes back once after 2–3 days (here 2.5); a second clean pass ends its reviews. */
+    cleanFirst: 2.5 * DAY,
     /** 复习按表现 (Lucas 2026-11-25, 游戏设计 七): first gap by the 归名 record, then ×3 clean / ×1.5 shaky; wrong →
      *  relapse and start again at 1 day; a clean pass on a gap over 90 days ends the reviews. simProg and playtests tune it. */
     adaptive: { oneSlip: 3 * DAY, slips: 1 * DAY, restart: 1 * DAY, clean: 3, shaky: 1.5, doneAfter: 90 * DAY },
