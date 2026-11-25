@@ -433,6 +433,8 @@ const FOREST = (rng: Rng): BossQuestion[] => {
   return talk(rng, first, rest);
 };
 
+// PLACEHOLDER: 蚀变②'s boss is still 「待设计」 (游戏设计, 0.7–0.8 开发资料索引 「还没定的」). This draft follows the
+// doc's suggestion so the chain 10 → 蚀变② → 12 can be played; replace it once Lucas decides.
 // ---- 11 · 蚀变② · 驳回书 in 租屋城's hall (formal complaint and appeal: n-Deklination, nominalised adjectives,
 // Partizip I as an adjective, formal letter phrases; reasons with weil) -----------------------------------------
 
