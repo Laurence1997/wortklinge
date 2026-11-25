@@ -45,7 +45,7 @@ export type FamilyId = 'zahnding' | 'echo' | 'zahlwurm' | 'sippe' | 'schild' | '
 /** Region 1: camp, echogasse, schilderstrasse, aschehof. Region 2 (面包集市): markt (city), gemuesegasse, waagegasse, kornspeicher. */
 export type ZoneId = 'camp' | 'echogasse' | 'schilderstrasse' | 'aschehof' | 'markt' | 'gemuesegasse' | 'waagegasse' | 'kornspeicher' | 'gleisdorf' | 'bahnhofstrasse' | 'altstadt' | 'fahrplanhalle' | LaterZoneId;
 /** 0.7/0.8 regions 4–12 (src/data/zones.ts): r4hub is the town, r4a / r4b / r4c its three fields. */
-export type LaterZoneId = `r${MapRegionNo}${'hub' | 'a' | 'b' | 'c'}`;
+export type LaterZoneId = `r${MapRegionNo}${'hub' | 'a' | 'b' | 'c'}` | `r${1 | 2 | 3}${'d' | 'e'}`;
 /** Segments 4–12 (游戏设计 rev 341: 8 and 11 are 蚀变 on old maps, the rest are new regions with their own map). */
 export type LaterRegionNo = 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
 /** Later segments that have a map of their own. */

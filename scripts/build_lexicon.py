@@ -1,0 +1,674 @@
+#!/usr/bin/env python3
+"""6000 词导入 (0.7+0.8): data/wortschatz/*.tsv → src/data/lexicon.ts.
+
+Inputs (all in data/wortschatz/):
+  wortschatz.tsv   the 8000-row word list (rank, card, lemma, article, plural, verb forms, examples …)
+  beispiele.tsv    extra example sentences by lemma
+  szenen-v1.tsv    《6000词进场景-第1版》: segment, scene group, batch, rank (exported from the xlsx)
+  grammatik-v1.tsv the 118 grammar words that are taught by grammar play, not as monsters
+
+What it decides (all re-run safe; scene ids depend only on the scene sheet):
+  - Regions 1–3 get five fields each, filled by situation (FIELD_PLAN below); regions 4–12 three fields.
+  - Groups under 6 words are merged into the group before them (same situation where possible).
+  - 文章群怪 words (regions 9–12, 蚀变②) are cut into scenes of 14 until the article texts exist (flag `art`).
+  - 蚀变 groups are hung on old field scenes: the scene holding most of their ladder base words, else one of the
+    same situation, else any free scene (segment 8 on regions 1–3, segment 11 on regions 1–7, never both).
+  - Example sentences get their {blank} marked where the word's form can be found in them.
+  - Present tense (CONJ) and Perfekt entries are generated for verbs the hand-written tables lack, only where the
+    forms are certain (regular verbs, or a vowel change readable from the 3rd person).
+
+Run: python3 scripts/build_lexicon.py   (writes src/data/lexicon.ts)
+"""
+import csv
+import json
+import re
+import sys
+from collections import OrderedDict, defaultdict
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+DATA = ROOT / 'data' / 'wortschatz'
+OUT = ROOT / 'src' / 'data' / 'lexicon.ts'
+
+MIN_GROUP = 6
+ARTICLE_CHUNK = 14
+FIRST_BATCH = 8
+
+# ---- fields of regions 1–3: situations in order (表达 groups follow their situation) -------------------------
+FIELD_PLAN = {
+    1: [
+        ('echogasse', '回声巷', 'Echogasse', ['日常物品', '住房家具']),
+        ('schilderstrasse', '名牌街', 'Schilderstraße', ['问候和自我介绍', '办手续']),
+        ('aschehof', '灰烬公寓', 'Aschehof', ['人际情感', '数字']),
+        ('r1d', '夜校楼', 'Abendschule', ['基础词', '媒体科技']),
+        ('r1e', '职介所', 'Jobbörse', ['作息爱好', '求职职场']),
+    ],
+    2: [
+        ('gemuesegasse', '菜摊街', 'Gemüsegasse', ['吃喝']),
+        ('waagegasse', '秤巷', 'Waagegasse', ['购物付钱']),
+        ('kornspeicher', '粮仓', 'Kornspeicher', ['日常物品', '住房家具', '数字', '基础词']),
+        ('r2d', '集市广场', 'Marktplatz', ['人际情感', '问候和自我介绍']),
+        ('r2e', '公所街', 'Amtsgasse', ['作息爱好', '银行保险合同', '办手续', '求职职场', '媒体科技']),
+    ],
+    3: [
+        ('bahnhofstrasse', '站前街', 'Bahnhofstraße', ['交通', '日常物品']),
+        ('altstadt', '老城路口', 'Altstadt', ['方向和城里的地方']),
+        ('fahrplanhalle', '时刻表大厅', 'Fahrplanhalle', ['时间日期']),
+        ('r3d', '河岸', 'Flussufer', ['旅行天气自然', '身体看病', '新闻社会']),
+        ('r3e', '候车楼', 'Wartesaal', ['问候和自我介绍', '数字', '基础词']),
+    ],
+}
+FIELD_KEYS = 'abcde'
+MAP_REGIONS = [1, 2, 3, 4, 5, 6, 7, 9, 10, 12]
+
+# Monster families (look and a few quests): by region and situation for nouns, by part of speech otherwise.
+NOUN_FAMILY = {
+    (1, '日常物品'): 'zahnding', (1, '住房家具'): 'zahnding', (1, '问候和自我介绍'): 'sippe', (1, '人际情感'): 'sippe',
+    (2, '吃喝'): 'krume', (2, '购物付钱'): 'muenzling',
+    (3, '交通'): 'fahrzeug', (3, '方向和城里的地方'): 'wegweiser', (3, '时间日期'): 'uhrwerk',
+}
+QUESTION_WORDS = {'wo', 'wer', 'was', 'wie', 'wann', 'warum', 'woher', 'wohin', 'wieso', 'weshalb', 'welcher', 'wozu', 'weswegen'}
+NUMBERS = {
+    'null': 0, 'eins': 1, 'zwei': 2, 'drei': 3, 'vier': 4, 'fünf': 5, 'sechs': 6, 'sieben': 7, 'acht': 8, 'neun': 9,
+    'zehn': 10, 'elf': 11, 'zwölf': 12, 'dreizehn': 13, 'vierzehn': 14, 'fünfzehn': 15, 'sechzehn': 16,
+    'siebzehn': 17, 'achtzehn': 18, 'neunzehn': 19, 'zwanzig': 20, 'dreißig': 30, 'vierzig': 40, 'fünfzig': 50,
+    'sechzig': 60, 'siebzig': 70, 'achtzig': 80, 'neunzig': 90, 'hundert': 100, 'tausend': 1000,
+}
+# Fixes to the word list until they are made there (reported to the word-list thread).
+CORRECTIONS = {'China': {'冠词': '', '复数': '', '卡片': 'China'}}
+ORDINALS = {'erste': '1.', 'zweite': '2.', 'dritte': '3.', 'vierte': '4.', 'fünfte': '5.', 'sechste': '6.', 'siebte': '7.', 'achte': '8.'}
+
+
+def slug(s):
+    s = s.lower().replace('ä', 'ae').replace('ö', 'oe').replace('ü', 'ue').replace('ß', 'ss').replace('é', 'e')
+    return re.sub(r'^-|-$', '', re.sub(r'[^a-z0-9]+', '-', s))
+
+
+def read_tsv(name):
+    with open(DATA / name, newline='', encoding='utf-8') as f:
+        return list(csv.DictReader(f, delimiter='\t'))
+
+
+def situation_of(group):
+    g = re.sub(r'^蚀变·', '', group)
+    return g.split('·')[0]
+
+
+# ---- examples: mark the word's form with {…} -------------------------------------------------------------------
+DET = set('''der die das den dem des ein eine einen einem einer eines kein keine keinen keinem keiner keines
+mein meine meinen meinem meiner meines dein deine deinen deinem deiner deines sein seine seinen seinem seiner seines
+ihr ihre ihren ihrem ihrer ihres unser unsere unseren unserem unserer unseres euer eure euren eurem eurer eures
+dieser diese dieses diesen diesem jeder jede jedes jeden jedem welcher welche welches welchen welchem
+zwei drei vier fünf sechs sieben acht neun zehn viele einige alle mehrere'''.split())
+TOKEN = re.compile(r"[A-Za-zÄÖÜäöüß]+(?:-[A-Za-zÄÖÜäöüß]+)*")
+SEP_PREFIXES = ['ab', 'an', 'auf', 'aus', 'bei', 'ein', 'fest', 'fort', 'her', 'hin', 'los', 'mit', 'nach', 'vor', 'weg', 'weiter',
+                'zu', 'zurück', 'zusammen', 'dabei', 'kennen', 'statt', 'teil', 'um', 'durch', 'über', 'wieder', 'herein', 'heraus',
+                'hinaus', 'vorbei', 'vorher', 'auseinander', 'entgegen', 'fern', 'frei', 'hoch', 'nieder', 'offen', 'kaputt', 'sauber', 'schief', 'spazieren', 'stehen', 'sitzen', 'liegen', 'bekannt', 'klar', 'voran', 'empor', 'herunter', 'hinunter', 'heran', 'herum', 'umher', 'rüber', 'runter', 'rein', 'raus']
+
+
+def tokens(s):
+    return [(m.start(), m.end(), m.group(0)) for m in TOKEN.finditer(s)]
+
+
+def verb_forms(inf, three):
+    """Contiguous forms of a verb that can stand in a sentence as one token."""
+    forms = {inf}
+    parts = [p.strip() for p in three.split('·')] if three else []
+    sep = None
+    if parts:
+        er = parts[0].split()
+        if len(er) > 1:
+            sep = er[-1]
+        pp = parts[-1].split()[-1] if parts[-1] else ''
+        if pp:
+            forms.add(pp)
+        if not sep:
+            forms.add(er[0])
+            if len(parts) > 1 and parts[1]:
+                pr = parts[1].split()[0]
+                forms |= {pr, pr + 'en', pr + 'n', pr + 'st', pr + 'est', pr + 't', pr + 'e'}
+    if sep and inf.startswith(sep):
+        forms.add(sep + 'zu' + inf[len(sep):])
+    elif not sep:
+        stem = inf[:-2] if inf.endswith('en') else inf[:-1]
+        # Present forms and the imperative (Leg …, Stell …).
+        forms |= {stem, stem + 'e', stem + 'st', stem + 't', stem + 'et', stem + 'est', stem + 'en', inf}
+        if parts:
+            er0 = parts[0].split()[0]
+            if er0.endswith('t'):
+                forms.add(er0[:-1] + 'st')
+                if er0[:-1] != stem and not er0[:-1].endswith(('ä', 'äu')) and re.search(r'[ie]', er0[:-1]):
+                    forms.add(er0[:-1])  # wirft → wirf, gibt → gib (not fährt → fähr)
+        for k, row in MANUAL_CONJ.items():
+            if inf == k:
+                forms |= set(row.split())
+    return {f for f in forms if len(f) >= 2}
+
+
+def adj_forms(de, comp):
+    base = {de}
+    if comp:
+        c = comp.split(',')[0].strip()
+        if c:
+            base.add(c)
+    else:
+        base.add(de + 'er' if not de.endswith('e') else de + 'r')
+    out = set()
+    for b in base:
+        stem = b
+        out |= {stem, stem + 'e', stem + 'en', stem + 'er', stem + 'es', stem + 'em'}
+        if b.endswith('e'):
+            out |= {b + 'n', b + 'r', b + 's', b + 'm'}
+    return out
+
+
+def noun_forms(de, pl):
+    forms = {de, de + 'n', de + 'en', de + 's', de + 'es', de + 'e'}
+    if pl and pl != '-':
+        forms |= {pl, pl + 'n'}
+    return forms
+
+
+def mark(sentence, w):
+    """Puts {…} round the word's form (with its article for nouns); None when the form isn't in the sentence."""
+    if '{' in sentence or '}' in sentence or '|' in sentence:
+        return None
+    toks = tokens(sentence)
+    pos = w['pos']
+    if pos == 'n':
+        forms = noun_forms(w['de'], w.get('pl'))
+        for i, (a, b, t) in enumerate(toks):
+            if t in forms:
+                start = a
+                if i >= 1 and toks[i - 1][2].lower() in DET:
+                    start = toks[i - 1][0]
+                elif i >= 2 and toks[i - 2][2].lower() in DET and re.fullmatch(r'[a-zäöüß]+(e|en|er|es|em)', toks[i - 1][2]):
+                    start = toks[i - 2][0]
+                if start != a and not re.fullmatch(r"[A-Za-zÄÖÜäöüß ]+", sentence[start:a]):
+                    start = a
+                return sentence[:start] + '{' + sentence[start:b] + '}' + sentence[b:]
+        return None
+    if ' ' in w['de']:
+        k = sentence.lower().find(w['de'].lower())
+        if k < 0:
+            return None
+        return sentence[:k] + '{' + sentence[k:k + len(w['de'])] + '}' + sentence[k + len(w['de']):]
+    if pos == 'v':
+        forms = verb_forms(w['de'], w.get('three', ''))
+        # Separable verb split in the sentence (Wir ziehen nächste Woche um): blank the finite part, the particle stays.
+        er = (w.get('three') or '').split('·')[0].split()
+        if len(er) == 2 and w['de'].startswith(er[1]):
+            particle, core = er[1], w['de'][len(er[1]):]
+            three = (w.get('three') or '').split('·')
+            pret = three[1].split()[0] if len(three) > 1 and three[1].split() else ''
+            fin = verb_forms(core, '') | {er[0], core[:-2] if core.endswith('en') else core[:-1]} | ({pret, pret + 'en', pret + 'n', pret + 'st', pret + 't'} if pret else set())
+            fin |= {er[0][:-1] + 'st'} if er[0].endswith('t') else set()
+            words_ = [t for _, _, t in toks]
+            for i, (a, b, t) in enumerate(toks):
+                if t in forms:
+                    return sentence[:a] + '{' + t + '}' + sentence[b:]
+            for i, (a, b, t) in enumerate(toks):
+                if (t in fin or (i == 0 and t.lower() in {f.lower() for f in fin})) and particle in words_[i + 1:]:
+                    return sentence[:a] + '{' + t + '}' + sentence[b:]
+            return None
+    elif pos == 'adj' or (pos == 'num' and w['de'].endswith('e')):
+        forms = adj_forms(w['de'][:-1] if pos == 'num' else w['de'], w.get('comp', '')) | {w['de']}
+    else:
+        forms = {w['de']}
+    lower = {f.lower() for f in forms}
+    for i, (a, b, t) in enumerate(toks):
+        if t in forms or (i == 0 and t.lower() in lower) or (pos not in ('n', 'name') and t.lower() == w['de'].lower() and t[0].isupper() and i == 0):
+            return sentence[:a] + '{' + t + '}' + sentence[b:]
+    return None
+
+
+# ---- verbs: present tense and Perfekt ---------------------------------------------------------------------------
+MANUAL_CONJ = {
+    'können': 'kann kannst kann können könnt können', 'müssen': 'muss musst muss müssen müsst müssen',
+    'dürfen': 'darf darfst darf dürfen dürft dürfen', 'sollen': 'soll sollst soll sollen sollt sollen',
+    'wollen': 'will willst will wollen wollt wollen', 'mögen': 'mag magst mag mögen mögt mögen',
+    'wissen': 'weiß weißt weiß wissen wisst wissen', 'werden': 'werde wirst wird werden werdet werden',
+    'tun': 'tue tust tut tun tut tun', 'sein': 'bin bist ist sind seid sind', 'haben': 'habe hast hat haben habt haben',
+    'nehmen': 'nehme nimmst nimmt nehmen nehmt nehmen', 'geben': 'gebe gibst gibt geben gebt geben',
+    'treten': 'trete trittst tritt treten tretet treten', 'halten': 'halte hältst hält halten haltet halten',
+    'raten': 'rate rätst rät raten ratet raten', 'laden': 'lade lädst lädt laden ladet laden',
+    'braten': 'brate brätst brät braten bratet braten', 'gelten': 'gelte giltst gilt gelten geltet gelten',
+    'lesen': 'lese liest liest lesen lest lesen', 'essen': 'esse isst isst essen esst essen',
+    'vergessen': 'vergesse vergisst vergisst vergessen vergesst vergessen', 'messen': 'messe misst misst messen messt messen',
+    'fressen': 'fresse frisst frisst fressen fresst fressen', 'stoßen': 'stoße stößt stößt stoßen stoßt stoßen',
+    'lassen': 'lasse lässt lässt lassen lasst lassen', 'wachsen': 'wachse wächst wächst wachsen wachst wachsen',
+    'waschen': 'wasche wäschst wäscht waschen wascht waschen', 'schmelzen': 'schmelze schmilzt schmilzt schmelzen schmelzt schmelzen',
+    'heißen': 'heiße heißt heißt heißen heißt heißen', 'sitzen': 'sitze sitzt sitzt sitzen sitzt sitzen',
+    'blasen': 'blase bläst bläst blasen blast blasen', 'erschrecken': 'erschrecke erschrickst erschrickt erschrecken erschreckt erschrecken',
+}
+INSEP = ('be', 'ge', 'er', 'ver', 'zer', 'ent', 'emp', 'miss', 'hinter', 'wider')
+
+
+def regular_present(inf):
+    """ich du er wir ihr sie of a regular verb, or None if the infinitive has an unusual shape."""
+    if inf.endswith('eln'):
+        st = inf[:-1]
+        return [inf[:-3] + 'le', st + 'st', st + 't', inf, st + 't', inf]
+    if inf.endswith('ern'):
+        st = inf[:-1]
+        return [st + 'e', st + 'st', st + 't', inf, st + 't', inf]
+    if not inf.endswith('en'):
+        return None
+    st = inf[:-2]
+    e = 'e' if re.search(r'(t|d|[^aeiouäöülrh]m|[^aeiouäöülrhm]n|chn|ffn|gn|dm)$', st) else ''
+    du = st + ('t' if re.search(r'(s|ß|z|x)$', st) else e + 'st')
+    return [st + 'e', du, st + e + 't', inf, st + e + 't', inf]
+
+
+def make_conj(inf, three):
+    """Present tense row ('ich … sie' and flags) where it is certain, else None."""
+    parts = [p.strip() for p in three.split('·')] if three else []
+    if not parts:
+        return None
+    er = parts[0].split()
+    particle = er[1] if len(er) > 1 else ''
+    if len(er) > 2:
+        return None
+    core = inf[len(particle):] if particle and inf.startswith(particle) else inf
+    if particle and core == inf:
+        return None
+    base = None
+    for k, row in MANUAL_CONJ.items():
+        if core == k or (core.endswith(k) and core[:-len(k)] in INSEP + ('an', 'auf', 'aus', 'mit', 'ein', 'zu', 'ab', 'vor', 'nach', 'über', 'unter', 'zurück', 'weg', 'fest', 'her', 'hin', 'um', 'durch')):
+            pre = core[:-len(k)]
+            base = [pre + f for f in row.split()]
+            strong = True
+            break
+    if base is None:
+        reg = regular_present(core)
+        if not reg:
+            return None
+        if er[0] == reg[2]:
+            base, strong = reg, False
+        else:
+            e3 = er[0]
+            st = core[:-2] if core.endswith('en') else None
+            if not st or not e3.endswith('t') or re.search(r'(t|d)$', st):
+                return None
+            stem3 = e3[:-1]
+            du = stem3 + ('t' if re.search(r'(s|ß|z|x)$', stem3) else 'st')
+            base, strong = [reg[0], du, e3, reg[3], reg[4], reg[5]], True
+    if particle:
+        base = [f + ' ' + particle for f in base]
+    past = parts[-1].split()
+    pp = past[-1] if past else ''
+    past_strong = bool(pp) and not pp.endswith('t')
+    flags = ('s' if strong else '') + ('p' if past_strong and not strong else '')
+    return ' '.join(f.replace(' ', '_') for f in base) + ('|' + flags if flags else '')
+
+
+AUX_FORMS = {'haben': {'habe', 'hast', 'hat', 'haben', 'habt'}, 'sein': {'bin', 'bist', 'ist', 'sind', 'seid'}}
+
+
+def make_perfekt(inf, three, sentences):
+    parts = [p.strip() for p in three.split('·')] if three else []
+    if len(parts) < 3:
+        return None
+    last = parts[-1].split()
+    if len(last) != 2 or last[0] not in ('hat', 'ist'):
+        return None
+    aux = 'haben' if last[0] == 'hat' else 'sein'
+    pp = last[1]
+    sep = len(parts[0].split()) > 1
+    if sep or inf.startswith(INSEP) or inf.endswith('ieren'):
+        kind = 'pre'
+    elif pp == 'ge' + inf[:-2] + 't' or pp == 'ge' + inf[:-2] + 'et':
+        kind = 'reg'
+    else:
+        kind = 'irr'
+    for de, zh in sentences:
+        toks = tokens(de)
+        words = [t for _, _, t in toks]
+        if pp not in words:
+            continue
+        ai = next((i for i, (_, _, t) in enumerate(toks) if t.lower() in AUX_FORMS[aux]), None)
+        pi = words.index(pp)
+        if ai is None or ai >= pi:
+            continue
+        a0, a1, at = toks[ai]
+        p0, p1, _ = toks[pi]
+        ex = de[:a0] + '{' + at + '}' + de[a1:p0] + '[' + pp + ']' + de[p1:]
+        return f'{aux}|{pp}|{kind}|{ex}|{zh}'
+    return None
+
+
+# ---- build ------------------------------------------------------------------------------------------------------
+def main():
+    words_tsv = {r['排名']: r for r in read_tsv('wortschatz.tsv')}
+    extra = defaultdict(list)
+    for r in read_tsv('beispiele.tsv'):
+        if r['例句']:
+            extra[r['原形']].append((r['例句'].strip(), r['例句中文'].strip()))
+    scenes_tsv = read_tsv('szenen-v1.tsv')
+    grammar = read_tsv('grammatik-v1.tsv')
+
+    # Groups by segment, in sheet order.
+    segs = OrderedDict()
+    for r in scenes_tsv:
+        seg = int(r['段'])
+        segs.setdefault(seg, OrderedDict()).setdefault(r['场景'], []).append(r)
+
+    def cut_articles(groups):
+        out = OrderedDict()
+        for name, rows in groups.items():
+            if name.startswith('文章群怪'):
+                for k in range(0, len(rows), ARTICLE_CHUNK):
+                    chunk = rows[k:k + ARTICLE_CHUNK]
+                    for j, x in enumerate(chunk):
+                        x['批次'] = '第1批' if j < FIRST_BATCH else '第2批'
+                        x['_art'] = True
+                    out[f'文章群怪·{k // ARTICLE_CHUNK + 1}'] = chunk
+            else:
+                out[name] = rows
+        return out
+
+    def merge_tiny(groups):
+        out = OrderedDict()
+        for name, rows in groups.items():
+            if len(rows) < MIN_GROUP and out:
+                sit = situation_of(name)
+                target = next((k for k in reversed(out) if situation_of(k) == sit and len(out[k]) + len(rows) <= 18), None)
+                target = target or next((k for k in reversed(out) if len(out[k]) + len(rows) <= 18), None) or next(reversed(out))
+                for x in rows:
+                    x['批次'] = '第2批'
+                out[target] = out[target] + rows
+            else:
+                out[name] = list(rows)
+        # A tiny first group: fold the next one in.
+        return out
+
+    for seg in segs:
+        segs[seg] = merge_tiny(cut_articles(segs[seg]))
+
+    # ---- fields and scene ids of map regions ----
+    scene_list = []  # dicts: id, region, field, zone, name, group, rows, situation
+    fields_out = {}
+    for region in MAP_REGIONS:
+        groups = segs[region]
+        names = list(groups)
+        if region in FIELD_PLAN:
+            plan = FIELD_PLAN[region]
+            assigned = [[] for _ in plan]
+            for name in names:
+                sit = situation_of(name)
+                fi = next((i for i, f in enumerate(plan) if sit in f[3]), None)
+                if fi is None:
+                    fi = min(range(len(plan)), key=lambda i: len(assigned[i]))
+                assigned[fi].append(name)
+            fields_out[region] = [(f[0], f[1], f[2]) for f in plan]
+        else:
+            n = len(names)
+            nf = 3
+            cuts = [round(n * k / nf) for k in range(nf + 1)]
+            assigned = [names[cuts[k]:cuts[k + 1]] for k in range(nf)]
+            fields_out[region] = [(f'r{region}{FIELD_KEYS[k]}', None, None) for k in range(nf)]
+        for fi, gnames in enumerate(assigned):
+            zone = fields_out[region][fi][0]
+            for si, g in enumerate(gnames):
+                scene_list.append({
+                    'id': f'r{region}-{FIELD_KEYS[fi]}{si + 1}', 'region': region, 'field': fi, 'zone': zone,
+                    'group': g, 'rows': groups[g], 'situation': situation_of(g),
+                })
+
+    # ---- words ----
+    seen = set()
+    by_lemma = {}
+    words = []
+
+    def card_word(rank, x, region, zone, scene, lvl, erode=None):
+        r = dict(words_tsv[str(rank)])
+        r.update(CORRECTIONS.get(r['原形'].strip(), {}))
+        de = r['原形'].strip()
+        cat = r['词性']
+        art = r['冠词'].strip()
+        if '/' in art:
+            art = art.split('/')[0]
+        pos = {'名词': 'n', '动词': 'v', '形容词': 'adj', '数词': 'num'}.get(cat, 'phr')
+        # German inside the Chinese ('拉；搬家（umziehen）', '美国（die USA）') would give the answer away.
+        zh = re.sub(r'[（(][^）)]*[A-Za-zÄÖÜäöüß][^）)]*[）)]', '', r['中文']).strip() or r['中文'].strip()
+        w = {'de': de, 'zh': zh, 'rank': int(rank), 'order': {'先': 1, '中': 2, '后': 3}.get(r['先后'], 2)}
+        if pos == 'n' and (not art or '地名' in r['标签']):
+            pos = 'name'
+        if pos == 'phr' and de.lower() in QUESTION_WORDS:
+            pos = 'q'
+        if pos == 'num':
+            if de in NUMBERS:
+                w['digit'] = str(NUMBERS[de])
+            elif de in ORDINALS:
+                w['digit'] = ORDINALS[de]
+            else:
+                pos = 'phr'
+        if pos == 'name' and art:
+            w['art'] = art
+        if pos == 'n':
+            w['art'] = art
+            pl = r['复数'].strip()
+            if '只有复数' in r['标签'] or '(Pl.)' in r['卡片']:
+                w['plOnly'] = True
+            elif pl:
+                w['pl'] = pl
+            else:
+                w['pl'] = '-'
+        if pos == 'v':
+            w['three'] = r['动词三形'].strip()
+        if pos == 'adj':
+            w['comp'] = r['比较级(仅不规则)'].strip()
+        w['pos'] = pos
+        base_id = slug(de) + ('-num' if pos == 'num' else '')
+        wid = base_id
+        while wid in seen:
+            wid += '-2'
+        seen.add(wid)
+        w['id'] = wid
+        w['region'] = region
+        w['zone'] = zone
+        w['scene'] = scene
+        w['lvl'] = lvl
+        if erode:
+            w['erode'] = erode
+        if x.get('批次') == '第2批':
+            w['batch'] = 2
+        if x.get('_art'):
+            w['art_pool'] = True
+        if x.get('语体') and x['语体'] not in ('中性', ''):
+            w['reg'] = x['语体']
+        m = re.search(r'梯子：(.+?) 的进阶说法', x.get('备注') or '')
+        if m:
+            w['_ladder'] = m.group(1).strip()
+        sit = r['情境'] or situation_of(x['场景'])
+        w['situation'] = sit
+        fam = NOUN_FAMILY.get((region, sit)) if pos in ('n', 'name') else None
+        w['family'] = fam or {'n': 'kram', 'name': 'schild', 'v': 'nachhall', 'adj': 'echo', 'phr': 'echo', 'num': 'zahlwurm', 'q': 'schild'}[pos]
+        sents = []
+        if r['例句'].strip():
+            sents.append((r['例句'].strip(), r['例句中文'].strip()))
+        for s in extra.get(de, []):
+            if s[0] not in [t[0] for t in sents]:
+                sents.append(s)
+        w['_sents'] = sents
+        by_lemma.setdefault(de, wid)
+        words.append(w)
+        return w
+
+    def levels(lo, hi, k, n, i, m):
+        return round(lo + (hi - lo) * ((k + (i / (m - 1) if m > 1 else 0)) / n))
+
+    # Map regions: levels climb over fields in order, scenes in order.
+    for region in MAP_REGIONS:
+        lo, hi = (region - 1) * 10 + 1, region * 10
+        sc = [s for s in scene_list if s['region'] == region]
+        for k, s in enumerate(sc):
+            ids = []
+            for i, x in enumerate(s['rows']):
+                w = card_word(x['排名'], x, region, s['zone'], s['id'], levels(lo, hi, k, len(sc), i, len(s['rows'])))
+                ids.append(w['id'])
+            s['words'] = ids
+    words_by_id = {w['id']: w for w in words}
+
+    # 常用短句 (Lucas 2026-11-25: keep useful short sentences like „Ich schaue mich nur um.“, drop plain greetings):
+    # each goes to the scene of its region and situation that has the fewest words.
+    for x in read_tsv('saetze-v1.tsv'):
+        region = int(x['段'])
+        cands = [s for s in scene_list if s['region'] == region and s['situation'] == x['情境']] or [s for s in scene_list if s['region'] == region]
+        s = min(cands, key=lambda c: len(c['words']))
+        lvl = max(words_by_id[i]['lvl'] for i in s['words'])
+        w = {'id': x['id'], 'de': x['德语'], 'zh': x['中文'], 'pos': x['词性'], 'family': 'echo', 'lvl': lvl, 'zone': s['zone'], 'scene': s['id'],
+             'region': region, 'order': 1, 'rank': 0, 'situation': x['情境'], '_sents': []}
+        if len(s['words']) >= FIRST_BATCH:
+            w['batch'] = 2
+        assert w['id'] not in seen, w['id']
+        seen.add(w['id'])
+        words.append(w)
+        words_by_id[w['id']] = w
+        s['words'].append(w['id'])
+
+    # 蚀变: host scenes.
+    host_of_word = {}
+    for s in scene_list:
+        for wid in s['words']:
+            host_of_word[wid] = s['id']
+    taken = {}
+    eroded_out = []
+    for seg, regions in ((8, (1, 2, 3)), (11, (1, 2, 3, 4, 5, 6, 7))):
+        lo, hi = (seg - 1) * 10 + 1, seg * 10
+        hosts = [s for s in scene_list if s['region'] in regions]
+        names = list(segs[seg])
+        rr = 0
+        for k, g in enumerate(names):
+            rows = segs[seg][g]
+            sit = situation_of(g)
+            ladders = [by_lemma.get(re.search(r'梯子：(.+?) 的进阶说法', x.get('备注') or '').group(1).strip()) for x in rows if re.search(r'梯子：(.+?) 的进阶说法', x.get('备注') or '')]
+            free = [s for s in hosts if s['id'] not in taken]
+            score = defaultdict(int)
+            for b in ladders:
+                if b and host_of_word.get(b):
+                    score[host_of_word[b]] += 1
+            best = max(free, key=lambda s: (score[s['id']], s['situation'] == sit, -abs(s['region'] - (regions[rr % len(regions)]))), default=None)
+            if best is None:
+                print('no host for', seg, g, file=sys.stderr)
+                continue
+            if score[best['id']] == 0 and best['situation'] != sit:
+                # Spread unmatched groups over the regions in turn.
+                pick = [s for s in free if s['region'] == regions[rr % len(regions)]]
+                best = pick[0] if pick else best
+            rr += 1
+            taken[best['id']] = seg
+            ids = []
+            for i, x in enumerate(rows):
+                w = card_word(x['排名'], x, seg, best['zone'], best['id'], levels(lo, hi, k, len(names), i, len(rows)), erode=seg)
+                ids.append(w['id'])
+            eroded_out.append({'scene': best['id'], 'seg': seg, 'group': g, 'words': ids})
+
+    # Ladder `after`: the word this one is the advanced form of.
+    for w in words:
+        if '_ladder' in w:
+            b = by_lemma.get(w['_ladder'])
+            if b and b != w['id']:
+                w['after'] = b
+
+    # ---- examples, verbs ----
+    ex = {}
+    conj = {}
+    perf = {}
+    unmarked = 0
+    for w in words:
+        lines = []
+        for de, zh in w['_sents']:
+            m = mark(de, w)
+            if m:
+                lines.append(f'{m}|{zh}')
+        if any(not l.endswith('|') for l in lines):
+            lines = [l for l in lines if not l.endswith('|')]
+        if lines:
+            ex[w['id']] = lines
+        else:
+            unmarked += 1
+        if w['_sents']:
+            w['ex'] = w['_sents'][0][0] + '|' + w['_sents'][0][1]
+        if w['pos'] == 'v':
+            c = make_conj(w['de'], w.get('three', ''))
+            if c:
+                conj[w['de']] = c
+            p = make_perfekt(w['de'], w.get('three', ''), w['_sents'])
+            if p:
+                perf[w['de']] = p
+
+    # ---- scene names ----
+    def short_zh(zh):
+        z = re.sub(r'（.*?）|\(.*?\)', '', zh).split('；')[0].split('，')[0].strip()
+        return z[:6]
+
+    wmap = {w['id']: w for w in words}
+    for s in scene_list:
+        lead = next((wmap[i] for i in s['words'] if wmap[i]['pos'] in ('n',)), wmap[s['words'][0]])
+        if s['group'].startswith('文章群怪'):
+            s['name'] = f'残页 · {short_zh(lead["zh"])}'
+        elif '表达' in s['group']:
+            s['name'] = f'{s["situation"]} · 说法'
+        else:
+            s['name'] = f'{s["situation"]} · {short_zh(lead["zh"])}'
+
+    # ---- write ----
+    def row(w):
+        f = [w['id'], w['de'], w.get('art', ''), '+' if w.get('plOnly') else w.get('pl', ''), w['zh'], w['pos'], w['family'],
+             str(w['lvl']), w['zone'], w['scene'], str(w['region']), str(w.get('erode', '')), str(w.get('batch', '')),
+             w.get('after', ''), w.get('digit', ''), str(w['order']), str(w['rank']), w.get('reg', ''), '1' if w.get('art_pool') else '',
+             w.get('ex', '')]
+        for v in f[:-1]:
+            assert '\t' not in v, v
+        return '\t'.join(v.replace('\t', ' ') for v in f)
+
+    out = []
+    out.append('// GENERATED by scripts/build_lexicon.py from data/wortschatz/ (6000 词表 + 《6000词进场景-第1版》). Do not edit by hand:')
+    out.append('// change the TSV files or the script and run it again. Sentences: see each row of wortschatz.tsv / beispiele.tsv for its source.')
+    out.append('/* eslint-disable */')
+    out.append('')
+    out.append('/** Fields of each map region: [zone id, 中文, Deutsch] (regions 4–12 take their names from zones.ts). */')
+    out.append('export const LEX_FIELDS: Record<number, Array<[string, string, string]>> = ' + json.dumps({r: [[a, b or '', c or ''] for a, b, c in f] for r, f in fields_out.items()}, ensure_ascii=False) + ';')
+    out.append('')
+    out.append('/** Field scenes in route order per field: [scene id, region, field index, name, situation, word ids]. */')
+    out.append('export const LEX_SCENES: Array<[string, number, number, string, string, string[]]> = [')
+    for s in scene_list:
+        out.append('  ' + json.dumps([s['id'], s['region'], s['field'], s['name'], s['situation'], s['words']], ensure_ascii=False) + ',')
+    out.append('];')
+    out.append('')
+    out.append('/** 蚀变 groups: [host scene id, segment, word ids]. */')
+    out.append('export const LEX_ERODED: Array<[string, 8 | 11, string[]]> = [')
+    for e in eroded_out:
+        out.append('  ' + json.dumps([e['scene'], e['seg'], e['words']], ensure_ascii=False) + ',')
+    out.append('];')
+    out.append('')
+    out.append('/** Words, one tab-separated row each: id de art pl(+ = plural only) zh pos family lvl zone scene region erode batch after digit 先后 rank 语体 article-pool example(de|zh). */')
+    out.append('export const LEX_ROWS: string = ' + json.dumps('\n'.join(row(w) for w in words), ensure_ascii=False) + ';')
+    out.append('')
+    out.append('/** Example sentences with the blank marked (same format as examples1.ts). */')
+    out.append('export const LEX_EX: Record<string, string[]> = ' + json.dumps(ex, ensure_ascii=False, separators=(',', ':')) + ';')
+    out.append('')
+    out.append("/** Present tense of verbs the hand-written table lacks: 'ich du er wir ihr sie|flags' (_ = space, s = strong, p = strong past). */")
+    out.append('export const LEX_CONJ: Record<string, string> = ' + json.dumps(conj, ensure_ascii=False, separators=(',', ':')) + ';')
+    out.append('')
+    out.append("/** Perfekt of verbs the hand-written table lacks: 'aux|pp|kind|sentence with {aux} and [pp]|中文'. */")
+    out.append('export const LEX_PERFEKT: Record<string, string> = ' + json.dumps(perf, ensure_ascii=False, separators=(',', ':')) + ';')
+    out.append('')
+    out.append('/** Grammar words (taught by grammar play, not as monsters): [de, 词性, 中文]. */')
+    out.append('export const LEX_GRAMMAR: Array<[string, string, string]> = ' + json.dumps([[g['原形'], g['词性'], g['中文']] for g in grammar], ensure_ascii=False) + ';')
+    OUT.write_text('\n'.join(out) + '\n', encoding='utf-8')
+
+    # Report.
+    print(f'words {len(words)}, scenes {len(scene_list)}, eroded groups {len(eroded_out)}, examples {len(ex)} (no marked sentence: {unmarked}), conj {len(conj)}, perfekt {len(perf)}')
+    for region in MAP_REGIONS:
+        sc = [s for s in scene_list if s['region'] == region]
+        per = defaultdict(int)
+        for s in sc:
+            per[s['field']] += 1
+        sizes = [len(s['words']) for s in sc]
+        print(f'  region {region}: {len(sc)} scenes, fields {dict(per)}, words {sum(sizes)} ({min(sizes)}–{max(sizes)} per scene), eroded hosts {sum(1 for s in sc if s["id"] in taken)}')
+
+
+if __name__ == '__main__':
+    main()

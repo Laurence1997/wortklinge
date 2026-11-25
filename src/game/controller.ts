@@ -345,7 +345,16 @@ export class Controller {
   // ---- Story & tutorials --------------------------------------------------------------
 
   private intro() {
+    // 6000 词导入: the one save reset, explained once to players who were here before.
+    const reset: Line[] = this.state.flags.reset6000
+      ? [
+          { who: SYS, text: '【0.7 + 0.8】词表换成了 6000 词，场景和地图都重排了，旧存档里的词对不上了，所以这一次所有存档从头开始（以后的更新不会再清档）。' },
+          { who: SYS, text: '学过的词会回来得很快：入学测试和「直接叫名」写对就能跳过。' },
+        ]
+      : [];
+    delete this.state.flags.reset6000;
     const lines: Line[] = [
+      ...reset,
       { who: SYS, text: '……心跳恢复。' },
       { who: HILDE, text: '醒了？别动。火边那块面包，刚才咬了我一口。' },
       { who: HILDE, text: '它怕名字。叫它。' },

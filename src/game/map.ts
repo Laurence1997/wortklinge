@@ -5,7 +5,8 @@
 
 import { makeRng } from '../core/rng';
 import { SCENES } from '../data/world';
-import { FIELD_KEYS, REGION_DEF, REGION_DEFS, fieldLevels, type FieldStyle, type RegionDef } from '../data/zones';
+import { REGION_DEF, REGION_DEFS, fieldLevels, type FieldStyle, type RegionDef } from '../data/zones';
+import { LEX_FIELDS } from '../data/lexicon';
 import type { RegionNo, ZoneId } from '../core/types';
 
 export const TILE = 16;
@@ -51,35 +52,24 @@ export interface ZoneDef {
 
 export const ZONES: ZoneDef[] = [
   { id: 'camp', region: 1, zh: '余烬营地', de: 'Glutheim', rect: { x: 4, y: 17, w: 15, h: 15 }, levels: '安全区', monsters: 0 },
-  { id: 'echogasse', region: 1, zh: '回声巷', de: 'Echogasse', rect: { x: 20, y: 10, w: 19, h: 28 }, levels: 'Lv 1–3', monsters: 9 },
-  { id: 'schilderstrasse', region: 1, zh: '名牌街', de: 'Schilderstraße', rect: { x: 41, y: 3, w: 26, h: 18 }, levels: 'Lv 3–7', monsters: 10 },
-  { id: 'aschehof', region: 1, zh: '灰烬公寓', de: 'Aschehof', rect: { x: 41, y: 27, w: 26, h: 18 }, levels: 'Lv 6–9', monsters: 10 },
   { id: 'markt', region: 2, zh: '面包集市', de: 'Brotmarkt', rect: { x: 4, y: 13, w: 18, h: 23 }, levels: '主城', monsters: 0 },
-  { id: 'gemuesegasse', region: 2, zh: '菜摊街', de: 'Gemüsegasse', rect: { x: 24, y: 3, w: 26, h: 19 }, levels: 'Lv 11–14', monsters: 10 },
-  { id: 'waagegasse', region: 2, zh: '秤巷', de: 'Waagegasse', rect: { x: 24, y: 27, w: 26, h: 18 }, levels: 'Lv 14–17', monsters: 10 },
-  { id: 'kornspeicher', region: 2, zh: '粮仓', de: 'Kornspeicher', rect: { x: 52, y: 6, w: 17, h: 36 }, levels: 'Lv 17–20', monsters: 10 },
   { id: 'gleisdorf', region: 3, zh: '铁轨镇广场', de: 'Gleisdorf', rect: { x: 4, y: 13, w: 18, h: 23 }, levels: '主城', monsters: 0 },
-  { id: 'bahnhofstrasse', region: 3, zh: '站前街', de: 'Bahnhofstraße', rect: { x: 24, y: 3, w: 26, h: 19 }, levels: 'Lv 21–24', monsters: 10 },
-  { id: 'altstadt', region: 3, zh: '老城路口', de: 'Altstadt', rect: { x: 24, y: 27, w: 26, h: 18 }, levels: 'Lv 24–27', monsters: 10 },
-  { id: 'fahrplanhalle', region: 3, zh: '时刻表大厅', de: 'Fahrplanhalle', rect: { x: 52, y: 6, w: 17, h: 36 }, levels: 'Lv 27–30', monsters: 10 },
-  // 0.7 + 0.8: regions 4–12 on the region-3 plan (src/data/zones.ts).
-  ...REGION_DEFS.flatMap(laterZones),
+  ...REGION_DEFS.map((d): ZoneDef => ({ id: `r${d.region}hub` as ZoneId, region: d.region, zh: d.hubZh, de: d.de, rect: { x: 4, y: 13, w: 18, h: 23 }, levels: '主城', monsters: 0 })),
+  // Fields of every region (6000 词导入): names from the lexicon / zones.ts, the rect round the field's scenes.
+  ...([1, 2, 3, ...REGION_DEFS.map((d) => d.region)] as RegionId[]).flatMap(fieldZones),
 ];
 
-function laterZones(d: RegionDef): ZoneDef[] {
-  const rects = [{ x: 24, y: 3, w: 26, h: 19 }, { x: 24, y: 27, w: 26, h: 18 }, { x: 52, y: 6, w: 17, h: 36 }];
-  return [
-    { id: `r${d.region}hub` as ZoneId, region: d.region, zh: d.hubZh, de: d.de, rect: { x: 4, y: 13, w: 18, h: 23 }, levels: '主城', monsters: 0 },
-    ...d.fields.map((f, i) => ({
-      id: `r${d.region}${FIELD_KEYS[i]}` as ZoneId,
-      region: d.region,
-      zh: f.zh,
-      de: f.de,
-      rect: rects[i],
-      levels: `Lv ${fieldLevels(d.region, i as 0 | 1 | 2).join('–')}`,
-      monsters: 10,
-    })),
-  ];
+function fieldZones(region: RegionId): ZoneDef[] {
+  const d = REGION_DEF[region];
+  return (LEX_FIELDS[region] ?? []).map(([id, zh, de], i) => {
+    const at = SCENES.filter((sc) => sc.region === region && sc.type === 'field' && sc.zone === id).map((sc) => sc.at);
+    const x0 = Math.max(2, Math.min(...at.map((p) => p.x)) - 3);
+    const y0 = Math.max(2, Math.min(...at.map((p) => p.y)) - 3);
+    const x1 = Math.min(MAP_W - 3, Math.max(...at.map((p) => p.x)) + 3);
+    const y1 = Math.min(MAP_H - 3, Math.max(...at.map((p) => p.y)) + 3);
+    const [lo, hi] = fieldLevels(region, i);
+    return { id: id as ZoneId, region, zh: d?.fields[i]?.zh ?? zh, de: d?.fields[i]?.de ?? de, rect: { x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1 }, levels: `Lv ${lo}–${hi}`, monsters: 10 };
+  });
 }
 
 export function zonesOf(region: RegionId): ZoneDef[] {
@@ -106,8 +96,10 @@ export function idx(x: number, y: number): number {
 
 export function generateMap(region: RegionId = 1): MapData {
   const later = REGION_DEF[region];
-  if (later) return generateLater(later);
-  return region === 3 ? generateRegion3() : region === 2 ? generateRegion2() : generateRegion1();
+  const m = later ? generateLater(later) : region === 3 ? generateRegion3() : region === 2 ? generateRegion2() : generateRegion1();
+  // Every scene stands on open road whatever the street style drew there (the route map sits on these tiles).
+  for (const sc of SCENES) if (sc.region === region) m.tiles[idx(sc.at.x, sc.at.y)] = T.Road;
+  return m;
 }
 
 function generateRegion1(): MapData {
@@ -273,9 +265,7 @@ function generateRegion2(): MapData {
         }
       }
   };
-  blocks(zonesOf(2)[1].rect, 'stalls');
-  blocks(zonesOf(2)[2].rect, 'shops');
-  blocks(zonesOf(2)[3].rect, 'sheds');
+  zonesOf(2).filter((z) => z.monsters).forEach((z, i) => blocks(z.rect, (['stalls', 'shops', 'sheds', 'stalls', 'shops'] as const)[i]));
 
   // The market square: ash and cobbles around the bonfire, the bakery and two tents.
   const bonfire = { x: 12, y: 24 };
@@ -412,9 +402,7 @@ function generateRegion3(): MapData {
         }
       }
   };
-  blocks(zonesOf(3)[1].rect, 'shops');
-  blocks(zonesOf(3)[2].rect, 'houses');
-  blocks(zonesOf(3)[3].rect, 'platforms');
+  zonesOf(3).filter((z) => z.monsters).forEach((z, i) => blocks(z.rect, (['shops', 'houses', 'platforms', 'houses', 'shops'] as const)[i]));
 
   // The town square: ash around the bonfire, the stationmaster's office north, the stalls south.
   const bonfire = { x: 12, y: 24 };

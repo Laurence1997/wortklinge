@@ -9,13 +9,20 @@ import { EX1 } from '../data/examples1';
 import { EX2 } from '../data/examples2';
 import { EX3 } from '../data/examples3';
 import { EX4 } from '../data/examples4';
+import { LEX_EX } from '../data/lexicon';
 import { genderOf, WORDS } from '../data/words';
 
 export type ClozeMode = 'pick' | 'base' | 'form';
 
+/** Hand-written sentences of the old 640 words first (where the id is still in the 6000-word list), then the list's
+ *  own example sentences with their blank marked by scripts/build_lexicon.py. */
 export const EXAMPLES: Record<string, string[]> = { ...EX1, ...EX2, ...EX3, ...EX4 };
-// 0.7/0.8 stand-in words (regions 4–12 before the 6000-word import) share the sentences of the word they copy.
-for (const w of WORDS) if (w.base && !EXAMPLES[w.id] && EXAMPLES[w.base]) EXAMPLES[w.id] = EXAMPLES[w.base];
+for (const [id, lines] of Object.entries(LEX_EX)) EXAMPLES[id] = [...(EXAMPLES[id] ?? []), ...lines.filter((l) => !EXAMPLES[id]?.includes(l))];
+// Hand-written sentences of old words that are not in the 6000-word list are dropped.
+{
+  const ids = new Set(WORDS.map((w) => w.id));
+  for (const id of Object.keys(EXAMPLES)) if (!ids.has(id)) delete EXAMPLES[id];
+}
 
 export interface Cloze {
   /** Sentence with ___ where the answer goes. */

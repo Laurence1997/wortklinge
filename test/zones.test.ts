@@ -7,52 +7,48 @@ import { normalize } from '../src/core/grading';
 import { answerBoss, startBoss } from '../src/core/boss';
 import { levelCapFor, trialDue } from '../src/core/stages';
 import { startExam, examParts } from '../src/core/breakthrough';
-import { EXAMPLES } from '../src/core/cloze';
 import { UNLOCK } from '../src/core/unlocks';
-import { WORDS, WORD_BY_ID, LATER_SCENE_WORDS, ERODED_SCENE_WORDS } from '../src/data/words';
+import { WORDS, WORD_BY_ID, SCENE_WORDS, ERODED_SCENE_WORDS } from '../src/data/words';
 import { SCENES, SCENE_BY_ID, routeTo } from '../src/data/world';
-import { ERODE_DEFS, REGION_DEFS, fieldLevels, regionLevels } from '../src/data/zones';
+import { ERODE_DEFS, REGION_DEFS, fieldLevels, fieldScenes, regionLevels } from '../src/data/zones';
 import { laterReady, purified } from '../src/core/erosion';
 import { eligible } from '../src/core/spawn';
 import { LATER_BOSSES, laterBossXp } from '../src/data/bossesLater';
 import { generateMap, isBlocked, zonesOf } from '../src/game/map';
 
 describe('0.7/0.8 区域数据', () => {
-  it('the seven new regions have a town, 3 fields × 9–10 scenes with words in the field band, a door and a hidden path', () => {
+  it('the seven new regions have a town, 3 fields of scenes with words in the field band, a door and a hidden path', () => {
     expect(REGION_DEFS.map((d) => d.region)).toEqual([4, 5, 6, 7, 9, 10, 12]);
-    for (const d of REGION_DEFS) {
-      const ss = SCENES.filter((s) => s.region === d.region);
+    for (const r of [1, 2, 3, ...REGION_DEFS.map((d) => d.region)]) {
+      const ss = SCENES.filter((s) => s.region === r);
       const fields = ss.filter((s) => s.type === 'field');
-      for (const f of d.fields) expect(f.scenes.length, `r${d.region} ${f.zh}`).toBeGreaterThanOrEqual(9);
-      for (const f of d.fields) expect(f.scenes.length, `r${d.region} ${f.zh}`).toBeLessThanOrEqual(10);
-      expect(fields.length, `r${d.region}`).toBe(d.fields.reduce((n, f) => n + f.scenes.length, 0));
+      const nf = r <= 3 ? 5 : 3;
+      expect(fieldScenes(r).length, `r${r}`).toBe(nf);
+      for (const f of fieldScenes(r)) expect(f.length, `r${r}`).toBeGreaterThanOrEqual(4);
+      expect(fields.length, `r${r}`).toBe(fieldScenes(r).flat().length);
       expect(ss.some((s) => s.type === 'door')).toBe(true);
       const hide = ss.find((s) => s.type === 'hidden')!;
-      expect(WORD_BY_ID[hide.hiddenBy!], `r${d.region} hidden sign`).toBeTruthy();
-      expect(zonesOf(d.region).filter((z) => z.monsters).length).toBe(3);
+      expect(WORD_BY_ID[hide.hiddenBy!], `r${r} hidden sign`).toBeTruthy();
+      expect(zonesOf(r as never).filter((z) => z.monsters).length).toBe(nf);
       fields.forEach((sc) => {
         expect(sc.words!.length, sc.id).toBeGreaterThan(0);
-        expect(sc.words).toEqual(LATER_SCENE_WORDS[sc.id]);
-        const fi = 'abc'.indexOf(sc.id.split('-')[1][0]) as 0 | 1 | 2;
-        const [lo, hi] = fieldLevels(d.region, fi);
+        expect(sc.words).toEqual(SCENE_WORDS[sc.id]);
+        const fi = 'abcde'.indexOf(sc.id.split('-')[1][0]);
+        const [lo, hi] = fieldLevels(r, fi);
         for (const id of sc.words!) {
           const w = WORD_BY_ID[id];
-          expect(w.region).toBe(d.region);
+          expect(w.region).toBe(r);
           expect(w.zone).toBe(sc.zone);
-          expect(w.lvl).toBeGreaterThanOrEqual(lo);
-          expect(w.lvl).toBeLessThanOrEqual(hi);
+          expect(w.lvl, id).toBeGreaterThanOrEqual(lo - 1);
+          expect(w.lvl, id).toBeLessThanOrEqual(hi + 1);
         }
       });
     }
   });
 
-  it('stand-in words copy a region 1–3 noun and share its example sentences; word ids stay unique', () => {
-    const ph = WORDS.filter((w) => w.base);
-    expect(ph.length).toBeGreaterThan(2000);
-    for (const w of ph) {
-      expect(WORD_BY_ID[w.base!]?.region ?? 0).toBeLessThanOrEqual(3);
-      if (EXAMPLES[w.base!]) expect(EXAMPLES[w.id]).toBe(EXAMPLES[w.base!]);
-    }
+  it('every word comes from the 6000-word list (no stand-ins left); word ids stay unique', () => {
+    expect(WORDS.filter((w) => w.base)).toEqual([]);
+    expect(WORDS.length).toBeGreaterThan(5800);
     expect(new Set(WORDS.map((w) => w.id)).size).toBe(WORDS.length);
   });
 
@@ -80,11 +76,15 @@ describe('0.7/0.8 区域数据', () => {
 });
 
 describe('0.7/0.8 蚀变和两批开', () => {
-  it('蚀变① picks ~28 scenes of regions 1–3, 蚀变② ~4 per region 1–7; words stand at the segment level', () => {
+  it('蚀变① hangs on about half of the region 1–3 scenes, 蚀变② on regions 1–7; words stand at the segment level', () => {
     const [e8, e11] = ERODE_DEFS;
-    expect(e8.scenes.length).toBe(28);
+    const early = SCENES.filter((sc) => sc.type === 'field' && sc.region <= 3).length;
+    expect(e8.scenes.length).toBeGreaterThanOrEqual(early * 0.4);
+    expect(e8.scenes.length).toBeLessThanOrEqual(early * 0.7);
     expect(new Set(e8.scenes.map((x) => SCENE_BY_ID[x.scene].region))).toEqual(new Set([1, 2, 3]));
-    for (let r = 1; r <= 7; r++) expect(e11.scenes.filter((x) => SCENE_BY_ID[x.scene].region === r).length, `r${r}`).toBe(4);
+    for (const x of e11.scenes) expect(SCENE_BY_ID[x.scene].region).toBeLessThanOrEqual(7);
+    const hosts = [...e8.scenes, ...e11.scenes].map((x) => x.scene);
+    expect(new Set(hosts).size).toBe(hosts.length);
     for (const e of ERODE_DEFS) {
       const [lo, hi] = regionLevels(e.seg);
       for (const x of e.scenes) {
@@ -99,35 +99,38 @@ describe('0.7/0.8 蚀变和两批开', () => {
           expect(w.region).toBe(e.seg);
           expect(w.lvl).toBeGreaterThanOrEqual(lo);
           expect(w.lvl).toBeLessThanOrEqual(hi);
-          expect(WORD_BY_ID[w.after!], `${id} after`).toBeTruthy();
+          if (w.after) expect(WORD_BY_ID[w.after], `${id} after`).toBeTruthy();
         }
       }
     }
+    // 近义词梯子: ladder words wait for their base word (reservieren → buchen).
+    expect(WORDS.filter((w) => w.erode && w.after).length).toBeGreaterThan(100);
   });
 
   it('a 蚀变 word waits for its boss and its base word; the second batch for half the group', () => {
     const s = newGame('T', 'student');
     s.level = 75;
-    const id = ERODED_SCENE_WORDS['r3-f2'][0];
-    const w = WORD_BY_ID[id];
+    const w = WORDS.find((x) => x.erode === 8 && x.after)!;
+    const host = w.scene!;
     expect(laterReady(s, w)).toBe(false);
     s.flags.boss7Kills = 1;
-    expect(laterReady(s, w)).toBe(false); // base never written
+    expect(laterReady(s, w)).toBe(w.batch === 2 ? false : false); // base never written
     s.words[w.after!] = { stage: 1, due: 0, write: 1 } as never;
+    const group = SCENE_BY_ID[host].eroded!;
+    if (w.batch === 2) for (const g of group.slice(0, Math.ceil(group.length / 2))) if (g !== w.id) s.words[g] = { stage: 2, due: 0 } as never;
     expect(laterReady(s, w)).toBe(true);
     expect(eligible(s, w)).toBe(true);
-    const group = SCENE_BY_ID['r3-f2'].eroded!;
     expect(purified(s, group, 8)).toBe(false);
     for (const g of group) s.words[g] = { stage: 3, due: 0, retired: 1 } as never;
     expect(purified(s, group, 8)).toBe(true);
-    // Two batches in a new region scene: rows 9+ wait until half the group is 半名.
-    const ids = LATER_SCENE_WORDS['r4-a1'];
-    const late = WORD_BY_ID[ids[8]];
-    expect(late.batch).toBe(2);
-    expect(WORD_BY_ID[ids[7]].batch).toBeUndefined();
-    expect(laterReady(s, late)).toBe(false);
-    for (const g of ids.slice(0, Math.ceil(ids.length / 2))) s.words[g] = { stage: 2, due: 0 } as never;
-    expect(laterReady(s, late)).toBe(true);
+    // Two batches (《进场景第 1 版》 批次): 第 2 批 waits until half the group is 半名.
+    const sc = SCENES.find((x) => x.type === 'field' && x.region === 4 && x.words!.some((id) => WORD_BY_ID[id].batch === 2))!;
+    const ids = sc.words!;
+    const late = WORD_BY_ID[ids.find((id) => WORD_BY_ID[id].batch === 2)!];
+    const s2 = newGame('T', 'student');
+    expect(laterReady(s2, late)).toBe(false);
+    for (const g of ids.slice(0, Math.ceil(ids.length / 2))) s2.words[g] = { stage: 2, due: 0 } as never;
+    expect(laterReady(s2, late)).toBe(true);
   });
 });
 

@@ -1,481 +1,76 @@
-// Region 1 · 余烬营地 Glutheim · Lv 1–10 · about 200 words.
-// Backbone: Goethe-Zertifikat A1 word list; picked by life scene (arriving in Germany,
-// introducing yourself, numbers, family). Written by Claude; needs a native-speaker check.
-//
-// Row format for nouns: 'art de | plural | 中文 | flags'
-// flags: m = usable in "Ich möchte …", t = tutorial word
-// Other rows: 'de | 中文'
+// 6000 词导入 (0.7+0.8, 游戏设计 rev 425/430): every monster word comes from the 6000-word list and its scene groups
+// 《6000词进场景-第1版》, generated into src/data/lexicon.ts by scripts/build_lexicon.py. Regions 1–3 have five fields,
+// regions 4–12 three; 蚀变 groups (segments 8 and 11) hang on old field scenes. Words carry their scene, batch and,
+// for 蚀变 ladder words, the base word they are the advanced form of (`after`).
+// The only word outside the list is the 宝箱怪 Truhe (rare spawn, flees with its chest).
 
 import type { Article, FamilyId, Pos, RegionNo, Word, ZoneId } from '../core/types';
-import { REGION2_GROUPS } from './words2';
-import { REGION3_GROUPS } from './words3';
-import { ERODE_DEFS, FIELD_KEYS, REGION_DEFS, fieldLevels, regionLevels } from './zones';
-import { FIRST_BATCH, PLACEHOLDER_PER_SCENE, SCENE_ROWS } from './zoneWords';
+import { LEX_ERODED, LEX_ROWS, LEX_SCENES } from './lexicon';
 
-interface Group {
-  family: FamilyId;
-  zone: ZoneId;
-  pos: Pos;
-  /** Monster level for the first rows → last rows (spread evenly). */
-  lvl: [number, number];
-  rows: string[];
-}
-
-const groups: Group[] = [
-  {
-    // 牙物: camp objects that grew teeth. Nouns, so they teach der/die/das from Lv1.
-    family: 'zahnding',
-    zone: 'echogasse',
-    pos: 'n',
-    lvl: [1, 3],
-    rows: [
-      'das Brot | Brote | 面包 | mt',
-      'der Tee | Tees | 茶 | mt',
-      'die Tasse | Tassen | 杯子（带把的） | mt',
-      'das Wasser | - | 水 | m',
-      'der Kaffee | Kaffees | 咖啡 | m',
-      'die Flasche | Flaschen | 瓶子 | m',
-      'das Glas | Gläser | 玻璃杯 | m',
-      'der Stuhl | Stühle | 椅子 | m',
-      'der Tisch | Tische | 桌子 | m',
-      'das Bett | Betten | 床 | m',
-      'die Lampe | Lampen | 灯 | m',
-      'die Tür | Türen | 门 |',
-      'das Fenster | Fenster | 窗户 |',
-      'der Schlüssel | Schlüssel | 钥匙 | m',
-      'die Tasche | Taschen | 包（手提包、书包） | m',
-      'das Buch | Bücher | 书 | m',
-      'der Stift | Stifte | 笔 | m',
-      'das Papier | Papiere | 纸 | m',
-      'die Uhr | Uhren | 钟；手表 | m',
-      'das Handy | Handys | 手机 | m',
-      'die Jacke | Jacken | 夹克 | m',
-      'der Schuh | Schuhe | 鞋 |',
-      'die Brille | Brillen | 眼镜 | m',
-      'das Feuer | - | 火 |',
-      'die Decke | Decken | 毯子 | m',
-      'der Koffer | Koffer | 行李箱 | m',
-      'die Karte | Karten | 卡片；地图 | m',
-      'das Foto | Fotos | 照片 | m',
-      'die Zeitung | Zeitungen | 报纸 | m',
-      'der Computer | Computer | 电脑 | m',
-      'das Zimmer | Zimmer | 房间 | m',
-      'das Haus | Häuser | 房子 |',
-      'die Wohnung | Wohnungen | 公寓 | m',
-      'die Straße | Straßen | 街道 |',
-    ],
-  },
-  {
-    // 回声: greetings that lost their speakers and keep shouting.
-    family: 'echo',
-    zone: 'echogasse',
-    pos: 'phr',
-    lvl: [2, 3],
-    rows: [
-      'Hallo | 你好',
-      'Guten Morgen | 早上好',
-      'Guten Tag | 你好（白天）',
-      'Guten Abend | 晚上好',
-      'Gute Nacht | 晚安',
-      'Tschüss | 再见（熟人之间）',
-      'Auf Wiedersehen | 再见（正式）',
-      'Danke | 谢谢',
-      'Bitte | 请；不客气',
-      'Vielen Dank | 非常感谢',
-      'Ja | 是',
-      'Nein | 不是',
-      'Entschuldigung | 对不起；打扰一下',
-      'Wie bitte? | 什么？（没听清时）',
-      'Wie geht’s? | 你好吗？',
-      'Freut mich | 很高兴认识你',
-      'Bis bald | 回头见',
-      'Bis morgen | 明天见',
-      'Herzlich willkommen | 热烈欢迎',
-      'Alles klar | 明白了',
-      'Kein Problem | 没问题',
-      'Ich weiß nicht | 我不知道',
-      'Noch einmal, bitte | 请再说一遍',
-      'Gern | 乐意',
-    ],
-  },
-  {
-    // 名牌: name tags, forms and job titles that forgot who they belong to.
-    family: 'schild',
-    zone: 'schilderstrasse',
-    pos: 'n',
-    lvl: [3, 6],
-    rows: [
-      'der Name | Namen | 名字 |',
-      'der Vorname | Vornamen | 名（不含姓） |',
-      'der Familienname | Familiennamen | 姓（正式说法，表格用） |',
-      'die Adresse | Adressen | 地址 |',
-      'die Telefonnummer | Telefonnummern | 电话号码 |',
-      'die E-Mail | E-Mails | 电子邮件 |',
-      'das Alter | - | 年龄 |',
-      'der Beruf | Berufe | 职业 |',
-      'die Sprache | Sprachen | 语言 |',
-      'das Land | Länder | 国家 |',
-      'die Stadt | Städte | 城市 |',
-      'der Ausweis | Ausweise | 身份证件 | m',
-      'der Pass | Pässe | 护照 |',
-      'das Formular | Formulare | 表格 | m',
-      'der Kurs | Kurse | 课程 | m',
-      'die Schule | Schulen | 学校 |',
-      'die Arbeit | Arbeiten | 工作 |',
-      'der Student | Studenten | 大学生（男） |',
-      'die Studentin | Studentinnen | 大学生（女） |',
-      'der Lehrer | Lehrer | 老师（男） |',
-      'die Lehrerin | Lehrerinnen | 老师（女） |',
-      'der Arzt | Ärzte | 医生（男） |',
-      'die Ärztin | Ärztinnen | 医生（女） |',
-      'der Koch | Köche | 厨师（男） |',
-      'die Köchin | Köchinnen | 厨师（女） |',
-      'der Ingenieur | Ingenieure | 工程师（男） |',
-      'der Freund | Freunde | 朋友（男） |',
-      'die Freundin | Freundinnen | 朋友（女） |',
-      'der Mann | Männer | 男人；丈夫 |',
-      'die Frau | Frauen | 女人；妻子；女士 |',
-      'das Kind | Kinder | 孩子 |',
-      'der Herr | Herren | 先生 |',
-      'der Nachbar | Nachbarn | 邻居（男） |',
-      'die Nachbarin | Nachbarinnen | 邻居（女） |',
-      'das Wort | Wörter | 词 |',
-      'der Satz | Sätze | 句子 |',
-      'die Frage | Fragen | 问题（提问） |',
-      'die Antwort | Antworten | 回答 |',
-    ],
-  },
-  {
-    family: 'schild',
-    zone: 'schilderstrasse',
-    pos: 'name',
-    lvl: [4, 6],
-    rows: [
-      'Deutschland | 德国',
-      'China | 中国',
-      'Österreich | 奥地利',
-      'die Schweiz | 瑞士',
-      'die Türkei | 土耳其',
-      'Italien | 意大利',
-      'Spanien | 西班牙',
-      'Frankreich | 法国',
-      'Japan | 日本',
-      'Deutsch | 德语',
-      'Chinesisch | 汉语',
-      'Englisch | 英语',
-    ],
-  },
-  {
-    family: 'schild',
-    zone: 'schilderstrasse',
-    pos: 'q',
-    lvl: [3, 5],
-    rows: ['wer | 谁', 'was | 什么', 'wo | 在哪里', 'woher | 从哪里', 'wie | 怎样；如何', 'wie viel | 多少'],
-  },
-  {
-    family: 'schild',
-    zone: 'schilderstrasse',
-    pos: 'v',
-    lvl: [4, 7],
-    rows: [
-      'sein | 是',
-      'haben | 有',
-      'heißen | 叫做',
-      'kommen | 来',
-      'wohnen | 住（住在某处）',
-      'sprechen | 说（语言）',
-      'lernen | 学习（学知识、技能）',
-      'arbeiten | 工作',
-      'machen | 做',
-      'gehen | 去；走',
-      'verstehen | 理解；听懂',
-      'buchstabieren | 拼写（逐个字母念）',
-      'fragen | 问',
-      'antworten | 回答',
-      'schreiben | 写',
-      'lesen | 读',
-      'hören | 听',
-      'sagen | 说（说出内容）',
-    ],
-  },
-  {
-    // 数虫: numbers that crawl and sting.
-    family: 'zahlwurm',
-    zone: 'schilderstrasse',
-    pos: 'num',
-    lvl: [3, 5],
-    rows: [
-      'null | 0',
-      'eins | 1',
-      'zwei | 2',
-      'drei | 3',
-      'vier | 4',
-      'fünf | 5',
-      'sechs | 6',
-      'sieben | 7',
-      'acht | 8',
-      'neun | 9',
-      'zehn | 10',
-      'elf | 11',
-      'zwölf | 12',
-    ],
-  },
-  {
-    family: 'zahlwurm',
-    zone: 'aschehof',
-    pos: 'num',
-    lvl: [6, 8],
-    rows: [
-      'dreizehn | 13',
-      'vierzehn | 14',
-      'fünfzehn | 15',
-      'sechzehn | 16',
-      'siebzehn | 17',
-      'achtzehn | 18',
-      'neunzehn | 19',
-      'zwanzig | 20',
-      'einundzwanzig | 21',
-      'dreißig | 30',
-      'vierzig | 40',
-      'fünfzig | 50',
-      'hundert | 100',
-    ],
-  },
-  {
-    // 影亲: shadows of family members in the burnt-out flats.
-    family: 'sippe',
-    zone: 'aschehof',
-    pos: 'n',
-    lvl: [6, 9],
-    rows: [
-      'die Familie | Familien | 家庭 |',
-      'der Vater | Väter | 父亲 |',
-      'die Mutter | Mütter | 母亲 |',
-      'die Eltern | pl | 父母 |',
-      'der Sohn | Söhne | 儿子 |',
-      'die Tochter | Töchter | 女儿 |',
-      'der Bruder | Brüder | 兄弟 |',
-      'die Schwester | Schwestern | 姐妹 |',
-      'die Geschwister | pl | 兄弟姐妹 |',
-      'der Opa | Opas | 爷爷；外公（口语） |',
-      'die Oma | Omas | 奶奶；外婆 |',
-      'der Großvater | Großväter | 祖父（正式说法） |',
-      'die Großmutter | Großmütter | 祖母（正式说法） |',
-      'das Baby | Babys | 婴儿 |',
-      'der Onkel | Onkel | 叔叔；舅舅 |',
-      'die Tante | Tanten | 阿姨；姑姑 |',
-      'der Junge | Jungen | 男孩 |',
-      'das Mädchen | Mädchen | 女孩 |',
-      'die Leute | pl | 人们 |',
-      'der Hund | Hunde | 狗 | m',
-      'die Katze | Katzen | 猫 | m',
-      'der Geburtstag | Geburtstage | 生日 |',
-      'das Jahr | Jahre | 年 |',
-      'der Tag | Tage | 天 |',
-      'die Woche | Wochen | 星期 |',
-      'der Monat | Monate | 月 |',
-    ],
-  },
-  {
-    family: 'sippe',
-    zone: 'aschehof',
-    pos: 'adj',
-    lvl: [6, 9],
-    rows: [
-      'groß | 大；高',
-      'klein | 小',
-      'alt | 老；旧',
-      'jung | 年轻',
-      'neu | 新',
-      'schön | 美丽',
-      'verheiratet | 已婚',
-      'ledig | 单身',
-      'müde | 累',
-      'krank | 生病',
-      'nett | 友好',
-      'toll | 很棒',
-      'hier | 这里',
-      'heute | 今天',
-      'morgen | 明天',
-      'auch | 也',
-      'sehr | 非常',
-      'nicht | 不（句中否定）',
-    ],
-  },
-];
-
-function slug(s: string): string {
-  return s
-    .toLowerCase()
-    .replace(/ä/g, 'ae')
-    .replace(/ö/g, 'oe')
-    .replace(/ü/g, 'ue')
-    .replace(/ß/g, 'ss')
-    .replace(/é/g, 'e')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '');
-}
+/** Nouns of these situations work in 「Ich möchte …」 (food, drink and things you can ask for). */
+const MOECHTE_SITUATIONS = new Set(['吃喝', '日常物品', '购物付钱']);
 
 function build(): Word[] {
-  const out: Word[] = [];
-  const seen = new Set<string>();
-  const all = [...groups.map((g) => ({ g, region: 1 as const })), ...REGION2_GROUPS.map((g) => ({ g, region: 2 as const })), ...REGION3_GROUPS.map((g) => ({ g, region: 3 as const }))];
-  for (const { g, region } of all) {
-    g.rows.forEach((row, i) => {
-      const parts = row.split('|').map((p) => p.trim());
-      const t = g.rows.length > 1 ? i / (g.rows.length - 1) : 0;
-      const lvl = Math.round(g.lvl[0] + (g.lvl[1] - g.lvl[0]) * t);
-      let w: Word;
-      if (g.pos === 'n') {
-        const [head, pl, zh, flags = ''] = parts;
-        const sp = head.indexOf(' ');
-        const art = head.slice(0, sp) as Article;
-        const de = head.slice(sp + 1);
-        w = {
-          id: slug(de),
-          de,
-          art,
-          pl: pl === 'pl' ? undefined : pl,
-          plOnly: pl === 'pl' || undefined,
-          zh,
-          pos: 'n',
-          family: g.family,
-          lvl,
-          zone: g.zone,
-          moechte: flags.includes('m') || undefined,
-          tutorial: flags.includes('t') || undefined,
-        };
-      } else {
-        const [deRaw, zh] = parts;
-        let de = deRaw;
-        let art: Article | undefined;
-        // Country names with an article (die Schweiz) still count as names.
-        const m = /^(der|die|das) (.+)$/.exec(deRaw);
-        if (m && g.pos === 'name') {
-          art = m[1] as Article;
-          de = m[2];
-        }
-        w = {
-          id: slug(de) + (g.pos === 'num' ? '-num' : ''),
-          de,
-          art,
-          zh: g.pos === 'num' ? `数字 ${zh}` : zh,
-          digit: g.pos === 'num' ? zh : undefined,
-          pos: g.pos,
-          family: g.family,
-          lvl,
-          zone: g.zone,
-        };
-      }
-      // "morgen" (tomorrow) vs "Guten Morgen" and similar: ids must stay unique.
-      w.region = region;
-      while (seen.has(w.id)) w.id += '-2';
-      seen.add(w.id);
-      out.push(w);
-    });
-  }
-  out.push(...buildLater(out, seen));
+  const situation = new Map<string, string>();
+  for (const [, , , , sit, ids] of LEX_SCENES) for (const id of ids) situation.set(id, sit);
+  const out: Word[] = LEX_ROWS.split('\n').map((line) => {
+    const [id, de, art, pl, zh, pos, family, lvl, zone, scene, region, erode, batch, after, digit, , , , , ex] = line.split('\t');
+    const w: Word = { id, de, zh, pos: pos as Pos, family: family as FamilyId, lvl: +lvl, zone: zone as ZoneId, region: +region as RegionNo, scene };
+    if (art) w.art = art as Article;
+    if (pl === '+') w.plOnly = true;
+    else if (pl) w.pl = pl;
+    if (erode) w.erode = +erode as 8 | 11;
+    if (batch) w.batch = 2;
+    if (after) w.after = after;
+    if (digit) w.digit = digit;
+    if (pos === 'num') w.zh = `数字 ${digit}`;
+    if (ex) w.ex = ex;
+    if (pos === 'n' && !erode && w.pl && w.pl !== '-' && MOECHTE_SITUATIONS.has(situation.get(id) ?? '')) w.moechte = true;
+    return w;
+  });
+  // The opening bread by the bonfire (tutorial respawn) is the list's Brot.
+  const brot = out.find((w) => w.id === 'brot');
+  if (brot) brot.tutorial = true;
+  out.push({ id: 'truhe', de: 'Truhe', art: 'die', pl: 'Truhen', zh: '宝箱', pos: 'n', family: 'truhe', lvl: 15, zone: 'waagegasse', region: 2 });
   return out;
 }
 
-/** 0.7/0.8: word ids of each region 4–12 scene (r4-a1 …), filled by buildLater. */
-export const LATER_SCENE_WORDS: Record<string, string[]> = {};
-/** 蚀变 word groups by old scene id (src/data/zones.ts ERODE_DEFS). */
-export const ERODED_SCENE_WORDS: Record<string, string[]> = {};
-
-const POS_FAMILY: Partial<Record<Pos, FamilyId>> = { n: 'kram', v: 'nachhall', adj: 'echo', phr: 'echo', num: 'zahlwurm', q: 'schild', name: 'schild' };
-
-/** Regions 4–12 (src/data/zones.ts): each scene's rows from zoneWords.ts, or stand-in nouns from regions 1–3
- *  (`ph<region>-<id>`, `base` = the copied word) until the 6000-word list is imported. Levels spread over the field's
- *  band in route order, like regions 1–3. Rows past FIRST_BATCH are the scene's second batch. Then the 蚀变 layers:
- *  a second word group on old scenes, at the segment's level (`erode`, `region` = segment, `after` = base word). */
-function buildLater(early: Word[], seen: Set<string>): Word[] {
-  const out: Word[] = [];
-  // Stand-ins: nouns with a plural and an example-ready id, region 3 first (closest in level and topic), rotating.
-  const ok = (w: Word) => w.pos === 'n' && !!w.art && !!w.pl && w.pl !== '-' && !w.plOnly && !w.tutorial && w.family !== 'truhe';
-  const pool = [...early.filter((w) => w.region === 3), ...early.filter((w) => w.region === 2), ...early.filter((w) => w.region === 1)].filter(ok);
-  let next = 0;
-  const claim = (id: string) => {
-    while (seen.has(id)) id += '-2';
-    seen.add(id);
-    return id;
-  };
-  /** One scene's words: its rows, or stand-ins from `bases` (each word knows its scene and batch). */
-  const fill = (key: string, scene: string, zone: ZoneId, region: RegionNo, lvlAt: (i: number, n: number) => number, bases: () => Word, extra: Partial<Word> = {}) => {
-    const rows = SCENE_ROWS[key];
-    const ids: string[] = [];
-    const push = (w: Word, i: number) => {
-      w.id = claim(w.id);
-      w.region = region;
-      w.scene = scene;
-      if (i >= FIRST_BATCH) w.batch = 2;
-      ids.push(w.id);
-      out.push(w);
-    };
-    if (rows?.length)
-      rows.forEach((row, i) => {
-        const [body, after] = row.split(' > ').map((x) => x.trim());
-        const w = parseLaterRow(body, zone, lvlAt(i, rows.length));
-        if (w) push({ ...w, ...extra, ...(after ? { after } : {}) }, i);
-      });
-    else
-      for (let i = 0; i < PLACEHOLDER_PER_SCENE && pool.length; i++) {
-        const b = bases();
-        const root = b.base ?? b.id;
-        push({ ...b, id: `ph${region}-${root}`, base: root, zone, lvl: lvlAt(i, PLACEHOLDER_PER_SCENE), moechte: undefined, ex: undefined, batch: undefined, ...extra, ...(extra.erode ? { after: b.id } : {}) }, i);
-      }
-    return ids;
-  };
-  for (const d of REGION_DEFS) {
-    d.fields.forEach((f, fi) => {
-      const [lo, hi] = fieldLevels(d.region, fi as 0 | 1 | 2);
-      const zone = `r${d.region}${FIELD_KEYS[fi]}` as ZoneId;
-      const n = f.scenes.length;
-      f.scenes.forEach((_, si) => {
-        const scene = `r${d.region}-${FIELD_KEYS[fi]}${si + 1}`;
-        // Scene si of n covers its share of the band; rows inside it climb within that share.
-        const lvlAt = (i: number, k: number) => Math.round(lo + (hi - lo) * ((si + (k > 1 ? i / (k - 1) : 0)) / n));
-        LATER_SCENE_WORDS[scene] = fill(scene, scene, zone, d.region, lvlAt, () => pool[next++ % pool.length]);
-      });
-    });
-  }
-  // 蚀变: stand-ins copy the old scene's own words where it has its group here (regions 4–7), else nouns of its
-  // field (regions 1–3), so 「基础词写对过一次才出进阶词」 already works on them.
-  const byId = new Map([...early, ...out].map((w) => [w.id, w]));
-  for (const e of ERODE_DEFS) {
-    const [lo, hi] = regionLevels(e.seg);
-    e.scenes.forEach((x, k) => {
-      const own = (LATER_SCENE_WORDS[x.scene] ?? []).map((id) => byId.get(id)!).filter(ok);
-      const field = early.filter((w) => w.zone === x.zone && ok(w));
-      const bases = own.length ? own : field.length ? field : pool;
-      let j = k;
-      const lvlAt = (i: number, n: number) => Math.round(lo + (hi - lo) * ((k + (n > 1 ? i / (n - 1) : 0)) / e.scenes.length));
-      ERODED_SCENE_WORDS[x.scene] = fill(`${x.scene}@${e.seg}`, x.scene, x.zone, e.seg, lvlAt, () => bases[j++ % bases.length], { erode: e.seg });
-    });
-  }
-  return out;
-}
-
-/** One zoneWords.ts row → a Word ('n: die Wohnung | Wohnungen | 公寓', 'v: umziehen | 搬家' …). */
-export function parseLaterRow(row: string, zone: ZoneId, lvl: number): Word | null {
-  const m = /^\s*(n|v|adj|phr|num|q|name)\s*:\s*(.+)$/.exec(row);
-  if (!m) return null;
-  const pos = m[1] as Pos;
-  const parts = m[2].split('|').map((p) => p.trim());
-  const family = POS_FAMILY[pos] ?? 'kram';
-  if (pos === 'n') {
-    const [head, pl, zh] = parts;
-    const a = /^(der|die|das) (.+)$/.exec(head ?? '');
-    if (!a || !zh) return null;
-    return { id: slug(a[2]), de: a[2], art: a[1] as Article, pl: pl === 'pl' ? undefined : pl, plOnly: pl === 'pl' || undefined, zh, pos, family, lvl, zone };
-  }
-  const [de, zh] = parts;
-  if (!de || !zh) return null;
-  return { id: slug(de) + (pos === 'num' ? '-num' : ''), de, zh: pos === 'num' ? `数字 ${zh}` : zh, digit: pos === 'num' ? zh : undefined, pos, family, lvl, zone };
-}
+/** Word ids of each field scene (all regions), in group order. */
+export const SCENE_WORDS: Record<string, string[]> = Object.fromEntries(LEX_SCENES.map(([id, , , , , ids]) => [id, ids]));
+/** @deprecated name from before the import; same object as SCENE_WORDS. */
+export const LATER_SCENE_WORDS = SCENE_WORDS;
+/** 蚀变 word groups by old scene id. */
+export const ERODED_SCENE_WORDS: Record<string, string[]> = Object.fromEntries(LEX_ERODED.map(([scene, , ids]) => [scene, ids]));
+/** Segment of each 蚀变 host scene. */
+export const ERODED_SEG: Record<string, 8 | 11> = Object.fromEntries(LEX_ERODED.map(([scene, seg]) => [scene, seg]));
 
 export const WORDS: Word[] = build();
 export const WORD_BY_ID: Record<string, Word> = Object.fromEntries(WORDS.map((w) => [w.id, w]));
+
+/** Old region 1–3 content made for the 640-word scenes (diary pages, scene pictures) follows its words to the 6000-word
+ *  scenes: each item goes to the scene of its region that holds most of its words, one item per scene, best matches
+ *  first. Items with no word left in their region get no scene. */
+export function sceneByWords(items: Array<{ key: string; ids: string[] }>): Map<string, string> {
+  const cands: Array<[string, string, number]> = [];
+  for (const it of items) {
+    const region = +it.key.slice(1, it.key.indexOf('-'));
+    const count = new Map<string, number>();
+    for (const id of it.ids) {
+      const w = WORD_BY_ID[id];
+      if (w?.scene && !w.erode && w.region === region) count.set(w.scene, (count.get(w.scene) ?? 0) + 1);
+    }
+    for (const [sc, n] of count) cands.push([it.key, sc, n]);
+  }
+  cands.sort((a, b) => b[2] - a[2]);
+  const out = new Map<string, string>();
+  const taken = new Set<string>();
+  for (const [key, sc] of cands) {
+    if (out.has(key) || taken.has(sc)) continue;
+    out.set(key, sc);
+    taken.add(sc);
+  }
+  return out;
+}
 
 /** Display form with article: "der Tee", "die Eltern", "Hallo". */
 export function fullForm(w: Word): string {

@@ -37,6 +37,8 @@ export interface Settings {
 
 export interface GameState {
   version: 3;
+  /** 6000 词导入 (0.7+0.8): 1 = the save was started on the 6000-word list. Older saves are reset once (see migrate). */
+  lexicon?: number;
   createdAt: number;
   /** Real time of the last local save (ms); the newer of local and cloud wins. */
   savedAt?: number;
@@ -111,6 +113,7 @@ export function dayKey(t: number): string {
 export function newGame(name: string, origin: string, t = Date.now()): GameState {
   return {
     version: 3,
+    lexicon: LEXICON,
     gearKills: {},
     createdAt: t,
     name,
@@ -289,7 +292,10 @@ export function load(): GameState | null {
   try {
     const raw = localStorage.getItem(KEY);
     if (!raw) return null;
-    return migrate(JSON.parse(raw));
+    const parsed = JSON.parse(raw);
+    // 6000 词导入: keep a copy of the pre-reset save in this browser (never read by the game, only for support).
+    if (parsed && (parsed.lexicon ?? 0) < LEXICON && !localStorage.getItem(`${KEY}.before6000`)) localStorage.setItem(`${KEY}.before6000`, raw);
+    return migrate(parsed);
   } catch {
     return null;
   }
@@ -303,8 +309,23 @@ export function clearSave(): void {
   }
 }
 
+/** Word-list generation of new saves (6000 词导入 = 1). */
+export const LEXICON = 1;
+
+/** The one and only save reset (Lucas 2026-11-25, 6000 词导入, announced in the game before release): a save from
+ *  before the 6000-word list starts over as a new game with the same name, origin and account. `flags.reset6000`
+ *  shows the note once. Everything else about the old save is dropped (its word ids no longer exist). */
+function resetForLexicon(old: GameState): GameState {
+  const s = newGame(old.name ?? '', old.origin ?? 'student');
+  if (old.owner) s.owner = old.owner;
+  s.savedAt = old.savedAt;
+  s.flags.reset6000 = true;
+  return s;
+}
+
 export function migrate(raw: unknown): GameState | null {
   if (!raw || typeof raw !== 'object') return null;
+  if (typeof (raw as GameState).level === 'number' && ((raw as GameState).lexicon ?? 0) < LEXICON) return resetForLexicon(raw as GameState);
   const s = raw as GameState;
   // Saves are never thrown away for a version mismatch: older versions are converted step by step here
   // (add `if (s.version === N) { ...convert...; s.version = N + 1 }` blocks when the format changes).

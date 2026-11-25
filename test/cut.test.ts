@@ -10,9 +10,12 @@ import { dueCount } from '../src/core/dailies';
 import { answerScreen, claimScene, homeScene, pendingXp, sameMeaning, startScreen } from '../src/core/screen';
 import { CONFIG, DAY, xpToNext } from '../src/core/config';
 import { dropPages } from '../src/core/diary';
+import { DIARY } from '../src/data/diary';
 import { fullForm, WORD_BY_ID, WORDS } from '../src/data/words';
 
 const T0 = new Date('2026-11-22T12:00:00').getTime();
+/** The field of die Lampe (6000 词导入: 租屋城, field B). */
+const LZ = WORD_BY_ID['lampe'].zone;
 
 function game(level = 6): GameState {
   const s = newGame('T', 'student', T0);
@@ -60,7 +63,7 @@ describe('斩杀 · 野外', () => {
     expect(r.verdict.notes.some((n) => n.includes('会写 1/2'))).toBe(true);
     expect(s.words.lampe.pend).toBeTruthy();
     expect(cutStatus(s.words.lampe, T0)).toContain('会写 1/2');
-    const picks = pickSpawns(s, 'echogasse', 30, new Set(), makeRng(2));
+    const picks = pickSpawns(s, LZ, 30, new Set(), makeRng(2));
     expect(picks.some((p) => p.word.id === 'lampe')).toBe(false);
   });
 
@@ -133,7 +136,7 @@ describe('斩杀 · 第二天验证', () => {
   it('glitched, typing first, no 低语; right → 可斩杀 and retired, never spawns again (until the 回响 check)', () => {
     const s = pendYesterday('lampe');
     expect(verifyOf(s.words.lampe, T0)).toBe('pend');
-    const sp = pickSpawns(s, 'echogasse', 3, new Set(), makeRng(1));
+    const sp = pickSpawns(s, LZ, 3, new Set(), makeRng(1));
     expect(sp.some((p) => p.word.id === 'lampe')).toBe(true);
     const b = fight(s, 'lampe');
     expect(b.verify).toBe('pend');
@@ -148,7 +151,7 @@ describe('斩杀 · 第二天验证', () => {
     expect(s.words.lampe.retired).toBeTruthy();
     expect(stageOf(s, WORD_BY_ID['lampe'], T0 + 200 * DAY)).toBe(3);
     expect(kindOf(s, WORD_BY_ID['lampe'])).toBe('guiming');
-    expect(pickSpawns(s, 'echogasse', 30, new Set(), makeRng(2)).some((p) => p.word.id === 'lampe')).toBe(false);
+    expect(pickSpawns(s, LZ, 30, new Set(), makeRng(2)).some((p) => p.word.id === 'lampe')).toBe(false);
     expect(cutStatus(s.words.lampe, T0)).toBe('已斩杀');
   });
 
@@ -196,15 +199,15 @@ describe('斩杀 · 第二天验证', () => {
 describe('场景刷空', () => {
   it('a field whose words are all retired still fills (next-region monsters) and says 去下一区', () => {
     const s = game(9);
-    for (const w of zoneWords('echogasse')) {
+    for (const w of zoneWords(LZ)) {
       met(s, w.id, 3);
       s.words[w.id].retired = T0;
     }
-    expect(fieldCleared(s, 'echogasse')).toBe(true);
-    const picks = pickSpawns(s, 'echogasse', 6, new Set(), makeRng(1));
+    expect(fieldCleared(s, LZ)).toBe(true);
+    const picks = pickSpawns(s, LZ, 6, new Set(), makeRng(1));
     expect(picks.length).toBeGreaterThan(0);
-    expect(picks.every((p) => p.word.zone !== 'echogasse')).toBe(true);
-    expect(picks.some((p) => (p.word.region ?? 1) === 2)).toBe(true);
+    expect(picks.every((p) => p.word.zone !== LZ)).toBe(true);
+    expect(picks.some((p) => (p.word.region ?? 1) > WORD_BY_ID['lampe'].region!)).toBe(true);
   });
 });
 
@@ -215,12 +218,12 @@ describe('复数怪不跟着退役', () => {
     s.words.lampe.retired = T0;
     const b = startBattle(s, WORD_BY_ID['lampe'], makeRng(9));
     expect(b.pluralMon).toBe(true);
-    for (const w of zoneWords('echogasse')) {
+    for (const w of zoneWords(LZ)) {
       met(s, w.id, 3);
       s.words[w.id].retired = T0;
     }
-    const picks = pickSpawns(s, 'echogasse', 6, new Set(), makeRng(1));
-    expect(picks.some((p) => p.word.zone === 'echogasse')).toBe(true);
+    const picks = pickSpawns(s, LZ, 6, new Set(), makeRng(1));
+    expect(picks.some((p) => p.word.zone === LZ)).toBe(true);
   });
 });
 
@@ -255,19 +258,20 @@ describe('主城全量筛选', () => {
   });
 
   it('the same Chinese (brackets aside) counts and retires the word written', () => {
-    expect(sameMeaning(WORD_BY_ID['tschuess'], WORD_BY_ID['auf-wiedersehen'])).toBe(true);
+    expect(sameMeaning(WORD_BY_ID['uni'], WORD_BY_ID['universitaet'])).toBe(true);
     expect(sameMeaning(WORD_BY_ID['arbeit'], WORD_BY_ID['arbeiten'])).toBe(false);
     const s = game(3);
-    const run = startScreen(s, '1');
-    run.current = WORD_BY_ID['tschuess'];
-    answerScreen(s, run, 'Auf Wiedersehen');
-    expect(s.words['auf-wiedersehen'].retired).toBeTruthy();
-    expect(s.words.tschuess).toBeUndefined();
+    const run = startScreen(s, String(WORD_BY_ID['uni'].region) as never);
+    run.current = WORD_BY_ID['uni'];
+    answerScreen(s, run, 'die Universität');
+    expect(s.words['universitaet'].retired).toBeTruthy();
+    expect(s.words.uni).toBeUndefined();
   });
 
   it('walking into the scene pays the stored XP once (level gap applied, at most one level) and drops its diary page only then', () => {
     const s = game(3);
-    const sc = homeScene('lampe')!;
+    // A scene that has a diary page (6000 词导入: not every new scene has one yet).
+    const sc = homeScene(WORD_BY_ID[DIARY[0].lines.join(' ').match(/\{([a-z0-9-]+)/)![1]].id)!;
     const run = startScreen(s, '1');
     for (const id of sc.words!) {
       run.current = WORD_BY_ID[id];
