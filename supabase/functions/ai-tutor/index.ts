@@ -2,13 +2,14 @@
 // function checks it in order and stops at the first step that decides:
 //   1. rule check: the sentence must use the monster's word (one of `forms`), else no model call at all;
 //   2. LanguageTool (public API): grammar / spelling matches, passed to the model as hints;
-//   3. the model (gpt-6-luna; DeepSeek when OpenAI refuses for quota or errors) returns a short JSON verdict.
+//   3. the model (gpt-6-luna, OpenAI only — Lucas 2026-11-25, no fallback) returns a short JSON verdict.
+//      Out of credit or down → 502 'model', and the game says AI is unavailable for now; nothing else depends on it.
 // 决斗场 ('duel'): the model plays the scene's NPC in simple German and notes the player's mistakes. The client sends
 // 3–5 target words the player must use; this function reports by rule which of them the reply used.
 // 小作文 ('essay'): 3–5 sentences with the given words, graded like 'grade'.
 // `known`: the player's learned words; the model is told to stay inside them (and simple patterns) when it writes.
 // Every model call takes one use of the player's daily quota (public.ai_take; caps are settings, migration 0004).
-// Secrets (Supabase dashboard → Edge Functions → Secrets): OPENAI_API_KEY, DEEPSEEK_API_KEY; optional AI_MODEL.
+// Secrets (Supabase dashboard → Edge Functions → Secrets): OPENAI_API_KEY; optional AI_MODEL.
 // SUPABASE_URL and SUPABASE_ANON_KEY are provided by Supabase. No key ever reaches the browser.
 
 const ALLOWED = ['https://wortklinge.myreverielab.com', 'http://localhost:5173', 'http://localhost:4173'];
@@ -97,11 +98,10 @@ async function languageTool(text: string): Promise<Array<{ msg: string; bad: str
   }
 }
 
-/** One chat call; OpenAI first, DeepSeek when OpenAI is out of quota or fails. */
+/** One chat call to OpenAI (gpt-6-luna). Null when the key is missing, the account is out of credit or the call fails. */
 async function chat(system: string, user: string): Promise<{ json: any; model: string } | null> {
   const tries: Array<{ url: string; key?: string; model: string; extra: Record<string, unknown> }> = [
     { url: 'https://api.openai.com/v1/chat/completions', key: Deno.env.get('OPENAI_API_KEY'), model: MODEL, extra: { reasoning_effort: 'low' } },
-    { url: 'https://api.deepseek.com/chat/completions', key: Deno.env.get('DEEPSEEK_API_KEY'), model: 'deepseek-flash', extra: { temperature: 0.3 } },
   ];
   for (const t of tries) {
     if (!t.key) continue;
@@ -111,7 +111,10 @@ async function chat(system: string, user: string): Promise<{ json: any; model: s
         headers: { Authorization: `Bearer ${t.key}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ model: t.model, messages: [{ role: 'system', content: system }, { role: 'user', content: user }], response_format: { type: 'json_object' }, ...t.extra }),
       });
-      if (!r.ok) continue; // 402 / 429 quota, 5xx: next provider
+      if (!r.ok) {
+        console.error('openai', r.status, (await r.text()).slice(0, 300));
+        continue;
+      }
       const j = await r.json();
       const raw = j.choices?.[0]?.message?.content ?? '';
       return { json: JSON.parse(raw.slice(raw.indexOf('{'), raw.lastIndexOf('}') + 1)), model: t.model };
@@ -136,6 +139,9 @@ const DUEL_SYS = `你在一款学德语的游戏里扮演场景里的人物，�
 每次只说一两句，自然、口语化，推动对话往场景目标走；玩家还没用上的「要用的词」，用提问自然地引他说出来，但你自己不要先说出这些词。玩家的德语有错时，在 note 里用中文简短指出最重要的一处（没有错就留空）。
 只输出 JSON：{"de":"你说的德语","zh":"中文翻译","note":"对玩家上一句的纠错，中文，可为空","done":true|false（场景目标完成时为 true）,"bad":["「要用的词」里玩家上一句用错了的词，照给的写法，没有就空数组"]}`;
 
+let lastPing = 0;
+let lastPingOk = false;
+
 Deno.serve(async (req) => {
   const origin = req.headers.get('origin');
   const h = cors(origin);
@@ -143,6 +149,22 @@ Deno.serve(async (req) => {
   if (req.method !== 'POST') return new Response('POST only', { status: 405, headers: h });
   if (!origin || !ALLOWED.includes(origin)) return new Response('origin not allowed', { status: 403, headers: h });
   const auth = req.headers.get('authorization') ?? '';
+  // Health check (no login): is the key there, and does a tiny call go through (credit left)? At most once a minute
+  // per instance, a few tokens, so it can't be used to run up the bill.
+  if (new URL(req.url).searchParams.get('ping') === '1') {
+    const key = Deno.env.get('OPENAI_API_KEY');
+    if (!key) return Response.json({ ok: false, why: 'no_key' }, { headers: h });
+    if (Date.now() - lastPing < 60_000) return Response.json({ ok: lastPingOk, cached: true, model: MODEL }, { headers: h });
+    lastPing = Date.now();
+    const r = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: MODEL, messages: [{ role: 'user', content: 'Antworte nur mit: ok' }], max_completion_tokens: 64, reasoning_effort: 'low' }),
+    });
+    const why = r.ok ? '' : (await r.text()).slice(0, 200);
+    lastPingOk = r.ok;
+    return Response.json({ ok: r.ok, status: r.status, model: MODEL, why }, { headers: h });
+  }
   if (!auth.startsWith('Bearer ')) return Response.json({ error: 'login' }, { status: 401, headers: h });
   let body: GradeReq | DuelReq | EssayReq;
   try {

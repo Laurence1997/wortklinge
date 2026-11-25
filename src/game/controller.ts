@@ -218,7 +218,7 @@ export class Controller {
     // AI 批改 (10 级): logged-in players get a teacher's note on the entry; offline or over the cap, nothing changes.
     if (s.level >= AI_TUTOR.grade && s.owner) {
       void aiGradeText(text.trim(), words, '篝火日记：用今天打过的词写两三句话', s.level, knownWords(s)).then((r) => {
-        if ('error' in r) return r.error === 'quota' ? toast('今天的 AI 批改次数用完了') : undefined;
+        if ('error' in r) return r.error === 'quota' ? toast('今天的 AI 批改次数用完了') : r.error === 'model' ? toast('AI 暂时不可用，日记照常记下了') : undefined;
         const lines = gradeLines(r);
         if (lines.length) say(lines);
       });
@@ -845,7 +845,7 @@ export class Controller {
     if (q.write === 'compose' && input.trim() && s.level >= AI_TUTOR.elite && s.owner) {
       const w = b.word;
       void aiGrade(input.trim(), w, `场景精英：用 ${w.de}（${w.zh}）写一句短句`, s.level, knownWords(s)).then((g) => {
-        if ('error' in g) return g.error === 'quota' ? toast('今天的 AI 批改次数用完了') : undefined;
+        if ('error' in g) return g.error === 'quota' ? toast('今天的 AI 批改次数用完了') : g.error === 'model' ? toast('AI 暂时不可用，这次先按规则判') : undefined;
         if (!g.ok && r.correct) {
           const p = s.words[w.id];
           if (p) p.flawN = (p.flawN ?? 0) + 1;
@@ -1798,7 +1798,7 @@ export class Controller {
     toast('……');
     const left = run.targets.filter((w) => !run.used.has(w.id));
     void duelTurn(d.scene, history, reply, s.level, left, run.known).then((r) => {
-      if ('error' in r) return say([{ who: SYS, text: r.error === 'quota' ? '今天的决斗场次数用完了，明天再来。' : r.error === 'login' ? '登录过期了，重新登录后再来。' : '连不上决斗场（网络或服务出错），稍后再试。' }]);
+      if ('error' in r) return say([{ who: SYS, text: r.error === 'quota' ? '今天的决斗场次数用完了，明天再来。' : r.error === 'login' ? '登录过期了，重新登录后再来。' : r.error === 'model' ? 'AI 暂时不可用，决斗场先关着，其他玩法不受影响。稍后再来。' : '连不上决斗场（网络或服务出错），稍后再试。' }]);
       const lines: Line[] = [];
       // Each target word used right counts as a context review (写对就算复习).
       for (const id of r.used ?? []) {
@@ -2887,6 +2887,6 @@ function gradeLines(r: AiGrade): Line[] {
 }
 
 function aiErrorZh(e: string): string {
-  return e === 'quota' ? '今天的 AI 批改次数用完了，明天再来。' : e === 'login' ? '登录过期了，重新登录后再来。' : '连不上 AI 批改（网络或服务出错），稍后再试。';
+  return e === 'quota' ? '今天的 AI 批改次数用完了，明天再来。' : e === 'login' ? '登录过期了，重新登录后再来。' : e === 'model' ? 'AI 暂时不可用，其他玩法不受影响，稍后再试。' : '连不上 AI 批改（网络或服务出错），稍后再试。';
 }
 

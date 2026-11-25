@@ -51,7 +51,8 @@ async function call<T>(body: Record<string, unknown>): Promise<T | { error: stri
     const { data, error } = await sb.functions.invoke('ai-tutor', { body });
     if (error) {
       const status = (error as { context?: { status?: number } }).context?.status;
-      return { error: status === 429 ? 'quota' : status === 401 ? 'login' : 'net' };
+      // 502 = the model is unavailable (out of credit or down): the game says so and goes on without AI.
+      return { error: status === 429 ? 'quota' : status === 401 ? 'login' : status === 502 ? 'model' : 'net' };
     }
     return data as T;
   } catch {
