@@ -2,7 +2,9 @@
 """Import the edited word list (xlsx) back into the repo.
 
 Usage:  python3 scripts/wortschatz_import.py 德语常用词-8000.xlsx
-Writes: data/wortschatz/wortschatz.tsv (all rows of the first two sheets, re-ranked in sheet order)
+Writes: data/wortschatz/wortschatz.tsv (all rows of the first two sheets, re-ranked in sheet order);
+        if the sheet 全部例句 is there, also data/wortschatz/beispiele-6000.tsv, and each word's 序号 1 sentence
+        becomes its 例句 in wortschatz.tsv and beispiele.tsv.
 Needs:  pip install openpyxl
 
 Rules: column headers must stay as they are. Rows can be deleted, added or edited.
@@ -39,6 +41,32 @@ def main(path):
             rows.append({c: get(c) for c in COLS + OPTIONAL})
     for i, r in enumerate(rows, 1):
         r['排名'] = str(i)
+    if '全部例句' in wb.sheetnames:
+        it = wb['全部例句'].iter_rows(values_only=True)
+        head = [str(h).strip() if h is not None else '' for h in next(it)]
+        bc = ['原形', '序号', '例句', '例句中文', '例句出处', '义项', '搭配']
+        if [c for c in bc if c not in head]:
+            sys.exit('全部例句: 缺列，请不要改列名')
+        ex = []
+        for r in it:
+            d = {c: ('' if r[head.index(c)] is None else str(r[head.index(c)]).strip()) for c in bc}
+            if d['原形'] and d['例句']: ex.append(d)
+        with open(os.path.join(os.path.dirname(OUT), 'beispiele-6000.tsv'), 'w', encoding='utf-8', newline='') as f:
+            w = csv.DictWriter(f, fieldnames=bc, delimiter='\t', lineterminator='\n'); w.writeheader(); w.writerows(ex)
+        first = {d['原形']: d for d in ex if d['序号'] == '1'}
+        for r in rows:
+            d = first.get(r['原形'])
+            if d:
+                for c in ('例句', '例句中文', '例句出处'): r[c] = d[c]
+        bp = os.path.join(os.path.dirname(OUT), 'beispiele.tsv')
+        old = list(csv.DictReader(open(bp, encoding='utf-8'), delimiter='\t')) if os.path.exists(bp) else []
+        for o in old:
+            d = first.get(o['原形'])
+            if d:
+                for c in ('例句', '例句中文', '例句出处'): o[c] = d[c]
+        with open(bp, 'w', encoding='utf-8', newline='') as f:
+            w = csv.DictWriter(f, fieldnames=['原形', '例句', '例句中文', '例句出处'], delimiter='\t', lineterminator='\n'); w.writeheader(); w.writerows(old)
+        print(f'{len(ex)} 句例句 → beispiele-6000.tsv')
     with open(OUT, 'w', encoding='utf-8', newline='') as f:
         w = csv.DictWriter(f, fieldnames=COLS + OPTIONAL, delimiter='\t', lineterminator='\n')
         w.writeheader(); w.writerows(rows)
