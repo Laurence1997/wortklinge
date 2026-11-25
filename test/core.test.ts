@@ -502,9 +502,47 @@ describe('classes and talents', () => {
     if (r.correct) expect(r.crit).toBe(true);
     const storm = makeQuestion(s, b, 'cls', rng);
     expect(storm.type).toBe('storm');
-    const rs = resolveTurn(s, b, 'cls', storm, storm.answer!, rng);
+    // rev 234: the chain is the target's own forms (der Apfel → die Äpfel at Lv12), sent joined with |.
+    expect(storm.forms!.map((f) => f.answer)).toEqual(['der Apfel', 'die Äpfel']);
+    const rs = resolveTurn(s, b, 'cls', storm, storm.forms!.map((f) => f.answer).join('|'), rng);
     expect(rs.correct).toBe(true);
+    expect(b.stormHits).toBe(2);
     expect(b.cfx.res).toBe(0);
+  });
+
+  it('墨水风暴 (rev 234): stops at the first wrong form; 3 forms from Lv21; damage grows with forms right', async () => {
+    const { stormForms, gradeStorm } = await import('../src/core/storm');
+    const apfel = WORDS.find((w) => w.id === 'apfel')!;
+    expect(stormForms(21, apfel, false).map((f) => f.answer)).toEqual(['der Apfel', 'die Äpfel', 'den Apfel']);
+    expect(stormForms(8, apfel, false).map((f) => f.answer)).toEqual(['der Apfel', 'den Apfel']);
+    const f3 = stormForms(21, apfel, false);
+    expect(gradeStorm(apfel, f3, 'der Apfel|die Apfel|den Apfel').n).toBe(1);
+    expect(gradeStorm(apfel, f3, 'der Apfel|die Aepfel|den Apfel').n).toBe(3);
+    const machen = WORDS.find((w) => w.de === 'machen')!;
+    expect(stormForms(21, machen, true).map((f) => f.answer)).toEqual(['machen', 'macht', 'hat gemacht']);
+    expect(stormForms(12, machen, true).map((f) => f.answer)).toEqual(['machen', 'macht']);
+  });
+
+  it('齐鸣 (rev 234): each mate is hit only when its own word is written', () => {
+    const rng = makeRng(7);
+    const s = newGame('T', 'student');
+    s.level = 11;
+    const der = WORDS.filter((w) => w.pos === 'n' && w.art === 'der' && w.region === 1);
+    const a = startBattle(s, der[0], rng);
+    const d = startBattle(s, der[1], rng);
+    const e = startBattle(s, der[2], rng);
+    for (const x of [a, d, e]) {
+      x.pluralMon = false;
+      x.monster.hp = x.monster.maxHp = 500;
+      x.intent = { ...x.intent, kind: 'wait', hits: 0, caseArt: undefined };
+    }
+    a.phase = 'der';
+    const q = makeQuestion(s, a, 'chorus', rng, undefined, true, [a, d, e]);
+    expect(q.mates).toEqual([d.word.id, e.word.id]);
+    const main = q.options ? q.answer! : q.answer!;
+    resolveTurn(s, a, 'chorus', q, `${main}|${d.word.art} ${d.word.de}|nix`, rng, [a, d, e]);
+    expect(d.monster.hp).toBeLessThan(500);
+    expect(e.monster.hp).toBe(500);
   });
 
   it('守护者: wrong answers hurt 20% less and 稳住 blocks', () => {

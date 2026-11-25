@@ -24,10 +24,12 @@ import { EXAMPLES, caseOf, clozeWhy, maskZh, pronounClozes, slotArticle, type Ca
 import { CONJ, PERSON_LABEL, type Person } from '../data/verbs';
 import { QTYPES, type QKey } from '../data/questionTypes';
 import { CLASSES, critRunNeeded, rank, resMax, shieldReflect, wrongHitShare, type ClassId } from './classes';
+import { gradeStorm, stormForms, type StormForm } from './storm';
+import { gradeGram, type GramTask } from './gram/task';
 
 /** callout = 点名 in packs (shout the target's article); conj = write a verb form (Lv12+); plural = write the plural (Lv11+). */
-/** storm = 书写者「墨水风暴」(type a long word you know); steady = 守护者「稳住」(no question). */
-export type QuestionType = 'article' | 'pickDe' | 'pickZh' | 'typed' | 'sentence' | 'skill' | 'callout' | 'conj' | 'plural' | 'storm' | 'steady' | 'saying' | 'cloze';
+/** storm = 书写者「墨水风暴」(write 2–3 forms of the target's word); steady = 守护者「稳住」(an easy question on the target's word). */
+export type QuestionType = 'article' | 'pickDe' | 'pickZh' | 'typed' | 'sentence' | 'skill' | 'callout' | 'conj' | 'plural' | 'storm' | 'steady' | 'saying' | 'cloze' | 'grammar';
 
 export interface Question {
   type: QuestionType;
@@ -81,15 +83,25 @@ export interface Question {
   link?: LinkRow;
   /** 回音怪 (2026-11-23): the minimal pair asked (type pickDe; options are the two words). */
   echo?: EchoTask;
+  /** Several boxes in one question, sent joined with | (墨水风暴 forms, 齐鸣 mates): one label per box. */
+  boxes?: string[];
+  /** 墨水风暴 (rev 234): the forms of the target's word, in order. */
+  forms?: StormForm[];
+  /** 齐鸣 (点名齐鸣, rev 234): the same-stance mates, by word id; each one's box asks its own word with the article. */
+  mates?: string[];
+  /** 语法题 (0.6.x–0.8 语法线): the task behind a 'grammar' question. */
+  gram?: GramTask;
 }
 
 /** Row of the 题型奖励表 (src/data/questionTypes.ts) this question belongs to. */
 export function qKey(q: Question): QKey {
   if (q.echo) return q.echo.say ? 'echoSay' : 'echoListen';
   if (q.review) return 'clozeForm'; // 语境复习 is a hard question (breaks armor)
+  if (q.gram) return q.gram.tier === 0 ? 'gramPick' : q.gram.tier === 1 ? 'gramTyped' : 'gramHard';
   if (q.write) return q.write;
   if (q.type === 'cloze') return q.clozeMode === 'form' ? 'clozeForm' : q.clozeMode === 'base' ? 'clozeBase' : 'clozePick';
   if (q.type === 'saying') return q.options ? 'sayingPick' : 'sayingTyped';
+  if (q.type === 'grammar') return 'gramTyped';
   return q.type;
 }
 
@@ -244,6 +256,10 @@ export interface Battle {
   /** 终极技能 (30 级): used this fight; how many of its two blanks were right. */
   ultUsed?: boolean;
   ultHits?: number;
+  /** 墨水风暴 (rev 234): forms written right in the last chain. */
+  stormHits?: number;
+  /** 齐鸣 (rev 234): mates whose own word was written right this turn (word ids). */
+  chorusHits?: string[];
   /** 斩杀 (0.6.x): this fight verifies a 待验证 word ('pend') or a retired word's 30-day 回响 check ('recheck'):
    *  glitched name, first question fixed (typing, no hint). */
   verify?: 'pend' | 'recheck';
@@ -838,9 +854,15 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
   const promptZh = w.digit ? w.digit : w.zh;
 
   if (move === 'cls') {
-    if (s.cls === 'guardian') return { type: 'steady', prompt: '稳住：花 3 沉着，挡下这回合的第一击', focus: '稳住', options: ['稳住！'], answer: '稳住！' };
-    const lw = stormWord(s, rng, w);
-    return { type: 'storm', prompt: '墨水风暴：默写这个词（名词带冠词），字母越多伤害越高', focus: zhWithPos(lw), withArticle: hasArticleQuestion(lw), answer: fullForm(lw), word: lw };
+    // 招式都问被打那只怪的词 (rev 234): 稳住 = an easy question on the target's word (its meaning, or its stance
+    // word for nouns); right blocks the next hit, wrong still blocks half.
+    if (s.cls === 'guardian') {
+      if (isNoun && rng() < 0.5) return { type: 'steady', prompt: '稳住：选对它的冠词，挡下下一击（答错也挡一半）', focus: zhWithPos(w), options: ['der', 'die', 'das'], answer: w.art! };
+      const opts = shuffle(rng, [w.zh, ...distractors(rng, w, 'zh', 2)]);
+      return { type: 'steady', prompt: '稳住：选出它的意思，挡下下一击（答错也挡一半）', focus: fullForm(w), options: opts, answer: w.zh };
+    }
+    const forms = stormForms(s.level, w, w.pos === 'v' && conjOpen(s, w));
+    return { type: 'storm', prompt: `墨水风暴：连写这只怪的词的 ${forms.length} 种形式，写错一个就停（每写对一个伤害 +50%）`, focus: zhWithPos(w), boxes: forms.map((f) => f.label), forms, answer: forms.map((f) => f.answer).join(' · '), word: w };
   }
   if (move === 'skill') {
     const sk = SKILLS[skillId ?? s.skills[0]];
@@ -1020,7 +1042,10 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
   }
   if (move === 'inscribe') q = { ...(q.echo ? q : harder(q) ?? q), inscribed: true };
   if (move === 'whisper') q = whisperOf(q, w);
-  if (move === 'chorus') q = { ...q, chorus: true };
+  if (move === 'chorus') {
+    // 点名齐鸣 (rev 234): after the target's answer, write each same-stance mate's own word (with the article).
+    q = { ...q, chorus: true, mates: mates.length ? chorusMates(b, mates).map((o) => o.word.id) : undefined };
+  }
   return q;
 
   function ladderQ(): Question {
@@ -1266,7 +1291,17 @@ export function knownMoechteNouns(s: GameState): Word[] {
 }
 
 export function gradeQuestion(s: GameState, b: Battle, q: Question, input: string): Verdict & { word?: Word } {
+  // 齐鸣 (点名齐鸣, rev 234): the mates' boxes come after the target's answer, joined with |; each mate written right
+  // (its own word with the article) is hit, the others are not.
+  if (q.mates?.length) {
+    const parts = input.split('|');
+    input = parts[0] ?? '';
+    b.chorusHits = q.mates.filter((id, i) => WORD_BY_ID[id] && gradeTyped(parts[i + 1] ?? '', WORD_BY_ID[id], hasArticleQuestion(WORD_BY_ID[id])).ok);
+  }
   switch (q.type) {
+    case 'grammar': {
+      return gradeGram(q.gram!, input);
+    }
     case 'article':
     case 'callout':
     case 'pickDe':
@@ -1276,10 +1311,17 @@ export function gradeQuestion(s: GameState, b: Battle, q: Question, input: strin
     }
     case 'typed':
       return gradeTyped(input, q.review ? WORD_BY_ID[q.review] : b.word, !!q.withArticle);
-    case 'storm':
-      return gradeTyped(input, q.word!, !!q.withArticle);
-    case 'steady':
-      return { ok: true, notes: [], correct: q.answer! };
+    case 'storm': {
+      if (!q.forms) return gradeTyped(input, q.word!, !!q.withArticle);
+      const g = gradeStorm(q.word!, q.forms, input);
+      b.stormHits = g.n;
+      const all = g.n === q.forms.length;
+      return { ok: g.n > 0, notes: all ? [] : [...g.notes, `全部：${q.answer}`], correct: q.answer!, word: all ? q.word : undefined };
+    }
+    case 'steady': {
+      const ok = !q.options || input === q.answer;
+      return { ok, notes: ok ? [] : [`正确答案：${q.answer}（这次只挡一半）`], correct: q.answer! };
+    }
     case 'cloze': {
       if (q.write === 'order') {
         const ok = gradeOrder(input, q.answer!);
@@ -1545,7 +1587,9 @@ export function resolveTurn(
   // 点名 that names another monster in the pack hits that one for half damage (and counts as wrong).
   const stray = q.type === 'callout' && !ok ? alive0.find((x) => x !== b && x.word.art === input) ?? null : null;
   const clozeTyped = q.type === 'cloze' && q.clozeMode !== 'pick';
-  const typedQ = q.type === 'typed' || q.type === 'sentence' || q.type === 'conj' || q.type === 'plural' || clozeTyped;
+  // 墨水风暴 with every form right counts as written (rev 234: it can be the 归名 blow).
+  const stormAll = q.type === 'storm' && !!q.forms && verdict.word?.id === b.word.id;
+  const typedQ = q.type === 'typed' || q.type === 'sentence' || q.type === 'conj' || q.type === 'plural' || clozeTyped || stormAll;
   const kills: Battle[] = [];
   let lastHitter: Battle | null = null;
   let playerDamage = 0;
@@ -1558,6 +1602,8 @@ export function resolveTurn(
   const writtenQ = q.type === 'typed' || q.type === 'conj' || q.type === 'plural' || q.type === 'storm' || clozeTyped || (q.type === 'callout' && !!q.withArticle);
   const readRight = !itemTurn && ok && move !== 'cls' && (['charge', 'heal', 'flee'].includes(intent.kind) || (intent.kind === 'defend' && writtenQ));
   let blocking = false;
+  /** 稳住 answered wrong (rev 234): still blocks half of the first hit. */
+  let halfBlock = false;
   let interrupted = false;
   const chorusStopped = new Set<Battle>();
   let cutFx: ReturnType<typeof cutCheck> = { notes: [], report: {} };
@@ -1582,7 +1628,7 @@ export function resolveTurn(
     if (!q.review && q.type !== 'saying' && (!ok || q.whispered)) b.flawed = true;
     if (ok && !q.whispered && !q.review && q.type === 'cloze') b.usedOk = true;
     if (ok && !q.whispered && !q.review) {
-      if (q.type === 'typed' || q.type === 'conj' || q.type === 'plural' || q.type === 'sentence' || (q.type === 'cloze' && q.clozeMode !== 'pick')) {
+      if (q.type === 'typed' || q.type === 'conj' || q.type === 'plural' || q.type === 'sentence' || stormAll || (q.type === 'cloze' && q.clozeMode !== 'pick')) {
         b.writeOk = (b.writeOk ?? 0) + 1;
         if (!b.phrase) reviewedByWriting(s, verdict.word ?? b.word); // 写对就算复习 (rev 51)
         else for (const id of Object.keys(s.words)) if (WORD_BY_ID[id] && hasWord(`${b.phrase.a} ${b.phrase.b}`, WORD_BY_ID[id])) reviewedByWriting(s, WORD_BY_ID[id]);
@@ -1611,7 +1657,7 @@ export function resolveTurn(
     // Class resources: 书写者 earns 墨水 for typed answers, 守护者 earns 沉着 for every answer.
     const cfx = b.cfx;
     const critWasReady = cfx.critReady; // earned this turn = the *next* hit crits
-    const typedLike = q.type === 'typed' || q.type === 'conj' || q.type === 'plural' || q.type === 'storm' || clozeTyped;
+    const typedLike = q.type === 'typed' || q.type === 'conj' || q.type === 'plural' || q.type === 'storm' || clozeTyped || (q.type === 'grammar' && !q.gram?.options);
     if (move === 'cls' && s.cls) cfx.res = Math.max(0, cfx.res - CLASSES[s.cls].skillCost);
     // 0.4 techniques: 低语 is free (its price: no 会写, no resource, no 归名); 铭刻 / 齐鸣 cooldowns.
     if (move === 'sentence') cfx.res = 0;
@@ -1622,6 +1668,11 @@ export function resolveTurn(
       log.push({ text: '「Ich habe den Zug verpasst.」——这次答错，什么也没丢。', tone: 'good' });
     }
     if (q.inscribed && !ok && !kept) cfx.res = Math.max(0, cfx.res - CONFIG.tech.inscribeMissCost);
+    // 言灵反噬 (语法线, Lucas 2026-11-25 provisional): breaking a grammar rule costs 1 resource point, never HP.
+    if (q.gram && !ok && !kept && cfx.res > 0) {
+      cfx.res -= 1;
+      log.push({ text: '言灵反噬：规则没守住，资源 −1。', tone: 'bad' });
+    }
     if (move === 'inscribe') cfx.inscribeCd = CONFIG.tech.inscribeCd;
     if (move === 'chorus') b.chorusCd = CONFIG.tech.chorusCd;
     // 题型奖励表: a correct answer earns its row's resource (guardians: +1 for every answer instead, their passive).
@@ -1701,9 +1752,10 @@ export function resolveTurn(
         const pen = s.cls === 'writer' ? 0.05 * rank(s, 'bifeng') : 0;
         // 0.4: the question type no longer multiplies damage (armor does that, below). Gear affixes stay.
         if (q.type === 'storm') {
-          const n = letters(q.word!);
-          mult *= ((1 + (0.15 + 0.03 * rank(s, 'changci')) * n) / 1.4) * (1 + pen); // same ratio to typing as before
-          log.push({ text: `墨水风暴：${fullForm(q.word!)}，${n} 个字母。`, tone: 'good' });
+          // rev 234: attack × (1 + 0.5 × forms right); talent 连写 +10% per form per point.
+          const n = q.forms ? b.stormHits ?? 0 : 1;
+          mult *= (1 + 0.5 * n) * (1 + 0.1 * rank(s, 'changci') * n) * (1 + pen);
+          log.push({ text: `墨水风暴：连写对 ${n}${q.forms ? ` / ${q.forms.length}` : ''} 种形式。`, tone: 'good' });
         } else if (typedLike) mult *= 1 + pen; // 书写者「笔锋」 (class identity, kept); no question-type gear affix
         if (q.type === 'sentence') {
           if (has(s.level, 'layerElement')) element = ELEMENT_BY_GENDER[genderOf(b.word) ?? 'n'];
@@ -1836,7 +1888,7 @@ export function resolveTurn(
           const hitOthers: string[] = [];
           const rings = needsPhase(b) ? phaseFx === 'right' : true;
           if (!rings) log.push({ text: '目标的相没选对：齐鸣没响，只打中了目标。', tone: 'bad' });
-          for (const o of rings ? chorusMates(b, pack) : []) {
+          for (const o of rings ? chorusMates(b, pack).filter((x) => !q.mates || (b.chorusHits ?? []).includes(x.word.id)) : []) {
             const auch = 1 + CONFIG.engrave.bonus * engraved(s, 'auch');
             const oArmor = needsPhase(o) ? effArmor(s, o, tier === 0 ? 1 : 2) : effArmor(s, o, tier);
             const d = Math.max(1, Math.round(atk * Math.min(chorusMult, CONFIG.damage.maxMultiplierOfBase) * auch * (1 - oArmor)));
@@ -1882,6 +1934,10 @@ export function resolveTurn(
         log.push({ text: '冷静：写错了，连击还在。', tone: 'info' });
       } else s.combo = 0;
       b.wrongStreak += 1;
+      if (move === 'cls' && q.type === 'steady') {
+        halfBlock = true;
+        log.push({ text: '「稳住」——没答对，只挡得住一半。', tone: 'info' });
+      }
       if (b.stage === 2 && !b.slipped && b.kind === 'due' && !q.review) {
         b.slipped = true;
         log.push({ text: '错了。它长回一颗牙（退回裂形）。', tone: 'bad' });
@@ -1948,6 +2004,10 @@ export function resolveTurn(
         const hitsN = ok && b === target && intent.hits > 1 ? 1 : intent.hits;
         if (hitsN < intent.hits) say({ text: '它只咬到一口。', tone: 'good' });
         for (let i = 0; i < hitsN; i++) {
+          if (i === 0 && halfBlock) {
+            hitPlayer(per / 2);
+            continue;
+          }
           if (i === 0 && blocking) {
             parried = true;
             const counter = Math.max(1, Math.round(attack(s) * CONFIG.player.critMult * (1 + (s.cls === 'guardian' ? 0.2 * rank(s, 'fanji') : 0))));
@@ -1980,8 +2040,8 @@ export function resolveTurn(
         }
         // 眼镜 (0.6, 23 级): the charged hit lands this much softer.
         const heavy = m.dmg * dmgMult * chillMult * CONFIG.monster.chargeMult * (monsterCrit ? 1.5 : 1) * (1 - (s.equipped.glasses?.main ?? 0));
-        if (blocking) {
-          hitPlayer(heavy / 2);
+        if (blocking || halfBlock) {
+          hitPlayer(blocking ? heavy / 2 : heavy * 0.75);
           say({ text: `你挡下一半大招，受到 ${monsterDamage} 点伤害。`, tone: 'bad' });
         } else {
           hitPlayer(heavy);

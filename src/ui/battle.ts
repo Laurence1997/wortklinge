@@ -13,7 +13,7 @@ import type { Move } from '../core/types';
 import { FAMILIES } from '../data/families';
 import { SKILLS } from '../data/skills';
 import { CLASSES, resMax } from '../core/classes';
-import { fullForm, genderOf } from '../data/words';
+import { fullForm, genderOf, WORD_BY_ID, zhWithPos } from '../data/words';
 import type { Controller } from '../game/controller';
 import { ELEMENT_TAG, GLITCH, NAME_RED } from '../game/sprites';
 import { $, bar, clear, h, umlautButtons } from './dom';
@@ -53,6 +53,8 @@ export class BattleUI {
   input: HTMLInputElement | null = null;
   private autoTimer = 0;
   private lastValue = '';
+  /** 齐鸣 (rev 234): one box per same-stance mate, sent after the target's answer joined with |. */
+  private mateBoxes: HTMLInputElement[] = [];
   private voicedFull = '';
   /** 跟读: the German sentence just read aloud after a right answer, and the last attempt's feedback. */
   private shadowText = '';
@@ -274,6 +276,7 @@ export class BattleUI {
 
   submit(value: string): void {
     if (this.phase !== 'answer' || !this.question) return;
+    if (this.question.mates?.length) value = [value, ...this.mateBoxes.map((x) => x.value)].join('|');
     this.lastValue = value;
     const voiced = this.b.intent;
     const target = this.b;
@@ -768,7 +771,7 @@ export class BattleUI {
     const teach = this.phase === 'choose' && s.flags.teachSkills && !b.tutorial ? h('div.small', { style: 'color:var(--gold, #ffcf4a)' }, '新招：试试 Q 铭刻（下一题难一级，伤害 ×1.5）；答题卡住时可以按 W 低语（给提示，但这题不算会写）') : this.phase === 'choose' && b.teachFin ? h('div.small', { style: 'color:var(--gold, #ffcf4a)' }, '言灵已满：按 F 放终结技，看中文写整句') : '';
     clear(el).append(h('div.b-top', monEl, intent, me), stance, teach, movesEl, q, blog);
     blog.scrollTop = blog.scrollHeight;
-    if (this.input && this.phase === 'answer') window.setTimeout(() => this.input?.focus(), 0);
+    if (this.input && this.phase === 'answer') window.setTimeout(() => (this.mateBoxes[0] ?? this.input)?.focus(), 0);
   }
 
   private pending: string | undefined;
@@ -826,6 +829,27 @@ export class BattleUI {
     const long = qq.type === 'cloze' ? 'font-size:22px;line-height:1.4;' : '';
     wrap.append(h('div.focus', { style: (focusColor ? `color:${focusColor};` : '') + long }, qq.focus));
     this.input = null;
+    // 告示怪 / 信件怪 / 文章群怪: the text the questions are about.
+    if (qq.gram?.passage) wrap.append(h('div.passage', { style: 'white-space:pre-wrap;font-size:15px;line-height:1.5;border:1px solid var(--line, #553);padding:8px 10px;margin:6px 0;max-height:220px;overflow:auto' }, qq.gram.passage));
+    // 齐鸣 (rev 234): write each same-stance mate's own word (with the article); each right one is hit.
+    this.mateBoxes = [];
+    if (qq.mates?.length) {
+      const prev = this.lastValue.split('|').slice(1);
+      const rows = qq.mates.map((id, i) => {
+        const mw = WORD_BY_ID[id];
+        const box = h('input', { type: 'text', autocomplete: 'off', autocapitalize: 'off', spellcheck: 'false', placeholder: 'der / die / das + 名词', disabled: this.phase !== 'answer' }) as HTMLInputElement;
+        if (this.phase === 'result') box.value = prev[i] ?? '';
+        box.addEventListener('keydown', (e) => {
+          if (e.key !== 'Enter') return;
+          e.preventDefault();
+          e.stopPropagation();
+          (this.mateBoxes[i + 1] ?? this.input)?.focus();
+        });
+        this.mateBoxes.push(box);
+        return h('div.typing', h('span.small', `齐鸣 → ${mw ? zhWithPos(mw) : id}`), box, umlautButtons(box));
+      });
+      wrap.append(h('div.small.muted', '齐鸣：先写下同相伙伴的词（带冠词），写对一个伤一只；再答目标的题'), ...rows);
+    }
     if (qq.echo && this.phase === 'answer') {
       if (this.echoMsg) wrap.append(h('div.small', { style: 'color:var(--gold, #ffcf4a)' }, this.echoMsg));
       if (!qq.echo.say) wrap.append(h('button.btn.ghost.small', { onclick: () => this.ctrl.speak(qq.echo!.target) }, '🔊 再听'));
@@ -847,6 +871,29 @@ export class BattleUI {
         );
       });
       wrap.append(opts);
+    } else if (qq.boxes?.length) {
+      // 墨水风暴 (rev 234): one box per form, in order; Enter moves on, the last one sends "a|b|c".
+      const prev = this.lastValue.split('|');
+      const boxes = qq.boxes.map((label, i) => {
+        const box = h('input', { type: 'text', autocomplete: 'off', autocapitalize: 'off', spellcheck: 'false', placeholder: label, disabled: this.phase !== 'answer' }) as HTMLInputElement;
+        if (this.phase === 'result') box.value = prev[i] ?? '';
+        return box;
+      });
+      const send = () => this.submit(boxes.map((x) => x.value).join('|'));
+      boxes.forEach((box, i) =>
+        box.addEventListener('keydown', (e) => {
+          if (e.key !== 'Enter') return;
+          e.preventDefault();
+          e.stopPropagation();
+          if (boxes[i + 1]) boxes[i + 1].focus();
+          else send();
+        }),
+      );
+      this.input = boxes[0];
+      wrap.append(
+        ...boxes.map((box, i) => h('div.typing', h('span.small', `${i + 1}. ${qq.boxes![i]}`), box, umlautButtons(box))),
+        h('div.typing', h('button.btn.primary', { disabled: this.phase !== 'answer', onclick: send }, '出招 ↵')),
+      );
     } else if (qq.ult) {
       // 终极技能: the frame with two blanks, one box each; sent as "a|b".
       const box = () => h('input', { type: 'text', autocomplete: 'off', autocapitalize: 'off', spellcheck: 'false', placeholder: '填空', disabled: this.phase !== 'answer' }) as HTMLInputElement;
@@ -885,7 +932,7 @@ export class BattleUI {
         disabled: this.phase !== 'answer',
       }) as HTMLInputElement;
       if (this.pending !== undefined) input.value = this.pending;
-      if (this.phase === 'result') input.value = this.lastValue;
+      if (this.phase === 'result') input.value = qq.mates?.length ? this.lastValue.split('|')[0] : this.lastValue;
       input.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
           e.preventDefault();

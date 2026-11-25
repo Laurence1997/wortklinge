@@ -29,7 +29,7 @@ export const CLASSES: Record<ClassId, ClassDef> = {
     blurb: [
       '打字题答对墨水 +1，填变形 +2（最多 5）。墨水攒满可放终结技。',
       '被动：连续默写答对 3 题，下一击必定暴击。',
-      '职业技能「墨水风暴」（3 墨水）：默写一个你学过的长词，字母越多伤害越高。',
+      '职业技能「墨水风暴」（3 墨水）：连写眼前这只怪的词的 2–3 种形式（原形、复数或变位、格或完成时），写错一个就停，每写对一个伤害 +50%。',
     ],
   },
   guardian: {
@@ -43,7 +43,7 @@ export const CLASSES: Record<ClassId, ClassDef> = {
     blurb: [
       '答错时受到的伤害 −20%。',
       '每答一题（对错都算），沉着 +1（最多 5）。沉着攒满可放终结技。',
-      '职业技能「稳住」（3 沉着，不用答题）：挡下这回合的第一击。',
+      '职业技能「稳住」（3 沉着）：答一道这只怪的词的简单题（选意思或选冠词），答对挡下这回合的第一击，答错也挡一半。',
       '「Ich habe keine Ahnung.」的反弹从 20% 升到 30%。',
     ],
   },
@@ -60,7 +60,7 @@ export interface TalentDef {
 export const TALENTS: Record<ClassId, TalentDef[]> = {
   writer: [
     { id: 'bifeng', zh: '笔锋', max: 3, tier: 1, desc: (r) => `默写伤害 +${5 * r}%（每点 5%）` },
-    { id: 'changci', zh: '长词', max: 2, tier: 1, desc: (r) => `墨水风暴每个字母再 +${3 * r}%` },
+    { id: 'changci', zh: '连写', max: 2, tier: 1, desc: (r) => `墨水风暴每写对一个形式再 +${10 * r}%` },
     { id: 'zhanmo', zh: '蘸墨', max: 1, tier: 2, desc: () => '墨水上限 +1' },
     { id: 'yiqi', zh: '一气呵成', max: 1, tier: 2, desc: () => '必暴击只要连对 2 题默写' },
     { id: 'lengjing', zh: '冷静', max: 1, tier: 2, desc: () => '每场第一次默写答错不断连击' },
