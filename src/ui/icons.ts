@@ -108,7 +108,7 @@ export function wordArt(w: { id: string; family?: string; cat?: string }): MonAr
   return kindArt(w);
 }
 
-const sheets: Partial<Record<SheetId, HTMLImageElement>> = {};
+const sheets: Partial<Record<Exclude<SheetId, 'c'>, HTMLImageElement>> = {};
 const DARK = ['#1e0606', '#4e1616', '#8f1f24', '#d8333a', '#ffb4a8'];
 const DEAD = ['#1e0606', '#4e1616'];
 /** A monster drawn at scale×16 px: own colours on everyday maps (raw), the dark ramp on 蚀变 maps and for bosses. */
@@ -116,8 +116,8 @@ export function monsterIcon(art: MonArt, scale = 2, dead = false, cls = 'icon', 
   const cv = document.createElement('canvas');
   cv.width = cv.height = T * scale;
   cv.className = cls;
-  let img = sheets[art.sheet];
-  if (!img) {
+  let img = art.sheet === 'c' ? null : sheets[art.sheet];
+  if (!img && art.sheet !== 'c') {
     img = sheets[art.sheet] = new Image();
     img.src = SHEET_URL[art.sheet];
   }
@@ -126,7 +126,7 @@ export function monsterIcon(art: MonArt, scale = 2, dead = false, cls = 'icon', 
   const draw = () => {
     let tile = cache.get(key);
     if (!tile) {
-      tile = monsterCanvas(img!, art, ramp);
+      tile = monsterCanvas(img ?? null, art, ramp);
       cache.set(key, tile);
     }
     const ctx = cv.getContext('2d')!;
@@ -134,7 +134,7 @@ export function monsterIcon(art: MonArt, scale = 2, dead = false, cls = 'icon', 
     ctx.clearRect(0, 0, cv.width, cv.height);
     ctx.drawImage(tile, 0, 0, cv.width, cv.height);
   };
-  if (img.complete && img.naturalWidth) draw();
+  if (!img || (img.complete && img.naturalWidth)) draw();
   else img.addEventListener('load', draw, { once: true });
   return cv;
 }

@@ -425,9 +425,9 @@ export class WorldScene extends Phaser.Scene {
     // 怪物美术: the word's look, own colours on bright maps, the map's dark ramp on 蚀变 maps.
     const art = wordArt(word);
     const bk = `mon-${artKey(art)}${this.bright ? '-raw' : this.ramp ? `-${this.ramp[3]}` : ''}`;
-    const sheetKey: Record<SheetId, string> = { d: 'dungeon', t: 'town', f: 'farm', b: 'battle' };
-    if (!this.textures.exists(bk) && this.textures.exists(sheetKey[art.sheet]))
-      this.textures.addCanvas(bk, monsterCanvas(this.textures.get(sheetKey[art.sheet]).getSourceImage() as HTMLImageElement, art, this.bright ? null : this.ramp ? shadeRamp(this.ramp) : SHADE_RAMP));
+    const sheetKey: Record<SheetId, string> = { d: 'dungeon', t: 'town', f: 'farm', b: 'battle', c: '' };
+    const src = art.sheet === 'c' ? null : this.textures.exists(sheetKey[art.sheet]) ? (this.textures.get(sheetKey[art.sheet]).getSourceImage() as HTMLImageElement) : undefined;
+    if (!this.textures.exists(bk) && src !== undefined) this.textures.addCanvas(bk, monsterCanvas(src, art, this.bright ? null : this.ramp ? shadeRamp(this.ramp) : SHADE_RAMP));
     const body = this.add.image(0, 5, bk).setOrigin(0.5, 1);
     label.setY(-14);
     teeth.setY(5);
