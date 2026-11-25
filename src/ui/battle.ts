@@ -2,7 +2,7 @@ import { icon, monsterTile, heroIcon } from './icons';
 import { DEFAULT_LOOK } from '../core/look';
 import type { Battle, Question, TurnReport } from '../core/combat';
 import { count as itemCount, itemsOpen, tabletHeal } from '../core/items';
-import { availableMoves, chorusMates, canHint, comboTier, effArmor, moveReady, needsPhase, phaseOf, resName, shownDe, stancesFor, teachPhase, readTarget, readRecall, readShown, phaseWrongWhy } from '../core/combat';
+import { availableMoves, chorusMates, canHint, comboTier, effArmor, moveReady, poolReady, needsPhase, phaseOf, resName, shownDe, stancesFor, teachPhase, readTarget, readRecall, readShown, phaseWrongWhy } from '../core/combat';
 import { articleSlip, clarity, shadowOk } from '../core/shadow';
 import { has } from '../core/unlocks';
 import type { Stance } from '../core/cloze';
@@ -11,8 +11,8 @@ import { STAGE_ZH } from '../core/srs';
 import { maxHp } from '../core/state';
 import type { Move } from '../core/types';
 import { FAMILIES } from '../data/families';
-import { SKILLS } from '../data/skills';
-import { CLASSES, resMax } from '../core/classes';
+import { loadout, POOL, type PoolId } from '../core/skillPool';
+import { resMax } from '../core/classes';
 import { fullForm, genderOf, WORD_BY_ID, zhWithPos } from '../data/words';
 import type { Controller } from '../game/controller';
 import { ELEMENT_TAG, GLITCH, NAME_RED } from '../game/sprites';
@@ -39,8 +39,8 @@ const MOVE_INFO: Record<Move, { key: string; zh: string; sub: string }> = {
   inscribe: { key: 'Q', zh: '铭刻', sub: '题难一级 · 答对 ×1.5 · 答错丢 1 资源' },
   whisper: { key: 'W', zh: '低语', sub: '给首字母 · 不算会写' },
   chorus: { key: 'E', zh: '齐鸣', sub: '这一题打同相的整群' },
-  skill: { key: 'R', zh: '技能', sub: '写对整句' },
-  cls: { key: 'G', zh: '职业技能', sub: '' },
+  skill: { key: 'R', zh: '技能', sub: '' },
+  cls: { key: 'G', zh: '技能', sub: '' },
   item: { key: 'H', zh: '药片', sub: '回血 · 占一回合' },
 };
 
@@ -217,17 +217,29 @@ export class BattleUI {
     else this.render();
   }
 
+  /** 技能池: keys R G T Y for the loadout's skills, in order. */
+  static readonly SKILL_KEYS = ['R', 'G', 'T', 'Y'];
+  private skillId: PoolId | undefined;
+
+  chooseSkill(id: PoolId): void {
+    if (!poolReady(this.ctrl.state, this.b, id)) return;
+    this.skillId = id;
+    this.choose('skill');
+  }
+
   choose(move: Move): void {
     if (!(this.moves().includes(move) || move === 'whisper') || !moveReady(this.ctrl.state, this.b, move)) return;
+    if (move !== 'skill') this.skillId = undefined;
     stopListening();
-    if (needsPhase(this.b) && !this.b.phase && move !== 'skill' && move !== 'cls') {
+    if (needsPhase(this.b) && !this.b.phase && move !== 'skill') {
       this.phaseNag = true;
       this.render();
       return;
     }
     this.phaseNag = false;
     this.move = move;
-    this.question = this.ctrl.askQuestion(move);
+    this.question = this.ctrl.askQuestion(move, move === 'skill' ? this.skillId : undefined);
+    if (this.question.listen) this.ctrl.speak(this.question.listen);
     this.echoSetup();
     // Listening step: the monster says its own name, the player picks the meaning.
     if (this.question.type === 'pickZh' && this.question.focus) this.ctrl.speak(this.question.focus);
@@ -510,7 +522,13 @@ export class BattleUI {
         this.hint();
         return true;
       }
-      const map: Record<string, Move> = { a: 'attack', q: 'inscribe', e: 'chorus', f: 'sentence', r: 'skill', g: 'cls' };
+      const si = BattleUI.SKILL_KEYS.indexOf(k.toUpperCase());
+      const lo = loadout(this.ctrl.state);
+      if (si >= 0 && lo[si]) {
+        this.chooseSkill(lo[si]);
+        return true;
+      }
+      const map: Record<string, Move> = { a: 'attack', q: 'inscribe', e: 'chorus', f: 'sentence' };
       if (map[k]) {
         this.choose(map[k]);
         return true;
@@ -660,20 +678,27 @@ export class BattleUI {
       for (const mv of moves) {
         // 2026-11-22 精简出手按钮: the finisher shows only when the resource bar is full.
         if (mv === 'sentence' && !moveReady(s, b, mv)) continue;
+        // 技能池: one button per skill in the loadout.
+        if (mv === 'skill') {
+          loadout(s).forEach((id, i) => {
+            const sk = POOL[id];
+            const cd = b.poolCd[id] ?? 0;
+            const ok = poolReady(s, b, id);
+            const sub = cd ? `冷却 ${cd}` : ok ? sk.asks : '这只怪用不了';
+            movesEl.append(h(`button.btn${this.move === 'skill' && this.skillId === id && this.phase !== 'choose' ? '.sel' : ''}`, { disabled: this.phase === 'result' || !ok, onclick: () => this.chooseSkill(id), title: `${sk.zh}：${sk.asks}。${sk.effect}（冷却 ${sk.cd} 回合）` }, h('kbd', BattleUI.SKILL_KEYS[i]), sk.zh, h('small', sub)));
+          });
+          continue;
+        }
         const info = MOVE_INFO[mv];
         const disabled = this.phase === 'result' || !moveReady(s, b, mv);
         const sub =
-          mv === 'skill' && s.skills[0]
-            ? `${SKILLS[s.skills[0]].zh}${b.skillCooldown ? ` · 冷却 ${b.skillCooldown}` : ''}`
-            : mv === 'cls' && s.cls
-              ? `${CLASSES[s.cls].skillZh} · ${CLASSES[s.cls].res} ${b.cfx.res}/${CLASSES[s.cls].skillCost}`
-              : mv === 'inscribe' && b.cfx.inscribeCd
-                ? `冷却 ${b.cfx.inscribeCd}`
-                : mv === 'chorus' && b.chorusCd
-                  ? `冷却 ${b.chorusCd}`
-                  : mv === 'sentence'
-                    ? `${resName(s)} ${b.cfx.res}/${resMax(s)} · 可以放了`
-                    : info.sub;
+          mv === 'inscribe' && b.cfx.inscribeCd
+            ? `冷却 ${b.cfx.inscribeCd}`
+            : mv === 'chorus' && b.chorusCd
+              ? `冷却 ${b.chorusCd}`
+              : mv === 'sentence'
+                ? `${resName(s)} ${b.cfx.res}/${resMax(s)} · 可以放了`
+                : info.sub;
         movesEl.append(
           h(
             `button.btn${this.move === mv && this.phase !== 'choose' ? '.sel' : ''}`,

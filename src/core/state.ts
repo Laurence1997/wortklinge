@@ -82,10 +82,14 @@ export interface GameState {
   recentNouns: string[];
   /** Which map you stand on (1 = 余烬营地, 2 = 面包集市). */
   region: 1 | 2 | 3;
-  /** Class picked at Greta (Lv10+, region 2), the classes whose trial you passed, talents per class. */
+  /** Old class fields (classes were cancelled, 游戏设计 十): always null / empty now; kept so old saves load. */
   cls: ClassId | null;
   classes: ClassId[];
-  talents: Partial<Record<ClassId, Record<string, number>>>;
+  /** 天赋树（共用一棵）: ranks under `shared` (old per-class keys are ignored). */
+  talents: Record<string, Record<string, number>>;
+  /** 技能池: skills given beyond the level schedule (optional) and the skills taken into battle (optional). */
+  pool?: import('./skillPool').PoolId[];
+  loadout?: import('./skillPool').PoolId[];
   /** 墨水 / 沉着 and the writer's typed streak, kept between fights until the bonfire. */
   cfx?: import('./combat').ClassFx;
   /** Mira's shelf (region 2). */

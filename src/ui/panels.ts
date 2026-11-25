@@ -8,10 +8,10 @@ import type { AffixKey, Item, Slot, Word } from '../core/types';
 import { has, UNLOCK } from '../core/unlocks';
 import { BLIND_FROM, blindBoxes, boxLabel, boxPrice, buyBox } from '../core/blindbox';
 import { FAMILIES } from '../data/families';
-import { SKILLS, skillLinesOpen } from '../data/skills';
+import { loadout, owned, POOL, POOL_FROM, POOL_ORDER, slotCount, toggleLoadout } from '../core/skillPool';
 import { phraseCards } from '../core/combat';
 import { SAYINGS, SAYING_CFG } from '../data/sayings';
-import { canLearn, CLASSES, learn, rank, spent, talentPoints, TALENT_FROM_LEVEL, TALENTS, TIER_GATE } from '../core/classes';
+import { BIG_GATE, BRANCHES, canLearn, learn, rank, spent, spentIn, talentPoints, TALENT_FROM_LEVEL, TALENT_TREE, type Branch } from '../core/classes';
 import { fullForm, genderOf, hasArticleQuestion, WORD_BY_ID, WORDS, zhWithPos } from '../data/words';
 import type { Controller } from '../game/controller';
 import { $, clear, h, umlautButtons } from './dom';
@@ -218,7 +218,7 @@ export class Panels {
       if (this.buying !== null) window.setTimeout(() => (el.querySelector('input.buy-line') as HTMLInputElement | null)?.focus(), 0);
       return;
     }
-    const titles: Record<Exclude<PanelName, 'shop' | 'chest' | 'quiz' | 'screen' | 'bigmap' | 'diary' | 'ask' | 'exam' | 'journal' | 'place'>, string> = { hero: '角色与装备', talents: '职业与天赋', quests: '任务', codex: '图鉴', words: '单词本', data: '数据与存档', account: '账号与排行', settings: '设置', help: '怎么玩' };
+    const titles: Record<Exclude<PanelName, 'shop' | 'chest' | 'quiz' | 'screen' | 'bigmap' | 'diary' | 'ask' | 'exam' | 'journal' | 'place'>, string> = { hero: '角色与装备', talents: '技能与天赋', quests: '任务', codex: '图鉴', words: '单词本', data: '数据与存档', account: '账号与排行', settings: '设置', help: '怎么玩' };
     const tabs = h('div.tabs');
     (Object.keys(titles) as Array<Exclude<PanelName, 'shop' | 'chest' | 'quiz' | 'screen' | 'bigmap' | 'diary' | 'ask' | 'exam' | 'journal' | 'place'>>).forEach((k) =>
       tabs.append(h(`button.btn${this.open === k ? '.on' : ''}`, { onclick: () => this.show(k) }, titles[k])),
@@ -259,12 +259,10 @@ export class Panels {
       ['击杀 / 死亡', `${s.stats.kills} / ${s.stats.deaths}`],
     ];
     for (const [k, v] of stats) left.append(h('div.stat', h('span', k), h('b', v)));
-    if (s.skills.length) {
-      left.append(h('h3', '句子技能'));
-      for (const id of s.skills) {
-        const sk = SKILLS[id];
-        left.append(h('div.slot', h('div.k', sk.zh), h('div', h('div', { style: 'font-family:var(--mono)' }, sk.lines.slice(0, skillLinesOpen(sk, s.skillUses[sk.id] ?? 0)).map((l) => l.de).join(' / ')), h('div.small.muted', `${sk.effect} · 已解锁 ${skillLinesOpen(sk, s.skillUses[sk.id] ?? 0)} / ${sk.lines.length} 种说法，每放 5 次多一种`))));
-      }
+    if (owned(s).length) {
+      const lo = loadout(s);
+      left.append(h('h3', `技能（出战 ${lo.length} / ${slotCount(s.level)} 格，按 T 换）`));
+      for (const id of lo) left.append(h('div.slot', h('div.k', POOL[id].zh), h('div.small.muted', `${POOL[id].asks} · ${POOL[id].effect}`)));
     }
 
     const right = h('div');
@@ -1048,42 +1046,61 @@ export class Panels {
     );
   }
 
-  // ---- Class & talents ---------------------------------------------------------
+  // ---- 技能池 & 天赋树 (游戏设计 十) ----------------------------------------------------------------
 
   private talents(): HTMLElement {
     const s = this.ctrl.state;
     const wrap = h('div');
-    if (!s.cls) {
-      wrap.append(h('p.muted', s.level < 10 ? '10 级以后，去面包集市找导师 Greta 选职业。' : '去面包集市找导师 Greta：先打一场试炼，再选职业。'));
-      return wrap;
+    // Skill pool and loadout.
+    wrap.append(h('h3', { style: 'margin-top:0' }, `技能池（出战 ${loadout(s).length} / ${slotCount(s.level)} 格）`));
+    if (s.level < POOL_FROM) wrap.append(h('p.muted.small', `${POOL_FROM} 级打完第 1 区首领后，导师 Greta 送你墨水风暴和稳住。技能格：10 级 2 格、30 级 3 格、61 级 4 格。`));
+    else {
+      wrap.append(h('p.small.muted', '技能不花资源，按回合冷却。每个技能都问眼前这只怪的词的另一层。点一下放进或拿出出战栏；战斗里按 R / G / T / Y 放。'));
+      const lo = loadout(s);
+      const own = owned(s);
+      for (const id of POOL_ORDER) {
+        const sk = POOL[id];
+        const have = own.includes(id);
+        const on = lo.includes(id);
+        wrap.append(
+          h(
+            `div.slot${have ? '' : '.dim'}`,
+            h('div.k', `${sk.zh}${on ? ' · 出战' : ''}`),
+            h('div.small', `${sk.asks}。${sk.effect}。冷却 ${sk.cd}`),
+            have
+              ? h('button.btn.small', { disabled: !on && lo.length >= slotCount(s.level), onclick: () => { toggleLoadout(s, id); this.ctrl.persist(); this.render(); } }, on ? '拿出' : '带上')
+              : h('span.small.muted', `${sk.lv} 级`),
+          ),
+        );
+      }
     }
-    const c = CLASSES[s.cls];
-    wrap.append(h('h3', { style: 'margin-top:0' }, `${c.zh} · 资源「${c.res}」`));
-    for (const line of c.blurb) wrap.append(h('p.small', line));
+    // Shared talent tree.
     const pts = talentPoints(s);
     const used = spent(s);
     wrap.append(h('h3', `天赋（已用 ${used} / ${pts} 点）`));
     if (s.level < TALENT_FROM_LEVEL) {
-      wrap.append(h('p.muted.small', `${TALENT_FROM_LEVEL} 级起每升一级得 1 点天赋。`));
+      wrap.append(h('p.muted.small', `${TALENT_FROM_LEVEL} 级起每升一级得 1 点天赋（31 级起每 2 级 1 点）。`));
       return wrap;
     }
-    for (const tier of [1, 2, 3] as const) {
+    for (const br of Object.keys(BRANCHES) as Branch[]) {
       const row = h('div.talent-row');
-      row.append(h('div.small.muted', tier === 1 ? '第 1 层' : `第 ${tier} 层（先花满 ${TIER_GATE[tier]} 点）`));
-      for (const t of TALENTS[s.cls].filter((x) => x.tier === tier)) {
+      row.append(h('div.small.muted', `${BRANCHES[br].zh}（${BRANCHES[br].about}）· 已点 ${spentIn(s, br)}`));
+      const nodes = TALENT_TREE.filter((x) => x.branch === br);
+      if (!nodes.length) row.append(h('div.small.muted', '这一支的天赋还在写。'));
+      for (const t of nodes) {
         const r = rank(s, t.id);
         row.append(
           h(
             `div.slot${r ? '' : '.dim'}`,
-            h('div.k', `${t.zh} ${r}/${t.max}`),
-            h('div.small', t.desc(Math.max(1, r))),
+            h('div.k', `${t.big ? '★ ' : ''}${t.zh} ${r}/${t.max}`),
+            h('div.small', `${t.desc(Math.max(1, r))}${t.big ? `（这一支先点满 ${BIG_GATE} 点）` : ''}`),
             h('button.btn.small', { disabled: !canLearn(s, t), onclick: () => { learn(s, t.id); this.ctrl.persist(); this.render(); } }, '点'),
           ),
         );
       }
       wrap.append(row);
     }
-    wrap.append(h('p.small.muted', '洗点：在导师 Greta 那里花一小时的金币。每个职业的天赋分开存。'));
+    wrap.append(h('p.small.muted', '洗点：在导师 Greta 那里花一小时的金币。'));
     return wrap;
   }
 
@@ -1310,22 +1327,22 @@ export class Panels {
         const err = await setNickname(s, nick.value);
         msg.textContent = err ?? '';
       };
-      wrap.append(h('h3', '起个昵称'), h('p.small.muted', '排行榜只显示昵称、等级和职业，不显示邮箱。'), h('div.row', nick, h('button.btn.primary', { onclick: () => void saveNick() }, '保存')), msg);
+      wrap.append(h('h3', '起个昵称'), h('p.small.muted', '排行榜只显示昵称、等级和归名数，不显示邮箱。'), h('div.row', nick, h('button.btn.primary', { onclick: () => void saveNick() }, '保存')), msg);
       return wrap;
     }
     wrap.append(h('h3', `排行榜 · 你是 ${cloud.profile.nickname}`));
     const table = h('table.log');
-    table.append(h('tr', h('td', { colspan: 5 }, '加载中…')));
+    table.append(h('tr', h('td', { colspan: 4 }, '加载中…')));
     wrap.append(table, h('p.small.muted', '按等级排，同级比已归名的词数。数据在你同步存档时更新。'));
     leaderboard()
       .then((rows) => {
-        clear(table).append(h('tr', h('th', '#'), h('th', '昵称'), h('th', '等级'), h('th', '职业'), h('th', '已归名')));
+        clear(table).append(h('tr', h('th', '#'), h('th', '昵称'), h('th', '等级'), h('th', '已归名')));
         rows.forEach((r, i) => {
           const me = r.nickname === cloud.profile?.nickname;
-          table.append(h(`tr${me ? '.me' : ''}`, h('td', i + 1), h('td', me ? `${r.nickname}（你）` : r.nickname), h('td', r.level), h('td', r.cls ? CLASSES[r.cls as keyof typeof CLASSES]?.zh ?? '—' : '—'), h('td', r.named)));
+          table.append(h(`tr${me ? '.me' : ''}`, h('td', i + 1), h('td', me ? `${r.nickname}（你）` : r.nickname), h('td', r.level), h('td', r.named)));
         });
       })
-      .catch(() => clear(table).append(h('tr', h('td', { colspan: 5 }, '排行榜加载失败，可能是断网了。'))));
+      .catch(() => clear(table).append(h('tr', h('td', { colspan: 4 }, '排行榜加载失败，可能是断网了。'))));
     return wrap;
   }
 
@@ -1442,7 +1459,7 @@ export class Panels {
       ['互动', 'E（篝火、守火人、路牌、门）'],
       ['面板', 'C 角色和装备 · B 图鉴 · Esc 关闭'],
       ['词性三相', '名词怪出手前先选相：1 der · 2 die · 3 das（对这只怪一直有效，随时可以点按钮换）。选对：护甲降一档、回 1 点资源、附带元素；6 级起选错：护甲翻倍、破甲清零。复数怪一律 die'],
-      ['战斗', 'A 攻击 · Q 铭刻 · E 齐鸣（只打同相的怪）· F 终结技（言灵满了才出现）· R 技能 · G 职业技能 · H 吃药片（回血，占一回合）；答题时 W 低语（用一张纸条给提示，打字时按 ?）；1/2/3 选答案；打字题按 Enter 交卷；结果会自动进下一题（Enter 跳过等待）；Z 看中文；V 再听；S 读出来（5 级起可选：答对后跟着读那句德语，读得像每场多给一次经验，读不好不扣东西；没有麦克风就不显示）'],
+      ['战斗', 'A 攻击 · Q 铭刻 · E 齐鸣（只打同相的怪）· F 终结技（言灵满了才出现）· R / G / T / Y 技能（出战栏里的技能，冷却制）· H 吃药片（回血，占一回合）；答题时 W 低语（用一张纸条给提示，打字时按 ?）；1/2/3 选答案；打字题按 Enter 交卷；结果会自动进下一题（Enter 跳过等待）；Z 看中文；V 再听；S 读出来（5 级起可选：答对后跟着读那句德语，读得像每场多给一次经验，读不好不扣东西；没有麦克风就不显示）'],
       ['变音字母', '点 ä ö ü ß 按钮，或者写 ae oe ue ss（算对，但会提示正确拼法）'],
       ['归名', '一个词就是一只怪。打败它 3 次（3 次不同的重生，隔天才会重生），最后一下要默写带冠词的全名，它才变回原样'],
       ['遗忘之物', '头上有「!」的怪是今天到期的词，经验和掉落更多。篝火休息会刷新所有怪'],

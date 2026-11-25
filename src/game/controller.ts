@@ -15,7 +15,7 @@ import { CHEST_ZH, CHESTS, lockWord, openChest, type ChestKind } from '../core/c
 import { playChest } from '../ui/chestFx';
 import { gradeTyped } from '../core/grading';
 import { buy as buyItem, openShop, refresh as refreshShop, sell as sellItem } from '../core/shop';
-import { CLASSES, resMax, respec, respecCost, spent, TALENT_FROM_LEVEL, type ClassId } from '../core/classes';
+import { resMax, respec, respecCost, spent } from '../core/classes';
 import { makeItem } from '../core/loot';
 import { applyLoss, applyWin, postFightHeal } from '../core/outcomes';
 import { defaultRng, type Rng } from '../core/rng';
@@ -57,7 +57,6 @@ import { drawPractice } from '../core/aiPractice';
 import { noticeById } from '../core/gram/notice';
 import { partnerChoices, partnerOf, setPartner } from '../core/gram/partner';
 import { cleared, floorRun, floorsOf, GRAM_DUNGEON, markCleared, type DungeonKind, type Floor } from '../core/gram/dungeons';
-import { SKILLS } from '../data/skills';
 import { fullForm, hasArticleQuestion, WORD_BY_ID, WORDS, zhWithPos } from '../data/words';
 import { initAudio, setBattleMusic, setVolumes, sfx, speak, speechAvailable, hasGermanVoice } from './audio';
 import type { MonsterEntity, WorldScene } from './WorldScene';
@@ -78,7 +77,6 @@ const SYS = '系统';
 const HILDE = '守火人 Hilde';
 const GRETA = '导师 Greta';
 const MIRA = '商人 Mira';
-const TRIAL_FIGHTS = 3;
 
 export class Controller {
   state: GameState;
@@ -90,8 +88,6 @@ export class Controller {
   pack: Battle[] = [];
   packEntities: MonsterEntity[] = [];
   private killer: Battle | null = null;
-  /** Greta's class trial in progress: which class, fights still to win. */
-  private trial: { cls: ClassId; left: number } | null = null;
   boss: BossFight | null = null;
   battleUI = new BattleUI(this);
   bossUI = new BossUI(this);
@@ -113,11 +109,9 @@ export class Controller {
         this.refresh();
       }, 2500);
     }
-    // A class trial borrows the class for its fights; undo it if the page closed mid-trial.
-    if ('trialPrev' in state.flags) {
-      state.cls = (state.flags.trialPrev as ClassId) || null;
-      delete state.flags.trialPrev;
-    }
+    // Classes were cancelled (游戏设计 十): a save from before forgets its class.
+    delete state.flags.trialPrev;
+    state.cls = null;
     // 物品栏 (2026-11-22): saves already past Lv4 get the starter 纸条 / 药片 once.
     grantStarter(state);
     // 发音训练 (2026-11-23): start the phoneme model in the background when it is on and already downloaded.
@@ -390,7 +384,7 @@ export class Controller {
       if (s.level < 3) return;
       const lines: Line[] = [{ who: SYS, text: '【0.6】每个场景有了自己的小插画和一组固定的词：词学到半名，画里对应的东西就亮起来。' }];
       lines.push({ who: SYS, text: '一个场景的词全到半名，会掉一页邻居的日记残页，按 B 在图鉴里填回去，还可以读出来。' });
-      if (s.level >= 9) lines.push({ who: SYS, text: '护符亲和改了：对上亲和的怪选对相，墨水或沉着 +2；破甲照旧。' });
+      if (s.level >= 9) lines.push({ who: SYS, text: '护符亲和改了：对上亲和的怪选对相，言灵 +2；破甲照旧。' });
       if (s.level >= 18) lines.push({ who: SYS, text: '第 3 区铁轨镇开了（21–30 级），等级上限到 30。打赢第 2 区首领吞秤者就能过去；21 级起几乎每一级都有新东西。' });
       window.setTimeout(() => say(lines), 900);
     }
@@ -463,7 +457,7 @@ export class Controller {
         break;
       case 12:
         lines.push({ who: SYS, text: '【变位】du ___（nehmen）→ nimmst。强变化动词经验 ×1.3' });
-        if (s.cls) lines.push({ who: SYS, text: '【天赋】第一个点到手。按 T' });
+        lines.push({ who: SYS, text: '【天赋】第一个点到手。按 T' });
         break;
       case 13:
         lines.push({ who: SYS, text: '【mich / dich】「Ich kratze dich!」挠你。「Ich kratze mich.」挠它自己' });
@@ -478,7 +472,7 @@ export class Controller {
 
   // ---- Encounters ----------------------------------------------------------------------
 
-  encounter(m: MonsterEntity, opts: { trial?: ClassId } = {}): void {
+  encounter(m: MonsterEntity, opts: { trial?: string } = {}): void {
     if (this.battle) return;
     const s = this.state;
     rollDay(s);
@@ -547,12 +541,6 @@ export class Controller {
       // Trial monsters fight at your level, whatever word they carry.
       const st = monsterStats(s.level, 1, 'new', 0);
       Object.assign(this.battle.monster, { lvl: s.level, hp: st.hp, maxHp: st.hp, dmg: st.dmg });
-    }
-    if (opts.trial === 'guardian') {
-      // 守护者试炼: review monsters left too long (three intervals overdue): fatter and meaner.
-      const mon = this.battle.monster;
-      mon.hp = mon.maxHp = Math.round(mon.maxHp * (1 + CONFIG.monster.overdueHpStep * 3));
-      mon.dmg = Math.round(mon.dmg * 1.3);
     }
     if (m.word.id === 'brot' && !s.flags.brotDone) {
       this.battle.monster.hp = this.battle.monster.maxHp = 1;
@@ -716,8 +704,8 @@ export class Controller {
     return { ok, score, xp };
   }
 
-  askQuestion(move: Move): Question {
-    const q = makeQuestion(this.state, this.battle!, move, this.rng, undefined, this.pack.length > 1, this.pack);
+  askQuestion(move: Move, skillId?: string): Question {
+    const q = makeQuestion(this.state, this.battle!, move, this.rng, skillId, this.pack.length > 1, this.pack);
     this.milestone(`q_${q.type}${q.type === 'cloze' && q.prompt.startsWith('代词') ? '_pron' : ''}`);
     if (move !== 'attack') this.milestone(`mv_${move}`);
     if (move === 'inscribe') delete this.state.flags.teachSkills;
@@ -1021,8 +1009,7 @@ export class Controller {
     }
     this.scene.endFocus();
     this.scene.restyleAll();
-    if (this.trial) this.trialNext(won);
-    else if (this.dungeon) this.dungeonNext(won);
+    if (this.dungeon) this.dungeonNext(won);
     else if (this.gramRun) this.gramRunNext(won);
     if (b.outcome === 'fled' && b.flees && !lost) toast('它抱着铁箱跑了。下次，在它喊「Ich muss los!」之前。');
     this.refresh();
@@ -1300,90 +1287,22 @@ export class Controller {
       return;
     }
     const lines: Line[] = [];
+    // 技能池打开 (游戏设计 十, replaces 选职业): at 10 Greta hands over 墨水风暴 and 稳住; later skills come with the level.
     if (!s.flags.gretaMet) {
       s.flags.gretaMet = true;
       lines.push(
         { who: GRETA, text: '营地来的？Hilde 说过你。在这儿光会叫名字，活不久。' },
-        { who: GRETA, text: '书写者，写得越多下手越狠。守护者，挨得住，还打得回去。' },
-        { who: GRETA, text: '各打一场试炼。过了，就是你的。第一个不要钱，以后想换随时来。' },
+        { who: GRETA, text: '拿着：墨水风暴，一口气写出它的几种样子；稳住，先答一道简单的，稳了再说。两招都问眼前那只怪自己的词。' },
+        { who: SYS, text: `【技能池】墨水风暴、稳住进了你的技能栏（战斗里按 R / G）。技能不花资源，用完冷却几回合。30 级多一格、61 级再多一格；以后到级还会拿到拆词、搭配、格之封印、听写。按 T 看技能和天赋。` },
       );
+      this.renderMenu();
     }
     const choices: Array<{ label: string; act: () => void }> = [];
-    for (const id of ['writer', 'guardian'] as ClassId[]) {
-      const c = CLASSES[id];
-      if (!s.classes.includes(id)) choices.push({ label: `试炼：${c.zh}（${c.trialZh}）`, act: () => this.startTrial(id) });
-      else if (s.cls !== id) choices.push({ label: `${s.cls ? '换成' : '选择'}${c.zh}`, act: () => this.pickClass(id) });
-    }
-    if (s.cls && s.level >= TALENT_FROM_LEVEL) choices.push({ label: '看天赋（T）', act: () => this.panels.show('talents') });
-    if (s.cls && spent(s) > 0) choices.push({ label: `洗点（${respecCost(s)} 金币）`, act: () => this.doRespec() });
+    choices.push({ label: '看技能和天赋（T）', act: () => this.panels.show('talents') });
+    if (spent(s) > 0) choices.push({ label: `洗点（${respecCost(s)} 金币）`, act: () => this.doRespec() });
     choices.push({ label: '离开', act: () => undefined });
-    if (!lines.length) lines.push({ who: GRETA, text: s.cls ? `${CLASSES[s.cls].zh}，今天想练什么？` : '想好了？' });
+    if (!lines.length) lines.push({ who: GRETA, text: '今天想练什么？' });
     say(lines, undefined, choices);
-  }
-
-  private startTrial(id: ClassId) {
-    const s = this.state;
-    this.trial = { cls: id, left: TRIAL_FIGHTS };
-    s.flags.trialPrev = s.cls ?? '';
-    s.cls = id;
-    resetClassFx(s);
-    say([{ who: GRETA, text: `${CLASSES[id].zh}试炼：${CLASSES[id].trialZh}。${CLASSES[id].blurb.join('')}` }], () => this.trialFight());
-  }
-
-  /** Trial fights use words you have already met, so they test the class, not new words. */
-  private trialFight() {
-    const s = this.state;
-    const known = WORDS.filter((w) => s.words[w.id] && w.pos !== 'phr' && w.pos !== 'num' && !w.digit && w.family !== 'truhe');
-    const pool = known.length >= 3 ? known : zoneWords('gemuesegasse');
-    const word = pool[Math.floor(this.rng() * pool.length)];
-    const p = this.scene.player;
-    const m = this.scene.addMonster(word, 'new', 'markt', p.x + 20, p.y, { scripted: 'trial' });
-    this.encounter(m, { trial: this.trial!.cls });
-  }
-
-  private trialNext(won: boolean) {
-    const s = this.state;
-    const t = this.trial!;
-    if (!won) {
-      this.trial = null;
-      s.cls = (s.flags.trialPrev as ClassId) || null;
-      delete s.flags.trialPrev;
-      resetClassFx(s);
-      say([{ who: GRETA, text: '倒得挺快。歇够了再来。' }]);
-      return;
-    }
-    t.left -= 1;
-    if (t.left > 0) {
-      toast(`试炼：还剩 ${t.left} 场`);
-      this.scene.time.delayedCall(600, () => this.trialFight());
-      return;
-    }
-    this.trial = null;
-    const prev = (s.flags.trialPrev as ClassId) || null;
-    delete s.flags.trialPrev;
-    s.cls = prev;
-    resetClassFx(s);
-    if (!s.classes.includes(t.cls)) s.classes.push(t.cls);
-    banner('试炼完成', `${CLASSES[t.cls].zh} 已解锁`);
-    const choices = [
-      { label: `${prev ? '换成' : '选择'}${CLASSES[t.cls].zh}`, act: () => this.pickClass(t.cls) },
-      { label: prev ? `继续当${CLASSES[prev].zh}` : '再想想', act: () => undefined },
-    ];
-    say([{ who: GRETA, text: `还行。${CLASSES[t.cls].zh}，你走得通。现在定？` }], undefined, choices);
-  }
-
-  private pickClass(id: ClassId) {
-    const s = this.state;
-    const first = !s.cls;
-    s.cls = id;
-    resetClassFx(s);
-    banner(first ? '职业' : '换职业', CLASSES[id].zh);
-    this.renderMenu();
-    const lines: Line[] = [{ who: GRETA, text: `今天起你是${CLASSES[id].zh}。【G】${CLASSES[id].skillZh}` }];
-    if (s.level >= TALENT_FROM_LEVEL) lines.push({ who: SYS, text: '【天赋】按 T 加点' });
-    else lines.push({ who: SYS, text: `【天赋】${TALENT_FROM_LEVEL} 级起每级 1 点（T）` });
-    say(lines);
-    this.refresh();
     this.persist();
   }
 
@@ -2166,8 +2085,9 @@ export class Controller {
       lines.push({ who: SYS, text: `【秩序会声望 1 档】Frau Weber 送你一本${it.name}${room() ? '' : '（背包满了，没拿到）'}。` });
       this.achieve('order10');
     } else if (forms === WEBER.tiers[1]) {
-      if (!s.skills.includes('wiederholen')) s.skills.push('wiederholen');
-      lines.push({ who: SYS, text: '【秩序会声望 2 档】学会句子技能「Könnten Sie das bitte wiederholen?」：每场一次，之后有一题可以换成同难度的另一题。' });
+      // 句子技能整类删除 (游戏设计 十): the tier-2 reward is a gold chest now.
+      this.gotChest('gold', s.level);
+      lines.push({ who: SYS, text: '【秩序会声望 2 档】Frau Weber 给了你一个金箱。' });
     } else if (forms === WEBER.tiers[2]) {
       const it = makeItem(this.rng, s.level, 'purple', 'dict');
       if (room()) s.bag.push(it);
@@ -2302,22 +2222,7 @@ export class Controller {
       this.persist();
       this.nextChest();
     };
-    const learnable = Object.values(SKILLS).filter((k) => k.boss === 3 && !s.skills.includes(k.id));
-    if (dailyFirst && learnable.length) {
-      lines.push({ who: SYS, text: '它说过的话，你能留下一句。【句子技能 R】选一句：' });
-      say(
-        lines,
-        undefined,
-        learnable.map((k) => ({
-          label: `${k.de}（${k.zh}：${k.effect}）`,
-          act: () => {
-            s.skills = [k.id, ...s.skills].slice(0, 3);
-            toast(`学会句子技能：${k.de}`, 'gold');
-            after();
-          },
-        })),
-      );
-    } else say(lines, after);
+    say(lines, after);
   }
 
   private knockRegion2() {
@@ -2373,22 +2278,7 @@ export class Controller {
       this.persist();
       this.nextChest();
     };
-    const learnable = Object.values(SKILLS).filter((k) => k.boss === 2 && !s.skills.includes(k.id));
-    if (dailyFirst && learnable.length) {
-      lines.push({ who: SYS, text: '它说过的话，你能留下一句。【句子技能 R】选一句：' });
-      say(
-        lines,
-        undefined,
-        learnable.map((k) => ({
-          label: `${k.de}（${k.zh}：${k.effect}）`,
-          act: () => {
-            s.skills = [k.id, ...s.skills].slice(0, 3);
-            toast(`学会句子技能：${k.de}`, 'gold');
-            after();
-          },
-        })),
-      );
-    } else say(lines, after);
+    say(lines, after);
     void f;
   }
 
@@ -2486,29 +2376,12 @@ export class Controller {
       banner('首领被唤醒', first ? '首杀：传说装备 + 称号「被记住的人」' : dailyFirst ? '金箱' : '铁箱');
       const lines: Line[] = BOSS.outro.map((t) => ({ who: SYS, text: t }));
       lines.push({ who: SYS, text: `获得 ${CONFIG.xp.boss} 经验、120 金币和 ${drops.length} 件装备（按 C 查看）。` });
-      const learnable = Object.values(SKILLS).filter((k) => k.boss === 1 && !s.skills.includes(k.id));
       const after = () => {
         for (const l of lv.levels) this.onLevelUp(l);
         this.refresh();
         this.persist();
       };
-      if (dailyFirst && learnable.length && has(s.level, 'skills')) {
-        lines.push({ who: SYS, text: '它说过的话，你能留下一句。【句子技能 R】写对整句释放。选一句：' });
-        say(
-          lines,
-          undefined,
-          learnable.map((k) => ({
-            label: `${k.de}（${k.zh}：${k.effect}）`,
-            act: () => {
-              s.skills = [k.id, ...s.skills].slice(0, 3);
-              toast(`学会句子技能：${k.de}`, 'gold');
-              after();
-            },
-          })),
-        );
-      } else {
-        say(lines, after);
-      }
+      say(lines, after);
     } else {
       sfx.death();
       s.hp = maxHp(s);
@@ -2595,7 +2468,7 @@ export class Controller {
       menu.append(b);
     };
     btn('角色', 'C', () => this.panels.toggle('hero'));
-    if (this.state.cls || this.state.level >= CONFIG.region2Level) btn('职业', 'T', () => this.panels.toggle('talents'));
+    if (this.state.level >= CONFIG.region2Level) btn('技能', 'T', () => this.panels.toggle('talents'));
     if (this.state.quests) btn('任务', 'J', () => this.panels.toggle('quests'));
     btn('图鉴', 'B', () => this.panels.toggle('codex'));
     btn('单词本', 'N', () => this.panels.toggle('words'));

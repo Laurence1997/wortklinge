@@ -18,14 +18,14 @@ import { has } from './unlocks';
 import { echoOptions, echoTask, notePron, type EchoTask } from './pron';
 import { count } from './items';
 import { fullForm, genderOf, hasArticleQuestion, WORD_BY_ID, WORDS, zhWithPos } from '../data/words';
-import { SKILLS, skillLine, skillLinesOpen } from '../data/skills';
+import { canTarget, collocOf, gradeSplit, loadout, MULT, POOL, SEAL_TURNS, splitOf, type PoolId, type SplitTask } from './skillPool';
 import { SAYING_CFG, SAYINGS } from '../data/sayings';
 import { expectedSentence, gradeSentence, nextPattern, PATTERNS, sentenceTags, type Pattern } from './sentence';
 import { PERFEKT, perfektFull, perfektParts } from '../data/perfekt';
 import { EXAMPLES, caseOf, clozeWhy, maskZh, pronounClozes, slotArticle, type Case, type Stance, clozeOptions, exampleSplits, gradeCloze, hasExamples, makeCloze, parse, showsWord, twoBlank, voiceLine, wholeSentence, type ClozeMode } from './cloze';
 import { CONJ, PERSON_LABEL, type Person } from '../data/verbs';
 import { QTYPES, type QKey } from '../data/questionTypes';
-import { CLASSES, critRunNeeded, rank, resMax, shieldReflect, wrongHitShare, type ClassId } from './classes';
+import { critRunNeeded, rank, resMax, wrongHitShare } from './classes';
 import { gradeStorm, stormForms, type StormForm } from './storm';
 import { gradeGram, type GramTask } from './gram/task';
 import { gramFor } from './gram/hook';
@@ -56,6 +56,11 @@ export interface Question {
   /** Typed questions on nouns need the article. */
   withArticle?: boolean;
   skillId?: string;
+  /** 技能池: which pool skill asked this (split / colloc / seal / dictate; storm and steady have their own types). */
+  pool?: PoolId;
+  split?: SplitTask;
+  /** 听写: the sentence the monster shouts (read aloud, no Chinese shown). */
+  listen?: string;
   /** conj questions: other accepted forms. */
   alts?: string[];
   /** storm questions: the long word to write. */
@@ -133,8 +138,8 @@ export function qTier(q: Question): 0 | 1 | 2 {
 }
 
 /** Name of the resource: the class's, or 言灵 before you pick one. */
-export function resName(s: GameState): string {
-  return s.cls ? CLASSES[s.cls].res : '言灵';
+export function resName(_s: GameState): string {
+  return '言灵';
 }
 
 export interface MonsterState {
@@ -181,8 +186,10 @@ export interface ClassFx {
   critReady: boolean;
   /** Talent 冷静: the first typed miss this fight keeps your combo. */
   calmUsed: boolean;
-  /** Talent 以守为攻: after 稳住, the next correct answer adds a plain hit. */
+  /** Talent 以守为攻 (old flag, unused now). */
   yishou?: boolean;
+  /** 稳住: wrong answers still covered (no HP lost, combo kept). */
+  guard?: number;
   /** 铭刻 cooldown in turns: carries across fights (the doc's 30 s), cleared at the bonfire. */
   inscribeCd?: number;
 }
@@ -202,8 +209,8 @@ export interface Battle {
   cfx: ClassFx;
   /** 宝箱怪 and rare monsters run away (「Ich muss los!」) and drop an iron chest. */
   flees: boolean;
-  /** Greta's class trial this fight belongs to. */
-  trial: ClassId | null;
+  /** Old class trial flag (classes were cancelled): always null. */
+  trial: string | null;
   intent: Intent;
   /** 「Wie viel kostet das?」: next turn's intent, already decided. */
   queued?: Intent;
@@ -264,6 +271,10 @@ export interface Battle {
   firstCorrectDone: boolean;
   lastKillTyped: boolean;
   skillCooldown: number;
+  /** 技能池 cooldowns in turns, per skill. */
+  poolCd: Partial<Record<PoolId, number>>;
+  /** 格之封印: turns this monster can't charge. */
+  sealed?: number;
   /** 齐鸣 cooldown in turns (shared by a pack). 铭刻's lives on cfx and carries across fights. */
   chorusCd: number;
   /** Orange 冠词审判: the next hit after a correct article answer deals double. */
@@ -350,7 +361,7 @@ export function startBattle(
   s: GameState,
   word: Word,
   rng: Rng,
-  opts: { isEcho?: boolean; tutorial?: Tutorial; trial?: ClassId; rare?: boolean; elite?: boolean; challenge?: boolean } = {},
+  opts: { isEcho?: boolean; tutorial?: Tutorial; trial?: string; rare?: boolean; elite?: boolean; challenge?: boolean } = {},
 ): Battle {
   const t = now(s);
   const kind = kindOf(s, word, t);
@@ -405,6 +416,7 @@ export function startBattle(
     firstCorrectDone: false,
     lastKillTyped: false,
     skillCooldown: 0,
+    poolCd: {},
     chorusCd: 0,
     judgement: false,
     outcome: null,
@@ -555,6 +567,8 @@ function nextIntent(s: GameState, b: Battle, rng: Rng): Intent {
     intent = generateIntent(rng, ctx);
     if (intent.kind === 'charge' && !tut && s.level >= CONFIG.timeWords.from) intent = timeCharge(b, intent, rng);
   }
+  // 格之封印: a sealed monster can't charge; it attacks instead (and an announced charge waits).
+  if ((b.sealed ?? 0) > 0 && intent.kind === 'charge') intent = generateIntent(rng, { ...ctx, force: { kind: 'attack', hits: 1, line: '… mmh …', zh: '它想蓄力，封印压着它（只能普通攻击）', layers: [] } });
   if (intent.kind === 'charge') b.turnsSinceCharge = 0;
   else b.turnsSinceCharge += 1;
   // 怪的台词 (2026-11-21): outside tutorials it mumbles one of its own example sentences with its name swallowed
@@ -697,8 +711,7 @@ export function availableMoves(s: GameState, b: Battle, alive = 1, mates = alive
   if (has(s.level, 'inscribe')) moves.push('inscribe');
   if (has(s.level, 'chorus') && alive > 1 && mates > 0) moves.push('chorus');
   if (has(s.level, 'sentence')) moves.push('sentence');
-  if (has(s.level, 'skills') && s.skills.length) moves.push('skill');
-  if (s.cls) moves.push('cls');
+  if (loadout(s).length && !b.tutorial) moves.push('skill');
   return moves;
 }
 
@@ -727,14 +740,18 @@ export function hintOf(b: Battle, q: Question): Question {
 
 /** Whether a move can be used right now (cooldown, resource). */
 export function moveReady(s: GameState, b: Battle, move: Move): boolean {
-  if (move === 'skill') return b.skillCooldown === 0;
-  if (move === 'cls') return !!s.cls && b.cfx.res >= CLASSES[s.cls].skillCost;
+  if (move === 'skill') return loadout(s).some((id) => poolReady(s, b, id));
   if (move === 'inscribe') return !b.cfx.inscribeCd;
   // 低语 is free, but a word you were hinted on is asked again without it first.
   if (move === 'whisper') return b.curse !== 'forget' && !b.hinted && !s.words[b.word.id]?.hinted;
   if (move === 'sentence') return resMax(s) > 0 && b.cfx.res >= resMax(s);
   if (move === 'chorus') return b.chorusCd === 0;
   return true;
+}
+
+/** 技能池: this skill is off cooldown and can target this monster's word. */
+export function poolReady(s: GameState, b: Battle, id: PoolId): boolean {
+  return loadout(s).includes(id) && !(b.poolCd[id] ?? 0) && canTarget(id, b.word) && !b.phrase;
 }
 
 /** Share of a hit this monster's armor stops, for the given question tier (0.4 战斗修正版):
@@ -961,24 +978,6 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
   const canType = has(s.level, 'typing');
   const promptZh = w.digit ? w.digit : w.zh;
 
-  if (move === 'cls') {
-    // 招式都问被打那只怪的词 (rev 234): 稳住 = an easy question on the target's word (its meaning, or its stance
-    // word for nouns); right blocks the next hit, wrong still blocks half.
-    if (s.cls === 'guardian') {
-      if (isNoun && rng() < 0.5) return { type: 'steady', prompt: '稳住：选对它的冠词，挡下下一击（答错也挡一半）', focus: zhWithPos(w), options: ['der', 'die', 'das'], answer: w.art! };
-      const opts = shuffle(rng, [w.zh, ...distractors(rng, w, 'zh', 2)]);
-      return { type: 'steady', prompt: '稳住：选出它的意思，挡下下一击（答错也挡一半）', focus: fullForm(w), options: opts, answer: w.zh };
-    }
-    const forms = stormForms(s.level, w, w.pos === 'v' && conjOpen(s, w));
-    return { type: 'storm', prompt: `墨水风暴：连写这只怪的词的 ${forms.length} 种形式，写错一个就停（每写对一个伤害 +50%）`, focus: zhWithPos(w), boxes: forms.map((f) => f.label), forms, answer: forms.map((f) => f.answer).join(' · '), word: w };
-  }
-  if (move === 'skill') {
-    const sk = SKILLS[skillId ?? s.skills[0]];
-    const uses = s.skillUses[sk.id] ?? 0;
-    const line = skillLine(sk, uses);
-    const open = skillLinesOpen(sk, uses);
-    return { type: 'skill', prompt: `释放「${sk.zh}」：写对整句${sk.lines.length > 1 ? `（已解锁 ${open} / ${sk.lines.length} 句）` : ''}`, focus: line.zh, answer: line.de, skillId: sk.id };
-  }
   if (move === 'attack') {
     const rq = contextQuestion(s, b, rng);
     if (rq) return rq;
@@ -1062,6 +1061,40 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
     const form = s.level >= 11 && hasExamples(w) ? clozeQ(s, w, rng, 'form') : null;
     return (form && form.clozeMode === 'form' ? form : null) ?? sentenceQ();
   };
+  if (move === 'skill') {
+    // 技能池 (游戏设计 十): every skill asks a layer of the target's own word that the plain attack doesn't.
+    const id = ((skillId as PoolId) && POOL[skillId as PoolId] ? skillId : loadout(s).find((x) => poolReady(s, b, x)) ?? 'storm') as PoolId;
+    const sk = POOL[id];
+    if (id === 'steady') {
+      if (isNoun && rng() < 0.5) return { type: 'steady', pool: id, prompt: '稳住：选对它的冠词。答对，接下来 2 次答错不扣血、不断连击（答错只保 1 次）', focus: zhWithPos(w), options: ['der', 'die', 'das'], answer: w.art! };
+      const opts = shuffle(rng, [w.zh, ...distractors(rng, w, 'zh', 2)]);
+      return { type: 'steady', pool: id, prompt: '稳住：选出它的意思。答对，接下来 2 次答错不扣血、不断连击（答错只保 1 次）', focus: fullForm(w), options: opts, answer: w.zh };
+    }
+    if (id === 'split') {
+      const t = splitOf(w)!;
+      return { type: 'typed', pool: id, split: t, prompt: t.prompt, focus: zhWithPos(w), answer: t.answer };
+    }
+    if (id === 'colloc') {
+      const c = collocOf(w)!;
+      const shown = c.ex.replace(new RegExp(`\\b${c.prep}\\b`, 'i'), '___');
+      return { type: 'typed', pool: id, prompt: `搭配：${c.combo.split(' ')[0]} 后面跟哪个介词？（${c.zh}）`, focus: `${shown}\n（${c.exZh}）`, answer: c.prep };
+    }
+    if (id === 'seal') {
+      // 格之封印: the word put into a short sentence that needs a case or person form.
+      const form = hasExamples(w) ? clozeQ(s, w, rng, 'form') : null;
+      const q = form && form.clozeMode === 'form' ? form : w.pos === 'v' && conjOpen(s, w) ? conj() : form;
+      if (q) return { ...q, pool: id, prompt: `格之封印：${q.prompt}（写对，它 ${SEAL_TURNS} 回合内蓄不了力）` };
+      return { ...bareTyped(), pool: id, prompt: `格之封印：默写${isNoun ? '（带冠词）' : ''}（写对，它 ${SEAL_TURNS} 回合内蓄不了力）` };
+    }
+    if (id === 'dictate') {
+      const d = dictQ(w, rng);
+      if (d) return { ...d, pool: id, listen: d.full, clozeZh: undefined, prompt: '听写：听它喊出的句子，打出被挖掉的词（不给中文）', focus: (d.focus ?? '').split('\n')[0] };
+      return { ...bareTyped(), pool: id, listen: w.de, prompt: '听写：听它喊出的词，打出来' };
+    }
+    void sk;
+    const forms = stormForms(s.level, w, w.pos === 'v' && conjOpen(s, w));
+    return { type: 'storm', pool: 'storm', prompt: `墨水风暴：连写这只怪的词的 ${forms.length} 种形式，写错一个就停（每写对一个伤害 +50%）`, focus: zhWithPos(w), boxes: forms.map((f) => f.label), forms, answer: forms.map((f) => f.answer).join(' · '), word: w };
+  }
   // 直接叫名 (Lucas 2026-11-25): plain dictation, no hint, nouns with the article.
   if (b.direct && move === 'attack') return { ...bareTyped(), directName: true, prompt: `直接叫名：不看提示写出它${isNoun ? '（带冠词）' : ''}。写对直接斩杀，写错照常学、不罚` };
   // 斩杀 (0.6.x): a verification fight opens with typing, no hint (nouns with the article).
@@ -1217,8 +1250,6 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
   }
 
   // Normal attack.
-  // 书写者试炼: everything is typed.
-  if (b.trial === 'writer' && canType && am === 'attack') return typed();
   if (b.tutorial === 'loss') return isNoun ? article() : pickZh();
   // 半名 and due: the killing blow must be typed, so offer typing.
   if (b.stage === 2 && b.kind === 'due' && canType) return typed();
@@ -1453,6 +1484,14 @@ export function gradeQuestion(s: GameState, b: Battle, q: Question, input: strin
     input = parts[0] ?? '';
     b.chorusHits = q.mates.filter((id, i) => WORD_BY_ID[id] && gradeTyped(parts[i + 1] ?? '', WORD_BY_ID[id], hasArticleQuestion(WORD_BY_ID[id])).ok);
   }
+  if (q.pool === 'split' && q.split) {
+    const ok = gradeSplit(q.split, input);
+    return { ok, notes: ok ? [] : [`正确答案：${q.answer}`], correct: q.answer! };
+  }
+  if (q.pool === 'colloc') {
+    const ok = input.trim().toLowerCase() === q.answer!.toLowerCase();
+    return { ok, notes: ok ? [] : [`正确答案：${q.answer}`], correct: q.answer! };
+  }
   switch (q.type) {
     case 'grammar': {
       return gradeGram(q.gram!, input);
@@ -1530,8 +1569,7 @@ export function gradeQuestion(s: GameState, b: Battle, q: Question, input: strin
       return { ok, notes: ok ? [] : [`正确答案：${q.answer}`], correct: q.answer!, word: ok ? b.word : undefined };
     }
     case 'skill': {
-      const sk = SKILLS[q.skillId!];
-      const fake: Word = { id: sk.id, de: q.answer ?? sk.de, zh: sk.zh, pos: 'phr', family: 'echo', lvl: 1, zone: 'camp' };
+      const fake: Word = { id: 'skill', de: q.answer ?? '', zh: '', pos: 'phr', family: 'echo', lvl: 1, zone: 'camp' };
       return gradeTyped(input, fake, false);
     }
     case 'conj':
@@ -1635,6 +1673,7 @@ function syncShared(from: Battle, pack: Battle[]) {
   for (const o of pack) {
     if (o === from) continue;
     o.skillCooldown = from.skillCooldown;
+    o.poolCd = from.poolCd;
     o.chorusCd = from.chorusCd;
     o.hintsLeft = from.hintsLeft;
     o.judgement = from.judgement;
@@ -1774,6 +1813,8 @@ export function resolveTurn(
   let blocking = false;
   /** 稳住 answered wrong (rev 234): still blocks half of the first hit. */
   let halfBlock = false;
+  /** 稳住 covered this wrong answer: the monsters' hits this turn cost no HP. */
+  let guarded = false;
   let interrupted = false;
   const chorusStopped = new Set<Battle>();
   let cutFx: ReturnType<typeof cutCheck> = { notes: [], report: {} };
@@ -1843,11 +1884,12 @@ export function resolveTurn(
       else log.push({ text: `它替你说完：「${x.a} ${x.b}」`, tone: 'bad' });
     }
 
-    // Class resources: 书写者 earns 墨水 for typed answers, 守护者 earns 沉着 for every answer.
+    // 言灵 (the only resource) and the 一气呵成 typed streak.
     const cfx = b.cfx;
     const critWasReady = cfx.critReady; // earned this turn = the *next* hit crits
     const typedLike = q.type === 'typed' || q.type === 'conj' || q.type === 'plural' || q.type === 'storm' || clozeTyped || (q.type === 'grammar' && !q.gram?.options);
-    if (move === 'cls' && s.cls) cfx.res = Math.max(0, cfx.res - CLASSES[s.cls].skillCost);
+    // 技能池: the cooldown starts when the skill is used, right or wrong.
+    if (move === 'skill' && q.pool) b.poolCd[q.pool] = POOL[q.pool].cd;
     // 0.4 techniques: 低语 is free (its price: no 会写, no resource, no 归名); 铭刻 / 齐鸣 cooldowns.
     if (move === 'sentence') cfx.res = 0;
     // 铭刻 has no cooldown (Lucas 2026-11-20: encourage it); a miss on an inscribed question costs 1 resource.
@@ -1865,8 +1907,8 @@ export function resolveTurn(
     if (move === 'inscribe') cfx.inscribeCd = CONFIG.tech.inscribeCd;
     if (move === 'chorus') b.chorusCd = CONFIG.tech.chorusCd;
     // 题型奖励表: a correct answer earns its row's resource (guardians: +1 for every answer instead, their passive).
-    if (ok && s.cls !== 'guardian' && move !== 'cls' && !q.whispered) cfx.res += QTYPES[qKey(q)].res;
-    if (s.cls === 'writer' && typedLike && q.type !== 'storm') {
+    if (ok && move !== 'skill' && !q.whispered) cfx.res += QTYPES[qKey(q)].res;
+    if (critRunNeeded(s) && typedLike && q.type !== 'storm') {
       if (ok) {
         cfx.run += 1;
         if (cfx.run >= critRunNeeded(s) && !cfx.critReady) {
@@ -1877,8 +1919,7 @@ export function resolveTurn(
       }
     }
     // Any wrong answer breaks the writer's streak (it carries across fights otherwise).
-    if (s.cls === 'writer' && !ok && !kept) cfx.run = 0;
-    if (s.cls === 'guardian' && move !== 'cls' && !q.whispered) cfx.res += 1 + (!ok && rank(s, 'chenzhuo') ? 1 : 0);
+    if (!ok && !kept) cfx.run = 0;
     cfx.res = Math.min(cfx.res, resMax(s));
 
     // --- 1. You act first.
@@ -1890,62 +1931,37 @@ export function resolveTurn(
       if (readRight && move !== 'skill') s.combo += 1; // 读对意图并出对克制招式，连击额外 +1
       s.bestCombo = Math.max(s.bestCombo, s.combo);
 
-      if (move === 'skill') {
-        const sk = SKILLS[q.skillId!];
-        b.skillCooldown = sk.cooldown;
-        const said = q.answer ?? sk.de;
-        const before = skillLinesOpen(sk, s.skillUses[sk.id] ?? 0);
-        s.skillUses[sk.id] = (s.skillUses[sk.id] ?? 0) + 1;
-        if (skillLinesOpen(sk, s.skillUses[sk.id]) > before) log.push({ text: `「${sk.zh}」解锁了新的说法，下次放它时会考。`, tone: 'sys' });
-        if (sk.id === 'keineAhnung') {
-          b.fx.shield = true;
-          log.push({ text: `「${said}」——字在你身前立成一面墙。`, tone: 'good' });
-        } else if (sk.id === 'wieBitte') {
-          interrupted = true;
-          log.push({ text: `「${said}」——它愣住了。`, tone: 'good' });
-        } else if (sk.id === 'zuTeuer') {
-          b.fx.cheap = true;
-          log.push({ text: `「${said}」——它们下手轻了一半。`, tone: 'good' });
-        } else if (sk.id === 'wieViel') {
-          b.fx.peek = 2;
-          log.push({ text: `「${said}」——接下来两回合，它们要蓄力你会提前知道。`, tone: 'good' });
-        } else if (sk.id === 'stimmtSo') {
-          b.fx.stimmt = true;
-          log.push({ text: `「${said}」——这一场，金币翻倍。`, tone: 'good' });
-        } else if (sk.id === 'zugFaehrtAb') {
-          b.fx.doubleNext = true;
-          log.push({ text: `「${said}」——下一题答对，伤害翻倍。`, tone: 'good' });
-        } else if (sk.id === 'verpasst') {
-          b.fx.keepRes = true;
-          log.push({ text: `「${said}」——下一次答错不丢资源。`, tone: 'good' });
-        } else if (sk.id === 'naechsterHalt') {
-          b.fx.nextHalt = true;
-          log.push({ text: `「${said}」——打倒它，下一只怪护甲降一档。`, tone: 'good' });
-        } else if (sk.id === 'wiederholen') {
-          b.fx.swap = true;
-          log.push({ text: `「${said}」——之后有一题，你可以请它换一题。`, tone: 'good' });
-        } else if (sk.id === 'freutMich') {
-          const heal = Math.round(maxHp(s) * 0.3);
-          s.hp = Math.min(maxHp(s), s.hp + heal);
-          log.push({ text: `「${said}」——生命 +${heal}。`, tone: 'good' });
-        }
-      } else if (move === 'cls' && q.type === 'steady') {
-        blocking = true;
-        if (rank(s, 'yishou')) cfx.yishou = true;
-        log.push({ text: '「稳住」——你沉下身子。第一下，挡得住。', tone: 'good' });
+      if (move === 'skill' && q.type === 'steady') {
+        // 稳住 (rev 425): no damage; the next 2 wrong answers cost no HP and keep the combo.
+        cfx.guard = 2;
+        log.push({ text: '「稳住」——你沉下身子。接下来两次答错，都不扣血、不断连击。', tone: 'good' });
       } else {
         const atk = attack(s);
         // 低语: the hinted question hits like one tier easier (typed → choice armor, hard → typed, no armor break).
         const tier = (q.whispered ? Math.max(0, qTier(q) - 1) : qTier(q)) as 0 | 1 | 2;
         let mult = between(rng, CONFIG.damage.roll[0], CONFIG.damage.roll[1]);
-        const pen = s.cls === 'writer' ? 0.05 * rank(s, 'bifeng') : 0;
+        const pen = 0.05 * rank(s, 'bifeng');
         // 0.4: the question type no longer multiplies damage (armor does that, below). Gear affixes stay.
         if (q.type === 'storm') {
           // rev 234: attack × (1 + 0.5 × forms right); talent 连写 +10% per form per point.
           const n = q.forms ? b.stormHits ?? 0 : 1;
           mult *= (1 + 0.5 * n) * (1 + 0.1 * rank(s, 'changci') * n) * (1 + pen);
           log.push({ text: `墨水风暴：连写对 ${n}${q.forms ? ` / ${q.forms.length}` : ''} 种形式。`, tone: 'good' });
-        } else if (typedLike) mult *= 1 + pen; // 书写者「笔锋」 (class identity, kept); no question-type gear affix
+        } else if (typedLike) mult *= 1 + pen; // 天赋「笔锋」; no question-type gear affix
+        if (q.pool && MULT[q.pool]) {
+          mult *= MULT[q.pool]!;
+          log.push({ text: `${POOL[q.pool].zh}：×${MULT[q.pool]}。`, tone: 'good' });
+        }
+        if (q.pool === 'seal') {
+          // 格之封印: no charging for 2 turns; a charge already building is gone.
+          b.sealed = SEAL_TURNS;
+          if (intent.kind === 'charge' || b.chargeIn) {
+            b.chargeIn = undefined;
+            if (b.queued?.kind === 'charge') b.queued = undefined;
+            interrupted = true;
+          }
+          log.push({ text: `格之封印：它 ${SEAL_TURNS} 回合内蓄不了力。`, tone: 'good' });
+        }
         if (q.type === 'sentence') {
           if (has(s.level, 'layerElement')) element = ELEMENT_BY_GENDER[genderOf(b.word) ?? 'n'];
         }
@@ -2009,7 +2025,7 @@ export function resolveTurn(
         const wasBroken = m.broken > 0;
         if ((tier === 2 || breaking) && !wasBroken && phaseFx !== 'wrong') {
           // 誊写 (书写者大天赋, 游戏设计 十): any hard-question break lasts 4 hits instead of 3.
-          m.broken = CONFIG.armor.breakHits + (s.cls === 'writer' && rank(s, 'tengxie') ? 1 : 0);
+          m.broken = CONFIG.armor.breakHits + (rank(s, 'tengxie') ? 1 : 0);
           log.push({ text: breaking ? `写对了。壳裂开了：这一下和之后 ${m.broken - 1} 下无视护甲。` : `难题破甲：这一下和之后 ${m.broken - 1} 下无视护甲。`, tone: 'good' });
         }
         // Right stance = the hit meets armor one tier lower (a choice answer as if typed, a typed one ignores it).
@@ -2062,8 +2078,7 @@ export function resolveTurn(
           if (b.queued?.kind === 'charge') b.queued = undefined;
           log.push({ text: '你听懂了它说的时间：抢在大招之前打断了它。', tone: 'good' });
         }
-        if (cfx.yishou && move !== 'cls') {
-          cfx.yishou = false;
+        if (rank(s, 'yishou') && (cfx.guard ?? 0) > 0 && move !== 'skill') {
           const d = Math.max(1, Math.round(attack(s) * (1 - effArmor(s, b, 0)) * between(rng, CONFIG.damage.roll[0], CONFIG.damage.roll[1])));
           m.hp -= d;
           playerDamage += d;
@@ -2122,15 +2137,15 @@ export function resolveTurn(
         kills.push(b);
       }
     } else {
-      if (s.cls === 'writer' && typedLike && rank(s, 'lengjing') && !cfx.calmUsed) {
-        cfx.calmUsed = true;
-        log.push({ text: '冷静：写错了，连击还在。', tone: 'info' });
+      if (move === 'skill' && q.type === 'steady') {
+        cfx.guard = 1;
+        log.push({ text: '「稳住」——没答对，只保得住下一次答错。', tone: 'info' });
+      } else if ((cfx.guard ?? 0) > 0) {
+        cfx.guard! -= 1;
+        guarded = true;
+        log.push({ text: `稳住护着你：这次答错不扣血、连击还在${cfx.guard ? `（还能护 ${cfx.guard} 次）` : ''}。`, tone: 'info' });
       } else s.combo = 0;
       b.wrongStreak += 1;
-      if (move === 'cls' && q.type === 'steady') {
-        halfBlock = true;
-        log.push({ text: '「稳住」——没答对，只挡得住一半。', tone: 'info' });
-      }
       if (b.stage === 2 && !b.slipped && b.kind === 'due' && !q.review) {
         b.slipped = true;
         log.push({ text: '错了。它长回一颗牙（退回裂形）。', tone: 'bad' });
@@ -2174,13 +2189,7 @@ export function resolveTurn(
 
   const hitPlayer = (raw: number) => {
     let d = Math.max(1, Math.round(raw * (1 - wrongReduce) * (ok ? 1 : wrongHitShare(s)) * (b.fx.cheap ? 0.5 : 1)));
-    if (b.fx.shield) {
-      b.fx.shield = false;
-      const back = Math.max(1, Math.round(d * shieldReflect(s)));
-      m.hp = Math.max(0, m.hp - back);
-      say({ text: `墙挡住了，反弹 ${back}。`, tone: 'good' });
-      d = 0;
-    }
+    if (guarded) d = 0;
     monsterDamage += d;
     s.hp -= d;
     if (d > 0) lastHitter = b;
@@ -2203,7 +2212,7 @@ export function resolveTurn(
           }
           if (i === 0 && blocking) {
             parried = true;
-            const counter = Math.max(1, Math.round(attack(s) * CONFIG.player.critMult * (1 + (s.cls === 'guardian' ? 0.2 * rank(s, 'fanji') : 0))));
+            const counter = Math.max(1, Math.round(attack(s) * CONFIG.player.critMult));
             m.hp = Math.max(0, m.hp - counter);
             say({ text: `弹反！挡住第一下并反击 ${counter} 点（算一次暴击）。`, tone: 'crit' });
             continue;
@@ -2299,6 +2308,8 @@ export function resolveTurn(
     log.push({ text: `你中毒了（${b.fx.poison} 层），掉了 ${d} 点。`, tone: 'bad' });
   }
   if (b.skillCooldown > 0) b.skillCooldown -= 1;
+  for (const k of Object.keys(b.poolCd) as PoolId[]) if (b.poolCd[k]! > 0) b.poolCd[k]! -= 1;
+  if ((b.sealed ?? 0) > 0) b.sealed! -= 1;
   if ((b.cfx.inscribeCd ?? 0) > 0) b.cfx.inscribeCd! -= 1;
   if (b.chorusCd > 0) b.chorusCd -= 1;
   b.fx.cheap = false;

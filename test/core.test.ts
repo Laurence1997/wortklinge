@@ -488,29 +488,27 @@ describe('region 2: packs, conjugation, plurals', () => {
 describe('classes and talents', () => {
   const noun = () => WORDS.find((w) => w.de === 'Apfel')!;
 
-  it('书写者: typed answers fill ink, 3 in a row make the next hit a crit, 墨水风暴 spends 3', () => {
+  it('技能池: 一气呵成 makes 3 typed in a row crit; 墨水风暴 costs nothing and goes on cooldown', () => {
     const rng = makeRng(11);
     const s = newGame('T', 'student');
     s.level = 12;
-    s.cls = 'writer';
+    s.talents = { shared: { critRun: 1 } };
     s.hp = 9999;
     s.words['apfel'] = { stage: 1 } as never;
     const b = startBattle(s, noun(), rng);
     b.monster.hp = b.monster.maxHp = 9999;
     const typed = { type: 'typed' as const, prompt: '', focus: '', withArticle: true, answer: 'der Apfel' };
     for (let i = 0; i < 3; i++) resolveTurn(s, b, 'attack', typed, 'der Apfel', rng);
-    expect(b.cfx.res).toBe(3);
     expect(b.cfx.critReady).toBe(true);
-    const r = resolveTurn(s, b, 'attack', makeQuestion(s, b, 'attack', rng), 'x', rng);
-    if (r.correct) expect(r.crit).toBe(true);
-    const storm = makeQuestion(s, b, 'cls', rng);
+    const res = b.cfx.res;
+    const storm = makeQuestion(s, b, 'skill', rng, 'storm');
     expect(storm.type).toBe('storm');
-    // rev 234: the chain is the target's own forms (der Apfel → die Äpfel at Lv12), sent joined with |.
     expect(storm.forms!.map((f) => f.answer)).toEqual(['der Apfel', 'die Äpfel']);
-    const rs = resolveTurn(s, b, 'cls', storm, storm.forms!.map((f) => f.answer).join('|'), rng);
+    const rs = resolveTurn(s, b, 'skill', storm, storm.forms!.map((f) => f.answer).join('|'), rng);
     expect(rs.correct).toBe(true);
     expect(b.stormHits).toBe(2);
-    expect(b.cfx.res).toBe(0);
+    expect(b.cfx.res).toBe(res);
+    expect(b.poolCd.storm).toBe(3); // cd 4, one turn already ticked
   });
 
   it('墨水风暴 (rev 234): stops at the first wrong form; 3 forms from Lv21; damage grows with forms right', async () => {
@@ -548,12 +546,12 @@ describe('classes and talents', () => {
     expect(e.monster.hp).toBe(500);
   });
 
-  it('守护者: wrong answers hurt 20% less and 稳住 blocks', () => {
-    const hitTaken = (cls: 'guardian' | null) => {
+  it('天赋「守势」: wrong answers hurt 20% less; 稳住 right covers the next 2 wrong answers (no HP, combo kept)', () => {
+    const hitTaken = (shoushi: boolean) => {
       const rng = makeRng(4);
       const s = newGame('T', 'student');
       s.level = 12;
-      s.cls = cls;
+      if (shoushi) s.talents = { shared: { shoushi: 1 } };
       s.hp = 9999;
       const b = startBattle(s, noun(), rng);
       b.intent = { ...b.intent, kind: 'attack', hits: 1, element: 'phys' };
@@ -561,29 +559,51 @@ describe('classes and talents', () => {
       b.monster.hp = 9999;
       const q = { type: 'article' as const, prompt: '', focus: '', options: ['der', 'die', 'das'], answer: 'der' };
       resolveTurn(s, b, 'attack', q, 'die', rng);
-      return { lost: 9999 - s.hp, res: b.cfx.res };
+      return 9999 - s.hp;
     };
-    const g = hitTaken('guardian');
-    expect(g.lost).toBeLessThan(hitTaken(null).lost);
-    expect(g.res).toBe(1);
+    expect(hitTaken(true)).toBeLessThan(hitTaken(false));
+    const rng = makeRng(4);
+    const s = newGame('T', 'student');
+    s.level = 12;
+    s.hp = 9999;
+    const b = startBattle(s, noun(), rng);
+    b.monster.dmg = 50;
+    b.monster.hp = b.monster.maxHp = 9999;
+    const st = makeQuestion(s, b, 'skill', rng, 'steady');
+    expect(st.type).toBe('steady');
+    resolveTurn(s, b, 'skill', st, st.answer!, rng);
+    expect(b.cfx.guard).toBe(2);
+    s.combo = 5;
+    for (let i = 0; i < 2; i++) {
+      b.intent = { ...b.intent, kind: 'attack', hits: 1, element: 'phys' };
+      const hp = s.hp;
+      resolveTurn(s, b, 'attack', { type: 'article', prompt: '', focus: '', options: ['der', 'die', 'das'], answer: 'der' }, 'die', rng);
+      expect(s.hp).toBe(hp);
+    }
+    expect(s.combo).toBe(5);
+    b.intent = { ...b.intent, kind: 'attack', hits: 1, element: 'phys' };
+    const hp = s.hp;
+    resolveTurn(s, b, 'attack', { type: 'article', prompt: '', focus: '', options: ['der', 'die', 'das'], answer: 'der' }, 'die', rng);
+    expect(s.hp).toBeLessThan(hp);
   });
 
-  it('talent points start at Lv12, tiers gate, respec costs an hour of gold', async () => {
+  it('talent points: 1 per level at 12–30, 1 per 2 levels at 31–120; big talents gate; respec costs an hour of gold', async () => {
     const { learn, talentPoints, respec, respecCost, spent } = await import('../src/core/classes');
     const s = newGame('T', 'student');
-    s.cls = 'writer';
     s.level = 11;
     expect(talentPoints(s)).toBe(0);
+    s.level = 30;
+    expect(talentPoints(s)).toBe(19);
+    s.level = 120;
+    expect(talentPoints(s)).toBe(64);
     s.level = 20;
     expect(talentPoints(s)).toBe(9);
-    expect(learn(s, 'tengxie')).toBe(false); // tier 3 needs 6 points first
+    expect(learn(s, 'tengxie')).toBe(false); // big talent: 4 points in 笔锋 first
     for (let i = 0; i < 3; i++) learn(s, 'bifeng');
     expect(learn(s, 'bifeng')).toBe(false); // max 3
     learn(s, 'changci');
-    learn(s, 'changci');
-    learn(s, 'zhanmo');
     expect(learn(s, 'tengxie')).toBe(true);
-    expect(spent(s)).toBe(7);
+    expect(spent(s)).toBe(5);
     s.gold = respecCost(s) - 1;
     expect(respec(s)).toBe(false);
     s.gold += 1;
@@ -756,13 +776,13 @@ describe('backen accepts both present forms', () => {
   });
 });
 
-describe('class resources carry over between fights', () => {
-  it('ink and the typed streak survive the next fight; a miss breaks the streak', async () => {
+describe('言灵 carries over between fights', () => {
+  it('言灵 and the typed streak survive the next fight; a miss breaks the streak', async () => {
     const { resetClassFx } = await import('../src/core/combat');
     const rng = makeRng(2);
     const s = newGame('T', 'student');
     s.level = 12;
-    s.cls = 'writer';
+    s.talents = { shared: { critRun: 1 } };
     s.hp = 9999;
     const apfel = WORDS.find((w) => w.de === 'Apfel')!;
     const typed = { type: 'typed' as const, prompt: '', focus: '', withArticle: true, answer: 'der Apfel' };
@@ -1201,27 +1221,32 @@ describe('词性标签 (2026-11-21)', () => {
   });
 });
 
-describe('句子技能轮换 + 墨水风暴抽词 (2026-11-21)', () => {
-  it('a skill asks its first line, unlocks one more every 5 casts and rotates; every line in a skill has its own Chinese', async () => {
-    const { SKILLS, skillLine, skillLinesOpen } = await import('../src/data/skills');
-    const sk = SKILLS.wieBitte;
-    expect(skillLine(sk, 0).de).toBe('Wie bitte?');
-    expect(skillLinesOpen(sk, 4)).toBe(1);
-    expect(skillLine(sk, 4).de).toBe('Wie bitte?');
-    expect(skillLine(sk, 5).de).toBe(sk.lines[1].de); // the cast it unlocks
-    expect(skillLinesOpen(sk, 100)).toBe(sk.lines.length);
-    for (const k of Object.values(SKILLS)) {
-      expect(k.lines[0].de).toBe(k.de);
-      expect(new Set(k.lines.map((l) => l.zh)).size).toBe(k.lines.length);
-    }
+describe('技能池 (rev 425) + 墨水风暴抽词', () => {
+  it('技能池: slots 2 / 3 / 4 at 10 / 30 / 61, skills come with the level, the bar keeps the pick', async () => {
+    const { loadout, owned, slotCount, toggleLoadout, splitOf, gradeSplit, collocOf } = await import('../src/core/skillPool');
+    expect([9, 10, 29, 30, 60, 61].map(slotCount)).toEqual([0, 2, 2, 3, 3, 4]);
     const s = newGame('T', 'student', T0);
-    s.level = 8;
-    s.skills = ['wieBitte'];
-    s.skillUses.wieBitte = 5;
-    const b = startBattle(s, WORDS[0], makeRng(3));
-    const q = makeQuestion(s, b, 'skill', makeRng(1));
-    expect(q.answer).toBe('Noch einmal, bitte.');
-    expect(resolveTurn(s, b, 'skill', q, 'Noch einmal, bitte', makeRng(2)).correct).toBe(true);
+    s.level = 9;
+    expect(owned(s)).toEqual([]);
+    s.level = 15;
+    expect(owned(s)).toEqual(['storm', 'steady', 'split']);
+    expect(loadout(s)).toEqual(['storm', 'steady']);
+    expect(toggleLoadout(s, 'split')).toBe(false); // bar full
+    toggleLoadout(s, 'storm');
+    expect(toggleLoadout(s, 'split')).toBe(true);
+    expect(loadout(s)).toEqual(['steady', 'split']);
+    expect(toggleLoadout(s, 'seal')).toBe(false); // not owned yet
+    // 拆词 targets: a compound noun with a known tail, a separable verb; a plain word can't be targeted.
+    const fake = (de: string, art?: 'der' | 'die' | 'das', pos: 'n' | 'v' = 'n') => ({ id: 'x', de, zh: '', pos, art, lvl: 1, zone: 'camp' }) as never;
+    const hbf = splitOf(fake('Hauptbahnhof', 'der'));
+    expect(hbf?.kind).toBe('compound');
+    expect(gradeSplit(hbf!, 'Haupt + Bahnhof')).toBe(true);
+    expect(gradeSplit(hbf!, 'Haupt')).toBe(false);
+    const auf = splitOf(fake('aufstehen', undefined, 'v'));
+    expect(auf?.kind).toBe('separable');
+    expect(gradeSplit(auf!, auf!.answer)).toBe(true);
+    expect(splitOf(fake('Tee', 'der'))).toBeNull();
+    expect(collocOf(fake('warten', undefined, 'v'))?.prep).toBe('auf');
   });
   it('墨水风暴 prefers words due soon or written wrong lately', async () => {
     const { stormWord } = await import('../src/core/combat');
@@ -1731,8 +1756,7 @@ describe('副词缀白名单 and 誊写 (2026-11-24)', () => {
       return resolveTurn(s, b, 'attack', q, 'der Tee', makeRng(2)).playerDamage;
     };
     expect(hit('der')).toBeGreaterThan(hit('die') * 1.3);
-    s.cls = 'writer';
-    s.talents = { writer: { tengxie: 1 } };
+    s.talents = { shared: { tengxie: 1 } };
     const b = startBattle(s, WORD_BY_ID['tee'], makeRng(3));
     b.monster.hp = b.monster.maxHp = 9999;
     b.pluralMon = false;

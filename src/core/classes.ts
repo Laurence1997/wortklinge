@@ -1,108 +1,84 @@
-// Classes (Lv10+, chosen at Greta in the market) and their talent trees (points from Lv12).
-// Design: 游戏设计页「第 2 区 · 职业试炼 / 天赋」. Pure rules; the UI lives in panels and the controller.
+// 天赋树（共用一棵）(游戏设计 十, Lucas 2026-11-25): the combat classes are gone. Everyone shares one tree with five
+// branches; each branch ends in a big talent that changes how you play. Points: 1 per level at 12–30, 1 per 2 levels
+// at 31–120 (誓约 quests add permanent points later). Respec at the mentor for about an hour's gold.
+//
+// Only the nodes the doc names are in yet (from the old class trees). 言辞 / 秩序 / 迅捷 and the rest of 笔锋 / 守势
+// (about 15 nodes per branch) wait for the docs thread to write them ("其余节点 0.7 开工前写全").
 
 import { CONFIG } from './config';
 import type { GameState } from './state';
 
+/** Kept only so old saves and the leaderboard type-check; nobody has a class any more. */
 export type ClassId = 'writer' | 'guardian';
 
-export interface ClassDef {
-  id: ClassId;
-  zh: string;
-  res: string; // resource name
-  resMax: number;
-  skillZh: string;
-  skillCost: number;
-  blurb: string[];
-  trialZh: string;
-}
+export type Branch = 'bifeng' | 'shoushi' | 'yanci' | 'zhixu' | 'xunjie';
 
-export const CLASSES: Record<ClassId, ClassDef> = {
-  writer: {
-    id: 'writer',
-    zh: '书写者',
-    res: '墨水',
-    resMax: 5,
-    skillZh: '墨水风暴',
-    skillCost: 3,
-    trialZh: '3 场战斗，每一题都要默写',
-    blurb: [
-      '打字题答对墨水 +1，填变形 +2（最多 5）。墨水攒满可放终结技。',
-      '被动：连续默写答对 3 题，下一击必定暴击。',
-      '职业技能「墨水风暴」（3 墨水）：连写眼前这只怪的词的 2–3 种形式（原形、复数或变位、格或完成时），写错一个就停，每写对一个伤害 +50%。',
-    ],
-  },
-  guardian: {
-    id: 'guardian',
-    zh: '守护者',
-    res: '沉着',
-    resMax: 5,
-    skillZh: '稳住',
-    skillCost: 3,
-    trialZh: '3 场战斗，对手都是拖久了变凶的复习怪',
-    blurb: [
-      '答错时受到的伤害 −20%。',
-      '每答一题（对错都算），沉着 +1（最多 5）。沉着攒满可放终结技。',
-      '职业技能「稳住」（3 沉着）：答一道这只怪的词的简单题（选意思或选冠词），答对挡下这回合的第一击，答错也挡一半。',
-      '「Ich habe keine Ahnung.」的反弹从 20% 升到 30%。',
-    ],
-  },
+export const BRANCHES: Record<Branch, { zh: string; about: string }> = {
+  bifeng: { zh: '笔锋', about: '默写、变形、墨水风暴' },
+  shoushi: { zh: '守势', about: '答错减伤、稳住' },
+  yanci: { zh: '言辞', about: '终结技、连句、搭配' },
+  zhixu: { zh: '秩序', about: '格和变位、封印、破甲' },
+  xunjie: { zh: '迅捷', about: '速答、即时战、听写' },
 };
 
 export interface TalentDef {
   id: string;
   zh: string;
+  branch: Branch;
   max: number;
-  tier: 1 | 2 | 3;
+  /** The branch's last node: needs BIG_GATE points in its branch first. */
+  big?: boolean;
   desc: (rank: number) => string;
 }
 
-export const TALENTS: Record<ClassId, TalentDef[]> = {
-  writer: [
-    { id: 'bifeng', zh: '笔锋', max: 3, tier: 1, desc: (r) => `默写伤害 +${5 * r}%（每点 5%）` },
-    { id: 'changci', zh: '连写', max: 2, tier: 1, desc: (r) => `墨水风暴每写对一个形式再 +${10 * r}%` },
-    { id: 'zhanmo', zh: '蘸墨', max: 1, tier: 2, desc: () => '墨水上限 +1' },
-    { id: 'yiqi', zh: '一气呵成', max: 1, tier: 2, desc: () => '必暴击只要连对 2 题默写' },
-    { id: 'lengjing', zh: '冷静', max: 1, tier: 2, desc: () => '每场第一次默写答错不断连击' },
-    { id: 'tengxie', zh: '誊写', max: 1, tier: 3, desc: () => '难题破甲后，无视护甲从 3 下延长到 4 下' },
-  ],
-  guardian: [
-    { id: 'houpi', zh: '厚皮', max: 3, tier: 1, desc: (r) => `生命 +${5 * r}%（每点 5%）` },
-    { id: 'chenzhuo', zh: '沉着', max: 1, tier: 1, desc: () => '答错时沉着多 +1' },
-    { id: 'fanji', zh: '反击', max: 2, tier: 2, desc: (r) => `弹反伤害 +${20 * r}%` },
-    { id: 'wen', zh: '稳', max: 2, tier: 2, desc: (r) => `答错受伤再 −${5 * r}%` },
-    { id: 'yishou', zh: '以守为攻', max: 1, tier: 3, desc: () => '「稳住」之后，下一题答对多打一次普通攻击' },
-  ],
-};
+export const TALENT_TREE: TalentDef[] = [
+  { id: 'bifeng', zh: '笔锋', branch: 'bifeng', max: 3, desc: (r) => `默写伤害 +${5 * r}%（每点 5%）` },
+  { id: 'changci', zh: '连写', branch: 'bifeng', max: 2, desc: (r) => `墨水风暴每写对一个形式再 +${10 * r}%` },
+  { id: 'critRun', zh: '一气呵成', branch: 'bifeng', max: 1, desc: () => '连对 3 题默写，下一击必暴击' },
+  { id: 'tengxie', zh: '誊写', branch: 'bifeng', max: 1, big: true, desc: () => '难题破甲后，无视护甲从 3 下延长到 4 下' },
+  { id: 'houpi', zh: '厚皮', branch: 'shoushi', max: 3, desc: (r) => `生命 +${5 * r}%（每点 5%）` },
+  { id: 'shoushi', zh: '守势', branch: 'shoushi', max: 1, desc: () => '答错时受到的伤害 −20%' },
+  { id: 'yishou', zh: '以守为攻', branch: 'shoushi', max: 1, big: true, desc: () => '稳住生效时答对，同时打出一次普通攻击' },
+];
 
-/** Points needed in the tree before tier 2 / tier 3 nodes open. */
-export const TIER_GATE: Record<1 | 2 | 3, number> = { 1: 0, 2: 3, 3: 6 };
+/** Points spent in a branch before its big talent opens (provisional until the docs thread writes the full tree). */
+export const BIG_GATE = 4;
 export const TALENT_FROM_LEVEL = 12;
+/** One per level up to here, then one per two levels up to 120. */
+export const TALENT_EVERY_LEVEL_UNTIL = 30;
+export const TALENT_UNTIL = 120;
 
-export function talentPoints(s: GameState): number {
-  return Math.max(0, s.level - TALENT_FROM_LEVEL + 1);
+export function talentPoints(s: Pick<GameState, 'level'>): number {
+  const l = Math.min(s.level, TALENT_UNTIL);
+  if (l < TALENT_FROM_LEVEL) return 0;
+  const early = Math.min(l, TALENT_EVERY_LEVEL_UNTIL) - TALENT_FROM_LEVEL + 1;
+  const late = l > TALENT_EVERY_LEVEL_UNTIL ? Math.floor((l - TALENT_EVERY_LEVEL_UNTIL) / 2) : 0;
+  return early + late;
 }
 
-export function tree(s: GameState, c: ClassId = s.cls!): Record<string, number> {
-  return (s.talents[c] ??= {});
+export function tree(s: GameState): Record<string, number> {
+  return ((s.talents as Record<string, Record<string, number>>).shared ??= {});
 }
 
-export function spent(s: GameState, c: ClassId = s.cls!): number {
-  return Object.values(tree(s, c)).reduce((a, b) => a + b, 0);
+export function spent(s: GameState): number {
+  return Object.values(tree(s)).reduce((a, b) => a + b, 0);
+}
+
+export function spentIn(s: GameState, br: Branch): number {
+  const t = tree(s);
+  return TALENT_TREE.filter((x) => x.branch === br).reduce((a, x) => a + (t[x.id] ?? 0), 0);
 }
 
 export function rank(s: GameState, id: string): number {
-  if (!s.cls) return 0;
-  return s.talents[s.cls]?.[id] ?? 0;
+  return (s.talents as Record<string, Record<string, number>>).shared?.[id] ?? 0;
 }
 
 export function canLearn(s: GameState, t: TalentDef): boolean {
-  if (!s.cls) return false;
-  return spent(s) < talentPoints(s) && rank(s, t.id) < t.max && spent(s) >= TIER_GATE[t.tier];
+  return spent(s) < talentPoints(s) && rank(s, t.id) < t.max && (!t.big || spentIn(s, t.branch) >= BIG_GATE);
 }
 
 export function learn(s: GameState, id: string): boolean {
-  const t = s.cls && TALENTS[s.cls].find((x) => x.id === id);
+  const t = TALENT_TREE.find((x) => x.id === id);
   if (!t || !canLearn(s, t)) return false;
   tree(s)[id] = rank(s, id) + 1;
   return true;
@@ -119,34 +95,27 @@ export function respecCost(s: GameState): number {
 
 export function respec(s: GameState): boolean {
   const cost = respecCost(s);
-  if (!s.cls || s.gold < cost || spent(s) === 0) return false;
+  if (s.gold < cost || spent(s) === 0) return false;
   s.gold -= cost;
-  s.talents[s.cls] = {};
+  (s.talents as Record<string, Record<string, number>>).shared = {};
   return true;
 }
 
+/** 言灵 is the only resource: 5 at most, from Lv4 (铭刻 misses cost it; 终结技 spends it from Lv5). */
 export function resMax(s: GameState): number {
-  // Before a class: 言灵, 5 at most, from Lv4 (铭刻 misses cost it; 终结技 spends it from Lv5).
-  if (!s.cls) return s.level >= 4 ? 5 : 0;
-  return CLASSES[s.cls].resMax + (s.cls === 'writer' ? rank(s, 'zhanmo') : 0);
+  return s.level >= 4 ? 5 : 0;
 }
 
-/** Share of a wrong-answer hit you still take (guardian −20%, talent 稳 −5% per point). */
+/** Share of a wrong-answer hit you still take (talent 守势 −20%). */
 export function wrongHitShare(s: GameState): number {
-  if (s.cls !== 'guardian') return 1;
-  return 1 - 0.2 - 0.05 * rank(s, 'wen');
+  return 1 - 0.2 * rank(s, 'shoushi');
 }
 
-/** 「Ich habe keine Ahnung.」 reflects 20%, guardians 30%. */
-export function shieldReflect(s: GameState): number {
-  return s.cls === 'guardian' ? 0.3 : 0.2;
-}
-
-/** Typed hits in a row before the writer's guaranteed crit. */
+/** Typed hits in a row before the guaranteed crit (talent 一气呵成), or 0 when not learned. */
 export function critRunNeeded(s: GameState): number {
-  return rank(s, 'yiqi') ? 2 : 3;
+  return rank(s, 'critRun') ? 3 : 0;
 }
 
 export function hpBonus(s: GameState): number {
-  return s.cls === 'guardian' ? 0.05 * rank(s, 'houpi') : 0;
+  return 0.05 * rank(s, 'houpi');
 }
