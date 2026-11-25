@@ -14,9 +14,9 @@ on:
         type: boolean
         default: true
       model:
-        description: 'DeepSeek model'
+        description: 'Model (gpt-* uses the OPENAI_API_KEY secret)'
         type: choice
-        options: [deepseek-flash, deepseek-v4-pro]
+        options: [deepseek-flash, deepseek-v4-pro, gpt-6-luna, gpt-6.2-astra]
         default: deepseek-flash
       tatoeba:
         description: 'Also compare with Tatoeba native sentences (downloads ~100 MB)'
@@ -69,6 +69,7 @@ jobs:
         if: github.event_name == 'workflow_dispatch' && inputs.deepseek
         env:
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           DEEPSEEK_MODEL: ${{ inputs.model || 'deepseek-flash' }}
         run: npx vite-node scripts/proof/deepseek.ts
       - name: Tatoeba
