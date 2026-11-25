@@ -120,6 +120,11 @@ for (const sev of ['error', 'translation', 'unnatural']) {
 writeFileSync(join(root, 'proof/out/deepseek.md'), lines.join('\n'));
 writeFileSync(join(root, 'proof/out/deepseek.json'), JSON.stringify(flagged.map((x) => ({ ...x, ...cache[x.hash] })), null, 1));
 console.log(`${flagged.length} suspicious → proof/out/deepseek.md`);
+// The full list in the log too, so it can be read without downloading the artifact.
+for (const x of flagged) {
+  const v = cache[x.hash];
+  console.log(`[${v.severity ?? 'error'}] ${x.id} | ${x.text}${x.zh ? ` | ${x.zh}` : ''} | ${v.problem ?? ''}${v.fix ? ` → ${v.fix}` : ''}`);
+}
 if (process.env.GITHUB_STEP_SUMMARY) {
   const sum = [`### 德语校对：DeepSeek`, `${items.length} 条，${flagged.length} 条可疑。完整名单见 artifact proof-report。`, ''];
   for (const x of flagged.slice(0, 30)) sum.push(`- \`${x.id}\` ${x.text} — ${cache[x.hash].problem ?? ''}${cache[x.hash].fix ? ` → ${cache[x.hash].fix}` : ''}`);
