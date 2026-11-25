@@ -271,7 +271,8 @@ export function showsWord(w: Word, text: string): boolean {
 
 /** 0.6.x: every sense of the word is blanked in the Chinese, every time it appears; nothing to blank → a mumble. */
 export function maskZh(zh: string, w: Word): string {
-  const senses = w.zh.split(/[；;，,、/（）()]/).map((x) => x.trim()).filter((x) => x.length > 0).sort((a, b) => b.length - a.length);
+  // Brackets hold hints (「姓（正式说法）」), not senses: only the senses get blanked.
+  const senses = w.zh.replace(/（[^）]*）|\([^)]*\)/g, '').split(/[；;，,、/]/).map((x) => x.trim()).filter((x) => x.length > 0).sort((a, b) => b.length - a.length);
   let out = zh;
   for (const z of senses) out = out.split(z).join('……');
   return out === zh ? '（它含糊地念着什么，听不清。）' : out.replace(/(……)+/g, '……');
