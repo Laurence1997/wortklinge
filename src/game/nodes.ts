@@ -4,6 +4,7 @@
 import { DUNGEON } from '../data/dungeon';
 import { GRAM_DUNGEON } from '../core/gram/dungeons';
 import { PARTNER } from '../core/gram/partner';
+import { DUEL } from '../data/grammar/duels';
 import { sceneArtCanvas } from '../ui/sceneArt';
 import Phaser from 'phaser';
 import { CONFIG } from '../core/config';
@@ -304,6 +305,7 @@ export class NodeNav {
     if (sc.bonfire) things.push(h('button.btn', { onclick: ia('bonfire') }, '🔥 篝火休息'));
     if (sc.id === 'r3-hide' && this.s.level >= DUNGEON.from) things.push(h('button.btn.primary', { disabled: busy, onclick: () => this.w.ctrl.enterDungeon() }, '🚪 进入零号站台（规则表地下城）'));
     // 语法秘境 (0.7–0.8): entered from a region's camp.
+    if (sc.type === 'camp' && sc.bonfire && this.s.level >= DUEL.from) things.push(h('button.btn', { disabled: busy, onclick: () => this.w.ctrl.openDuel() }, '⚔ 决斗场（AI 对话）'));
     if (sc.type === 'camp' && sc.bonfire && this.s.level >= PARTNER.from) things.push(h('button.btn', { disabled: busy, onclick: () => this.w.ctrl.choosePartner() }, '🤝 复习伙伴'));
     if (sc.type === 'camp' && sc.bonfire && this.s.level >= GRAM_DUNGEON.from.ablaut) things.push(h('button.btn', { disabled: busy, onclick: () => this.w.ctrl.enterGramDungeon() }, '📜 语法秘境'));
     if (sc.bonfire && has(this.s.level, 'dailies')) things.push(h('button.btn', { disabled: busy, onclick: () => this.w.ctrl.showDailies() }, '📋 每日委托'));

@@ -51,6 +51,8 @@ import { LINA } from '../data/lina';
 import { WEBER, WEBER_POOL, usesDu } from '../data/weber';
 import { answerExam, BREAK, examPassed, PART_ZH, startExam, startGrammarExam, type Exam } from '../core/breakthrough';
 import { DUNGEON, RULES, type Rule } from '../data/dungeon';
+import { AI_TUTOR, aiGradeText, duelTurn } from '../net/aiTutor';
+import { DUEL, DUEL_SCENES, type DuelScene } from '../data/grammar/duels';
 import { partnerChoices, partnerOf, setPartner } from '../core/gram/partner';
 import { cleared, floorRun, floorsOf, GRAM_DUNGEON, markCleared, type DungeonKind, type Floor } from '../core/gram/dungeons';
 import { SKILLS } from '../data/skills';
@@ -205,6 +207,14 @@ export class Controller {
     const xp = first ? Math.max(1, Math.round(xpToNext(s.level) * JOURNAL_XP_SHARE)) : 0;
     if (xp) this.diaryXp(xp, '写了篝火日记');
     this.persist();
+    // AI 批改 (40 级): logged-in players get a teacher's note on the entry; offline or over the cap, nothing changes.
+    if (s.level >= AI_TUTOR.from && s.owner) {
+      void aiGradeText(text.trim(), words, '篝火日记：用今天打过的词写两三句话', s.level).then((r) => {
+        if ('error' in r) return r.error === 'quota' ? toast('今天的 AI 批改次数用完了') : undefined;
+        const lines: Line[] = r.ok && !r.errors.length ? [{ who: '批改', text: `写得对。${r.better ? `更自然的说法：${r.better}` : ''}` }] : [...r.errors.map((x) => ({ who: '批改', text: `「${x.bad}」→「${x.fix}」：${x.why}` })), ...(r.better ? [{ who: '批改', text: `改好的句子：${r.better}` }] : [])];
+        if (lines.length) say(lines);
+      });
+    }
     return xp;
   }
 
@@ -1766,6 +1776,43 @@ export class Controller {
     this.persist();
     this.refresh();
     toast(`${it.name} 鉴定好了${f.misses.length ? '' : '：每条词缀都挑了更好的那个'}`, 'gold');
+  }
+
+  // ---- 决斗场 · AI 对话 (40) -----------------------------------------------------------------------
+  openDuel(): void {
+    const s = this.state;
+    if (s.level < DUEL.from) return;
+    if (!s.owner) return say([{ who: SYS, text: '决斗场要登录才能用（AI 对话在云端）。' }]);
+    const lines: Line[] = [];
+    if (!s.flags.duelSeen) {
+      s.flags.duelSeen = true;
+      lines.push({ who: SYS, text: '【决斗场】和 AI 扮演的人用德语把一件事办完：点单、约医生、看房、去市政厅……每次回答它会指出你最重要的一处错。每天有次数上限；每天第一次办成给一点经验。' });
+    }
+    lines.push({ who: SYS, text: '选一个场景：' });
+    say(lines, undefined, [...DUEL_SCENES.map((d) => ({ label: d.title, act: () => this.duelStep(d, [], '') })), { label: '先不', act: () => {} }]);
+  }
+
+  private duelStep(d: DuelScene, history: Array<{ who: 'npc' | 'me'; de: string }>, reply: string): void {
+    const s = this.state;
+    toast('……');
+    void duelTurn(d.scene, history, reply, s.level).then((r) => {
+      if ('error' in r) return say([{ who: SYS, text: r.error === 'quota' ? '今天的决斗场次数用完了，明天再来。' : r.error === 'login' ? '登录过期了，重新登录后再来。' : '连不上决斗场（网络或服务出错），稍后再试。' }]);
+      const h2 = [...history, ...(reply ? [{ who: 'me' as const, de: reply }] : []), { who: 'npc' as const, de: r.de }];
+      const turns = h2.filter((x) => x.who === 'me').length;
+      const lines: Line[] = [...(r.note ? [{ who: '纠错', text: r.note }] : []), { who: d.npc, text: `${r.de}\n（${r.zh}）` }];
+      if (r.done || turns >= d.turns) {
+        const today = dayKey(now(s));
+        const first = r.done && s.flags.duelDay !== today;
+        if (first) {
+          s.flags.duelDay = today;
+          this.diaryXp(Math.max(1, Math.round(xpToNext(s.level) * DUEL.xpShare)), `决斗场「${d.title}」办成了`);
+          this.persist();
+        }
+        lines.push({ who: SYS, text: r.done ? `「${d.title}」办成了。` : '时间到了，这次先到这里。' });
+        return say(lines);
+      }
+      say(lines, () => this.panels.ask(d.npc, r.de, (text: string) => (text.trim() ? this.duelStep(d, h2, text.trim()) : say([{ who: SYS, text: '你转身走了。' }]))));
+    });
   }
 
   // ---- 复习伙伴 (43) -----------------------------------------------------------------------------
