@@ -141,4 +141,6 @@ GRAM_UNLOCK_TEXT[30] = [...(GRAM_UNLOCK_TEXT[30] ?? []), '技能格 +1（共 3 �
 GRAM_UNLOCK_TEXT[41] = [...(GRAM_UNLOCK_TEXT[41] ?? []), '新技能「搭配」：写出这个词的固定搭配（warten auf），伤害 ×1.6'];
 GRAM_UNLOCK_TEXT[61] = [...(GRAM_UNLOCK_TEXT[61] ?? []), '新技能「格之封印」：把词放进要变格或变位的短句，写对它 2 回合蓄不了力', '技能格 +1（共 4 格）'];
 GRAM_UNLOCK_TEXT[81] = [...(GRAM_UNLOCK_TEXT[81] ?? []), '新技能「听写」：听它喊出例句，打出被挖掉的词，伤害 ×1.3'];
+GRAM_UNLOCK_TEXT[31] = [...(GRAM_UNLOCK_TEXT[31] ?? []), '快答：仍是回合制，答得快（选择 2 秒内、默写约每 3 个字母 1 秒）有天赋加成，慢了不罚', '天赋点改成每 2 级 1 点'];
+GRAM_UNLOCK_TEXT[141] = [...(GRAM_UNLOCK_TEXT[141] ?? []), '语法星位（天赋页最下面）：每个星位一条语法，过试炼（8 题对 6，随时重考）后花 1 点点亮，这条语法的题伤害 +10%、答错连击只减半'];
 for (const [lv, lines] of Object.entries(GRAM_UNLOCK_TEXT)) UNLOCK_TEXT[Number(lv)] = [...(UNLOCK_TEXT[Number(lv)] ?? []), ...lines];

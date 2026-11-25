@@ -15,7 +15,7 @@ import { CHEST_ZH, CHESTS, lockWord, openChest, type ChestKind } from '../core/c
 import { playChest } from '../ui/chestFx';
 import { gradeTyped } from '../core/grading';
 import { buy as buyItem, openShop, refresh as refreshShop, sell as sellItem } from '../core/shop';
-import { resMax, respec, respecCost, spent } from '../core/classes';
+import { rank, resMax, respec, respecCost, spent } from '../core/classes';
 import { makeItem } from '../core/loot';
 import { applyLoss, applyWin, postFightHeal } from '../core/outcomes';
 import { defaultRng, type Rng } from '../core/rng';
@@ -810,7 +810,7 @@ export class Controller {
       if (!this.fightOver() && b.outcome) this.retarget();
     }
     // 直接叫名 missed: no penalty, so it isn't counted as a wrong answer either.
-    const free = !!q.directName && !r.correct;
+    const free = (!!q.directName && !r.correct) || !!q.chain; // 格位连锁 is a bonus, not a record on the word
     if (!free) recordAnswer(s, b.word, r.correct);
     flushSkill(s, b.word, b);
     // 场景精英 ③ 造句 (rev 459): from level 10 a logged-in player's sentence also goes to the AI teacher. The rule check
@@ -1758,12 +1758,12 @@ export class Controller {
     const s = this.state;
     const [a, b] = DUEL.words;
     const targets = drawPractice(s, a + Math.floor(this.rng() * (b - a + 1)), this.rng);
-    const run = { d, turns: duelTurns(s.level, this.rng), targets, used: new Set<string>(), known: knownWords(s) };
+    const run = { d, turns: duelTurns(s.level, this.rng), targets, used: new Set<string>(), known: knownWords(s), clean: 0 };
     if (targets.length) say([{ who: SYS, text: `这场要用上的词：${targets.map((w) => `${w.art ? `${w.art} ` : ''}${w.de}（${w.zh}）`).join('、')}。最多 ${run.turns} 轮。` }], () => this.duelStep(run, [], ''));
     else this.duelStep(run, [], '');
   }
 
-  private duelStep(run: { d: DuelScene; turns: number; targets: Word[]; used: Set<string>; known: string[] }, history: Array<{ who: 'npc' | 'me'; de: string }>, reply: string): void {
+  private duelStep(run: { d: DuelScene; turns: number; targets: Word[]; used: Set<string>; known: string[]; clean: number }, history: Array<{ who: 'npc' | 'me'; de: string }>, reply: string): void {
     const s = this.state;
     const d = run.d;
     toast('……');
@@ -1780,13 +1780,14 @@ export class Controller {
         lines.push({ who: SYS, text: `✓ 用上了 ${w.art ? `${w.art} ` : ''}${w.de}（算复习一次）` });
       }
       if (r.used?.length) this.persist();
+      if (reply && !r.note.trim()) run.clean += 1; // 天赋「健谈」: lines with nothing to correct
       const h2 = [...history, ...(reply ? [{ who: 'me' as const, de: reply }] : []), { who: 'npc' as const, de: r.de }];
       const turns = h2.filter((x) => x.who === 'me').length;
       lines.push(...(r.note ? [{ who: '纠错', text: r.note }] : []), { who: d.npc, text: `${r.de}\n（${r.zh}）` });
       if (r.done || turns >= run.turns) {
         if (r.done) {
           const today = dayKey(now(s));
-          const gold = DUEL.goldPerLevel * s.level;
+          const gold = Math.round(DUEL.goldPerLevel * s.level * (1 + 0.1 * rank(s, 'jiantan') * run.clean));
           s.gold += gold;
           logLine(`决斗场「${d.title}」：金币 +${gold}`, 'good');
           if (s.flags.duelDay !== today) {

@@ -81,18 +81,26 @@ export function stormForms(level: number, w: Word, conjOpen: boolean): StormForm
 }
 
 /** How many forms were right before the first wrong one. Input = the boxes joined with |. */
-export function gradeStorm(w: Word, forms: StormForm[], input: string): { n: number; notes: string[] } {
+/** Forms right in a row; a miss stops the chain. 天赋「续写」(keepGoing): a miss is skipped and the chain goes on
+ *  (the missed form counts for nothing, and `all` is then false). */
+export function gradeStorm(w: Word, forms: StormForm[], input: string, keepGoing = false): { n: number; notes: string[]; all: boolean } {
   const parts = input.split('|');
   let n = 0;
+  let miss = false;
   const notes: string[] = [];
   for (let i = 0; i < forms.length; i++) {
     const f = forms[i];
     const v = f.dict ? gradeTyped(parts[i] ?? '', w, true) : gradeTyped(parts[i] ?? '', { ...w, de: f.answer, art: undefined }, false);
     if (!v.ok) {
-      notes.push(`第 ${i + 1} 个写错了，连写到这里停：${f.answer}`);
-      break;
+      miss = true;
+      if (!keepGoing) {
+        notes.push(`第 ${i + 1} 个写错了，连写到这里停：${f.answer}`);
+        break;
+      }
+      notes.push(`第 ${i + 1} 个写错了（续写：跳过，接着写）：${f.answer}`);
+      continue;
     }
     n += 1;
   }
-  return { n, notes };
+  return { n, notes, all: !miss && n === forms.length };
 }

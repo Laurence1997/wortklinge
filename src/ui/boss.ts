@@ -1,6 +1,7 @@
 import { portrait } from './icons';
 import type { BossFight, BossVerdict } from '../core/boss';
 import { maxHp } from '../core/state';
+import { rank } from '../core/classes';
 import { BOSS as BOSS1 } from '../data/boss';
 import { BOSS2 } from '../data/boss2';
 import { BOSS3, boardText } from '../data/boss3';
@@ -66,6 +67,8 @@ export class BossUI {
     this.waiting = true;
     this.lastAnswer = value;
     this.last = this.ctrl.answerBoss(value, timedOut);
+    // 天赋「争分」: each right answer in a timed boss dialogue adds a second.
+    if (this.last.ok && Number.isFinite(this.deadline) && rank(this.ctrl.state, 'zhengfen')) this.deadline += 1000;
     this.render();
   }
 

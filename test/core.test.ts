@@ -595,8 +595,8 @@ describe('classes and talents', () => {
     expect(s.hp).toBeLessThan(hp);
   });
 
-  it('talent points: 1 per level at 12–30, 1 per 2 levels at 31–120; big talents gate; respec costs an hour of gold', async () => {
-    const { learn, talentPoints, respec, respecCost, spent } = await import('../src/core/classes');
+  it('talent points: 1 per level at 12–30, 1 per 2 levels to 200; rows gate at 4/8/12/16, big at 20; respec', async () => {
+    const { learn, talentPoints, respec, respecCost, spent, rank, TALENT_TREE } = await import('../src/core/classes');
     const s = newGame('T', 'student');
     s.level = 11;
     expect(talentPoints(s)).toBe(0);
@@ -604,14 +604,23 @@ describe('classes and talents', () => {
     expect(talentPoints(s)).toBe(19);
     s.level = 120;
     expect(talentPoints(s)).toBe(64);
-    s.level = 20;
-    expect(talentPoints(s)).toBe(9);
-    expect(learn(s, 'tengxie')).toBe(false); // big talent: 4 points in 笔锋 first
+    s.level = 200;
+    expect(talentPoints(s)).toBe(104);
+    for (const br of ['bifeng', 'shoushi', 'yanci', 'zhixu', 'xunjie']) expect(TALENT_TREE.filter((t) => t.branch === br).length).toBe(15);
+    s.level = 40;
+    expect(learn(s, 'critRun')).toBe(false); // row 2: 4 points in 笔锋 first
     for (let i = 0; i < 3; i++) learn(s, 'bifeng');
     expect(learn(s, 'bifeng')).toBe(false); // max 3
     learn(s, 'changci');
-    expect(learn(s, 'tengxie')).toBe(true);
+    expect(learn(s, 'critRun')).toBe(true);
+    expect(learn(s, 'tengxie')).toBe(false); // big: 20 points
     expect(spent(s)).toBe(5);
+    s.level = 60;
+    (s.talents as Record<string, Record<string, number>>).shared.erchong = 1;
+    expect(rank(s, 'erchong')).toBe(0); // 81 级起
+    s.level = 81;
+    expect(rank(s, 'erchong')).toBe(1);
+    delete (s.talents as Record<string, Record<string, number>>).shared.erchong;
     s.gold = respecCost(s) - 1;
     expect(respec(s)).toBe(false);
     s.gold += 1;

@@ -59,6 +59,8 @@ export class BattleUI {
   /** 跟读: the German sentence just read aloud after a right answer, and the last attempt's feedback. */
   private shadowText = '';
   private readMsg = '';
+  /** When the current question showed (performance.now()). */
+  private askedAt = 0;
   private shadowMsg = '';
   private renderedQ: Question | null = null;
   private phaseNag = false;
@@ -245,6 +247,7 @@ export class BattleUI {
     if (this.question.type === 'pickZh' && this.question.focus) this.ctrl.speak(this.question.focus);
     if (this.question.type === 'saying') this.ctrl.speak(this.question.say!.a);
     this.phase = 'answer';
+    this.askedAt = performance.now();
     this.render();
   }
 
@@ -289,6 +292,8 @@ export class BattleUI {
   submit(value: string): void {
     if (this.phase !== 'answer' || !this.question) return;
     if (this.question.mates?.length) value = [value, ...this.mateBoxes.map((x) => x.value)].join('|');
+    // 答题用时 (速记 / A2 快答 / 一气呵成): from the question showing to the answer.
+    this.question.ms ??= Math.round(performance.now() - this.askedAt);
     this.lastValue = value;
     const voiced = this.b.intent;
     const target = this.b;
@@ -421,6 +426,7 @@ export class BattleUI {
       logLine(fresh ? `读音攻击：「${target}」读对了，清晰度 ${c}，必中` : `读音攻击：说对了「${target}」，清晰度 ${c}，算一次低语（弱一击）`, 'good');
       this.choose(fresh ? 'attack' : 'whisper');
       const q = this.question;
+      if (q) q.spoken = true;
       if ((this.phase as Phase) === 'answer' && q) this.submit(q.answer ?? '');
       return;
     }
@@ -454,6 +460,11 @@ export class BattleUI {
         return;
       }
       this.ctrl.finishBattle();
+      return;
+    }
+    // 格位连锁: the follow-up question comes right away, before the monster's next turn.
+    if (this.b.chainOffer) {
+      this.choose('attack');
       return;
     }
     this.startTurn();

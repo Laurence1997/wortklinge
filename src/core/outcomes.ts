@@ -1,5 +1,5 @@
 import { CHALLENGE_CFG, noteFirstTry } from './challenge';
-import type { Battle } from './combat';
+import { quickFightXp, type Battle } from './combat';
 import { CONFIG, levelGapMult } from './config';
 import { makeItem, rollQuality } from './loot';
 import { markUnidentified } from './identify';
@@ -69,6 +69,7 @@ export function applyWin(s: GameState, b: Battle, rng: Rng, opts: { heal?: boole
   // 场景精英: each part pays what its word pays as a normal monster, ×1.2.
   if (b.elite) xp *= CONFIG.elite.rewardMult;
   if (b.challenge) xp *= CHALLENGE_CFG.xpMult;
+  xp *= quickFightXp(s, b); // 天赋「一气呵成」
   if (b.tutorial === 'loss') xp = 0;
   xp = Math.round(xp);
 

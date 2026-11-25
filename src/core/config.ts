@@ -73,6 +73,9 @@ export const CONFIG = {
     atkPerLevel: 1,
     baseCrit: 0.05,
     critMult: 1.5,
+    /** 暴击率和暴击伤害的上限 (gear and talents together): 50% and ×3. */
+    critCap: 0.5,
+    critMultCap: 3,
     postFightHealPct: 0.15,
   },
 

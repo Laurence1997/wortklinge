@@ -12,7 +12,8 @@ import { FAMILIES } from '../data/families';
 import { loadout, owned, POOL, POOL_FROM, POOL_ORDER, slotCount, toggleLoadout } from '../core/skillPool';
 import { phraseCards } from '../core/combat';
 import { SAYINGS, SAYING_CFG } from '../data/sayings';
-import { BIG_GATE, BRANCHES, canLearn, learn, rank, spent, spentIn, talentPoints, TALENT_FROM_LEVEL, TALENT_TREE, type Branch } from '../core/classes';
+import { BRANCHES, canLearn, canLight, learn, learned, lightStar, litStars, ROW_GATE, spent, spentIn, STARS, STARS_FROM, starsPassed, talentPoints, TALENT_FROM_LEVEL, TALENT_TREE, type Branch } from '../core/classes';
+import { finishStarTrial, starTrial, STAR_TRIAL } from '../core/stars';
 import { fullForm, genderOf, hasArticleQuestion, WORD_BY_ID, WORDS, zhWithPos } from '../data/words';
 import type { Controller } from '../game/controller';
 import { $, clear, h, umlautButtons } from './dom';
@@ -175,7 +176,7 @@ export class Panels {
           go();
         } else if (a.multi) e.stopPropagation();
       });
-      panel.append(h('h2', h('span', a.title), h('button.btn.ghost', { onclick: () => this.close() }, '不回答 Esc')), h('p', a.prompt), h('div.typing', input, umlautButtons(input), h('button.btn.primary', { onclick: go }, a.multi ? '交 Ctrl+↵' : '说 ↵')));
+      panel.append(h('h2', h('span', a.title), h('button.btn.ghost', { onclick: () => this.close() }, '不回答 Esc')), h('p', { style: 'white-space:pre-line' }, a.prompt), h('div.typing', input, umlautButtons(input), h('button.btn.primary', { onclick: go }, a.multi ? '交 Ctrl+↵' : '说 ↵')));
       clear(el).append(panel);
       el.onclick = null;
       window.setTimeout(() => input.focus(), 0);
@@ -1085,17 +1086,43 @@ export class Panels {
     }
     for (const br of Object.keys(BRANCHES) as Branch[]) {
       const row = h('div.talent-row');
-      row.append(h('div.small.muted', `${BRANCHES[br].zh}（${BRANCHES[br].about}）· 已点 ${spentIn(s, br)}`));
-      const nodes = TALENT_TREE.filter((x) => x.branch === br);
-      if (!nodes.length) row.append(h('div.small.muted', '这一支的天赋还在写。'));
-      for (const t of nodes) {
-        const r = rank(s, t.id);
+      const inBr = spentIn(s, br);
+      row.append(h('div.small.muted', `${BRANCHES[br].zh}（${BRANCHES[br].about}）· 已点 ${inBr}`));
+      for (let r = 1; r <= 6; r++) {
+        const nodes = TALENT_TREE.filter((x) => x.branch === br && x.row === r);
+        const open = inBr >= ROW_GATE[r];
+        row.append(h('div.small.muted', r === 6 ? `大天赋（这一支点满 ${ROW_GATE[6]} 点）` : r === 1 ? '第 1 排' : `第 ${r} 排（这一支点满 ${ROW_GATE[r]} 点${open ? '' : '，还没开'}）`));
+        for (const t of nodes) {
+          const k = learned(s, t.id);
+          const grey = t.pending ? `（${t.pending}，点了暂不生效）` : t.from && s.level < t.from ? `（${t.from} 级起生效）` : '';
+          row.append(
+            h(
+              `div.slot${k && !grey ? '' : '.dim'}`,
+              h('div.k', `${t.big ? '★ ' : ''}${t.zh} ${k}/${t.max}`),
+              h('div.small', `${t.desc(Math.max(1, k))}${grey}`),
+              h('button.btn.small', { disabled: !canLearn(s, t), onclick: () => { learn(s, t.id); this.ctrl.persist(); this.render(); } }, '点'),
+            ),
+          );
+        }
+      }
+      wrap.append(row);
+    }
+    // 外圈：语法星位 (141+).
+    wrap.append(h('h3', `语法星位（${litStars(s).length} / ${STARS.length} 已点亮）`));
+    if (s.level < STARS_FROM) wrap.append(h('p.muted.small', `${STARS_FROM} 级起：每个星位是一条语法。先过这条语法的试炼（${STAR_TRIAL.n} 题对 ${STAR_TRIAL.pass}，不挨打、随时重考），再花 1 点点亮：这条语法的题伤害 +10%，答错连击只减半；每点亮 5 个生命 +3%。`));
+    else {
+      const row = h('div.talent-row');
+      for (const st of STARS) {
+        const lit = litStars(s).includes(st.id);
+        const passed = starsPassed(s).includes(st.id);
         row.append(
           h(
-            `div.slot${r ? '' : '.dim'}`,
-            h('div.k', `${t.big ? '★ ' : ''}${t.zh} ${r}/${t.max}`),
-            h('div.small', `${t.desc(Math.max(1, r))}${t.big ? `（这一支先点满 ${BIG_GATE} 点）` : ''}`),
-            h('button.btn.small', { disabled: !canLearn(s, t), onclick: () => { learn(s, t.id); this.ctrl.persist(); this.render(); } }, '点'),
+            `div.slot${lit ? '' : '.dim'}`,
+            h('div.k', `${lit ? '✦' : passed ? '✧' : '·'} ${st.zh}`),
+            h('div.small', lit ? '已点亮' : passed ? '试炼已过，可以点亮' : '还没过试炼'),
+            lit ? '' : passed
+              ? h('button.btn.small', { disabled: !canLight(s, st.id), onclick: () => { lightStar(s, st.id); this.ctrl.persist(); this.render(); } }, '点亮')
+              : h('button.btn.small', { onclick: () => this.runStarTrial(st.id, st.zh) }, '试炼'),
           ),
         );
       }
@@ -1103,6 +1130,33 @@ export class Panels {
     }
     wrap.append(h('p.small.muted', '洗点：在导师 Greta 那里花一小时的金币。'));
     return wrap;
+  }
+
+  /** 语法星位试炼: 8 questions one after another in the answer box; 6 right passes. */
+  private runStarTrial(id: string, zh: string): void {
+    const s = this.ctrl.state;
+    const tasks = starTrial(s, id, Math.random);
+    if (!tasks) {
+      this.ask(`试炼 · ${zh}`, `你见过的这类句子还不够 ${STAR_TRIAL.n} 句。多打一些用到「${zh}」的怪再来。（随便写点什么关掉）`, () => this.show('talents'));
+      return;
+    }
+    const answers: string[] = [];
+    const next = (i: number) => {
+      if (i >= tasks.length) {
+        const r = finishStarTrial(s, id, tasks, answers);
+        this.ctrl.persist();
+        this.ask(`试炼 · ${zh}`, `${r.right} / ${tasks.length} 题对。${r.passed ? '过了：回天赋页花 1 点点亮它。' : `差一点，要对 ${STAR_TRIAL.pass} 题。随时可以重考。`}（随便写点什么关掉）`, () => this.show('talents'));
+        return;
+      }
+      const t = tasks[i];
+      const opts = t.options ? `\n可选：${t.options.join(' / ')}` : '';
+      this.ask(`试炼 · ${zh}（${i + 1} / ${tasks.length}）`, `${t.prompt}\n${t.focus}${opts}`, (text) => {
+        if (!text.trim()) return; // closed: the trial stops, nothing counted
+        answers.push(text.trim());
+        next(i + 1);
+      });
+    };
+    next(0);
   }
 
   private itemBody(it: Item): HTMLElement {
