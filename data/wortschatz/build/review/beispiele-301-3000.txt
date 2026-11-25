@@ -25,7 +25,7 @@ still|Warum bist du heute so still, ist etwas passiert?|你今天怎么这么安
 satt|Danke, ich bin schon satt, weil ich spät gefrühstückt habe.|谢谢，我已经饱了，早饭吃得晚。
 Farbe|Welche Farbe soll das neue Sofa für das Wohnzimmer haben?|客厅的新沙发要选什么颜色？
 entstehen|Für die Beratung entstehen Ihnen keine zusätzlichen Kosten.|咨询不会给您产生额外费用。
-offiziell|Deutsch ist die offizielle Sprache in Deutschland, Österreich und der Schweiz.|德语是德国、奥地利和瑞士的官方语言。
+offiziell|Deutsch ist eine der offiziellen Sprachen in Deutschland, Österreich und der Schweiz.|德语是德国、奥地利和瑞士的官方语言之一。
 Überweisung|Ich bezahle die Miete jeden Monat per Überweisung.|我每个月转账付房租。
 Freude|Es macht mir große Freude, wenn meine Schüler Fortschritte machen.|学生们有进步，我就特别开心。
 Anwalt|Wenn der Vermieter nicht reagiert, solltest du einen Anwalt fragen.|如果房东不回应，你应该问问律师。
@@ -110,7 +110,7 @@ Quelle|Bitte gib immer die Quelle an, wenn du Fotos benutzt.|用照片时请务�
 schade|Schade, dass du heute Abend nicht mitkommen kannst!|可惜你今晚不能一起来！
 Hinweis|Danke für den Hinweis, das habe ich total vergessen.|谢谢提醒，我完全忘了这件事。
 mitnehmen|Vergiss nicht, einen Regenschirm mitzunehmen, weil es regnen soll.|别忘了带伞，据说要下雨。
-See|Im Sommer gehen wir oft am See schwimmen.|夏天我们常去湖里游泳。
+See|Im Sommer gehen wir oft im See schwimmen.|夏天我们常去湖里游泳。
 Ohr|Mein linkes Ohr tut weh, deshalb gehe ich zum Arzt.|我左耳疼，所以要去看医生。
 ans|Am Wochenende fahren wir mit Freunden ans Meer.|周末我们和朋友去海边。
 gewiss|Bis zu einem gewissen Punkt kann ich dich gut verstehen.|在某种程度上我很能理解你。
@@ -161,7 +161,7 @@ Krieg|Mein Großvater hat nie über den Krieg gesprochen.|我爷爷从来没提�
 fressen|Unsere Katze frisst nur, wenn niemand in der Küche ist.|我们家的猫只在厨房没人时才吃东西。
 Auftrag|Unsere Firma hat einen großen Auftrag aus China bekommen.|我们公司拿到了一个来自中国的大订单。
 Bekannte|Eine Bekannte hat mir geholfen, eine Wohnung zu finden.|一个熟人帮我找到了房子。
-Steuer|Wenn man zu viel Steuer bezahlt hat, bekommt man Geld zurück.|如果多交了税，钱会退回来。
+Steuer|Wenn man zu viele Steuern bezahlt hat, bekommt man Geld zurück.|如果多交了税，钱会退回来。
 tausend|Für die Kaution musste ich fast tausend Euro bezahlen.|押金我交了将近一千欧元。
 sauber|Die Küche muss sauber sein, bevor der Vermieter kommt.|房东来之前，厨房必须干干净净。
 Kumpel|Am Freitag gehe ich mit ein paar Kumpels Fußball schauen.|周五我和几个哥们去看球。
@@ -203,7 +203,7 @@ kaputt|Die Waschmaschine ist kaputt, deshalb muss ich in den Waschsalon.|洗衣�
 Rat|Kannst du mir einen Rat geben, welchen Laptop ich kaufen soll?|你能给我个建议吗，我该买哪台笔记本？
 riesig|Der Supermarkt ist riesig, ich habe die Milch nicht gefunden.|超市大得不得了，我都没找到牛奶。
 Meer|Ich wollte schon immer mal am Meer wohnen.|我一直想住在海边。
-anmelden|Nach dem Umzug muss man sich innerhalb von zwei Wochen anmelden.|搬家后必须在两周内去登记户口。
+anmelden|Nach dem Umzug muss man sich innerhalb von zwei Wochen anmelden.|搬家后必须在两周内办理住址登记。
 Nase|Meine Nase läuft schon seit Tagen, ich glaube, ich bin erkältet.|我流鼻涕好几天了，大概是感冒了。
 Ball|Die Kinder spielen im Hof Ball, bis es dunkel wird.|孩子们在院子里玩球，一直玩到天黑。
 untersuchen|Der Arzt hat mich untersucht und gesagt, dass alles in Ordnung ist.|医生给我检查后说一切正常。
@@ -223,7 +223,7 @@ empfangen|Die Familie hat mich sehr herzlich empfangen, das war schön.|那家�
 Gegend|Ich kenne mich in der Gegend noch nicht so gut aus.|这一带我还不太熟。
 Toilette|Entschuldigung, wissen Sie, wo hier die Toilette ist?|打扰一下，您知道这里的厕所在哪儿吗？
 daraus|Ich habe einen Fehler gemacht, aber ich habe daraus gelernt.|我犯了个错，但从中学到了东西。
-Bestand|Der Artikel ist leider nicht mehr auf Bestand, kommt aber nächste Woche.|这件商品可惜没库存了，不过下周到货。
+Bestand|Die Jacke ist in Ihrer Größe leider nicht mehr im Bestand.|这件夹克您的尺码可惜没有库存了。
 Ecke|Die Bäckerei ist gleich hier um die Ecke.|面包店就在拐角那儿。
 witzig|Der Film war so witzig, dass wir die ganze Zeit gelacht haben.|电影太好笑了，我们一直在笑。
 Ausgang|Wir treffen uns am Ausgang, wenn das Konzert vorbei ist.|音乐会结束后我们在出口碰头。
@@ -270,11 +270,11 @@ Verzeihung|Verzeihung, dass ich so spät antworte, ich war krank.|抱歉这么�
 aktuell|Aktuell suchen wir keine neuen Mitarbeiter, aber vielleicht im Frühling.|我们目前不招人，也许春天会招。
 Gemeinde|In unserer Gemeinde gibt es jeden Sommer ein großes Fest.|我们镇每年夏天都有个大型节庆。
 heutig|In der heutigen Zeit hat fast jeder ein Smartphone.|如今几乎人人都有智能手机。
-reagieren|Ich habe ihm drei Mal geschrieben, aber er hat nicht reagiert.|我给他写了三次，可他一点反应都没有。
+reagieren|Ich habe ihm dreimal geschrieben, aber er hat nicht reagiert.|我给他写了三次，可他一点反应都没有。
 folgend|Bitte schicken Sie uns die folgenden Unterlagen bis Freitag.|请在周五前把下列材料寄给我们。
 Wiedersehen|Auf Wiedersehen, und vielen Dank für Ihre Hilfe!|再见，非常感谢您的帮助！
 herzlich|Herzlichen Glückwunsch zum Geburtstag, ich wünsche dir alles Gute!|生日快乐，祝你一切都好！
-herausfinden|Ich muss herausfinden, wann das Bürgeramt am Samstag geöffnet hat.|我得查查市民局周六几点开门。
+herausfinden|Ich muss herausfinden, wann das Bürgeramt am Samstag geöffnet ist.|我得查查市民局周六几点开门。
 bemerken|Ich habe gar nicht bemerkt, dass du eine neue Brille hast.|我都没注意到你换了新眼镜。
 Unterstützung|Vielen Dank für deine Unterstützung in den letzten Monaten!|感谢你这几个月来的支持！
 leise|Kannst du bitte etwas leiser sprechen, weil das Baby schläft?|你能小点声吗？宝宝在睡觉。
@@ -307,7 +307,7 @@ vergeben|Die Termine werden nach dem Datum der Anmeldung vergeben.|预约名额�
 Onkel|Mein Onkel, der in Hamburg lebt, besucht uns jedes Jahr zu Weihnachten.|我住在汉堡的叔叔每年圣诞节都来看我们。
 Zwiebel|Wenn ich Zwiebeln schneide, muss ich immer weinen.|我一切洋葱就流眼泪。
 Schutz|Zum Schutz vor der Sonne solltest du eine Mütze tragen.|你应该戴顶帽子防晒。
-Überraschung|Wir haben für ihren Geburtstag eine Überraschung vorbereitet, die sie nicht kennt.|我们为她的生日准备了一个她不知道的惊喜。
+Überraschung|Wir haben für ihren Geburtstag eine Überraschung vorbereitet, von der sie nichts weiß.|我们为她的生日准备了一个她不知道的惊喜。
 kontrollieren|Im Zug wurde meine Fahrkarte zweimal kontrolliert.|在火车上我的票被查了两次。
 Haar|Sie hat sich die Haare kurz schneiden lassen, und es steht ihr gut.|她把头发剪短了，很适合她。
 Höhe|Die Höhe der Miete hängt davon ab, wo die Wohnung liegt.|房租多少取决于房子在哪儿。
@@ -403,13 +403,13 @@ extrem|Im August war es extrem heiß, sodass wir kaum schlafen konnten.|八月�
 entlang|Wir sind am Abend den Fluss entlang spazieren gegangen.|晚上我们沿着河边散步。
 wozu|Wozu brauchst du so viele Schuhe, wenn du immer dieselben trägst?|你总穿同一双，要那么多鞋干什么？
 Dienst|Am Wochenende hat meine Schwester im Krankenhaus Dienst.|周末我姐姐在医院值班。
-zufällig|Ich habe sie zufällig in der U-Bahn getroffen, nach zehn Jahren.|过了十年，我在地铁里偶然碰到了她。
+zufällig|Nach zehn Jahren habe ich sie zufällig in der U-Bahn getroffen.|过了十年，我在地铁里偶然碰到了她。
 Pflicht|In Deutschland ist es Pflicht, dass man sich beim Bürgeramt anmeldet.|在德国去市民局登记是义务。
 berühmt|Heidelberg ist berühmt für seine alte Universität und das Schloss.|海德堡以古老的大学和城堡闻名。
 sichern|Vergiss nicht, deine Dateien zu sichern, bevor du das Update machst.|更新前别忘了备份文件。
 speziell|Gibt es hier ein spezielles Angebot für Studenten?|这里有专门给学生的优惠吗？
 bewusst|Mir war nicht bewusst, dass man hier sonntags nicht einkaufen kann.|我没意识到这里周日不能购物。
-hierher|Wie lange hast du gebraucht, um mit dem Fahrrad hierher zu kommen?|你骑车到这儿花了多久？
+hierher|Wie lange hast du gebraucht, um mit dem Fahrrad hierherzukommen?|你骑车到这儿花了多久？
 präsentieren|Morgen muss ich meine Ergebnisse vor der ganzen Gruppe präsentieren.|明天我得在全组面前展示我的成果。
 Husten|Ich habe seit einer Woche Husten, der einfach nicht weggeht.|我咳嗽一个星期了，就是不好。
 Gewissen|Ich habe ein schlechtes Gewissen, weil ich meine Oma so selten anrufe.|我很少给奶奶打电话，心里很过意不去。
@@ -440,7 +440,7 @@ zulassen|Ich kann nicht zulassen, dass du alles allein bezahlst.|我不能让你
 Rom|Letztes Jahr sind wir für ein langes Wochenende nach Rom geflogen.|去年我们飞去罗马过了个长周末。
 Eis|Bei der Hitze gibt es nichts Besseres als ein Eis.|这么热的天，没什么比来个冰淇淋更好了。
 durchführen|Die Bauarbeiten werden in den Sommerferien durchgeführt.|施工安排在暑假进行。
-eröffnen|Um ein Konto zu eröffnen, braucht man eine Meldebescheinigung.|开银行账户需要户籍登记证明。
+eröffnen|Um ein Konto zu eröffnen, braucht man eine Meldebescheinigung.|开银行账户需要住址登记证明。
 wachen|Die Mutter hat die ganze Nacht am Bett ihres kranken Kindes gewacht.|母亲在生病的孩子床边守了一整夜。
 überleben|Zum Glück haben alle den Unfall überlebt.|幸好大家都在事故中活了下来。
 Wolf|In manchen Teilen Deutschlands gibt es wieder Wölfe.|德国一些地区又出现了狼。
@@ -463,7 +463,7 @@ klug|Es war klug von dir, eine Versicherung abzuschließen.|你买了保险，�
 Leistung|Ihre Leistungen in der Schule haben sich deutlich verbessert.|她在学校的成绩明显提高了。
 schweigen|Als ich nach dem Geld fragte, hat er nur geschwiegen.|我问起那笔钱时，他只是沉默。
 fair|Ich finde es nicht fair, dass immer ich putzen muss.|总是我打扫，我觉得这不公平。
-Spitze|An der Spitze des Berges hatten wir eine wunderbare Aussicht.|在山顶上我们看到了绝美的景色。
+Spitze|Von der Spitze des Turms hatten wir eine wunderbare Aussicht.|从塔顶上我们看到了绝美的景色。
 absehen|Es ist noch nicht abzusehen, wann die Bauarbeiten fertig sind.|施工什么时候结束还说不准。
 Ton|Mir gefällt dein Ton nicht, sprich bitte freundlicher mit mir!|我不喜欢你的语气，请好好跟我说话！
 Vorteil|Der Vorteil an der Wohnung ist, dass sie direkt am Bahnhof liegt.|这房子的好处是就在火车站边上。
@@ -501,7 +501,7 @@ Juli|Im Juli fliege ich für drei Wochen nach Hause.|七月我飞回家待三周
 landen|Das Flugzeug ist wegen Nebel erst zwei Stunden später gelandet.|飞机因为大雾晚了两个小时才降落。
 vermisst|Seit Montag wird ein zwölfjähriges Mädchen aus unserer Stadt vermisst.|从周一起，我们城里一个十二岁的女孩失踪了。
 zurückkehren|Nach dem Studium will er in seine Heimat zurückkehren.|毕业后他想回到家乡。
-schwimmen|Als Kind habe ich im Sommer jeden Tag im See geschwommen.|小时候我夏天每天都在湖里游泳。
+schwimmen|Als Kind bin ich im Sommer jeden Tag im See geschwommen.|小时候我夏天每天都在湖里游泳。
 hell|Die Wohnung ist hell und ruhig, genau das, was wir gesucht haben.|房子明亮又安静，正是我们想找的。
 mächtig|Er ist einer der mächtigsten Männer in der Firma.|他是公司里最有权势的人之一。
 Schnitt|Im Schnitt brauche ich vierzig Minuten bis zur Arbeit.|我上班平均要四十分钟。
@@ -555,7 +555,7 @@ anschauen|Wollen wir uns am Samstag die Wohnung zusammen anschauen?|我们周六
 Unterricht|Der Unterricht fällt heute aus, weil die Lehrerin krank ist.|今天停课，因为老师病了。
 Gehirn|Beim Lernen einer neuen Sprache muss das Gehirn hart arbeiten.|学一门新语言时，大脑要努力工作。
 Engel|Du bist ein Engel, vielen Dank, dass du mir geholfen hast!|你真是天使，非常感谢你帮了我！
-Ausländer|Als Ausländer muss man sich bei der Ausländerbehörde melden.|外国人必须去外管局登记。
+Ausländer|Als Ausländer braucht man für viele Dinge einen Termin bei der Ausländerbehörde.|作为外国人，很多事都得去外管局预约。
 Organisation|Er arbeitet für eine Organisation, die Kindern in Afrika hilft.|他在一个帮助非洲儿童的组织工作。
 Westen|Die Sonne geht im Westen unter, und das sieht man von unserem Balkon.|太阳从西边落下，在我们阳台上就能看到。
 Hass|Im Internet gibt es leider viel Hass gegen Ausländer.|可惜网上有很多针对外国人的仇恨。
@@ -614,7 +614,7 @@ Aktion|Im Supermarkt gibt es diese Woche eine Aktion auf alle Getränke.|超市�
 süß|Euer Baby ist wirklich süß, wie alt ist es denn?|你们的宝宝真可爱，多大了？
 ausgezeichnet|Das Essen war ausgezeichnet, wir kommen bestimmt wieder.|饭菜好极了，我们肯定还会再来。
 verzichten|Wegen meiner Diät verzichte ich seit einem Monat auf Zucker.|因为节食，我已经一个月不吃糖了。
-Modell|Dieses Modell ist leider nicht mehr lieferbar, aber es gibt ein neueres.|这款型号可惜已经停产了，不过有更新的。
+Modell|Dieses Modell ist leider nicht mehr lieferbar, aber es gibt ein neueres.|这款型号可惜已经无法供货了，不过有更新款。
 anscheinend|Anscheinend ist niemand zu Hause, es macht keiner auf.|好像没人在家，没人开门。
 schuldig|Ich fühle mich schuldig, weil ich ihr nicht geholfen habe.|我没帮她，心里很愧疚。
 Aufmerksamkeit|Darf ich kurz um Ihre Aufmerksamkeit bitten?|请大家注意一下好吗？
@@ -644,12 +644,12 @@ teilen|Ich teile mir die Wohnung mit zwei anderen Studenten.|我和另外两个�
 eingehen|Auf diese Frage möchte ich später noch genauer eingehen.|这个问题我稍后再详细谈。
 abschneiden|Ich habe beim Test besser abgeschnitten, als ich gedacht hatte.|我考试考得比预想的好。
 Generation|Die junge Generation kann sich ein Leben ohne Handy nicht vorstellen.|年轻一代无法想象没有手机的生活。
-Verbot|In Restaurants gilt in Deutschland ein Verbot für das Rauchen.|在德国餐馆里禁止吸烟。
+Verbot|In Restaurants gilt in Deutschland ein Verbot, drinnen zu rauchen.|在德国餐馆室内禁止吸烟。
 Brauch|An Ostern ist es ein Brauch, dass man bunte Eier versteckt.|复活节有藏彩蛋的习俗。
 weshalb|Ich weiß nicht, weshalb er so schlechte Laune hat.|我不知道他为什么心情这么差。
 billig|Wenn man Lebensmittel billig kaufen will, geht man am besten zu Aldi.|想买便宜的食品，最好去阿尔迪。
 Übersetzung|Für das Visum brauche ich eine beglaubigte Übersetzung meines Zeugnisses.|办签证我需要一份成绩单的公证翻译件。
-Hintergrund|Im Hintergrund hört man auf dem Foto noch die Kirche.|照片的背景里还能看到教堂。
+Hintergrund|Im Hintergrund sieht man auf dem Foto noch die Kirche.|照片的背景里还能看到教堂。
 Material|Aus welchem Material ist diese Jacke, ist sie wasserdicht?|这件夹克是什么材料的，防水吗？
 Alkohol|Wenn man Auto fährt, sollte man überhaupt keinen Alkohol trinken.|开车的话最好滴酒不沾。
 Roman|Ich lese gerade einen Roman auf Deutsch, um meinen Wortschatz zu verbessern.|我正在读一本德语小说来扩充词汇量。
@@ -657,12 +657,12 @@ zweimal|Ich habe dich zweimal angerufen, warum bist du nicht rangegangen?|我给
 Absicht|Das war keine Absicht, ich habe dich nicht gesehen!|我不是故意的，我没看见你！
 Bühne|Als ich auf der Bühne stand, hatte ich plötzlich alles vergessen.|站上舞台时，我突然什么都忘了。
 gestalten|Wir haben das Kinderzimmer selbst gestaltet und alles bunt gestrichen.|我们自己布置了儿童房，刷得五颜六色。
-Sturm|Wegen des Sturms ist ein Baum auf die Gleise gefallen.|因为暴风雨，一棵树倒在了铁轨上。
+Sturm|Wegen des Sturms ist ein Baum auf die Gleise gefallen.|因为暴风，一棵树倒在了铁轨上。
 Produkt|Wenn Sie mit dem Produkt nicht zufrieden sind, bekommen Sie Ihr Geld zurück.|如果您对产品不满意，可以退款。
 Methode|Welche Methode findest du am besten, um Vokabeln zu lernen?|你觉得背单词哪种方法最好？
 vollständig|Ihr Antrag ist leider nicht vollständig, es fehlt noch eine Unterschrift.|您的申请可惜不完整，还缺一个签名。
 Oktober|Im Oktober werden die Tage schon deutlich kürzer.|十月白天就明显变短了。
-empfinden|Viele Leute empfinden das deutsche Essen als ziemlich schwer.|很多人觉得德国菜挺油腻的。
+empfinden|Viele Leute empfinden das deutsche Essen als ziemlich schwer.|很多人觉得德国菜挺厚重、不好消化。
 zwölf|Der Laden hat sonntags nur von zwölf bis sechs geöffnet.|这家店周日只在十二点到六点营业。
 Zugang|Im Hotel hat man kostenlosen Zugang zum Internet.|酒店里可以免费上网。
 Gegner|Unser Gegner im nächsten Spiel ist viel stärker als wir.|我们下场比赛的对手比我们强得多。
@@ -779,7 +779,7 @@ ordentlich|Mein Mitbewohner ist nicht sehr ordentlich, überall liegen seine Sac
 Zusammenhang|Ich verstehe den Zusammenhang zwischen den beiden Sätzen nicht.|我不明白这两句话之间的关联。
 Publikum|Das Publikum hat am Ende lange applaudiert.|最后观众鼓掌了很久。
 regelmäßig|Man sollte regelmäßig lüften, damit sich kein Schimmel bildet.|要定期通风，免得长霉。
-Tante|Meine Tante hat mir zu Weihnachten einen Pullover gestrickt.|我姑姑给我织了件毛衣当圣诞礼物。
+Tante|Meine Tante hat mir zu Weihnachten einen Pullover gestrickt.|我阿姨给我织了件毛衣当圣诞礼物。
 ignorieren|Er hat meine Nachrichten einfach ignoriert, das finde ich unhöflich.|他干脆无视我的消息，我觉得很没礼貌。
 peinlich|Es war mir total peinlich, dass ich ihren Namen vergessen hatte.|我忘了她的名字，真是太尴尬了。
 Netz|Im Zug habe ich oft kein Netz, deshalb kann ich nicht telefonieren.|在火车上我常常没信号，没法打电话。
@@ -860,7 +860,7 @@ anstellen|Was hast du jetzt wieder angestellt? Die Küche ist total chaotisch!|�
 lebendig|Die Altstadt ist abends sehr lebendig, überall sind Leute.|老城晚上很热闹，到处都是人。
 versagen|Bei der Prüfung habe ich völlig versagt, weil ich so nervös war.|考试时我太紧张了，完全考砸了。
 Schatten|Bei der Hitze setzen wir uns lieber in den Schatten.|这么热，我们还是坐到阴凉处吧。
-verwirrt|Nach der langen Reise war ich so verwirrt, dass ich die Uhrzeit vergaß.|长途旅行后我晕头转向，连几点都忘了。
+verwirrt|Nach dem Flug war ich so verwirrt, dass ich den Tag verwechselt habe.|下了飞机我晕头转向，连日子都搞错了。
 duschen|Nach dem Sport dusche ich immer, bevor ich nach Hause fahre.|运动后我总是先洗个澡再回家。
 anlegen|Für die Kinder haben wir ein Sparkonto angelegt.|我们给孩子开了个储蓄账户。
 zugeben|Ich muss zugeben, dass ich am Anfang sehr skeptisch war.|我得承认，一开始我很怀疑。
@@ -905,10 +905,10 @@ ursprünglich|Ursprünglich wollte ich nur ein Jahr bleiben, jetzt sind es schon
 Alternative|Wenn der Zug ausfällt, ist der Fernbus eine günstige Alternative.|火车取消的话，长途大巴是个便宜的替代选择。
 Schulter|Vom vielen Sitzen am Computer tut mir die Schulter weh.|在电脑前坐太久，我肩膀疼。
 Haufen|Auf meinem Schreibtisch liegt ein Haufen Papiere, die ich noch sortieren muss.|我桌上有一大堆文件还要整理。
-Teppich|Der Kaffee ist auf den neuen Teppich gefallen, das geht nie wieder raus.|咖啡洒在了新地毯上，再也洗不掉了。
+Teppich|Ich habe Kaffee auf den neuen Teppich gekippt, das geht nie wieder raus.|我把咖啡洒在了新地毯上，再也洗不掉了。
 zurückkommen|Wann kommst du aus dem Urlaub zurück? Wir vermissen dich schon.|你什么时候度假回来？我们已经想你了。
 momentan|Momentan habe ich sehr viel Stress, weil ich Prüfungen habe.|我现在压力很大，因为要考试。
-Saison|Im Winter ist auf den Skipisten Saison, dann sind die Hotels teuer.|冬天是滑雪季，那时酒店很贵。
+Saison|In den Skigebieten ist im Winter Saison, dann sind die Hotels teuer.|冬天是滑雪区的旺季，那时酒店很贵。
 Bäckerei|Die Bäckerei an der Ecke hat sonntags bis zwölf Uhr geöffnet.|拐角的面包店周日开到十二点。
 ausmachen|Macht es Ihnen etwas aus, wenn ich das Fenster aufmache?|我开窗您介意吗？
 männlich|In technischen Berufen sind immer noch die meisten Mitarbeiter männlich.|技术类职业里大多数员工仍是男性。
@@ -1001,10 +1001,10 @@ Socke|Ich finde immer nur eine Socke, wo ist die andere?|我总是只找到一�
 spinnen|Du spinnst wohl, bei dem Wetter willst du draußen schwimmen?|你疯了吧，这种天气还想去外面游泳？
 belegen|Im ersten Semester habe ich zu viele Kurse belegt und war total gestresst.|第一学期我选了太多课，压力特别大。
 ausfüllen|Bitte füllen Sie das Formular aus und unterschreiben Sie unten rechts.|请填好表格，并在右下角签名。
-Tradition|Bei uns ist es Tradition, dass die ganze Familie an Silvester zusammen isst.|在我们家，除夕全家一起吃饭是传统。
+Tradition|Bei uns ist es Tradition, dass die ganze Familie an Silvester zusammen isst.|在我们家，跨年夜全家一起吃饭是传统。
 Hamburg|In Hamburg regnet es oft, aber der Hafen ist wunderschön.|汉堡常下雨，但港口美极了。
 Besucher|Das Museum hatte am Sonntag mehr als tausend Besucher.|博物馆周日接待了一千多名参观者。
-Pass|Ich muss meinen Pass verlängern, bevor er im Sommer abläuft.|我得在夏天护照到期前去续签。
+Pass|Mein Pass läuft im Sommer ab, ich muss rechtzeitig einen neuen beantragen.|我的护照夏天到期，我得及时申请新的。
 Angelegenheit|Das ist eine private Angelegenheit, darüber möchte ich nicht sprechen.|这是私事，我不想谈。
 Pfeffer|Kannst du mir bitte das Salz und den Pfeffer geben?|你能把盐和胡椒递给我吗？
 vertraut|Nach einem Jahr ist mir die Stadt schon ganz vertraut.|一年之后，这座城市我已经很熟悉了。
@@ -1016,15 +1016,15 @@ Wirkung|Die Tablette zeigt schon nach einer halben Stunde Wirkung.|这片药半�
 weich|Das Bett im Hotel war so weich, dass ich Rückenschmerzen bekommen habe.|酒店的床太软了，我都睡得背疼。
 anhören|Hör dir mal diesen Song an, der ist richtig gut!|你听听这首歌，真的很好听！
 Ansicht|Meiner Ansicht nach sollten wir lieber mit dem Zug fahren.|我认为我们最好坐火车去。
-Taxi|Weil keine Bahn mehr fuhr, mussten wir ein Taxi nehmen.|因为没有电车了，我们只好打车。
+Taxi|Weil keine Bahn mehr fuhr, mussten wir ein Taxi nehmen.|因为已经没车了，我们只好打车。
 Spanien|Viele Rentner verbringen den Winter in Spanien, weil es dort warm ist.|很多退休老人在西班牙过冬，因为那里暖和。
 matt|Wählen Sie lieber Fotos mit matter Oberfläche, die glänzen nicht so.|您最好选哑光的照片，没那么反光。
 übertragen|Das Spiel wird heute Abend live im Fernsehen übertragen.|比赛今晚在电视上直播。
 Donnerstag|Am Donnerstag haben die Geschäfte in unserer Stadt länger geöffnet.|我们城里周四商店营业时间更长。
 Garantie|Auf den Laptop gibt es zwei Jahre Garantie, also hebe die Rechnung auf.|笔记本电脑保修两年，所以留好发票。
-Ausnahme|Normalerweise darf man hier nicht parken, aber heute ist eine Ausnahme.|这里平时不能停车，但今天例外。
+Ausnahme|Normalerweise darf man hier nicht parken, aber heute machen wir eine Ausnahme.|这里平时不能停车，但今天破个例。
 WLAN|Wie lautet das Passwort für das WLAN hier im Café?|这家咖啡馆的无线网密码是多少？
-Charakter|Er hat einen starken Charakter und sagt immer, was er denkt.|他性格很强，总是有话直说。
+Charakter|Er hat einen starken Charakter und sagt immer, was er denkt.|他很有主见，总是有话直说。
 Afrika|Meine Kollegin hat zwei Jahre in Afrika als Ärztin gearbeitet.|我同事在非洲当了两年医生。
 hässlich|Das Gebäude ist ziemlich hässlich, aber die Wohnungen sind schön.|这栋楼挺难看的，不过里面的公寓很漂亮。
 nervös|Vor der mündlichen Prüfung war ich so nervös, dass ich kaum schlafen konnte.|口试前我紧张得几乎睡不着。
@@ -1041,9 +1041,9 @@ Scherz|Das war nur ein Scherz, sei doch nicht gleich beleidigt!|只是开个玩�
 Quittung|Können Sie mir bitte eine Quittung geben? Ich brauche sie für die Firma.|能给我开张收据吗？我要给公司报销。
 Motiv|Die Polizei weiß noch nicht, welches Motiv der Täter hatte.|警方还不知道作案者的动机。
 Riese|Neben meinem großen Bruder sehe ich aus wie ein Zwerg neben einem Riesen.|站在我哥哥旁边，我就像巨人旁边的小矮人。
-Kritik|Mein Chef hat meine Präsentation mit konstruktiver Kritik kommentiert.|老板对我的报告提了建设性的批评意见。
+Kritik|Mein Chef hat konstruktive Kritik zu meiner Präsentation geäußert.|老板对我的报告提了建设性的批评意见。
 reißen|Die Tüte ist gerissen, und alle Äpfel sind auf die Straße gefallen.|袋子破了，苹果全掉在了街上。
-bestrafen|Wer bei Rot über die Ampel fährt, wird mit einer Geldstrafe bestraft.|闯红灯会被罚款。
+bestrafen|Wer bei Rot über die Ampel fährt, wird mit einem Bußgeld bestraft.|闯红灯会被罚款。
 Dokument|Speichern Sie das Dokument, bevor Sie den Computer ausschalten.|关电脑前请保存文档。
 mitmachen|Wir spielen gleich im Park Volleyball, hättest du Lust mitzumachen?|我们马上要在公园打排球，你想一起来吗？
 aufstellen|Zu Weihnachten stellen wir im Wohnzimmer einen Tannenbaum auf.|圣诞节我们在客厅里摆一棵圣诞树。
@@ -1083,7 +1083,7 @@ fröhlich|Fröhliche Weihnachten und einen guten Rutsch ins neue Jahr!|圣诞快
 Widerstand|Gegen die neuen Regeln gab es viel Widerstand von den Mietern.|租客们强烈反对新规定。
 Maus|Die Maus von meinem Computer funktioniert nicht mehr, brauche ich neue Batterien?|我电脑的鼠标不能用了，要换新电池吗？
 Single|Seit einem Jahr bin ich Single, aber das ist völlig okay für mich.|我单身一年了，不过我觉得完全没问题。
-nieder|Wegen des Sturms ist der alte Baum vor unserem Haus niedergebrochen.|因为暴风雨，我们家门前那棵老树倒了。
+nieder|Der Sturm hat den alten Baum vor unserem Haus niedergerissen.|暴风把我们家门前那棵老树刮倒了。
 auslösen|Der Rauch vom Toaster hat mitten in der Nacht den Feueralarm ausgelöst.|半夜烤面包机冒的烟触发了火警。
 befürchten|Ich befürchte, dass wir den letzten Zug verpasst haben.|我担心我们错过了最后一班火车。
 beliebt|Dieses Café ist bei Studenten sehr beliebt, weil es günstig ist.|这家咖啡馆在学生中很受欢迎，因为便宜。
@@ -1132,7 +1132,7 @@ Wäsche|Die Wäsche, die ich gestern aufgehängt habe, ist immer noch nicht troc
 drinnen|Weil es draußen so kalt war, haben wir den ganzen Tag drinnen gespielt.|因为外面太冷，我们一整天都在屋里玩。
 Gegensatz|Im Gegensatz zu meiner Schwester stehe ich gern früh auf.|和我妹妹相反，我喜欢早起。
 dahinter|Vorne ist der Supermarkt, und dahinter befindet sich ein großer Parkplatz.|前面是超市，后面有一个大停车场。
-Verband|Die Krankenschwester hat mir einen neuen Verband um das Knie gemacht.|护士给我膝盖换了新绷带。
+Verband|Die Krankenschwester hat mir einen neuen Verband um das Knie angelegt.|护士给我膝盖换了新绷带。
 Aufnahme|Für die Aufnahme an der Uni braucht man ein Sprachzertifikat auf Niveau C1.|大学录取需要 C1 级的语言证书。
 Pilot|Der Pilot hat uns mitgeteilt, dass wir wegen des Nebels später landen würden.|机长通知我们，因为大雾会晚点降落。
 Fortschritt|Seit ich jeden Tag übe, mache ich beim Deutschlernen große Fortschritte.|自从每天练习，我学德语进步很大。
@@ -1212,7 +1212,7 @@ prima|Das hast du prima gemacht, ich hätte es nicht besser machen können!|你�
 aufmachen|Könntest du bitte das Fenster aufmachen? Hier drinnen ist es so stickig.|你能把窗户打开吗？屋里太闷了。
 Journalist|Der Journalist, der den Artikel geschrieben hat, wurde mehrfach ausgezeichnet.|写这篇文章的记者多次获奖。
 anschließen|Hast du den neuen Drucker schon an den Computer angeschlossen?|你把新打印机连到电脑上了吗？
-erben|Nachdem ihre Tante gestorben war, hat sie das Haus am See geerbt.|姑姑去世后，她继承了湖边的房子。
+erben|Nachdem ihre Tante gestorben war, hat sie das Haus am See geerbt.|她阿姨去世后，她继承了湖边的房子。
 elf|Die Kneipe macht erst um elf zu, wir können also noch ein Bier trinken.|小酒馆十一点才关门，所以我们还能再喝杯啤酒。
 investieren|Wir haben viel Zeit und Geld in die Renovierung der Wohnung investiert.|我们在房子装修上投入了大量时间和金钱。
 Identität|Bei der Bank musste ich meine Identität mit dem Pass nachweisen.|在银行我得用护照证明身份。
@@ -1267,7 +1267,7 @@ Sender|Weißt du, auf welchem Sender heute Abend das Fußballspiel läuft?|你�
 Wettbewerb|Sie hat bei einem Wettbewerb für junge Musiker den ersten Preis gewonnen.|她在一个青年音乐家比赛中获得了一等奖。
 benehmen|Die Kinder haben sich bei Oma sehr gut benommen, sie war ganz begeistert.|孩子们在奶奶家表现得很好，奶奶特别高兴。
 Träne|Als sie die Nachricht hörte, kamen ihr die Tränen.|听到这个消息时，她流下了眼泪。
-Notruf|In Deutschland wählt man die 112, wenn man einen Notruf machen muss.|在德国，需要报警急救时拨打 112。
+Notruf|In Deutschland wählt man die 112, wenn man einen Notruf absetzen muss.|在德国，需要报警急救时拨打 112。
 Kiste|Die Bücher habe ich in Kisten gepackt, die wir im Keller gefunden hatten.|我把书装进了我们在地下室找到的箱子里。
 krass|Krass, dass du in nur einem Jahr so gut Deutsch gelernt hast!|太牛了，你一年就把德语学得这么好！
 vertreiben|Der laute Lärm von der Baustelle hat alle Gäste aus dem Café vertrieben.|工地的噪音把咖啡馆里的客人都赶跑了。
@@ -1284,7 +1284,7 @@ ansonsten|Das Zimmer ist etwas klein, ansonsten ist die Wohnung perfekt.|房间�
 Abenteuer|Die Reise durch Island war ein echtes Abenteuer, das wir nie vergessen werden.|冰岛之旅是一次我们永远不会忘记的真正冒险。
 verschaffen|Mit dieser Übung können Sie sich einen guten Überblick über die Grammatik verschaffen.|通过这个练习，您可以对语法有个全面的了解。
 Staffel|Hast du schon die neue Staffel von der Serie gesehen, die alle so lieben?|大家都爱看的那部剧，新一季你看了吗？
-Kündigung|Die Kündigung muss schriftlich erfolgen und drei Monate vorher beim Vermieter sein.|退租必须书面提出，并提前三个月送到房东手里。
+Kündigung|Die Kündigung muss schriftlich erfolgen und spätestens drei Monate vorher beim Vermieter ankommen.|退租必须书面提出，并至少提前三个月送到房东手里。
 weitergehen|Wie soll es nach dem Studium weitergehen? Weißt du das schon?|毕业后打算怎么办？你想好了吗？
 Schwäche|Schokolade ist meine große Schwäche, ich kann einfach nicht aufhören.|巧克力是我的一大弱点，我就是停不下来。
 gründen|Nach dem Studium haben die beiden zusammen eine kleine Firma gegründet.|毕业后他们俩一起创办了一家小公司。
@@ -1310,7 +1310,7 @@ beherrschen|Wer in Deutschland studieren will, sollte die Sprache gut beherrsche
 Rückkehr|Nach seiner Rückkehr aus China hatte er große Schwierigkeiten, sich wieder einzuleben.|他从中国回来后，很难重新适应这里的生活。
 neulich|Neulich habe ich in der Bahn eine alte Schulfreundin getroffen, die jetzt auch hier wohnt.|前几天我在火车上碰到一个老同学，她现在也住这儿。
 jüdisch|In Berlin gibt es ein großes Museum über die jüdische Geschichte in Deutschland.|柏林有一座介绍德国犹太人历史的大型博物馆。
-Verständnis|Vielen Dank für Ihr Verständnis, dass der Zug heute später ankommt.|感谢您对今天火车晚点的理解。
+Verständnis|Vielen Dank für Ihr Verständnis dafür, dass der Zug heute später ankommt.|感谢您对今天火车晚点的理解。
 Hütte|Am Wochenende übernachten wir in einer Hütte in den Bergen, in der es keinen Strom gibt.|周末我们住在山里一间没有电的小屋里。
 Analyse|Die Analyse der Daten hat länger gedauert, als wir geplant hatten.|数据分析花的时间比我们计划的长。
 Sitzung|Die Sitzung wurde abgebrochen, weil sich die Teilnehmer nicht einigen konnten.|会议中断了，因为与会者无法达成一致。
@@ -1360,7 +1360,7 @@ professionell|Die Fotos von unserer Hochzeit hat ein professioneller Fotograf ge
 heulen|Hör auf zu heulen, so schlimm ist es doch nicht!|别哭了，没那么糟！
 dauernd|Mein Handy klingelt dauernd, weil meine Mutter mich ständig etwas fragt.|我手机老是响，因为我妈总问我事情。
 geeignet|Diese Wohnung ist für eine Familie mit Kindern leider nicht geeignet.|这套房子可惜不适合有孩子的家庭。
-Straßenbahn|Die Straßenbahn fährt direkt vor unserer Haustür ab, deshalb brauchen wir kein Auto.|电车就在我们家门口发车，所以我们不需要车。
+Straßenbahn|Die Straßenbahn hält direkt vor unserer Haustür, deshalb brauchen wir kein Auto.|电车就停在我们家门口，所以我们不需要车。
 vorhanden|Wenn ein Schaden vorhanden ist, müssen Sie das sofort dem Vermieter melden.|如果有损坏，您必须马上告诉房东。
 Ritter|Mein Sohn hat sich zum Geburtstag ein Kostüm als Ritter gewünscht.|我儿子生日想要一套骑士服装。
 leihen|Kannst du mir bis Montag dein Fahrrad leihen? Meins ist in der Werkstatt.|你能把自行车借我到周一吗？我的在修车厂。
@@ -1372,7 +1372,7 @@ Mexiko|Meine Kollegin kommt aus Mexiko und hat uns zum Abendessen eingeladen.|�
 Krise|Während der Krise haben viele kleine Geschäfte schließen müssen.|危机期间很多小店不得不关门。
 Humor|Was ich an ihm besonders mag, ist sein Humor, mit ihm wird es nie langweilig.|我特别喜欢他的幽默，和他在一起从不无聊。
 Affäre|In der Zeitung stand, dass der Politiker eine Affäre mit seiner Sekretärin hatte.|报上说那位政治家和他的秘书有染。
-bevorzugen|Ich bevorzuge ein Zimmer, das zum Hof liegt, weil es ruhiger ist.|我更喜欢朝院子的房间，因为更安静。
+bevorzugen|Ich bevorzuge ein Zimmer, das zum Hof hinausgeht, weil es dort ruhiger ist.|我更喜欢朝院子的房间，因为更安静。
 heutzutage|Heutzutage kann man fast alles online erledigen, nur nicht beim Bürgeramt.|如今几乎什么都能在网上办，除了市民局的事。
 Universum|Er liest gern Bücher über das Universum und die Entstehung der Sterne.|他喜欢读关于宇宙和星体形成的书。
 Wende|Nach der Wende sind viele Menschen aus dem Osten in den Westen gezogen.|两德统一后很多人从东部搬到了西部。
@@ -1433,7 +1433,7 @@ Brille|Ohne Brille kann ich die Schilder auf der Straße nicht lesen.|不戴眼�
 Gefängnis|Der Mann, der die Bank überfallen hat, muss für fünf Jahre ins Gefängnis.|那个抢银行的男人要坐五年牢。
 Leidenschaft|Kochen ist ihre große Leidenschaft, am Wochenende probiert sie immer neue Rezepte aus.|做饭是她的最爱，周末她总是尝试新菜谱。
 Hauptbahnhof|Wir treffen uns um acht am Hauptbahnhof vor der großen Uhr.|我们八点在中央火车站的大钟前碰头。
-Standort|Die Firma hat ihren Standort von Berlin nach Leipzig verlegt, weil die Mieten dort günstiger sind.|公司把地址从柏林迁到了莱比锡，因为那里房租便宜。
+Standort|Die Firma hat ihren Standort von Berlin nach Leipzig verlegt, weil die Mieten dort günstiger sind.|公司把所在地从柏林迁到了莱比锡，因为那里房租便宜。
 betonen|Der Arzt hat betont, dass ich die Tabletten unbedingt bis zum Ende nehmen muss.|医生强调我一定要把药吃完。
 Gras|Im Sommer liegen wir oft im Park im Gras und lesen.|夏天我们常躺在公园的草地上看书。
 betragen|Die Kaution beträgt drei Monatsmieten und muss vor dem Einzug bezahlt werden.|押金是三个月房租，入住前必须付清。
@@ -1457,7 +1457,7 @@ Bezirk|In welchem Bezirk wohnst du? Ich wohne in Kreuzberg.|你住哪个区？�
 umkehren|Weil die Straße gesperrt war, mussten wir umkehren und einen anderen Weg nehmen.|因为路被封了，我们只好掉头走另一条路。
 Vorsitzende|Die Vorsitzende des Vereins hat zur jährlichen Versammlung eingeladen.|协会主席召集了年度大会。
 erweitern|Ich lese viel auf Deutsch, um meinen Wortschatz zu erweitern.|我大量阅读德语来扩充词汇量。
-kräftig|Nach dem Training hatte ich einen kräftigen Hunger und habe zwei Teller Nudeln gegessen.|训练后我饿坏了，吃了两盘面。
+kräftig|Nach dem Training habe ich kräftig gegessen, gleich zwei Teller Nudeln.|训练后我吃了很多，一下吃了两盘面。
 aktivieren|Bevor Sie die Karte benutzen können, müssen Sie sie online aktivieren.|使用这张卡之前，您必须在网上激活。
 zusehen|Ich kann nicht länger zusehen, wie du dich kaputtarbeitest.|我不能再眼睁睁看着你累垮自己。
 Rabatt|Wenn Sie heute bestellen, bekommen Sie zehn Prozent Rabatt auf alles.|如果您今天下单，全部打九折。
@@ -1475,7 +1475,7 @@ rosa|Meine Tochter möchte ihr Zimmer unbedingt rosa streichen, ich finde das sc
 Befehl|Der Hund hört nur auf die Befehle meines Vaters, nicht auf meine.|狗只听我爸的命令，不听我的。
 Handlung|Die Handlung des Films war so kompliziert, dass ich sie nicht verstanden habe.|电影情节太复杂，我没看懂。
 verhandeln|Bei gebrauchten Möbeln kann man oft über den Preis verhandeln.|买二手家具通常可以讲价。
-schweizer|Zum Abendessen gab es Raclette mit Schweizer Käse und Kartoffeln.|晚饭吃的是瑞士奶酪烤土豆。
+schweizer|Zum Abendessen gab es Raclette mit Schweizer Käse und Kartoffeln.|晚饭吃的是拉克莱特：融化的瑞士奶酪配土豆。
 intensiv|Vor der Prüfung habe ich zwei Wochen lang intensiv gelernt.|考试前我集中学习了两个星期。
 irgendjemand|Hat irgendjemand meinen Schlüssel gesehen? Ich finde ihn nirgends.|有人看到我的钥匙了吗？我哪儿都找不到。
 heil|Nach der langen Fahrt sind wir zum Glück heil zu Hause angekommen.|长途旅行后，我们幸好平安到家了。
@@ -1534,7 +1534,7 @@ konkret|Können Sie mir ein konkretes Beispiel geben, damit ich das besser verst
 bedeutend|Goethe ist einer der bedeutendsten deutschen Schriftsteller, die es je gab.|歌德是有史以来最重要的德国作家之一。
 Kissen|Im Hotel war das Kissen so hart, dass ich die ganze Nacht schlecht geschlafen habe.|酒店的枕头太硬了，我整晚都没睡好。
 Kapitel|Bis nächste Woche sollen wir die ersten drei Kapitel des Romans lesen.|下周前我们要读完这本小说的前三章。
-finanzieren|Sie finanziert ihr Studium mit einem Nebenjob in einem Café.|她在咖啡馆打工来支付学费。
+finanzieren|Sie finanziert ihr Studium mit einem Nebenjob in einem Café.|她靠在咖啡馆打工来负担上大学的开销。
 jahrelang|Er hat jahrelang in einer kleinen Wohnung gelebt, bevor er sich ein Haus leisten konnte.|在买得起房子之前，他在一套小公寓里住了好多年。
 Kenntnis|Für diese Stelle werden gute Kenntnisse in Englisch und Deutsch vorausgesetzt.|这个职位要求熟练掌握英语和德语。
 anwenden|Es ist eine Sache, die Grammatik zu kennen, und eine andere, sie richtig anzuwenden.|懂语法是一回事，正确运用是另一回事。
@@ -1553,7 +1553,7 @@ lenken|Er hat das Gespräch geschickt auf ein anderes Thema gelenkt, weil er nic
 erleichtern|Die neue App erleichtert die Suche nach einer Wohnung enorm.|新应用让找房子容易多了。
 Bedürfnis|Nach dem langen Arbeitstag hatte ich das Bedürfnis, einfach allein zu sein.|漫长的一天工作后，我只想一个人待着。
 voran|Mit dem Bau der neuen Brücke geht es nur langsam voran.|新桥的建设进展缓慢。
-begraben|Ihr Großvater wurde auf dem kleinen Friedhof im Dorf begraben, in dem er geboren war.|她爷爷被葬在他出生的那个村子的小墓地里。
+begraben|Ihr Großvater wurde auf dem kleinen Friedhof in dem Dorf begraben, in dem er geboren wurde.|她爷爷被葬在他出生的那个村子的小墓地里。
 beachten|Bitte beachten Sie, dass das Büro zwischen den Feiertagen geschlossen ist.|请注意，节日期间办公室关闭。
 Produktion|Die Produktion wurde nach China verlegt, weil es dort billiger ist.|生产转移到了中国，因为那里更便宜。
 Aktie|Er hat sein ganzes Geld in Aktien investiert und viel verloren.|他把所有钱都投进了股票，亏了很多。
@@ -1596,7 +1596,7 @@ massiv|Wegen des Streiks kam es heute im ganzen Land zu massiven Verspätungen.|
 brutal|Der Film war mir zu brutal, ich habe nach zwanzig Minuten ausgeschaltet.|这部电影对我来说太暴力了，看了二十分钟我就关了。
 Stipendium|Sie hat ein Stipendium bekommen, mit dem sie ein Jahr in Deutschland studieren kann.|她获得了一笔奖学金，可以用它在德国读一年书。
 Maßnahme|Die Stadt hat neue Maßnahmen beschlossen, um den Verkehr in der Innenstadt zu reduzieren.|市里决定采取新措施减少市中心的交通。
-Lob|Das Lob von meinem Chef hat mich sehr gefreut, weil er sonst nie etwas sagt.|老板的表扬让我很开心，因为他平时从不夸人。
+Lob|Das Lob von meinem Chef hat mich sehr gefreut, weil er sonst nie etwas sagt.|老板的表扬让我很开心，因为他平时什么都不说。
 Bewohner|Die Bewohner des Hauses haben sich gemeinsam über die hohe Miete beschwert.|这栋楼的住户一起抱怨房租太高。
 malen|Als Kind habe ich stundenlang Bilder gemalt, heute habe ich leider keine Zeit mehr dafür.|小时候我能画上几个小时，可惜现在没时间了。
 anbringen|Der Vermieter hat uns erlaubt, im Bad ein Regal an der Wand anzubringen.|房东允许我们在浴室墙上装一个架子。
@@ -1652,7 +1652,7 @@ entwerfen|Die Architektin hat das Haus selbst entworfen, in dem sie mit ihrer Fa
 Kommunikation|In unserem Team gibt es Probleme mit der Kommunikation, weil alle im Homeoffice arbeiten.|我们团队沟通有问题，因为大家都在家办公。
 abbrechen|Sie hat ihr Studium abgebrochen, weil sie lieber eine Ausbildung machen wollte.|她中断了学业，因为更想去做职业培训。
 mitbringen|Soll ich zum Grillen etwas mitbringen, zum Beispiel einen Salat oder Getränke?|烧烤要我带点什么吗，比如沙拉或饮料？
-laufend|Wir halten Sie über alle Änderungen laufend auf dem Laufenden.|我们会随时向您通报所有变动。
+laufend|Wir halten Sie über alle Änderungen am Fahrplan laufend informiert.|时刻表的所有变动我们都会随时通知您。
 ausreden|Lass mich bitte erst ausreden, bevor du mir widersprichst!|在你反驳之前，请先让我把话说完！
 Wolke|Am Himmel war keine einzige Wolke zu sehen, deshalb sind wir an den See gefahren.|天上一片云都没有，所以我们去了湖边。
 Laune|Wenn mein Mann Hunger hat, hat er immer schlechte Laune.|我丈夫一饿就心情不好。
@@ -1664,7 +1664,7 @@ Werkzeug|Hast du das richtige Werkzeug, um den Schrank zusammenzubauen?|你有�
 global|Der Klimawandel ist ein globales Problem, das kein Land allein lösen kann.|气候变化是一个全球性问题，没有哪个国家能独自解决。
 Fischer|Morgens um fünf fahren die Fischer mit ihren Booten aufs Meer hinaus.|早上五点渔民们开着船出海。
 stinken|Der Müll stinkt schon, wir müssen ihn dringend runterbringen.|垃圾已经臭了，我们得赶紧拿下去。
-Betrug|Die E-Mail von der angeblichen Bank war Betrug, deshalb habe ich sie sofort gelöscht.|那封所谓银行发来的邮件是诈骗，所以我马上删了。
+Betrug|Die E-Mail von der angeblichen Bank war ein Betrug, deshalb habe ich sie sofort gelöscht.|那封所谓银行发来的邮件是诈骗，所以我马上删了。
 explodieren|In der Küche ist eine Flasche explodiert, weil sie zu lange in der Sonne stand.|厨房里一个瓶子爆了，因为在太阳下放得太久。
 Alarm|Mitten in der Nacht ging der Alarm los, und alle mussten das Gebäude verlassen.|半夜警报响了，所有人都得离开大楼。
 ahnen|Ich habe schon geahnt, dass der Ausflug ins Wasser fällt, weil Regen angesagt war.|我早就料到郊游会泡汤，因为天气预报说要下雨。
@@ -1680,10 +1680,10 @@ Persönlichkeit|Sie hat eine starke Persönlichkeit und setzt sich immer für an
 einschlafen|Gestern bin ich beim Fernsehen auf dem Sofa eingeschlafen.|昨天我看电视时在沙发上睡着了。
 Bedarf|Bei Bedarf können Sie uns jederzeit unter dieser Nummer erreichen.|如有需要，您可以随时拨打这个号码联系我们。
 unnötig|Ich finde es unnötig, für so eine kurze Strecke ein Taxi zu nehmen.|我觉得这么短的路没必要打车。
-arabisch|Mein Nachbar kommt aus Syrien und bringt mir gerade ein paar Wörter Arabisch bei.|我邻居来自叙利亚，正在教我几个阿拉伯语单词。
+arabisch|Mein Nachbar kommt aus Syrien und bringt mir gerade ein paar arabische Wörter bei.|我邻居来自叙利亚，正在教我几个阿拉伯语单词。
 Indien|Viele Studenten aus Indien kommen nach Deutschland, um Informatik zu studieren.|很多印度学生来德国学计算机。
 behindern|Die Bauarbeiten behindern den Verkehr in der Innenstadt seit Wochen.|施工几周来一直妨碍市中心的交通。
-Droge|Die Polizei hat am Bahnhof einen Mann mit Drogen in der Tasche festgenommen.|警察在火车站逮捕了一个包里藏着毒品的男人。
+Droge|Die Polizei hat am Bahnhof einen Mann mit Drogen in der Tasche festgenommen.|警察在火车站逮捕了一个包里带着毒品的男人。
 zurückziehen|Nach dem Streit hat er sich in sein Zimmer zurückgezogen und mit niemandem gesprochen.|吵架后他回到自己房间，跟谁都不说话。
 Symptom|Wenn Sie Symptome wie Fieber oder Husten haben, bleiben Sie bitte zu Hause.|如果您有发烧或咳嗽等症状，请待在家里。
 sinnlos|Es ist sinnlos, jetzt noch zum Bahnhof zu rennen, der Zug ist sowieso weg.|现在再跑去火车站也没用了，火车反正已经开走了。
@@ -1736,7 +1736,7 @@ wegnehmen|Der große Bruder hat seiner kleinen Schwester das Spielzeug weggenomm
 bedauern|Ich bedauere sehr, dass ich nicht zu deiner Hochzeit kommen konnte.|没能来参加你的婚礼，我非常遗憾。
 leuchten|Ihre Augen leuchteten vor Freude, als sie das Geschenk aufmachte.|她打开礼物时，眼睛里闪着喜悦的光。
 verdächtig|Ein Mann, der sich verdächtig verhielt, wurde von der Polizei kontrolliert.|一个行为可疑的男人被警察盘查了。
-Schrecken|Mit dem Schrecken davongekommen sind wir zum Glück alle unverletzt nach Hause gekommen.|虽然受了惊吓，但幸好我们都毫发无损地回到了家。
+Schrecken|Zum Glück sind wir mit dem Schrecken davongekommen und alle unverletzt geblieben.|幸好我们只是受了惊吓，大家都没受伤。
 Kilo|Ein Kilo Äpfel kostet auf dem Markt nur zwei Euro, im Supermarkt mehr.|市场上一公斤苹果只要两欧元，超市里更贵。
 Wüste|Auf unserer Reise durch Marokko haben wir zwei Nächte in der Wüste geschlafen.|我们在摩洛哥旅行时，在沙漠里睡了两晚。
 Cousin|Mein Cousin, der auch in Deutschland studiert, besucht mich nächstes Wochenende.|也在德国读书的表哥下周末来看我。
@@ -1839,7 +1839,7 @@ nützen|Es nützt nichts, sich über das Wetter zu ärgern, wir können es sowie
 Länge|Der Tisch hat eine Länge von zwei Metern, passt er überhaupt in unsere Küche?|这张桌子长两米，我们的厨房放得下吗？
 drum|Ich kümmere mich drum, dass bis morgen alles fertig ist, mach dir keine Sorgen.|我会负责让一切在明天前搞定，你别担心。
 Villa|Am See stehen viele alte Villen, die heute oft als Hotels genutzt werden.|湖边有很多老别墅，如今常被用作酒店。
-Pille|Ich muss die Pille jeden Morgen zur gleichen Zeit nehmen.|我每天早上必须在同一时间吃这药。
+Pille|Ich muss die Pille jeden Morgen zur gleichen Zeit nehmen.|我每天早上必须在同一时间吃避孕药。
 Haltung|Seine Haltung gegenüber Ausländern hat sich verändert, seit er selbst im Ausland war.|自从他自己出过国，他对外国人的态度就变了。
 Kranke|In der Grippezeit sind die Wartezimmer voller Kranker, die stundenlang warten.|流感季候诊室里挤满了病人，一等就是几个小时。
 fleißig|Sie ist sehr fleißig und lernt jeden Abend zwei Stunden Deutsch, auch nach der Arbeit.|她非常勤奋，即使下班后也每晚学两个小时德语。
@@ -1849,7 +1849,7 @@ Nagel|Kannst du mir einen Nagel geben? Ich möchte das Bild hier aufhängen.|你
 ablaufen|Mein Visum läuft in drei Monaten ab, deshalb muss ich bald einen Termin machen.|我的签证三个月后到期，所以得赶紧预约。
 Rätsel|Es ist mir ein Rätsel, wie er mit so wenig Geld in München leben kann.|他钱那么少怎么能在慕尼黑生活，我真想不通。
 belasten|Die Sorgen um seine kranke Mutter belasten ihn sehr, er schläft kaum noch.|对生病母亲的担忧让他压力很大，他几乎睡不着觉。
-Sprung|Mit einem großen Sprung ist der Hund über den Zaun in den Garten des Nachbarn gesprungen.|狗纵身一跃，跳过篱笆进了邻居的花园。
+Sprung|Mit einem großen Sprung war der Hund über den Zaun und im Garten des Nachbarn.|狗纵身一跃，越过篱笆进了邻居的花园。
 definieren|Es ist schwer zu definieren, was Heimat eigentlich bedeutet.|很难定义家乡到底意味着什么。
 Magie|Die Magie der ersten Schneeflocken macht jedes Jahr wieder alle Kinder glücklich.|每年初雪的魔力都会让所有孩子快乐起来。
 hervor|Plötzlich kam eine Katze unter dem Auto hervor und rannte über die Straße.|突然一只猫从车底下钻出来，跑过了马路。
@@ -1866,7 +1866,7 @@ beseitigen|Nach dem Sturm haben die Nachbarn gemeinsam die umgefallenen Bäume b
 gratis|Zu jedem Kaffee bekommt man hier einen kleinen Keks gratis dazu.|在这里每杯咖啡都免费送一块小饼干。
 Ross|Im Märchen kommt der Prinz auf einem weißen Ross, um die Prinzessin zu retten.|童话里王子骑着白马来救公主。
 ohnehin|Du musst mich nicht abholen, ich wollte ohnehin zu Fuß gehen.|你不用来接我，反正我本来就想走路。
-Kostüm|An Karneval verkleiden sich viele Erwachsene mit einem lustigen Kostüm.|狂欢节时很多大人都穿上滑稽的服装。
+Kostüm|An Karneval verkleiden sich viele Erwachsene mit lustigen Kostümen.|狂欢节时很多大人都穿上滑稽的服装。
 Treffer|Mit seinem zweiten Treffer hat er das Spiel für unsere Mannschaft entschieden.|他的第二个进球为我们队锁定了胜局。
 Pirat|Die Kinder spielen im Garten Piraten und suchen einen versteckten Schatz.|孩子们在花园里玩海盗游戏，寻找藏起来的宝藏。
 Elend|Die Bilder aus dem Kriegsgebiet zeigen das Elend der Menschen, die alles verloren haben.|战区的照片展示了那些失去一切的人的苦难。
@@ -1898,7 +1898,7 @@ Korrektur|Die Lehrerin hat mir den Aufsatz mit vielen roten Korrekturen zurückg
 Faust|Vor Wut schlug er mit der Faust auf den Tisch, sodass alle erschraken.|他气得一拳砸在桌上，把大家都吓了一跳。
 App|Mit dieser App kann man Bus- und Bahntickets direkt auf dem Handy kaufen.|用这个应用可以直接在手机上买公交和火车票。
 Umgang|Der Umgang mit Kunden macht mir an meinem Job am meisten Spaß.|在我的工作中，我最喜欢和客户打交道。
-Gesang|Im Chor habe ich gelernt, dass Gesang auch eine gute Übung für die Aussprache ist.|在合唱团里我发现，唱歌也是练发音的好办法。
+Gesang|Der Gesang der Vögel weckt mich im Sommer jeden Morgen um fünf.|夏天每天早上五点，鸟叫声就把我吵醒。
 Abschied|Der Abschied von meiner Familie am Flughafen ist mir sehr schwergefallen.|在机场和家人告别让我非常难受。
 Schokolade|Wenn ich gestresst bin, esse ich immer viel zu viel Schokolade.|我一有压力就会吃太多巧克力。
 erleiden|Bei dem Unfall hat er schwere Verletzungen erlitten und musste operiert werden.|他在事故中受了重伤，不得不做手术。
@@ -1907,7 +1907,7 @@ angestellte|Als angestellte Ärztin verdient sie weniger als ihre Kollegen mit e
 unendlich|Die Warteschlange am Bürgeramt schien heute unendlich lang zu sein.|今天市民局的队伍好像长得没有尽头。
 jenseits|Jenseits des Flusses beginnt der Wald, in dem wir oft spazieren gehen.|河对岸就是我们常去散步的那片森林。
 widerlich|Im Kühlschrank lag ein alter Käse, der widerlich gerochen hat.|冰箱里有块旧奶酪，味道恶心极了。
-Überstunde|Diesen Monat habe ich so viele Überstunden gemacht, dass ich drei Tage frei nehmen kann.|这个月我加了很多班，可以休三天假。
+Überstunde|Diesen Monat habe ich so viele Überstunden gemacht, dass ich drei Tage freinehmen kann.|这个月我加了很多班，可以休三天假。
 Bestimmung|Nach den neuen Bestimmungen dürfen Hunde nicht mehr frei im Park laufen.|按新规定，狗不能再在公园里自由跑动了。
 zurückgehen|Die Zahl der Unfälle ist in diesem Jahr deutlich zurückgegangen.|今年事故数量明显下降了。
 Anführer|Der Anführer der Gruppe hat beschlossen, dass wir heute nicht weiterwandern.|领队决定我们今天不再继续徒步了。
@@ -1927,7 +1927,7 @@ Verwaltung|Die Verwaltung der Universität ist im Sommer nur vormittags geöffne
 Auswirkung|Der Streik hat große Auswirkungen auf den Verkehr in der ganzen Region.|罢工对整个地区的交通影响很大。
 wiegen|Der Koffer wiegt mehr als dreiundzwanzig Kilo, deshalb muss ich extra bezahlen.|行李箱超过二十三公斤，所以我得额外付钱。
 kreativ|Sie ist sehr kreativ und macht alle Geschenke für ihre Freunde selbst.|她很有创意，给朋友的礼物都是自己做的。
-überwinden|Es hat mich viel Mut gekostet, meine Angst vor dem Sprechen zu überwinden.|克服说话的恐惧花了我很大的勇气。
+überwinden|Es hat mich viel Mut gekostet, meine Angst vor dem Sprechen zu überwinden.|我鼓起很大勇气才克服了对开口说话的恐惧。
 umgeben|Das kleine Dorf ist von Bergen und Wäldern umgeben.|这个小村庄被群山和森林环绕。
 Nachfrage|Die Nachfrage nach günstigen Wohnungen ist in Unistädten viel größer als das Angebot.|在大学城，便宜房子供不应求。
 Jungfrau|Am Wochenende sind wir mit der Bahn auf die Jungfrau in der Schweiz gefahren.|周末我们坐火车上了瑞士的少女峰。
@@ -1948,13 +1948,13 @@ Gedächtnis|Ich habe ein schlechtes Gedächtnis für Namen, aber Gesichter verge
 entgehen|Lass dir diese Gelegenheit nicht entgehen, so ein Angebot bekommst du nicht wieder.|别错过这个机会，这样的机会不会再有了。
 erholen|Nach der Operation braucht sie noch ein paar Wochen, um sich richtig zu erholen.|手术后她还需要几周才能完全康复。
 zufolge|Dem Wetterbericht zufolge soll es am Wochenende endlich wärmer werden.|据天气预报，周末终于要变暖和了。
-Masse|In der Masse der Touristen habe ich meine Freunde auf dem Weihnachtsmarkt verloren.|在圣诞市场的人群中，我和朋友们走散了。
+Masse|Bei der Masse an Touristen habe ich meine Freunde auf dem Weihnachtsmarkt verloren.|圣诞市场上游客太多，我和朋友们走散了。
 zusammenarbeiten|Wir arbeiten seit drei Jahren eng mit einer Firma in Shanghai zusammen.|我们和上海的一家公司密切合作已经三年了。
 Vorstand|Der Vorstand des Vereins wird jedes Jahr von den Mitgliedern neu gewählt.|协会理事会每年由会员重新选举。
 durchsetzen|Sie hat sich mit ihrer Idee gegen alle anderen im Team durchgesetzt.|她的想法力压团队里所有人，最终被采纳了。
 Bock|Ich habe heute überhaupt keinen Bock, zur Arbeit zu gehen.|我今天一点都不想去上班。
 Schriftsteller|Der Schriftsteller liest heute Abend in der Buchhandlung aus seinem neuen Roman vor.|这位作家今晚在书店朗读他的新小说。
-versammeln|Vor dem Rathaus haben sich Tausende Menschen versammelt, um zu demonstrieren.|成千上万的人聚集在市政厅前游行。
+versammeln|Vor dem Rathaus haben sich Tausende Menschen versammelt, um zu demonstrieren.|成千上万的人聚集在市政厅前示威。
 Effekt|Die neue Creme hatte leider überhaupt keinen Effekt auf meine trockene Haut.|新面霜对我的干性皮肤可惜一点效果都没有。
 Burg|Auf dem Hügel über der Stadt steht eine alte Burg aus dem zwölften Jahrhundert.|城市上方的山丘上矗立着一座十二世纪的古堡。
 Chinese|Ein Chinese aus meinem Kurs hat mir geholfen, mich in der Stadt zurechtzufinden.|我班上的一个中国人帮我熟悉了这座城市。
@@ -2101,7 +2101,7 @@ schlimm|Das ist nicht so schlimm, das kann jedem passieren.|没那么严重，�
 Buch|Ich lese gerade ein Buch auf Deutsch, aber es ist schwer.|我正在读一本德语书，可是很难。
 leicht|Die Prüfung war leichter, als ich gedacht hatte.|考试比我想的容易。
 Unfall|Auf dem Weg zur Arbeit habe ich einen Unfall gesehen.|上班路上我看到了一起事故。
-Kontrolle|Im Zug war heute eine Kontrolle, aber ich hatte ein Ticket.|今天火车上查票，还好我有票。
+Kontrolle|Heute gab es im Zug eine Kontrolle, aber ich hatte ein Ticket.|今天火车上查票，还好我有票。
 Kirche|Sonntags gehen meine Nachbarn immer in die Kirche.|我邻居每个周日都去教堂。
 schließlich|Wir haben lange gesucht und schließlich eine Wohnung gefunden.|我们找了很久，终于找到了房子。
 gern|Ich trinke morgens gern einen Kaffee auf dem Balkon.|我早上喜欢在阳台上喝杯咖啡。
@@ -2133,7 +2133,7 @@ Herz|Er hat ein gutes Herz und hilft immer allen.|他心地善良，总是帮助
 zwar|Die Wohnung ist zwar klein, aber sehr gemütlich.|房子虽然小，但很温馨。
 Miete|Die Miete ist hier so hoch, dass ich eine WG suche.|这里房租太高，所以我在找合租。
 freuen|Ich freue mich, dass du heute Abend kommst!|你今晚能来，我很高兴！
-oben|Die Gläser sind oben im Schrank, ganz rechts.|杯子在柜子上面，最右边。
+oben|Die Gläser sind oben im Schrank, ganz rechts.|杯子在柜子上层，最右边。
 fertig|Bist du schon fertig? Wir müssen gleich los.|你好了吗？我们马上要出发了。
 ernst|Ich meine das ernst, das ist kein Witz!|我是认真的，不是开玩笑！
 Milch|Kannst du auf dem Heimweg noch Milch mitbringen?|你回家路上能带点牛奶吗？
@@ -2280,7 +2280,7 @@ anfangen|Wann fängt der Deutschkurs am Montag an?|周一的德语课几点开�
 Ruhe|Lass mich in Ruhe, ich muss arbeiten!|别烦我，我得工作！
 neben|Die Bank ist direkt neben dem Supermarkt.|银行就在超市旁边。
 laden|Ich muss mein Handy laden, der Akku ist fast leer.|我得给手机充电，快没电了。
-fliegen|Im August fliegen wir nach China zu meinen Eltern.|八月我们飞回中国看父母。
+fliegen|Im August fliegen wir nach China zu meinen Eltern.|八月我们飞去中国看父母。
 Schwester|Meine Schwester ist zwei Jahre älter als ich.|我姐姐比我大两岁。
 tief|Das Wasser ist hier sehr tief, pass auf!|这里水很深，小心！
 derselbe|Wir haben denselben Arzt, so ein Zufall!|我们看的是同一个医生，真巧！
@@ -2392,7 +2392,7 @@ grün|Warte, bis die Ampel grün ist.|等到绿灯再走。
 Glas|Kann ich bitte ein Glas Wasser haben?|能给我一杯水吗？
 Ausweis|Bitte zeigen Sie mir Ihren Ausweis.|请出示您的证件。
 Blick|Vom Turm hat man einen tollen Blick über die Stadt.|从塔上可以俯瞰全城，景色很棒。
-Körper|Sport ist gut für Körper und Kopf.|运动对身体和头脑都有好处。
+Körper|Sport ist gut für Körper und Geist.|运动对身体和精神都有好处。
 absolut|Das ist absolut kein Problem, ich helfe dir gern.|这完全没问题，我很乐意帮你。
 Mittagessen|In der Mittagspause gehen wir zusammen zum Mittagessen.|午休时我们一起去吃午饭。
 obwohl|Ich gehe zur Arbeit, obwohl ich mich nicht gut fühle.|虽然我不太舒服，我还是去上班。
@@ -2568,7 +2568,7 @@ Meter|Der Supermarkt ist nur zweihundert Meter von hier.|超市离这儿只有�
 übrigens|Übrigens, hast du schon die neue Bäckerei gesehen?|顺便问一下，你看到那家新面包店了吗？
 irgendwo|Mein Handy muss irgendwo in der Wohnung sein.|我的手机肯定在家里某个地方。
 Gefahr|Bei Glatteis besteht große Gefahr auf den Straßen.|路面结冰时非常危险。
-solange|Du kannst bei uns wohnen, solange du keine Wohnung hast.|在你找到房子之前，可以住我们家。
+solange|Du kannst bei uns wohnen, solange du keine Wohnung hast.|只要你还没有住处，就可以住在我们家。
 unbedingt|Den Film musst du unbedingt sehen!|这部电影你一定要看！
 Rücken|Vom vielen Sitzen tut mir der Rücken weh.|坐太久了，我背疼。
 darin|Im Keller steht eine alte Kiste, darin sind Fotos von früher.|地下室有个旧箱子，里面是以前的照片。
@@ -2673,7 +2673,7 @@ bestätigen|Bitte bestätigen Sie Ihren Termin per E-Mail.|请通过邮件确认
 dadurch|Ich bin früher aufgestanden und habe dadurch den Bus noch bekommen.|我早起了，因此还赶上了公交。
 Note|In Mathe habe ich eine gute Note bekommen.|我数学拿了个好分数。
 Reihe|Warten Sie bitte, Sie sind gleich an der Reihe.|请稍等，马上轮到您了。
-Geschenk|Ich habe noch kein Geschenk für meine Mutter.|我还没给妈妈买礼物。
+Geschenk|Ich habe noch kein Geschenk für meine Mutter.|我还没给妈妈准备礼物。
 Druck|Vor der Prüfung stehe ich unter großem Druck.|考试前我压力很大。
 Bereich|Der Bereich hinter der Tür ist nur für Mitarbeiter.|门后的区域仅限员工进入。
 Sommer|Im Sommer fahren wir oft an den See zum Schwimmen.|夏天我们常去湖边游泳。
