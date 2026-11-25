@@ -1,0 +1,461 @@
+原形	类型	原句	原中文	改成	问题
+Schule	translation	Meine Tochter kommt um drei aus der Schule.	我女儿三点放学回家。	我女儿三点从学校回来。	德语只说女儿三点从学校回来，没有明确说是回家。
+denken	translation	Ich denke oft an meine Familie.	我常想念家人。	我常常想到我的家人。	„an jemanden denken“是“想到某人”，不一定表示“想念”。
+neu	translation	Unsere Nachbarn haben ein neues Auto.	我们的邻居买了辆新车。	我们的邻居有一辆新车。	德语只说邻居有一辆新车，没有说是他们买的。
+neu	translation	Das Restaurant ist ganz neu.	这家餐馆是新开的。	这家餐馆很新。	德语只说餐馆是新的，没有明确说它是新开的。
+Nachricht	unnatural	Auf dem Handy stehen viele neue Nachrichten.	手机上有很多新消息。	Auf dem Handy sind viele neue Nachrichten.	用 „stehen“ 描述手机上有消息不自然。
+bitte	translation	Kannst du das bitte noch einmal sagen?	你能请再说一遍吗？	你能再说一遍吗？	中文“你能请再说一遍吗”表达不自然。
+Rechnung	translation	Die Rechnung kommt heute per E-Mail.	账单今天会通过电子邮件发来。	搭配：per E-Mail kommen	中文标注的搭配是“per E-Mail bekommen”，但句子用的是“per E-Mail kommen”。
+bringen	translation	Darf ich ihn mit nach Hause bringen?	我可以带他回家吗？	搭配：jdn. mit nach Hause bringen	句子中的“mit nach Hause bringen”不是标注的动词搭配“jdn. mitbringen”。
+jung	error	Ich bin drei Jahre jünger als du.	我比你小三岁。	jünger als + Nom.	搭配标注的格错误：比较结构 als 后的代词用主格，不是第四格。
+helfen	translation	Kannst du deiner Schwester beim Kochen helfen?	你能帮你妹妹做饭吗？	你能帮你姐妹做饭吗？	德语 Schwester 不说明年龄，译成“妹妹”增加了原文没有的信息。
+Post	translation	Hat die Post noch zu?	邮局还开着吗？	邮局还关着吗？	“noch zu”表示“还关着”，中文译文意思相反。
+dabei	translation	Beim Umzug waren alle Freunde dabei.	搬家的时候，所有朋友都来帮忙了。	搬家的时候，所有朋友都在场。	德语只说搬家时所有朋友都在场，并没有说他们来帮忙。
+passieren	error	Er redete weiter als sei nichts passiert.	他继续说着，仿佛什么都没发生。	Er redete weiter, als sei nichts passiert.	als 引导的从句前缺少逗号。
+schreiben	error	Schreib bitte mit einem Kuli.	请用圆珠笔写。	mit + Dat. schreiben	搭配标注把“schreiben mit + Dat.”误写成了带直接宾语的“jdn./etw. schreiben”；本句只体现用某物书写。
+Stunde	translation	Eine Stunde später war ich zu Hause.	一小时后我到家了。	一小时后我已经在家了。	德语表示“一小时后我在家”，不一定表示“我到家了”。
+Wort	translation	Ich habe dir ja mein Wort gegeben.	我已经答应你了。	我可是答应过你的。	“ja”在这里是语气词，不表示“已经”；德语句子表示“我可是答应过你的”。
+schwer	unnatural	Nach der Arbeit bin ich heute ziemlich schwer müde.	今天下班后我特别累。	Nach der Arbeit bin ich heute ziemlich müde.	“ziemlich schwer müde”不是自然的德语表达。
+sondern	translation	Er ist nicht mein Freund, sondern mein Bruder.	他不是我的朋友，而是我的哥哥。	他不是我的朋友，而是我的兄弟。	德语 Bruder 不说明哥哥还是弟弟，中文“哥哥”额外限定了年龄。
+passen	translation	Der Termin passt mir am Montag gut.	这个时间我周一合适。	周一这个时间对我很合适。	中文语序不自然，意思应是周一的这个时间对说话者很合适。
+Größe	error	Es hat etwa die Größe eines Eies.	它大约有一个鸡蛋那么大。	Es hat etwa die Größe von einem Ei.	中文标注的搭配是「die Größe von + Dativ」，但句子用了属格「eines Eies」。
+frei	error	Sie hat einen Tag frei genommen.	她请了一天假。	Sie hat sich einen Tag freigenommen.	sich freinehmen 是反身动词，这里缺少反身代词 sich。
+anders	translation	Diese Stadt ist ganz anders als vor zehn Jahren.	这座城市和十年前很不一样。	搭配：anders als + Vergleich；这座城市和十年前很不一样。	搭配说明写了“anders als + Nom.”，但句中的 als 后接的是时间状语“vor zehn Jahren”，不是名词第一格。
+scheinen	translation	Er ist viel älter, als er scheint.	他比看起来老得多。	搭配：scheinen；他比看起来老得多。	搭配说明是“scheinen zu + Inf.”，但句子用的是“scheinen”作“看起来”的独立用法，并未接不定式。
+lernen	translation	Meine Schwester lernt gerade für die Prüfung.	我姐姐正在为考试学习。	我姐姐/妹妹正在为考试学习。	德语 Schwester 没有说明是姐姐还是妹妹，中文却限定为“姐姐”。
+Kopf	error	Das Lied will mir nicht aus dem Kopf.	这首歌一直在我脑海里挥之不去。	Das Lied will mir nicht aus dem Kopf gehen.	固定说法应为“jemandem nicht aus dem Kopf gehen”；这里缺少动词 gehen。
+Junge	error	Von allen Jungs ist er der größte.	在所有男孩中，他个子最高。	Von allen Jungs ist er der Größte.	这里的“der Größte”是名词化形容词，应大写。
+Junge	translation	Der Junge stellt eine Frage.	那个男孩问了一个问题。	那个男孩在问一个问题。	德语是现在时，中文“问了”表达过去时。
+toll	translation	Das ist ein toller Tag.	今天真棒。	这是美好的一天。	德语说“这是美好的一天”，中文“今天真棒”没有对应“这一天”的表达。
+Hilfe	error	Ohne deine Hilfe könnte ich es nicht schaffen.	没有你的帮助，我就办不到。	Ohne die Hilfe von dir könnte ich es nicht schaffen.	标注的搭配是“Hilfe von + 第三格”，但句子里没有出现“von + 第三格”。
+bald	error	Es wird ihr bald wieder gut gehen.	她很快就会好起来。	Es wird ihr bald wieder gutgehen.	表示“情况好转”的动词 gutgehen 通常写作一个词。
+erklären	translation	Kannst du mir erklären, wie dieser Automat funktioniert?	你能给我讲讲这台机器怎么用吗？	你能给我讲讲这台机器是怎么运作的吗？	德语问的是这台机器如何运作，不是如何使用。
+deshalb	translation	Ich weiß, deshalb bist du nicht hier.	我知道你为什么不在这里。	我知道，所以你才不在这里。	德语意思是“我知道，所以你才不在这里”，中文却是“我知道你为什么不在这里”。
+überhaupt	error	Diese Sache macht mir überhaupt keine Angst.	这件事根本吓不到我。	Ich habe vor dieser Sache überhaupt keine Angst.	句子用了“jemandem Angst machen”，没有用中文标注的搭配“Angst haben”。
+wünschen	error	Ich wünschte, wir könnten mehr Zeit miteinander verbringen.	我希望我们能有更多时间待在一起。	Ich wünsche mir, dass wir mehr Zeit miteinander verbringen.	标注的搭配是“wünschen, dass …”，但句子使用的是“ich wünschte, … könnten”结构，没有出现 dass 从句。
+Typ	translation	Da bin ich nicht der richtige Typ für.	这可不是我擅长的类型。	这件事不适合我。	德语是说“我不是做这件事的合适人选”，中文却说“这不是我擅长的类型”，意思不完全对应。
+liefern	error	Er hat versprochen Informationen zu liefern.	他答应提供信息。	Er hat versprochen, Informationen zu liefern.	zu 不定式从句前缺少逗号。
+erhalten	unnatural	Das alte Haus muss erhalten bleiben.	这栋老房子必须保留下来。	Das alte Haus muss erhalten werden.	句子用了“erhalten bleiben”（得以保留），没有用标注的“etwas erhalten”。
+Bahnhof	error	Der Bahnhof ist nicht weit von hier.	火车站离这里不远。	Der Bahnhof ist nicht weit von hier entfernt.	例句没有使用标注的搭配“von + Dat. entfernt”。
+Bahnhof	error	Der Zug fuhr in Richtung Bahnhof.	火车朝火车站的方向开去。	Der Zug fuhr in Richtung des Bahnhofs.	“in Richtung Bahnhof”没有体现标注的第二格搭配。
+Tür	translation	Kannst du bitte die Tür zumachen? Es zieht.	你能把门关上吗？有风。	你能把门关上吗？有穿堂风。	“Es zieht”指有穿堂风或漏风，不是泛指外面有风。
+U-Bahn	unnatural	Wo ist hier die nächste U-Bahn?	这附近最近的地铁站在哪里？	Wo ist hier die nächste U-Bahn-Station?	这里的“die nächste U-Bahn”通常指下一班地铁，询问最近的地铁站应明确说“U-Bahn-Station”。
+danach	unnatural	Nach dem Kurs trinken wir danach einen Tee.	下课后我们再喝杯茶。	Nach dem Kurs trinken wir einen Tee.	“Nach dem Kurs”和“danach”都表示下课后，重复表达了同一时间关系。
+handeln	translation	Es handelt sich um einen Fehler in Ihrer Rechnung.	这涉及您账单里的一个错误。	这是您账单中的一处错误。	“Es handelt sich um …”在这里是说“这是一处……”，不是“这涉及……”。
+Suche	translation	Bei der Suche half mir meine Schwester.	我找东西时，我姐姐帮了我。	寻找过程中，我姐姐帮了我。	原句只说“寻找时”，中文增加了“找东西”，限定了寻找的对象。
+Koffer	unnatural	Mein Koffer ist zu schwer für das Flugzeug.	我的行李箱上飞机太重了。	Mein Koffer ist zu schwer, um ihn ins Flugzeug mitzunehmen.	“zu schwer für das Flugzeug”听起来像行李箱对飞机来说太重，表达“太重而不能带上飞机”不自然。
+Koffer	unnatural	Am Bahnhof gebe ich den Koffer auf.	我在火车站办理行李托运。	Am Flughafen gebe ich den Koffer auf.	在火车站托运行李通常不说 „den Koffer aufgeben“；这里的意思应是去机场办理托运。
+Versicherung	translation	Die Versicherung bezahlt den Schaden.	保险公司赔偿了损失。	保险公司会赔偿损失。	德语是现在时，中文却译成了过去时。
+eher	translation	Am Wochenende stehe ich eher spät auf.	周末我通常起得比较晚。	搭配：eher + 形容词/副词；周末我起得比较晚。	eher spät 表示“比较晚”，不表示“通常起得晚”。
+Ziel	error	Wer ist als letzter ins Ziel gekommen?	谁最后到达终点？	Wer ist als Letzter ins Ziel gekommen?	此处 letzter 是名词化形容词，应大写。
+steigen	error	Der Bus hielt, doch niemand stieg aus.	公交车停了，但没人下车。	Der Bus hielt, doch niemand stieg aus dem Bus aus.	句子只用了“aussteigen”，没有体现标注的“aus + Dativ”搭配。
+werfen	unnatural	Die Kinder werfen den Ball im Park.	孩子们在公园里扔球。	Die Kinder werfen sich den Ball im Park zu.	werfen 通常需要说明扔球的方向或对象；单独说“在公园里扔球”不够自然。
+fangen	translation	Der Torwart fängt den Ball sicher.	守门员稳稳地接住了球。	守门员稳稳地接球。	德语是现在时，中文译成了已完成的过去动作。
+laden	translation	Ich lade jeden ein, der kommen möchte.	谁想来，我都欢迎。	我邀请每个想来的人。	einladen 是“邀请”，中文“欢迎”没有准确表达邀请的意思。
+halb	translation	Das Glas ist noch halb voll.	杯子里还有半杯。	杯子还是半满的。	德语表示杯子仍然有一半是满的，不是杯子里还剩半杯。
+nutzen	error	Dieses Buch schadet mehr, als dass es nutzt.	这本书弊大于利。	Dieses Buch schadet dir mehr, als dass es dir nutzt.	句子里的 nutzen 没有带与格宾语，未使用标注的搭配 „jemandem nutzen“。
+Schuld	translation	Das war nicht meine Schuld.	他们告诉我，那是你的错。	他们告诉我，那不是我的错。	德语说的是“那不是我的错”，中文却写成“那是你的错”。
+Rede	translation	Bei der Hochzeit hat der Vater eine schöne Rede gehalten.	婚礼上父亲做了一段很美的致辞。	婚礼上，父亲发表了一段很精彩的讲话。	中文“做了一段致辞”搭配不自然。
+grün	error	Sie trägt nie grün.	她从不穿绿色的衣服。	Sie trägt nie Grün.	这里的颜色名作名词使用，需大写。
+Gesellschaft	translation	Er hat gesagt, er wolle etwas Gesellschaft.	他说他想有人陪。	他说他想有人陪。	句子用了“etwas Gesellschaft haben”，没有使用标注的搭配“jemandem Gesellschaft leisten”。
+raten	unnatural	Ich rate dir zu einem Arzt.	我建议你去看医生。	Ich rate dir zu einem Arztbesuch.	„Ich rate dir zu einem Arzt“ klingt unvollständig; natürlicher ist eine Empfehlung für einen Arztbesuch.
+Botschaft	translation	Ich habe eine Botschaft für euch von ihr.	她让我给你们带个消息。	我有她给你们捎来的消息。	德语只说“我有她给你们的消息”，中文增加了“她让我带”的意思。
+kündigen	translation	Ich habe meinen Handyvertrag gekündigt, er war zu teuer.	我把手机合约退了，太贵了。	我把手机合约解约了，因为太贵。	„gekündigt“表示解约或取消，不是退回手机合约。
+willkommen	translation	Fühl dich bei uns willkommen.	在我们这里，别客气，就像在自己家一样。	在我们这里，请感到宾至如归。	德语是“在我们这里感到受欢迎”，中文却表达成“别客气，就像在自己家一样”。
+aufhören	unnatural	Der Film hat endlich aufgehört.	电影终于结束了。	Der Film ist endlich zu Ende.	Film hat aufgehört 说电影结束不自然，通常说电影结束了或放完了。
+heilig	translation	Was du mir sagst, das ist mir heilig.	你对我说的话，我会严格保密。	你对我说的话对我来说很重要。	德语表示“你对我说的话对我来说很重要／神圣”，不表示会替对方保密。
+stören	translation	Der Lärm stört mich beim Lernen.	噪声让我没法安心学习。	噪声在我学习时会打扰我。	德语只是说噪声在我学习时打扰我，并未明确说“没法安心学习”。
+rennen	translation	Ich musste zum Bus rennen, sonst hätte ich ihn verpasst.	我得跑着去赶公交，不然就错过了。	我当时不得不跑着去赶公交，不然就错过了。	德语是过去时，表示当时不得不跑去赶公交；中文“我得”容易理解为现在或一般情况。
+stehlen	translation	Mir wurde im Zug das Portemonnaie gestohlen.	我在火车上被偷了钱包。	我在火车上钱包被偷了。	中文把“钱包被偷”说成了“我被偷了钱包”，表达不自然且意思不准确。
+englisch	translation	Er möchte Teil der englischen Gesellschaft sein.	他想成为英国社会的一员。	他想成为英国社会的一员。	englisch 在这里指“英国的”，中文“英国社会”表达正确，但德语的定冠词和语义没有问题；无错误。
+unterstützen	translation	Meine Kollegen unterstützen mich bei der Arbeit.	我的同事在工作中支持我。	我的同事在工作时支持我。	bei der Arbeit 表示“在工作中”，不一定是同事在工作上提供支持；中文译文容易扩大为工作支持。
+Gebäude	translation	Was ist das für ein großes Gebäude vor uns?	我们前面那栋大楼是什么地方？	我们前面那栋大楼是什么样的建筑？	德语问的是“这是什么样的一栋大楼？”，中文问的是“这栋大楼是什么地方？”，意思不完全相符。
+Ergebnis	error	Sein Erfolg ist das Ergebnis harter Arbeit.	他的成功是努力工作的结果。	Sein Erfolg ist das Ergebnis von harter Arbeit.	标注的搭配是 „das Ergebnis von + Dat.“，但句子用了属格 „harter Arbeit“，没有使用标注的搭配。
+Hausaufgabe	error	Ich mache die Hausaufgabe nach dem Essen.	我吃完饭做作业。	Ich mache die Hausaufgaben nach dem Essen.	标注的搭配是 „Hausaufgaben machen“，句子却用了单数 „die Hausaufgabe“。
+irgendein	translation	Hast du irgendeine Idee, was wir ihr schenken können?	你有什么主意我们可以送她什么吗？	你有什么主意吗？我们可以送她什么礼物？	中文句子结构不自然，两个疑问结构叠在一起。
+soweit	error	Ruf mich an, wenn du soweit bist!	你准备好了就给我打电话！	Ruf mich an, wenn du so weit bist!	表示“准备好、达到某种状态”时应分开写“so weit”。
+soweit	error	Ich bin noch nicht soweit.	我还没准备好。	Ich bin noch nicht so weit.	表示“准备好、达到某种状态”时应分开写“so weit”。
+Besuch	error	Ist dies dein erster Besuch hier?	这是你第一次来这里吗？	Ist dies dein erster Besuch des Museums?	句子没有使用标注的“Besuch + Gen.”结构；这里的“hier”不是第二格成分。
+Freiheit	error	Das einzige, was ich will, ist meine Freiheit.	我唯一想要的就是我的自由。	Das Einzige, was ich will, ist meine Freiheit.	“Das Einzige”作名词化代词时要大写。
+rum	translation	Am Sonntag sitzen wir meistens nur rum und machen gar nichts.	周日我们通常就在家闲坐着，什么也不干。	周日我们通常就闲坐着，什么也不干。	德语没有说明是在家里，中文增加了“在家”。
+sammeln	translation	Ich kann meine Gedanken nicht sammeln.	我没法集中注意力。	我没法理清思绪。	„seine Gedanken sammeln“是整理、理清思绪，不是集中注意力。
+Mist	translation	Man soll viel lesen, aber nicht jeden Mist.	人应该多读书，但不是什么书都要读。	人应该多读书，但不是什么乱七八糟的东西都读。	„nicht jeden Mist“指不是什么乱七八糟的东西都读，不特指书。
+Wette	translation	Die Wette nehme ich nicht an!	这个赌我不打！	这个赌约我不接受！	德语表示“不接受这个赌约”，不是“不打这个赌”。
+sowieso	error	Ich gehe sowieso einkaufen, soll ich dir etwas mitbringen?	反正我要去买东西，要给你带点什么吗？	Ich gehe sowieso einkaufen; soll ich dir etwas mitbringen?	两个独立句子不能只用逗号连接。
+Fan	error	Ich bin dein größter Fan.	我是你最大的粉丝。	Ich bin der größte Fan von dir.	句子没有使用标注的搭配“Fan von + Dativ”。
+vereinbaren	error	Sie kam eine Stunde später als vereinbart.	她比约定时间晚到了一小时。	Sie kam wie vereinbart.	例句用了“als vereinbart”，没有使用标注的搭配“wie vereinbart”。
+Gleis	translation	Der Zug nach München fährt heute von Gleis sieben ab.	去慕尼黑的火车今天从七站台发车。	去慕尼黑的火车今天从七号轨道发车。	“Gleis”是“轨道/站台编号”，不是“站台”。
+Kurs	translation	Der Deutschkurs kostet sechzig Euro.	这门德语课收费六十欧元。	搭配改为：einen Kurs kosten → Der Deutschkurs kostet sechzig Euro.	句子表达课程收费，但没有使用中文搭配所标的“einen Kurs kosten”；这个搭配也不适合表达课程的价格。
+Kurs	translation	Der Kurs steht heute bei 1,08 Euro pro Dollar.	今天的汇率是1欧元兑1.08美元。	今天的汇率是1美元兑1.08欧元。	汇率方向译反了：德语表示1美元兑1.08欧元。
+Verzeihung	translation	Verzeihung, ist dieser Platz noch frei?	不好意思，这个座位有人吗？	不好意思，这个座位还空着吗？	“Ist dieser Platz noch frei?”是在问座位是否空着，中文“这个座位有人吗？”表达不够准确。
+aktuell	translation	Mir scheint, dass dies ein ziemlich aktuelles Thema ist.	在我看来，这似乎是个相当热门的话题。	在我看来，这似乎是个相当热门门的话题。	aktuell 指“当前的、时下的”，不一定表示“热门”。
+Beruf	unnatural	Sie sucht einen Beruf mit festen Zeiten.	她在找一份工作时间固定的职业。	Sie sucht einen Beruf mit festen Arbeitszeiten.	“feste Zeiten”表达工作时间固定不够自然，这里通常说“feste Arbeitszeiten”。
+Krankenwagen	translation	Der Krankenwagen bringt den Mann ins Krankenhaus.	救护车把那名男子送进了医院。	救护车把那名男子送进医院。	德语是现在时，中文译成了过去时。
+bewerben	translation	Ich bewerbe mich auf Ihre Anzeige.	我应聘您招聘广告上的职位。	我应聘您广告中的职位。	“应聘贵司的招聘”表达不自然，德语指的是应聘广告中发布的职位。
+Mai	error	Der erste Mai ist der Tag der Arbeit.	五月一日是劳动节。	Am ersten Mai ist der Tag der Arbeit.	标注的搭配是“am ersten Mai”，但句子中没有使用这个搭配。
+prüfen	unnatural	Der Arzt prüft heute mein Blut.	医生今天检查我的血液。	Der Arzt untersucht heute mein Blut.	“Blut prüfen”在这里不太自然，通常说“Blut untersuchen”。
+ausgeben	translation	Wie hast du das Geld ausgegeben?	你把这些钱花在哪儿了？	你是怎么花掉这笔钱的？	德语问的是“你是怎么花这笔钱的”，中文却问“花在哪儿了”。
+lehren	error	Man muss Kinder das Teilen lehren.	要教孩子们学会分享。	Man muss Kindern das Teilen lehren.	“Kinder”是第四格，不符合标注的“jemandem etwas lehren”搭配；这里应使用第三格。
+dicht	error	Er will dichter an der Natur leben.	他想住得离大自然更近。	Er will näher an der Natur leben.	句中的“an der Natur”是第三格；标注的“dicht an + Akk.”不符合这里表示静态位置的用法。
+Zweck	error	Wofür ist dieses Formular, welchen Zweck hat es eigentlich?	这张表是干什么用的，到底有什么用途？	Wofür ist dieses Formular? Welchen Zweck hat es eigentlich?	两个独立疑问句不能只用逗号连接，应拆成两个句子或用问号分开。
+eröffnen	error	Dieses neue Restaurant hat gerade erst eröffnet.	这家新餐馆刚刚开张。	Der Besitzer hat dieses neue Restaurant gerade erst eröffnet.	标注的搭配“ein Restaurant eröffnen”是及物用法，原句中的“eröffnet”却是不及物用法。
+besorgen	error	Kannst du bitte einen Stuhl besorgen?	你能帮忙弄把椅子来吗？	Kannst du mir bitte einen Stuhl besorgen?	句子没有使用标注的搭配“jemandem etwas besorgen”，缺少第三格对象。
+verteidigen	translation	Sie hat ihren Bruder verteidigt, obwohl er eigentlich schuld war.	尽管其实是她弟弟的错，她还是替他辩护。	尽管其实是她兄弟的错，她还是替他辩护。	德语只表示“她的兄弟”，没有说明是弟弟。
+China	translation	Ich habe sechs Monate in China gewohnt.	他写过很多关于中国的书。	我在中国住了六个月。	中文与德语句意不符；德语是说自己在中国住了六个月。
+Fahrer	translation	Der Fahrer öffnet die Tür für die Gäste.	司机为乘客开门。	司机为客人开门。	Gäste 是“客人”，不是“乘客”。
+wehtun	translation	Die Schuhe haben mir wehgetan.	这双鞋把我的脚磨疼了。	这双鞋让我很疼。	德语只说鞋子把人弄疼了，中文却具体说成把脚磨疼，增加了原句没有的信息。
+selbstverständlich	error	Sag' das nicht, als wäre es selbstverständlich!	别说得好像这理所当然一样！	Halt das nicht für selbstverständlich!	句子没有使用标注的搭配“etwas für selbstverständlich halten”。
+Glückwunsch	error	Herzlichen Glückwunsch zur bestandenen Prüfung, das hast du toll gemacht!	恭喜你通过考试，你太棒了！	Herzlichen Glückwunsch zur bestandenen Prüfung! Das hast du toll gemacht!	两个独立句子仅用逗号连接，标点不规范。
+herstellen	error	Die Ordnung war wieder hergestellt.	秩序又恢复了。	Die Ordnung war wiederhergestellt.	这里的“wiederherstellen”表示“恢复”，过去分词应连写。
+Juni	error	Im Juni sind die Tage am längsten, es wird erst um zehn dunkel.	六月白天最长，十点才天黑。	Im Juni sind die Tage am längsten. Es wird erst um zehn dunkel.	两个独立句子仅用逗号连接，标点不规范。
+sperren	error	Die Straße ist bis auf weiteres gesperrt.	这条路暂时封闭。	Die Straße ist bis auf Weiteres gesperrt.	“Weiteres”在固定表达“bis auf Weiteres”中应大写。
+Sendung	unnatural	Die Sendung, die ich bestellt habe, ist immer noch nicht angekommen.	我订的包裹到现在还没到。	Das Paket, das ich bestellt habe, ist immer noch nicht angekommen.	“Sendung”通常指寄送的货物或邮件，不自然地说成自己“订购”的东西；中文明确是包裹。
+Aktion	unnatural	Die Aktion auf Kaffee gilt nur heute.	咖啡的促销活动只在今天有效。	Die Aktion für Kaffee gilt nur heute.	„Aktion auf Kaffee“不太自然，德语通常说咖啡的促销活动是 „Aktion für Kaffee“，或说 „Aktion auf Kaffee“时把促销活动作为正在进行的优惠来表达。
+extra	translation	Kannst du mir bitte extra eine Tüte geben?	你能特意给我一个袋子吗？	你能额外给我一个袋子吗？	这里的 extra 表示“额外”，不是“特意”。
+Übersetzung	translation	Für das Visum brauche ich eine beglaubigte Übersetzung meines Zeugnisses.	办签证我需要一份成绩单的公证翻译件。	办签证我需要一份成绩单的认证翻译件。	“beglaubigte Übersetzung”指经过认证的译文，不一定是公证翻译。
+Material	error	Aus welchem Material ist diese Jacke, ist sie wasserdicht?	这件夹克是什么材料的，防水吗？	Aus welchem Material ist diese Jacke? Ist sie wasserdicht?	两个独立疑问句不能用逗号直接连接。
+Bühne	unnatural	Als ich auf der Bühne stand, hatte ich plötzlich alles vergessen.	站上舞台时，我突然什么都忘了。	Als ich auf der Bühne stand, vergaß ich plötzlich alles.	这里描述站在舞台上时突然忘记了所有内容，用过去完成时会让人理解为忘记发生在站上舞台之前。
+Sturm	translation	Wegen des Sturms ist ein Baum auf die Gleise gefallen.	因为暴风，一棵树倒在了铁轨上。	因为风暴，一棵树倒在了铁轨上。	“暴风”在这里表达不完整，应指暴风雨或风暴。
+November	error	Wir haben jetzt November.	现在已经是十一月了。	Wir sind jetzt im November.	句子没有使用标注的搭配“im + Dativ”。
+Liebling	translation	Sie ist ein Liebling des Lehrers.	她是老师最喜欢的学生。	她是老师喜欢的学生之一。	“ein Liebling des Lehrers”表示老师喜欢的学生之一，不表示最喜欢的学生。
+Wesen	translation	Sie hat ein sehr freundliches Wesen, alle mögen sie.	她性格很温和，大家都喜欢她。	她性格很友善，大家都喜欢她。	“freundlich”是友善、和善，不是“温和”。
+womit	error	Womit kann ich Ihnen helfen, suchen Sie etwas Bestimmtes?	我能帮您什么，您在找什么特定的东西吗？	Womit kann ich Ihnen helfen? Suchen Sie etwas Bestimmtes?	两个独立问句不能只用逗号连接。
+darunter	unnatural	Unter den Gästen waren auch Kinder darunter.	来宾中也有孩子。	Unter den Gästen waren auch Kinder.	Unter den Gästen 和 darunter 重复表达“其中”，显得累赘。
+ran	error	Ich finde, da könnte etwas Salz ran.	我觉得那里可以再加点盐。	Ich finde, da könnte man noch etwas Salz dranmachen.	句子用了 etwas Salz könnte ran，而不是标注的 Salz an etwas ranmachen 搭配。
+Motor	error	Der Motor macht komische Geräusche, ich muss in die Werkstatt.	发动机有怪声，我得去修车厂。	Der Motor macht komische Geräusche. Ich muss in die Werkstatt.	两个独立分句不能只用逗号连接。
+binden	error	Sie band ihren Hund am Baum an.	她把狗拴在树上。	Sie band ihren Hund an einen Baum an.	搭配标注要求 „an + Akk.“，但句中 „am Baum“ 是第三格；若要匹配该搭配，应使用第四格。
+einnehmen	translation	Nimmst du in letzter Zeit deine Medikamente ein?	你最近有按时吃药吗？	你最近有在服用药物吗？	德语只问最近是否在服药，没有“按时”的意思。
+Präsident	translation	Der Präsident des Vereins hat zur Versammlung eingeladen.	协会会长召集大家开会。	协会会长邀请大家参加会议。	德语是“邀请参加会议”，中文“召集大家开会”则表示召集、组织会议，意思不完全相同。
+Lokal	translation	In dem Lokal an der Ecke gibt es mittags günstige Gerichte.	拐角那家小馆中午有便宜的套餐。	拐角那家小馆中午有便宜的菜。	Gerichte 指菜肴或餐食，不一定是套餐；中文“套餐”缩窄了原意。
+Region	error	All dies Gemüse stammt aus der Region.	这些蔬菜都产自本地区。	All dieses Gemüse stammt aus der Region.	“Gemüse”作名词时应使用“dieses”修饰；“dies”不能这样直接限定名词。
+verabschieden	error	Er verließ das Haus, ohne sich zu verabschieden.	他没告别就离开了家。	Er verließ das Haus, ohne sich von jemandem zu verabschieden.	例句没有用到标注的搭配“sich von + Dativ verabschieden”。
+verabschieden	error	Wir haben uns nach dem Essen verabschiedet.	吃完饭后，我们道别了。	Wir haben uns nach dem Essen voneinander verabschiedet.	例句没有用到标注的搭配“sich von + Dativ verabschieden”。
+außen	error	Wir haben ihn gebeten, die Tür von außen zu schließen.	我们请他从外面把门关上。	Wir haben ihn gebeten, die Tür von der Außenseite aus zu schließen.	“von außen”中的“außen”是副词，不是“von + 第三格”搭配。
+Feier	translation	Zur Feier des Tages gehen wir heute Abend schön essen.	为了庆祝今天，我们今晚去好好吃一顿。	为了庆祝这个特别的日子，我们今晚去好好吃一顿。	“Zur Feier des Tages”是“为了庆祝这个特别的日子/这个喜庆的时刻”，不是“为了庆祝今天”。
+Garantie	error	Auf den Laptop gibt es zwei Jahre Garantie, also hebe die Rechnung auf.	笔记本电脑保修两年，所以留好发票。	Für den Laptop gibt es zwei Jahre Garantie, also hebe die Rechnung auf.	表示“有……保修”应使用 für，不能用 auf。
+Mittwoch	error	Der nächste Mittwoch passt gut.	下周三很合适。	Am nächsten Mittwoch passt es gut.	标注的搭配是“am Mittwoch”，但句子里没有使用这个搭配。
+Verhandlung	error	Die Verhandlungen laufen immer noch.	谈判还在进行。	Wir führen immer noch Verhandlungen.	例句用了“laufen”，没有体现标注的搭配“Verhandlungen führen”。
+Kohle	error	Für die neue Jacke fehlt mir die Kohle.	我没钱买这件新夹克。	Für die neue Jacke fehlt mir das Geld.	标注的搭配是“Geld für + Akk. fehlen”，句子中却用了“Kohle”，没有实际出现该搭配。
+beibringen	translation	Meine Kollegin hat mir beigebracht, wie man richtig Brezeln backt.	我同事教会了我怎么烤正宗的扭结面包。	我同事教会了我怎么正确地烤扭结面包。	“richtig”表示“正确地、好好地”，不表示“正宗的”。
+dorthin	error	Das Konzert ist in Leipzig, wie kommen wir am besten dorthin?	音乐会在莱比锡，我们怎么去那儿最好？	Das Konzert ist in Leipzig. Wie kommen wir am besten dorthin?	逗号不能直接连接这两个独立主句。
+Maus	error	Die Maus von meinem Computer funktioniert nicht mehr, brauche ich neue Batterien?	我电脑的鼠标不能用了，要换新电池吗？	Meine Computermaus funktioniert nicht mehr. Brauche ich neue Batterien?	逗号不能直接连接两个独立句；此外，“Die Maus von meinem Computer”表达不自然。
+soviel	error	Ich habe nicht vor, soviel zu bezahlen.	我没打算付这么多钱。	Ich habe nicht vor, so viel zu bezahlen.	这里表示“这么多”，应分开写作“so viel”。
+soviel	error	Heute haben wir soviel zu tun.	我们今天有这么多事要做。	Heute haben wir so viel zu tun.	这里表示“这么多”，应分开写作“so viel”。
+zuständig	error	Hast du herausgefunden, wer hier zuständig ist?	你查清楚谁负责这里了吗？	Hast du herausgefunden, wer für diesen Bereich zuständig ist?	例句没有用到要求的搭配“zuständig für + Akk.”。
+Qualität	error	Hast du welche mit besserer Qualität?	你有质量更好的吗？	Hast du welche von besserer Qualität?	例句用了“mit”而不是要求的搭配“von + Dativ”。
+Verband	translation	Die Krankenschwester hat mir einen neuen Verband um das Knie angelegt.	护士给我膝盖换了新绷带。	护士给我膝盖缠上了新绷带。	德语只说给膝盖缠上了新绷带，没有说明是更换绷带。
+Ausdruck	error	Diesen Ausdruck habe ich noch nie gehört, was bedeutet er genau?	这个说法我从来没听过，它到底是什么意思？	Diesen Ausdruck habe ich noch nie gehört. Was bedeutet er genau?	逗号不能连接这两个独立句子。
+Funktion	error	Diese Funktion der App ist neu, mit ihr kann man Tickets direkt kaufen.	应用的这个功能是新的，可以用它直接买票。	Diese Funktion der App ist neu. Mit ihr kann man Tickets direkt kaufen.	逗号不能连接这两个独立句子。
+sogenannt	unnatural	In der sogenannten Probezeit kann man den Job ohne langen Vorlauf kündigen.	在所谓的试用期里，可以不用提前很久就辞职。	In der sogenannten Probezeit kann man den Job ohne lange Kündigungsfrist kündigen.	kündigen ohne langen Vorlauf 说法不自然，这里通常说不用遵守很长的 Kündigungsfrist。
+Neuigkeit	translation	Ich habe eine tolle Neuigkeit: Ich habe die Stelle bekommen, auf die ich mich beworben habe!	我有个好消息：我申请的那个职位拿到了！	我有个好消息：我拿到了我申请的那个职位！	“Ich habe die Stelle bekommen”表示“我拿到了这个职位”，中文原句没有明确表达“拿到”。
+überweisen	translation	Jeden Monat überweist er Geld an seinen Bruder.	他每个月都给哥哥转钱。	他每个月都给兄弟转钱。	Bruder 只表示兄弟，中文“哥哥”额外限定了年长。
+Lippe	translation	Ich habe große Lippen.	我的嘴唇很厚。	我的嘴唇很大。	große Lippen表示嘴唇大，不一定是厚。
+aussuchen	error	Such dir aus, was du essen möchtest, ich lade dich heute ein.	你想吃什么随便挑，今天我请客。	Such dir aus, was du essen möchtest. Ich lade dich heute ein.	两个独立主句不能只用逗号连接。
+mischen	error	Wasser und Öl mischen sich nicht.	水和油不能混合。	Wasser mischt sich nicht mit Öl.	句子没有用到标注的“sich mit + Dativ mischen”搭配。
+mischen	error	Ich mische mich da nicht ein.	我不插手这件事。	Ich mische mich in diese Sache nicht ein.	句子没有用到标注的“sich in + Akkusativ einmischen”搭配。
+Dutzend	translation	Zum Geburtstag backen wir ein Dutzend Muffins.	我们为生日烤一打松 muffin。	我们为生日烤一打松饼。	中文里“松 muffin”有误，未正确写出 Muffins。
+emotional	translation	Du bist sehr emotional.	你很容易情绪激动。	你很情绪化。	“很容易情绪激动”表示容易激动，与“你很情绪化”的意思不完全相同。
+verschaffen	translation	Sie verschaffte sich Zugang zu den Unterlagen.	她设法拿到了这些文件。	她设法获得了查阅这些文件的权限。	德语说她设法获得了查阅文件的权限，中文却说她拿到了文件。
+sanft	error	Sie hat eine sehr sanfte Stimme, die Kinder beruhigen sich sofort, wenn sie singt.	她声音很温柔，她一唱歌孩子们马上就安静下来。	Sie hat eine sehr sanfte Stimme, und die Kinder beruhigen sich sofort, wenn sie singt.	两个独立分句仅用逗号连接，属于逗号拼接。
+Humor	error	Was ich an ihm besonders mag, ist sein Humor, mit ihm wird es nie langweilig.	我特别喜欢他的幽默，和他在一起从不无聊。	Was ich an ihm besonders mag, ist sein Humor, und mit ihm wird es nie langweilig.	两个独立分句仅用逗号连接，属于逗号拼接。
+unangenehm	unnatural	Der enge Schuh ist unangenehm am Fuß.	这只紧鞋穿在脚上不舒服。	Der enge Schuh drückt am Fuß.	“unangenehm am Fuß sein”用于鞋子穿着不舒服不自然，通常会说鞋子挤脚或穿起来不舒服。
+worüber	translation	Worüber habt ihr gestern Abend so lange gesprochen, dass du so spät kamst?	你们昨晚聊什么聊了那么久，害你回来那么晚？	你们昨晚聊什么聊了那么久，害你来得那么晚？	德语只说对方来得晚，没有说明是“回来”。
+mittlere	translation	Mein mittlerer Bruder wohnt in Köln, der jüngste noch bei unseren Eltern.	我二哥住在科隆，最小的弟弟还和父母住。	我排行居中的哥哥住在科隆，最小的弟弟还和父母住。	mittlerer Bruder 指排行居中的哥哥，不一定是“二哥”。
+Schrift	translation	Die historischen Schriften sind in einem eigenen Flügel.	历史文献在一个独立的展厅里。	历史文献在独立的一翼里。	“Flügel”指建筑的侧翼或一翼，不是单个展厅。
+Standort	error	Der Standort der Schule ist sehr zentral.	学校的位置非常中心。	Der Standort von der Schule ist sehr zentral.	句子用了属格“der Schule”，没有使用标注的“der Standort von etwas”搭配。
+Geschwindigkeit	unnatural	In der Stadt darf man höchstens mit einer Geschwindigkeit von fünfzig fahren.	在市区最高时速只能开五十。	In der Stadt darf man höchstens fünfzig Stundenkilometer fahren.	“mit einer Geschwindigkeit von fünfzig”缺少速度单位，表达不完整。
+Konflikt	translation	Ihr Freund ist im Konflikt mit dem Gesetz.	她的朋友触犯了法律。	她的朋友与法律有冲突。	“im Konflikt mit dem Gesetz”表示与法律存在冲突，不一定是已经触犯法律。
+Marke	unnatural	Welche Marke ist dein Handy? Die Fotos sind wirklich gut.	你的手机是什么牌子的？拍的照片真好。	Von welcher Marke ist dein Handy? Die Fotos sind wirklich gut.	询问手机品牌时，„Welche Marke ist dein Handy?“不自然；德语通常说手机“来自哪个品牌”。
+Kenntnis	translation	Für diese Stelle werden gute Kenntnisse in Englisch und Deutsch vorausgesetzt.	这个职位要求熟练掌握英语和德语。	这个职位要求具备良好的英语和德语能力。	„gute Kenntnisse“是“良好的知识/能力”，不一定达到中文“熟练掌握”的程度。
+Sammlung	error	Dieses Museum hat eine herrliche Sammlung moderner Kunst.	这座博物馆收藏了大量精美的现代艺术作品。	Dieses Museum hat eine herrliche Sammlung von moderner Kunst.	中文标注的搭配是「Sammlung von + 第三格」，但句子用的是不带 von 的属格结构。
+gewaltig	translation	Aber inzwischen haben sich die Dinge gewaltig geändert.	但与此同时，情况已经发生了巨大的变化。	但如今，情况已经发生了巨大的变化。	“inzwischen”这里表示“如今/现在”，不是“与此同时”。
+außergewöhnlich	error	Der Sommer war außergewöhnlich heiß, es hat fast zwei Monate nicht geregnet.	这个夏天异常炎热，将近两个月没下雨。	Der Sommer war außergewöhnlich heiß. Es hat fast zwei Monate nicht geregnet.	两个独立主句不能只用逗号连接。
+Kopie	error	Dein Sohn ist fast eine Kopie deines Vaters.	你儿子简直像你父亲的翻版。	Dein Sohn ist fast eine Kopie von deinem Vater.	句子用了属格结构，没有使用指定搭配“eine Kopie von”。
+anbringen	translation	Sie bringen viele gute Argumente an.	他们提出了许多有力的论据。	他们提出了许多很好的论据。	“gute Argumente”是“很好的论据”，不一定是“有力的论据”。
+bezüglich	translation	Bezüglich Ihrer Anfrage vom letzten Montag kann ich Ihnen leider noch keine Antwort geben.	关于您上周一的询问，我可惜还不能给您答复。	关于您上周一的询问，很抱歉，我目前还不能给您答复。	中文“我可惜还不能”不自然，语序和措辞都不符合中文表达。
+ausrichten	error	Drei der Zimmer sind zur Straße ausgerichtet.	其中三个房间朝向街道。	Drei der Zimmer sind auf die Straße ausgerichtet.	中文标注的搭配是“auf + Akk. ausgerichtet sein”，但句子用了“zu + Dat.”。
+Chip	unnatural	Der Chip speichert alle wichtigen Daten auf der Karte.	芯片会在卡上存储所有重要数据。	Der Chip speichert alle wichtigen Daten auf dem Chip.	搭配要求的是“在芯片上存储数据”，原句却说数据存储在卡上。
+anmachen	translation	Sie macht mich richtig an.	她真的很吸引我。	她真的很挑逗我。	“jemanden anmachen”在这里带有明显的性吸引或挑逗意味，中文“很吸引我”没有体现出来。
+logisch	translation	Das klingt logisch, aber in der Praxis funktioniert es leider oft anders.	这听起来合乎逻辑，但实际上往往行不通。	这听起来合乎逻辑，但实际上情况往往并非如此。	德语说实际情况往往与听起来的逻辑不同，并未表示事情行不通。
+laufend	error	Ich versuche auf dem laufenden zu bleiben.	我尽量及时了解最新情况。	Ich versuche, auf dem Laufenden zu bleiben.	固定表达中的名词化形式应大写。
+Geschlecht	error	Wir wollten das Geschlecht unseres Kindes nicht im voraus wissen.	我们不想提前知道孩子的性别。	Wir wollten das Geschlecht unseres Kindes nicht im Voraus wissen.	固定表达“im Voraus”中的名词应大写。
+stinken	translation	Die ganze Sache stinkt zum Himmel!	这整件事简直糟透了！	这整件事简直臭不可闻！	“zum Himmel stinken”在这里表示事情可疑、令人愤慨或臭不可闻，不只是“糟透了”。
+behindern	unnatural	Der Tisch behindert den Weg.	桌子挡住了通道。	Der Tisch versperrt den Weg.	“Der Tisch behindert den Weg”不太自然，德语通常说桌子“挡住通道”。
+verdanken	error	Seinen Erfolg hat er Glück zu verdanken.	他的成功要归功于运气。	Seinen Erfolg hat er dem Glück zu verdanken.	„Glück“ 在这里作 „verdanken“ 的第三格宾语，需要加定冠词。
+Cousin	translation	Mein Cousin, der auch in Deutschland studiert, besucht mich nächstes Wochenende.	也在德国读书的表哥下周末来看我。	也在德国读书的表兄弟下周末来看我。	德语只说明是男性表亲，没有说明他年长；“表哥”额外限定了年龄。
+Münze	translation	Für den Einkaufswagen braucht man eine Münze, einen Euro oder fünfzig Cent.	推购物车需要一枚硬币，一欧元或五十欧分。	使用购物车需要一枚硬币、一欧元或五十欧分。	德语说的是“购物车需要一枚硬币、一欧元或五十欧分”，中文却把 Einkaufswagen 说成了“推购物车”。
+Warnung	translation	Der Wetterdienst hat eine Warnung vor starkem Sturm für heute Nacht herausgegeben.	气象局发布了今晚有强风暴的预警。	气象局发布了今晚强风暴预警。	德语的 starkem Sturm 是“强风暴”，中文“强风暴的预警”略显生硬，且未明确这是针对今晚的预警。
+Dusche	error	Ich brauche eine heiße Dusche.	我需要冲个热水澡。	Ich muss eine heiße Dusche nehmen.	句子没有使用中文标注的搭配「eine Dusche nehmen」。
+jubeln	translation	Als das Tor fiel, haben im Stadion alle laut gejubelt.	进球时，体育场里所有人都大声欢呼。	进球时，体育场里所有人都大声欢呼。	德语 Tor fiel 在足球语境中指“进球”，中文译文表达正确，但缺少“进球”这一事件的明确语义时容易理解为球门倒下。
+Hitze	translation	Mir macht die Hitze nichts aus.	我不觉得热。	我不介意热。	“我不觉得热”表示不感觉热，原句是说炎热对我没有影响。
+Friedhof	translation	Am Wochenende besuchen viele ältere Menschen die Gräber ihrer Familie auf dem Friedhof.	周末很多老人去墓地给家人扫墓。	周末很多老人会去墓地看望家人的墓。	德语只说老人去墓地看望家人的坟墓，并未明确说是扫墓。
+Status	error	Der Status eines Arztes ist sehr hoch in dieser Gemeinde.	在这个社区里，医生的地位很高。	Der Status von Ärzten ist in dieser Gemeinde sehr hoch.	标注的搭配是“der Status von + 第三格”，但句子用了属格“eines Arztes”，没有体现该搭配。
+Länge	error	Der Tisch hat eine Länge von zwei Metern, passt er überhaupt in unsere Küche?	这张桌子长两米，我们的厨房放得下吗？	Der Tisch hat eine Länge von zwei Metern. Passt er überhaupt in unsere Küche?	逗号连接了两个独立句子，标点不正确。
+Länge	unnatural	Die Länge des Kleides passt mir gut.	这条裙子的长度很适合我。	Die Länge des Kleides ist genau richtig.	说裙子的长度“适合我”不太自然，通常会说长度正合适。
+Kranke	translation	In der Grippezeit sind die Wartezimmer voller Kranker, die stundenlang warten.	流感季候诊室里挤满了病人，一等就是几个小时。	流感季节候诊室里挤满了病人，一等就是几个小时。	中文“流感季”表达不完整，应为“流感季节”。
+absetzen	translation	Kannst du mich bitte am Bahnhof absetzen, bevor du zur Arbeit fährst?	你去上班前能把我放在火车站吗？	你去上班前能把我送到火车站吗？	“absetzen”在这里是“送到某处、让某人下车”，中文“放在火车站”不自然。
+Kostüm	unnatural	An Karneval verkleiden sich viele Erwachsene mit lustigen Kostümen.	狂欢节时很多大人都穿上滑稽的服装。	An Karneval verkleiden sich viele Erwachsene in lustige Kostüme.	表示穿上某种服装时，“sich mit Kostümen verkleiden”不够自然，通常说“sich in Kostüme verkleiden”。
+Treffer	error	Ohne seinen rechtzeitigen Treffer hätte unsere Mannschaft das Spiel verloren.	要不是他及时进球，我们队就输掉比赛了。	Ohne dass er rechtzeitig einen Treffer erzielt hätte, hätte unsere Mannschaft das Spiel verloren.	中文标注的搭配是“einen Treffer erzielen”，但句子没有使用这个搭配。
+angestellte	unnatural	Sie arbeitet als angestellte Lehrerin an einer Grundschule.	她在一所小学当受雇教师。	Sie arbeitet als Angestellte an einer Grundschule.	句子用了“als angestellte Lehrerin”，没有使用标注的搭配“als Angestellte arbeiten”。
+Jungfrau	unnatural	Am Wochenende sind wir mit der Bahn auf die Jungfrau in der Schweiz gefahren.	周末我们坐火车上了瑞士的少女峰。	Am Wochenende sind wir mit der Bahn aufs Jungfraujoch in der Schweiz gefahren.	火车不能开到少女峰（Jungfrau）山顶，通常说乘火车去少女峰地区的少女峰山坳（Jungfraujoch）。
+Gedenken	translation	Zum Gedenken an die Opfer haben viele Menschen Kerzen vor das Rathaus gestellt.	为了悼念遇难者，很多人在市政厅前点上了蜡烛。	为了悼念遇难者，很多人在市政厅前摆放了蜡烛。	德语说的是把蜡烛放在市政厅前，中文却说点上了蜡烛。
+Muster	error	Mir gefällt das Muster auf deinem Kleid, wo hast du es gekauft?	我喜欢你裙子上的图案，在哪儿买的？	Mir gefällt das Muster auf deinem Kleid. Wo hast du es gekauft?	两个独立句子不能只用逗号连接。
+widersprechen	error	Ich muss dir widersprechen, ich glaube nicht, dass das so einfach ist.	我得反驳你，我不认为事情这么简单。	Ich muss dir widersprechen. Ich glaube nicht, dass das so einfach ist.	两个独立句子不能只用逗号连接。
+Sorte	error	Es gibt verschiedene Sorten Kaffee.	有各种不同种类的咖啡。	Es gibt verschiedene Sorten von Kaffee.	例句没有使用标注的搭配“Sorten von + Dat.”；应在“Kaffee”前加“von”。
+beurteilen	error	Ich kann nicht beurteilen, ob die Wohnung den Preis wert ist, ich habe sie nicht gesehen.	我没见过那套房子，没法判断它值不值这个价。	Ich kann nicht beurteilen, ob die Wohnung den Preis wert ist. Ich habe sie nicht gesehen.	两个完整主句不能仅用逗号连接。
+Datum	unnatural	Bitte vergessen Sie nicht, das Datum und Ihre Unterschrift unten einzutragen.	请别忘了在下面填上日期并签名。	Bitte vergessen Sie nicht, das Datum unten einzutragen und zu unterschreiben.	表格里通常不会说“填入签名”，德语更自然的说法是“签名”。
+wandeln	error	Das Viertel hat sich in den letzten Jahren stark gewandelt, früher war es viel ärmer.	近几年这个街区变化很大，以前要穷得多。	Das Viertel hat sich in den letzten Jahren stark gewandelt; früher war es viel ärmer.	两个完整主句不能仅用逗号连接。
+Scheidung	unnatural	Nach der Scheidung blieben die Kinder bei der Mutter, besuchen den Vater aber oft.	离婚后孩子们跟着母亲，但常去看父亲。	Nach der Scheidung bleiben die Kinder bei der Mutter, besuchen den Vater aber oft.	过去时“blieben”和现在时“besuchen”在这里时态不一致。
+Datei	error	Ich kann die Datei nicht öffnen, die du mir geschickt hast, sie ist zu groß.	我打不开你发来的文件，它太大了。	Ich kann die Datei nicht öffnen, die du mir geschickt hast. Sie ist zu groß.	两个完整主句不能仅用逗号连接。
+Verpflichtung	error	Dazu besteht keine Verpflichtung.	没有义务这样做。	Es besteht keine Verpflichtung zu dieser Handlung.	句子用了 dazu，没有用搭配所标注的「zu + 与格」结构。
+braten	translation	Ich werde für ihn Fleisch braten.	我会为他烤肉。	我会为他煎肉。	braten 指煎、烤制等烹调方式，不宜直接译为“烤肉”。
+Pfand	error	Auf die Flasche sind 25 Cent Pfand.	这个瓶子有 25 分押金。	Für die Flasche gibt es 25 Cent Pfand.	这里表示瓶子有押金，应使用“Für … gibt es … Pfand”或“Auf … gibt es … Pfand”，原句的介词和格不对。
+Spülmaschine	translation	Könntest du mir erklären, wie die Spülmaschine funktioniert?	你能给我讲讲洗碗机怎么用吗？	你能给我解释一下洗碗机怎么用吗？	缺少中文翻译。
+Geldautomat	translation	Wo gibt es einen Geldautomaten?	附近哪里有自动取款机？	哪里有自动取款机？	缺少中文翻译。
+Kassenbon	translation	Hast du den Kassenbon aufbewahrt?	你把购物小票留着了吗？	你把收银小票保存下来了吗？	缺少中文翻译。
+S-Bahn	error	Mit der S-Bahn bin ich schnell bei der Arbeit.	坐城铁我很快就能到单位。	Mit der S-Bahn fahre ich schnell zur Arbeit.	中文标注的搭配是“mit der S-Bahn fahren”，句子里没有使用动词“fahren”。
+Monatskarte	translation	Ich muss mir diese Woche noch die Monatskarte kaufen.	我这周还得买月票。	我这周还得买月票。	缺少中文翻译。
+Rindfleisch	translation	Ich habe Gemüse, Rindfleisch und Butter gekauft.	我买了蔬菜、牛肉和奶油。	我买了蔬菜、牛肉和黄油。	Butter 指黄油，不是奶油。
+Silvester	translation	An Silvester gibt es um Mitternacht ein Feuerwerk.	除夕午夜有烟花。	新年前夜午夜有烟花。	Silvester 指新年前夜，不是中国农历除夕。
+Pfanne	translation	Wo ist die Pfanne?	炒锅在哪里？	平底锅在哪里？	Pfanne 通常指平底锅，炒锅更接近 Wok。
+zumachen	error	Ich muß noch zur Bank, bevor sie zumacht.	银行关门前，我还得去一趟。	Ich muss noch zur Bank, bevor sie zumacht.	旧拼写“muß”不符合现行德语正字法。
+rumhängen	error	Magst du kommen und zusammen rumhängen?	你愿意过来一起待会儿吗？	Magst du kommen und mit mir rumhängen?	句子没有用到标注的搭配 „rumhängen mit + Dat.“。
+Öffnungszeit	translation	Welche Öffnungszeiten hat das Café?	这家咖啡馆的营业时间是什么时候？	这家咖啡馆的营业时间是怎样的？	德语问的是这家咖啡馆的营业时间有哪些，中文“是什么时候”更像是在问营业时间的具体时段。
+Märchen	translation	Glaubst du an Märchen?	你相信神话传说吗？	你相信童话吗？	Märchen 指童话，不是神话传说。
+sozusagen	translation	Diese Arbeit ist sozusagen fertig.	那个工作几乎被完成了。	这项工作可以说完成了。	sozusagen 是“可以说、姑且算是”，不表示“几乎”；德语也没有“被完成”的意思。
+zurzeit	translation	Ich bin zurzeit sehr beschäftigt.	我最近忙得很。	我目前很忙。	zurzeit 表示“目前、现在”，不表示“最近”这一段时间。
+GmbH	translation	Unsere Firma ist eine GmbH.	我们公司是有限公司。	我们公司是一家有限责任公司。	GmbH 是有限责任公司，中文译文不够准确。
+Garage	error	Gibt es zu der Wohnung eine Garage?	这套公寓配有车库吗？	Gehört eine Garage zu der Wohnung?	标注的搭配是“zu etwas gehören”，但句子没有使用该搭配。
+beraten	translation	Ein wahrer Freund würde dich beraten.	真正的朋友能够给予你忠告。	真正的朋友会给你建议。	德语用虚拟式表达“真正的朋友会给你建议”，中文的“能够”表达的是能力。
+beleidigt	translation	Warum bist du jetzt beleidigt?	你怎么生气了？	你现在为什么觉得受冒犯了？	“beleidigt”是“觉得受冒犯”，不等同于“生气”。
+beleidigt	translation	Warum warst du denn gestern so beleidigt?	你昨天为什么那么生气呢？	你昨天为什么那么觉得受委屈呢？	“beleidigt”是“感到受冒犯、受委屈”，不等于一般的“生气”。
+Großvater	translation	Er sieht wie sein Großvater aus.	他很像他外公。	他看起来像他的祖父。	“Großvater”没有说明是外公，中文译文却限定为外公。
+vornehmen	error	Mußten wir diese Änderung wirklich vornehmen?	我们真的必须做这个改动吗？	Mussten wir diese Änderung wirklich vornehmen?	“Mußten”是旧拼法，现代标准德语应使用“mussten”。
+wund	translation	Er hat wunde Augen.	他的眼睛又红又痛。	他的眼睛又痛又酸。	“wunde Augen”表示眼睛疼痛或酸痛，不一定是发红；中文增加了“又红又”的意思。
+verlieben	error	Eines Tages werde ich mich verlieben.	总有一天我会爱上某个人。	Eines Tages werde ich mich in jemanden verlieben.	例句没有用到标注的搭配“sich verlieben in + Akk.”，缺少介词宾语。
+letztendlich	translation	Das war letztendlich doch keine so gute Idee.	这终究不是一个很好主意	这终究不是一个很好的主意。	中文缺少结构助词“的”，语句不通顺。
+vorgeben	translation	Der Chef gibt den Zeitplan vor.	老板规定了时间表。	老板规定时间表。	德语是现在时，中文“规定了”表示已完成。
+wiederholt	translation	Ich habe dich wiederholt darum gebeten.	我已经一再求你这件事了。	我已经一再请求你这么做了。	“darum gebeten”是请求对方做某事，不一定是“求”；中文表达也不自然。
+Pater	translation	Pater Michael leitet die Kirche im Dorf.	米夏埃尔神父主持村里的教堂。	米夏埃尔神父负责管理村里的教堂。	“leitet die Kirche”是负责管理教堂，中文“主持教堂”意思不准确。
+Felsen	translation	Er schlug sich den Kopf an einem Felsen an.	他的头撞倒了一块岩石。	他的头撞到了一块岩石上。	中文把“他的头撞到一块岩石上”误写成“他的头撞倒了一块岩石”。
+Werkstatt	error	Ich muß mein Auto in die Werkstatt bringen.	我得把车送去修理厂。	Ich muss mein Auto in die Werkstatt bringen.	“muß”是旧拼法，现代标准德语应写作“muss”。
+vertragen	translation	Ich vertrage keine Milch.	我不可以喝牛奶。	我不能喝牛奶。	德语表示不能耐受牛奶，中文“我不可以喝牛奶”更像是被禁止喝。
+belästigen	translation	Er wurde in der Stadt ständig von Lärm und anderem belästigt.	他在城市里一直受到噪音或者其他的干扰。	他在城市里一直受到噪音和其他事物的干扰。	德语是“噪音和其他事物”，中文的“或者”误译成了“或”。
+Kommissar	translation	Der Kommissar hat ihn befragt.	警察盘问了他。	警察询问了他。	“befragen”是询问、讯问，不一定有“盘问”所带的强烈审讯意味。
+absurd	translation	Das ist völlig absurd.	这完全荒谬。	这太荒谬了。	中文“这完全荒谬”表达不完整，和德语句意不够对应。
+auflegen	error	Laß uns mal etwas Musik auflegen!	我们放点音乐吧！	Lass uns mal etwas Musik auflegen!	「Laß」是旧拼法，现代标准拼写应为「Lass」。
+Finanzamt	error	Das Finanzamt meint, ich würde ihnen noch Steuern schulden.	税务局认为我还欠他们税款。	Das Finanzamt meint, ich würde ihm noch Steuern schulden.	“ihnen”指代单数中性名词“das Finanzamt”时格和数不一致。
+verschwenden	translation	Du verschwendest unsere Zeit.	你在浪费我们时间。	你在浪费我们的时间。	中文缺少“的”，应表达“我们的时间”。
+berücksichtigen	translation	Er lehnte es ab, meinen Vorschlag zu berücksichtigen.	他对我的提议不屑一顾。	他拒绝考虑我的提议。	“不屑一顾”表示轻视，语气强于德语原句“拒绝考虑”。
+Safe	translation	Der Safe war geöffnet.	保险箱被打开了。	保险箱是开着的。	Der Safe war geöffnet 表示保险箱处于开着的状态，不一定是在说它曾被打开。
+Notiz	translation	Das sind meine Notizen für Geschichte.	这是我的历史课笔记本。	这是我的历史课笔记。	Notizen 指笔记，不是笔记本。
+Atem	translation	Er hielt seinen Atem an.	他止住了呼吸。	他屏住了呼吸。	Atem anhalten 是屏住呼吸，不是止住呼吸。
+Austausch	unnatural	Sie macht ein Jahr Austausch in Hamburg.	她在汉堡做一年交换生。	Sie macht ein Austauschjahr in Hamburg.	macht ein Jahr Austausch 不是自然的德语说法。
+Darstellung	error	Die Darstellung der Stadt im Film gefällt mir.	我喜欢电影里对这座城市的呈现。	Die Darstellung von der Stadt im Film gefällt mir.	句子用了属格“der Stadt”，没有使用标注的“von + 与格”搭配。
+Segen	error	Nicht zu wissen kann ein Segen kann.	一无所知有时反而是福。	Nicht zu wissen kann ein Segen sein.	句末多了一个“kann”，且这里应使用“sein”连接表语。
+polnisch	error	Wie sagt man das auf polnisch?	这个用波兰语怎么说？	Wie sagt man das auf Polnisch?	语言名称作副词使用时要大写，应写作“Polnisch”。
+Liebhaber	error	Ich bin ein großer Golf-Liebhaber.	我非常喜欢高尔夫。	Ich bin ein großer Liebhaber von Golf.	句子用了复合词「Golf-Liebhaber」，没有使用中文标注的「Liebhaber von + 第三格」搭配。
+Überlebende	translation	Der einzige Überlebende des Unfalls war ein Baby.	这场灾难的唯一幸存者是一个婴儿。	这场事故的唯一幸存者是一个婴儿。	“Unfall”是“事故”，不是“灾难”。
+Priorität	translation	Du hast wirklich keine Prioritäten!	你真的没有优先权！	你真的没有优先事项！	这里的 „Prioritäten“ 指优先事项或轻重缓急，不是“优先权”。
+Nebel	translation	Ich sah nichts außer Nebel.	除了雾我什么都看不见。	除了雾，我什么都没看见。	德语是过去时，中文却译成了现在时。
+vielmehr	error	Er ist vielmehr reich als arm.	他更像是富人，而不是穷人。	Er ist eher reich als arm.	„vielmehr“ 不能这样表示“与其说……不如说……”，这里应使用 „eher“。
+ausstellen	error	Wie stellt man hier denn das Licht aus?	这里怎么关灯？	Wie schaltet man hier denn das Licht aus?	ausstellen 不表示“关灯”；“关灯”应使用 ausschalten。
+Voraussetzung	error	Die Voraussetzungen dafür sind günstig.	这方面的条件很有利。	Die Voraussetzungen für das Projekt sind günstig.	句子用了代词 dafür，没有出现搭配“Voraussetzungen für + Akk.”。
+Annahme	error	Wir können nun mit Sicherheit sagen, dass diese Annahme eingetroffen ist.	我们现在能肯定地说，这个假设是成立的。	Wir können nun mit Sicherheit sagen, dass sich diese Annahme bestätigt hat.	假设通常不能说“eingetroffen”；这里应表达假设已得到证实或成立。
+Ansatz	unnatural	Der Ansatz für das neue Projekt liegt in kleinen Schritten.	这个新项目的切入点在于从小步骤开始。	Der Ansatz für das neue Projekt liegt darin, in kleinen Schritten vorzugehen.	“Der Ansatz liegt in kleinen Schritten”不自然，表达“切入点在于……”时通常用“liegt darin, …”。
+Haushalt	error	Er führt sich selbst den Haushalt.	他自己操持家务。	Er führt seinen Haushalt selbst.	“sich den Haushalt führen”不是正确搭配。
+Ernte	error	Diese Felder bringen reiche Ernte.	这些田有很多收获。	Diese Felder bringen eine reiche Ernte.	“reiche Ernte bringen”通常需要不定冠词。
+ersticken	error	Lasse mich los, du erstickst mich.	放开我，你要把我憋死了。	Lass mich los, du erstickst mich.	“Lasse”不是“lassen”的单数命令式，应为“Lass”。
+pumpen	error	Das Herz dient dazu, um Blut zu pumpen.	心脏的作用是泵送血液。	Das Herz dient dazu, Blut zu pumpen.	“dazu”已经引出目的从句，不能再接“um … zu”。
+unterdrücken	error	Die Wahrheit läßt sich nicht unterdrücken.	真相无法被掩盖。	Die Wahrheit lässt sich nicht unterdrücken.	“läßt”是旧拼法，现代标准拼写应为“lässt”。
+Logik	translation	Verstehst du nicht mal einfachste Logik?	你不懂基本逻辑吗？	你连最简单的逻辑都不懂吗？	“einfachste Logik”是“最简单的逻辑”，不只是“基本逻辑”。
+tippen	error	Ich tippe nun so schnell wie ich kann.	我现在尽可能快地打字。	Ich tippe nun so schnell, wie ich kann.	比较从句“wie ich kann”前需要加逗号。
+verbrauchen	translation	Diese Maschine verbraucht das meiste Öl.	这个引擎耗用最多的油。	这台机器耗油最多。	德语是“机器”，中文却译成了“引擎”。
+Webseite	translation	Sie hat eine Webseite für ihr Geschäft.	她为自己的生意建了一个网页。	她有一个用于自己生意的网站。	德语只说她有一个网站，并没有说这个网站是她建的。
+Überzeugung	translation	Ist das deine Überzeugung?	这是你确信的事吗？	这是你的信念吗？	Überzeugung 指“信念、看法”，不是“确信的事”。
+Fläche	error	Drei Punkte, die nicht auf einer Linie liegen, bilden eine einzelne Fläche.	三个不在同一直线上的点构成一个平面。	Drei Punkte, die nicht auf einer Linie liegen, bilden eine Ebene.	几何学中三个不共线的点确定一个平面，德语应使用 Ebene，而不是 Fläche。
+Beleidigung	error	Für deine Beleidigungen wirst du mir bezahlen.	你辱骂我，这笔账我会让你付出代价。	Für deine Beleidigungen wirst du bezahlen.	“bezahlen”需要直接宾语；这里“mir bezahlen”缺少所付的内容，表达“为侮辱付出代价”也应使用“für ... bezahlen”。
+Forscher	error	Die Forscher fingen an, Hungers zu leiden.	研究人员开始挨饿。	Die Forscher fingen an, Hunger zu leiden.	固定说法是“Hunger leiden”，这里“Hungers”用错了。
+faszinieren	error	Diese Art von Geschichten faszinieren mich.	这类故事令我着迷。	Diese Art von Geschichten fasziniert mich.	主语是单数“Diese Art”，谓语应使用单数形式。
+Tageszeitung	translation	Ich habe eine Tageszeitung gekauft.	我买了一张日报。	我买了一份日报。	“Tageszeitung”是日报或日报的一份，不是“一张日报”。
+stur	translation	Du bist so was von stur.	你可这么倔。	你也太倔了。	中文“你可这么倔”表达不自然，也没有准确传达“你真是太倔了”的语气。
+Reisende	translation	Die Reisenden steigen in den Zug.	旅行者们上了火车。	旅行者们正在上火车。	德语是现在时，中文译成了过去时。
+pervers	translation	Diese perverse Idee macht den ganzen Abend kaputt.	这个荒唐的主意把整个晚上都毁了。	这个变态的主意毁了整个晚上。	pervers 在这里是“变态的、邪恶的”，不是“荒唐的”。
+Berufung	error	Er legte an einem höheren Gericht gegen das Urteil Berufung ein.	他向上级法院对判决提起了上诉。	Er legte bei einem höheren Gericht gegen das Urteil Berufung ein.	表示向某个法院提起上诉时，通常用 „bei einem Gericht“，这里的 „an einem Gericht“ 不自然。
+Gebot	error	Das höchste Gebot bei der Auktion lag bei fünfhundert Euro.	拍卖会上最高的出价是五百欧元。	Bei der Auktion gab jemand das höchste Gebot von fünfhundert Euro ab.	句子没有使用中文标注的搭配“ein Gebot abgeben”。
+ordnen	translation	Wir haben die Bücher nach Größe geordnet.	我们把书跟从大小排列。	我们按大小排列了这些书。	中文把“按大小排列”误写成了“跟从大小排列”。
+Champagner	translation	Ich nehme ein Glas Champagner.	我会喝一杯香槟。	我要一杯香槟。	“Ich nehme ein Glas Champagner”是点一杯香槟，不是说自己会喝一杯。
+Islam	error	Sie interessiert sich sehr für Islam.	她对伊斯兰教很感兴趣。	Sie interessiert sich sehr für den Islam.	这里通常需要定冠词，表达“对伊斯兰教感兴趣”应说“für den Islam”。
+Geste	error	Erwarte keine großen Worte, eine kleine Geste ist genug	别指望长篇大论，一个小小的表示就够了。	Erwarte keine großen Worte. Eine kleine Geste ist genug.	逗号不能连接这两个独立句子。
+Plattform	unnatural	Der Zug fährt von Plattform drei ab.	火车从三号站台出发。	Der Zug fährt von Gleis drei ab.	火车通常说从几号轨道出发；这里用 „Plattform“ 指站台不自然。
+Folter	error	Bei so einem Wetter im Büro sein zu müssen ist wirklich Folter.	这种天气还得待在办公室里，真是折磨。	Bei so einem Wetter im Büro sein zu müssen, ist wirklich Folter.	句首作主语的不定式结构后需要加逗号。
+Kennzeichen	error	Das Bedürfnis, recht zu haben ist das Kennzeichen eines gewöhnlichen Geistes.	总想证明自己正确，是普通人心智的一个特征。	Das Bedürfnis, recht zu haben, ist das Kennzeichen von einem gewöhnlichen Geist.	“Das Bedürfnis, recht zu haben”后缺少逗号；此外句子用了属格结构，没有使用题注要求的“das Kennzeichen von + Dativ”搭配。
+unfair	translation	Es wäre unfair, ihn so schlecht zu behandeln.	这样对待他似乎不太公平。	这样对待他是不公平的。	德语表示“这样对待他是不公平的”，中文的“似乎”增添了原文没有的语气。
+vollenden	translation	Ohne deine Hilfe hätte ich diese Arbeit nicht vollenden können.	如果不是因为有你的帮助，我不可能完成了这个工作。	如果没有你的帮助，我就不可能完成这项工作。	德语表示“我本来不可能完成这项工作”，中文的“完成了”不符合原句的虚拟语气。
+Vollzeit	error	Wir arbeiten beide auf Vollzeit.	我们俩都是全职工作。	Wir arbeiten beide in Vollzeit.	表示全职工作应说 „in Vollzeit arbeiten“，不能说 „auf Vollzeit arbeiten“。
+Premiere	translation	Das ist eine Premiere in der Geschichte dieses Landes.	这是这国家历史上第一次。	这是这个国家历史上的第一次。	中文缺少“这个”中的“个”，应写成“这个国家”。
+Demonstration	error	Die Lehrerin gab eine kurze Demonstration des Geräts.	老师简短演示了这个设备。	Die Lehrerin gab eine kurze Demonstration von dem Gerät.	句子用了属格 „des Geräts“，没有体现中文标注的 „von + Dativ“ 搭配。
+schmelzen	translation	Der Schnee hat bereits begonnen zu schmelzen.	雪已经开始溶了。	雪已经开始融化了。	雪融化应说“融化了”，不是“溶了”。
+aufziehen	error	Es sieht aus, als zieht ein Sturm auf.	看来快要刮暴风雨了。	Es sieht aus, als ziehe ein Sturm auf.	“als”引导从句时动词应置于句末；这里的“zieht”语序错误。
+Ruhestand	translation	Seit wann bist du im Ruhestand?	你退休多久了？	你从什么时候开始退休的？	“Seit wann”问的是“从什么时候开始”，不是“多久了”。
+Börse	translation	Mein Vater ist derzeit sehr stark an der Börse engagiert.	我爸爸现在非常专注于股市。	我爸爸目前在股市投入很多。	「专注于股市」没有表达出他在股市投入很多或参与很深的意思。
+Hindernis	translation	Er kann jedes Hindernis überwinden.	他能够超越所有困难。	他能够克服所有困难。	überwinden 在这里是「克服」，不是「超越」。
+Vereinigung	error	Die Vereinigung der beiden Gemeinden wurde lange geplant.	两个市镇的合并经过了长时间的规划。	Die Vereinigung von zwei Gemeinden wurde lange geplant.	标注的搭配是“Vereinigung von + 第三格”，句子却用了属格“der beiden Gemeinden”。
+Aufwand	unnatural	Für die Planung brauchen wir noch etwas Aufwand.	这项计划还需要我们再花些精力。	Für die Planung müssen wir noch etwas Aufwand betreiben.	“Aufwand brauchen”在这里不自然，通常说“Aufwand betreiben”或改说还需要时间。
+Sensor	unnatural	Das Licht geht mit einem Sensor an.	灯是感应开关的。	Das Licht wird durch einen Sensor eingeschaltet.	“geht mit einem Sensor an”表达不自然，通常说灯由传感器开启或自动亮起。
+Alltag	translation	Die Erfindung des Fernsehers hat zu einer radikalen Veränderung unseres Alltags geführt.	电视的发明为我们的生活模式带来了巨大的变化。	电视的发明彻底改变了我们的日常生活。	“radikale Veränderung unseres Alltags”是“彻底改变我们的日常生活”，中文的“生活模式”和“巨大变化”都没有准确对应原文。
+seither	translation	Bist du seither hier gewesen?	你后来还来过这儿吗？	从那以后你还来过这儿吗？	“seither”指“从那以后”，中文“后来”没有体现“从那时起”的时间含义。
+Untergang	error	Der Untergang des alten Reiches begann vor Jahren.	那个古老帝国的覆灭始于多年前。	Der Untergang von dem alten Reich begann vor Jahren.	句子用了属格 „des alten Reiches“，没有使用中文标注的搭配 „der Untergang von + Dativ“。
+Drohne	translation	Die Drohne macht heute gute Fotos von unserem Garten.	这架无人机今天拍了不少我们花园的好照片。	这架无人机今天为我们的花园拍了些好照片。	德语只说无人机拍了好照片，没有说明拍了很多张；中文“ 不少”增加了数量信息。
+überholen	error	Schreibt mehr deutsche Sätze, die Franzosen haben uns überholt!	多写些德语句子吧，法国人已经超过我们了！	Schreibt mehr deutsche Sätze! Die Franzosen haben uns überholt!	两个独立句子不能只用逗号连接。
+Helfer	translation	Überhaupt, dieses Projekt braucht jede Menge Helfer.	总之，这个项目需要很多帮手。	而且，这个项目需要很多帮手。	「Überhaupt」在这里不表示「总之」，中文译文与德语句意不符。
+überaus	translation	Gestern las er einen überaus interessanten Roman.	他昨天看了一部最有趣的小说。	他昨天读了一部非常有趣的小说。	“überaus interessant”是“非常有趣”，不是最高级“最有趣”。
+blicken	translation	Der Alte hielt plötzlich an und blickte sich um.	老人突然停下并往回看。	老人突然停下，环顾四周。	“blickte sich um”是“环顾四周”，不是“往回看”。
+wiederkommen	translation	Ich werde hier warten, bis er wiederkommt.	我会在这里等着到他回来的。	我会在这里等到他回来。	中文表达不通顺，且应表达“等到他回来”。
+zweifeln	translation	Die Angehörigen zweifelten stark an der Aussage des Militärs.	家属对军方的说法高度置疑。	家属对军方的说法提出了强烈质疑。	“置疑”用词不当，此处应为“质疑”。
+ergehen	error	Wie ist es dir ergangen?	你最近过得怎么样？	Wie ist es dir gegangen?	句子用的是“jemandem ergehen”，与标注的搭配“es geht jemandem”不一致。
+Bewährung	unnatural	Die neue Regelung ist eine Bewährung für das ganze Team.	这项新规定对整个团队来说是一种考验。	Die neue Regelung ist eine Bewährungsprobe für das ganze Team.	Bewährung 通常指缓刑或经受考验的过程；这里说新规定“是一种考验”不自然。
+Qual	translation	Ihre Qual hat ein Ende.	他们的煎熬过了。	他们的煎熬结束了。	中文“过了”没有表达煎熬已经结束的意思。
+Hüfte	error	Sie legte sich die Hände auf die Hüfte.	她双手叉腰。	Sie legte sich die Hände auf die Hüften.	两只手分别放在两侧的胯部，通常用复数 Hüften。
+Inspektor	translation	Der Inspektor stellt viele Fragen.	督察问了很多问题。	督察问很多问题。	德语是现在时，中文却译成了过去时。
+gefälligst	translation	Räum gefälligst deine Schuhe aus dem engen Flur!	麻烦你把鞋从狭窄的走廊里拿开！	给我把鞋从狭窄的走廊里拿开！	“gefälligst”带有恼火、命令的语气，中文“麻烦你”显得过于客气。
+gültig	translation	Diese Karte ist drei Tage gültig.	这张票3天内有效。	这张票有效期为三天。	“drei Tage gültig”表示有效期为三天，不是“三天内有效”。
+ergreifen	error	Mich ergriff der Wunsch, das Buch zu kaufen.	我突然有了买这本书的念头。	Ich wurde von dem Wunsch ergriffen, das Buch zu kaufen.	句子用了“der Wunsch ergriff mich”的结构，没有使用标注的“von einem Wunsch ergriffen werden”搭配。
+Sicherung	translation	Die Sicherung der Daten ist besonders wichtig.	数据安全保障尤其重要。	数据备份尤其重要。	这里的 „Sicherung der Daten“ 通常指数据备份，而不是数据安全保障。
+meiden	translation	Ich meide sie nicht.	我不嫌弃他们。	我没有避开他们。	meiden 是“避开、躲开”，不是“不嫌弃”。
+schonen	error	Sie muß ihre Kraft schonen.	她必须保存体力。	Sie muss ihre Kraft schonen.	“muß”是旧拼写，现代标准德语应写作“muss”。
+beunruhigen	translation	Er sagte, er habe mich nicht beunruhigen wollen.	他说不想担心我。	他说他不想让我担心。	德语是“他不想让我担心”，中文“他说不想担心我”表达的是他自己不担心我。
+Anliegen	translation	Ich habe noch ein Anliegen an Sie.	我还有一件事想请您帮忙。	我还有一件事想跟您说。	“ein Anliegen an Sie haben”是有事想向您提出，不一定是请您帮忙。
+riskant	translation	Sie zieht mich in ein riskantes Abenteuer hinein.	她使我处于危险的冒险。	她把我卷入一场危险的冒险中。	原中文没有表达“把我卷入一场冒险中”的意思。
+Vieh	translation	Ihr ganzes Vieh ist fett.	他们的牛都很肥。	他们的牲畜都很肥。	Vieh 指牲畜，不特指牛。
+Kaninchen	translation	Es war ein böses Kaninchen.	那只兔子有恶意。	那是一只坏兔子。	“böses Kaninchen”是“坏兔子/邪恶的兔子”，不表示兔子“有恶意”。
+Künstlerin	translation	Sie ist eine junge Künstlerin.	她是文艺青年。	她是一位年轻的女艺术家。	“junge Künstlerin”是“年轻的女艺术家”，不等于“文艺青年”。
+Einspruch	error	Der Richter lehnte den Einspruch ab.	法官驳回了异议。	Der Richter legte Einspruch gegen die Entscheidung ein.	中文标注的搭配是「Einspruch gegen + Akk. einlegen」，但句子用的是「einen Einspruch ablehnen」。
+Zeitalter	error	Wir leben im Zeitalter der Technik.	我们生活在技术时代。	Wir leben im Zeitalter von moderner Technik.	句子用了“im Zeitalter der Technik”，没有使用标注的搭配“im Zeitalter von”。
+Gewohnheit	error	Mit Gewohnheiten ist schwer zu brechen.	习惯难改。	Mit Gewohnheiten zu brechen ist schwer.	„Mit Gewohnheiten ist schwer zu brechen“ ist grammatisch nicht korrekt.
+Absender	translation	Der Absender hat seine Adresse vergessen.	寄件人忘了写自己的地址。	寄件人忘了自己的地址。	德语只说寄件人忘了自己的地址，没有说明是忘了写地址。
+Pokal	error	Wir halten den Pokal in aller Ehre.	我们珍视这座奖杯。	Wir halten den Pokal in Ehren.	Die feste Wendung lautet „den Pokal in Ehren halten“, nicht „in aller Ehre halten“.
+Chirurg	translation	Mein Vater ist Chirurg.	我父亲是一名外科专家。	我父亲是一名外科医生。	„Chirurg“ bedeutet „外科医生“, nicht unbedingt „外科专家“.
+Abfall	translation	In unserer Stadt achtet man sehr darauf, Abfälle getrennt zu sammeln.	在我们的城市那，我们非常谨慎地分类收集垃圾。	在我们城市，人们很注意分类收集垃圾。	中文译文有误；德语说的是在本市，人们很注意分类收集垃圾。
+Penner	translation	Er nannte seinen Bruder im Streit einen Penner.	他在争吵时骂自己的兄弟是个废物。	他在争吵时骂自己的兄弟是个流浪汉。	这里的“Penner”是骂人“流浪汉／废物”的侮辱性称呼，中文“废物”没有体现原词的流浪汉含义。
+eiskalt	unnatural	Seine kurze Antwort ließ sie völlig eiskalt zurück.	他简短的回答让她完全感受不到一丝温情。	Seine kurze Antwort ließ sie völlig kalt.	表达“让她无动于衷”时，固定说法是 „jemanden kaltlassen“；„eiskalt zurücklassen“ 在这里不自然。
+Landwirtschaft	error	Die Regierung sollte mehr Geld in Landwirtschaft investieren.	政府应该加大对农业的投资。	Die Regierung sollte mehr Geld in die Landwirtschaft investieren.	介词短语中缺少冠词，标准说法是 „in die Landwirtschaft investieren“。
+ledern	error	Für die Reise packt sie ihre ledernе Tasche sorgfältig ein.	为了旅行，她仔细地收好了她的皮包。	Für die Reise packt sie ihre lederne Tasche sorgfältig ein.	“ledernе”中的词尾混入了西里尔字母“е”，不是德语字母。
+beheben	translation	Bist du sicher, dass man den Fehler beheben kann?	你确认那是可纠正的错误吗？	你确定这个错误可以修复吗？	中文没有准确表达“是否能修复这个错误”。
+lesbisch	translation	Ich bin lesbisch, na und?	我是同性恋，所以呢？	我是女同性恋，所以呢？	“lesbisch”特指女同性恋，中文“同性恋”没有体现这一点。
+Besatzung	translation	Moderne Schiffe brauchen nur eine kleine Besatzung.	现代船只只需要一小组的船员。	现代船只只需要少量船员。	“一小组的船员”不自然，也没有准确表达“船员人数少”。
+Landung	translation	Das Flugzeug machte eine perfekte Landung.	这架飞机完美的著陆了。	这架飞机完美地着陆了。	中文“完美的著陆了”用词不当，应表达“完美地着陆了”。
+Gastgeber	translation	Unser Gastgeber bot uns etwas zu trinken an.	我们的主人给我们端来了饮料。	我们的主人给我们提供了饮料。	“bot uns etwas zu trinken an”是给我们提供饮料，不一定表示已经端来了。
+Schweiß	translation	Ohne Schweiß kein Preis.	苦尽甘来。	没有付出就没有收获。	德语表达的是“没有付出就没有收获”，不是“苦尽甘来”。
+verständigen	error	Ich kann mich nicht auf englisch verständigen.	我不会用英语交流。	Ich kann mich nicht auf Englisch verständigen.	语言名称在这里要大写。
+Horizont	translation	In der Jugend solltest du deinen Horizont erweitern.	年轻的时候你应该开拓你的思想。	年轻的时候你应该开阔眼界。	“den Horizont erweitern”是“开阔眼界、拓宽视野”，不是“开拓思想”。
+dreifach	error	Das Formular muß dreifach ausgefüllt werden.	这张表格必须填写三份。	Das Formular muss dreifach ausgefüllt werden.	「muß」是旧拼写，现代标准拼写应为「muss」。
+weiden	error	Die Pferde weideten friedlich im Tal.	马儿在山谷里安静地吃草。	Die Pferde weideten auf einer Weide im Tal.	句子没有使用标注的搭配“weiden auf + Dativ”。
+gleichen	error	Sind das alles die gleichen?	他们都是一样的吗？	Sind das alles die Gleichen?	这里的“Gleichen”是名词化用法，需大写。
+Gegenzug	error	Ich helfe dir, im Gegenzug kochst du heute.	我帮你，作为回报你今天做饭。	Ich helfe dir. Im Gegenzug kochst du heute.	逗号连接了两个完整句子，需改用句号、分号或连词。
+Haftpflichtversicherung	translation	Meine Haftpflichtversicherung bezahlt den Schaden am Fahrrad des Nachbarn.	我的责任险赔偿了邻居自行车的损失。	我的责任险赔偿邻居自行车的损失。	德语是现在时“赔偿”，中文却译成了过去时“赔偿了”。
+Minijob	translation	Neben dem Studium sucht sie einen Minijob in einem Café.	她在读大学期间想找一份咖啡馆的迷你工作。	她在读大学期间想找一份咖啡馆的低收入兼职。	Minijob 指德国的低收入兼职工作，不是字面意义上的“迷你工作”。
+Werkstudent	error	Als Werkstudent sammelt er praktische Erfahrung in einer Firma.	作为工读生，他在一家公司积累实践经验。	Als Werkstudent arbeitet er in einer Firma und sammelt praktische Erfahrung.	中文标注的搭配是 als Werkstudent arbeiten，但句子没有使用 arbeiten。
+Schwarzfahren	unnatural	Schwarzfahren kostet 60 Euro Strafe.	逃票罚款 60 欧元。	Schwarzfahren kostet 60 Euro.	“kostet 60 Euro Strafe”搭配不自然；通常直接说逃票要付 60 欧元，或说会被罚款。
+dokumentieren	translation	Jede kleinste Änderung muss genau dokumentiert werden.	所有改动，不论多小，都需要被完善地纪录下来。	所有改动，不论多小，都需要准确记录下来。	中文把“genau”（准确地）译成了“完善地”，且“纪录”应写作“记录”。
+Karton	translation	Für diese Verpackung brauchen wir einen festen Karton.	做这个包装，我们需要一张硬纸板。	做这个包装，我们需要一个结实的纸箱。	德语中的 „Karton“ 通常指纸箱或纸板箱，不是“一张硬纸板”。
+Franken	translation	Einen Franken soll man sich zum Freund, aber nicht zum Nachbar wünschen.	人们希望有一个法郎做朋友，却不希望有一个法郎做邻居。	人们希望有一个弗兰肯人做朋友，却不希望有一个弗兰肯人做邻居。	这里的“Franken”指弗兰肯人，不是货币“法郎”。
+Heilung	translation	Die Wissenschaftler haben noch keine Heilung für Krebs gefunden.	科学家们还不知道怎么治疗癌症。	科学家们还没有找到治愈癌症的方法。	德语说科学家还没有找到治愈癌症的方法，中文却说他们不知道如何治疗癌症，意思不一致。
+Einkaufszentrum	translation	Wo ist das nächste Einkaufszentrum?	最近的大卖场在哪里？	最近的购物中心在哪里？	“Einkaufszentrum”指购物中心，不是“大卖场”。
+anlügen	translation	Ich kann dich nicht anlügen.	我无能对你说谎。	我不能对你说谎。	中文“我无能对你说谎”不通顺，且与德语“我不能对你说谎”不符。
+absolvieren	translation	Du hast alle Prüfungen absolviert.	你已经通过了所有考试。	你参加了所有考试。	“Prüfungen absolvieren”表示参加或完成考试，不表示通过考试。
+donnern	error	Es donnert, aber regnet nicht.	打雷了，但没下雨。	Es donnert, aber es regnet nicht.	“aber”后缺少主语“es”，这种句子不能省略。
+Stab	translation	Der Schatten des Stabes ist sichtbar.	立竿见影。	手杖的影子看得见。	德语只说“手杖的影子看得见”，并没有表达“立竿见影”。
+Umfang	translation	Wie berechnet ihr den Umfang eines Kreises? Ich habe es vergessen.	你们怎么算圆的周长？我忘了。	把搭配标注改为：den Umfang eines Kreises berechnen	句子用了属格“eines Kreises”，没有用中文标注的“von + Dativ”结构。
+plaudern	error	Ich bin da, möchtest du mit mir plaudern?	我在这，你想聊天吗？	Ich bin da. Möchtest du mit mir plaudern?	两个独立分句不能只用逗号连接。
+Bereitschaft	translation	Die Bereitschaft zur Korrektur ist ein Zeichen von Weisheit.	愿意接受纠正是智慧的表现。	愿意改正是智慧的表现。	“Bereitschaft zur Korrektur”通常指愿意进行纠正，不明确表示愿意接受纠正。
+Inspiration	error	Meine Mutter war ein Engel, und auch die Quelle meiner Inspiration.	我的母亲是一位天使，也是我的灵感来源。	Meine Mutter war ein Engel und auch die Quelle meiner Inspiration.	„ein Engel“和„die Quelle“是由 und 连接的并列表语，中间不应加逗号。
+Korn	translation	Auch ein blindes Huhn findet mal ein Korn.	凡人皆有得意时。	瞎猫碰上死耗子。	这句谚语是说能力不足的人偶尔也会成功，不是“凡人皆有得意时”。
+befriedigen	translation	Du wirst merken, dass sie schwer zu befriedigen ist.	你会发现难以满足她。	你会发现她很难取悦。	中文没有明确表达她是难以取悦的对象，原译句意不够清楚。
+verzeichnen	error	In Brasilien ist eine erhöhte Nachfrage für die deutsche Sprache zu verzeichnen.	在巴西，对德语的需求有所上升。	In Brasilien ist eine erhöhte Nachfrage nach der deutschen Sprache zu verzeichnen.	表示对某事的需求应使用“Nachfrage nach”，这里介词用错了。
+Sektion	unnatural	Die Sektion trifft sich jeden Montag im Büro.	这个部门每周一在办公室开会。	Die Abteilung trifft sich jeden Montag im Büro.	“Sektion”通常不用于表示会开会的部门，这里用“Abteilung”更自然。
+gleichfalls	unnatural	Danke, gleichfalls wünsche ich dir einen schönen Abend.	谢谢，也祝你晚上愉快。	Danke, ich wünsche dir auch einen schönen Abend.	“gleichfalls”通常单独用作回应，放在这里接“wünsche ich dir”不自然。
+erweisen	translation	Die Idee hat sich als gut erwiesen.	这个主意被证明是好的。	结果证明这个主意不错。	德语表示这个主意“结果证明不错”，不是“被证明是好的”。
+organisch	unnatural	Viele Lebensmittel im Laden sind organisch.	店里有很多有机食品。	Viele Lebensmittel im Laden sind Bio-Lebensmittel.	德语通常用“Bio-Lebensmittel”表示有机食品；“organisch”一般不这样形容食品。
+Gärtner	translation	Wie sich später herausstellte, war der Gärtner der Mörder.	园丁后来发现就是凶手。	后来发现园丁就是凶手。	中文说成园丁发现了凶手，德语的意思是后来发现园丁就是凶手。
+gärtnern	error	Mein Hobby ist gärtnern.	我的爱好是园艺。	Mein Hobby ist Gärtnern.	作为名词使用的不定式需要大写。
+Kontext	translation	Ohne Kontext kein Text.	没有上下文就没有词义。	没有上下文就没有文本。	德语说的是没有上下文就没有文本，不是没有词义。
+Aufstellung	error	Ich sah mir dir Aufstellung der Verluste und Gewinne durch.	我仔细看了看损益表。	Ich sah mir die Aufstellung der Verluste und Gewinne durch.	定冠词写错了，应为阴性第四格 die。
+bürgerlich	translation	Er wuchs in einer bürgerlichen Familie in Hamburg auf.	他在汉堡的一个市民家庭中长大。	他在汉堡的一个中产阶级家庭中长大。	bürgerliche Familie 在此更接近“中产阶级家庭”，不是“市民家庭”。
+Laser	translation	Der Arzt arbeitet mit einem Laser.	医生用激光治疗。	医生使用激光。	德语只说医生使用激光，中文却明确说用激光治疗，增加了治疗这一含义。
+Heilmittel	translation	Die Wissenschaftler haben noch kein Heilmittel gegen Krebs gefunden.	科学家们还不知道怎么治疗癌症。	科学家们还没有找到治疗癌症的药物。	德语说科学家还没有找到治疗癌症的药物，中文却说他们还不知道如何治疗癌症，意思不符。
+Versuchung	translation	Sie gab der Versuchung endlich nach und aß den ganzen Kuchen.	她终于受不了诱惑，吃掉了整件蛋糕。	她终于抵挡不住诱惑，把整个蛋糕都吃了。	中文的“整件蛋糕”不自然，量词应改为“整个”。
+Speck	error	Das ist Speck auf die Falle.	这是放在陷阱上的培根。	Das ist Speck auf der Falle.	“auf”表示静态位置时要用第三格，这里应为“auf der Falle”。
+mental	unnatural	Nach dem Umzug brauchte sie mental etwas Zeit, um anzukommen.	搬家后，她需要一些时间来适应新的生活。	Nach dem Umzug brauchte sie etwas Zeit, um sich einzuleben.	mental etwas Zeit um anzukommen 说法不自然；搬家后“适应下来”通常说 sich einleben。
+zusammenhalten	translation	Gut essen und trinken hält Leib und Seele zusammen.	吃好喝好才能维持生计。	吃好喝好能维持身心所需。	„Leib und Seele zusammenhalten“ 指勉强维持生计或活下去，中文“吃好喝好才能维持生计”没有准确表达原句意思。
+Exzellenz	error	Eure Exzellenz, ich bitte darum eine Frage stellen zu dürfen.	阁下，请允许我提一个问题。	Eure Exzellenz, ich bitte darum, eine Frage stellen zu dürfen.	“darum”后面的不定式结构需要用逗号隔开。
+Schwager	translation	Mein Schwager ist Polizist.	我姐夫是警察。	我的姻亲是警察。	„Schwager“ 泛指姻亲中的男性，中文“姐夫”限定为姐姐的丈夫，意思过窄。
+Zwischenfall	translation	Hoffentlich gab es keine unangenehmen Zwischenfälle.	幸好没有发生什么不愉快的事。	希望没有发生什么不愉快的事。	“Hoffentlich”表示“希望”，不是“幸好”。
+Hirsch	error	Männliche Hirsche haben Hörner, aber weibliche nicht.	雄鹿有角，但雌鹿没有。	Männliche Hirsche haben ein Geweih, weibliche nicht.	鹿的角通常称为“Geweih”，不称为“Hörner”。
+Deckel	unnatural	Der Deckel des Buches ist aus rotem Stoff.	这本书的封面是红色布面的。	Der Buchdeckel ist aus rotem Stoff.	说书的封面时，“Deckel des Buches”不自然，通常说“Buchdeckel”或“Einband”。
+Untergrund	unnatural	Die U-Bahn fährt unter der Stadt durch den Untergrund.	地铁在城市地下穿行。	Die U-Bahn fährt im Untergrund unter der Stadt hindurch.	“unter der Stadt durch den Untergrund”搭配生硬；句子也没有使用所标注的“im Untergrund”。
+Baseball	translation	Er kann sehr gut Baseball spielen.	他垒球打得很好。	他棒球打得很好。	德语说的是棒球，中文却说垒球。
+Überrest	unnatural	Nach dem Essen blieb nur ein kleiner Überrest auf dem Teller.	吃完饭后，盘子里只剩下一小点东西。	Nach dem Essen blieb nur ein kleiner Rest auf dem Teller.	说盘子里剩下的食物时，Überrest 不自然，通常说 Rest。
+akut	translation	Bei akuten Beschwerden sollten Sie heute noch einen Arzt anrufen.	如果症状严重，请您今天就给医生打电话。	如果出现急性不适，请您今天就给医生打电话。	“akuten Beschwerden”指急性不适或症状，不一定是“症状严重”。
+Parade	error	Es waren viele Leute auf der Straße, als die Parade vorbeikam.	游行经过时，街上有很多人。	Es waren viele Leute auf der Straße, als die Parade an ihnen vorbeikam.	例句没有使用标注的搭配“an jemandem vorbeikommen”。
+versäumen	error	Er hat es versäumt zu tun, was er gesagt hatte.	他没能做到自己说过要做的事。	Er hat es versäumt, zu tun, was er gesagt hatte.	“es versäumen, etwas zu tun”中的不定式结构需要用逗号隔开。
+Kristall	error	Das Kristall der Herzen, wenn es bricht, lässt sich nicht reparieren.	心之水晶一旦破碎，就无法修复。	Der Kristall der Herzen, wenn er bricht, lässt sich nicht reparieren.	„Kristall“ ist hier als einzelner Kristall maskulin: „der Kristall“.
+verwirklichen	translation	Er verwirklichte seinen Traum, Künstler zu werden.	他实现了当兿术家的梦想。	他实现了成为艺术家的梦想。	Die chinesische Übersetzung enthält einen Schreibfehler: „兿术家“ muss „艺术家“ heißen.
+circa	translation	In circa zwei Wochen.	大约两周内。	大约两周后。	“In circa zwei Wochen”表示大约两周后，而不是大约两周内。
+erobern	translation	Das ist er: jener Mann, der mein Herz erobert hat.	他就是我中意的那个男人。	他就是那个赢得我芳心的男人。	“mein Herz erobert hat”是“赢得了我的芳心”，中文“中意”没有充分表达这个意思。
+Juwel	error	Der Juwel wurde in der Nacht gestohlen.	那颗宝石在夜里被偷了。	Das Juwel wurde in der Nacht gestohlen.	标准德语中 Juwel 通常是中性名词，应使用定冠词 das。
+zucken	translation	Er zuckte mit den Schultern.	她耸了耸肩。	他耸了耸肩。	德语主语是“他”，中文却写成了“她”。
+kommunistisch	translation	In der Schule erhielt ich eine klassische kommunistische Bildung.	我在学校接受了传统的共产主义教育。	我在学校接受了经典的共产主义教育。	“klassisch”是“古典的/经典的”，与中文“传统的”不符。
+erbauen	error	In welchem Jahr wurde die Schule erbaut?	这所学校是哪一年建成的？	In welchem Jahr erbaute man die Schule?	句子用了被动态，“die Schule”是主格；没有体现搭配“etw. erbauen”中的第四格宾语。
+Spekulation	error	Er verdient sein Geld mit Spekulationen an der Börse.	他靠在证券交易所投机赚钱。	Er verdient sein Geld damit, an der Börse zu spekulieren.	句子用了名词“Spekulationen”，没有使用标注的搭配“mit etwas spekulieren”。
+rauben	translation	Das hat mir die Hoffnung geraubt.	让我失望了。	这让我失去了希望。	德语表示“这让我失去了希望”，中文“让我失望了”意思不同。
+Falke	translation	Der Falke hat einen gebrochenen Flügel.	鹰的一只翅膀断了。	隼的一只翅膀断了。	Falke 指“隼”，不是“鹰”。
+umsetzen	unnatural	Die Bank setzt den Betrag zum aktuellen Kurs um.	银行按当前汇率兑换这笔金额。	Die Bank rechnet den Betrag zum aktuellen Kurs um.	表示按汇率把金额兑换成另一种货币时，umsetzen 不自然，通常说 umtauschen 或 umrechnen。
+schaufeln	error	Schaufele mir nicht ständig was auf den Teller!	别老往我盘子里铲东西！	Schaufel mir nicht ständig was auf den Teller!	第二人称单数命令式不能写作“Schaufele”，应为“Schaufel”或“Schaufle”。
+kennzeichnen	translation	Alle Ausgänge sind als solche gekennzeichnet.	所有出口都标明了其用途。	所有出口都被标明为出口。	„als solche gekennzeichnet“是“被标明为出口/被认作出口”，不表示标明出口的用途。
+Sitte	error	Andere Länder; andere Sitten.	入乡随俗。	Andere Länder, andere Sitten.	这句谚语的两个分句之间应使用逗号，而不是分号。
+Rechner	unnatural	Mit dem Rechner teile ich 48 durch sechs.	我用计算器把48除以6。	Mit dem Rechner rechne ich 48 geteilt durch sechs.	句子表达了用计算器计算，但没有实际使用中文搭配指定的动词 „rechnen“。
+Aids	translation	Er hat sich mit AIDS infiziert.	他感染了爱滋病。	他感染了艾滋病。	中文病名写法有误，规范写法是“艾滋病”。
+vortragen	error	Deine vorgeschlagenen Themen sind sehr umfangreich, wer wird vortragen?	你提议的主题范围很广，谁来做报告？	Deine vorgeschlagenen Themen sind sehr umfangreich. Wer wird sie vortragen?	两个完整主句不能只用逗号连接；这里也应明确“谁来报告这些主题”。
+wegkommen	error	Als ich zurück kam, war mein Auto weg.	我回来时，车已经不见了。	Als ich zurückkam, war mein Auto weg.	从句中的“zurückkommen”应连写。
+Schloss	translation	Wir sahen vor uns ein Schloss.	我们面前出现了一座城堡。	我们看见前方有一座城堡。	德语是“我们看见前方有一座城堡”，没有表达城堡“出现”这一动作。
+Gatte	translation	Das hier ist mein Gatte.	这位是我的配偶。	这位是我丈夫。	“Gatte”特指丈夫，中文“配偶”没有体现这一点。
+Schiedsrichter	translation	Der Schiedsrichter traf die richtige Entscheidung.	裁判做出了正确的判决。	裁判做出了正确的决定。	“Entscheidung”是“决定”，不表示法律意义上的“判决”。
+nachgeben	translation	Das Dach gab plötzlich nach.	屋顶突然崩塌了。	屋顶突然塌陷了。	“gab nach”是“支撑不住、塌陷”，不一定表示整个屋顶“崩塌”。
+Malerei	translation	Mit über fünfzig entwickelte er ein Talent für die Malerei.	五十多岁时，他展现出了绘画天赋。	五十多岁时，他培养出了绘画天赋。	“entwickelte ein Talent”是培养出了绘画天赋，不是展现出已有的天赋。
+Protein	error	Fleisch und Eier enthalten viel Proteine.	肉和鸡蛋含有大量蛋白质。	Fleisch und Eier enthalten viele Proteine.	viel 不能直接修饰复数名词 Proteine。
+Vetter	translation	Er ging, um bei seinem Vetter zu bleiben.	他去和他的表弟待在一起了。	他去和他的堂/表兄弟待在一起了。	Vetter 只表示男性堂/表兄弟，不说明年纪较小。
+Weibchen	error	Die Hälfte der Art sind Weibchen.	这个物种中有一半是雌性。	Die Hälfte der Art ist weiblich.	主语 Hälfte 是单数，动词应使用 ist。
+wörtlich	translation	Du solltest das nicht zu wörtlich nehmen.	你不应该把这件事理解得太字面。	你不应该把这件事按字面意思理解。	中文表达不自然，且没有清楚体现“按字面意思理解”。
+Entschluss	error	Was du auch sagst: mein Entschluss steht fest.	不管你说什么，我都已经拿定主意了。	Was du auch sagst: Mein Entschluss steht fest.	冒号后接完整句子时，句首应大写。
+verantworten	error	Schweigen ist oft besser als sich verantworten.	沉默往往胜过为自己辩解。	Schweigen ist oft besser, als sich zu verantworten.	比较结构中不定式需要加 zu。
+minimal	translation	Manchen Menschen reichen minimale Gründe für einen Mord.	对有些人来说最小的理由足够谋杀。	对有些人来说，极小的理由就足以让他们杀人。	中文表达不自然，也没有明确说出“对有些人来说，极小的理由就足以让他们杀人”。
+kauen	error	Man soll nicht auf beiden Seite kauen.	人不应该两边都嚼。	Man soll nicht auf beiden Seiten kauen.	“Seite”应使用复数形式。
+bescheren	error	Trink Wein, beschert dir Gott Wein.	喝酒吧，愿上帝赐你美酒。	Trink Wein, wenn dir Gott Wein beschert.	“beschert dir Gott Wein”在这里语序不成立，表达“如果上帝赐你酒”应使用条件从句。
+Sprichwort	translation	Ich habe dem Lehrer die ganzen chinesischen Sprichwörter wieder zurückgegeben.	我把成语全部还给老师了。	我把那些中文谚语全都还给老师了。	“Sprichwörter”是谚语，不是中文的“成语”。
+Salzburg	unnatural	Salzburg ist die Stadt von Mozart.	萨尔茨堡是莫扎特的城市。	Salzburg ist die Stadt Mozarts.	“die Stadt von Mozart”不符合自然的德语表达。
+flüchten	translation	Die Einwohner flüchten aus der Stadt.	居民们逃离了这座城市。	居民们正在逃离这座城市。	德语是现在时，中文却译成了过去时。
+Stier	translation	Du musst den Stier bei den Hörnern packen.	你必须紧握公牛的角。	你必须迎难而上。	这是习语，意思是“迎难而上”，不是必须紧握公牛的角。
+Schauspiel	error	Der Sonnenuntergang ist ein Schauspiel von großer Schönheit.	日落是一道美丽壮观的景象。	Der Sonnenuntergang ist ein Schauspiel der Natur.	中文标注的搭配是“ein Schauspiel der Natur”，但句子中没有使用这个搭配。
+Ausblick	error	Ich hätte gern ein Zimmer mit einem schönen Ausblick.	我想要一间景色优美的房间。	Ich hätte gern ein Zimmer mit einem schönen Ausblick auf die Berge.	句子没有用到标注的搭配“Ausblick auf etwas”。
+Ausblick	unnatural	Die Firma hat gute Aussichten und einen positiven Ausblick.	这家公司前景不错，未来展望积极。	Der Ausblick auf die Zukunft der Firma ist positiv.	“gute Aussichten”和“einen positiven Ausblick”意思重复，而且句子没有用到标注的“Ausblick auf etwas”。
+Alias	translation	Unter diesem Alias kennt ihn fast jeder.	几乎每个人都用这个化名认识他。	几乎每个人都以这个化名认识他。	德语是“几乎每个人都以这个化名认识他”，中文表达成了“每个人都用这个化名认识他”，意思不够准确。
+angeklagt	translation	Ich wurde zu Unrecht angeklagt.	我被冤枉起诉了。	我被冤枉地指控了。	angeklagt 是“被指控／被控告”，不特指被起诉；“被冤枉起诉了”意思不准确。
+selig	error	Geben ist seliger denn nehmen.	施比受更有福。	Geben ist seliger denn Nehmen.	„Nehmen“ 是名词化动词，应大写。
+Vorwand	error	Er kam nicht unter dem Vorwand krank zu sein.	他没有以生病为借口过来。	Er kam nicht unter dem Vorwand, krank zu sein.	„unter dem Vorwand“ 后接从句时需要加逗号。
+trompeten	translation	Der Elefant trompetet laut.	大象大声吼叫。	大象大声鸣叫。	„trompeten“ 指大象发出号角般的鸣叫，不是一般的“吼叫”。
+erliegen	error	Katzen erlegen, aus dem Haus gelassen, oft kleine Tiere.	猫会捕杀小动物，而它们常常被放出家门。	Katzen erlegen, wenn sie aus dem Haus gelassen werden, oft kleine Tiere.	句子缺少谓语，结构不完整。
+fromm	translation	Das ist ja ein frommer Wunsch!	这真是一个很善良的愿望。	这真是一个虔诚的愿望！	fromm 是“虔诚的／虔敬的”，不是“善良的”。
+Klemme	translation	Ich sitze in der Klemme.	我很尴尬。	我陷入了困境。	in der Klemme 表示“陷入困境／左右为难”，不是“尴尬”。
+unverschämt	translation	Das ist ein unverschämter Preis.	这个价格不合理。	这个价格真是太离谱了。	unverschämt 的语气比“不合理”更强，指价格高得离谱、过分。
+Reue	error	Gib acht ist mehr als Reue.	小心总比事后后悔好。	Vorsicht ist besser als Nachsicht.	Gib acht 是命令式，不能这样充当句子的主语；句子表达也不成立。
+Messung	translation	Vor der Messung prüft die Ärztin das Gerät.	测量前，医生检查了仪器。	测量前，医生检查仪器。	德语用现在时，中文却译成了过去时。
+wägen	error	Er wog den Stein in seiner Hand.	他在手里掂了掂那块石头。	Er wägte den Stein.	“wog”是“wiegen”的过去时，不是标注的动词“wägen”的过去时；“wägen”的过去时是“wägte”。
+klemmen	unnatural	Ich habe mir den Finger in der Tür geklemmt.	我把手指夹在门里了。	Ich habe mir den Finger in der Tür eingeklemmt.	表示手指被门夹住时，通常说“sich den Finger einklemmen”，单用“klemmen”不自然。
+Palme	translation	Du bringst mich noch auf die Palme!	你将要把我逼疯了！	你真要把我惹毛了！	„Du bringst mich noch auf die Palme“ beschreibt, dass jemand einen gerade auf die Palme bringt, nicht ausdrücklich eine zukünftige Handlung.
+Brocken	error	Im Kuchen ist ein großer Brocken dunkle Schokolade.	蛋糕里有一大块黑巧克力。	Im Kuchen ist ein großer Brocken dunkler Schokolade.	这里表示“一大块黑巧克力”，应使用第二格形式“dunkler Schokolade”。
+turnen	error	Er mag es mich anzuschauen, während ich turne.	我做体操时，他喜欢看着我。	Er mag es, mich anzuschauen, während ich turne.	这里的“es”后面接扩展不定式，按规范需要加逗号。
+Taxifahrer	translation	Ihr Vater ist Taxifahrer.	他们的父亲是一个计程车司机。	他们的父亲是一个计程车司机。对应德语：Ihr Vater ist Taxifahrer. → Ihr Vater ist Taxifahrer.（若指“他们的父亲”，应写“Der Vater von ihnen ist Taxifahrer.”）	“Ihr Vater”表示“她的父亲”或“您的父亲”，不表示“他们的父亲”。
+Kinn	translation	Der Mann kratzte sich am Kinn und überlegte, was er tun solle.	那个男人摸着下巴，思索着该怎么办。	那个男人挠着下巴，思索着该怎么办。	“sich am Kinn kratzen”是挠下巴，不是摸下巴。
+leitend	translation	Sie ist leitende Ärztin im Krankenhaus.	她是医院的主治医师。	她是医院的高级医生。	“leitende Ärztin”指高级或主管医生，不等同于“主治医师”。
+Bischof	translation	Der Bischof besucht die Gemeinde.	主教访问教区。	主教访问当地教会团体。	“Gemeinde”在这里指教会团体或堂区，不是通常意义上的“教区”。

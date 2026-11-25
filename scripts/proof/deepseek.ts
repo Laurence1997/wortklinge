@@ -134,20 +134,30 @@ const limit = Number(process.env.DEEPSEEK_LIMIT ?? todo.length);
 const run = todo.slice(0, limit);
 console.log(`${items.length} items, ${items.length - todo.length} cached, sending ${run.length}`);
 const SIZE = 40;
-for (let i = 0; i < run.length; i += SIZE) {
-  const batch = run.slice(i, i + SIZE);
-  let res: Map<number, Verdict>;
-  try {
-    res = await ask(batch);
-  } catch (e) {
-    // One bad batch must not lose the rest: leave it uncached, the next run sends it again.
-    console.log(`\nbatch ${i / SIZE + 1} skipped: ${(e as Error).message.slice(0, 200)}`);
-    continue;
+// Several batches at once (env PROOF_PARALLEL, default 6): 30 000 sentences one batch at a time took over an hour.
+const PAR = Number(process.env.PROOF_PARALLEL ?? 6);
+const batches: Item[][] = [];
+for (let i = 0; i < run.length; i += SIZE) batches.push(run.slice(i, i + SIZE));
+let next = 0;
+let sent = 0;
+async function worker() {
+  while (next < batches.length) {
+    const k = next++;
+    const batch = batches[k];
+    try {
+      const res = await ask(batch);
+      batch.forEach((x, j) => (cache[x.hash] = res.get(j) ?? { ok: true }));
+    } catch (e) {
+      // One bad batch must not lose the rest: leave it uncached, the next run sends it again.
+      console.log(`\nbatch ${k + 1} skipped: ${(e as Error).message.slice(0, 200)}`);
+    }
+    sent += batch.length;
+    if (k % 10 === 0) writeFileSync(cachePath, JSON.stringify(cache));
+    process.stdout.write(`\rcross-check ${Math.min(sent, run.length)}/${run.length}`);
   }
-  batch.forEach((x, k) => (cache[x.hash] = res.get(k) ?? { ok: true }));
-  writeFileSync(cachePath, JSON.stringify(cache));
-  process.stdout.write(`\rDeepSeek ${Math.min(i + SIZE, run.length)}/${run.length}`);
 }
+await Promise.all(Array.from({ length: PAR }, worker));
+writeFileSync(cachePath, JSON.stringify(cache));
 process.stdout.write('\n');
 console.log(`tokens: input ${usage.prompt} (cached ${usage.cached}), output ${usage.completion}`);
 

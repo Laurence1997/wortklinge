@@ -6,7 +6,7 @@
    unused Tatoeba pool sentences, the table's example, then Luna.
 2. Sentences without Chinese (Tatoeba example 1 of words ranked after 3000) get a translation.
 Words missing from the file entirely are added with their example 1 first.
-Env: OPENAI_API_KEY, MODEL (gpt-6-luna).
+Env: OPENAI_API_KEY, MODEL (gpt-6-luna). Also refills Chinese cleared by apply_proof_fixes.py.
 """
 import csv, json, os, sys, time, urllib.request, urllib.error
 from concurrent.futures import ThreadPoolExecutor
