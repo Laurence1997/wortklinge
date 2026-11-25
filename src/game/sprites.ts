@@ -196,6 +196,96 @@ function townTile(sheet: CanvasImageSource, tile: number, ramp: number[], palett
   return cv;
 }
 
+// 明亮地图 (Lucas 2026-11-25, 预览): everyday regions show the Kenney Tiny Town tiles in their own colours, each region
+// with its own tile set and a light colour grade; red-black stays for 蚀变 maps, bosses and 零号站台.
+export interface BrightStyle {
+  set: Partial<Record<number, number[]>>;
+  /** Light colour grade over the whole map (soft-light), e.g. a cool mist for the harbour. */
+  tint?: string;
+  tintAlpha?: number;
+  fog: string;
+}
+const GRASS = [0, 0, 0, 0, 0, 1, 0, 2];
+export const BRIGHT: Record<number, BrightStyle> = {
+  // 回声巷: wooden houses, red roofs, sandy lanes
+  1: { set: { [T.Ground]: GRASS, [T.Ash]: [39, 40, 41, 42], [T.Road]: [25, 25, 24, 26, 37], [T.Wall]: [72, 73, 75, 72, 84, 85], [T.Roof]: [52, 53, 54], [T.Rubble]: [43, 5, 29], [T.Tree]: [4, 16, 28, 5], [T.Crate]: [130, 106] }, fog: '#e8efe4' },
+  2: { set: { [T.Ground]: [0, 0, 0, 2, 1], [T.Ash]: [39, 41], [T.Road]: [25, 24, 26], [T.Wall]: [72, 73, 75, 85, 86], [T.Roof]: [52, 53, 54, 64], [T.Rubble]: [43], [T.Tree]: [3, 15, 27, 4], [T.Crate]: [130, 106, 57] }, tint: '#ffd27a', tintAlpha: 0.12, fog: '#f3ecd8' },
+  3: { set: { [T.Ground]: GRASS, [T.Ash]: [109], [T.Road]: [109], [T.Wall]: [76, 77, 79, 88, 77], [T.Roof]: [48, 49, 50], [T.Rubble]: [43], [T.Tree]: [16, 28, 4], [T.Crate]: [130, 131] }, fog: '#e6ecef' },
+  // 租屋城: stone blocks, blue roofs, plaza stone streets
+  4: { set: { [T.Ground]: [0, 0, 1, 0], [T.Ash]: [109], [T.Road]: [109], [T.Wall]: [76, 77, 79, 88, 89, 90], [T.Roof]: [48, 49, 50, 60], [T.Rubble]: [43], [T.Tree]: [5, 28, 16], [T.Crate]: [130, 131, 57] }, fog: '#eef0f2' },
+  // 泉疗镇: flower meadows, warm sun
+  5: { set: { [T.Ground]: [0, 2, 0, 1, 0, 2], [T.Ash]: [39, 40], [T.Road]: [25, 24, 26, 13], [T.Wall]: [76, 77, 79, 89], [T.Roof]: [52, 53, 54], [T.Rubble]: [43, 29], [T.Tree]: [5, 16, 28, 29], [T.Crate]: [131, 130] }, tint: '#ffb3c8', tintAlpha: 0.14, fog: '#fbeff2' },
+  // 雾港: sandy quays, autumn trees, cool sea mist
+  6: { set: { [T.Ground]: [25, 24, 26, 39, 40, 25], [T.Ash]: [41, 42], [T.Road]: [109], [T.Wall]: [72, 73, 75, 84], [T.Roof]: [48, 49, 50], [T.Rubble]: [43], [T.Tree]: [3, 15, 27], [T.Crate]: [130, 106, 107] }, tint: '#8fc6ff', tintAlpha: 0.22, fog: '#dfeaf2' },
+  7: { set: { [T.Ground]: GRASS, [T.Ash]: [109], [T.Road]: [109], [T.Wall]: [76, 77, 79, 100, 101], [T.Roof]: [52, 53, 54, 64], [T.Rubble]: [43], [T.Tree]: [5, 16], [T.Crate]: [131, 130] }, tint: '#ffe08a', tintAlpha: 0.1, fog: '#f2efe4' },
+  9: { set: { [T.Ground]: [39, 40, 0, 41], [T.Ash]: [42], [T.Road]: [25, 24, 26], [T.Wall]: [72, 73, 75, 74], [T.Roof]: [52, 53, 54], [T.Rubble]: [43, 105], [T.Tree]: [3, 27], [T.Crate]: [130, 106, 57] }, tint: '#ff9e5c', tintAlpha: 0.12, fog: '#efe6dc' },
+  10: { set: { [T.Ground]: GRASS, [T.Ash]: [109], [T.Road]: [109], [T.Wall]: [76, 77, 79, 88, 102], [T.Roof]: [48, 49, 50], [T.Rubble]: [43], [T.Tree]: [16, 28], [T.Crate]: [131, 130] }, tint: '#b0a8ff', tintAlpha: 0.12, fog: '#ecebf6' },
+  12: { set: { [T.Ground]: [0, 2, 0, 0, 1], [T.Ash]: [39], [T.Road]: [25, 24, 26], [T.Wall]: [72, 73, 75, 85], [T.Roof]: [52, 53, 54, 64], [T.Rubble]: [29], [T.Tree]: [4, 5, 15], [T.Crate]: [130] }, tint: '#ff8fbf', tintAlpha: 0.12, fog: '#f8ecf1' },
+};
+for (const r of [13, 14, 16, 17, 18, 20]) BRIGHT[r] = BRIGHT[[4, 9, 12, 3, 7, 10][[13, 14, 16, 17, 18, 20].indexOf(r)]];
+
+function rawTile(sheet: CanvasImageSource, tile: number, c: CanvasRenderingContext2D, x: number, y: number) {
+  c.drawImage(sheet, (tile % TOWN_COLS) * 16, Math.floor(tile / TOWN_COLS) * 16, 16, 16, x, y, 16, 16);
+}
+
+/** The bright map: tiles in their own colours; hidden side paths dimmed; fog drawn as pale mist. */
+export function renderBrightMap(m: MapData, sheet: CanvasImageSource, hidden: Array<{ x: number; y: number }>, style: BrightStyle): HTMLCanvasElement {
+  const cv = document.createElement('canvas');
+  cv.width = MAP_W * TILE;
+  cv.height = MAP_H * TILE;
+  const c = cv.getContext('2d')!;
+  c.imageSmoothingEnabled = false;
+  const set = style.set;
+  for (let y = 0; y < MAP_H; y++)
+    for (let x = 0; x < MAP_W; x++) {
+      const t = m.tiles[idx(x, y)];
+      const seed = x * 7349 + y * 1931;
+      const pick = (xs: number[]) => xs[(seed >>> 3) % xs.length];
+      const ox = x * TILE;
+      const oy = y * TILE;
+      if (t === T.Fog) {
+        c.fillStyle = style.fog;
+        c.fillRect(ox, oy, TILE, TILE);
+        continue;
+      }
+      const list = set[t];
+      if (!list) {
+        drawTile(c, t, ox, oy, seed);
+        continue;
+      }
+      if (OVERLAY.has(t) || t === T.Rubble) rawTile(sheet, pick(set[T.Ground]!), c, ox, oy);
+      const tile = pick(list);
+      rawTile(sheet, tile, c, x * TILE, y * TILE);
+      // the pale plaza stone would glare next to grass: give it a warm cobble shade
+      if (tile === 109) {
+        c.fillStyle = 'rgba(150,120,90,0.28)';
+        c.fillRect(ox, oy, TILE, TILE);
+      }
+      if (hidden.some((h) => Math.abs(h.x - x) <= 4 && Math.abs(h.y - y) <= 4)) {
+        c.fillStyle = 'rgba(20,30,40,0.45)';
+        c.fillRect(ox, oy, TILE, TILE);
+      }
+    }
+  if (style.tint) {
+    c.globalCompositeOperation = 'soft-light';
+    c.globalAlpha = style.tintAlpha ?? 0.15;
+    c.fillStyle = style.tint;
+    c.fillRect(0, 0, cv.width, cv.height);
+    c.globalCompositeOperation = 'source-over';
+    c.globalAlpha = 1;
+  }
+  return cv;
+}
+
+/** A Tiny Dungeon figure in its own colours (bright maps). */
+export function rawFigure(sheet: CanvasImageSource, tile: number): HTMLCanvasElement {
+  const cv = document.createElement('canvas');
+  cv.width = cv.height = 16;
+  const ctx = cv.getContext('2d')!;
+  ctx.drawImage(sheet, (tile % 12) * 16, Math.floor(tile / 12) * 16, 16, 16, 0, 0, 16, 16);
+  return cv;
+}
+
 /** The whole static map as one canvas (cheap to render, crisp when scaled). With the Town sheet loaded the ground,
  *  walls, roofs, rubble, trees and crates use Kenney tiles; `hidden` are tile spots of hidden side paths. */
 export function renderMapCanvas(m: MapData, sheet?: CanvasImageSource | null, hidden: Array<{ x: number; y: number }> = [], shades: readonly string[] = MAP_SHADES): HTMLCanvasElement {

@@ -13,12 +13,13 @@ import type { Controller } from './controller';
 import { DEFAULT_LOOK, lookKey, type Look } from '../core/look';
 import { myBubble, online } from '../net/online';
 import { generateMap, isBlocked, MAP_H, MAP_W, TILE, walkableTilesIn, zonesOf, zoneAt, type MapData, type NpcId, type RegionId, type ZoneDef } from './map';
-import { GLITCH, heroFramesKenney, dungeonTile, SHADE_RAMP, CHAR_RAMP, makeTextures, renderMapCanvas, PAL } from './sprites';
+import { GLITCH, heroFramesKenney, dungeonTile, SHADE_RAMP, CHAR_RAMP, makeTextures, renderMapCanvas, PAL, BRIGHT, renderBrightMap, rawFigure } from './sprites';
 import { NPC_TILE, isRestored, wordTile } from '../ui/icons';
 import { sfx } from './audio';
 import { CONFIG } from '../core/config';
 import { NodeNav } from './nodes';
 import { charRamp, mapRamp, mapShades, shadeRamp, type Ramp5 } from './palette';
+import { REGION_DEF } from '../data/zones';
 
 export interface MonsterEntity {
   uid: number;
@@ -55,6 +56,7 @@ export class WorldScene extends Phaser.Scene {
   ctrl!: Controller;
   /** 各区色调: this map's 5-step ramp, or null for the classic red (src/game/palette.ts). */
   ramp: Ramp5 | null = null;
+  bright = false;
   map!: MapData;
   player!: Phaser.GameObjects.Sprite;
   monsters: MonsterEntity[] = [];
@@ -107,7 +109,10 @@ export class WorldScene extends Phaser.Scene {
     const oldmap = !CONFIG.map.nodes || new URLSearchParams(location.search).has('oldmap');
     const town = !oldmap && this.textures.exists('town') ? (this.textures.get('town').getSourceImage() as HTMLImageElement) : null;
     const hidden = SCENES.filter((x) => x.region === region && x.type === 'hidden').map((x) => x.at);
-    addCanvas('map', renderMapCanvas(this.map, town, hidden, this.ramp ? mapShades(this.ramp) : undefined));
+    // 明亮地图 (预览, ?bright): everyday maps in their own colours; 蚀变 maps keep their dark ramp.
+    const eroded = this.ramp !== ((REGION_DEF[region]?.palette as Ramp5 | undefined) ?? null);
+    this.bright = !!town && new URLSearchParams(location.search).has('bright') && !eroded && !!BRIGHT[region];
+    addCanvas('map', this.bright ? renderBrightMap(this.map, town!, hidden, BRIGHT[region]) : renderMapCanvas(this.map, town, hidden, this.ramp ? mapShades(this.ramp) : undefined));
     void tex;
     for (const k of ['hero0', 'hero1']) {
       if (this.textures.exists(k)) this.textures.remove(k);
@@ -124,7 +129,8 @@ export class WorldScene extends Phaser.Scene {
     const W = MAP_W * TILE;
     const H = MAP_H * TILE;
     this.cameras.main.setBounds(0, 0, W, H);
-    this.cameras.main.setBackgroundColor(PAL.void);
+    document.body.classList.toggle('bright', this.bright);
+    this.cameras.main.setBackgroundColor(this.bright ? BRIGHT[region].fog : PAL.void);
 
     // Light sources.
     const b = this.map.bonfire;
@@ -147,8 +153,8 @@ export class WorldScene extends Phaser.Scene {
       // Lina stays a shadow (two darkest steps) until she is freed, like her dialog portrait.
       const shadow = n.id === 'lina' && !isRestored('lina');
       const figure = this.ramp ? charRamp(this.ramp) : CHAR_RAMP;
-      const nk = `npc-${n.id}${shadow ? '-s' : ''}${this.ramp ? `-${this.ramp[3]}` : ''}`;
-      if (!this.textures.exists(nk)) this.textures.addCanvas(nk, dungeonTile(this.dsheet(), NPC_TILE[n.id] ?? 111, shadow ? figure.slice(0, 2) : figure));
+      const nk = `npc-${n.id}${shadow ? '-s' : ''}${this.bright && !shadow ? '-raw' : this.ramp ? `-${this.ramp[3]}` : ''}`;
+      if (!this.textures.exists(nk)) this.textures.addCanvas(nk, this.bright && !shadow ? rawFigure(this.dsheet(), NPC_TILE[n.id] ?? 111) : dungeonTile(this.dsheet(), NPC_TILE[n.id] ?? 111, shadow ? figure.slice(0, 2) : figure));
       this.add.sprite(n.x * TILE + 8, n.y * TILE + 6, nk).setDepth(n.y * TILE + 8);
       if (this.map.region >= 2 || n.id !== 'hilde')
         this.add

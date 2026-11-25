@@ -41,6 +41,7 @@ kbd { font-family: var(--mono); font-size: 11px; padding: 0 4px; border: 1px sol
   background: radial-gradient(ellipse at 50% 48%, rgba(0,0,0,0) 30%, rgba(5,0,3,.55) 62%, rgba(5,0,3,.92) 100%);
   mix-blend-mode: multiply;
 }
+body.bright #vignette { background: radial-gradient(ellipse at 50% 48%, rgba(0,0,0,0) 45%, rgba(60,35,10,.18) 80%, rgba(40,20,5,.4) 100%); }
 #ui { position: absolute; inset: 0; pointer-events: none; }
 #ui > * { pointer-events: auto; }
 #ui > #toasts, #ui > #banner { pointer-events: none; }
