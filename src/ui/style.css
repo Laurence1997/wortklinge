@@ -346,3 +346,14 @@ canvas.slot-icon.q-red { border-color: var(--q-red, #ff3a3a); }
 .feedback .report .btn.ghost { background: transparent; border-color: transparent; color: var(--muted); text-decoration: underline; padding: 0 4px; }
 .feedback .report-form { display: inline-flex; flex-wrap: wrap; gap: 6px; align-items: center; color: var(--ink); }
 .feedback .report-form input { width: 200px; }
+
+/* 冒险者 PK (2026-11-25) */
+#pk { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.55); pointer-events: auto; z-index: 40; }
+#pk[hidden] { display: none; }
+#pk .pk { width: min(640px, 92vw); }
+#pk .pk-score { font-family: var(--mono); margin: 4px 0 8px; color: var(--gold, #ffcf4a); }
+#pk .pk-say { color: #c8a890; margin-bottom: 8px; min-height: 1.4em; }
+#pk .pk-focus { font-size: 26px; margin: 6px 0 12px; }
+#pk .pk-note { margin-top: 10px; min-height: 1.4em; }
+#pk .row { flex-wrap: wrap; gap: 6px; }
+.ai-tag { display: inline-block; font-size: 10px; line-height: 1; padding: 2px 4px; border-radius: 3px; background: #2b6cb0; color: #fff; font-family: var(--mono); vertical-align: 1px; }

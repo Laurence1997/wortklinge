@@ -95,6 +95,8 @@ export interface GameState {
   gram?: import('./gram/boards').GramSave;
   /** 排行榜 counters (optional; refreshed before each save). */
   board?: import('./board').BoardSave;
+  /** Recent timed answers (冒险者 PK: the rival's accuracy and pace follow these). */
+  recentAns?: import('./adventurers').AnsRec[];
   /** 红装 / 橙装保底 counters and 套装 materials (optional, old saves have none). */
   forge?: import('./forge').ForgeSave;
   /** 篝火日记 (2026-11-22): entries written at bonfires (newest last). Optional: absent = none yet. */

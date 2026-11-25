@@ -1,6 +1,9 @@
 import { carriesShout } from '../core/skillPool';
 import { track } from '../net/social';
 import { noteGram, stampBoard } from '../core/board';
+import { pkOpen, runPk } from '../ui/pk';
+import { ORIGINS } from '../ui/title';
+import { ADV, adventurerById, adventurerPrompt, adventurerScene, GREET, notePkPaid, noteAnswer, pkPaidLeft, regionGrammar, type Adventurer } from '../core/adventurers';
 import { TICK_TURN } from '../core/combat';
 import { loadPron, pronCached } from '../ui/phoneme';
 import { icon, setRestored, SLOT_TILE } from '../ui/icons';
@@ -95,6 +98,8 @@ const SYS = '系统';
 const HILDE = '守火人 Hilde';
 const GRETA = '导师 Greta';
 const MIRA = '商人 Mira';
+
+type DuelRun = { d: DuelScene; turns: number; targets: Word[]; used: Set<string>; known: string[]; clean: number; grammar?: string[]; voice?: boolean; onIdle?: () => void };
 
 export class Controller {
   state: GameState;
@@ -348,7 +353,7 @@ export class Controller {
   }
 
   uiBlocking(): boolean {
-    return !!this.battle || !!this.boss || dialogOpen() || !$('modal').hidden || !$('title').hidden;
+    return !!this.battle || !!this.boss || dialogOpen() || !$('modal').hidden || !$('title').hidden || pkOpen();
   }
 
   refresh(): void {
@@ -1037,6 +1042,7 @@ export class Controller {
     if (r.correct) log.correct += 1;
     else if (!free) log.wrong += 1;
     if (q.gram && move !== 'item') noteGram(s, r.correct);
+    if (move !== 'item' && !free) noteAnswer(s, q.gram ? 'gram' : q.options?.length ? 'pick' : 'typed', r.correct, q.ms); // 冒险者 PK pace
     // Feedback.
     if (r.correct) (r.crit ? sfx.crit : sfx.correct)();
     else sfx.wrong();
@@ -1700,6 +1706,7 @@ export class Controller {
   interact(it: { kind: string; data?: string }): void {
     if (it.kind === 'bonfire') this.rest();
     else if (it.kind === 'npc') this.talkNpc(it.data ?? 'hilde');
+    else if (it.kind === 'adv' && it.data) this.talkAdventurer(it.data);
     else if (it.kind === 'door') this.knockDoor(it.data);
     else if (it.kind === 'gate') this.travel((Number(it.data) || Math.max(1, this.state.region - 1)) as RegionId);
     else if (it.kind === 'sign') {
@@ -2107,12 +2114,82 @@ export class Controller {
     if (!s.owner) return say([{ who: SYS, text: 'AI 对话要登录才能用（在云端）。' }]);
     const n = s.flags.aiPayDay === dayKey(now(s)) ? ((s.flags.aiPayN as number) ?? 0) : 0;
     const modes = [
-      ...(s.level >= DUEL.from ? [{ label: '⚔ 决斗场：用德语把一件事办完', act: () => this.openDuel() }] : []),
       ...(s.level >= AI_TUTOR.grade ? [{ label: '✎ 批改造句：用一个词写一句', act: () => this.openAiSentence() }] : []),
       ...(s.level >= AI_TUTOR.essay ? [{ label: '📝 小作文：用 3 个词写 3–5 句', act: () => this.openEssay() }] : []),
       ...(s.level >= PERSUADE.from ? [{ label: '🗣 说服段：用德语说服一个人', act: () => this.openPersuade() }] : []),
     ];
-    say([{ who: SYS, text: `【AI 对话】选一种。决斗场每天前 ${CONFIG.aiPaidPerDay} 场给金币和经验（今天已经 ${Math.min(n, CONFIG.aiPaidPerDay)} 场），之后只算复习。篝火日记在篝火休息时写。` }], undefined, [...modes, { label: '先不了', act: () => undefined }]);
+    say([{ who: SYS, text: `【AI 对话】选一种。想用德语聊天（决斗场）就去找场景里挂「AI」牌子的冒险者：每天前 ${CONFIG.aiPaidPerDay} 场给金币和经验（今天已经 ${Math.min(n, CONFIG.aiPaidPerDay)} 场），之后只算复习。篝火日记在篝火休息时写。` }], undefined, [...modes, { label: '先不了', act: () => undefined }]);
+  }
+
+  // ---- 游荡的冒险者 (AI 玩家, Lucas 2026-11-25): talk (the duel engine) or PK; below 10 only a greeting ---------
+  talkAdventurer(id: string): void {
+    const s = this.state;
+    const a = adventurerById(id);
+    if (!a) return;
+    const who = `${a.name}（AI）`;
+    if (s.level < ADV.from) {
+      const [de, zh] = GREET[Math.floor(this.rng() * GREET.length)];
+      return say([{ who, text: `${de.replace('{n}', a.name)}\n（${zh.replace('{n}', a.name)}）` }, { who: SYS, text: `挂「AI」牌子的是 AI 扮演的冒险者。${ADV.from} 级起可以和它们用德语聊天（决斗场）和 PK。` }]);
+    }
+    const lines: Line[] = [];
+    if (!s.flags.advSeen) {
+      s.flags.advSeen = true;
+      lines.push({ who: SYS, text: `【冒险者】挂「AI」牌子的是 AI 扮演的冒险者，不是真人。聊天：用德语聊这个区的事，给你 3–5 个要用上的词（用对算复习），可以按住说德语；每天前 ${CONFIG.aiPaidPerDay} 场给金币和经验。PK：不用 AI，抢答本区学过的词和语法，先拿 ${ADV.pkWin} 分赢；每天前 ${ADV.pkPaid} 场有碎片（赢 ${ADV.pkShardsWin} 片、输 ${ADV.pkShardsLose} 片）。` });
+    }
+    lines.push({ who, text: `${a.origin}。（${a.manner}）` });
+    say(lines, undefined, [
+      { label: '💬 聊天（德语）', act: () => this.chatAdventurer(a) },
+      { label: `⚔ PK（今天还有 ${pkPaidLeft(s)} 场有奖励）`, act: () => this.pkAdventurer(a) },
+      { label: '走开', act: () => undefined },
+    ]);
+  }
+
+  private chatAdventurer(a: Adventurer): void {
+    const s = this.state;
+    if (!s.owner) return say([{ who: SYS, text: '和冒险者聊天要登录才能用（AI 在云端）。PK 不用登录。' }]);
+    const sc = adventurerScene(a);
+    const grammar = regionGrammar(a.region, s.level, this.rng);
+    const originZh = ORIGINS.find(([v]) => v === s.origin)?.[1] ?? s.origin;
+    const d: DuelScene = { id: `adv-${a.id}`, title: `和 ${a.name} 聊天`, npc: `${a.name}（AI）`, scene: adventurerPrompt(a, sc, originZh, grammar) };
+    if (grammar.length) toast(`这场会用到：${grammar.join('、')}`);
+    this.startDuel(d, {
+      grammar,
+      voice: true,
+      onIdle: () => say([{ who: `${a.name}（AI）`, text: '……（在发呆）' }, { who: SYS, text: 'AI 暂时不可用，冒险者在发呆。可以和它 PK。' }], undefined, [{ label: '⚔ PK', act: () => this.pkAdventurer(a) }, { label: '走开', act: () => undefined }]),
+    });
+  }
+
+  private pkAdventurer(a: Adventurer): void {
+    const s = this.state;
+    const region = a.erode ? (s.region ?? 1) : a.region;
+    const ok = runPk(
+      s,
+      a,
+      region,
+      this.rng,
+      (q, right) => {
+        recordAnswer(s, q.word, right, q.kind === 'typed' ? 'write' : 'read');
+        (right ? sfx.correct : sfx.wrong)();
+        if (q.gram) noteGram(s, right);
+        const log = todayLog(s);
+        if (right) log.correct += 1;
+        else log.wrong += 1;
+      },
+      (r) => {
+        if (r.rival < 0) return this.persist();
+        const paid = notePkPaid(s);
+        if (paid) {
+          const n = r.won ? ADV.pkShardsWin : ADV.pkShardsLose;
+          addGearKill(s, region, 1, n);
+          const gold = r.won ? Math.round(ADV.pkGoldKills * CONFIG.gold.perKill(s.level)) : 0;
+          s.gold += gold;
+          toast(`${r.won ? 'PK 赢了' : 'PK 输了'}（${r.me}:${r.rival}）：碎片 +${n}${gold ? `、金币 +${gold}` : ''}`, 'gold');
+        } else toast(`PK ${r.won ? '赢了' : '输了'}（${r.me}:${r.rival}）：今天前 ${ADV.pkPaid} 场的奖励已领完，这场只算学习进度`);
+        this.refresh();
+        this.persist();
+      },
+    );
+    if (!ok) say([{ who: `${a.name}（AI）`, text: 'Hmm … du kennst hier noch zu wenig Wörter.' }, { who: SYS, text: 'PK 只出这个区你学到半名以上的词，至少要 4 个。先去打几只怪。' }]);
   }
 
   // ---- 决斗场 · AI 对话 (10, rev 459) ----------------------------------------------------------------
@@ -2129,31 +2206,41 @@ export class Controller {
     say(lines, undefined, [...DUEL_SCENES.map((d) => ({ label: d.title, act: () => this.startDuel(d) })), { label: '先不', act: () => {} }]);
   }
 
-  private startDuel(d: DuelScene): void {
+  private startDuel(d: DuelScene, opt: { grammar?: string[]; voice?: boolean; onIdle?: () => void } = {}): void {
     const s = this.state;
     const [a, b] = DUEL.words;
     const targets = drawPractice(s, a + Math.floor(this.rng() * (b - a + 1)), this.rng);
-    const run = { d, turns: duelTurns(s.level, this.rng), targets, used: new Set<string>(), known: knownWords(s), clean: 0 };
+    const run: DuelRun = { d, turns: duelTurns(s.level, this.rng), targets, used: new Set<string>(), known: knownWords(s), clean: 0, ...opt };
     if (targets.length) say([{ who: SYS, text: `这场要用上的词（用德语说出来）：${targets.map((w) => `「${w.zh}」`).join('、')}。最多 ${run.turns} 轮。` }], () => this.duelStep(run, [], ''));
     else this.duelStep(run, [], '');
   }
 
-  private duelStep(run: { d: DuelScene; turns: number; targets: Word[]; used: Set<string>; known: string[]; clean: number }, history: Array<{ who: 'npc' | 'me'; de: string }>, reply: string): void {
+  private duelStep(run: DuelRun, history: Array<{ who: 'npc' | 'me'; de: string }>, reply: string, spoken = false): void {
     const s = this.state;
     const d = run.d;
     toast('……');
     const left = run.targets.filter((w) => !run.used.has(w.id));
-    void duelTurn(d.scene, history, reply, s.level, left, run.known).then((r) => {
-      if ('error' in r) return say([{ who: SYS, text: r.error === 'quota' ? '今天的决斗场次数用完了，明天再来。' : r.error === 'login' ? '登录过期了，重新登录后再来。' : r.error === 'model' ? 'AI 暂时不可用，决斗场先关着，其他玩法不受影响。稍后再来。' : '连不上决斗场（网络或服务出错），稍后再试。' }]);
+    void duelTurn(d.scene, history, reply, s.level, left, run.known, run.grammar).then((r) => {
+      if ('error' in r) {
+        // 冒险者: when the AI is out it stands 「在发呆」 and only PK is left.
+        if (r.error === 'model' && run.onIdle) return run.onIdle();
+        return say([{ who: SYS, text: r.error === 'quota' ? '今天的 AI 对话次数用完了，明天再来。' : r.error === 'login' ? '登录过期了，重新登录后再来。' : r.error === 'model' ? 'AI 暂时不可用，AI 对话先关着，其他玩法不受影响。稍后再来。' : '连不上 AI 对话（网络或服务出错），稍后再试。' }]);
+      }
       const lines: Line[] = [];
-      // Each target word used right counts as a context review (写对就算复习).
+      // 防泄露 ②: a target the reply could not keep quiet about is dropped from this talk.
+      for (const id of r.dropped ?? []) {
+        const i = run.targets.findIndex((x) => x.id === id);
+        if (i >= 0 && !run.used.has(id)) run.targets.splice(i, 1);
+      }
+      // Each target word used right counts as a context review (写对就算复习). Said aloud: a review, never 会写.
       for (const id of r.used ?? []) {
         const w = run.targets.find((x) => x.id === id);
         if (!w || run.used.has(id)) continue;
         run.used.add(id);
-        reviewedByWriting(s, w);
-        lines.push({ who: SYS, text: `✓ 用上了 ${w.art ? `${w.art} ` : ''}${w.de}（算复习一次）` });
+        if (!(spoken && s.words[w.id]?.placed)) reviewedByWriting(s, w);
+        lines.push({ who: SYS, text: `✓ 用上了 ${w.art ? `${w.art} ` : ''}${w.de}（算复习一次${spoken ? '；说出来的不算会写' : ''}）` });
       }
+      for (const g of r.gramOk ?? []) lines.push({ who: SYS, text: `✓ 这句用对了「${g}」` });
       if (r.used?.length) this.persist();
       if (reply && !r.note.trim()) run.clean += 1; // 天赋「健谈」: lines with nothing to correct
       const h2 = [...history, ...(reply ? [{ who: 'me' as const, de: reply }] : []), { who: 'npc' as const, de: r.de }];
@@ -2181,7 +2268,8 @@ export class Controller {
         return say(lines);
       }
       const need = run.targets.filter((w) => !run.used.has(w.id)).map((w) => `「${w.zh}」`); // 审查修订: targets in Chinese
-      say(lines, () => this.panels.ask(d.npc, `${r.de}${need.length ? `\n（还要用上：${need.join('、')}；第 ${turns + 1}/${run.turns} 轮）` : `\n（第 ${turns + 1}/${run.turns} 轮）`}`, (text: string) => (text.trim() ? this.duelStep(run, h2, text.trim()) : say([{ who: SYS, text: '你转身走了。' }]))));
+      if (run.voice) this.speak(r.de);
+      say(lines, () => this.panels.ask(d.npc, `${r.de}${need.length ? `\n（还要用上：${need.join('、')}；第 ${turns + 1}/${run.turns} 轮）` : `\n（第 ${turns + 1}/${run.turns} 轮）`}`, (text: string, sp?: boolean) => (text.trim() ? this.duelStep(run, h2, text.trim(), !!sp) : say([{ who: SYS, text: '你转身走了。' }])), false, !!run.voice));
     });
   }
 

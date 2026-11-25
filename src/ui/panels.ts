@@ -34,7 +34,7 @@ import { cloud, leaderboard, mustChangePassword, push, setNickname, signOut } fr
 import { loginView } from './account';
 import { toast } from './feedback';
 import { ACHIEVEMENTS, NOTES } from '../data/achievements';
-import { canListen, lastConfidence, listening, listenOnce } from './listen';
+import { canListen, lastConfidence, listening, listenOnce, stopHold } from './listen';
 import { clarity, shadowOk } from '../core/shadow';
 import { DIARY, DIARY_WRITER, type DiaryBlank } from '../data/diary';
 import { SCENE_BY_ID } from '../data/world';
@@ -168,12 +168,36 @@ export class Panels {
       const input = (a.multi
         ? h('textarea.ask', { rows: 6, autocomplete: 'off', spellcheck: 'false', placeholder: 'Ich …（Ctrl + Enter 交）', style: 'width:100%;font-size:18px' })
         : h('input.ask', { type: 'text', autocomplete: 'off', spellcheck: 'false', placeholder: 'Ich …' })) as HTMLInputElement;
+      // 冒险者语音对话: hold to speak German (Chrome's recognition); the text goes the same way as typed.
+      let heard = '';
       const go = () => {
         if (!input.value.trim()) return;
         this.asking = null;
         this.close();
-        a.onAnswer(input.value);
+        a.onAnswer(input.value, !!heard && input.value.trim() === heard);
       };
+      const mic = a.voice && canListen()
+        ? h('button.btn', {
+            title: '按住说德语，松开结束',
+            onmousedown: async () => {
+              const s = this.ctrl.state;
+              if (!s.flags.voiceChatNote) {
+                s.flags.voiceChatNote = true;
+                toast('提示：Chrome 的语音识别会把录音发给 Google 处理。不想用就继续打字。');
+              }
+              mic!.textContent = '🎤 在听……';
+              const r = await listenOnce({ hold: true });
+              mic!.textContent = '🎤 按住说';
+              if (r?.[0]) {
+                heard = r[0].trim();
+                input.value = heard;
+                input.focus();
+              } else if (r === null) toast('用不了麦克风：在地址栏左边的网站设置里允许麦克风');
+            },
+            onmouseup: () => stopHold(),
+            onmouseleave: () => stopHold(),
+          }, '🎤 按住说')
+        : null;
       input.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && (!a.multi || e.ctrlKey || e.metaKey)) {
           e.preventDefault();
@@ -181,7 +205,7 @@ export class Panels {
           go();
         } else if (a.multi) e.stopPropagation();
       });
-      panel.append(h('h2', h('span', a.title), h('button.btn.ghost', { onclick: () => this.close() }, '不回答 Esc')), h('p', { style: 'white-space:pre-line' }, a.prompt), h('div.typing', input, umlautButtons(input), h('button.btn.primary', { onclick: go }, a.multi ? '交 Ctrl+↵' : '说 ↵')));
+      panel.append(h('h2', h('span', a.title), h('button.btn.ghost', { onclick: () => this.close() }, '不回答 Esc')), h('p', { style: 'white-space:pre-line' }, a.prompt), h('div.typing', input, umlautButtons(input), mic, h('button.btn.primary', { onclick: go }, a.multi ? '交 Ctrl+↵' : '说 ↵')));
       clear(el).append(panel);
       el.onclick = null;
       window.setTimeout(() => input.focus(), 0);
@@ -434,11 +458,11 @@ export class Panels {
     return wrap;
   }
 
-  private asking: { title: string; prompt: string; onAnswer: (text: string) => void; multi?: boolean } | null = null;
+  private asking: { title: string; prompt: string; onAnswer: (text: string, spoken?: boolean) => void; multi?: boolean; voice?: boolean } | null = null;
 
   /** One free-text answer (the night guard's formal question in 零号站台). `multi`: a few sentences (小作文). */
-  ask(title: string, prompt: string, onAnswer: (text: string) => void, multi = false): void {
-    this.asking = { title, prompt, onAnswer, multi };
+  ask(title: string, prompt: string, onAnswer: (text: string, spoken?: boolean) => void, multi = false, voice = false): void {
+    this.asking = { title, prompt, onAnswer, multi, voice };
     this.show('ask');
   }
 

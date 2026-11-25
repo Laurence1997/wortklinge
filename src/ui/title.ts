@@ -18,6 +18,9 @@ export function showTitle(opts: {
   onNew: (name: string, origin: string, look: Look) => void;
   onImport: (text: string) => void;
   version: string;
+  /** Logged in, but the cloud save could not be read (offline / timeout): never offer a fresh start up front. */
+  cloudFailed?: boolean;
+  onRetry?: () => void;
 }): void {
   const el = $('title');
   el.hidden = false;
@@ -51,16 +54,36 @@ export function showTitle(opts: {
       '你在篝火旁醒来。叫对一个名字，它就会变回原样。',
     ),
   );
+  // An existing character (or a cloud save we could not reach) takes the centre; creating a new one is folded away.
+  const form = h('div');
+  const folded = !!opts.existing || !!opts.cloudFailed;
+  form.hidden = folded;
   if (opts.existing) {
+    // 6000 词导入 (the one save reset): say so here, before anything else, so a level-1 character is no surprise.
+    if (opts.existing.flags?.reset6000) box.append(h('p.small', { style: 'color:var(--gold, #ffcf4a)' }, '这一版换成了 6000 词的新词表，旧存档按之前的通知清空了：角色名和账号保留，从 1 级重新开始（旧存档的备份留在这个浏览器里）。'));
     box.append(
       h(
         'div.actions',
         h('button.btn.primary', { onclick: () => { el.hidden = true; opts.onContinue(); } }, `继续：${opts.existing.name} · Lv ${opts.existing.level}`),
       ),
-      h('p.small.muted', { style: 'margin-top:18px' }, '或者开始一个新角色（会覆盖当前存档）：'),
+    );
+  } else if (opts.cloudFailed) {
+    box.append(
+      h('p', '连不上云存档，现在读不到你的角色。请检查网络后重试；先别新建角色，以免盖掉云端的存档。'),
+      h('div.actions', h('button.btn.primary', { onclick: () => opts.onRetry?.() }, '重试')),
     );
   }
-  box.append(
+  if (folded) {
+    const unfold = h('button.btn.ghost.small', { style: 'margin-top:18px' }, opts.existing ? '开始一个新角色（会覆盖当前存档）' : '我确定没有角色，新建一个') as HTMLButtonElement;
+    unfold.onclick = () => {
+      unfold.remove();
+      form.hidden = false;
+      name.focus();
+    };
+    box.append(h('div', unfold));
+  }
+  box.append(form);
+  form.append(
     h(
       'div.form.panel',
       h('label', h('span', '名字（首领会问你「Wie heißt du?」）'), name),
@@ -73,11 +96,13 @@ export function showTitle(opts: {
       h('button.btn.ghost', { onclick: () => file.click() }, '导入存档'),
       file,
     ),
+  );
+  box.append(
     opts.account ?? '',
-    h('div.ver', `v${opts.version} · 第 1–2 区 · 请用电脑上的 Chrome 打开，开声音`),
+    h('div.ver', `v${opts.version} · 第 1–20 区 · 请用电脑上的 Chrome 打开，开声音`),
   );
   clear(el).append(box);
-  window.setTimeout(() => (opts.existing ? null : name.focus()), 50);
+  window.setTimeout(() => (folded ? null : name.focus()), 50);
 }
 
 function confirmOverwrite(): boolean {

@@ -6,6 +6,7 @@ import { loginView } from './ui/account';
 import { $ } from './ui/dom';
 import { mountLogBox } from './ui/logbox';
 import { joinWorld } from './net/social';
+import { initAdvChat } from './net/advChat';
 import { h } from './ui/dom';
 import { Controller } from './game/controller';
 import { WorldScene } from './game/WorldScene';
@@ -14,7 +15,7 @@ import { importJson } from './core/state';
 import { toast } from './ui/feedback';
 import { setReportVersion } from './net/report';
 
-const VERSION = '0.6.11';
+const VERSION = '0.8.0';
 setReportVersion(VERSION);
 const dev = new URLSearchParams(location.search).has('dev');
 
@@ -23,6 +24,7 @@ function boot(state: ReturnType<typeof newGame>) {
   (window as unknown as { wk: Controller }).wk = ctrl; // handy for debugging in the console
   const logBox = mountLogBox();
   joinWorld(() => ({ level: ctrl.state.level, hidden: !!ctrl.state.settings.hideBoard }));
+  initAdvChat(() => ctrl.state);
   window.setInterval(() => logBox.setVisible($('title').hidden), 1000);
   if (cloud.session && !mustChangePassword() && (!cloud.profile || !state.look)) window.setTimeout(() => ctrl.panels.show('account'), 2500);
   new Phaser.Game({
@@ -77,6 +79,8 @@ showTitle({
   account,
   existing,
   version: VERSION,
+  cloudFailed: !existing && !!cloud.session && cloud.status === 'offline',
+  onRetry: () => location.reload(),
   onContinue: () => boot(existing!),
   onNew: (name, origin, look) => {
     const s = newGame(name, origin);

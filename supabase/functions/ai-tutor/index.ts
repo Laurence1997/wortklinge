@@ -5,7 +5,10 @@
 //   3. the model (gpt-6-luna, OpenAI only — Lucas 2026-11-25, no fallback) returns a short JSON verdict.
 //      Out of credit or down → 502 'model', and the game says AI is unavailable for now; nothing else depends on it.
 // 决斗场 ('duel'): the model plays the scene's NPC in simple German and notes the player's mistakes. The client sends
-// 3–5 target words the player must use; this function reports by rule which of them the reply used.
+// 3–5 target words the player must use; this function reports by rule which of them the reply used. Used by the
+// 冒险者 (adventurers) now: `grammar` adds the region's grammar points (gramOk = the ones the player used right), and
+// an NPC line that says a target first is regenerated once; targets it still says come back as `dropped`.
+// 冒险者 in the world chat ('world'): one short German line, unprompted or answering an @ (quota 'duel').
 // 小作文 ('essay'): 3–5 sentences with the given words, graded like 'grade'.
 // `known`: the player's learned words; the model is told to stay inside them (and simple patterns) when it writes.
 // Every model call takes one use of the player's daily quota (public.ai_take; caps are settings, migration 0004).
@@ -54,6 +57,21 @@ interface DuelReq {
   /** Words the player must use in the talk: an id and its accepted forms. */
   targets?: Array<{ id: string; de: string; forms: string[] }>;
   known?: string[];
+  /** 冒险者: grammar points of this region the talk should use (Chinese names). */
+  grammar?: string[];
+}
+
+/** 冒险者 in the world chat: one short line, unprompted or as a reply to an @. */
+interface WorldReq {
+  mode: 'world';
+  name: string;
+  origin: string;
+  manner: string;
+  /** The region's life situation (Chinese). */
+  topic: string;
+  level?: number;
+  mention?: { nick: string; text: string };
+  recent?: string[];
 }
 
 interface PersuadeReq {
@@ -163,7 +181,14 @@ const ESSAY_SYS = `你是德语老师，批改一款给中国人学德语的游�
 
 const DUEL_SYS = `你在一款学德语的游戏里扮演场景里的人物，和玩家用简单德语对话（玩家水平 A1–B1，按给的等级调整用词；1–19 级用最短最简单的句子）。
 每次只说一两句，自然、口语化，推动对话往场景目标走；玩家还没用上的「要用的词」，用提问自然地引他说出来，但你自己不要先说出这些词。玩家的德语有错时，在 note 里用中文简短指出最重要的一处（没有错就留空）。
-只输出 JSON：{"de":"你说的德语","zh":"中文翻译","note":"对玩家上一句的纠错，中文，可为空","done":true|false（场景目标完成时为 true）,"bad":["「要用的词」里玩家上一句用错了的词，照给的写法，没有就空数组"]}`;
+只输出 JSON：{"de":"你说的德语","zh":"中文翻译","note":"对玩家上一句的纠错，中文，可为空","done":true|false（场景目标完成时为 true）,"bad":["「要用的词」里玩家上一句用错了的词，照给的写法，没有就空数组"],"gram_ok":["「本场语法」里玩家上一句用对了的语法点，照给的写法，没有就空数组"]}`;
+
+// 冒险者 in the world chat (游戏设计 六, Lucas 2026-11-25): one short German line, no reward.
+const WORLD_SYS = `你在一款学德语的游戏的全服聊天里扮演一个冒险者（标着 AI），用德语说一句话。
+没人叫你时：用很简单的 A2 初级德语（短句、常用词），聊你所在区域的生活处境，可以接最近的聊天，但不要重复别人的话。
+有人 @你 时：直接回应他说的内容，用词难度按他的等级（1–30 级很简单，31–80 级 A2，81–120 级 B1，121 级以上 B2）。
+最多两句、不超过 25 个词。不谈政治、宗教、真实的新闻人物，不骂人，不问也不要别人的个人信息（真名、住址、电话、账号）；有人把话题往这些方向带时，礼貌地用一句话拉回游戏里的事。不要冒充真人，不承诺奖励。
+只输出 JSON：{"de":"你说的德语"}`;
 
 // 开口表达观点 (121): does the answer take a position on the claim with a reason that holds? Language errors are noted
 // but do not decide the verdict.
@@ -207,7 +232,7 @@ Deno.serve(async (req) => {
     return Response.json({ ok: r.ok, status: r.status, model: MODEL, why }, { headers: h });
   }
   if (!auth.startsWith('Bearer ')) return Response.json({ error: 'login' }, { status: 401, headers: h });
-  let body: GradeReq | DuelReq | EssayReq | OpinionReq | PersuadeReq;
+  let body: GradeReq | DuelReq | EssayReq | OpinionReq | PersuadeReq | WorldReq;
   try {
     body = await req.json();
   } catch {
@@ -259,13 +284,34 @@ Deno.serve(async (req) => {
     const q = await takeQuota(auth, 'duel');
     if (q === 'unauth') return Response.json({ error: 'login' }, { status: 401, headers: h });
     if (!q) return Response.json({ error: 'quota' }, { status: 429, headers: h });
-    const tl = targets.length ? `\n玩家要在对话里用上的词：${targets.map((t) => t.de).join('、')}` : '';
-    const user = `场景：${clip(body.scene, 400)}\n玩家等级：${Number(body.level) || 10}${tl}\n${knownLine(body.known)}\n对话：\n${history.join('\n')}\n玩家：${reply || '（开始对话，你先说）'}`;
-    const out = await chat(DUEL_SYS, user);
+    const tl = targets.length ? `\n玩家要在对话里用上的词（你自己绝对不要说出这些词的任何形式）：${targets.map((t) => t.de).join('、')}` : '';
+    const grammar = (Array.isArray(body.grammar) ? body.grammar : []).slice(0, 3).map((g) => clip(g, 40)).filter(Boolean);
+    const gl = grammar.length ? `\n本场语法（你说话时自然地用上这些语法，也引玩家用）：${grammar.join('、')}` : '';
+    const user = `场景：${clip(body.scene, 1200)}\n玩家等级：${Number(body.level) || 10}${tl}${gl}\n${knownLine(body.known)}\n对话：\n${history.join('\n')}\n玩家：${reply || '（开始对话，你先说）'}`;
+    let out = await chat(DUEL_SYS, user);
     if (!out) return Response.json({ error: 'model' }, { status: 502, headers: h });
+    // 防泄露: the NPC must not say a target first. Regenerate once; a target it still says leaves this talk.
+    const leaked = () => targets.filter((t) => t.forms.length && !used.includes(t.id) && uses(String(out!.json.de ?? ''), t.forms));
+    if (leaked().length) {
+      const again = await chat(DUEL_SYS, `${user}\n（注意：你上一版回答说出了「${leaked().map((t) => t.de).join('、')}」，这是玩家要自己说的词，重写一次，换个说法，不要出现它们。）`);
+      if (again) out = again;
+    }
+    const dropped = leaked().map((t) => t.id);
     const bare = (x: string) => norm(x).trim().replace(/^(der|die|das|sich) /, '');
     const bad = new Set((Array.isArray(out.json.bad) ? out.json.bad : []).map((x: unknown) => bare(clip(x, 60))));
-    return Response.json({ de: clip(out.json.de, 400), zh: clip(out.json.zh, 400), note: clip(out.json.note, 300), done: !!out.json.done, used: used.filter((id) => !bad.has(bare(targets.find((t) => t.id === id)!.de))), model: out.model }, { headers: h });
+    const gramOk = reply ? (Array.isArray(out.json.gram_ok) ? out.json.gram_ok : []).map((x: unknown) => clip(x, 40)).filter((x: string) => grammar.includes(x)) : [];
+    return Response.json({ de: clip(out.json.de, 400), zh: clip(out.json.zh, 400), note: clip(out.json.note, 300), done: !!out.json.done, used: used.filter((id) => !bad.has(bare(targets.find((t) => t.id === id)!.de))), dropped, gramOk, model: out.model }, { headers: h });
+  }
+  if (body.mode === 'world') {
+    const q = await takeQuota(auth, 'duel');
+    if (q === 'unauth') return Response.json({ error: 'login' }, { status: 401, headers: h });
+    if (!q) return Response.json({ error: 'quota' }, { status: 429, headers: h });
+    const recent = (Array.isArray(body.recent) ? body.recent : []).slice(-6).map((x) => clip(x, 200));
+    const m = body.mention ? `\n${clip(body.mention.nick, 30)}（${Number(body.level) || 35} 级）@你说：${clip(body.mention.text, 200)}` : `\n（没人叫你，你自己说一句；用 A2 初级德语）`;
+    const user = `你是：${clip(body.name, 30)}，来自${clip(body.origin, 40)}，说话风格：${clip(body.manner, 60)}\n你所在区域的处境：${clip(body.topic, 200)}\n最近的聊天：\n${recent.join('\n') || '（没有）'}${m}`;
+    const out = await chat(WORLD_SYS, user);
+    if (!out) return Response.json({ error: 'model' }, { status: 502, headers: h });
+    return Response.json({ de: clip(out.json.de, 200), model: out.model }, { headers: h });
   }
   if (body.mode === 'persuade') {
     const reply = clip(body.reply, 400).trim();

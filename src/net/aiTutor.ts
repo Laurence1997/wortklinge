@@ -26,6 +26,16 @@ export interface DuelLine {
   done: boolean;
   /** Target word ids this reply used right. */
   used?: string[];
+  /** 防泄露: targets the model kept saying first (regenerated once); they leave this talk. */
+  dropped?: string[];
+  /** 冒险者: grammar points of this talk the player's last line used right (shown, no reward). */
+  gramOk?: string[];
+}
+
+/** 冒险者 in the world chat: one line (null when the AI is out). */
+export async function worldLine(p: { name: string; origin: string; manner: string; topic: string; level: number; mention?: { nick: string; text: string }; recent: string[] }): Promise<string | null> {
+  const r = await call<{ de: string }>({ mode: 'world', ...p });
+  return 'error' in r || !r.de ? null : r.de;
 }
 
 /** The forms of a word a sentence may use (Tee, Tees; trinken, trinke, trinkst …). */
@@ -64,8 +74,8 @@ export function aiGrade(sentence: string, w: Word, task: string, level: number, 
   return call<AiGrade>({ mode: 'grade', sentence, forms: wordForms(w), task, level, known });
 }
 
-export function duelTurn(scene: string, history: Array<{ who: 'npc' | 'me'; de: string }>, reply: string, level: number, targets: Word[] = [], known: string[] = []) {
-  return call<DuelLine>({ mode: 'duel', scene, history, reply, level, known, targets: targets.map((w) => ({ id: w.id, de: w.de, forms: wordForms(w) })) });
+export function duelTurn(scene: string, history: Array<{ who: 'npc' | 'me'; de: string }>, reply: string, level: number, targets: Word[] = [], known: string[] = [], grammar: string[] = []) {
+  return call<DuelLine>({ mode: 'duel', scene, history, reply, level, known, grammar, targets: targets.map((w) => ({ id: w.id, de: w.de, forms: wordForms(w) })) });
 }
 
 /** 小作文 (20 级): 3–5 sentences with the given words. `missing` = given words the text did not use. */
