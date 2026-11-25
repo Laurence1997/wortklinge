@@ -12,6 +12,7 @@ import { FAMILIES } from '../data/families';
 import { loadout, owned, POOL, POOL_FROM, POOL_ORDER, slotCount, toggleLoadout } from '../core/skillPool';
 import { phraseCards } from '../core/combat';
 import { SAYINGS, SAYING_CFG } from '../data/sayings';
+import { MASTERY, masteryFree, masteryIn, masteryPts, spendMastery, type MasteryTrack } from '../core/mastery';
 import { BRANCHES, canLearn, canLight, learn, learned, lightStar, litStars, ROW_GATE, spent, spentIn, STARS, STARS_FROM, starsPassed, talentPoints, TALENT_FROM_LEVEL, TALENT_TREE, type Branch } from '../core/classes';
 import { finishStarTrial, starTrial, STAR_TRIAL } from '../core/stars';
 import { fullForm, genderOf, hasArticleQuestion, WORD_BY_ID, WORDS, zhWithPos } from '../data/words';
@@ -1130,6 +1131,25 @@ export class Panels {
             lit ? '' : passed
               ? h('button.btn.small', { disabled: !canLight(s, st.id), onclick: () => { lightStar(s, st.id); this.ctrl.persist(); this.render(); } }, '点亮')
               : h('button.btn.small', { onclick: () => this.runStarTrial(st.id, st.zh) }, '试炼'),
+          ),
+        );
+      }
+      wrap.append(row);
+    }
+    // 言灵精通 (满级后).
+    if (s.level >= CONFIG.levelCap || masteryPts(s.flags) > 0) {
+      wrap.append(h('h3', `言灵精通（可用 ${masteryFree(s.flags)} / 共 ${masteryPts(s.flags)} 点）`));
+      wrap.append(h('p.muted.small', '满级后每攒满一级的经验得 1 点；裂隙深层第一次到达每 10 层也给 1 点。'));
+      const row = h('div.talent-row');
+      for (const t of Object.keys(MASTERY) as MasteryTrack[]) {
+        const m = MASTERY[t];
+        const n = masteryIn(s.flags, t);
+        row.append(
+          h(
+            'div.slot',
+            h('div.k', `${m.zh} ${n} / ${m.max}`),
+            h('div.small', `+${Math.round(n * m.per * 1000) / 10}%（每点 +${m.per * 100}%）`),
+            h('button.btn.small', { disabled: masteryFree(s.flags) <= 0 || n >= m.max, onclick: () => { spendMastery(s.flags, t); this.ctrl.persist(); this.render(); } }, '加点'),
           ),
         );
       }

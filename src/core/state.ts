@@ -6,6 +6,7 @@ import type { RiftRun } from './rift';
 import { convertLegacyAffixes } from './loot';
 import { UNLOCK } from './unlocks';
 import { levelCapFor } from './stages';
+import { masteryAffix } from './mastery';
 
 export interface DayLog {
   minutes: number;
@@ -182,7 +183,9 @@ export function todayLog(s: GameState): DayLog {
 
 /** 裂隙 白板进入: no gear inside the rift. */
 export const gear = (s: Pick<GameState, 'equipped' | 'rift'>) => (s.rift ? {} : s.equipped) as GameState['equipped'];
-const blessed = (s: Pick<GameState, 'rift'>, id: string) => s.rift?.bless.filter((x) => x === id).length ?? 0;
+/** Rift blessings picked; past max level they grow with depth (局内祈福按层数变强: ×(1 + 2% a floor), 暂定). */
+const blessed = (s: Pick<GameState, 'rift' | 'level'>, id: string) =>
+  (s.rift?.bless.filter((x) => x === id).length ?? 0) * (s.rift && s.level >= CONFIG.levelCap ? 1 + 0.02 * s.rift.floor : 1);
 
 export function maxHp(s: GameState): number {
   const coat = gear(s).coat?.main ?? 0;
@@ -255,19 +258,29 @@ export function engraved(s: GameState, word: 'auch' | 'denn'): number {
 export function affixTotal(s: GameState, key: string): number {
   let t = 0;
   for (const it of Object.values(gear(s))) if (!it?.unidentified) for (const a of it?.affixes ?? []) if (a.key === key) t += a.value;
-  return t;
+  return t + masteryAffix(s.flags, key);
 }
 
 export interface LevelUpResult {
   levels: number[];
   capped: boolean;
+  /** 言灵精通 points gained (at max level, each level's worth of experience). */
+  mastery?: number;
 }
 
 export function addXp(s: GameState, amount: number): LevelUpResult {
   const levels: number[] = [];
   s.xp += Math.max(0, Math.round(amount));
   let capped = false;
+  let mastery = 0;
   while (s.xp >= xpToNext(s.level)) {
+    // 言灵精通: at max level a level's worth of experience becomes one point.
+    if (s.level >= CONFIG.levelCap) {
+      s.xp -= xpToNext(s.level);
+      s.flags.masteryPts = ((s.flags.masteryPts as number) ?? 0) + 1;
+      mastery += 1;
+      continue;
+    }
     if (s.level >= levelCapFor(s.flags)) {
       // At the cap keep at most one level's worth, like a breakthrough trial.
       s.xp = Math.min(s.xp, xpToNext(s.level));
@@ -279,7 +292,7 @@ export function addXp(s: GameState, amount: number): LevelUpResult {
     levels.push(s.level);
   }
   if (levels.length) s.hp = maxHp(s);
-  return { levels, capped };
+  return { levels, capped, ...(mastery ? { mastery } : {}) };
 }
 
 // ---- Save / load ----------------------------------------------------------

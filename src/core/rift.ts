@@ -2,8 +2,9 @@
 // you have met (mostly 半名 and due ones, a few 归名 spot checks), each floor ends with a pick of one of three
 // temporary blessings, and death ends the run. You go in bare (no gear; skills and talents stay); what you find inside
 // is gone when you leave, but boss and exit chests and gold come home. 静默蔓延: every action on a floor past its
-// budget costs HP. After max level the floors go deeper: item level = 200 + depth (≤ 230), weekly depth ranking,
-// a 言灵精通 point for each first arrival at a tenth floor.
+// budget costs HP. After max level the floors go deeper: item level = 200 + depth (≤ 230), blessings grow with depth,
+// a personal deepest record, a 言灵精通 point for each first arrival at a tenth floor, and the words drawn are mostly the
+// ones this player forgets most.
 //
 // Numbers marked 暂定 are not in the doc yet (floor size, budget, blessing list); they live here so the docs thread
 // can set them.
@@ -59,7 +60,7 @@ export interface RiftRun {
   calmLeft?: boolean;
   /** Gold banked this run (comes home even on death: it is picked up when won). */
   gold: number;
-  /** Real time the run started (ms), for the weekly depth ranking. */
+  /** Real time the run started (ms). */
   startedAt: number;
 }
 
@@ -78,6 +79,11 @@ export function bossFloor(r: RiftRun): boolean {
 
 export function blessCount(s: GameState, id: BlessId): number {
   return s.rift?.bless.filter((x) => x === id).length ?? 0;
+}
+
+/** Strength of numeric blessings: past max level ×(1 + 2% a floor) (暂定), same as state.ts blessed(). */
+export function blessScale(s: GameState): number {
+  return s.rift && s.level >= RIFT.deepFrom ? 1 + 0.02 * s.rift.floor : 1;
 }
 
 /** Actions left before the silence bites (静 adds 2 per pick). */
@@ -101,6 +107,12 @@ export function riftWord(s: GameState, rng: () => number, t = now(s)): Word | nu
   const met = WORDS.filter((w) => s.words[w.id] && ok(w) && !isRetired(s.words[w.id]));
   const review = met.filter((w) => kindOf(s, w, t) === 'due' || stageOf(s, w, t) === 2);
   const named = met.filter((w) => stageOf(s, w, t) === 3);
+  // 深层: past max level, mostly the words this player forgets most (most wrong answers and relapses).
+  if (s.level >= RIFT.deepFrom && s.rift && met.length) {
+    const forget = (w: Word) => (s.words[w.id].wrong ?? 0) + 2 * (s.words[w.id].relapse ?? 0);
+    const worst = [...met].sort((a, b) => forget(b) - forget(a)).slice(0, Math.max(20, Math.ceil(met.length / 10)));
+    if (rng() < 0.7) return worst[Math.floor(rng() * worst.length)];
+  }
   const pool = rng() < RIFT.checkShare && named.length ? named : review.length ? review : met;
   return pool.length ? pool[Math.floor(rng() * pool.length)] : null;
 }
@@ -169,13 +181,13 @@ export function bare(s: Pick<GameState, 'rift'>): boolean {
 }
 
 export function riftAtkMult(s: GameState): number {
-  return 1 + 0.15 * blessCount(s, 'atk');
+  return 1 + 0.15 * blessCount(s, 'atk') * blessScale(s);
 }
 
 export function riftHpMult(s: GameState): number {
-  return 1 + 0.2 * blessCount(s, 'hp');
+  return 1 + 0.2 * blessCount(s, 'hp') * blessScale(s);
 }
 
 export function riftCrit(s: GameState): number {
-  return 0.08 * blessCount(s, 'crit');
+  return 0.08 * blessCount(s, 'crit') * blessScale(s);
 }

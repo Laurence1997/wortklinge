@@ -19,7 +19,7 @@ import { buy as buyItem, openShop, refresh as refreshShop, sell as sellItem } fr
 import { rank, resMax, respec, respecCost, spent } from '../core/classes';
 import { bossRed } from '../core/forge';
 import { noteVisit } from '../core/redname';
-import { BLESSINGS, blessCount, bossFloor, canDescend, descend, endRift, offerBlessings, RIFT, riftAct, riftItemLevel, riftOpen, riftWord, silenceLeft, startRift, takeBlessing } from '../core/rift';
+import { BLESSINGS, blessCount, blessScale, bossFloor, canDescend, descend, endRift, offerBlessings, RIFT, riftAct, riftItemLevel, riftOpen, riftWord, silenceLeft, startRift, takeBlessing } from '../core/rift';
 import { makeItem } from '../core/loot';
 import { applyLoss, applyWin, postFightHeal } from '../core/outcomes';
 import { defaultRng, type Rng } from '../core/rng';
@@ -1019,6 +1019,7 @@ export class Controller {
         if (b.word.family === 'krume') this.questFire('krumeKill');
         this.dailyTick(m.zone, false);
         for (const lv of res.levelUp.levels) this.onLevelUp(lv);
+        if (res.levelUp.mastery) banner('言灵精通', `+${res.levelUp.mastery} 点（在「技能与天赋」里加）`);
         if (res.levelUp.capped && !s.flags.taughtCapLevel) {
           s.flags.taughtCapLevel = true;
           const st = trialDue(s.level, s.flags);
@@ -2091,7 +2092,7 @@ export class Controller {
     }
     r.fightsLeft -= 1;
     const mend = blessCount(s, 'mend');
-    if (mend) s.hp = Math.min(maxHp(s), s.hp + Math.round(maxHp(s) * 0.1 * mend));
+    if (mend) s.hp = Math.min(maxHp(s), s.hp + Math.round(maxHp(s) * 0.1 * mend * blessScale(s)));
     if (bossFloor(r) && r.fightsLeft === 0) {
       // 首领宝箱 comes home whatever happens next.
       const il = riftItemLevel(s, s.level);
