@@ -1,0 +1,43 @@
+name: 例句快查 (rewritten example sentences quick check)
+
+# LanguageTool + OpenAI model on scripts/wortschatz/out/check-input.tsv, in parallel; commits check-result.tsv back.
+on:
+  push:
+    paths: ['scripts/wortschatz/check_examples.py', 'scripts/wortschatz/out/check-input.tsv', '.github/workflows/wortschatz-check.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    services:
+      languagetool:
+        image: erikvl87/languagetool:latest
+        ports: ['8010:8010']
+        env:
+          Java_Xmx: 2g
+    steps:
+      - uses: actions/checkout@v4
+      - name: Wait for LanguageTool
+        run: |
+          for i in $(seq 1 60); do
+            curl -fs -d 'language=de-DE&text=Test.' http://localhost:8010/v2/check >/dev/null && exit 0
+            sleep 3
+          done
+          exit 1
+      - name: Check
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: python3 scripts/wortschatz/check_examples.py
+      - name: Commit result
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898233+github-actions[bot]@users.noreply.github.com'
+          git add scripts/wortschatz/out/check-result.tsv
+          git diff --cached --quiet && exit 0
+          git commit -m 'Wortschatz: example quick-check result'
+          git pull --rebase -q || true
+          git push
