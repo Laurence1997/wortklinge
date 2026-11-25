@@ -16,4 +16,6 @@ This data is licensed **CC BY-SA 4.0** (https://creativecommons.org/licenses/by-
 - german-nouns by gambolputty (from Wiktionary), CC BY-SA 4.0: https://github.com/gambolputty/german-nouns
 - german-verbs / german-verbs-dict from RosaeNLG (Apache-2.0; dictionary based on german-pos-dict, CC BY-SA 4.0): https://github.com/RosaeNLG/rosaenlg
 
+Example sentences: mostly from Tatoeba (https://tatoeba.org, CC BY 2.0 FR; sentence id and author kept in the 例句出处 column), picked by `build/scripts/tatoeba_match.py`; rows marked 自写 and the Chinese marked 中文自译 were written for this project (`beispiele.tsv`).
+
 Chinese glosses, the life-in-Germany word list and the example sentences in `verben-praeposition.tsv` were written for this project.

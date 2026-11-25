@@ -18,8 +18,11 @@ for f in sorted(glob.glob(f'{W}/../rev/b0*.txt')):
 rem.sort()
 POS={'n':'名词','v':'动词','adj':'形容词','adv':'副词','prep':'介词','konj':'连词','pron':'代词','art':'冠词','num':'数词','int':'感叹词','part':'小品词'}
 H=['排名','卡片','原形','冠词','复数','属格(仅不规则)','动词三形','比较级(仅不规则)','词性','中文','标签','游戏里已有','例句','例句中文','例句出处','来源','备注']
+BSP={}
+for r in csv.DictReader(open('/home/user/wortklinge/data/wortschatz/beispiele.tsv',encoding='utf-8'),delimiter='\t'): BSP[r['原形']]=r
 def rowv(o):
-  return [o['rank'],o['disp'],o['lemma'],o['art'],o['pl'],o['gen'],o['vf'],o['cmp'],POS.get(o['pos'],o['pos']),o['zh'],'、'.join(o['tags']),'是' if o['game'] else '','', '', '',o['src'],o['note']]
+  b=BSP.get(o['lemma']) or BSP.get(o['lemma'].lower()) or {}
+  return [o['rank'],o['disp'],o['lemma'],o['art'],o['pl'],o['gen'],o['vf'],o['cmp'],POS.get(o['pos'],o['pos']),o['zh'],'、'.join(o['tags']),'是' if o['game'] else '',b.get('例句',''),b.get('例句中文',''),b.get('例句出处',''),o['src'],o['note']]
 wb=Workbook()
 hf=Font(bold=True,color='FFFFFF');fill=PatternFill('solid',fgColor='7A1F1F')
 def sheet(ws,head,data,widths):
@@ -37,14 +40,14 @@ info=[('说明',''),('排序','字幕词频（FrequencyWords / OpenSubtitles 201
 ('前 6000','以后进游戏的词；6001–8000 留给 121 级以后的文章模式。'),
 ('卡片','名词：冠词 + 单数 + 复数；只有不规则（弱变化等）才写属格。动词：三单现在时 · 过去式 · 完成时。形容词：只有不规则才写比较级。'),
 ('标签','基础=最常用打招呼/功能词；生活=德国生活场景；影视=字幕里偏多、日常少；不规则/可分/sein=动词；弱变化=名词属格不规则；地名。'),
-('待校','动词变化和名词复数是自动从开源词典生成的，个别会错（「备注」写了「待校」的优先看）。例句之后补（Tatoeba，标出处）。'),
+('待校','动词变化和名词复数是自动从开源词典生成的，个别会错。'),('例句','大部分来自 Tatoeba 母语者句子（CC BY 2.0 FR，出处列有编号和作者）；前 3000 词缺中文的已自译；找不到合适句子的词是自写（标「自写」）。之后统一过 LanguageTool + DeepSeek 校对。'),
 ('修改方法','直接在表里改、删行、加行都行（新加的词排名留空或填数字）。改完把 xlsx 发回来，脚本会导回仓库。不要改列名。'),
 ('',''),('数据来源和许可',''),
 ('FrequencyWords','hermitdave/FrequencyWords，OpenSubtitles 2018 德语，CC BY-SA 4.0'),
 ('wordfreq','rspeer/wordfreq 数据，CC BY-SA 4.0'),
 ('german-nouns','gambolputty/german-nouns（来自 Wiktionary），CC BY-SA 4.0'),
 ('german-verbs','german-verbs / german-verbs-dict（来自 german-pos-dict），Apache-2.0 / CC BY-SA'),
-('本表','以上派生，按 CC BY-SA 4.0 发布。中文释义为自写。')]
+('Tatoeba','tatoeba.org 例句，CC BY 2.0 FR，保留句子编号和作者'),('本表','以上派生，按 CC BY-SA 4.0 发布。中文释义为自写。')]
 ws=wb.create_sheet('说明和来源')
 for a,b in info: ws.append([a,b])
 ws.column_dimensions['A'].width=18;ws.column_dimensions['B'].width=110

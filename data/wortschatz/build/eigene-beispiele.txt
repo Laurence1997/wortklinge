@@ -1,0 +1,256 @@
+nächst|Wir steigen an der nächsten Haltestelle aus.|我们下一站下车。
+U-Bahn|Ich fahre jeden Morgen mit der U-Bahn zur Arbeit.|我每天早上坐地铁上班。
+tja|Tja, da kann man nichts machen.|唉，这也没办法。
+naja|Naja, das Essen war okay.|嗯，饭还行吧。
+E-Mail|Ich schicke dir die Adresse per E-Mail.|我把地址发邮件给你。
+Verlauf|Im Verlauf des Gesprächs wurde er ruhiger.|谈话过程中他平静了下来。
+sorry|Sorry, ich bin zu spät.|对不起，我来晚了。
+beantragen|Ich muss ein neues Visum beantragen.|我得申请新签证。
+Deal|Du kochst, ich wasche ab. Deal?|你做饭，我洗碗。成交？
+Shop|Die Schuhe habe ich in einem Online-Shop gekauft.|这双鞋是我在网店买的。
+Bundeswehr|Sein Bruder ist bei der Bundeswehr.|他哥哥在联邦国防军服役。
+original|Ist das die originale Verpackung?|这是原包装吗？
+nee|Nee, heute habe ich keine Zeit.|不行，今天我没空。
+top|Das Hotel war echt top.|那家酒店真是一流。
+Tomate|Kauf bitte noch ein Kilo Tomaten.|请再买一公斤西红柿。
+stattdessen|Der Bus kam nicht, stattdessen bin ich gelaufen.|公交没来，我就走着去了。
+matt|Nach der Grippe fühle ich mich noch matt.|流感过后我还觉得没力气。
+Info|Danke für die Info!|谢谢你的消息！
+aha|Aha, jetzt verstehe ich das.|啊哈，现在我明白了。
+Studio|Das Fitnessstudio ist bis 23 Uhr offen.|健身房开到晚上 11 点。
+Landtag|Im Frühling wird der Landtag neu gewählt.|春天要重新选举州议会。
+T-Shirt|Ich nehme das T-Shirt in Größe M.|我要 M 号的这件 T 恤。
+klicken|Klicken Sie unten auf „Weiter“.|请点击下方的“继续”。
+Wende|Nach der Wende zog seine Familie nach Berlin.|两德统一后他家搬到了柏林。
+Standort|Die Firma hat einen neuen Standort in Leipzig.|公司在莱比锡有了新的厂址。
+aktivieren|Du musst die Karte erst aktivieren.|你得先激活这张卡。
+schweizer|Ich mag Schweizer Käse.|我喜欢瑞士奶酪。
+Bund|Bund und Länder wollen mehr Geld für Schulen ausgeben.|联邦和各州想在学校上多花钱。
+Finale|Wer spielt heute im Finale?|今天谁打决赛？
+Umbau|Das Café ist wegen Umbau geschlossen.|咖啡馆因装修暂停营业。
+Union|Deutschland ist Mitglied der Europäischen Union.|德国是欧盟成员国。
+Kanzlerin|Die Kanzlerin hält morgen eine Rede.|总理明天发表讲话。
+erstens|Erstens ist es zu teuer, zweitens zu weit weg.|第一太贵，第二太远。
+angestellte|Sie ist Angestellte bei einer Bank.|她是一家银行的职员。
+Datenschutz|Aus Gründen des Datenschutzes darf ich Ihnen das nicht sagen.|出于数据保护，我不能告诉您。
+Einstieg|Der Einstieg ist nur vorne beim Fahrer.|只能从前门司机那儿上车。
+Gedenken|Im Gedenken an die Opfer brennen Kerzen.|为纪念遇难者点起了蜡烛。
+Migration|Migration ist ein wichtiges Thema in der Politik.|移民是政治中的重要话题。
+Aufzeichnung|Die Aufzeichnung des Kurses ist online.|课程录像已经放到网上了。
+Quote|Die Quote der Arbeitslosen ist gesunken.|失业率下降了。
+Transport|Der Transport der Möbel kostet extra.|家具运输另外收费。
+zurückschicken|Die Hose passt nicht, ich schicke sie zurück.|裤子不合身，我要寄回去。
+Agentur|Ich habe die Wohnung über eine Agentur gefunden.|我通过中介找到了这套房子。
+kippen|Kannst du bitte das Fenster kippen?|你能把窗户斜开一下吗？
+Bundesland|Bayern ist das größte Bundesland.|巴伐利亚是面积最大的联邦州。
+Erdgeschoss|Die Wohnung liegt im Erdgeschoss.|房子在一楼（地面层）。
+Pater|Pater Michael leitet die Kirche im Dorf.|米夏埃尔神父主持村里的教堂。
+Like|Ihr Foto hat schon hundert Likes.|她的照片已经有一百个赞了。
+Level|Sein Deutsch ist auf einem hohen Level.|他的德语水平很高。
+Camp|Im Sommer fahren die Kinder ins Camp.|夏天孩子们去夏令营。
+Austausch|Sie macht ein Jahr Austausch in Hamburg.|她在汉堡做一年交换生。
+nachweisen|Sie müssen Ihr Einkommen nachweisen.|您必须证明您的收入。
+prost|Prost, auf dein neues Jahr!|干杯，祝你新年快乐！
+Treppenhaus|Im Treppenhaus darf man keine Fahrräder abstellen.|楼梯间里不能停自行车。
+bisherig|Meine bisherige Wohnung war zu klein.|我原来的房子太小了。
+daraufhin|Ich habe mich beschwert, daraufhin bekam ich mein Geld zurück.|我投诉了，随后拿回了钱。
+Produzent|Der Produzent des Films kommt aus Köln.|这部电影的制片人来自科隆。
+Drehbuch|Sie schreibt gerade an einem Drehbuch.|她正在写一个剧本。
+Übertragung|Die Übertragung des Spiels beginnt um acht.|比赛直播八点开始。
+Überwachung|In der Halle gibt es Videoüberwachung.|大厅里有视频监控。
+Wohnraum|In der Stadt fehlt bezahlbarer Wohnraum.|城里缺少负担得起的住房。
+Kooperation|Die Uni arbeitet in Kooperation mit einer Firma.|大学和一家公司合作。
+dankeschön|Dankeschön für die Blumen!|非常感谢你的花！
+Staatsanwaltschaft|Die Staatsanwaltschaft ermittelt gegen den Chef.|检察院在调查这位老板。
+Rückgang|Es gibt einen Rückgang der Preise.|价格有所下降。
+Allianz|Die Länder bilden eine Allianz.|这些国家结成了联盟。
+Café|Wollen wir uns im Café treffen?|我们在咖啡馆见面吧？
+Leipzig|Leipzig liegt in Sachsen.|莱比锡在萨克森州。
+Hauptbahnhof|Wir treffen uns am Hauptbahnhof.|我们在中央火车站见。
+Investor|Ein Investor hat das alte Kino gekauft.|一位投资者买下了那家老电影院。
+demnach|Er war krank, demnach konnte er nicht kommen.|他生病了，因此没法来。
+Behinderte|Der Eingang ist auch für Behinderte geeignet.|这个入口也适合残疾人。
+Einzelhandel|Viele Leute arbeiten im Einzelhandel.|很多人在零售业工作。
+Nachweis|Für die Ermäßigung brauchen Sie einen Nachweis.|要享受优惠需要出示证明。
+Düsseldorf|Meine Schwester wohnt in Düsseldorf.|我姐姐住在杜塞尔多夫。
+Plattform|Der Zug fährt von Plattform drei ab.|火车从三号站台出发。
+Anhang|Den Vertrag finden Sie im Anhang.|合同见附件。
+Aufklärung|Wir brauchen mehr Aufklärung über das Thema.|这个话题需要更多的说明和普及。
+Krankenkasse|Bei welcher Krankenkasse sind Sie versichert?|您在哪家医保公司投保？
+Konzern|Er arbeitet bei einem großen Konzern.|他在一家大集团工作。
+Arena|Das Konzert findet in der Arena statt.|音乐会在体育馆举行。
+Vereinigung|Sie ist Mitglied einer Vereinigung für Studenten.|她是一个学生联合会的成员。
+Zeitraum|In diesem Zeitraum bin ich nicht zu Hause.|这段时间我不在家。
+Sensor|Das Licht geht mit einem Sensor an.|灯是感应开关的。
+Teddy|Das Kind schläft nie ohne seinen Teddy.|孩子没有泰迪熊就不睡觉。
+Kanzlei|Sie arbeitet in einer Kanzlei in der Stadt.|她在城里一家律师事务所工作。
+erlassen|Die Stadt hat neue Regeln erlassen.|市政府颁布了新规定。
+regional|Ich kaufe gern regionales Gemüse.|我喜欢买本地蔬菜。
+Inspektor|Der Inspektor stellt viele Fragen.|督察问了很多问题。
+Dresden|Am Wochenende fahren wir nach Dresden.|周末我们去德累斯顿。
+Kanzler|Der Kanzler trifft heute den Präsidenten.|总理今天会见总统。
+Image|Die Firma will ihr Image verbessern.|公司想改善自己的形象。
+Jahrgang|Sie ist Jahrgang 1998.|她是 1998 年出生的。
+Verfolgung|Die Polizei nahm die Verfolgung auf.|警察开始追捕。
+Versorgung|Die Versorgung mit Strom ist wieder normal.|电力供应恢复正常了。
+apropos|Apropos Urlaub, wohin fahrt ihr?|说到度假，你们去哪儿？
+Partnerschaft|Die Städte haben eine Partnerschaft.|这两个城市结成了友好城市。
+strategisch|Das war eine strategische Entscheidung.|那是一个战略决定。
+Koordinate|Schick mir die Koordinaten vom Treffpunkt.|把集合地点的坐标发给我。
+kellnern|Am Wochenende kellnert sie in einer Bar.|周末她在一家酒吧当服务员。
+kaiserlich|Das ist der alte kaiserliche Palast.|这是旧皇宫。
+Umkreis|Im Umkreis von zwei Kilometern gibt es keinen Supermarkt.|方圆两公里内没有超市。
+Salon|Sie hat einen Termin im Friseursalon.|她约了理发店。
+Bündnis|Die Parteien schließen ein Bündnis.|这些政党结成联盟。
+Finanzierung|Die Finanzierung des Studiums ist schwierig.|学费的筹措很难。
+Casino|Er hat im Casino viel Geld verloren.|他在赌场输了很多钱。
+Hauptquartier|Das Hauptquartier der Firma ist in München.|公司总部在慕尼黑。
+Umsatz|Der Laden hat dieses Jahr mehr Umsatz gemacht.|这家店今年营业额更高了。
+geistlich|Er singt gern geistliche Lieder.|他喜欢唱圣歌。
+ledern|Sie trägt eine lederne Jacke.|她穿着一件皮夹克。
+Einblick|Das Praktikum gibt einen guten Einblick in den Beruf.|实习能让人很好地了解这个职业。
+Weltmeister|Deutschland war 2014 Weltmeister.|德国是 2014 年世界冠军。
+Übernahme|Nach der Übernahme verloren viele ihren Job.|被收购后很多人丢了工作。
+Besetzung|Die Besetzung des Films ist super.|这部电影的演员阵容很棒。
+mixen|Er mixt die besten Cocktails.|他调的鸡尾酒最好喝。
+Urkunde|Für die Hochzeit brauchen Sie Ihre Geburtsurkunde.|结婚需要您的出生证明。
+Übergang|Das ist nur eine Lösung für den Übergang.|这只是一个过渡办法。
+Besichtigung|Die Besichtigung der Wohnung ist am Samstag.|看房在周六。
+Gegenzug|Ich helfe dir, im Gegenzug kochst du heute.|我帮你，作为回报你今天做饭。
+ummelden|Nach dem Umzug musst du dich ummelden.|搬家后你得变更登记地址。
+Bürgeramt|Ich habe morgen einen Termin beim Bürgeramt.|我明天在市民局有预约。
+Ausländerbehörde|Die Ausländerbehörde hat mir einen Brief geschickt.|外国人管理局给我寄了一封信。
+Aufenthaltstitel|Mein Aufenthaltstitel läuft im März ab.|我的居留许可三月到期。
+Bescheinigung|Ich brauche eine Bescheinigung vom Arbeitgeber.|我需要雇主开的证明。
+Steuererklärung|Hast du deine Steuererklärung schon gemacht?|你报税了吗？
+Steuernummer|Die Steuernummer steht auf dem Brief vom Finanzamt.|税号在税务局的信上。
+Rundfunkbeitrag|Jede Wohnung muss den Rundfunkbeitrag zahlen.|每户都得交广播电视费。
+Kaltmiete|Die Kaltmiete beträgt 600 Euro.|冷租是 600 欧元。
+Warmmiete|Die Warmmiete ist inklusive Heizung.|暖租包含暖气费。
+Mülltrennung|In Deutschland ist Mülltrennung sehr wichtig.|在德国垃圾分类很重要。
+Altglas|Altglas kommt in den Container an der Ecke.|废玻璃扔进街角的回收箱。
+Restmüll|Windeln gehören in den Restmüll.|尿布属于其他垃圾。
+Biomüll|Die Kartoffelschalen kommen in den Biomüll.|土豆皮扔进厨余垃圾。
+IBAN|Bitte geben Sie Ihre IBAN an.|请填写您的国际银行账号。
+Lastschrift|Die Miete wird per Lastschrift bezahlt.|房租通过自动扣款支付。
+abbuchen|Das Fitnessstudio bucht das Geld jeden Monat ab.|健身房每月自动扣钱。
+EC-Karte|Kann ich mit EC-Karte zahlen?|我能用借记卡付款吗？
+Haftpflichtversicherung|Eine Haftpflichtversicherung ist in Deutschland sehr wichtig.|在德国责任险非常重要。
+Hausratversicherung|Die Hausratversicherung zahlt bei Einbruch.|入室盗窃时家财险会赔。
+Versichertenkarte|Bitte bringen Sie Ihre Versichertenkarte mit.|请带上您的医保卡。
+Krankmeldung|Ich habe die Krankmeldung an meinen Chef geschickt.|我把病假条发给了老板。
+krankschreiben|Der Arzt hat mich drei Tage krankgeschrieben.|医生给我开了三天病假。
+brutto|Ich verdiene 3000 Euro brutto.|我税前挣 3000 欧元。
+Gehaltsabrechnung|Auf der Gehaltsabrechnung stehen alle Abzüge.|工资单上列着所有扣款。
+Werkstudent|Er arbeitet als Werkstudent bei einer Firma.|他在一家公司当工读生。
+Arbeitnehmer|Arbeitnehmer haben ein Recht auf Urlaub.|雇员有权休假。
+Arbeitsamt|Nach der Kündigung ging sie zum Arbeitsamt.|被解雇后她去了劳动局。
+Jobcenter|Das Jobcenter hilft bei der Suche nach Arbeit.|就业中心帮人找工作。
+Sozialversicherung|Die Sozialversicherung wird vom Gehalt abgezogen.|社保从工资里扣。
+S-Bahn|Die S-Bahn fährt alle zehn Minuten.|城铁每十分钟一班。
+Schwarzfahren|Schwarzfahren kostet 60 Euro Strafe.|逃票罚款 60 欧元。
+Immatrikulation|Für die Immatrikulation brauchen Sie Ihr Zeugnis.|注册入学需要您的成绩单。
+Sprachkurs|Ich mache einen Sprachkurs an der Volkshochschule.|我在成人大学上语言课。
+Zertifikat|Nach dem Kurs bekommen Sie ein Zertifikat.|课程结束后您会拿到证书。
+Handyvertrag|Mein Handyvertrag läuft noch ein Jahr.|我的手机合约还有一年。
+Prepaidkarte|Eine Prepaidkarte bekommst du im Supermarkt.|预付卡在超市就能买到。
+SIM-Karte|Ich brauche eine neue SIM-Karte.|我需要一张新 SIM 卡。
+Reklamation|Für eine Reklamation brauchen Sie den Kassenbon.|退货投诉需要购物小票。
+Hotline|Die Hotline ist ständig besetzt.|热线一直占线。
+Kundennummer|Bitte nennen Sie Ihre Kundennummer.|请报一下您的客户号。
+Einbürgerung|Für die Einbürgerung braucht man einen Test.|入籍需要考试。
+Integrationskurs|Der Integrationskurs dauert ungefähr ein Jahr.|融入课程大约持续一年。
+Geburtsort|Tragen Sie bitte Ihren Geburtsort ein.|请填写您的出生地。
+Wohnort|Mein Wohnort ist seit Mai Hamburg.|从五月起我住在汉堡。
+legendär|Die Partys in seiner WG sind legendär.|他合租屋的派对很有名。
+kombinieren|Man kann die Angebote gut kombinieren.|这些优惠可以叠加使用。
+beschlagnahmen|Der Zoll hat die Ware beschlagnahmt.|海关没收了货物。
+unterhalb|Unterhalb der Brücke ist ein kleiner Park.|桥下有个小公园。
+taktisch|Das war ein taktischer Fehler.|那是一个战术失误。
+Infrastruktur|Die Infrastruktur auf dem Land ist schlecht.|乡下的基础设施很差。
+Demo|Am Samstag gibt es eine Demo in der Innenstadt.|周六市中心有示威游行。
+Vermittlung|Die Agentur nimmt Geld für die Vermittlung.|中介收取中介费。
+Nutzung|Die Nutzung des WLANs ist kostenlos.|无线网免费使用。
+inszenieren|Er hat das Theaterstück neu inszeniert.|他重新导演了这部话剧。
+Elite|Die Uni gehört zur Elite in Deutschland.|这所大学属于德国顶尖大学。
+Wade|Nach dem Laufen tut mir die Wade weh.|跑步后我小腿疼。
+ciao|Ciao, bis morgen!|拜拜，明天见！
+einerseits|Einerseits ist die Wohnung schön, andererseits zu teuer.|一方面房子很好，另一方面太贵。
+statistisch|Statistisch gesehen ist Fliegen sicher.|从统计上看坐飞机很安全。
+Förderung|Für das Studium gibt es eine staatliche Förderung.|学业有国家资助。
+Bereitschaft|Danke für deine Bereitschaft zu helfen.|谢谢你愿意帮忙。
+austragen|Er trägt morgens Zeitungen aus.|他早上送报纸。
+Sektion|Die Sektion für Kinderbücher ist im ersten Stock.|童书区在二楼。
+Gewebe|Das Gewebe ist sehr dünn.|这块布料很薄。
+gleichfalls|„Schönes Wochenende!“ – „Danke, gleichfalls!“|“周末愉快！”——“谢谢，你也是！”
+Springer|Der Springer darf über andere Figuren springen.|马可以越过其他棋子。
+Entsetzen|Zu meinem Entsetzen war die Tür offen.|让我惊恐的是门开着。
+Abschaum|Er nannte die Diebe Abschaum.|他称那些小偷是败类。
+Fraktion|Die Fraktion stimmt gegen das Gesetz.|该党团投票反对这项法律。
+Laser|Der Arzt arbeitet mit einem Laser.|医生用激光治疗。
+Zulassung|Ich habe die Zulassung für die Uni bekommen.|我拿到了大学录取。
+bunkern|Er bunkert Süßigkeiten in seinem Zimmer.|他在房间里囤零食。
+belangen|Dafür kann man ihn nicht belangen.|这事不能追究他的责任。
+rocken|Die Band hat das Festival gerockt.|乐队把音乐节点燃了。
+Transporter|Für den Umzug mieten wir einen Transporter.|搬家我们租了一辆厢式货车。
+Visier|Er hat sein Ziel im Visier.|他瞄准了目标。
+Untergrund|Der Untergrund ist hier sehr weich.|这里的地面很软。
+Komponente|Das System besteht aus drei Komponenten.|这个系统由三个组件组成。
+vorführen|Der Verkäufer führt uns das Gerät vor.|售货员给我们演示这台机器。
+Olympia|Sie will bei Olympia schwimmen.|她想参加奥运会游泳比赛。
+klinisch|Das Medikament wird noch klinisch getestet.|这种药还在做临床试验。
+akut|Bei akuten Schmerzen gehen Sie bitte in die Notaufnahme.|急性疼痛请去急诊。
+Biest|Die Katze ist ein kleines Biest.|这只猫是个小坏蛋。
+Joint|Er hat auf der Party einen Joint geraucht.|他在派对上抽了大麻烟。
+Cover|Das Cover des Buches gefällt mir.|我喜欢这本书的封面。
+Bingo|Im Altenheim spielen sie jeden Freitag Bingo.|养老院每周五玩宾果。
+Bremen|Bremen liegt im Norden.|不来梅在北部。
+Übergabe|Die Übergabe der Wohnung ist am Montag.|房子周一交接。
+scannen|Kannst du das Dokument scannen?|你能扫描一下这份文件吗？
+ungut|Ich habe ein ungutes Gefühl.|我有种不好的预感。
+nobel|Das ist ein sehr nobles Restaurant.|这是一家很高档的餐厅。
+Steuerung|Die Steuerung des Spiels ist einfach.|这个游戏的操作很简单。
+Boom|In der Stadt gibt es einen Bau-Boom.|这座城市建筑业正繁荣。
+Kollektiv|Das Café wird von einem Kollektiv geführt.|这家咖啡馆由一个集体经营。
+Wirbel|Um die Wahl gab es viel Wirbel.|围绕选举闹得沸沸扬扬。
+Punk|In den Achtzigern war er Punk.|八十年代他是个朋克。
+ankern|Das Schiff ankert vor der Küste.|船在海岸外抛锚。
+absichern|Ich möchte mich gegen Unfälle absichern.|我想为意外上保险。
+Delta|Das Delta des Flusses ist sehr groß.|这条河的三角洲很大。
+Kompanie|Die Kompanie marschiert durch die Stadt.|连队穿城而过。
+alliiert|Die alliierten Truppen kamen 1945.|盟军 1945 年到来。
+vermeintlich|Der vermeintliche Fehler war gar keiner.|所谓的错误其实根本不是错误。
+Entschädigung|Für die Verspätung bekommen Sie eine Entschädigung.|晚点您可以得到赔偿。
+Anbetracht|In Anbetracht der Lage bleiben wir zu Hause.|鉴于情况，我们待在家里。
+Ansage|Hast du die Ansage im Zug verstanden?|你听懂火车上的广播了吗？
+hybrid|Wir haben uns ein Hybridauto gekauft.|我们买了一辆混合动力车。
+Informant|Die Polizei hat einen Informanten.|警方有一个线人。
+ducken|Er duckt sich, um nicht gesehen zu werden.|他蹲下身以免被看到。
+verkürzen|Die Bahn verkürzt die Fahrzeit nach Berlin.|铁路缩短了去柏林的行车时间。
+Übersicht|Hier haben Sie eine Übersicht über die Kosten.|这是费用概览。
+psychiatrisch|Er ist in psychiatrischer Behandlung.|他在接受精神科治疗。
+Abwehr|Die Abwehr des Teams war heute schwach.|这支球队今天的防守很弱。
+Beurteilung|Die Beurteilung vom Chef war gut.|老板的评价很好。
+Vernichtung|Der Film zeigt die Vernichtung der Stadt.|电影展现了这座城市的毁灭。
+Flyer|Sie verteilt Flyer für das Konzert.|她在发音乐会传单。
+Salzburg|Salzburg ist die Stadt von Mozart.|萨尔茨堡是莫扎特的城市。
+würgen|Ich musste beim Geruch würgen.|闻到那味道我直犯恶心。
+vorbehalten|Änderungen vorbehalten.|保留修改权利。
+Nürnberg|In Nürnberg gibt es einen berühmten Weihnachtsmarkt.|纽伦堡有个有名的圣诞市场。
+Alias|Er benutzt im Internet einen Alias.|他在网上用化名。
+Vertretung|Frau Klein ist im Urlaub, ich bin ihre Vertretung.|克莱因女士在休假，我是她的代理人。
+freilich|Das ist freilich nicht so einfach.|这当然没那么简单。
+trompeten|Der Elefant trompetet laut.|大象大声吼叫。
+Erzbischof|Der Erzbischof besucht die Stadt.|大主教访问这座城市。
+Formation|Die Vögel fliegen in einer Formation.|鸟儿排成队形飞行。
+abdrücken|Er hat nicht abgedrückt.|他没扣扳机。
+klonen|Man kann Schafe klonen.|羊是可以克隆的。
+einstufen|Der Test stuft dich in einen Kurs ein.|测试会把你分进相应的课程。
+Legion|Die römische Legion zog nach Norden.|罗马军团向北进军。
+Sammler|Er ist ein Sammler von alten Münzen.|他收藏古钱币。
+leitend|Sie ist leitende Ärztin im Krankenhaus.|她是医院的主治医师。
+Inhaber|Der Inhaber des Ladens ist sehr nett.|这家店的店主人很好。
+Exil|Der Schriftsteller lebte lange im Exil.|这位作家长期流亡在外。
+Röhre|Das Wasser fließt durch eine Röhre.|水从一根管子里流过。
+neuerdings|Neuerdings fährt er mit dem Fahrrad zur Arbeit.|最近他骑车上班。
+kuppeln|Beim Anfahren musst du kuppeln.|起步时你得踩离合。

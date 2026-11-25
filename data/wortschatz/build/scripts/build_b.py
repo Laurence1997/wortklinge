@@ -84,7 +84,7 @@ REM={}
 for w in 'Majestät Hoheit Herrin Fräulein Telegramm Kassette Kutsche Graf Gräfin Fürst Baron Herzog Thron Rüstung Bube Bursche Hauptmann Oberst Indianer'.split(): REM[w]='过时/历史用语'
 for w in 'Paris London Madrid Tokio Hongkong Amsterdam Barcelona Istanbul Stockholm Jerusalem'.split(): REM[w]='外国地名（德语写法和原文一样，没有学习价值）'
 for w in 'oh hey hi ah wow hm ha äh au ähm hmm hä bravo uh nö ey amen haha mhm bla aua och hopp hurra ups herrgott puh pardon oje jaja psst juhu peng boah ahh huch merci bumm uff ooh autsch jep adieu hahaha herrje halleluja ohh pfui hui'.split(): REM[w]='感叹词/拟声词（字幕里多，学习价值低）'
-REM['jawohl']='过时/军队用语'; REM['Arsch']='粗话'
+REM['jawohl']='过时/军队用语'; REM['Weber']='人名（姓）'; REM['Arsch']='粗话'
 _seen=set();_r=[]
 for x in r:
   k=(FIXCASE.get(x['lemma'],x['lemma']).lower(),x['pos'])
