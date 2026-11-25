@@ -309,6 +309,8 @@ export interface Battle {
   curse?: 'forget' | 'silence';
   /** 锈名 (0.6, 27 级): a long-overdue review monster, fatter and paying double. */
   rusty?: boolean;
+  /** 审查修订: sentences shown in this fight (normalized), kept out of writing questions. */
+  seenLines?: string[];
   /** It carried a curse at the start (pays ×1.3 XP and one more shard even once lifted). */
   cursed?: boolean;
   /** 跟读 paid out in this fight (once per fight). */
@@ -762,8 +764,18 @@ export function shoutLine(say: SayLine): { line: string; zh: string; full: undef
 
 // ---- Questions -------------------------------------------------------------
 
+/** Meanings that overlap (a shared gloss) count as synonyms. */
+const zhParts = (zh: string) => zh.split(/[、，,;；/（）()\s]+/).map((x) => x.trim()).filter((x) => x.length > 0);
+function synonym(a: Word, b: Word): boolean {
+  const pa = zhParts(a.zh);
+  return zhParts(b.zh).some((x) => pa.includes(x));
+}
+
+/** 审查修订「干扰项」: same part of speech, same gender (nouns), and never a synonym. */
 function distractors(rng: Rng, w: Word, field: 'de' | 'zh', n: number): string[] {
-  const samePos = WORDS.filter((x) => x.id !== w.id && x.pos === w.pos && x[field] !== w[field]);
+  const fits = (x: Word) => x.id !== w.id && x.pos === w.pos && x[field] !== w[field] && !synonym(w, x) && (!w.art || x.art === w.art);
+  const strict = WORDS.filter(fits);
+  const samePos = strict.length >= n ? strict : WORDS.filter((x) => x.id !== w.id && x.pos === w.pos && x[field] !== w[field] && !synonym(w, x));
   const pool = samePos.length >= n ? samePos : WORDS.filter((x) => x.id !== w.id);
   const out: string[] = [];
   for (const x of shuffle(rng, pool)) {
@@ -1018,7 +1030,8 @@ function exampleOf(w: Word, rng: Rng): string | null {
 /** 造句 (场景精英 ③): write a short sentence of your own with the word. `answer` is only the word, for 低语 and notes. */
 function composeQ(w: Word): Question {
   const name = w.art ? `${w.art} ${w.de}` : w.de;
-  return { type: 'cloze', write: 'compose', prompt: `造句：用 ${name}（${w.zh}）写一句你自己的短句`, focus: `${name} · ${w.zh}`, answer: name };
+  // 审查修订「题面露词」: the word is given in Chinese only, or writing it would prove nothing.
+  return { type: 'cloze', write: 'compose', prompt: `造句：用「${w.zh}」这个词写一句你自己的短句（德语${w.art ? '，名词带冠词' : ''}）`, focus: w.zh, answer: name };
 }
 
 /** 句中默写 (练中学, rev 425): the word's slot blanked in one of its examples, the whole Chinese given, no letters.
@@ -1046,8 +1059,16 @@ export function dictQ(w: Word, rng: Rng): Question | null {
   };
 }
 
+/** 审查修订: sentences already shown in this fight (the monster's lines, sentences shown after answers). Until every
+ *  word has 3 examples, these are not reused for a writing question. Set by makeQuestion, read by clozeQ. */
+let seenNow: Set<string> = new Set();
+const lineKey = (x: string) => x.replace(/\s+/g, ' ').replace(/[.!?…]+$/, '').trim().toLowerCase();
+
 export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skillId?: string, inPack = false, mates: Battle[] = []): Question {
   const w = b.word;
+  b.seenLines ??= [];
+  for (const x of [b.intent?.line, b.intent?.full]) if (x && !b.seenLines.includes(lineKey(x))) b.seenLines.push(lineKey(x));
+  seenNow = new Set(b.seenLines);
   const isNoun = hasArticleQuestion(w);
   const canType = has(s.level, 'typing');
   const promptZh = w.digit ? w.digit : w.zh;
@@ -1421,8 +1442,9 @@ function whisperOf(q: Question, w: Word): Question {
   else if (q.write === 'slot' && q.slot) hint = `${PATTERNS[q.slot.pattern].lead} …（比如眼前这只怪）`;
   else if (q.write === 'link' && q.link) hint = `… ${q.link.conj} ${q.answer!.split(` ${q.link.conj} `)[1]?.split(' ')[0] ?? ''} …`;
   else if (q.type === 'sentence' && q.pattern) hint = `${PATTERNS[q.pattern].lead} …`;
-  else if (q.withArticle && w.art) hint = `${w.art} ${w.de[0]}…`;
-  else if (q.type === 'cloze' && a.includes(' ')) hint = `${a.split(' ')[0]} ${a.split(' ')[1][0]}…`;
+  // 审查修订: only the word's first letter, never the article.
+  else if (q.withArticle && w.art) hint = `${w.de[0]}…`;
+  else if (q.type === 'cloze' && a.includes(' ')) hint = `${(a.split(' ').find((x) => !/^(der|die|das|den|dem|des|ein|eine|einen|einem|einer)$/i.test(x)) ?? a)[0]}…`;
   return { ...q, whisper: hint, whispered: true };
 }
 
@@ -1436,8 +1458,10 @@ export function clozeQ(s: GameState, w: Word, rng: Rng, mode: ClozeMode = clozeM
       return { type: 'cloze', prompt: `代词：把名词换成 ihn / sie / es · ${p.zh}`, focus: p.shown, answer: p.answer, clozeMode: 'form', full: p.full };
     }
   }
-  const c = makeCloze(w, mode, rng) ?? (mode === 'base' ? makeCloze(w, 'form', rng) : null);
-  if (!c) return null;
+  let c = makeCloze(w, mode, rng) ?? (mode === 'base' ? makeCloze(w, 'form', rng) : null);
+  // Writing modes: not on a sentence this fight already showed (try a few, else no cloze here).
+  if (mode !== 'pick') for (let i = 0; i < 4 && c && seenNow.has(lineKey(c.full)); i++) c = makeCloze(w, mode, rng);
+  if (!c || (mode !== 'pick' && seenNow.has(lineKey(c.full)))) return null;
   const real: ClozeMode = mode === 'base' && c.answer !== w.de && !c.answer.endsWith(w.de) ? 'form' : mode;
   const tip = real === 'pick' ? '选出填进去的词' : real === 'base' ? '打出填进去的词' : '打出这里要的形式（带冠词、变位或复数）';
   return {
@@ -1833,7 +1857,9 @@ function cutCheck(s: GameState, b: Battle, q: Question, input: string, ok: boole
     notes.push(typo ? `差一个字母：${fullForm(w)}。算你会，会写 1/2` : '✓ 会写 1/2 · 明天再遇到写对就能斩杀');
   }
   // Anything that put the spelling on screen (the question itself, or a wrong answer's correction).
-  if (SHOWS_SPELLING.has(q.type) || (q.type === 'cloze' && q.clozeMode === 'pick') || !ok || q.whispered) b.spellSeen = true;
+  // 审查修订: the full sentence shown after a right answer counts as having seen the spelling too.
+  if (SHOWS_SPELLING.has(q.type) || (q.type === 'cloze' && q.clozeMode === 'pick') || !ok || q.whispered || (ok && !!(q.full || q.gram?.full))) b.spellSeen = true;
+  for (const x of [q.full, q.gram?.full]) if (x) (b.seenLines ??= []).push(lineKey(x));
   return { notes, report };
 }
 

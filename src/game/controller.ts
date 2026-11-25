@@ -1907,7 +1907,7 @@ export class Controller {
     const [a, b] = DUEL.words;
     const targets = drawPractice(s, a + Math.floor(this.rng() * (b - a + 1)), this.rng);
     const run = { d, turns: duelTurns(s.level, this.rng), targets, used: new Set<string>(), known: knownWords(s), clean: 0 };
-    if (targets.length) say([{ who: SYS, text: `这场要用上的词：${targets.map((w) => `${w.art ? `${w.art} ` : ''}${w.de}（${w.zh}）`).join('、')}。最多 ${run.turns} 轮。` }], () => this.duelStep(run, [], ''));
+    if (targets.length) say([{ who: SYS, text: `这场要用上的词（用德语说出来）：${targets.map((w) => `「${w.zh}」`).join('、')}。最多 ${run.turns} 轮。` }], () => this.duelStep(run, [], ''));
     else this.duelStep(run, [], '');
   }
 
@@ -1949,7 +1949,7 @@ export class Controller {
         lines.push({ who: SYS, text: `${r.done ? `「${d.title}」办成了。` : '时间到了，这次先到这里。'}${run.targets.length ? ` 用上了 ${run.used.size}/${run.targets.length} 个词${miss.length ? `；没用上：${miss.map((w) => w.de).join('、')}` : ''}。` : ''}` });
         return say(lines);
       }
-      const need = run.targets.filter((w) => !run.used.has(w.id)).map((w) => w.de);
+      const need = run.targets.filter((w) => !run.used.has(w.id)).map((w) => `「${w.zh}」`); // 审查修订: targets in Chinese
       say(lines, () => this.panels.ask(d.npc, `${r.de}${need.length ? `\n（还要用上：${need.join('、')}；第 ${turns + 1}/${run.turns} 轮）` : `\n（第 ${turns + 1}/${run.turns} 轮）`}`, (text: string) => (text.trim() ? this.duelStep(run, h2, text.trim()) : say([{ who: SYS, text: '你转身走了。' }]))));
     });
   }
@@ -1963,7 +1963,7 @@ export class Controller {
     const w = drawPractice(s, 1, this.rng)[0];
     if (!w) return say([{ who: SYS, text: '现在没有需要练的词（半名或到期的词）。去野外打几只再来。' }]);
     const name = `${w.art ? `${w.art} ` : ''}${w.de}`;
-    this.panels.ask('AI 批改造句', `用 ${name}（${w.zh}）写一句你自己的话。AI 只改错、不打分；写对算它复习一次。`, (text) => {
+    this.panels.ask('AI 批改造句', `用「${w.zh}」这个词（德语${w.art ? '，名词带冠词' : ''}）写一句你自己的话。AI 只改错、不打分；写对算它复习一次。`, (text) => {
       if (!text.trim()) return;
       toast('批改中……');
       void aiGrade(text.trim(), w, `用 ${name}（${w.zh}）写一句话`, s.level, knownWords(s)).then((r) => {
@@ -1986,7 +1986,7 @@ export class Controller {
     if (!s.owner) return say([{ who: SYS, text: '小作文要登录才能用（AI 批改在云端）。' }]);
     const words = drawPractice(s, 3, this.rng);
     if (words.length < 2) return say([{ who: SYS, text: '现在需要练的词不够（半名或到期的词）。去野外打几只再来。' }]);
-    const list = words.map((w) => `${w.art ? `${w.art} ` : ''}${w.de}（${w.zh}）`).join('、');
+    const list = words.map((w) => `「${w.zh}」`).join('、'); // 审查修订: given in Chinese
     this.panels.ask('小作文', `用 ${list} 写 3–5 句，题目随你（今天、周末、你住的地方……）。AI 只改错、不打分。`, (text) => {
       if (!text.trim()) return;
       toast('批改中……');
