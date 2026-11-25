@@ -2,8 +2,8 @@ import { monsterArt, monsterIcon, heroIcon } from './icons';
 import { DEFAULT_LOOK } from '../core/look';
 import type { Battle, Question, TurnReport } from '../core/combat';
 import { count as itemCount, itemsOpen, tabletHeal } from '../core/items';
-import { bestHeard, castMs, gcdMs, parryWindowMs, realtimeOn, voiceOpen } from '../core/combat';
-import { availableMoves, chorusMates, canHint, comboTier, effArmor, moveReady, poolReady, needsPhase, phaseOf, resName, shownDe, stancesFor, teachPhase, readTarget, readRecall, readShown, phaseWrongWhy } from '../core/combat';
+import { bestHeard, plateZh, castMs, gcdMs, parryWindowMs, realtimeOn, voiceOpen } from '../core/combat';
+import { availableMoves, chorusMates, canHint, comboTier, effArmor, moveReady, poolReady, needsPhase, phaseOf, resName, stancesFor, teachPhase, readTarget, readRecall, readShown, phaseWrongWhy } from '../core/combat';
 import { articleSlip, clarity, shadowOk } from '../core/shadow';
 import { has } from '../core/unlocks';
 import type { Stance } from '../core/cloze';
@@ -694,7 +694,7 @@ export class BattleUI {
     const elTag = b.stage > 0 && showG && (b.pluralMon || g) ? ELEMENT_TAG[b.pluralMon ? 'pl' : g!] : '';
 
     // Monster card.
-    const glyph = nameGlyph(b, this.phase === 'answer');
+    const glyph = nameGlyph(b, this.phase === 'answer' && asksMeaning(this.question));
     const m = b.monster;
     const st: string[] = [];
     if (m.broken > 0) st.push(`破甲 ${m.broken}`);
@@ -736,7 +736,7 @@ export class BattleUI {
       h(
         'div',
         { style: 'flex:1;min-width:0' },
-        h('div.kind', `${pack.length > 1 ? nameGlyph(b, this.phase === 'answer') + ' ' : '它'}说`),
+        h('div.kind', `${pack.length > 1 ? nameGlyph(b, this.phase === 'answer' && asksMeaning(this.question)) + ' ' : '它'}说`),
         // 审查修订: the line often is the word's own example — while a finisher / ultimate or 直接叫名 is answered it
         // only mumbles.
         ...(() => {
@@ -953,7 +953,7 @@ export class BattleUI {
         { onclick: () => this.target(i), title: '选中它（Tab 切换）', disabled: dead },
         h('div.fam', h('span', `${FAMILIES[w.family].zh} · Lv ${pb.monster.lvl}`), h('span', dead ? '已打散' : STAGE_ZH[pb.stage])),
         monsterIcon(monsterArt(pb), 2, dead, 'mon-icon small', !!this.ctrl.scene?.bright),
-        h('div.nm', { style: `color:${color}` }, dead ? (pb.pluralMon ? `die ${w.pl}` : fullForm(w)) : nameGlyph(pb, this.phase === 'answer'), elTag && !dead ? h('span.tag', { style: 'margin-left:4px;font-size:10px' }, elTag) : ''),
+        h('div.nm', { style: `color:${color}` }, dead ? (pb.pluralMon ? `die ${w.pl}` : fullForm(w)) : nameGlyph(pb, this.phase === 'answer' && asksMeaning(this.question)), elTag && !dead ? h('span.tag', { style: 'margin-left:4px;font-size:10px' }, elTag) : ''),
         pb.pluralMon && !dead ? h('span.tag.echo', '复数怪 · 一律 die') : '',
         bar('hp', pb.monster.hp, pb.monster.maxHp, `${pb.monster.hp} / ${pb.monster.maxHp}`),
         dead ? '' : h('div.it', it.line),
@@ -1158,15 +1158,17 @@ export class BattleUI {
 
 }
 
-/** The monster's name as the player may see it (0.6.x: single card, pack cards and 「X 说」 use the same rule):
- *  glitch when unnamed, every other letter when cracked, half the word (article once the right stance landed) after. */
-function nameGlyph(b: Battle, answering = false): string {
-  const de = shownDe(b);
-  const showG = !needsPhase(b) || !!b.phaseHit;
+/** 名牌 (Lucas 2026-11-25, replaces 「作答时乱码、平时半名」): the meaning in Chinese in battle (the fight means you
+ *  have met it); glitch only for 蚀变 words and, while a question that asks the meaning is answered, hidden. No
+ *  article, no letters; 半名 shows in the stage label, not in the plate. */
+function nameGlyph(b: Battle, hide = false): string {
   if (b.phrase) return `${b.phrase.a} …`;
-  // 斩杀: a word being verified shows no letters at all, whatever its stage. 审查修订: while a question is being
-  // answered the plate is glitch too (the half name stays on the map and while choosing a move).
-  if (b.stage === 0 || (b.verify && !b.verifyDone) || answering || b.direct) return Array.from({ length: Math.max(3, Math.min(9, de.length)) }, () => GLITCH[Math.floor(Math.random() * GLITCH.length)]).join('');
-  if (b.stage === 1) return [...de].map((c, i) => (i % 2 === 0 || c === ' ' ? c : '▒')).join('');
-  return (showG && b.word.art ? (b.pluralMon ? 'die' : b.word.art) + ' ' : '') + de.slice(0, Math.ceil(de.length / 2)) + '▒▒';
+  if (b.word.erode || hide) return Array.from({ length: Math.max(3, Math.min(9, b.word.de.length)) }, () => GLITCH[Math.floor(Math.random() * GLITCH.length)]).join('');
+  return plateZh(b.word) + (b.pluralMon ? ' · 复数' : '');
+}
+
+/** The question on screen asks the meaning (pick the Chinese, listen and pick, 回音听辨, Chinese options). */
+function asksMeaning(q: Question | null | undefined): boolean {
+  if (!q) return false;
+  return q.type === 'pickZh' || (!!q.echo && !q.echo.say) || !!q.options?.some((o) => /[\u4e00-\u9fff]/.test(o));
 }

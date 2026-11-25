@@ -8,7 +8,7 @@ import { now } from '../core/state';
 import type { Word, ZoneId } from '../core/types';
 import { fullForm, WORD_BY_ID } from '../data/words';
 import { has } from '../core/unlocks';
-import { phraseCards, phraseWord } from '../core/combat';
+import { phraseCards, phraseWord, plateZh } from '../core/combat';
 import { SAYING_CFG, SAYINGS } from '../data/sayings';
 import { FAMILIES } from '../data/families';
 import type { Controller } from './controller';
@@ -501,7 +501,8 @@ export class WorldScene extends Phaser.Scene {
     m.container.setScale(m.kind === 'shadow' ? 0.85 : 1);
   }
 
-  /** The name restores with 归名: garbage → half-revealed → "der Ap▒▒". */
+  /** 名牌 (Lucas 2026-11-25): the meaning in Chinese once you have met the word; glitch for a word never met and for
+   *  蚀变 words. No German letters, no article. */
   updateGlyph(m: MonsterEntity) {
     const w = m.word;
     if (m.phrase) {
@@ -510,17 +511,8 @@ export class WorldScene extends Phaser.Scene {
       return;
     }
     const rnd = () => GLITCH[Math.floor(Math.random() * GLITCH.length)];
-    let txt: string;
-    if (m.stage === 0) {
-      const n = Math.max(3, Math.min(9, w.de.length));
-      txt = Array.from({ length: n }, rnd).join('');
-    } else if (m.stage === 1) {
-      txt = [...w.de].map((ch, i) => (ch === ' ' ? ' ' : m.reveal[i] ? ch : rnd())).join('');
-    } else {
-      const half = Math.ceil(w.de.length / 2);
-      txt = w.de.slice(0, half) + '▒'.repeat(Math.max(1, w.de.length - half));
-    }
-    m.label.setText(txt);
+    const met = !!this.ctrl.state.words[w.id];
+    m.label.setText(!met || w.erode ? Array.from({ length: Math.max(3, Math.min(9, w.de.length)) }, rnd).join('') : plateZh(w));
   }
 
   removeMonster(m: MonsterEntity, how: 'scatter' | 'guiming' | 'flee') {

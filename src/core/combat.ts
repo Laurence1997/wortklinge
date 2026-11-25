@@ -1811,10 +1811,12 @@ function syncShared(from: Battle, pack: Battle[]) {
 }
 
 /** A pack mate's name in the log before its spelling has been shown: article (once it is a known noun) + half. */
-function halfName(b: Battle): string {
-  const de = shownDe(b);
-  return de.slice(0, Math.ceil(de.length / 2)) + '▒▒';
+/** 名牌 (Lucas 2026-11-25): the meaning in Chinese, short (first sense, no brackets), never the German letters. */
+export function plateZh(w: Word): string {
+  const z = w.zh.replace(/（[^）]*）|\([^)]*\)/g, '').split(/[；;，,／/]/)[0].trim() || w.zh;
+  return z.length > 8 ? `${z.slice(0, 8)}…` : z;
 }
+
 
 /** Question types that put the word's German spelling on screen (斩杀: a typed answer after one is not 会写). */
 const SHOWS_SPELLING = new Set(['article', 'callout', 'pickZh', 'pickDe', 'conj', 'plural', 'saying']);
@@ -1929,7 +1931,7 @@ export function resolveTurn(
   b.directOffer = false; // the offer stands only before the first question
   const log: LogLine[] = [];
   const multi = pack.length > 1;
-  const tagOf = (x: Battle) => (multi ? `${(x.named || x.stage > 0) && !x.verify ? (x.spellSeen ? fullForm(x.word) : halfName(x)) : '它'} ` : '它');
+  const tagOf = (x: Battle) => (multi ? `${x.spellSeen ? fullForm(x.word) : x.word.erode ? '它' : plateZh(x.word)} ` : '它');
   const alive0 = pack.filter((x) => !x.outcome);
   const dmgMult = packDamageMult(alive0.length);
   // 药片 (物品栏): no answer this turn; the monsters act as after a right one (a charged hit still lands).
