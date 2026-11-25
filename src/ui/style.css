@@ -21,6 +21,7 @@
   --q-green: #5fdc7f;
   --q-purple: #b07cff;
   --q-orange: #ff9a3a;
+  --q-red: #ff3a3a;
   --mono: 'Courier New', ui-monospace, 'SFMono-Regular', Menlo, monospace;
   --sans: system-ui, -apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
   color-scheme: dark;
@@ -110,9 +111,9 @@ kbd { font-family: var(--mono); font-size: 11px; padding: 0 4px; border: 1px sol
 .stat b { font-family: var(--mono); }
 .slot { display: flex; gap: 8px; align-items: flex-start; padding: 8px; border: 1px solid var(--line); margin-bottom: 6px; min-height: 52px; background: #0d0709; }
 .slot .k { width: 44px; color: var(--muted); font-size: 12px; flex: none; }
-.item-name.white { color: var(--q-white); } .item-name.green { color: var(--q-green); } .item-name.purple { color: var(--q-purple); } .item-name.orange { color: var(--q-orange); }
+.item-name.white { color: var(--q-white); } .item-name.green { color: var(--q-green); } .item-name.purple { color: var(--q-purple); } .item-name.orange { color: var(--q-orange); } .item-name.red { color: var(--q-red); }
 .item { border: 1px solid var(--line); padding: 8px; background: #0d0709; display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
-.item.white { border-left: 3px solid var(--q-white); } .item.green { border-left: 3px solid var(--q-green); } .item.purple { border-left: 3px solid var(--q-purple); } .item.orange { border-left: 3px solid var(--q-orange); box-shadow: 0 0 10px rgba(255,154,58,.25); }
+.item.white { border-left: 3px solid var(--q-white); } .item.green { border-left: 3px solid var(--q-green); } .item.purple { border-left: 3px solid var(--q-purple); } .item.orange { border-left: 3px solid var(--q-orange); box-shadow: 0 0 10px rgba(255,154,58,.25); } .item.red { border-left: 3px solid var(--q-red); box-shadow: 0 0 12px rgba(255,58,58,.35); }
 .item .aff { font-size: 12px; color: var(--muted); }
 .item .acts { display: flex; gap: 4px; flex: none; }
 .item .acts .btn { font-size: 12px; padding: 3px 8px; }
@@ -310,6 +311,7 @@ canvas.slot-icon.q-white { border-color: var(--q-white); }
 canvas.slot-icon.q-green { border-color: var(--q-green, #5fd16b); }
 canvas.slot-icon.q-purple { border-color: var(--q-purple, #b07cff); }
 canvas.slot-icon.q-orange { border-color: var(--q-orange, #ff9a3c); }
+canvas.slot-icon.q-red { border-color: var(--q-red, #ff3a3a); }
 .toast canvas.slot-icon { margin-right: 6px; }
 
 /* 开箱动画 (0.6.x): ui/chestFx.ts */

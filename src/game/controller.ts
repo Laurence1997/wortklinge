@@ -17,6 +17,7 @@ import { playChest } from '../ui/chestFx';
 import { gradeTyped } from '../core/grading';
 import { buy as buyItem, openShop, refresh as refreshShop, sell as sellItem } from '../core/shop';
 import { rank, resMax, respec, respecCost, spent } from '../core/classes';
+import { bossRed } from '../core/forge';
 import { BLESSINGS, blessCount, bossFloor, canDescend, descend, endRift, offerBlessings, RIFT, riftAct, riftItemLevel, riftOpen, riftWord, silenceLeft, startRift, takeBlessing } from '../core/rift';
 import { makeItem } from '../core/loot';
 import { applyLoss, applyWin, postFightHeal } from '../core/outcomes';
@@ -970,8 +971,8 @@ export class Controller {
         if (res.gearUp) this.milestone(`gear${res.gearUp}`);
         if (res.kill.guiming) this.milestone('guiming');
         if (res.drop) {
-          (res.drop.quality === 'orange' ? sfx.orange : sfx.loot)();
-          toast(`掉落：${res.drop.name}（${{ white: '普通', green: '优秀', purple: '史诗', orange: '传说' }[res.drop.quality]}）`, res.drop.quality === 'white' ? '' : 'gold', icon(SLOT_TILE[res.drop.slot], 1, false, `slot-icon q-${res.drop.quality}`));
+          (res.drop.quality === 'orange' || res.drop.quality === 'red' ? sfx.orange : sfx.loot)();
+          toast(`掉落：${res.drop.name}（${{ white: '普通', green: '优秀', purple: '史诗', orange: '传说', red: '红装' }[res.drop.quality]}）`, res.drop.quality === 'white' ? '' : 'gold', icon(SLOT_TILE[res.drop.slot], 1, false, `slot-icon q-${res.drop.quality}`));
           if (!s.flags.taughtGear) {
             s.flags.taughtGear = true;
             say([{ who: SYS, text: '【装备】C 打开角色，点「穿上」' }]);
@@ -2063,6 +2064,8 @@ export class Controller {
     if (bossFloor(r) && r.fightsLeft === 0) {
       // 首领宝箱 comes home whatever happens next.
       const il = riftItemLevel(s, s.level);
+      const red = bossRed(s, this.rng, { riftFloor: r.floor });
+      if (red && s.bag.length < CONFIG.loot.bagSize) (s.bag.push(red), sfx.orange(), banner('红装', red.name));
       this.gotChest(s.level >= RIFT.deepFrom && r.floor >= 10 ? 'gold' : 'iron', il);
       this.persist();
       return say([{ who: SYS, text: `第 ${r.floor} 层的首领倒下了，掉下一只宝箱。` }], undefined, [
@@ -2396,6 +2399,7 @@ export class Controller {
     s.gold += CONFIG.boss3.gold;
     this.questFire('boss3');
     this.chestQueue.push({ kind: dailyFirst ? 'gold' : 'iron', ilvl: s.level });
+    this.bossRedDrop();
     if (first) {
       const o = makeItem(this.rng, s.level, 'orange');
       if (s.bag.length < CONFIG.loot.bagSize) s.bag.push(o);
@@ -2452,6 +2456,7 @@ export class Controller {
     s.gold += CONFIG.boss2.gold;
     this.questFire('boss2');
     this.chestQueue.push({ kind: dailyFirst ? 'gold' : 'iron', ilvl: s.level });
+    this.bossRedDrop();
     if (first) {
       const o = makeItem(this.rng, s.level, 'orange');
       if (s.bag.length < CONFIG.loot.bagSize) s.bag.push(o);
@@ -2552,6 +2557,7 @@ export class Controller {
     const lv = addXp(s, xp);
     s.gold += gold;
     this.chestQueue.push({ kind: dailyFirst ? 'gold' : 'iron', ilvl: s.level });
+    this.bossRedDrop();
     if (first) {
       const o = makeItem(this.rng, s.level, 'orange');
       if (s.bag.length < CONFIG.loot.bagSize) s.bag.push(o);
@@ -2669,6 +2675,16 @@ export class Controller {
     return v;
   }
 
+  /** 红装 (111 级): every boss kill may drop one (1%, the 60th boss without one always). */
+  private bossRedDrop(): void {
+    const s = this.state;
+    const red = bossRed(s, this.rng);
+    if (!red || s.bag.length >= CONFIG.loot.bagSize) return;
+    s.bag.push(red);
+    sfx.orange();
+    banner('红装', red.name);
+  }
+
   finishBoss(): void {
     const s = this.state;
     const f = this.boss!;
@@ -2700,6 +2716,8 @@ export class Controller {
         ? [makeItem(this.rng, 9, 'purple'), makeItem(this.rng, 9, 'green'), makeItem(this.rng, 9, this.rng() < 0.3 ? 'purple' : 'green')]
         : [makeItem(this.rng, 9, 'green'), makeItem(this.rng, 9, 'white')];
       if (first) drops.unshift(makeItem(this.rng, 9, 'orange'));
+      const red = bossRed(s, this.rng);
+      if (red) drops.unshift(red);
       for (const d of drops) if (s.bag.length < CONFIG.loot.bagSize) s.bag.push(d);
       sfx.orange();
       banner('首领被唤醒', first ? '首杀：传说装备 + 称号「被记住的人」' : dailyFirst ? '金箱' : '铁箱');

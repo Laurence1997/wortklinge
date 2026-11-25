@@ -5,6 +5,7 @@
 
 import { CONFIG } from './config';
 import { makeItem } from './loot';
+import { pityOrange } from './forge';
 import { markUnidentified } from './identify';
 import { weighted, type Rng } from './rng';
 import { now, type GameState } from './state';
@@ -32,11 +33,11 @@ const ORDER: Quality[] = ['white', 'green', 'purple', 'orange'];
 // Base drop weights are white 70 / green 24 / purple 5 / orange 1 (CONFIG.loot.qualityWeights).
 // 0.3 item counts take the low end of the doc table: wood 1, iron 2, gold 3.
 export const CHESTS: Record<ChestKind, ChestDef> = {
-  wood: { items: 1, weights: { white: 70, green: 24, purple: 5, orange: 1 }, first: 'white', locked: false, goldKills: 5 },
+  wood: { items: 1, weights: { white: 70, green: 24, purple: 5, orange: 1, red: 0 }, first: 'white', locked: false, goldKills: 5 },
   // 0.3 has no grammar stones or letters yet: one item, purple twice as likely.
-  forgotten: { items: 1, weights: { white: 70, green: 24, purple: 10, orange: 1 }, first: 'white', locked: false },
-  iron: { items: 2, weights: { white: 70, green: 24, purple: 10, orange: 1 }, first: 'green', locked: true },
-  gold: { items: 3, weights: { white: 70, green: 24, purple: 5, orange: 3 }, first: 'purple', locked: true },
+  forgotten: { items: 1, weights: { white: 70, green: 24, purple: 10, orange: 1, red: 0 }, first: 'white', locked: false },
+  iron: { items: 2, weights: { white: 70, green: 24, purple: 10, orange: 1, red: 0 }, first: 'green', locked: true },
+  gold: { items: 3, weights: { white: 70, green: 24, purple: 5, orange: 3, red: 0 }, first: 'purple', locked: true },
 };
 
 function rollQ(rng: Rng, def: ChestDef, min: Quality): Quality {
@@ -84,6 +85,7 @@ export function openChest(s: GameState, kind: ChestKind, ilvl: number, rng: Rng,
       seen.push(q2);
       if (ORDER.indexOf(q2) > ORDER.indexOf(q)) q = q2;
     }
+    q = pityOrange(s, q, 'orange');
     const it = makeItem(rng, ilvl, q);
     markUnidentified(s, it);
     if (s.bag.length >= CONFIG.loot.bagSize) bagFull += 1;

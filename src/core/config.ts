@@ -157,7 +157,7 @@ export const CONFIG = {
 
   loot: {
     smallDropRate: 0.2,
-    qualityWeights: { white: 70, green: 24, purple: 5, orange: 1 },
+    qualityWeights: { white: 70, green: 24, purple: 5, orange: 1, red: 0 },
     bagSize: 30,
   },
 

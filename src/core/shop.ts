@@ -9,7 +9,7 @@ import type { GameState } from './state';
 import type { AffixKey, Item, Quality, Slot } from './types';
 
 export const SHOP_SLOTS = 8;
-export const PRICE: Record<Quality, number> = { white: 0.04, green: 0.1, purple: 0.5, orange: 0 };
+export const PRICE: Record<Quality, number> = { white: 0.04, green: 0.1, purple: 0.5, orange: 0, red: 0 };
 const STOCK_WEIGHTS: Array<[Quality, number]> = [['white', 60], ['green', 32], ['purple', 8]];
 export const REFRESH_BASE = 0.05;
 export const BARGAIN_OFF = 0.1;

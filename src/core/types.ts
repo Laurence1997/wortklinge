@@ -114,7 +114,7 @@ export interface WordProgress {
   flawN?: number;
 }
 
-export type Quality = 'white' | 'green' | 'purple' | 'orange';
+export type Quality = 'white' | 'green' | 'purple' | 'orange' | 'red';
 export type Slot = 'pen' | 'coat' | 'amulet' | 'dict' | 'glasses';
 
 export interface Affix {
@@ -151,4 +151,6 @@ export interface Item {
   unidentified?: boolean;
   /** 刻字孔 (0.6, 25 级): '' = an open socket; auch / denn once engraved. */
   socket?: '' | 'auch' | 'denn';
+  /** 主题套装 (101 级): the region whose set this piece belongs to. */
+  set?: number;
 }

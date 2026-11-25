@@ -8,24 +8,28 @@ const NAMES: Record<Slot, Record<Quality, string[]>> = {
     green: ['磨尖的铅笔', '旧钢笔', '记号笔'],
     purple: ['守夜人的鹅毛笔', '灰烬钢笔'],
     orange: ['冠词审判者'],
+    red: ['失语者的最后一支笔'],
   },
   coat: {
     white: ['破外套', '旧雨衣', '烧焦的毛衣'],
     green: ['厚呢大衣', '补过的雨衣', '工装夹克'],
     purple: ['守火人斗篷', '铁轨工大衣'],
     orange: ['冠词审判者的长袍'],
+    red: ['沉默织成的外衣'],
   },
   amulet: {
     white: ['旧车票', '钥匙扣', '纽扣'],
     green: ['褪色的车票护符', '铜钥匙坠'],
     purple: ['余烬吊坠', '无名者的戒指'],
     orange: ['冠词审判者的徽记'],
+    red: ['被叫回的名字'],
   },
   dict: {
     white: ['缺页小词典', '单词卡片'],
     green: ['口袋词典', '旧语法书'],
     purple: ['守夜人笔记', '烧焦的杜登'],
     orange: ['冠词审判者的典籍'],
+    red: ['完整的杜登'],
   },
   // 0.6 第 6 块 (23 级): the fifth slot; main stat = less damage from a charged hit.
   glasses: {
@@ -33,16 +37,17 @@ const NAMES: Record<Slot, Record<Quality, string[]>> = {
     green: ['站长的老花镜', '圆框眼镜'],
     purple: ['检票员的单片镜', '时刻表读书镜'],
     orange: ['冠词审判者的镜片'],
+    red: ['看穿沉默的镜片'],
   },
 };
 
 /** 眼镜 main stat by quality: a charged hit on you does this much less. */
-export const GLASSES_MAIN: Record<Quality, number> = { white: 0.05, green: 0.08, purple: 0.12, orange: 0.16 };
+export const GLASSES_MAIN: Record<Quality, number> = { white: 0.05, green: 0.08, purple: 0.12, orange: 0.16, red: 0.2 };
 /** Glasses drop only from Lv23 (region 3). */
 export const GLASSES_FROM = 23;
 
 export const SLOT_ZH: Record<Slot, string> = { pen: '笔', coat: '外套', amulet: '护符', dict: '词典', glasses: '眼镜' };
-export const QUALITY_ZH: Record<Quality, string> = { white: '普通', green: '优秀', purple: '史诗', orange: '传说' };
+export const QUALITY_ZH: Record<Quality, string> = { white: '普通', green: '优秀', purple: '史诗', orange: '传说', red: '红装' };
 
 export const AFFIX_ZH: Record<AffixKey, (v: number) => string> = {
   dmg: (v) => `伤害 +${pct(v)}`,
@@ -93,10 +98,19 @@ export function convertLegacyAffixes(it: Item | null | undefined): void {
   }
 }
 
-const AFFIX_COUNT: Record<Quality, number> = { white: 0, green: 1, purple: 2, orange: 3 };
+const AFFIX_COUNT: Record<Quality, number> = { white: 0, green: 1, purple: 2, orange: 3, red: 4 };
+/** 红装 (111 级): orange ranges, raised by this much (暂定). */
+export const RED_AFFIX = 1.15;
+export function affixRange(k: AffixKey, q: Quality): [number, number] {
+  if (q === 'red') {
+    const [lo, hi] = AFFIX_RANGE[k].orange;
+    return [lo * RED_AFFIX, hi * RED_AFFIX];
+  }
+  return AFFIX_RANGE[k][(q === 'white' ? 'green' : q) as 'green' | 'purple' | 'orange'];
+}
 
 export function rollQuality(rng: Rng, maxQuality: Quality, guaranteeMin?: Quality): Quality {
-  const order: Quality[] = ['white', 'green', 'purple', 'orange'];
+  const order: Quality[] = ['white', 'green', 'purple', 'orange', 'red'];
   const w = { ...CONFIG.loot.qualityWeights } as Record<Quality, number>;
   let q = weighted(rng, w);
   if (order.indexOf(q) > order.indexOf(maxQuality)) q = maxQuality;
@@ -108,7 +122,7 @@ let counter = 0;
 
 export function makeItem(rng: Rng, ilvl: number, quality: Quality, slot?: Slot): Item {
   const s: Slot = slot ?? pick(rng, (ilvl >= GLASSES_FROM ? ['pen', 'coat', 'amulet', 'dict', 'glasses'] : ['pen', 'coat', 'amulet', 'dict']) as Slot[]);
-  const qMult = { white: 1, green: 1.25, purple: 1.6, orange: 2 }[quality];
+  const qMult = { white: 1, green: 1.25, purple: 1.6, orange: 2, red: 2.4 }[quality];
   const main =
     s === 'pen'
       ? Math.max(1, Math.round((1 + ilvl * 0.6) * qMult))
@@ -118,13 +132,13 @@ export function makeItem(rng: Rng, ilvl: number, quality: Quality, slot?: Slot):
           ? Math.round((0.01 + ilvl * 0.002) * qMult * 1000) / 1000
           : s === 'glasses'
             ? GLASSES_MAIN[quality]
-            : Math.min(4, quality === 'white' ? 1 : quality === 'green' ? 1 : quality === 'purple' ? 2 : 3);
+            : Math.min(4, quality === 'white' ? 1 : quality === 'green' ? 1 : quality === 'purple' ? 2 : quality === 'orange' ? 3 : 4);
   const keys = Object.keys(AFFIX_RANGE) as AffixKey[];
   const affixes: Affix[] = [];
   const pool = keys.slice();
   for (let i = 0; i < AFFIX_COUNT[quality]; i++) {
     const k = pool.splice(Math.floor(rng() * pool.length), 1)[0];
-    const [lo, hi] = AFFIX_RANGE[k][quality as 'green' | 'purple' | 'orange'];
+    const [lo, hi] = affixRange(k, quality);
     affixes.push({ key: k, value: Math.round(between(rng, lo, hi) * 100) / 100 });
   }
   counter += 1;
@@ -136,7 +150,7 @@ export function makeItem(rng: Rng, ilvl: number, quality: Quality, slot?: Slot):
     name: pick(rng, NAMES[s][quality]),
     main,
     affixes,
-    legendary: quality === 'orange' ? 'articleJudgement' : undefined,
+    legendary: quality === 'orange' || quality === 'red' ? 'articleJudgement' : undefined,
   };
 }
 

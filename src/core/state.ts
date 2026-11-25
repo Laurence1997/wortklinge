@@ -82,6 +82,8 @@ export interface GameState {
   challenge?: import('./challenge').ChallengeSave;
   /** 语法线 (0.7–0.8): boards seen, dungeon floors cleared, review partner. Optional: absent = nothing yet. */
   gram?: import('./gram/boards').GramSave;
+  /** 红装 / 橙装保底 counters and 套装 materials (optional, old saves have none). */
+  forge?: import('./forge').ForgeSave;
   /** 篝火日记 (2026-11-22): entries written at bonfires (newest last). Optional: absent = none yet. */
   journal?: import('./journal').JournalEntry[];
   /** 回音怪 (2026-11-23): right / wrong per minimal-pair category, for the weak-spot record. */

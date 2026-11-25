@@ -1,4 +1,5 @@
 import { CHALLENGE_CFG, noteFirstTry } from './challenge';
+import { pityOrange } from './forge';
 import { quickFightXp, type Battle } from './combat';
 import { CONFIG, levelGapMult } from './config';
 import { makeItem, rollQuality } from './loot';
@@ -111,6 +112,7 @@ export function applyWin(s: GameState, b: Battle, rng: Rng, opts: { heal?: boole
       // 学习加成: typed kills and due words raise purple/orange odds.
       let q = rollQuality(rng, maxQ, firstGreen ? 'green' : undefined);
       if (q === 'white' && (b.lastKillTyped || rv) && rng() < 0.15) q = 'green';
+      q = pityOrange(s, q, maxQ);
       drop = makeItem(rng, b.monster.lvl, q, firstGreen ? 'pen' : undefined);
       markUnidentified(s, drop);
       if (firstGreen) s.flags.firstGreen = true;
