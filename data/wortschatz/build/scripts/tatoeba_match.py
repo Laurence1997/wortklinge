@@ -78,6 +78,9 @@ for line in open(f('deu_sentences_detailed.tsv'), encoding='utf-8'):
                 if last + l in rank: targets.add(last + l)
     for tgt in targets:
         tr = rank[tgt]
+        pos = [i for i, L in enumerate(per) if tgt in L]
+        if pos == [0] and tgt not in ('ich', 'ja', 'nein', 'danke', 'bitte', 'hallo'):
+            continue  # only sentence-initial: case can't tell a noun from a verb/adjective
         if tr > 8000: continue
         others = [r for L, r in zip(per, rk) if tgt not in L]
         hard = max(others) if others else 0
