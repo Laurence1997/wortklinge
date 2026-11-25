@@ -1,0 +1,4 @@
+# Names, made-up places and correct words LanguageTool's dictionary does not know. One per line.
+Wang
+Miet
+Nachtische

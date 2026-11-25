@@ -17,6 +17,7 @@ import { fullForm, genderOf } from '../data/words';
 import type { Controller } from '../game/controller';
 import { ELEMENT_TAG, GLITCH, NAME_RED } from '../game/sprites';
 import { $, bar, clear, h, umlautButtons } from './dom';
+import { reportButton } from './report';
 import { logLine } from './gamelog';
 import { canListen, lastConfidence, listenOnce, listening, stopHold, stopListening } from './listen';
 import { isRecording, judgePair, playRecording, pronReady, startRecording, stopRecording } from './phoneme';
@@ -295,6 +296,27 @@ export class BattleUI {
     // 0.6.x: a wrong cloze waits for Enter, so the correction and its rule can be read.
     if (!this.report.correct && this.question.type === 'cloze' && !this.ctrl.fightOver()) return;
     this.autoTimer = window.setTimeout(() => this.continue(), delay);
+  }
+
+  /** 「这句有问题」: the German sentence this question showed, if any, and where it came from. */
+  private reportable(qq: Question): { sentence: string; context: Record<string, unknown> } | null {
+    let k = 0;
+    const sentence = qq.full ?? (qq.frame && qq.ult ? qq.frame.replace(/___/g, () => qq.ult![k++] ?? '___') : '');
+    const voiced = this.b.intent.full ?? '';
+    const s = sentence || voiced || (qq.say ? `${qq.say.a} ${qq.say.b}` : '');
+    if (!s || !/[a-zäöüß]{2,}\s+\S/i.test(s)) return null;
+    return {
+      sentence: s,
+      context: {
+        type: qq.type,
+        word: this.b.word?.id ?? null,
+        answer: qq.answer ?? null,
+        input: this.lastValue.slice(0, 120),
+        correct: !!this.report?.correct,
+        zh: qq.clozeZh ?? this.b.intent.fullZh ?? null,
+        level: this.ctrl.state.level,
+      },
+    };
   }
 
   /** 记录: one line per answer (question, your answer, the right one, damage), then the fight's own log lines. */
@@ -894,6 +916,12 @@ export class BattleUI {
       if (r.readRight) fb.append(h('span.note', '读懂了它：连击 +1'));
       if (this.voicedFull) fb.append(h('span.note', `它刚才念的是：${this.voicedFull}`));
       fb.append(this.shadowRow());
+      const reportable = this.reportable(qq);
+      if (reportable) {
+        fb.append(
+          reportButton(reportable.sentence, reportable.context, () => window.clearTimeout(this.autoTimer)),
+        );
+      }
       fb.append(h('span.note.muted', this.ctrl.fightOver() ? '结算（Enter 跳过）' : !r.correct && qq.type === 'cloze' ? h('button.btn.small', { onclick: () => this.continue() }, '看完了，继续（Enter）') : '下一题（Enter 跳过）'));
       wrap.append(fb);
     }

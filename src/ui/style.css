@@ -338,3 +338,8 @@ canvas.slot-icon.q-orange { border-color: var(--q-orange, #ff9a3c); }
 #chest-fx .cfx-flash { position: fixed; inset: 0; pointer-events: none; opacity: 0; background: radial-gradient(circle, rgba(255, 180, 168, 0.55) 0%, rgba(216, 51, 58, 0.45) 45%, rgba(78, 22, 22, 0.2) 100%); }
 #chest-fx .cfx-flash.on { animation: cfx-flash 0.7s ease-out; }
 @keyframes cfx-flash { 0% { opacity: 0; } 15% { opacity: 1; } 100% { opacity: 0; } }
+/* 「这句有问题」 */
+.feedback .report { margin-top: 4px; }
+.feedback .report .btn.ghost { background: transparent; border-color: transparent; color: var(--muted); text-decoration: underline; padding: 0 4px; }
+.feedback .report-form { display: inline-flex; flex-wrap: wrap; gap: 6px; align-items: center; color: var(--ink); }
+.feedback .report-form input { width: 200px; }
