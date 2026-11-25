@@ -89,7 +89,7 @@ describe('挑战怪 fight', () => {
     const win = applyWin(s, b, makeRng(5));
     expect(win.xp).toBeGreaterThan(xpPlain);
     expect(s.words[w.id]?.pend).toBeTruthy();
-    expect(s.challenge?.recent.at(-1)).toBe(2);
+    expect(s.challenge?.recent.slice(-1)[0]).toBe(2);
   });
   it('a wrong opener shows the spelling and gives no quick cut', () => {
     const s = game(6);

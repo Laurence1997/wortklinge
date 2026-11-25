@@ -1,4 +1,7 @@
+import { BOARDS } from '../src/core/gram/boards';
+import { GRAM_CFG } from '../src/core/gram/hook';
 import { describe, expect, it } from 'vitest';
+GRAM_CFG.chance = 0; // grammar questions have their own tests (gram.test.ts)
 import { chunks, gradeLink, gradeOrder, gradeSlot, linkTask, orderTask, slotNouns, slotTask } from '../src/core/writing';
 import { LINKS } from '../src/data/links';
 import { expectedSentence } from '../src/core/sentence';
@@ -64,6 +67,7 @@ describe('A1 写作 in fights', () => {
   it('a Lv16 player meets 排句, 槽位造句 and 连句, and right answers hit', () => {
     const s = newGame('T', 'student', Date.now());
     s.level = 16;
+    s.gram = { boards: Object.keys(BOARDS) }; // 语法线 off: these fights are scripted
     s.hp = 999;
     for (const id of ['brot', 'tee', 'tasse', 'kaffee', 'stuhl', 'stift', 'lampe', 'tisch', 'flasche', 'glas']) {
       s.words[id] = { stage: 1, correct: 2, wrong: 0, read: 1, write: 1, due: Date.now() + 1e9, interval: 1, relapse: 0 } as never;

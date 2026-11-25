@@ -1,4 +1,7 @@
+import { BOARDS } from '../src/core/gram/boards';
+import { GRAM_CFG } from '../src/core/gram/hook';
 import { describe, expect, it } from 'vitest';
+GRAM_CFG.chance = 0; // grammar questions have their own tests (gram.test.ts)
 import { gradeMoechte, gradeTyped, normalize } from '../src/core/grading';
 import { WORD_BY_ID, WORDS } from '../src/data/words';
 import { SCENES } from '../src/data/world';
@@ -1045,6 +1048,7 @@ describe('0.5 示例战斗 with 词性三相 (acceptance: right, wrong, soft bef
       const rng = makeRng(9);
       const s = newGame('T', 'student', T0);
       s.level = 8;
+      s.gram = { boards: Object.keys(BOARDS) }; // 语法线 off: this fight is scripted
       s.words['brot'] = { stage: 1, due: 9e15, firstSeen: 0, lastSeen: 0, relapse: 0, correct: 1, wrong: 0 };
       const b = startBattle(s, WORD_BY_ID['brot'], rng);
       b.pluralMon = false;

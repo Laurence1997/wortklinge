@@ -26,6 +26,13 @@ import { QTYPES, type QKey } from '../data/questionTypes';
 import { CLASSES, critRunNeeded, rank, resMax, shieldReflect, wrongHitShare, type ClassId } from './classes';
 import { gradeStorm, stormForms, type StormForm } from './storm';
 import { gradeGram, type GramTask } from './gram/task';
+import { gramFor } from './gram/hook';
+import { markBoard, type ShownBoard } from './gram/boards';
+
+/** A grammar task as a battle question (choice when it has options, typed otherwise). */
+export function gramQuestion(t: GramTask, board: ShownBoard | null = null): Question {
+  return { type: 'grammar', prompt: t.prompt, focus: t.focus, options: t.options, answer: t.answer, gram: t, ...(board ? { board } : {}) };
+}
 import { CHALLENGE_CFG } from './challenge';
 
 /** callout = 点名 in packs (shout the target's article); conj = write a verb form (Lv12+); plural = write the plural (Lv11+). */
@@ -92,6 +99,8 @@ export interface Question {
   mates?: string[];
   /** 语法题 (0.6.x–0.8 语法线): the task behind a 'grammar' question. */
   gram?: GramTask;
+  /** 规则怪谈看板: shown above the first question of a newly opened grammar system. */
+  board?: ShownBoard;
 }
 
 /** Row of the 题型奖励表 (src/data/questionTypes.ts) this question belongs to. */
@@ -261,6 +270,8 @@ export interface Battle {
   stormHits?: number;
   /** 齐鸣 (rev 234): mates whose own word was written right this turn (word ids). */
   chorusHits?: string[];
+  /** 语法线: grammar questions asked on this word this fight. */
+  gramAsked?: number;
   /** 挑战怪 (rev 342): a word from the scene's challenge pool: your level + 2, ×1.75 XP, opens with a dictation,
    *  and written right before its spelling showed it takes the field's quick 斩杀 even in its first fight. */
   challenge?: boolean;
@@ -1090,6 +1101,11 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
     const t = echoTask(s, w, rng);
     if (t) return { type: 'pickDe', echo: t, prompt: `回音怪：${t.target} 还是 ${t.partner}？`, focus: t.target, options: echoOptions(t, rng), answer: t.target };
   }
+  // 语法线 (0.7–0.8): once a system is open, the word monster sometimes asks it on its own word (first time with its board).
+  if (am === 'attack' && !fresh && !b.tutorial && !b.trial && !b.pluralMon && !b.verify && (b.stage >= 1 || b.kind !== 'new')) {
+    const g = gramFor(s, w, rng, b.gramAsked ?? 0);
+    if (g) return gramQuestion(g.task, g.board);
+  }
   // Question ladder: each correct hit asks about another side of the word, never the same
   // question twice in a row (Lucas, playtest 2026-11-19: three der clicks in a row is boring).
   // New words: article → hear it and pick the meaning → type it (once typing is unlocked).
@@ -1629,6 +1645,8 @@ export function resolveTurn(
   if (!itemTurn) {
     b.qIndex += 1;
     if (q.type === 'sentence') b.sxUsed = (b.sxUsed ?? 0) + 1;
+    if (q.gram) b.gramAsked = (b.gramAsked ?? 0) + 1;
+    if (q.board) markBoard(s, q.board.sys);
     if (q.ult) b.ultUsed = true;
     if (q.echo) {
       b.echoDone = true;

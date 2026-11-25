@@ -11,6 +11,9 @@ import { normalize } from '../grading';
 /** Which grammar system asked. Also the key of the 规则怪谈看板 that teaches it (boards.ts). */
 export type GramSys =
   | 'kein'
+  | 'nicht'
+  | 'timePrep'
+  | 'datPron'
   | 'mein'
   | 'modal'
   | 'sep'

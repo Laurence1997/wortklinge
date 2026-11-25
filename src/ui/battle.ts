@@ -824,6 +824,17 @@ export class BattleUI {
       this.phase === 'answer' && canHint(this.ctrl.state, this.b, this.move, qq)
         ? h('button.btn.ghost.small', { onclick: () => this.hint(), title: '低语：用一张纸条，给一个提示（选择题去掉一个错选项，打字题给首字母）。代价：这题不算会写、不回资源、护甲按低一档算，这个词下次要先不带提示答对' }, h('kbd', 'W'), `低语 · 提示（纸条 ${itemCount(this.ctrl.state, 'hint')}）`)
         : '';
+    // 规则怪谈看板: the first question of a newly opened grammar system teaches its rule with sentences you met.
+    if (qq.board && this.phase === 'answer')
+      wrap.append(
+        h(
+          'div.board',
+          { style: 'border:1px solid #7a5cff;background:rgba(60,30,120,.25);padding:8px 12px;margin:4px 0 8px;line-height:1.55' },
+          h('div', { style: 'color:#c3a9ff;font-weight:bold;margin-bottom:4px' }, qq.board.title),
+          ...qq.board.lines.map((l) => h('div', l)),
+          ...(qq.board.examples.length ? [h('div', { style: 'margin-top:4px;color:#9fd' }, '你见过的句子：'), ...qq.board.examples.map((x) => h('div', { style: 'color:#9fd' }, `· ${x}`))] : []),
+        ),
+      );
     wrap.append(h('div.prompt', h('span', qq.prompt), tags ? h('span.tag', tags) : '', hintBtn));
     const focusColor = qq.type === 'article' && this.phase === 'result' && this.b.word.art ? NAME_RED : '';
     const long = qq.type === 'cloze' ? 'font-size:22px;line-height:1.4;' : '';

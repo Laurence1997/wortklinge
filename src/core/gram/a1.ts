@@ -63,9 +63,12 @@ export function nounSlots(w: Word, datOpen = true): NounSlot[] {
 const cap = (s: string, like: string) => (like[0] && like[0] === like[0].toUpperCase() && like[0] !== like[0].toLowerCase() ? s[0].toUpperCase() + s.slice(1) : s);
 const tidy = (s: string) => s.replace(/\s+/g, ' ').replace(/\s+([.,!?])/g, '$1').trim();
 
+/** Particles that change what a negation means (noch → nicht mehr, nur, auch → auch nicht): such sentences are skipped. */
+export const FOCUS_PARTICLE = /\b(noch|nur|auch|schon|immer|mal|gerade|wieder|sogar|jetzt)\b/i;
+
 /** 否定 kein (5 级): a sentence with ein/eine/einen + this noun, turned into the negative. */
 export function keinTask(w: Word, rng: Rng, datOpen = false): GramTask | null {
-  const slots = nounSlots(w, datOpen).filter((x) => x.indef);
+  const slots = nounSlots(w, datOpen).filter((x) => x.indef && !FOCUS_PARTICLE.test(x.before));
   // Example sentences already written with kein count too ({keinen Ausweis}).
   const direct = (EXAMPLES[w.id] ?? [])
     .map(parse)
