@@ -205,6 +205,18 @@ export class BattleUI {
 
   private startTurn() {
     this.zhShown = this.ctrl.state.settings.autoZh || this.ctrl.state.level <= 3;
+    // 直接叫名 (审查修订: chosen before the fight): straight to the dictation — no teaching, nothing read aloud.
+    if (this.b.direct) {
+      this.readMsg = '';
+      this.zhShown = false;
+      this.phaseNag = false;
+      this.move = 'attack';
+      this.question = this.ctrl.askQuestion('attack');
+      this.phase = 'answer';
+      this.askedAt = performance.now();
+      this.render();
+      return;
+    }
     this.ctrl.speak(this.b.intent.line);
     teachPhase(this.b);
     const moves = this.moves().filter((m) => moveReady(this.ctrl.state, this.b, m));
@@ -212,7 +224,7 @@ export class BattleUI {
     this.readMsg = '';
     const rt = canListen() ? readTarget(this.ctrl.state, this.b) : null;
     if (rt) window.setTimeout(() => this.ctrl.speak(readShown(this.b, rt)), 1800);
-    if (moves.length === 1 && !rt && !this.b.cutReady && !this.b.directOffer && !(needsPhase(this.b) && !this.b.phase)) this.choose(moves[0]);
+    if (moves.length === 1 && !rt && !this.b.cutReady && !(needsPhase(this.b) && !this.b.phase)) this.choose(moves[0]);
     else {
       this.phase = 'choose';
       this.question = null;
@@ -670,7 +682,7 @@ export class BattleUI {
     this.pending = keep;
     const s = this.ctrl.state;
     const b = this.b;
-    const taught = this.phase !== 'result' ? teachPhase(b) : !!b.phaseTaught && b.phaseTaught === b.turn && b.phase === phaseOf(b); // a pack's next target is taught too
+    const taught = b.direct ? false : this.phase !== 'result' ? teachPhase(b) : !!b.phaseTaught && b.phaseTaught === b.turn && b.phase === phaseOf(b); // a pack's next target is taught too
     const el = $('battle');
     el.className = 'panel';
     const w = b.word;
@@ -681,7 +693,7 @@ export class BattleUI {
     const elTag = b.stage > 0 && showG && (b.pluralMon || g) ? ELEMENT_TAG[b.pluralMon ? 'pl' : g!] : '';
 
     // Monster card.
-    const glyph = nameGlyph(b);
+    const glyph = nameGlyph(b, this.phase === 'answer');
     const m = b.monster;
     const st: string[] = [];
     if (m.broken > 0) st.push(`破甲 ${m.broken}`);
@@ -723,9 +735,13 @@ export class BattleUI {
       h(
         'div',
         { style: 'flex:1;min-width:0' },
-        h('div.kind', `${pack.length > 1 ? nameGlyph(b) + ' ' : '它'}说`),
-        h('div.line', it.line),
-        h('div.zh', this.zhShown && this.b.curse !== 'forget' ? plainZh(it.zh) : ''),
+        h('div.kind', `${pack.length > 1 ? nameGlyph(b, this.phase === 'answer') + ' ' : '它'}说`),
+        // 审查修订: the line often is the word's own example — while a finisher / ultimate or 直接叫名 is answered it
+        // only mumbles.
+        ...(() => {
+          const mum = b.direct || (this.phase === 'answer' && (this.move === 'sentence' || !!this.question?.ult));
+          return [h('div.line', mum ? '… mmh …' : it.line), h('div.zh', !mum && this.zhShown && this.b.curse !== 'forget' ? plainZh(it.zh) : '')];
+        })(),
         b.queued?.kind === 'charge' ? h('div.zh', { style: 'color:var(--gold, #ffcf4a)' }, '看穿 · 它下回合要蓄力') : '',
         // 即时战: its cast bar; answer right in the last second of an attack to parry, during a charge to break it.
         this.rtOn
@@ -780,9 +796,7 @@ export class BattleUI {
     if (b.cutReady && !b.outcome)
       movesEl.append(h('button.btn.primary', { disabled: this.phase !== 'choose', onclick: () => this.cut(), title: '斩杀（Enter）：你会写它了，一键秒杀，经验和掉落照拿' }, h('kbd', 'Enter'), '斩杀', h('small', '一键秒杀 · 以后不用再背')));
     // 直接叫名 (Lucas 2026-11-25): first meeting only, before its first question.
-    if (b.directOffer && !b.cutReady && !b.outcome)
-      movesEl.append(h('button.btn', { disabled: this.phase !== 'choose', onclick: () => this.directName(), title: '你本来就会这个词？不看提示写出来（名词带冠词），写对直接斩杀；写错照常学，不罚' }, '直接叫名', h('small', '会就写，写对直接斩杀')));
-    if (moves.length > 1 || b.cutReady || b.directOffer) {
+    if (moves.length > 1 || b.cutReady) {
       for (const mv of moves) {
         // 2026-11-22 精简出手按钮: the finisher shows only when the resource bar is full.
         if (mv === 'sentence' && !moveReady(s, b, mv)) continue;
@@ -882,7 +896,10 @@ export class BattleUI {
         ...stancesFor(s.level, b).map((p, i) =>
           h(`button.btn.${p}${b.phase === p ? '.sel' : ''}`, { disabled: this.phase === 'result', onclick: () => this.setPhase(p), title: `${p}（${(i + 1) % 10}）` }, h('kbd', String((i + 1) % 10)), p),
         ),
-        taught
+        // 审查修订: while answering, the stance bar shows nothing about the word (no German, no Chinese).
+        this.phase === 'answer' && !b.pluralMon
+          ? ''
+          : taught
           ? h(
               'span.small',
               { style: 'color:var(--gold, #ffcf4a)' },
@@ -935,7 +952,7 @@ export class BattleUI {
         { onclick: () => this.target(i), title: '选中它（Tab 切换）', disabled: dead },
         h('div.fam', h('span', `${FAMILIES[w.family].zh} · Lv ${pb.monster.lvl}`), h('span', dead ? '已打散' : STAGE_ZH[pb.stage])),
         icon(monsterTile(pb), 2, dead, 'mon-icon small'),
-        h('div.nm', { style: `color:${color}` }, dead ? (pb.pluralMon ? `die ${w.pl}` : fullForm(w)) : nameGlyph(pb), elTag && !dead ? h('span.tag', { style: 'margin-left:4px;font-size:10px' }, elTag) : ''),
+        h('div.nm', { style: `color:${color}` }, dead ? (pb.pluralMon ? `die ${w.pl}` : fullForm(w)) : nameGlyph(pb, this.phase === 'answer'), elTag && !dead ? h('span.tag', { style: 'margin-left:4px;font-size:10px' }, elTag) : ''),
         pb.pluralMon && !dead ? h('span.tag.echo', '复数怪 · 一律 die') : '',
         bar('hp', pb.monster.hp, pb.monster.maxHp, `${pb.monster.hp} / ${pb.monster.maxHp}`),
         dead ? '' : h('div.it', it.line),
@@ -1142,12 +1159,13 @@ export class BattleUI {
 
 /** The monster's name as the player may see it (0.6.x: single card, pack cards and 「X 说」 use the same rule):
  *  glitch when unnamed, every other letter when cracked, half the word (article once the right stance landed) after. */
-function nameGlyph(b: Battle): string {
+function nameGlyph(b: Battle, answering = false): string {
   const de = shownDe(b);
   const showG = !needsPhase(b) || !!b.phaseHit;
   if (b.phrase) return `${b.phrase.a} …`;
-  // 斩杀: a word being verified shows no letters at all, whatever its stage.
-  if (b.stage === 0 || (b.verify && !b.verifyDone)) return Array.from({ length: Math.max(3, Math.min(9, de.length)) }, () => GLITCH[Math.floor(Math.random() * GLITCH.length)]).join('');
+  // 斩杀: a word being verified shows no letters at all, whatever its stage. 审查修订: while a question is being
+  // answered the plate is glitch too (the half name stays on the map and while choosing a move).
+  if (b.stage === 0 || (b.verify && !b.verifyDone) || answering || b.direct) return Array.from({ length: Math.max(3, Math.min(9, de.length)) }, () => GLITCH[Math.floor(Math.random() * GLITCH.length)]).join('');
   if (b.stage === 1) return [...de].map((c, i) => (i % 2 === 0 || c === ' ' ? c : '▒')).join('');
   return (showG && b.word.art ? (b.pluralMon ? 'die' : b.word.art) + ' ' : '') + de.slice(0, Math.ceil(de.length / 2)) + '▒▒';
 }

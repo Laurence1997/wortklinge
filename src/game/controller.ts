@@ -650,6 +650,16 @@ export class Controller {
     this.scene.focusBattle(m);
     setBattleMusic(true);
     setPrompt(null);
+    // 直接叫名 (审查修订): asked before the fight, so nothing about the word is shown or read first.
+    const b0 = this.battle;
+    if (b0.directOffer && this.pack.length === 1) {
+      b0.directOffer = false;
+      say([{ who: SYS, text: '一个没见过的名字扑了过来。你本来就认识它吗？' }], undefined, [
+        { label: '我认识它（直接叫名：不看提示写出来，写对直接斩杀）', act: () => ((b0.direct = true), this.battleUI.open()) },
+        { label: '不认识，开始学', act: () => this.battleUI.open() },
+      ]);
+      return;
+    }
     this.battleUI.open();
     if (this.pack.length > 1 && !s.flags.firstPackDone) {
       say([
