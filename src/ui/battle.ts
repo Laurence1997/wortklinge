@@ -1,4 +1,4 @@
-import { icon, monsterTile, heroIcon } from './icons';
+import { monsterArt, monsterIcon, heroIcon } from './icons';
 import { DEFAULT_LOOK } from '../core/look';
 import type { Battle, Question, TurnReport } from '../core/combat';
 import { count as itemCount, itemsOpen, tabletHeal } from '../core/items';
@@ -706,7 +706,7 @@ export class BattleUI {
     const mon = h(
       'div.b-mon',
       h('div.fam', h('span', `${fam.zh} · Lv ${m.lvl}`), h('span', STAGE_ZH[b.stage])),
-      icon(monsterTile(b, this.ctrl.dungeon?.left === 1), 5, false, 'mon-icon'),
+      monsterIcon(monsterArt(b, this.ctrl.dungeon?.left === 1), 5, false, 'mon-icon', this.ctrl.dungeon?.left !== 1 && !!this.ctrl.scene?.bright),
       h('div.glyph', { style: `color:${color};text-shadow:0 0 8px ${b.stage === 0 ? '#ff1830' : color}` }, glyph, elTag ? h('span.tag', { style: 'margin-left:6px;font-size:11px;vertical-align:middle' }, elTag) : ''),
       h(
         'div',
@@ -952,7 +952,7 @@ export class BattleUI {
         `button.pk${pb === this.b ? '.sel' : ''}${dead ? '.dead' : ''}`,
         { onclick: () => this.target(i), title: '选中它（Tab 切换）', disabled: dead },
         h('div.fam', h('span', `${FAMILIES[w.family].zh} · Lv ${pb.monster.lvl}`), h('span', dead ? '已打散' : STAGE_ZH[pb.stage])),
-        icon(monsterTile(pb), 2, dead, 'mon-icon small'),
+        monsterIcon(monsterArt(pb), 2, dead, 'mon-icon small', !!this.ctrl.scene?.bright),
         h('div.nm', { style: `color:${color}` }, dead ? (pb.pluralMon ? `die ${w.pl}` : fullForm(w)) : nameGlyph(pb, this.phase === 'answer'), elTag && !dead ? h('span.tag', { style: 'margin-left:4px;font-size:10px' }, elTag) : ''),
         pb.pluralMon && !dead ? h('span.tag.echo', '复数怪 · 一律 die') : '',
         bar('hp', pb.monster.hp, pb.monster.maxHp, `${pb.monster.hp} / ${pb.monster.maxHp}`),

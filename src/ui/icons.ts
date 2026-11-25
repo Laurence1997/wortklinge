@@ -6,6 +6,7 @@ import type { Battle } from '../core/combat';
 import type { Slot } from '../core/types';
 import { dungeonTile, heroTile, heroTinyCanvas, CHAR_RAMP } from '../game/sprites';
 import type { Look } from '../core/look';
+import { artKey, monsterCanvas, SHEET_URL, wordArt as kindArt, type MonArt, type SheetId } from '../game/monsterArt';
 
 const T = 16;
 const COLS = 12;
@@ -75,20 +76,6 @@ export function icon(tile: number, scale = 2, shadow = false, cls = 'icon'): HTM
   return cv;
 }
 
-/** 画风统一 (原型): one body per word, the same on the map and in battle. Nouns draw from a pool by word id (never by
- *  gender, 词性三相 hides it), verbs/adjectives/others keep one shape each so the word class stays readable. */
-const NOUN_POOL = [108, 120, 123, 122, 108, 123];
-export function wordTile(w: { id: string; pos?: string; family?: string }): number {
-  if (w.family === 'truhe') return 92;
-  const p = w.pos;
-  if (p === 'v') return 121;
-  if (p === 'adj') return 110;
-  if (p !== 'n') return 124;
-  let h = 0;
-  for (const ch of w.id) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
-  return NOUN_POOL[h % NOUN_POOL.length];
-}
-
 /** Your own figure (same as on the map, without the outline), hair in its own colour. */
 export function heroIcon(look: Look, scale = 4): HTMLCanvasElement {
   const cv = document.createElement('canvas');
@@ -105,14 +92,51 @@ export function heroIcon(look: Look, scale = 4): HTMLCanvasElement {
   return cv;
 }
 
-/** Monster portrait tile by kind. */
-export function monsterTile(b: Battle, boss = false): number {
-  if (boss) return 109;
-  if (b.word.family === 'truhe' || b.flees) return 92;
-  if (b.elite) return 108;
-  if (b.rusty || b.curse) return 110;
-  if (b.phrase) return 124;
-  return wordTile(b.word);
+/** The monster's look: special monsters keep their old Tiny Dungeon tiles, everyone else looks like their word. */
+export function monsterArt(b: Battle, boss = false): MonArt {
+  const d = (n: number): MonArt => ({ sheet: 'd', n });
+  if (boss) return d(109);
+  if (b.word.family === 'truhe' || b.flees) return d(92);
+  if (b.rusty || b.curse) return d(110);
+  if (b.phrase) return d(124);
+  return wordArt(b.word);
+}
+
+/** Map and battle look of a word's monster (宝箱怪 keep the chest). */
+export function wordArt(w: { id: string; family?: string; cat?: string }): MonArt {
+  if (w.family === 'truhe') return { sheet: 'd', n: 92 };
+  return kindArt(w);
+}
+
+const sheets: Partial<Record<SheetId, HTMLImageElement>> = {};
+const DARK = ['#1e0606', '#4e1616', '#8f1f24', '#d8333a', '#ffb4a8'];
+const DEAD = ['#1e0606', '#4e1616'];
+/** A monster drawn at scale×16 px: own colours on everyday maps (raw), the dark ramp on 蚀变 maps and for bosses. */
+export function monsterIcon(art: MonArt, scale = 2, dead = false, cls = 'icon', raw = false): HTMLCanvasElement {
+  const cv = document.createElement('canvas');
+  cv.width = cv.height = T * scale;
+  cv.className = cls;
+  let img = sheets[art.sheet];
+  if (!img) {
+    img = sheets[art.sheet] = new Image();
+    img.src = SHEET_URL[art.sheet];
+  }
+  const ramp = dead ? DEAD : raw ? null : DARK;
+  const key = `mon:${artKey(art)}:${ramp ? ramp.length : 'raw'}`;
+  const draw = () => {
+    let tile = cache.get(key);
+    if (!tile) {
+      tile = monsterCanvas(img!, art, ramp);
+      cache.set(key, tile);
+    }
+    const ctx = cv.getContext('2d')!;
+    ctx.imageSmoothingEnabled = false;
+    ctx.clearRect(0, 0, cv.width, cv.height);
+    ctx.drawImage(tile, 0, 0, cv.width, cv.height);
+  };
+  if (img.complete && img.naturalWidth) draw();
+  else img.addEventListener('load', draw, { once: true });
+  return cv;
 }
 
 /** Map figures for NPCs (same tiles as their dialog portraits). */

@@ -502,6 +502,11 @@ def main():
         # German inside the Chinese ('拉；搬家（umziehen）', '美国（die USA）') would give the answer away.
         zh = re.sub(r'[（(][^）)]*[A-Za-zÄÖÜäöüß][^）)]*[）)]', '', r['中文']).strip() or r['中文'].strip()
         w = {'de': de, 'zh': zh, 'rank': int(rank), 'order': {'先': 1, '中': 2, '后': 3}.get(r['先后'], 2)}
+        # 怪物美术: the monster's kind (类别) and, where the art packs have the very thing, its own look (专属造型).
+        w['cat'] = {'食物': 'food', '物品': 'item', '动物': 'animal', '人物': 'person', '地点': 'place'}.get(r.get('类别', '').strip(), '')
+        look = re.match(r'(farm|town|dungeon|battle)#(\d+)', r.get('专属造型', '').strip())
+        if look:
+            w['look'] = look.group(1)[0] + look.group(2)
         if pos == 'n' and (not art or '地名' in r['标签']):
             pos = 'name'
         if pos == 'phr' and de.lower() in QUESTION_WORDS:
@@ -753,7 +758,7 @@ def main():
         f = [w['id'], w['de'], w.get('art', ''), '+' if w.get('plOnly') else w.get('pl', ''), w['zh'], w['pos'], w['family'],
              str(w['lvl']), w['zone'], w['scene'], str(w['region']), str(w.get('erode', '')), str(w.get('batch', '')),
              w.get('after', ''), w.get('digit', ''), str(w['order']), str(w['rank']), w.get('reg', ''), '1' if w.get('art_pool') else '',
-             w.get('ex', ''), w.get('situation', '')]
+             w.get('ex', ''), w.get('situation', ''), w.get('cat', ''), w.get('look', '')]
         for v in f:
             assert '\t' not in v, v
         return '\t'.join(v.replace('\t', ' ') for v in f)
@@ -778,7 +783,7 @@ def main():
         out.append('  ' + json.dumps([e['scene'], e['seg'], e['words']], ensure_ascii=False) + ',')
     out.append('];')
     out.append('')
-    out.append('/** Words, one tab-separated row each: id de art pl(+ = plural only) zh pos family lvl zone scene region erode batch after digit 先后 rank 语体 article-pool example(de|zh). */')
+    out.append('/** Words, one tab-separated row each: id de art pl(+ = plural only) zh pos family lvl zone scene region erode batch after digit 先后 rank 语体 article-pool example(de|zh) situation cat look. */')
     out.append('export const LEX_ROWS: string = ' + json.dumps('\n'.join(row(w) for w in words), ensure_ascii=False) + ';')
     out.append('')
     out.append('/** Example sentences with the blank marked (same format as examples1.ts). */')
