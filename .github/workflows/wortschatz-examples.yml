@@ -42,7 +42,7 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898233+github-actions[bot]@users.noreply.github.com'
-          git add data/wortschatz/build/beispiele-mehr.tsv data/wortschatz/build/tatoeba/pool-1-3.tsv data/wortschatz/beispiele-1-3.tsv data/wortschatz/build/yixiang-1-3.tsv 2>/dev/null || true
+          git add -A data/wortschatz
           git diff --cached --quiet && exit 0
           git commit -m 'Wortschatz: examples with senses and collocations (Tatoeba + Luna)'
           git pull --rebase -q && git push
