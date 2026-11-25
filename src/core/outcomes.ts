@@ -88,6 +88,7 @@ export function applyWin(s: GameState, b: Battle, rng: Rng, opts: { heal?: boole
   xp *= quickFightXp(s, b); // 天赋「一气呵成」
   xp *= 1 + (b.fx.charm?.xp ?? 0); // 秘术 Übung macht den Meister.
   if (b.tutorial === 'loss') xp = 0;
+  if (b.presumed && b.cutReady) xp = 0; // 快速通道: a 推定会 word named at once pays shards only
   xp = Math.round(xp);
 
   let gold = CONFIG.gold.perKill(b.monster.lvl);

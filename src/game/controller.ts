@@ -1760,6 +1760,8 @@ export class Controller {
     const tradeOpt = [
       ...(trades ? [{ label: free ? '碎片换档（免费）' : `碎片换档（${ti.cost} 片）`, act: () => this.shardTrade() }] : []),
       ...(s.level >= GEM.from ? [{ label: '言石', act: () => this.gemMenu() }] : []),
+      // 快速通道 不硬锁: from the camp bonfire, straight to the region the test placed you in.
+      ...(region === 1 && s.placement && regionFor(s.placement.level) > 1 ? [{ label: `传送到第 ${regionFor(s.placement.level)} 区（定级）`, act: () => this.travel(regionFor(s.placement!.level) as RegionId) }] : []),
     ];
     if (jw) {
       lines.push({ who: SYS, text: `【篝火日记】今天打过 ${jw.map((w) => `「${w.zh}」`).join('、')}。用它们写两三句话？每天一篇，登录后 AI 批改。` });
@@ -1934,7 +1936,7 @@ export class Controller {
     banner(`Lv ${o.level}`, '分级入场');
     sfx.levelUp();
     const heads = o.gained.map((l) => ((UNLOCK_TEXT[l] ?? [])[0] ? `${l} 级 ${(UNLOCK_TEXT[l] ?? [])[0].split(/[：:，,]/)[0]}` : '')).filter(Boolean);
-    const lines: Line[] = [{ who: SYS, text: `【跳到 ${o.level} 级】这一路的功能都开了，每样第一次出现时还会提示。按 H 能看怎么玩。` }];
+    const lines: Line[] = [{ who: SYS, text: `【新能力 · 跳到 ${o.level} 级】这一路的功能都开了，每样第一次出现时只给一行提示。按 H 能看怎么玩。之前各区没归名的词照常出怪，按你的等级给经验；标「推定会」的怪点「我认识它」写对一次就斩杀。营地篝火随时能传送到第 ${o.region} 区。` }];
     if (o.region > 1) lines.push({ who: SYS, text: `入学礼：一套第 ${o.region} 区的白色 0 档装备（比身上的好才换上）。之后靠碎片在篝火换档。` });
     for (let i = 0; i < heads.length; i += 8) lines.push({ who: SYS, text: heads.slice(i, i + 8).join(' · ') });
     say(lines, next);

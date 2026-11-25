@@ -13,6 +13,7 @@ import { WORDS } from '../data/words';
 import { prioritise } from './wordImport';
 import { challengeSlots, pickChallenge } from './challenge';
 import { laterReady } from './erosion';
+import { isPlaced } from './placement';
 
 export interface SpawnPick {
   word: Word;
@@ -55,7 +56,7 @@ export function pickSpawns(s: GameState, zone: ZoneId, count: number, alive: Set
     const k = kindOf(s, w, t);
     if (verifyOf(s.words[w.id], t)) verify.push(w);
     else if (k === 'due') due.push(w);
-    else if (k === 'new') fresh.push(w);
+    else if (k === 'new' || isPlaced(s.words[w.id])) fresh.push(w); // 快速通道: 推定会 words come as monsters
     else if (k === 'shadow') shadows.push(w);
   }
   // Reviews (2026-11-21) come to wherever you are: due words of every field of your region and the ones before it.

@@ -511,8 +511,10 @@ export class WorldScene extends Phaser.Scene {
       return;
     }
     const rnd = () => GLITCH[Math.floor(Math.random() * GLITCH.length)];
-    const met = !!this.ctrl.state.words[w.id];
-    m.label.setText(!met || w.erode ? Array.from({ length: Math.max(3, Math.min(9, w.de.length)) }, rnd).join('') : plateZh(w));
+    const p = this.ctrl.state.words[w.id];
+    const met = !!p;
+    const presumed = !!p?.placed && !p.retired; // 快速通道: 名牌标「推定会」
+    m.label.setText(!met || w.erode ? Array.from({ length: Math.max(3, Math.min(9, w.de.length)) }, rnd).join('') : presumed ? `推定会·${plateZh(w)}` : plateZh(w));
   }
 
   removeMonster(m: MonsterEntity, how: 'scatter' | 'guiming' | 'flee') {

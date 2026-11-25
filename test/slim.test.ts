@@ -66,3 +66,26 @@ describe('系统瘦身', () => {
     expect(speedCrit(s, { ...(q as object), ms: 900 } as never)).toBe(true);
   });
 });
+
+describe('快速通道', () => {
+  it('a 推定会 word comes as a new monster with the offer; earlier-region words stand at your level', async () => {
+    const { startBattle, fastTrackWord } = await import('../src/core/combat');
+    const { pickSpawns } = await import('../src/core/spawn');
+    const { WORDS } = await import('../src/data/words');
+    const s = newGame('T', 'student');
+    s.level = 25;
+    s.placement = { at: 1, level: 25, top: 7, checks: {} };
+    const w = WORDS.find((x) => (x.region ?? 1) === 1 && x.pos === 'n' && x.art && x.lvl <= 5 && !x.tutorial && x.family !== 'truhe')!;
+    s.words[w.id] = { stage: 3, due: 9e15, ctxDone: true, placed: 1, firstSeen: 1, lastSeen: 1, relapse: 0, correct: 0, wrong: 0, read: 0, write: 0 };
+    const picks = pickSpawns(s, w.zone, 30, new Set(), makeRng(1));
+    expect(picks.some((p) => p.word.id === w.id)).toBe(true);
+    const b = startBattle(s, w, makeRng(2));
+    expect(b.presumed).toBe(true);
+    expect(b.directOffer).toBe(true);
+    expect(b.monster.lvl).toBe(25);
+    const v = WORDS.find((x) => (x.region ?? 1) === 1 && x.id !== w.id && x.lvl <= 5 && !x.tutorial)!;
+    expect(fastTrackWord(s, v)).toBe(true);
+    s.words[v.id] = { stage: 3, due: 9e15, firstSeen: 1, lastSeen: 1, relapse: 0, correct: 1, wrong: 0, read: 1, write: 1 };
+    expect(fastTrackWord(s, v)).toBe(false);
+  });
+});

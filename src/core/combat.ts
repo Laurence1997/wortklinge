@@ -7,7 +7,7 @@ import { ELEMENT_ZH, generateIntent, INTENT_ZH } from './intents';
 import { between, makeRng, pick, shuffle, type Rng } from './rng';
 import { contextDueWords, contextFail, contextPass, gapZh, reviewedByWriting, reviewMon, failVerify, retire, setGuiming, kindOf, stageOf, overdueSteps, verifyOf, type Kind, type Stage } from './srs';
 import { typoOk } from './cut';
-import { placedCheck, placedPick } from './placement';
+import { isPlaced, placedCheck, placedPick, regionFor } from './placement';
 import { blindLine, blindTask, LISTEN, passageFor, passageTask, rollListen } from './listening';
 import { fillGems, gemSum } from './gems';
 import { announces, insightOptions, LIAR, liarIntent, TELL_ZH } from './liar';
@@ -397,6 +397,9 @@ export interface Battle {
   cutReady?: boolean;
   /** 直接叫名 (Lucas 2026-11-25): a word met for the first time offers an unhinted dictation before its first question. */
   directOffer?: boolean;
+  /** 快速通道 (Lucas 2026-11-25): a 推定会 word met in the field. 「我认识它」 written right retires it (3 shards, no
+   *  XP); declined or wrong, it is a missed word and is learned as new. */
+  presumed?: boolean;
   /** The player took the 直接叫名 offer: the next attack question is that dictation. */
   direct?: boolean;
   /** 斩杀: this fight showed the word's spelling (a question with the German on screen, or a wrong answer's
@@ -440,6 +443,9 @@ export function startBattle(
   opts: { isEcho?: boolean; tutorial?: Tutorial; trial?: string; rare?: boolean; elite?: boolean; challenge?: boolean; struct?: boolean } = {},
 ): Battle {
   const t = now(s);
+  // 快速通道: a 推定会 word comes as a new monster with the 「我认识它」 offer; its entry is dropped (missed unless named).
+  const presumed = !opts.tutorial && !opts.trial && isPlaced(s.words[word.id]);
+  if (presumed) delete s.words[word.id];
   const kind = kindOf(s, word, t);
   const stage = stageOf(s, word, t);
   // The word holding your echo waits at your level, so you can win it back.
@@ -450,7 +456,8 @@ export function startBattle(
   const isReview = kind === 'due' && reviewMon(s.words[word.id], t);
   const challenge = !!opts.challenge && !opts.isEcho && !opts.tutorial && !opts.trial;
   // 审查修订 B2: Lv1–5 a challenge monster is your level (the 1–5 cap of 0 above), +2 from Lv6.
-  const lvl = challenge ? s.level + (s.level <= 5 ? 0 : CHALLENGE_CFG.levelAbove) : opts.isEcho ? Math.min(word.lvl, s.level) : isReview ? Math.max(word.lvl, s.level) : s.flags[`zoneOk_${word.zone}`] ? word.lvl : Math.min(word.lvl, s.level + CONFIG.monster.maxAbove(s.level));
+  // 快速通道: a placed player's not-yet-归名 words in the regions before the entry region stand at the player's level.
+  const lvl = (presumed || fastTrackWord(s, word)) && !opts.isEcho ? Math.max(word.lvl, s.level) : challenge ? s.level + (s.level <= 5 ? 0 : CHALLENGE_CFG.levelAbove) : opts.isEcho ? Math.min(word.lvl, s.level) : isReview ? Math.max(word.lvl, s.level) : s.flags[`zoneOk_${word.zone}`] ? word.lvl : Math.min(word.lvl, s.level + CONFIG.monster.maxAbove(s.level));
   const overdue = overdueSteps(s, word, t);
   // 锈名 (27 级): 审查修订 — only the look of 越久越肥 layers 3–4 (3+ intervals overdue); the HP comes from 越久越肥.
   const rusty = isReview && overdue >= CONFIG.rusty.overdue && s.level >= CONFIG.rusty.from && !opts.tutorial && !opts.elite;
@@ -470,6 +477,7 @@ export function startBattle(
     reviewMon: isReview || undefined,
     overdue,
     rusty: rusty || undefined,
+    presumed: presumed || undefined,
     stage,
     isEcho: !!opts.isEcho,
     tutorial,
@@ -2801,7 +2809,7 @@ function directTurn(s: GameState, b: Battle, q: Question, input: string): TurnRe
     retire(s, w, t);
     b.cutReady = true;
     cut = 'ready';
-    log.push({ text: `✓ 直接叫名：${fullForm(w)}，你本来就会。可以斩杀了（30 天后回响抽查一次）`, tone: 'good' });
+    log.push({ text: `✓ 直接叫名：${fullForm(w)}，你本来就会。可以斩杀了（30 天后回响抽查一次）${b.presumed ? '。推定会的词：给 3 碎片，不给经验' : ''}`, tone: 'good' });
   } else {
     b.spellSeen = true;
     log.push({ text: `没叫出来：${fullForm(w)}。没关系，照常学它。`, tone: 'info' });
@@ -2812,6 +2820,15 @@ function directTurn(s: GameState, b: Battle, q: Question, input: string): TurnRe
 function finish(_s: GameState, b: Battle, r: TurnReport): TurnReport {
   b.log.push(...r.log);
   return r;
+}
+
+/** 快速通道: a placed player's word in a region before the one the test put them in, not yet 归名 or retired. */
+export function fastTrackWord(s: GameState, w: Word): boolean {
+  if (!s.placement || s.placement.level <= 1) return false;
+  const entry = regionFor(s.placement.level);
+  if ((w.region ?? 1) >= entry) return false;
+  const p = s.words[w.id];
+  return !p || (!p.retired && p.stage < 3);
 }
 
 export function intentLabel(i: Intent): string {
