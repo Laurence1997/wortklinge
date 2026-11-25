@@ -9,6 +9,7 @@
 // The 6000-word list brings 情境 / 层 / 功能线 / related words (optional Word fields below); until then only the
 // next region's words are in the pool.
 
+import { LEX_REL } from '../data/lexicon';
 import { shuffle, type Rng } from './rng';
 import { isRetired, kindOf, pendingToday, verifyOf } from './srs';
 import { now, type GameState } from './state';
@@ -89,7 +90,7 @@ export function challengePool(s: GameState, zone: ZoneId, alive: Set<string>): W
     kindOf(s, w, t) === 'new';
   // Related words of local words not yet written right stay out (场景分组防干扰).
   const blocked = new Set<string>();
-  for (const w of local) if (!(s.words[w.id]?.write ?? 0)) for (const r of w.rel ?? []) blocked.add(r);
+  for (const w of local) if (!(s.words[w.id]?.write ?? 0)) for (const r of w.rel ?? (LEX_REL[w.id] ?? []).flat()) blocked.add(r);
   const ok = (w: Word) => open(w) && !blocked.has(w.id);
   const out: Word[] = [];
   const seen = new Set<string>();
