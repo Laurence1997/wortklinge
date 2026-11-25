@@ -116,9 +116,10 @@ describe('斩杀 · 打字完形填空', () => {
     s.words[v.id].pend = T0 - DAY;
     const b = startBattle(s, v, makeRng(2));
     const q = makeQuestion(s, b, 'attack', makeRng(1));
-    expect(q.type).toBe('typed');
-    expect(q.answer).toBe(v.de);
-    expect(q.focus).not.toContain(v.de);
+    // 练中学 (rev 425): the verification is a 句中默写 when the verb has an example, else 看中文写 its infinitive.
+    expect(q.type === 'typed' || q.dict).toBe(true);
+    if (q.type === 'typed') expect(q.answer).toBe(v.de);
+    expect(q.focus).not.toContain(q.answer!);
   });
 });
 
@@ -140,9 +141,9 @@ describe('斩杀 · 第二天验证', () => {
     expect(b.pluralMon).toBeFalsy();
     expect(availableMoves(s, b, 1)).toEqual(['attack']);
     const q = makeQuestion(s, b, 'attack', makeRng(1));
-    expect(q.type).toBe('typed');
+    expect(q.dict || q.type === 'typed').toBe(true); // 句中默写 (rev 425)
     expect(q.whispered).toBeFalsy();
-    const r = resolveTurn(s, b, 'attack', q, 'die Lampe', makeRng(1));
+    const r = resolveTurn(s, b, 'attack', q, q.answer!, makeRng(1));
     expect(r.cut).toBe('ready');
     expect(b.cutReady).toBe(true);
     expect(s.words.lampe.retired).toBeTruthy();
@@ -171,7 +172,8 @@ describe('斩杀 · 第二天验证', () => {
     expect(cutStatus(s.words.lampe, T0)).toBe('回响抽查中');
     const b = fight(s, 'lampe');
     expect(b.verify).toBe('recheck');
-    resolveTurn(s, b, 'attack', makeQuestion(s, b, 'attack', makeRng(1)), 'die Lampe', makeRng(1));
+    const rq = makeQuestion(s, b, 'attack', makeRng(1));
+    resolveTurn(s, b, 'attack', rq, rq.answer!, makeRng(1));
     expect(s.words.lampe.sure).toBe(true);
     expect(needsVerify(s, WORD_BY_ID['lampe'], T0 + 100 * DAY)).toBe(false);
 

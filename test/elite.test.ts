@@ -84,7 +84,7 @@ describe('场景精英: how it fights', () => {
   it('part 1 asks recognition only, part 3 typing only', () => {
     expect([...parts(0).tiers]).toEqual([0]);
     const p3 = parts(2);
-    expect([...p3.types].every((t) => t === 'typed' || t === 'conj')).toBe(true);
+    expect([...p3.types].every((t) => t === 'typed' || t === 'conj' || t === 'cloze')).toBe(true); // 句中默写 is a typed cloze (rev 425)
   });
 
   it('part 2 asks cloze (or typing when there is no example)', () => {

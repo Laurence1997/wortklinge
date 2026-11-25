@@ -40,3 +40,42 @@ describe('adaptive review', () => {
     expect(s.words[v.id].ivl).toBe(DAY);
   });
 });
+
+describe('练中学 (rev 425)', () => {
+  it('a review monster opens with a 句中默写; right brings it straight back to 归名', async () => {
+    const { startBattle, makeQuestion, resolveTurn } = await import('../src/core/combat');
+    const { makeRng } = await import('../src/core/rng');
+    const { reviewMon } = await import('../src/core/srs');
+    const s = newGame('T', 'student', T0);
+    s.timeOffset = T0 - Date.now();
+    s.level = 8;
+    s.hp = 999;
+    const w = WORD_BY_ID['brot'];
+    s.words[w.id] = { stage: 2, lapsed: true, due: T0 - 1000, firstSeen: 0, lastSeen: 0, relapse: 0, correct: 3, wrong: 1 };
+    expect(reviewMon(s.words[w.id], T0)).toBe(true);
+    const b = startBattle(s, w, makeRng(1));
+    b.pluralMon = false;
+    b.notice = undefined;
+    const q = makeQuestion(s, b, 'attack', makeRng(1));
+    expect(q.dict).toBe(true);
+    expect(q.focus).toContain('___');
+    resolveTurn(s, b, 'attack', q, q.answer!, makeRng(1));
+    expect(s.words[w.id].stage).toBe(3);
+    expect(s.words[w.id].ivl).toBe(DAY);
+  });
+  it('认 hears the whole sentence', async () => {
+    const { startBattle, makeQuestion } = await import('../src/core/combat');
+    const { makeRng } = await import('../src/core/rng');
+    const s = newGame('T', 'student', T0);
+    s.level = 1;
+    const b = startBattle(s, WORD_BY_ID['brot'], makeRng(1));
+    b.step = 1;
+    let seen = false;
+    for (let i = 0; i < 4; i++) {
+      b.step = i;
+      const q = makeQuestion(s, b, 'attack', makeRng(i));
+      if (q.type === 'pickZh' && q.prompt.includes('听整句')) seen = true;
+    }
+    expect(seen).toBe(true);
+  });
+});

@@ -6,7 +6,7 @@ import { makeQuestion, resolveTurn, startBattle } from '../src/core/combat';
 import { applyWin } from '../src/core/outcomes';
 import { CHALLENGE_CFG, challengePool, challengeShare, noteFirstTry, pickChallenge } from '../src/core/challenge';
 import { pickSpawns, zoneWords } from '../src/core/spawn';
-import { fullForm, WORDS } from '../src/data/words';
+import { WORDS } from '../src/data/words';
 
 const T0 = new Date('2026-11-22T12:00:00').getTime();
 
@@ -76,9 +76,9 @@ describe('挑战怪 fight', () => {
     expect(b.challenge).toBe(true);
     expect(b.monster.lvl).toBe(s.level + CHALLENGE_CFG.levelAbove);
     const q = makeQuestion(s, b, 'attack', makeRng(2));
-    expect(q.type).toBe('typed');
+    expect(q.type === 'typed' || q.dict).toBe(true);
     expect(q.prompt).toContain('挑战怪');
-    const r = resolveTurn(s, b, 'attack', q, fullForm(w), makeRng(2));
+    const r = resolveTurn(s, b, 'attack', q, q.answer!, makeRng(2));
     expect(r.cut).toBe('pend');
     expect(b.firstTry).toBe('dict');
     b.monster.hp = 0;

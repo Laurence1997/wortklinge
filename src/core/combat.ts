@@ -5,7 +5,7 @@ import { CONFIG, DAY, HOUR, monsterHpAt, playerBaseHp } from './config';
 import { gradeTyped, normalize, type Verdict } from './grading';
 import { ELEMENT_ZH, generateIntent, INTENT_ZH } from './intents';
 import { between, makeRng, pick, shuffle, type Rng } from './rng';
-import { contextDueWords, contextFail, contextPass, gapZh, reviewedByWriting, reviewMon, failVerify, retire, kindOf, stageOf, overdueSteps, verifyOf, type Kind, type Stage } from './srs';
+import { contextDueWords, contextFail, contextPass, gapZh, reviewedByWriting, reviewMon, failVerify, retire, setGuiming, kindOf, stageOf, overdueSteps, verifyOf, type Kind, type Stage } from './srs';
 import { typoOk } from './cut';
 import { placedCheck, placedPick } from './placement';
 import { addGearKill, affinityOf, affixTotal, attack, engraved, critChance, gearPen, hintsPerFight, maxHp, now, type GameState } from './state';
@@ -20,7 +20,7 @@ import { SKILLS, skillLine, skillLinesOpen } from '../data/skills';
 import { SAYING_CFG, SAYINGS } from '../data/sayings';
 import { expectedSentence, gradeSentence, nextPattern, PATTERNS, sentenceTags, type Pattern } from './sentence';
 import { PERFEKT, perfektFull, perfektParts } from '../data/perfekt';
-import { EXAMPLES, caseOf, clozeWhy, maskZh, pronounClozes, slotArticle, type Case, type Stance, clozeModeFor, clozeOptions, exampleSplits, gradeCloze, hasExamples, makeCloze, twoBlank, voiceLine, wholeSentence, type ClozeMode } from './cloze';
+import { EXAMPLES, caseOf, clozeWhy, maskZh, pronounClozes, slotArticle, type Case, type Stance, clozeModeFor, clozeOptions, exampleSplits, gradeCloze, hasExamples, makeCloze, parse, showsWord, twoBlank, voiceLine, wholeSentence, type ClozeMode } from './cloze';
 import { CONJ, PERSON_LABEL, type Person } from '../data/verbs';
 import { QTYPES, type QKey } from '../data/questionTypes';
 import { CLASSES, critRunNeeded, rank, resMax, shieldReflect, wrongHitShare, type ClassId } from './classes';
@@ -79,6 +79,8 @@ export interface Question {
   whispered?: boolean;
   /** 语境复习 (2026-11-24): the word id of a due 归名 word asked in this fight; counts as an attack on the target. */
   review?: string;
+  /** 句中默写 (练中学): a typed cloze on the word's own example with no letters shown; counts as 会写 for 斩杀. */
+  dict?: boolean;
   /** 复习伙伴 (43): this cloze is on the partner word (id); right → it strikes with you. */
   partner?: string;
   /** 药片 turn (物品栏): nothing to answer. */
@@ -278,6 +280,8 @@ export interface Battle {
   chorusHits?: string[];
   /** 语法秘境: every attack question is this floor's grammar on the monster's word. */
   gramDungeon?: { kind: import('./gram/dungeons').DungeonKind; floor: string };
+  /** 复习怪: its opening 句中默写 was right, so the word is back at 归名. */
+  backToGuiming?: boolean;
   /** 复习伙伴: its question was asked this fight. */
   partnerDone?: boolean;
   /** 告示怪 / 信件怪 (15): the notice it carries, and how many of its questions were asked. */
@@ -902,6 +906,39 @@ export function contextQuestion(s: GameState, b: Battle, rng: Rng): Question | n
   return { type: 'typed', review: id, prompt: `${tag}：${hasArticleQuestion(rw) ? '默写，带上冠词' : '默写这个词'}`, focus: zhWithPos(rw), withArticle: hasArticleQuestion(rw), answer: fullForm(rw) };
 }
 
+/** One whole example sentence of the word (for 「听整句选意思」), or null. */
+function exampleOf(w: Word, rng: Rng): string | null {
+  const ps = (EXAMPLES[w.id] ?? []).map(parse).filter((x): x is NonNullable<typeof x> => !!x);
+  if (!ps.length) return null;
+  const p = pick(rng, ps);
+  return `${p.before}${p.blank}${p.after}`.replace(/\s+/g, ' ').trim();
+}
+
+/** 句中默写 (练中学, rev 425): the word's slot blanked in one of its examples, the whole Chinese given, no letters.
+ *  Nouns only from slots that carry the article (einen Tee), so the answer shows the article and case. */
+export function dictQ(w: Word, rng: Rng): Question | null {
+  const noun = hasArticleQuestion(w);
+  const ps = (EXAMPLES[w.id] ?? [])
+    .map(parse)
+    .filter((x): x is NonNullable<typeof x> => !!x && !!x.zh)
+    .filter((x) => (noun ? ARTICLE_RE.test(`${x.blank} `) : true))
+    .filter((x) => !showsWord(w, `${x.before} ${x.after}`));
+  if (!ps.length) return null;
+  const p = pick(rng, ps);
+  // The dictionary form in its sentence (das Brot, kaufen) is a typed question; a changed form (einen Tee, kaufst) is 填变形.
+  const same = normalize(p.blank) === normalize(fullForm(w)) || normalize(p.blank) === normalize(w.de);
+  return {
+    type: 'cloze',
+    clozeMode: same ? 'base' : 'form',
+    dict: true,
+    prompt: `句中默写：看整句中文，打出空里的词${noun ? '（带冠词，按句子变格）' : '（按句子变形）'} · ${p.zh}`,
+    focus: `${p.before}___${p.after}`.replace(/\s+/g, ' ').trim(),
+    answer: p.blank,
+    full: `${p.before}${p.blank}${p.after}`.replace(/\s+/g, ' ').trim(),
+    clozeZh: p.zh,
+  };
+}
+
 export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skillId?: string, inPack = false, mates: Battle[] = []): Question {
   const w = b.word;
   const isNoun = hasArticleQuestion(w);
@@ -945,9 +982,14 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
   };
   const pickZh = (): Question => {
     const opts = shuffle(rng, [w.zh, ...distractors(rng, w, 'zh', 2)]);
-    return { type: 'pickZh', prompt: '它在说什么？选出意思', focus: fullForm(w), options: opts, answer: w.zh };
+    // 练中学 (rev 425): 认 = hear the whole sentence and pick what the word means.
+    const ex = exampleOf(w, rng);
+    return { type: 'pickZh', prompt: ex ? `听整句，选出 ${fullForm(w)} 的意思：「${ex}」` : '它在说什么？选出意思', focus: fullForm(w), options: opts, answer: w.zh };
   };
-  const typed = (): Question => ({
+  // 练中学 (rev 425): 写 = 句中默写 (the word blanked in its example, the whole Chinese given, no letters);
+  // plain 看中文写 only for words without an example.
+  const typed = (): Question => dictQ(w, rng) ?? bareTyped();
+  const bareTyped = (): Question => ({
     type: 'typed',
     prompt: isNoun ? '默写：带上冠词（der / die / das）' : '默写这个词',
     focus: zhWithPos(w),
@@ -1005,9 +1047,20 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
     return (form && form.clozeMode === 'form' ? form : null) ?? sentenceQ();
   };
   // 斩杀 (0.6.x): a verification fight opens with typing, no hint (nouns with the article).
-  if (b.verify && !b.verifyDone && move === 'attack') return { ...typed(), prompt: `${b.verify === 'recheck' ? '回响抽查' : '你昨天会写它'}——不看提示再写一次${isNoun ? '（带冠词）' : ''}` };
+  if (b.verify && !b.verifyDone && move === 'attack') {
+    const v = typed();
+    return { ...v, prompt: `${b.verify === 'recheck' ? '回响抽查' : '你昨天会写它'}——不看提示再写一次${isNoun ? '（带冠词）' : ''}${v.clozeZh ? ` · ${v.clozeZh}` : ''}` };
+  }
+  // 复习怪 (rev 425): its first question is the 句中默写; right brings it straight back to 归名.
+  if (b.reviewMon && b.qIndex === 0 && move === 'attack' && canType && !b.tutorial) {
+    const v = dictQ(w, rng);
+    if (v) return { ...v, prompt: v.prompt.replace('句中默写', '复习怪 · 句中默写（写对直接回到归名）') };
+  }
   // 挑战怪 (rev 342): it opens with a dictation, no hint — know it and you can cut it today.
-  if (b.challenge && b.qIndex === 0 && move === 'attack' && canType) return { ...typed(), prompt: `挑战怪：比你高两级的词——看中文，不看提示直接写${isNoun ? '（带冠词）' : ''}` };
+  if (b.challenge && b.qIndex === 0 && move === 'attack' && canType) {
+    const v = typed();
+    return { ...v, prompt: `挑战怪：比你高两级的词——看中文，不看提示直接写${isNoun ? '（带冠词）' : ''}${v.clozeZh ? ` · ${v.clozeZh}` : ''}` };
+  }
   const fresh = b.kind === 'new' && b.stage === 0 && b.step < 2;
   const am: Move = move === 'inscribe' || move === 'whisper' || move === 'chorus' ? 'attack' : move;
 
@@ -1587,9 +1640,10 @@ function cutCheck(s: GameState, b: Battle, q: Question, input: string, ok: boole
   // question doesn't show the word (no conjugated / declined form, no «(gehen)» hint).
   const shown = normalize(`${q.prompt} ${q.focus ?? ''} ${q.frame ?? ''}`);
   const clozeDict = q.type === 'cloze' && q.clozeMode !== 'pick' && q.answer === fullForm(w) && !shown.includes(normalize(w.de));
-  const plainTyped = (q.type === 'typed' || clozeDict) && q.answer === fullForm(w) && !q.whispered && !b.phrase;
-  const typo = !ok && plainTyped && typoOk(input, w, !!w.art);
-  if (b.verify && !b.verifyDone && q.type === 'typed') {
+  // 句中默写 (练中学): its answer is the slot's form (einen Tee), shown nowhere on screen.
+  const plainTyped = (((q.type === 'typed' || clozeDict) && q.answer === fullForm(w)) || !!q.dict) && !q.whispered && !b.phrase;
+  const typo = !ok && plainTyped && q.answer === fullForm(w) && typoOk(input, w, !!w.art);
+  if (b.verify && !b.verifyDone && (q.type === 'typed' || q.dict)) {
     b.verifyDone = true;
     if (ok || typo) {
       b.cutReady = true;
@@ -1700,6 +1754,16 @@ export function resolveTurn(
     if (q.gram) b.gramAsked = (b.gramAsked ?? 0) + 1;
     if (q.gram?.sys === 'notice' && b.notice) b.notice.i += 1;
     if (q.partner) b.partnerDone = true;
+    // 复习怪: its opening 句中默写 right → back to 归名 now (the gap restarts at 1 day).
+    if (b.reviewMon && q.dict && ok && !q.whispered && b.qIndex === 1) {
+      const p = s.words[b.word.id];
+      if (p && !p.retired && (p.lapsed || p.stage === 3)) {
+        p.relapse += p.lapsed ? 1 : 0;
+        setGuiming(p, now(s), false, true);
+        b.backToGuiming = true;
+        log.push({ text: `✓ 还记得：${fullForm(b.word)} 回到归名。`, tone: 'good' });
+      }
+    }
     if (q.board) markBoard(s, q.board.sys);
     if (q.ult) b.ultUsed = true;
     if (q.echo) {
@@ -2023,7 +2087,7 @@ export function resolveTurn(
         b.lastKillTyped = typedQ && !q.whispered && !q.review && (q.type === 'sentence' ? verdict.word?.id === b.word.id : true);
         if (q.type === 'typed' && !q.withArticle && hasArticleQuestion(b.word)) b.lastKillTyped = false;
         // A noun's 归名 blow must write the article: only a form cloze that includes one (den Tee) counts.
-        if (q.type === 'cloze' && hasArticleQuestion(b.word) && !(q.clozeMode === 'form' && ARTICLE_RE.test(q.answer ?? ''))) b.lastKillTyped = false;
+        if (q.type === 'cloze' && hasArticleQuestion(b.word) && !((q.clozeMode === 'form' || q.dict) && ARTICLE_RE.test(q.answer ?? ''))) b.lastKillTyped = false;
         log.push({ text: `${tagOf(b)}散了。`, tone: 'sys' });
         kills.push(b);
       }
