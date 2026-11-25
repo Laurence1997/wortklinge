@@ -873,6 +873,31 @@ export class Controller {
     return { res, report };
   }
 
+  /** 洞察 (会说谎的怪): spend the turn on 「它在说谎吗，破绽在哪里」. Right: its move misses and the next hit ×1.5. */
+  insight(choice: string): { right: boolean; answer: string; line: string; zh: string; report: TurnReport } | null {
+    const s = this.state;
+    const b = this.battle;
+    const L = b?.liar;
+    if (!b || b.outcome || !L?.claim || L.probed || !L.answer) return null;
+    L.probed = true;
+    const right = choice === L.answer;
+    const claim = L.claim;
+    if (right) {
+      L.dodge = true;
+      L.boost = true;
+    }
+    b.log.push({ text: right ? `看穿了：${L.answer}。` : `没看穿（${L.answer}）。白费一回合。`, tone: right ? 'good' : 'bad' });
+    const report = resolveTurn(s, b, 'item', ITEM_TURN, '', this.rng, this.pack);
+    if (report.killer) this.killer = report.killer;
+    if (report.monsterDamage > 0) {
+      sfx.hurt();
+      this.scene.shake(0.004);
+    }
+    this.refresh();
+    this.persist();
+    return { right, answer: L.answer, line: claim.de, zh: claim.zh, report };
+  }
+
   buyConsumable(k: Consumable, sentence: string) {
     const r = buyConsumable(this.state, k, sentence);
     if (r.ok) sfx.loot();

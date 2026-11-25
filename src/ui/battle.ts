@@ -73,6 +73,8 @@ export class BattleUI {
   private phaseNag = false;
   /** 秘术栏: the charm being shouted (its input row is open). */
   private charmId: string | null = null;
+  /** 洞察: the three readings are on screen. */
+  private probing = false;
   // 回音怪 (2026-11-23): the pair's two options, re-reads used, the last message, a judgement in progress.
   private echoOpts: string[] = [];
   private echoTries = 0;
@@ -303,6 +305,40 @@ export class BattleUI {
     this.render();
     window.clearTimeout(this.autoTimer);
     this.autoTimer = window.setTimeout(() => this.continue(), this.ctrl.fightOver() ? 1600 : 1400);
+  }
+
+  /** 洞察 (会说谎的怪). */
+  probe(choice: string): void {
+    if (this.phase !== 'choose') return;
+    const target = this.b;
+    const from = target.log.length;
+    const r = this.ctrl.insight(choice);
+    this.probing = false;
+    if (!r) return;
+    stopListening();
+    this.report = r.report;
+    this.question = { type: 'steady', prompt: r.right ? '看穿了' : '没看穿', focus: `「${r.line}」${r.zh} · ${r.answer}`, item: true };
+    this.move = 'item';
+    this.phase = 'result';
+    this.lastValue = '';
+    this.voicedFull = '';
+    this.shadowText = '';
+    for (const l of target.log.slice(from)) logLine(`  ${l.text}`, l.tone === 'good' ? 'good' : l.tone === 'bad' ? 'bad' : l.tone === 'crit' ? 'gold' : 'info');
+    this.render();
+    window.clearTimeout(this.autoTimer);
+    this.autoTimer = window.setTimeout(() => this.continue(), this.ctrl.fightOver() ? 1600 : 2600);
+  }
+
+  private probeRow(): HTMLElement | string {
+    const L = this.b.liar;
+    if (!L?.claim || L.probed || this.phase !== 'choose') return '';
+    const row = h('div.moves.probe');
+    if (!this.probing) {
+      row.append(h('button.btn', { onclick: () => { this.probing = true; this.render(); }, title: '洞察（I）：这一回合不攻击，判断它这句是不是假话、破绽在哪里。看穿了它这一下落空，你下一击 ×1.5' }, h('kbd', 'I'), '洞察', h('small', '它在说谎吗？')));
+      return row;
+    }
+    (L.options ?? []).forEach((o, i) => row.append(h('button.btn', { onclick: () => this.probe(o) }, h('kbd', String(i + 1)), o)));
+    return row;
   }
 
   private charmRow(): HTMLElement | string {
@@ -685,6 +721,18 @@ export class BattleUI {
     }
     if (typing) return false;
     const k = e.key.toLowerCase();
+    if (this.phase === 'choose' && this.b.liar?.claim && !this.b.liar.probed) {
+      if (k === 'i' && !this.probing) {
+        this.probing = true;
+        this.render();
+        return true;
+      }
+      const n = Number(k);
+      if (this.probing && n >= 1 && n <= 3 && this.b.liar.options?.[n - 1]) {
+        this.probe(this.b.liar.options[n - 1]);
+        return true;
+      }
+    }
     if (this.phase === 'choose' || (this.phase === 'answer' && this.question?.options)) {
       if (k === 'h' && this.phase === 'choose') {
         this.tablet();
@@ -992,7 +1040,7 @@ export class BattleUI {
 
     // 教学战 (0.5 节奏表): the first fight after a new move opens points at it.
     const teach = this.phase === 'choose' && s.flags.teachSkills && !b.tutorial ? h('div.small', { style: 'color:var(--gold, #ffcf4a)' }, '新招：试试 Q 铭刻（下一题难一级，伤害 ×1.5）；答题卡住时可以按 W 低语（给提示，但这题不算会写）') : this.phase === 'choose' && b.teachFin ? h('div.small', { style: 'color:var(--gold, #ffcf4a)' }, '言灵已满：按 F 放终结技，看中文写整句') : '';
-    clear(el).append(h('div.b-top', monEl, intent, me), stance, teach, movesEl, q, blog);
+    clear(el).append(h('div.b-top', monEl, intent, me), stance, this.probeRow(), teach, movesEl, q, blog);
     blog.scrollTop = blog.scrollHeight;
     if (this.input && this.phase === 'answer') window.setTimeout(() => (this.mateBoxes[0] ?? this.input)?.focus(), 0);
   }
