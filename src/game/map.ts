@@ -4,7 +4,7 @@
 // Generated from fixed seeds so every player walks the same streets. Both maps are 74×48.
 
 import { makeRng } from '../core/rng';
-import { SCENES } from '../data/world';
+import { LINKS, SCENES } from '../data/world';
 import { REGION_DEF, REGION_DEFS, fieldLevels, type RegionDef } from '../data/zones';
 import { LEX_FIELDS } from '../data/lexicon';
 import type { RegionNo, ZoneId } from '../core/types';
@@ -30,9 +30,13 @@ export const enum T {
   Water = 12,
   /** Vegetable beds (Tiny Farm). */
   Crop = 13,
+  /** Railway track (walkable). */
+  Rail = 14,
+  /** Castle walls and theatre seats. */
+  Keep = 15,
 }
 
-const BLOCKING = new Set<number>([T.Wall, T.Rubble, T.Tree, T.Fog, T.Lamp, T.Tent, T.Crate, T.Roof, T.Door, T.Water, T.Crop]);
+const BLOCKING = new Set<number>([T.Wall, T.Rubble, T.Tree, T.Fog, T.Lamp, T.Tent, T.Crate, T.Roof, T.Door, T.Water, T.Crop, T.Keep]);
 
 export interface Rect {
   x: number;
@@ -229,47 +233,8 @@ function generateRegion2(): MapData {
       if (edge < 2 || (edge < 3 && rng() < 0.5)) set(x, y, T.Fog);
     }
 
-  // Market street from the west gate to the granary's scale room, plus two cross streets.
-  for (let x = 2; x < 70; x++) for (let dy = 0; dy < 2; dy++) set(x, 24 + dy, T.Road);
-  for (let y = 4; y < 45; y++) for (let dx = 0; dx < 2; dx++) set(22 + dx, y, T.Road);
-  for (let y = 4; y < 45; y++) for (let dx = 0; dx < 2; dx++) set(50 + dx, y, T.Road);
-
-  // Field blocks: market stalls (crates) in the vegetable lane, shop rows in the scale lane, sheds in the granary.
-  const blocks = (r: Rect, style: 'stalls' | 'shops' | 'sheds') => {
-    const step = style === 'sheds' ? 8 : 7;
-    for (let y = r.y; y < r.y + r.h; y++)
-      for (let x = r.x; x < r.x + r.w; x++) {
-        if (get(x, y) === T.Fog) continue;
-        const lx = x - r.x;
-        const ly = y - r.y;
-        if (lx % step === 0 || ly % step === 0) {
-          set(x, y, T.Road);
-          continue;
-        }
-        const bx = lx % step;
-        const by = ly % step;
-        const inner = bx >= 2 && bx <= step - 2 && by >= 2 && by <= step - 2;
-        if (!inner) {
-          if (rng() < 0.03) set(x, y, T.Tree);
-          else if (rng() < 0.03) set(x, y, T.Crate);
-          continue;
-        }
-        if (style === 'stalls') {
-          // Open stalls: a row of crates with a gap, ground behind.
-          if (by === 2 && bx !== 4) set(x, y, T.Crate);
-          else if (by === 5 && rng() < 0.3) set(x, y, T.Rubble);
-        } else if (style === 'shops') {
-          const edgeB = bx === 2 || bx === step - 2 || by === 2 || by === step - 2;
-          if (edgeB) set(x, y, rng() < 0.1 ? T.Rubble : T.Wall);
-          else set(x, y, T.Roof);
-        } else {
-          const edgeB = bx === 2 || bx === step - 2 || by === 2 || by === step - 2;
-          if (edgeB) set(x, y, by === step - 2 && bx === 4 ? T.Ground : T.Wall);
-          else if (rng() < 0.35) set(x, y, T.Crate);
-        }
-      }
-  };
-  zonesOf(2).filter((z) => z.monsters).forEach((z, i) => blocks(z.rect, (['stalls', 'shops', 'sheds', 'stalls', 'shops'] as const)[i]));
+  // 各区布局 (Lucas 2026-11-25): the market street, a fountain square, wheat fields and granary barns.
+  layoutFields(2, set, get, rng);
 
   // The market square: ash and cobbles around the bonfire, the bakery and two tents.
   const bonfire = { x: 12, y: 24 };
@@ -371,42 +336,8 @@ function generateRegion3(): MapData {
       if (edge < 2 || (edge < 3 && rng() < 0.5)) set(x, y, T.Fog);
     }
 
-  // The railway runs west to east through the town; two streets cross it.
-  for (let x = 2; x < 70; x++) for (let dy = 0; dy < 2; dy++) set(x, 24 + dy, T.Road);
-  for (let y = 4; y < 45; y++) for (let dx = 0; dx < 2; dx++) set(22 + dx, y, T.Road);
-  for (let y = 4; y < 45; y++) for (let dx = 0; dx < 2; dx++) set(50 + dx, y, T.Road);
-
-  // Station street: shop rows; old town: houses with yards; timetable hall: long platforms (walls with gaps).
-  const blocks = (r: Rect, style: 'shops' | 'houses' | 'platforms') => {
-    const step = style === 'platforms' ? 6 : 7;
-    for (let y = r.y; y < r.y + r.h; y++)
-      for (let x = r.x; x < r.x + r.w; x++) {
-        if (get(x, y) === T.Fog) continue;
-        const lx = x - r.x;
-        const ly = y - r.y;
-        if (lx % step === 0 || ly % step === 0) {
-          set(x, y, T.Road);
-          continue;
-        }
-        const bx = lx % step;
-        const by = ly % step;
-        const inner = bx >= 2 && bx <= step - 2 && by >= 2 && by <= step - 2;
-        if (!inner) {
-          if (rng() < 0.03) set(x, y, style === 'houses' ? T.Tree : T.Lamp);
-          else if (rng() < 0.03) set(x, y, T.Crate);
-          continue;
-        }
-        if (style === 'platforms') {
-          if (by === 2 && bx !== 3) set(x, y, T.Wall);
-          else if (rng() < 0.15) set(x, y, T.Crate);
-        } else {
-          const edgeB = bx === 2 || bx === step - 2 || by === 2 || by === step - 2;
-          if (edgeB) set(x, y, rng() < (style === 'houses' ? 0.2 : 0.1) ? T.Rubble : T.Wall);
-          else set(x, y, T.Roof);
-        }
-      }
-  };
-  zonesOf(3).filter((z) => z.monsters).forEach((z, i) => blocks(z.rect, (['shops', 'houses', 'platforms', 'houses', 'shops'] as const)[i]));
+  // 各区布局 (Lucas 2026-11-25): tracks through the station, the old town north, a freight yard south.
+  layoutFields(3, set, get, rng);
 
   // The town square: ash around the bonfire, the stationmaster's office north, the stalls south.
   const bonfire = { x: 12, y: 24 };
@@ -503,11 +434,7 @@ function generateLater(d: RegionDef): MapData {
       if (edge < 2 || (edge < 3 && rng() < 0.5)) set(x, y, T.Fog);
     }
   // 各区布局 (Lucas 2026-11-25): every region past 3 gets its own street plan east of the town square.
-  layoutFields(d, set, get, rng);
-  // A scene never stands in water: a little jetty of road round it.
-  for (const sc of SCENES)
-    if (sc.region === d.region)
-      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (get(sc.at.x + dx, sc.at.y + dy) === T.Water) set(sc.at.x + dx, sc.at.y + dy, T.Road);
+  layoutFields(d.region, set, get, rng);
   // Scenes stand on open ground whatever the field style drew there (the route map sits on these tiles).
   for (const sc of SCENES) if (sc.region === d.region) set(sc.at.x, sc.at.y, T.Road);
 
@@ -576,16 +503,16 @@ function generateLater(d: RegionDef): MapData {
 
 type SetT = (x: number, y: number, t: T) => void;
 type GetT = (x: number, y: number) => number;
-export type LayoutKind = 'blocks' | 'spa' | 'harbour' | 'boulevard' | 'works' | 'ring' | 'garden';
-/** Street plan of each region east of its town square (4–12 each their own; the B2 regions reuse one with their own seed). */
+export type LayoutKind = 'blocks' | 'spa' | 'harbour' | 'boulevard' | 'works' | 'ring' | 'garden' | 'market' | 'rail' | 'citadel' | 'canals' | 'theatre' | 'maze' | 'court' | 'islands';
+/** Street plan of each region east of its town square: every region its own (Lucas 2026-11-25: 每个图风格都不同). */
 export const LAYOUT: Partial<Record<number, LayoutKind>> = {
-  4: 'blocks', 5: 'spa', 6: 'harbour', 7: 'boulevard', 9: 'works', 10: 'ring', 12: 'garden',
-  13: 'boulevard', 14: 'works', 16: 'ring', 17: 'garden', 18: 'blocks', 20: 'spa',
+  2: 'market', 3: 'rail', 4: 'blocks', 5: 'spa', 6: 'harbour', 7: 'boulevard', 9: 'works', 10: 'ring', 12: 'garden',
+  13: 'citadel', 14: 'canals', 16: 'theatre', 17: 'maze', 18: 'court', 20: 'islands',
 };
 
 /** The field area (x 24–69): roads, houses, water and greenery for the region's layout. Scenes are set to road
  *  afterwards, the town square and the boss door are drawn over it by the caller. */
-function layoutFields(d: RegionDef, set: SetT, get: GetT, rng: () => number) {
+function layoutFields(region: number, set: SetT, get: GetT, rng: () => number) {
   const X0 = 24;
   const X1 = 69;
   const Y0 = 3;
@@ -638,7 +565,7 @@ function layoutFields(d: RegionDef, set: SetT, get: GetT, rng: () => number) {
     for (let y = cy - ry; y <= cy + ry; y++)
       for (let x = cx - rx; x <= cx + rx; x++) if (((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 <= 1 + (rng() - 0.5) * 0.15) put(x, y, T.Water);
   };
-  const kind = LAYOUT[d.region] ?? 'blocks';
+  const kind = LAYOUT[region] ?? 'blocks';
 
   if (kind === 'blocks') {
     // 租屋城: a regular grid of terraced houses, courtyard trees.
@@ -728,6 +655,178 @@ function layoutFields(d: RegionDef, set: SetT, get: GetT, rng: () => number) {
     vroad(cx, cy + 6, Y1 - 1);
     for (const [x, y] of [[25, 3], [31, 3], [58, 3], [64, 3], [25, 40], [31, 40], [58, 40], [64, 40], [25, 10], [64, 10], [25, 33], [64, 33]] as const) if (fits(x, y, 4, 3)) house(x, y, 4, 3);
     scatter(T.Tree, 0.05);
+  } else if (kind === 'market') {
+    // 面包集市: stalls along the market street, a square with a fountain, wheat fields and granary barns.
+    hroad(24, X0 - 2, X1);
+    vroad(40, Y0 + 1, Y1 - 1);
+    vroad(54, Y0 + 1, Y1 - 1);
+    hroad(12, X0, 39);
+    hroad(37, 56, X1);
+    for (let y = 18; y <= 31; y++) for (let x = 42; x <= 53; x++) put(x, y, T.Ash);
+    water(47, 20, 1, 1);
+    for (let x = 42; x <= 53; x += 2) {
+      put(x, 18, x % 4 === 0 ? T.Tent : T.Crate);
+      put(x, 31, x % 4 === 2 ? T.Tent : T.Crate);
+    }
+    for (const y of [22, 27])
+      for (let x = 26; x <= 68; x++) if ((x < 40 || x > 55) && x % 4 !== 1) put(x, y, x % 6 === 0 ? T.Tent : T.Crate);
+    street(26, 4, 13, 7, [4, 5], [3, 3]);
+    street(26, 14, 13, 6, [4, 5], [3, 3]);
+    for (let y = 5; y <= 19; y++) if (y % 3 !== 1) for (let x = 57; x <= 68; x++) put(x, y, T.Crop);
+    for (let y = 30; y <= 43; y += 3) for (let x = 27; x <= 38; x += 3) put(x, y, T.Tree);
+    house(57, 30, 11, 4);
+    house(57, 39, 11, 4);
+    scatter(T.Crate, 0.03, 56, X1, 34, 38);
+  } else if (kind === 'rail') {
+    // 铁轨镇: two tracks through the station platforms, the station hall, the old town north, a freight yard south.
+    hroad(24, X0 - 2, X1);
+    for (const y of [20, 29]) for (let x = X0 - 2; x <= X1; x++) put(x, y, T.Rail);
+    for (let x = 30; x <= 64; x++) {
+      put(x, 21, T.Ash);
+      put(x, 28, T.Ash);
+      if (x % 5 === 0) {
+        put(x, 22, T.Lamp);
+        put(x, 27, T.Lamp);
+      }
+    }
+    house(38, 13, 18, 6);
+    vroad(46, 19, 19, 2);
+    vroad(30, Y0 + 1, 18);
+    vroad(62, Y0 + 1, 18);
+    street(X0, 4, 6, 14, [4, 5], [3, 3]);
+    street(33, 4, 28, 8, [3, 5], [3, 3]);
+    street(65, 4, 4, 14, [3, 4], [3, 3]);
+    for (const y of [33, 37, 41]) for (let x = 36; x <= 67; x++) put(x, y, T.Rail);
+    for (const y of [35, 39]) for (let x = 38; x <= 66; x += 3) put(x, y, T.Crate);
+    vroad(32, 30, Y1 - 1);
+    house(25, 32, 6, 4);
+    house(25, 39, 6, 4);
+    scatter(T.Tree, 0.04, X0, X1, Y0, 18);
+  } else if (kind === 'citadel') {
+    // 议会堡: a walled keep on an island in a moat, bridges on the four axes, villages outside.
+    const cx = 47;
+    const cy = 24;
+    const inEll = (x: number, y: number, rx: number, ry: number) => ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 <= 1;
+    for (let y = Y0; y <= Y1; y++)
+      for (let x = X0; x <= X1; x++) {
+        if (inEll(x, y, 16, 13) && !inEll(x, y, 13, 10.5)) put(x, y, T.Water);
+        else if (inEll(x, y, 10, 8) && !inEll(x, y, 9, 7)) put(x, y, T.Keep);
+        else if (inEll(x, y, 9, 7)) put(x, y, T.Ash);
+      }
+    hroad(24, X0 - 2, X1);
+    vroad(cx, Y0 + 1, cy - 8);
+    vroad(cx, cy + 8, Y1 - 1);
+    house(cx - 4, cy - 6, 9, 5);
+    for (const [x, y] of [[cx - 7, cy - 3], [cx + 7, cy - 3], [cx - 7, cy + 4], [cx + 7, cy + 4]] as const) put(x, y, T.Tree);
+    for (const [x, y] of [[25, 4], [31, 6], [25, 38], [31, 40], [62, 4], [64, 10], [62, 37], [64, 41], [26, 12], [63, 31]] as const) if (fits(x, y, 4, 3)) house(x, y, 4, 3);
+    scatter(T.Tree, 0.06);
+  } else if (kind === 'canals') {
+    // 铸币场: a merchant town on canals, bridges where the streets cross, tall houses along the water.
+    for (const x of [32, 44, 57]) for (let y = Y0; y <= Y1; y++) for (let k = 0; k < 2; k++) put(x + k, y, T.Water);
+    for (const y of [11, 37]) for (let x = X0; x <= X1; x++) for (let k = 0; k < 2; k++) put(x, y + k, T.Water);
+    hroad(24, X0 - 2, X1);
+    for (const x of [38, 51, 63]) vroad(x, Y0 + 1, Y1 - 1);
+    hroad(17, X0, X1);
+    hroad(30, X0, X1);
+    for (const [x0, x1] of [[25, 31], [34, 37], [40, 43], [46, 50], [53, 56], [59, 62], [65, 68]] as const)
+      for (const [y0, h] of [[4, 6], [13, 3], [19, 4], [26, 3], [32, 4], [39, 5]] as const) street(x0, y0, x1 - x0 + 1, h, [3, 4], [3, 3]);
+    scatter(T.Crate, 0.03);
+  } else if (kind === 'theatre') {
+    // 面具剧场: an open-air theatre (rows of seats round a stage), formal flower gardens north.
+    const cx = 47;
+    const cy = 40;
+    hroad(24, X0 - 2, X1);
+    for (let y = 26; y <= Y1; y++)
+      for (let x = X0; x <= X1; x++) {
+        const r = Math.hypot((x - cx) / 1.3, y - cy);
+        if (y > cy) continue;
+        if (r < 5) put(x, y, T.Ash);
+        else if (r < 15 && Math.floor(r) % 2 === 1 && Math.abs(x - cx) % 6 !== 0) put(x, y, T.Keep);
+      }
+    house(cx - 4, cy + 1, 9, 3);
+    for (let y = 4; y <= 21; y++)
+      for (let x = 26; x <= 68; x++) {
+        if (x % 6 === 2 || y % 6 === 4) put(x, y, T.Road);
+        else if ((x + y) % 3 === 0) put(x, y, T.Rubble);
+      }
+    for (let x = 26; x <= 68; x += 6) put(x, 22, T.Tree);
+    scatter(T.Tree, 0.05, X0, X1, 26, Y1);
+  } else if (kind === 'maze') {
+    // 档案深处: a hedge maze of long archive rows (cells of 3), a ruined court in the middle.
+    const CW = 3;
+    const nx = Math.floor((X1 - 26) / CW);
+    const ny = Math.floor((Y1 - 4) / CW);
+    for (let y = 4; y <= 4 + ny * CW; y++) for (let x = 26; x <= 26 + nx * CW; x++) put(x, y, T.Tree);
+    const seen = new Uint8Array(nx * ny);
+    const stack: Array<[number, number]> = [[0, 0]];
+    seen[0] = 1;
+    const cell = (i: number, j: number) => {
+      for (let y = 0; y < CW - 1; y++) for (let x = 0; x < CW - 1; x++) put(27 + i * CW + x, 5 + j * CW + y, T.Ground);
+    };
+    cell(0, 0);
+    while (stack.length) {
+      const [i, j] = stack[stack.length - 1];
+      const next = ([[1, 0], [-1, 0], [0, 1], [0, -1]] as const).filter(([di, dj]) => i + di >= 0 && j + dj >= 0 && i + di < nx && j + dj < ny && !seen[(j + dj) * nx + i + di]);
+      if (!next.length) {
+        stack.pop();
+        continue;
+      }
+      const [di, dj] = next[Math.floor(rng() * next.length)];
+      const a = i + di;
+      const b = j + dj;
+      seen[b * nx + a] = 1;
+      cell(a, b);
+      // knock out the hedge between the two cells
+      for (let k = 0; k < CW - 1; k++)
+        if (di) put(27 + Math.min(i, a) * CW + CW - 1, 5 + j * CW + k, T.Ground);
+        else put(27 + i * CW + k, 5 + Math.min(j, b) * CW + CW - 1, T.Ground);
+      stack.push([a, b]);
+    }
+    hroad(24, X0 - 2, X1);
+    for (let y = 18; y <= 30; y++) for (let x = 41; x <= 53; x++) put(x, y, rng() < 0.08 ? T.Rubble : T.Ash);
+    // the hedges thin out here and there, so the maze never walls a monster in
+    for (let y = 4; y <= Y1; y++) for (let x = 26; x <= X1; x++) if (get(x, y) === T.Tree && rng() < 0.12) put(x, y, T.Ground);
+  } else if (kind === 'court') {
+    // 天平庭: a strictly symmetric court: the axis road between two long pools lined with columns, halls north and
+    // south, square gardens in the corners.
+    hroad(24, X0 - 2, X1);
+    for (const y of [20, 21, 28, 29]) for (let x = 30; x <= 64; x++) put(x, y, T.Water);
+    for (let x = 30; x <= 64; x += 3) {
+      put(x, 19, T.Lamp);
+      put(x, 30, T.Lamp);
+    }
+    for (let y = 22; y <= 27; y++) for (let x = 30; x <= 64; x++) if (get(x, y) !== T.Road) put(x, y, T.Ash);
+    house(39, 6, 17, 6);
+    house(39, 36, 17, 6);
+    vroad(47, 12, 18);
+    vroad(47, 31, 35);
+    for (const [gx, gy] of [[26, 4], [58, 4], [26, 33], [58, 33]] as const)
+      for (let y = gy; y < gy + 10; y++)
+        for (let x = gx; x < gx + 10; x++) {
+          const edge = x === gx || y === gy || x === gx + 9 || y === gy + 9;
+          put(x, y, edge ? T.Road : (x - gx) % 3 === 2 && (y - gy) % 3 === 2 ? T.Tree : T.Ground);
+        }
+  } else if (kind === 'islands') {
+    // 沉默之心: a still lake; every scene stands on its own island, wooden bridges along the routes between them.
+    for (let y = Y0; y <= Y1; y++) for (let x = X0 + 2; x <= X1; x++) put(x, y, T.Water);
+    const here = SCENES.filter((sc) => sc.region === region);
+    for (const sc of here)
+      for (let y = sc.at.y - 3; y <= sc.at.y + 3; y++)
+        for (let x = sc.at.x - 4; x <= sc.at.x + 4; x++) if (((x - sc.at.x) / 2.6) ** 2 + ((y - sc.at.y) / 1.8) ** 2 <= 1) put(x, y, rng() < 0.1 ? T.Tree : T.Ground);
+    const byId = new Map(here.map((sc) => [sc.id, sc.at]));
+    for (const [a, b] of LINKS) {
+      const p = byId.get(a);
+      const q = byId.get(b);
+      if (!p || !q) continue;
+      const n = Math.max(Math.abs(q.x - p.x), Math.abs(q.y - p.y));
+      for (let i = 0; i <= n; i++) {
+        const x = Math.round(p.x + ((q.x - p.x) * i) / n);
+        const y = Math.round(p.y + ((q.y - p.y) * i) / n);
+        if (get(x, y) === T.Water || get(x, y) === T.Tree) put(x, y, T.Road);
+      }
+    }
+    hroad(24, X0 - 2, X0 + 2);
+    hroad(24, 66, X1);
   } else {
     // 心巷: lanes that wind between cottages and vegetable gardens.
     let y = 24;
@@ -755,6 +854,14 @@ function layoutFields(d: RegionDef, set: SetT, get: GetT, rng: () => number) {
     }
     scatter(T.Tree, 0.06);
   }
+  // A scene never stands in water or inside a wall: a little jetty of road round it.
+  for (const sc of SCENES)
+    if (sc.region === region)
+      for (let dy = -1; dy <= 1; dy++)
+        for (let dx = -1; dx <= 1; dx++) {
+          const t = get(sc.at.x + dx, sc.at.y + dy);
+          if (t === T.Water || t === T.Keep) set(sc.at.x + dx, sc.at.y + dy, T.Road);
+        }
 }
 
 export function isBlocked(m: MapData, tx: number, ty: number): boolean {
