@@ -1,0 +1,34 @@
+name: 词表例句补到 3 句 (more example sentences)
+
+# Fills data/wortschatz/beispiele-mehr.tsv (examples 2 and 3 per word: Tatoeba first, then Luna) and commits it
+# back to the same branch. Runs on a push that changes the script or this file. Costs a few cents per run.
+on:
+  push:
+    paths: ['scripts/wortschatz/examples3_luna.py', '.github/workflows/wortschatz-examples.yml']
+
+permissions:
+  contents: write
+
+concurrency:
+  group: wortschatz-examples-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  examples:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Examples
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          LIMIT: '60'
+        run: python3 scripts/wortschatz/examples3_luna.py
+      - name: Commit
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898233+github-actions[bot]@users.noreply.github.com'
+          git add data/wortschatz/beispiele-mehr.tsv
+          git diff --cached --quiet && exit 0
+          git commit -m 'Wortschatz: examples 2 and 3 (Tatoeba + Luna)'
+          git pull --rebase -q && git push

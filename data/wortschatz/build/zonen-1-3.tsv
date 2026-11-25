@@ -1,0 +1,1417 @@
+区	场景	排名	原形	卡片	中文	词性
+1	基础词·1	2	sein	sein (ist, war, ist gewesen)	是；在	动词
+1	基础词·1	33	gut	gut (besser, am besten)	好的	形容词
+1	基础词·1	47	hier	hier	这里	副词
+1	基础词·1	62	wissen	wissen (weiß, wusste, hat gewusst)	知道	动词
+1	基础词·1	92	wo	wo	在哪里	副词
+1	基础词·1	115	warum	warum	为什么	副词
+1	基础词·1	134	bringen	bringen (bringt, brachte, hat gebracht)	带来	动词
+1	基础词·1	153	halten	halten (hält, hielt, hat gehalten)	拿着；停；认为（halten für）	动词
+1	基础词·1	158	ob	ob	是否	连词
+1	基础词·1	172	jung	jung (jünger, am jüngsten)	年轻的	形容词
+1	基础词·1	192	zeigen	zeigen (zeigt, zeigte, hat gezeigt)	给…看，展示	动词
+1	基础词·1	224	lang	lang (länger, am längsten)	长的	形容词
+1	基础词·1	253	setzen	setzen (setzt, setzte, hat gesetzt)	放（坐放）；坐下（sich setzen）	动词
+1	基础词·1	306	fast	fast	几乎	副词
+1	基础词·1	313	sondern	sondern	而是	连词
+1	基础词·1	318	darauf	darauf	在上面；对此	副词
+1	基础词·1	401	wann	wann	什么时候	副词
+1	基础词·2	6	haben	haben (hat, hatte, hat gehabt)	有	动词
+1	基础词·2	41	machen	machen (macht, machte, hat gemacht)	做	动词
+1	基础词·2	48	da	da	那里；那时	副词
+1	基础词·2	66	viel	viel (mehr, am meisten)	多	形容词
+1	基础词·2	93	leben	leben (lebt, lebte, hat gelebt)	生活；活着	动词
+1	基础词·2	119	fragen	fragen (fragt, fragte, hat gefragt)	问	动词
+1	基础词·2	135	schön	schön	美的；好的	形容词
+1	基础词·2	154	selbst	selbst	自己；甚至	副词
+1	基础词·2	176	versuchen	versuchen (versucht, versuchte, hat versucht)	尝试	动词
+1	基础词·2	193	wenig	wenig (weniger, am wenigsten)	少的	形容词
+1	基础词·2	234	davon	davon	从中；关于这	副词
+1	基础词·2	275	hin	hin	去（那边）	副词
+1	基础词·2	319	darüber	darüber	关于这个	副词
+1	基础词·2	322	genug	genug	足够	副词
+1	基础词·2	335	halt	halt	就是（语气）；停！	小品词
+1	基础词·2	337	bestimmt	bestimmt	一定，肯定	形容词
+1	基础词·2	516	außerdem	außerdem	此外	副词
+1	基础词·3	8	nicht	nicht	不	副词
+1	基础词·3	42	wollen	wollen (will, wollte, hat gewollt)	想要	动词
+1	基础词·3	50	sagen	sagen (sagt, sagte, hat gesagt)	说	动词
+1	基础词·3	73	tun	tun (tut, tat, hat getan)	做	动词
+1	基础词·3	102	einfach	einfach	简单的；就是（语气）	形容词
+1	基础词·3	120	stehen	stehen (steht, stand, hat gestanden)	站	动词
+1	基础词·3	140	brauchen	brauchen (braucht, brauchte, hat gebraucht)	需要	动词
+1	基础词·3	159	stellen	stellen (stellt, stellte, hat gestellt)	放（竖放）；提（问题）	动词
+1	基础词·3	179	zurück	zurück	回来	副词
+1	基础词·3	194	suchen	suchen (sucht, suchte, hat gesucht)	找	动词
+1	基础词·3	237	passieren	passieren (passiert, passierte, ist passiert)	发生	动词
+1	基础词·3	299	her	her	过来	副词
+1	基础词·3	324	wieso	wieso	为什么（口语）	副词
+1	基础词·3	344	sogar	sogar	甚至	副词
+1	基础词·3	351	scheinen	scheinen (scheint, schien, hat geschienen)	看起来，似乎；照耀	动词
+1	基础词·3	353	ach	ach	啊	感叹词
+1	基础词·3	533	Ding	das Ding, die Dinge	东西，事物	名词
+1	基础词·4	12	werden	werden (wird, wurde, ist geworden)	变成；将要（将来时助动词）	动词
+1	基础词·4	43	müssen	müssen (muss, musste, hat gemusst)	必须	动词
+1	基础词·4	54	sollen	sollen (soll, sollte, hat gesollt)	应该	动词
+1	基础词·4	74	lassen	lassen (lässt, ließ, hat gelassen)	让；留下	动词
+1	基础词·4	105	neu	neu	新的	形容词
+1	基础词·4	124	klein	klein	小的	形容词
+1	基础词·4	141	weg	weg	离开，不见了	副词
+1	基础词·4	157	verstehen	verstehen (versteht, verstand, hat verstanden)	理解，听懂	动词
+1	基础词·4	184	bekommen	bekommen (bekommt, bekam, hat bekommen)	得到	动词
+1	基础词·4	201	schnell	schnell	快的	形容词
+1	基础词·4	240	dazu	dazu	另外；对此	副词
+1	基础词·4	302	rein	rein	进来（口语）；纯的	副词
+1	基础词·4	349	allein	allein	单独，独自	副词
+1	基础词·4	354	sofort	sofort	立刻	副词
+1	基础词·4	388	je	je	每；越…越（je…desto）	副词
+1	基础词·4	780	woher	woher	从哪里	副词
+1	基础词·5	19	können	können (kann, konnte, hat gekonnt)	能，会	动词
+1	基础词·5	45	gehen	gehen (geht, ging, ist gegangen)	走；去	动词
+1	基础词·5	56	sehen	sehen (sieht, sah, hat gesehen)	看见	动词
+1	基础词·5	75	ander	ander	别的，其他的	形容词
+1	基础词·5	109	groß	groß (größer, am größten)	大的	形容词
+1	基础词·5	130	bleiben	bleiben (bleibt, blieb, ist geblieben)	留下，待着	动词
+1	基础词·5	146	Mensch	der Mensch, des Menschen, die Menschen	人	名词
+1	基础词·5	169	weit	weit	远的	形容词
+1	基础词·5	185	liegen	liegen (liegt, lag, hat gelegen)	躺；位于	动词
+1	基础词·5	221	hoch	hoch (höher, am höchsten)	高的	形容词
+1	基础词·5	242	kriegen	kriegen (kriegt, kriegte, hat gekriegt)	弄到，得到（口语）	动词
+1	基础词·5	305	Wort	das Wort, die Wörter	词，话	名词
+1	基础词·5	350	anders	anders	不同地，别样	副词
+1	基础词·6	24	wie	wie	怎么；像…一样	副词
+1	基础词·6	46	kommen	kommen (kommt, kam, ist gekommen)	来	动词
+1	基础词·6	55	geben	geben (gibt, gab, hat gegeben)	给；有（es gibt）	动词
+1	基础词·6	79	finden	finden (findet, fand, hat gefunden)	找到；觉得	动词
+1	基础词·6	110	nehmen	nehmen (nimmt, nahm, hat genommen)	拿	动词
+1	基础词·6	131	alt	alt (älter, am ältesten)	老的；旧的	形容词
+1	基础词·6	149	dürfen	dürfen (darf, durfte, hat gedurft)	可以，被允许	动词
+1	基础词·6	170	sprechen	sprechen (spricht, sprach, hat gesprochen)	说（语言）；讲话	动词
+1	基础词·6	190	helfen	helfen (hilft, half, hat geholfen)	帮助	动词
+1	基础词·6	223	warten	warten (wartet, wartete, hat gewartet)	等	动词
+1	基础词·6	251	Sache	die Sache, die Sachen	事情	名词
+1	基础词·6	310	raus	raus	出去（口语）	副词
+1	基础词·6	355	daran	daran	在那上面；对此	副词
+1	人际情感·1	26	aber	aber	但是	连词
+1	人际情感·1	95	zusammen	zusammen	一起	副词
+1	人际情感·1	103	denken	denken (denkt, dachte, hat gedacht)	想，认为	动词
+1	人际情感·1	177	Liebe	die Liebe, die Lieben	爱	名词
+1	人际情感·1	287	erzählen	erzählen (erzählt, erzählte, hat erzählt)	讲述	动词
+1	人际情感·1	320	rufen	rufen (ruft, rief, hat gerufen)	叫，喊	动词
+1	人际情感·1	427	Typ	der Typ, die Typen	家伙；类型	名词
+1	人际情感·1	485	besuchen	besuchen (besucht, besuchte, hat besucht)	拜访	动词
+1	人际情感·1	544	Freundin	die Freundin, die Freundinnen	女朋友；女性朋友	名词
+1	人际情感·1	598	persönlich	persönlich	个人的	形容词
+1	人际情感·1	641	ehrlich	ehrlich	诚实的	形容词
+1	人际情感·1	662	vertrauen	vertrauen (vertraut, vertraute, hat vertraut)	信任	动词
+1	人际情感·1	690	Gedanke	der Gedanke, des Gedankens, die Gedanken	想法	名词
+1	人际情感·2	111	mögen	mögen (mag, mochte, hat gemocht)	喜欢；想要（möchte）	动词
+1	人际情感·2	116	glauben	glauben (glaubt, glaubte, hat geglaubt)	相信；认为	动词
+1	人际情感·2	178	reden	reden (redet, redete, hat geredet)	说话，谈	动词
+1	人际情感·2	216	dafür	dafür	为此；赞成	副词
+1	人际情感·2	227	stimmen	stimmen (stimmt, stimmte, hat gestimmt)	对，没错（das stimmt）	动词
+1	人际情感·2	289	sorgen	sorgen (sorgt, sorgte, hat gesorgt)	照顾；担心（sich Sorgen machen）	动词
+1	人际情感·2	361	Angst	die Angst, die Ängste	害怕，恐惧	名词
+1	人际情感·2	432	antworten	antworten (antwortet, antwortete, hat geantwortet)	回答	动词
+1	人际情感·2	492	Gefühl	das Gefühl, die Gefühle	感觉	名词
+1	人际情感·2	561	glücklich	glücklich	幸福的	形容词
+1	人际情感·2	601	Baby	das Baby, die Babys	婴儿	名词
+1	人际情感·2	646	weinen	weinen (weint, weinte, hat geweint)	哭	动词
+1	人际情感·2	664	Meinung	die Meinung, die Meinungen	意见	名词
+1	人际情感·2	1067	kennenlernen	kennenlernen (lernt kennen, lernte kennen, hat kennengelernt)	认识（结识）	动词
+1	人际情感·3	163	Leute	die Leute (Pl.)	人们（复数）	名词
+1	人际情感·3	197	Freund	der Freund, die Freunde	朋友；男朋友	名词
+1	人际情感·3	259	echt	echt	真的	形容词
+1	人际情感·3	268	eigentlich	eigentlich	其实	副词
+1	人际情感·3	280	meinen	meinen (meint, meinte, hat gemeint)	认为；意思是	动词
+1	人际情感·3	294	fühlen	fühlen (fühlt, fühlte, hat gefühlt)	感觉	动词
+1	人际情感·3	402	Glück	das Glück, kein Pl.	幸运；幸福	名词
+1	人际情感·3	445	ernst	ernst	严肃的	形容词
+1	人际情感·3	510	lachen	lachen (lacht, lachte, hat gelacht)	笑	动词
+1	人际情感·3	563	hassen	hassen (hasst, hasste, hat gehasst)	恨	动词
+1	人际情感·3	608	versprechen	versprechen (verspricht, versprach, hat versprochen)	承诺	动词
+1	人际情感·3	647	kümmern	kümmern (kümmert, kümmerte, hat gekümmert)	照顾（sich kümmern um）	动词
+1	人际情感·3	670	Traum	der Traum, die Träume	梦	名词
+1	人际情感·3	1103	einladen	einladen (lädt ein, lud ein, hat eingeladen)	邀请	动词
+1	人际情感·4	168	kennen	kennen (kennt, kannte, hat gekannt)	认识	动词
+1	人际情感·4	226	treffen	treffen (trifft, traf, hat getroffen)	遇见；见面	动词
+1	人际情感·4	304	lieb	lieb	亲爱的，可爱的	形容词
+1	人际情感·4	374	hoffen	hoffen (hofft, hoffte, hat gehofft)	希望	动词
+1	人际情感·4	382	wahr	wahr	真的，真实的	形容词
+1	人际情感·4	386	egal	egal	无所谓的	形容词
+1	人际情感·4	426	erwarten	erwarten (erwartet, erwartete, hat erwartet)	期待；等待	动词
+1	人际情感·4	482	bekannt	bekannt	知名的；熟悉的	形容词
+1	人际情感·4	526	Schatz	der Schatz, die Schätze	宝贝；宝藏	名词
+1	人际情感·4	576	lieben	lieben (liebt, liebte, hat geliebt)	爱	动词
+1	人际情感·4	628	Stimme	die Stimme, die Stimmen	声音；选票	名词
+1	人际情感·4	653	böse	böse	坏的，恶的；生气的	形容词
+1	人际情感·4	682	lügen	lügen (lügt, log, hat gelogen)	撒谎	动词
+1	住房家具·1	123	Zimmer	das Zimmer, die Zimmer	房间	名词
+1	住房家具·1	230	Problem	das Problem, die Probleme	问题（麻烦）	名词
+1	住房家具·1	262	ziehen	ziehen (zieht, zog, hat gezogen)	拉；搬家（umziehen）	动词
+1	住房家具·1	332	sitzen	sitzen (sitzt, saß, hat gesessen)	坐	动词
+1	住房家具·1	383	Strom	der Strom, die Ströme	电流；水流	名词
+1	住房家具·1	434	Ordnung	die Ordnung, die Ordnungen	秩序；没问题（in Ordnung）	名词
+1	住房家具·1	466	bauen	bauen (baut, baute, hat gebaut)	建造	动词
+1	住房家具·1	490	Tisch	der Tisch, die Tische	桌子	名词
+1	住房家具·1	527	fehlen	fehlen (fehlt, fehlte, hat gefehlt)	缺少	动词
+1	住房家具·1	564	ruhig	ruhig	安静的	形容词
+1	住房家具·1	602	Decke	die Decke, die Decken	被子；天花板	名词
+1	住房家具·1	639	hängen	hängen (hängt, hängte, hat gehangen)	挂	动词
+1	住房家具·1	734	Küche	die Küche, die Küchen	厨房	名词
+1	住房家具·1	1039	Stuhl	der Stuhl, die Stühle	椅子	名词
+1	住房家具·2	138	Wohnung	die Wohnung, die Wohnungen	公寓，住房	名词
+1	住房家具·2	286	Schlüssel	der Schlüssel, die Schlüssel	钥匙	名词
+1	住房家具·2	340	Bett	das Bett, die Betten	床	名词
+1	住房家具·2	425	verlassen	verlassen (verlässt, verließ, hat verlassen)	离开	动词
+1	住房家具·2	441	Miete	die Miete, die Mieten	房租	名词
+1	住房家具·2	480	Stock	der Stock, die Stöcke	楼层；棍子	名词
+1	住房家具·2	498	wohnen	wohnen (wohnt, wohnte, hat gewohnt)	住	动词
+1	住房家具·2	583	Bad	das Bad, die Bäder	浴室	名词
+1	住房家具·2	612	Raum	der Raum, die Räume	空间；房间	名词
+1	住房家具·2	669	Licht	das Licht, die Lichter	光；灯	名词
+1	住房家具·2	871	Fenster	das Fenster, die Fenster	窗户	名词
+1	住房家具·2	1004	ausziehen	ausziehen (zieht aus, zog aus, ist ausgezogen)	脱下；搬出	动词
+1	住房家具·3	236	Haus	das Haus, die Häuser	房子	名词
+1	住房家具·3	323	Nachbar	der Nachbar, des Nachbarn, die Nachbarn	邻居	名词
+1	住房家具·3	375	Keller	der Keller, die Keller	地下室	名词
+1	住房家具·3	431	fest	fest	牢固的；坚定的	形容词
+1	住房家具·3	447	laut	laut (lauter, am lautesten)	大声的	形容词
+1	住房家具·3	488	Tür	die Tür, die Türen	门	名词
+1	住房家具·3	539	gehören	gehören (gehört, gehörte, hat gehört)	属于	动词
+1	住房家具·3	584	offen	offen	开着的	形容词
+1	住房家具·3	631	drin	drin	在里面（口语）	副词
+1	住房家具·3	731	Kühlschrank	der Kühlschrank, die Kühlschränke	冰箱	名词
+1	住房家具·3	930	Herd	der Herd, die Herde	炉灶	名词
+1	住房家具·3	1094	einziehen	einziehen (zieht ein, zog ein, ist eingezogen)	搬入	动词
+1	住房家具·4	1262	umziehen	umziehen (zieht um, zog um, ist umgezogen)	搬家；换衣服	动词
+1	住房家具·4	1263	Garten	der Garten, die Gärten	花园	名词
+1	住房家具·4	1284	Mieter	der Mieter, die Mieter	租客	名词
+1	住房家具·4	1369	Schrank	der Schrank, die Schränke	柜子	名词
+1	问候和自我介绍·1	25	so	so	这样；那么	副词
+1	问候和自我介绍·1	36	ja	ja	是，对	感叹词
+1	问候和自我介绍·1	65	doch	doch	可是；（反驳否定）不是的	副词
+1	问候和自我介绍·1	81	Schule	die Schule, die Schulen	学校	名词
+1	问候和自我介绍·1	113	Frau	die Frau, die Frauen	女人；妻子；女士	名词
+1	问候和自我介绍·1	235	Herr	der Herr, des Herrn, die Herren	先生	名词
+1	问候和自我介绍·1	276	heißen	heißen (heißt, hieß, hat geheißen)	叫作	动词
+1	问候和自我介绍·1	309	hallo	hallo	你好	感叹词
+1	问候和自我介绍·1	357	Dank	der Dank, kein Pl.	感谢	名词
+1	问候和自我介绍·1	392	Alter	der Alter, des Alten, die Alte	年龄；老年	名词
+1	问候和自我介绍·1	475	Entschuldigung	die Entschuldigung, die Entschuldigungen	对不起；道歉	名词
+1	问候和自我介绍·1	522	Uni	die Uni, die Unis	大学（口语）	名词
+1	问候和自我介绍·1	604	vorstellen	vorstellen (stellt vor, stellte vor, hat vorgestellt)	介绍；想象（sich vorstellen）	动词
+1	问候和自我介绍·1	753	Student	der Student, des Studenten, die Studenten	大学生	名词
+1	问候和自我介绍·1	928	tschüss	tschüss	拜拜	感叹词
+1	问候和自我介绍·1	1308	Onkel	der Onkel, die Onkel	叔叔，舅舅	名词
+1	问候和自我介绍·2	67	genau	genau	准确的；正是	形容词
+1	问候和自我介绍·2	77	ganz	ganz	完全；整个的	形容词
+1	问候和自我介绍·2	80	sehr	sehr	非常	副词
+1	问候和自我介绍·2	91	Mann	der Mann, die Männer	男人；丈夫	名词
+1	问候和自我介绍·2	143	Kind	das Kind, die Kinder	孩子	名词
+1	问候和自我介绍·2	246	Vater	der Vater, die Väter	父亲	名词
+1	问候和自我介绍·2	285	nennen	nennen (nennt, nannte, hat genannt)	称作	动词
+1	问候和自我介绍·2	336	Mädchen	das Mädchen, die Mädchen	女孩	名词
+1	问候和自我介绍·2	362	Junge	der Junge, des Jungen, die Jungen	男孩	名词
+1	问候和自我介绍·2	454	Lehrer	der Lehrer, die Lehrer	老师	名词
+1	问候和自我介绍·2	489	Eltern	die Eltern (Pl.)	父母	名词
+1	问候和自我介绍·2	585	studieren	studieren (studiert, studierte, hat studiert)	上大学，学习	动词
+1	问候和自我介绍·2	619	Klasse	die Klasse, die Klassen	班级；很棒（口语）	名词
+1	问候和自我介绍·2	759	Heimat	die Heimat, die Heimaten	家乡	名词
+1	问候和自我介绍·2	1084	Sprache	die Sprache, die Sprachen	语言	名词
+1	问候和自我介绍·3	106	Familie	die Familie, die Familien	家庭	名词
+1	问候和自我介绍·3	126	wirklich	wirklich	真的	副词
+1	问候和自我介绍·3	137	danke	danke	谢谢	感叹词
+1	问候和自我介绍·3	156	recht	recht	对的；相当（recht gut）	形容词
+1	问候和自我介绍·3	210	Name	der Name, des Namens, die Namen	名字	名词
+1	问候和自我介绍·3	271	Mutter	die Mutter, die Mütter	母亲	名词
+1	问候和自我介绍·3	288	deutsch	deutsch	德国的；德语的	形容词
+1	问候和自我介绍·3	343	Sohn	der Sohn, die Söhne	儿子	名词
+1	问候和自我介绍·3	389	Bruder	der Bruder, die Brüder	兄弟	名词
+1	问候和自我介绍·3	469	Tochter	die Tochter, die Töchter	女儿	名词
+1	问候和自我介绍·3	519	verheiratet	verheiratet	已婚的	形容词
+1	问候和自我介绍·3	591	Schwester	die Schwester, die Schwestern	姐妹	名词
+1	问候和自我介绍·3	680	Dame	die Dame, die Damen	女士	名词
+1	问候和自我介绍·3	792	Antwort	die Antwort, die Antworten	回答	名词
+1	问候和自我介绍·3	1270	Verzeihung	die Verzeihung, kein Pl.	对不起	名词
+1	作息爱好·1	32	auch	auch	也	副词
+1	作息爱好·1	37	wenn	wenn	如果；每当	连词
+1	作息爱好·1	76	immer	immer	总是	副词
+1	作息爱好·1	99	hören	hören (hört, hörte, hat gehört)	听	动词
+1	作息爱好·1	249	Spiel	das Spiel, die Spiele	游戏；比赛	名词
+1	作息爱好·1	338	Musik	die Musik, die Musiken	音乐	名词
+1	作息爱好·1	370	schlafen	schlafen (schläft, schlief, hat geschlafen)	睡觉	动词
+1	作息爱好·1	391	Kino	das Kino, die Kinos	电影院	名词
+1	作息爱好·1	468	interessiert	interessiert	感兴趣的	形容词
+1	作息爱好·1	573	werfen	werfen (wirft, warf, hat geworfen)	扔	动词
+1	作息爱好·1	594	interessieren	interessieren (interessiert, interessierte, hat interessiert)	感兴趣（sich interessieren für）	动词
+1	作息爱好·1	691	singen	singen (singt, sang, hat gesungen)	唱	动词
+1	作息爱好·1	872	rennen	rennen (rennt, rannte, ist gerannt)	跑	动词
+1	作息爱好·1	1256	Semester	das Semester, die Semester	学期	名词
+1	作息爱好·1	3210	Hobby	das Hobby, die Hobbys	爱好	名词
+1	作息爱好·2	78	wieder	wieder	再，又	副词
+1	作息爱好·2	84	also	also	那么，所以	副词
+1	作息爱好·2	98	denn	denn	因为；（疑问句语气词）到底	连词
+1	作息爱好·2	127	spielen	spielen (spielt, spielte, hat gespielt)	玩；演奏；踢（球）	动词
+1	作息爱好·2	296	lesen	lesen (liest, las, hat gelesen)	读	动词
+1	作息爱好·2	356	lernen	lernen (lernt, lernte, hat gelernt)	学习	动词
+1	作息爱好·2	372	gewinnen	gewinnen (gewinnt, gewann, hat gewonnen)	赢	动词
+1	作息爱好·2	406	Film	der Film, die Filme	电影	名词
+1	作息爱好·2	501	bereit	bereit	准备好的	形容词
+1	作息爱好·2	580	fangen	fangen (fängt, fing, hat gefangen)	抓住	动词
+1	作息爱好·2	623	gemeinsam	gemeinsam	共同的	形容词
+1	作息爱好·2	696	feiern	feiern (feiert, feierte, hat gefeiert)	庆祝	动词
+1	作息爱好·2	1152	Verein	der Verein, die Vereine	协会，俱乐部	名词
+1	作息爱好·2	1281	leise	leise (leiser, am leisesten)	小声的	形容词
+1	作息爱好·2	3545	Freizeit	die Freizeit, die Freizeiten	空闲时间	名词
+1	作息爱好·3	114	weil	weil	因为	连词
+1	作息爱好·3	118	damit	damit	借此；以便（damit 从句）	副词
+1	作息爱好·3	147	nie	nie	从不	副词
+1	作息爱好·3	198	laufen	laufen (läuft, lief, ist gelaufen)	跑；走路	动词
+1	作息爱好·3	316	vergessen	vergessen (vergisst, vergaß, hat vergessen)	忘记	动词
+1	作息爱好·3	358	Mitglied	das Mitglied, die Mitglieder	成员	名词
+1	作息爱好·3	385	erinnern	erinnern (erinnert, erinnerte, hat erinnert)	记得（sich erinnern）；提醒	动词
+1	作息爱好·3	444	fertig	fertig	完成的；准备好的	形容词
+1	作息爱好·3	567	treten	treten (tritt, trat, hat getreten)	踢；踩	动词
+1	作息爱好·3	587	Ruhe	die Ruhe, kein Pl.	安静	名词
+1	作息爱好·3	626	unternehmen	unternehmen (unternimmt, unternahm, hat unternommen)	从事；做（活动）	动词
+1	作息爱好·3	936	waschen	waschen (wäscht, wusch, hat gewaschen)	洗	动词
+1	作息爱好·3	1246	Vorlesung	die Vorlesung, die Vorlesungen	大学讲座	名词
+1	作息爱好·3	1293	Feierabend	der Feierabend, die Feierabende	下班	名词
+1	日常物品·1	60	mal	mal	一下；次（口语缓和语气）	副词
+1	日常物品·1	150	Karte	die Karte, die Karten	卡片；地图；票	名词
+1	日常物品·1	311	schwer	schwer	重的；难的	形容词
+1	日常物品·1	373	legen	legen (legt, legte, hat gelegt)	放（平放）	动词
+1	日常物品·1	418	weiß	weiß	白色的	形容词
+1	日常物品·1	470	schwarz	schwarz (schwärzer, am schwärzesten)	黑色的	形容词
+1	日常物品·1	509	benutzen	benutzen (benutzt, benutzte, hat benutzt)	使用	动词
+1	日常物品·1	535	fallen	fallen (fällt, fiel, ist gefallen)	掉落	动词
+1	日常物品·1	571	Stück	das Stück, die Stücke	块；件	名词
+1	日常物品·1	622	drauf	drauf	在上面（口语）	副词
+1	日常物品·1	728	Mantel	der Mantel, die Mäntel	大衣	名词
+1	日常物品·1	1113	mitnehmen	mitnehmen (nimmt mit, nahm mit, hat mitgenommen)	带走	动词
+1	日常物品·2	239	Schuh	der Schuh, die Schuhe	鞋	名词
+1	日常物品·2	312	Hose	die Hose, die Hosen	裤子	名词
+1	日常物品·2	378	Bild	das Bild, die Bilder	图片；画	名词
+1	日常物品·2	424	schließen	schließen (schließt, schloss, hat geschlossen)	关上；结束	动词
+1	日常物品·2	472	verlieren	verlieren (verliert, verlor, hat verloren)	丢失；输	动词
+1	日常物品·2	511	reichen	reichen (reicht, reichte, hat gereicht)	够了；递给	动词
+1	日常物品·2	556	stecken	stecken (steckt, steckte, hat gesteckt)	插；放进	动词
+1	日常物品·2	575	Jacke	die Jacke, die Jacken	夹克	名词
+1	日常物品·2	634	öffnen	öffnen (öffnet, öffnete, hat geöffnet)	打开	动词
+1	日常物品·2	860	Liste	die Liste, die Listen	清单	名词
+1	日常物品·2	1258	scharf	scharf (schärfer, am schärfsten)	锋利的；辣的	形容词
+1	日常物品·3	307	holen	holen (holt, holte, hat geholt)	去拿，取来	动词
+1	日常物品·3	345	tragen	tragen (trägt, trug, hat getragen)	穿；拿，提	动词
+1	日常物品·3	408	Buch	das Buch, die Bücher	书	名词
+1	日常物品·3	453	voll	voll	满的	形容词
+1	日常物品·3	500	verschwinden	verschwinden (verschwindet, verschwand, ist verschwunden)	消失	动词
+1	日常物品·3	528	Müll	der Müll, kein Pl.	垃圾	名词
+1	日常物品·3	560	rot	rot (röter, am rötesten)	红色的	形容词
+1	日常物品·3	579	Paket	das Paket, die Pakete	包裹	名词
+1	日常物品·3	658	Hemd	das Hemd, die Hemden	衬衫	名词
+1	日常物品·3	1106	Tasche	die Tasche, die Taschen	包；口袋	名词
+1	求职职场·1	61	Arbeit	die Arbeit, die Arbeiten	工作	名词
+1	求职职场·1	195	Chef	der Chef, die Chefs	老板	名词
+1	求职职场·1	241	Kollege	der Kollege, des Kollegen, die Kollegen	同事	名词
+1	求职职场·1	247	Teil	das Teil, die Teile	部分	名词
+1	求职职场·1	255	schaffen	schaffen (schafft, schaffte, hat geschafft)	做成，搞定	动词
+1	求职职场·1	265	eigen	eigen	自己的	形容词
+1	求职职场·1	279	führen	führen (führt, führte, hat geführt)	带领；导致	动词
+1	求职职场·1	458	Büro	das Büro, die Büros	办公室	名词
+1	求职职场·1	545	Team	das Team, die Teams	团队	名词
+1	求职职场·1	656	beschäftigt	beschäftigt	忙的	形容词
+1	求职职场·1	679	Universität	die Universität, die Universitäten	大学	名词
+1	求职职场·1	897	Studium	das Studium, die Studien	大学学业	名词
+1	求职职场·1	1133	Bewerbung	die Bewerbung, die Bewerbungen	求职；申请	名词
+1	求职职场·1	1179	Lohn	der Lohn, die Löhne	工资	名词
+1	求职职场·1	1329	bewerben	bewerben (bewirbt, bewarb, hat beworben)	申请（sich bewerben）	动词
+1	求职职场·2	121	Stelle	die Stelle, die Stellen	职位；地方	名词
+1	求职职场·2	204	arbeiten	arbeiten (arbeitet, arbeitete, hat gearbeitet)	工作	动词
+1	求职职场·2	205	Job	der Job, die Jobs	工作（口语）	名词
+1	求职职场·2	315	einzig	einzig	唯一的	形容词
+1	求职职场·2	326	Art	die Art, die Arten	种类；方式	名词
+1	求职职场·2	387	Idee	die Idee, die Ideen	主意	名词
+1	求职职场·2	435	Prüfung	die Prüfung, die Prüfungen	考试	名词
+1	求职职场·2	494	verdienen	verdienen (verdient, verdiente, hat verdient)	挣钱；应得	动词
+1	求职职场·2	625	übernehmen	übernehmen (übernimmt, übernahm, hat übernommen)	接管；承担	动词
+1	求职职场·2	671	Gruppe	die Gruppe, die Gruppen	小组	名词
+1	求职职场·2	686	Gehalt	der Gehalt, die Gehalte	工资	名词
+1	求职职场·2	907	Hausaufgabe	die Hausaufgabe, die Hausaufgaben	家庭作业	名词
+1	求职职场·2	1265	Kurs	der Kurs, die Kurse	课程；汇率	名词
+1	求职职场·2	1291	Beruf	der Beruf, die Berufe	职业	名词
+1	求职职场·2	1332	Lebenslauf	der Lebenslauf, die Lebensläufe	简历	名词
+1	媒体科技·1	107	Nachricht	die Nachricht, die Nachrichten	消息；新闻（复数）	名词
+1	媒体科技·1	183	Handy	das Handy, die Handys	手机	名词
+1	媒体科技·1	282	folgen	folgen (folgt, folgte, ist gefolgt)	跟随	动词
+1	媒体科技·1	297	Seite	die Seite, die Seiten	页；一边	名词
+1	媒体科技·1	477	klingen	klingen (klingt, klang, hat geklungen)	听起来	动词
+1	媒体科技·1	518	Suche	die Suche, die Suchen	寻找，搜索	名词
+1	媒体科技·1	531	Ahnung	die Ahnung, die Ahnungen	概念（keine Ahnung 不知道）	名词
+1	媒体科技·1	537	erkennen	erkennen (erkennt, erkannte, hat erkannt)	认出	动词
+1	媒体科技·1	589	laden	laden (lädt, lud, hat geladen)	装载；邀请（einladen）；充电	动词
+1	媒体科技·1	632	drehen	drehen (dreht, drehte, hat gedreht)	转动	动词
+1	媒体科技·1	675	Information	die Information, die Informationen	信息	名词
+1	媒体科技·1	707	Anzeige	die Anzeige, die Anzeigen	广告；报案	名词
+1	媒体科技·1	795	Telefon	das Telefon, die Telefone	电话	名词
+1	媒体科技·1	888	englisch	englisch	英语的；英国的	形容词
+1	媒体科技·1	1159	Computer	der Computer, die Computer	电脑	名词
+1	媒体科技·2	152	anrufen	anrufen (ruft an, rief an, hat angerufen)	打电话	动词
+1	媒体科技·2	260	Internet	das Internet, kein Pl.	互联网	名词
+1	媒体科技·2	399	schauen	schauen (schaut, schaute, hat geschaut)	看（口语）	动词
+1	媒体科技·2	515	Foto	das/die Foto, die Fotos	照片	名词
+1	媒体科技·2	538	funktionieren	funktionieren (funktioniert, funktionierte, hat funktioniert)	运作，起作用	动词
+1	媒体科技·2	570	erfahren	erfahren (erfährt, erfuhr, hat erfahren)	得知	动词
+1	媒体科技·2	618	schicken	schicken (schickt, schickte, hat geschickt)	寄，发送	动词
+1	媒体科技·2	654	Rede	die Rede, die Reden	讲话，演说	名词
+1	媒体科技·2	681	ansehen	ansehen (sieht an, sah an, hat angesehen)	观看	动词
+1	媒体科技·2	748	Anruf	der Anruf, die Anrufe	电话（来电）	名词
+1	媒体科技·2	868	Zeitung	die Zeitung, die Zeitungen	报纸	名词
+1	媒体科技·2	1107	E-Mail	die/das E-Mail, die E-Mails	电子邮件	名词
+1	媒体科技·2	1297	Satz	der Satz, die Sätze	句子	名词
+1	办手续·1	164	sicher	sicher	安全的；肯定的	形容词
+1	办手续·1	189	Brief	der Brief, die Briefe	信	名词
+1	办手续·1	219	Frage	die Frage, die Fragen	问题，提问	名词
+1	办手续·1	225	Fall	der Fall, die Fälle	情况；案件	名词
+1	办手续·1	256	schreiben	schreiben (schreibt, schrieb, hat geschrieben)	写	动词
+1	办手续·1	411	Kontrolle	die Kontrolle, die Kontrollen	检查；控制	名词
+1	办手续·1	423	Antrag	der Antrag, die Anträge	申请	名词
+1	办手续·1	471	erhalten	erhalten (erhält, erhielt, hat erhalten)	收到	动词
+1	办手续·1	555	Adresse	die Adresse, die Adressen	地址	名词
+1	办手续·1	642	Schuld	die Schuld, die Schulden	罪过；过错（schuld sein 有责任）	名词
+1	办手续·1	700	Ausweis	der Ausweis, die Ausweise	证件	名词
+1	办手续·1	746	Botschaft	die Botschaft, die Botschaften	大使馆；信息	名词
+1	办手续·1	1165	Steuer	das Steuer, die Steuer	税	名词
+1	办手续·1	1207	anmelden	anmelden (meldet an, meldete an, hat angemeldet)	登记；报名（sich anmelden）	动词
+1	办手续·1	1359	Formular	das Formular, die Formulare	表格	名词
+1	办手续·2	200	Post	die Post, die Posten	邮局；邮件	名词
+1	办手续·2	243	wichtig	wichtig	重要的	形容词
+1	办手续·2	281	Grund	der Grund, die Gründe	原因	名词
+1	办手续·2	364	möglich	möglich	可能的	形容词
+1	办手续·2	366	unterschreiben	unterschreiben (unterschreibt, unterschrieb, hat unterschrieben)	签字	动词
+1	办手续·2	417	Person	die Person, die Personen	人（个人）	名词
+1	办手续·2	429	Behörde	die Behörde, die Behörden	官方机构	名词
+1	办手续·2	529	regeln	regeln (regelt, regelte, hat geregelt)	处理，安排	动词
+1	办手续·2	616	wählen	wählen (wählt, wählte, hat gewählt)	选择；拨号	动词
+1	办手续·2	668	melden	melden (meldet, meldete, hat gemeldet)	报告；联系（sich melden）	动词
+1	办手续·2	709	Amt	das Amt, die Ämter	政府机关	名词
+1	办手续·2	823	Unterschrift	die Unterschrift, die Unterschriften	签名	名词
+1	办手续·2	1219	vereinbaren	vereinbaren (vereinbart, vereinbarte, hat vereinbart)	约定	动词
+1	办手续·2	1327	Feuerwehr	die Feuerwehr, die Feuerwehren	消防队	名词
+1	数字·1	132	zwei	zwei	二	数词
+1	数字·1	215	Paar	das Paar, die Paare	一对；几个（ein paar）	名词
+1	数字·1	393	vier	vier	四	数词
+1	数字·1	499	Million	die Million, die Millionen	百万	名词
+1	数字·1	637	zehn	zehn	十	数词
+1	数字·1	716	zählen	zählen (zählt, zählte, hat gezählt)	数；算数	动词
+1	数字·1	822	sieben	sieben	七	数词
+1	数字·1	1166	tausend	tausend	千	数词
+1	数字·1	1320	hundert	hundert	百	数词
+1	数字·2	207	drei	drei	三	数词
+1	数字·2	390	zweite	zweite	第二	数词
+1	数字·2	436	fünf	fünf	五	数词
+1	数字·2	603	sechs	sechs	六	数词
+1	数字·2	674	Nummer	die Nummer, die Nummern	号码	名词
+1	数字·2	814	acht	acht	八	数词
+1	数字·2	1143	eins	eins	一	数词
+1	数字·2	1236	neun	neun	九	数词
+1	问候和自我介绍·表达·1	175	klar	klar	清楚的；当然	形容词
+1	问候和自我介绍·表达·1	202	natürlich	natürlich	当然；自然的	副词
+1	问候和自我介绍·表达·1	218	gar	gar	根本（gar nicht）	副词
+1	问候和自我介绍·表达·1	277	na	na	嗯；那么（口语）	感叹词
+1	问候和自我介绍·表达·1	283	okay	okay	好的，OK	感叹词
+1	问候和自我介绍·表达·1	368	leid	leid	抱歉（es tut mir leid）	副词
+1	问候和自我介绍·表达·1	369	toll	toll	很棒的	形容词
+1	问候和自我介绍·表达·1	422	wünschen	wünschen (wünscht, wünschte, hat gewünscht)	希望；祝愿	动词
+1	问候和自我介绍·表达·1	452	ziemlich	ziemlich	相当	副词
+1	问候和自我介绍·表达·1	464	nett	nett	友好的，好的	形容词
+1	问候和自我介绍·表达·1	473	besonders	besonders	特别	副词
+1	问候和自我介绍·表达·1	474	leider	leider	遗憾地	副词
+1	问候和自我介绍·表达·1	577	völlig	völlig	完全	副词
+1	问候和自我介绍·表达·1	615	super	super	超棒的	形容词
+1	问候和自我介绍·表达·1	652	perfekt	perfekt	完美的	形容词
+1	人际情感·表达·1	404	überhaupt	überhaupt	到底；根本	副词
+1	人际情感·表达·1	407	schlimm	schlimm	糟糕的	形容词
+1	人际情感·表达·1	442	freuen	freuen (freut, freute, hat gefreut)	高兴（sich freuen）	动词
+1	人际情感·表达·1	624	dumm	dumm (dümmer, am dümmsten)	笨的	形容词
+1	人际情感·表达·1	688	tatsächlich	tatsächlich	实际上	副词
+1	人际情感·表达·1	772	überrascht	überrascht	吃惊的	形容词
+1	作息爱好·表达·1	161	richtig	richtig	正确的	形容词
+1	作息爱好·表达·1	173	wohl	wohl	大概；好（sich wohl fühlen）	副词
+1	作息爱好·表达·1	188	weiter	weiter	继续，接着	副词
+1	作息爱好·表达·1	191	los	los	出发！走吧；发生（was ist los）	副词
+1	作息爱好·表达·1	212	dabei	dabei	在这时；在场	副词
+1	作息爱好·表达·1	229	lange	lange	很久	副词
+1	作息爱好·表达·1	244	einmal	einmal	一次；曾经	副词
+1	作息爱好·表达·1	293	sonst	sonst	否则	副词
+1	作息爱好·表达·1	347	gerne	gerne	乐意地	副词
+1	作息爱好·表达·1	367	oft	oft (öfter, am öftesten)	经常	副词
+1	作息爱好·表达·1	371	eben	eben	刚才；就是（语气）	副词
+1	作息爱好·表达·1	396	bevor	bevor	在…之前	连词
+1	作息爱好·表达·1	403	deshalb	deshalb	所以	副词
+1	作息爱好·表达·1	413	schließlich	schließlich	最终；毕竟	副词
+1	作息爱好·表达·1	414	gern	gern (lieber, am liebsten)	乐意地	副词
+1	作息爱好·表达·16	440	zwar	zwar	虽然（zwar…aber）	副词
+1	作息爱好·表达·16	448	meist	meist	大多数的	形容词
+1	作息爱好·表达·16	455	darum	darum	因此；围绕这	副词
+1	作息爱好·表达·16	457	kaum	kaum	几乎不	副词
+1	作息爱好·表达·16	491	manchmal	manchmal	有时	副词
+1	作息爱好·表达·16	512	danach	danach	然后，之后	副词
+1	作息爱好·表达·16	524	gefallen	gefallen (gefällt, gefiel, hat gefallen)	让…喜欢	动词
+1	作息爱好·表达·16	536	nachdem	nachdem	在…之后	连词
+1	作息爱好·表达·16	568	dran	dran	轮到（口语 dran sein）	副词
+1	作息爱好·表达·16	572	falls	falls	万一，如果	连词
+1	作息爱好·表达·16	636	niemals	niemals	决不	副词
+1	作息爱好·表达·16	684	zuerst	zuerst	首先	副词
+1	办手续·表达·1	381	falsch	falsch	错的	形容词
+1	办手续·表达·1	398	erklären	erklären (erklärt, erklärte, hat erklärt)	解释	动词
+1	办手续·表达·1	507	beweisen	beweisen (beweist, bewies, hat bewiesen)	证明	动词
+1	办手续·表达·1	525	Stand	der Stand, die Stände	状态；摊位	名词
+1	办手续·表达·1	630	gelten	gelten (gilt, galt, hat gegolten)	有效；被视为	动词
+1	求职职场·表达·1	405	Folge	die Folge, die Folgen	后果；（剧集）一集	名词
+1	求职职场·表达·1	409	leicht	leicht	容易的；轻的	形容词
+1	求职职场·表达·1	415	bedeuten	bedeuten (bedeutet, bedeutete, hat bedeutet)	意味着	动词
+1	求职职场·表达·1	437	direkt	direkt	直接的	形容词
+1	求职职场·表达·1	461	ändern	ändern (ändert, änderte, hat geändert)	改变	动词
+1	求职职场·表达·1	479	Chance	die Chance, die Chancen	机会	名词
+1	求职职场·表达·1	483	bestehen	bestehen (besteht, bestand, hat bestanden)	通过（考试）；存在；由…组成（aus）	动词
+1	求职职场·表达·1	504	hart	hart (härter, am härtesten)	硬的；艰难的	形容词
+1	求职职场·表达·1	513	Plan	der Plan, die Pläne	计划	名词
+1	求职职场·表达·1	517	handeln	handeln (handelt, handelte, hat gehandelt)	行动；涉及（es handelt sich um）	动词
+1	求职职场·表达·1	541	Sinn	der Sinn, die Sinne	意义	名词
+1	求职职场·表达·1	551	wagen	wagen (wagt, wagte, hat gewagt)	敢	动词
+1	求职职场·表达·1	552	Ziel	das Ziel, die Ziele	目标	名词
+1	求职职场·表达·1	557	Punkt	der Punkt, die Punkte	点；分	名词
+1	求职职场·表达·1	596	Beispiel	das Beispiel, die Beispiele	例子（zum Beispiel）	名词
+1	求职职场·表达·16	599	Vergleich	der Vergleich, die Vergleiche	比较	名词
+1	求职职场·表达·16	600	normal	normal	正常的	形容词
+1	求职职场·表达·16	606	geschehen	geschehen (geschieht, geschah, ist geschehen)	发生	动词
+1	求职职场·表达·16	610	Wahrheit	die Wahrheit, die Wahrheiten	真相	名词
+1	求职职场·表达·16	613	Fehler	der Fehler, die Fehler	错误	名词
+1	求职职场·表达·16	614	Zukunft	die Zukunft, die Zukünfte	未来	名词
+1	求职职场·表达·16	629	nutzen	nutzen (nutzt, nutzte, hat genutzt)	利用	动词
+1	求职职场·表达·16	645	bieten	bieten (bietet, bot, hat geboten)	提供	动词
+1	求职职场·表达·16	648	Rolle	die Rolle, die Rollen	角色	名词
+1	求职职场·表达·16	649	entscheiden	entscheiden (entscheidet, entschied, hat entschieden)	决定	动词
+1	求职职场·表达·16	655	Entscheidung	die Entscheidung, die Entscheidungen	决定	名词
+1	求职职场·表达·16	660	Möglichkeit	die Möglichkeit, die Möglichkeiten	可能性	名词
+1	求职职场·表达·16	666	verschieden	verschieden	不同的	形容词
+1	求职职场·表达·16	676	Thema	das Thema, die Themen	话题	名词
+1	求职职场·表达·16	677	dienen	dienen (dient, diente, hat gedient)	服务	动词
+1	求职职场·表达·31	981	Note	die Note, die Noten	分数；乐谱	名词
+2	吃喝·1	85	Wasser	das Wasser, die Wasser	水	名词
+2	吃喝·1	112	bitte	bitte	请；不客气	感叹词
+2	吃喝·1	300	schlecht	schlecht	坏的，差的	形容词
+2	吃喝·1	446	Milch	die Milch, die Milche	牛奶	名词
+2	吃喝·1	621	Hunger	der Hunger, kein Pl.	饥饿	名词
+2	吃喝·1	820	Kartoffel	die Kartoffel, die Kartoffeln	土豆	名词
+2	吃喝·1	1026	satt	satt	饱的	形容词
+2	吃喝·1	1197	fein	fein	精细的；好的	形容词
+2	吃喝·1	1442	Eis	das Eis, kein Pl.	冰；冰激凌	名词
+2	吃喝·1	1618	verzichten	verzichten (verzichtet, verzichtete, hat verzichtet)	放弃（auf etwas verzichten）	动词
+2	吃喝·1	1841	italienisch	italienisch	意大利的	形容词
+2	吃喝·1	2061	backen	backen (backt, buk, hat gebacken)	烤	动词
+2	吃喝·1	2470	Topf	der Topf, die Töpfe	锅	名词
+2	吃喝·1	2998	pur	pur	纯的	形容词
+2	吃喝·1	3237	Suppe	die Suppe, die Suppen	汤	名词
+2	吃喝·1	4089	vegetarisch	vegetarisch	素食的	形容词
+2	吃喝·1	5002	Birne	die Birne, die Birnen	梨；灯泡	名词
+2	吃喝·2	231	Bier	das Bier, die Biere	啤酒	名词
+2	吃喝·2	460	trinken	trinken (trinkt, trank, hat getrunken)	喝	动词
+2	吃喝·2	651	Käse	der Käse, die Käse	奶酪	名词
+2	吃喝·2	862	Messer	das Messer, die Messer	刀	名词
+2	吃喝·2	1033	Kuchen	der Kuchen, die Kuchen	蛋糕	名词
+2	吃喝·2	1199	schmecken	schmecken (schmeckt, schmeckte, hat geschmeckt)	尝起来	动词
+2	吃喝·2	1448	sauer	sauer (saurer, am sauersten)	酸的；生气的	形容词
+2	吃喝·2	1852	Gurke	die Gurke, die Gurken	黄瓜	名词
+2	吃喝·2	2070	Quark	der Quark, kein Pl.	夸克（凝乳）	名词
+2	吃喝·2	2633	Huhn	das Huhn, die Hühner	鸡	名词
+2	吃喝·2	2704	Kombination	die Kombination, die Kombinationen	组合	名词
+2	吃喝·2	2879	Kern	der Kern, die Kerne	核心	名词
+2	吃喝·2	3015	braten	braten (brät, briet, hat gebraten)	煎；烤	动词
+2	吃喝·2	3316	Dose	die Dose, die Dosen	罐头	名词
+2	吃喝·2	4090	vegan	vegan	纯素的	形容词
+2	吃喝·2	5045	Korn	das Korn, die Körner	谷物	名词
+2	吃喝·3	248	essen	essen (isst, aß, hat gegessen)	吃	动词
+2	吃喝·3	462	Kaffee	der Kaffee, die Kaffees	咖啡	名词
+2	吃喝·3	699	Glas	das Glas, die Gläser	玻璃；玻璃杯	名词
+2	吃喝·3	883	schneiden	schneiden (schneidet, schnitt, hat geschnitten)	切	动词
+2	吃喝·3	1037	Öl	das Öl, die Öle	油	名词
+2	吃喝·3	1268	probieren	probieren (probiert, probierte, hat probiert)	尝试	动词
+2	吃喝·3	1578	Tasse	die Tasse, die Tassen	杯子	名词
+2	吃喝·3	1882	Mehl	das Mehl, die Mehle	面粉	名词
+2	吃喝·3	2103	rühren	rühren (rührt, rührte, hat gerührt)	搅拌；触动	动词
+2	吃喝·3	2694	Schluck	der Schluck, die Schlucke	一口	名词
+2	吃喝·3	3039	Rindfleisch	das Rindfleisch, kein Pl.	牛肉	名词
+2	吃喝·3	3456	bitter	bitter	苦的	形容词
+2	吃喝·3	4204	Speisekarte	die Speisekarte, die Speisekarten	菜单	名词
+2	吃喝·3	5123	Schinken	der Schinken, die Schinken	火腿	名词
+2	吃喝·4	290	Fisch	der Fisch, die Fische	鱼	名词
+2	吃喝·4	467	Brot	das Brot, die Brote	面包	名词
+2	吃喝·4	704	Mittagessen	das Mittagessen, die Mittagessen	午饭	名词
+2	吃喝·4	893	Tee	der Tee, die Tees	茶	名词
+2	吃喝·4	1070	Saft	der Saft, die Säfte	果汁	名词
+2	吃喝·4	1269	Nudel	die Nudel, die Nudeln	面条	名词
+2	吃喝·4	1600	Salat	der Salat, die Salate	沙拉	名词
+2	吃喝·4	1905	bedienen	bedienen (bedient, bediente, hat bedient)	服务；操作	动词
+2	吃喝·4	2124	Durst	der Durst, kein Pl.	口渴	名词
+2	吃喝·4	2702	Hähnchen	das Hähnchen, die Hähnchen	鸡肉	名词
+2	吃喝·4	3040	Schweinefleisch	das Schweinefleisch, kein Pl.	猪肉	名词
+2	吃喝·4	3751	Pilz	der Pilz, die Pilze	蘑菇	名词
+2	吃喝·4	4236	Honig	der Honig, die Honige	蜂蜜	名词
+2	吃喝·4	5270	Sahne	die Sahne, kein Pl.	奶油	名词
+2	吃喝·5	301	Wein	der Wein, die Weine	葡萄酒	名词
+2	吃喝·5	495	kochen	kochen (kocht, kochte, hat gekocht)	做饭	动词
+2	吃喝·5	744	Salz	das Salz, die Salze	盐	名词
+2	吃喝·5	922	frisch	frisch	新鲜的	形容词
+2	吃喝·5	1080	Obst	das Obst, kein Pl.	水果	名词
+2	吃喝·5	1296	fett	fett	肥的	形容词
+2	吃喝·5	1604	verbrennen	verbrennen (verbrennt, verbrannte, hat verbrannt)	烧	动词
+2	吃喝·5	1915	Bäckerei	die Bäckerei, die Bäckereien	面包店	名词
+2	吃喝·5	2184	Kneipe	die Kneipe, die Kneipen	小酒馆	名词
+2	吃喝·5	2768	Geruch	der Geruch, die Gerüche	气味	名词
+2	吃喝·5	3041	Sprudel	der Sprudel, die Sprudel	气泡水	名词
+2	吃喝·5	3833	Café	das Café, die Cafés	咖啡馆	名词
+2	吃喝·5	4316	Imbiss	der Imbiss, die Imbisse	小吃店	名词
+2	吃喝·5	5403	Braten	der Braten, die Braten	烤肉	名词
+2	吃喝·6	342	Fleisch	das Fleisch, kein Pl.	肉	名词
+2	吃喝·6	505	Abendessen	das Abendessen, die Abendessen	晚饭	名词
+2	吃喝·6	750	Apfel	der Apfel, die Äpfel	苹果	名词
+2	吃喝·6	932	Butter	die/der/das Butter, kein Pl.	黄油	名词
+2	吃喝·6	1150	Tomate	die Tomate, die Tomaten	西红柿	名词
+2	吃喝·6	1309	Zwiebel	die/der Zwiebel, die Zwiebeln	洋葱	名词
+2	吃喝·6	1616	süß	süß (süßer, am süßesten)	甜的；可爱的	形容词
+2	吃喝·6	1944	Geschmack	der Geschmack, die Geschmäcke	味道；品味	名词
+2	吃喝·6	2260	mischen	mischen (mischt, mischte, hat gemischt)	混合	动词
+2	吃喝·6	2900	Hamburger	der Hamburger, die Hamburger	汉堡包	名词
+2	吃喝·6	3062	Erdbeere	die Erdbeere, die Erdbeeren	草莓	名词
+2	吃喝·6	3899	Becher	der Becher, die Becher	杯子（无柄）	名词
+2	吃喝·6	4325	Steak	das Steak, die Steaks	牛排	名词
+2	吃喝·6	5491	Zitrone	die Zitrone, die Zitronen	柠檬	名词
+2	吃喝·7	359	Frühstück	das Frühstück, die Frühstücke	早餐	名词
+2	吃喝·7	595	Zucker	der Zucker, die Zucker	糖	名词
+2	吃喝·7	768	Rest	der Rest, die Reste	剩余部分	名词
+2	吃喝·7	956	voller	voller	充满…的	形容词
+2	吃喝·7	1157	Bar	das Bar, die Bars	酒吧；现金（bar bezahlen）	名词
+2	吃喝·7	1317	Getränk	das Getränk, die Getränke	饮料	名词
+2	吃喝·7	1656	Alkohol	der Alkohol, die Alkohole	酒精	名词
+2	吃喝·7	1977	Teller	der/das Teller, die Teller	盘子	名词
+2	吃喝·7	2295	Joghurt	der/die/das Joghurt, die Joghurts	酸奶	名词
+2	吃喝·7	2908	Schokolade	die Schokolade, die Schokoladen	巧克力	名词
+2	吃喝·7	3068	Gabel	die Gabel, die Gabeln	叉子	名词
+2	吃喝·7	3917	reif	reif	成熟的	形容词
+2	吃喝·7	4798	Mensa	die Mensa, die Mensen	学生食堂	名词
+2	吃喝·7	5878	Geschirr	das Geschirr, die Geschirre	餐具	名词
+2	吃喝·8	377	Ei	das Ei, die Eier	蛋	名词
+2	吃喝·8	609	Restaurant	das Restaurant, die Restaurants	餐馆	名词
+2	吃喝·8	784	lecker	lecker	好吃的	形容词
+2	吃喝·8	990	Reis	der Reis, die Reise	米饭	名词
+2	吃喝·8	1175	Wurst	die Wurst, die Würste	香肠	名词
+2	吃喝·8	1350	Flasche	die Flasche, die Flaschen	瓶子	名词
+2	吃喝·8	1710	Koch	der Koch, die Köche	厨师	名词
+2	吃喝·8	2012	Pfeffer	der Pfeffer, die Pfeffer	胡椒	名词
+2	吃喝·8	2303	Karotte	die Karotte, die Karotten	胡萝卜	名词
+2	吃喝·8	2929	Kellner	der Kellner, die Kellner	服务员	名词
+2	吃喝·8	3095	Paprika	die Paprika, die Paprikas	甜椒	名词
+2	吃喝·8	3930	Cola	die/das Cola, die Colas	可乐	名词
+2	吃喝·8	4807	Leitungswasser	das Leitungswasser, kein Pl.	自来水	名词
+2	吃喝·9	438	bestellen	bestellen (bestellt, bestellte, hat bestellt)	订购，点菜	动词
+2	吃喝·9	611	Rezept	das Rezept, die Rezepte	食谱；处方	名词
+2	吃喝·9	817	Gemüse	das Gemüse, die Gemüse	蔬菜	名词
+2	吃喝·9	996	übrig	übrig	剩下的	形容词
+2	吃喝·9	1188	Banane	die Banane, die Bananen	香蕉	名词
+2	吃喝·9	1402	Brötchen	das Brötchen, die Brötchen	小面包	名词
+2	吃喝·9	1808	betrunken	betrunken	喝醉的	形容词
+2	吃喝·9	2060	Orange	die Orange, die Orangen	橙子	名词
+2	吃喝·9	2307	Pizza	die Pizza, die Pizzas	比萨	名词
+2	吃喝·9	2971	grillen	grillen (grillt, grillte, hat gegrillt)	烧烤	动词
+2	吃喝·9	3160	hungrig	hungrig	饿的	形容词
+2	吃喝·9	4073	durstig	durstig	口渴的	形容词
+2	吃喝·9	4839	Schüssel	die Schüssel, die Schüsseln	碗	名词
+2	购物付钱·1	40	nur	nur	只	副词
+2	购物付钱·1	64	mehr	mehr	更多	副词
+2	购物付钱·1	96	nein	nein	不	感叹词
+2	购物付钱·1	133	Rechnung	die Rechnung, die Rechnungen	账单	名词
+2	购物付钱·1	329	kaufen	kaufen (kauft, kaufte, hat gekauft)	买	动词
+2	购物付钱·1	597	Menge	die Menge, die Mengen	数量；很多	名词
+2	购物付钱·1	949	wechseln	wechseln (wechselt, wechselte, hat gewechselt)	换；兑换	动词
+2	购物付钱·1	1200	Kleid	das Kleid, die Kleider	连衣裙	名词
+2	购物付钱·1	1619	Modell	das Modell, die Modelle	模型；款式	名词
+2	购物付钱·1	1925	kostenlos	kostenlos	免费的	形容词
+2	购物付钱·1	2194	Cent	der Cent, die Cent	分（货币）	名词
+2	购物付钱·1	2467	Rabatt	der Rabatt, die Rabatte	折扣	名词
+2	购物付钱·1	2785	abziehen	abziehen (zieht ab, zog ab, hat abgezogen)	扣除；撤走	动词
+2	购物付钱·1	3029	Metzgerei	die Metzgerei, die Metzgereien	肉店	名词
+2	购物付钱·1	3094	Öffnungszeit	die Öffnungszeit, die Öffnungszeiten	营业时间	名词
+2	购物付钱·1	4776	Ladenschluss	der Ladenschluss, die Ladenschlüsse	商店打烊	名词
+2	购物付钱·2	155	Angebot	das Angebot, die Angebote	报价；优惠	名词
+2	购物付钱·2	339	passen	passen (passt, passte, hat gepasst)	合适；注意（aufpassen）	动词
+2	购物付钱·2	714	Dollar	der Dollar, die Dollar	美元	名词
+2	购物付钱·2	914	vergleichen	vergleichen (vergleicht, verglich, hat verglichen)	比较	动词
+2	购物付钱·2	971	Bargeld	das Bargeld, kein Pl.	现金	名词
+2	购物付钱·2	1062	mindestens	mindestens	至少	副词
+2	购物付钱·2	1238	ungefähr	ungefähr	大约	副词
+2	购物付钱·2	1247	Lieferung	die Lieferung, die Lieferungen	送货	名词
+2	购物付钱·2	1639	gebraucht	gebraucht	二手的	形容词
+2	购物付钱·2	1937	tauschen	tauschen (tauscht, tauschte, hat getauscht)	交换	动词
+2	购物付钱·2	2243	aussuchen	aussuchen (sucht aus, suchte aus, hat ausgesucht)	挑选	动词
+2	购物付钱·2	2519	Marke	die Marke, die Marken	品牌；邮票	名词
+2	购物付钱·2	2799	Silber	das Silber, kein Pl.	银	名词
+2	购物付钱·2	3030	Drogerie	die Drogerie, die Drogerien	日化店	名词
+2	购物付钱·2	3221	zurückschicken	zurückschicken (schickt zurück, schickte zurück, hat zurückgeschickt)	寄回	动词
+2	购物付钱·2	4808	Umkleidekabine	die Umkleidekabine, die Umkleidekabinen	试衣间	名词
+2	购物付钱·3	199	Geld	das Geld, die Gelder	钱	名词
+2	购物付钱·3	346	Größe	die Größe, die Größen	尺码；大小	名词
+2	购物付钱·3	715	Geschäft	das Geschäft, die Geschäfte	商店；生意	名词
+2	购物付钱·3	1001	Gold	das Gold, kein Pl.	金子	名词
+2	购物付钱·3	1300	empfehlen	empfehlen (empfiehlt, empfahl, hat empfohlen)	推荐	动词
+2	购物付钱·3	1634	extra	extra	特意；额外	副词
+2	购物付钱·3	1652	billig	billig	便宜的	形容词
+2	购物付钱·3	1794	lediglich	lediglich	仅仅	副词
+2	购物付钱·3	1802	insgesamt	insgesamt	总共	副词
+2	购物付钱·3	1986	Verkauf	der Verkauf, die Verkäufe	销售	名词
+2	购物付钱·3	2245	Gewinn	der Gewinn, die Gewinne	利润；奖品	名词
+2	购物付钱·3	2573	Verkäufer	der Verkäufer, die Verkäufer	售货员	名词
+2	购物付钱·3	2933	wiegen	wiegen (wiegt, wog, hat gewogen)	称重	动词
+2	购物付钱·3	3031	Kiosk	der Kiosk, die Kioske	小卖部	名词
+2	购物付钱·3	4099	Korb	der Korb, die Körbe	篮子	名词
+2	购物付钱·3	4809	Reklamation	die Reklamation, die Reklamationen	退货投诉	名词
+2	购物付钱·4	203	zahlen	zahlen (zahlt, zahlte, hat gezahlt)	付款	动词
+2	购物付钱·4	433	liefern	liefern (liefert, lieferte, hat geliefert)	送货	动词
+2	购物付钱·4	756	Kasse	die Kasse, die Kassen	收银台；医保公司	名词
+2	购物付钱·4	1044	Euro	der Euro, die Euros	欧元	名词
+2	购物付钱·4	1378	ausgeben	ausgeben (gibt aus, gab aus, hat ausgegeben)	花（钱）	动词
+2	购物付钱·4	1663	Produkt	das Produkt, die Produkte	产品	名词
+2	购物付钱·4	1818	voraus	voraus	预先（im Voraus）	副词
+2	购物付钱·4	1883	lohnen	lohnen (lohnt, lohnte, hat gelohnt)	值得（es lohnt sich）	动词
+2	购物付钱·4	2032	hässlich	hässlich	丑的	形容词
+2	购物付钱·4	2111	zahlreich	zahlreich	众多的	形容词
+2	购物付钱·4	2285	einkaufen	einkaufen (kauft ein, kaufte ein, hat eingekauft)	购物	动词
+2	购物付钱·4	2596	Trinkgeld	das Trinkgeld, die Trinkgelder	小费	名词
+2	购物付钱·4	2937	Nachfrage	die Nachfrage, die Nachfragen	需求；询问	名词
+2	购物付钱·4	3042	anprobieren	anprobieren (probiert an, probierte an, hat anprobiert)	试穿	动词
+2	购物付钱·4	4495	Flohmarkt	der Flohmarkt, die Flohmärkte	跳蚤市场	名词
+2	购物付钱·4	4810	Kundenservice	der/das Kundenservice, die Kundenservices	客服	名词
+2	购物付钱·5	208	bezahlen	bezahlen (bezahlt, bezahlte, hat bezahlt)	付钱	动词
+2	购物付钱·5	478	geöffnet	geöffnet	营业中的	形容词
+2	购物付钱·5	803	getrennt	getrennt	分开（付）	副词
+2	购物付钱·5	1050	teuer	teuer (teurer, am teuersten)	贵的	形容词
+2	购物付钱·5	1483	besorgen	besorgen (besorgt, besorgte, hat besorgt)	弄到，采购	动词
+2	购物付钱·5	1678	Eintritt	der Eintritt, die Eintritte	入场；门票	名词
+2	购物付钱·5	2044	Quittung	die Quittung, die Quittungen	收据	名词
+2	购物付钱·5	2120	günstig	günstig	划算的	形容词
+2	购物付钱·5	2146	umsonst	umsonst	免费；白费	副词
+2	购物付钱·5	2301	T-Shirt	das T-Shirt, die T-Shirts	T 恤	名词
+2	购物付钱·5	2342	Option	die Option, die Optionen	选项	名词
+2	购物付钱·5	2685	Bedarf	der Bedarf, die Bedarfe	需求	名词
+2	购物付钱·5	3021	Pfand	das/der Pfand, die Pfänder	押金（瓶子）	名词
+2	购物付钱·5	3043	umtauschen	umtauschen (tauscht um, tauschte um, hat umgetauscht)	换货	动词
+2	购物付钱·5	4690	Einkauf	der Einkauf, die Einkäufe	购物	名词
+2	购物付钱·5	4811	Hotline	die Hotline, die Hotlines	热线	名词
+2	购物付钱·6	209	kosten	kosten (kostet, kostete, hat gekostet)	花费；值	动词
+2	购物付钱·6	481	verkaufen	verkaufen (verkauft, verkaufte, hat verkauft)	卖	动词
+2	购物付钱·6	843	leisten	leisten (leistet, leistete, hat geleistet)	做到；负担得起（sich leisten）	动词
+2	购物付钱·6	1072	Kauf	der Kauf, die Käufe	购买	名词
+2	购物付钱·6	1534	anbieten	anbieten (bietet an, bot an, hat angeboten)	提供	动词
+2	购物付钱·6	1798	Tüte	die Tüte, die Tüten	塑料袋	名词
+2	购物付钱·6	2064	Kohle	die Kohle, die Kohlen	煤；钱（口语）	名词
+2	购物付钱·6	2289	verschaffen	verschaffen (verschafft, verschaffte, hat verschafft)	弄到	动词
+2	购物付钱·6	2379	bevorzugen	bevorzugen (bevorzugt, bevorzugte, hat bevorzugt)	更喜欢	动词
+2	购物付钱·6	2444	jeweils	jeweils	各自	副词
+2	购物付钱·6	2457	beschweren	beschweren (beschwert, beschwerte, hat beschwert)	投诉（sich beschweren）	动词
+2	购物付钱·6	2751	Ware	die Ware, die Waren	商品	名词
+2	购物付钱·6	3026	Kassenbon	der Kassenbon, die Kassenbons	购物小票	名词
+2	购物付钱·6	3051	Friseur	der Friseur, die Friseure	理发师	名词
+2	购物付钱·6	4773	EC-Karte	die EC-Karte, die ec-Karten	借记卡	名词
+2	购物付钱·6	4823	Ermäßigung	die Ermäßigung, die Ermäßigungen	减价	名词
+2	购物付钱·7	238	Preis	der Preis, die Preise	价格；奖	名词
+2	购物付钱·7	506	Kleidung	die Kleidung, die Kleidungen	衣服	名词
+2	购物付钱·7	910	Supermarkt	der Supermarkt, die Supermärkte	超市	名词
+2	购物付钱·7	1155	knapp	knapp	勉强的；紧缺的	形容词
+2	购物付钱·7	1541	Deal	der Deal, die Deals	交易	名词
+2	购物付钱·7	1804	Summe	die Summe, die Summen	总额	名词
+2	购物付钱·7	2100	Qualität	die Qualität, die Qualitäten	质量	名词
+2	购物付钱·7	2339	Handschuh	der Handschuh, die Handschuhe	手套	名词
+2	购物付钱·7	2582	relativ	relativ	相对	副词
+2	购物付钱·7	2591	reduzieren	reduzieren (reduziert, reduzierte, hat reduziert)	减少	动词
+2	购物付钱·7	2613	höchstens	höchstens	最多	副词
+2	购物付钱·7	2758	Münze	die Münze, die Münzen	硬币	名词
+2	购物付钱·7	3027	Kassierer	der Kassierer, die Kassierer	收银员	名词
+2	购物付钱·7	3069	Bäcker	der Bäcker, die Bäcker	面包师	名词
+2	购物付钱·7	4774	Sonderangebot	das Sonderangebot, die Sonderangebote	特价	名词
+2	购物付钱·7	5409	Automat	der Automat, des Automaten, die Automaten	自动售货机	名词
+2	购物付钱·8	298	Markt	der Markt, die Märkte	市场	名词
+2	购物付钱·8	554	bar	bar	用现金	副词
+2	购物付钱·8	913	Kunde	der Kunde, des Kunden, die Kunden	顾客	名词
+2	购物付钱·8	1189	Handel	der Handel, die Händel	贸易，商业	名词
+2	购物付钱·8	1615	Aktion	die Aktion, die Aktionen	行动；促销	名词
+2	购物付钱·8	1894	niedrig	niedrig	低的	形容词
+2	购物付钱·8	2153	auswählen	auswählen (wählt aus, wählte aus, hat ausgewählt)	挑选	动词
+2	购物付钱·8	2350	Pfund	das Pfund, die Pfunde	英镑；磅	名词
+2	购物付钱·8	2715	genügend	genügend	足够的	形容词
+2	购物付钱·8	2769	edel	edel	高贵的	形容词
+2	购物付钱·8	2869	einzigartig	einzigartig	独一无二的	形容词
+2	购物付钱·8	2899	ersparen	ersparen (erspart, ersparte, hat erspart)	省去	动词
+2	购物付钱·8	3028	Einkaufswagen	der Einkaufswagen, die Einkaufswagen	购物车	名词
+2	购物付钱·8	3073	Metzger	der Metzger, die Metzger	屠夫	名词
+2	购物付钱·8	4775	Öffnungszeiten	die Öffnungszeiten (Pl.)	营业时间	名词
+2	人际情感·1	726	raten	raten (rät, riet, hat geraten)	猜；建议	动词
+2	人际情感·1	730	dagegen	dagegen	反对；相反	副词
+2	人际情感·1	742	froh	froh	高兴的	形容词
+2	人际情感·1	782	Verbindung	die Verbindung, die Verbindungen	联系；连接	名词
+2	人际情感·1	791	schreien	schreien (schreit, schrie, hat geschrien)	尖叫	动词
+2	人际情感·1	809	Kerl	der Kerl, die Kerle	家伙	名词
+2	人际情感·1	851	überraschen	überraschen (überrascht, überraschte, hat überrascht)	使惊讶	动词
+2	人际情感·1	884	Witz	der Witz, die Witze	笑话	名词
+2	人际情感·1	894	unterstützen	unterstützen (unterstützt, unterstützte, hat unterstützt)	支持	动词
+2	人际情感·1	898	Ehe	die Ehe, die Ehen	婚姻	名词
+2	人际情感·1	919	verhalten	verhalten (verhält, verhielt, hat verhalten)	表现（sich verhalten）	动词
+2	人际情感·1	938	Gespräch	das Gespräch, die Gespräche	谈话	名词
+2	人际情感·1	968	fremd	fremd	陌生的	形容词
+2	人际情感·1	983	Geschenk	das Geschenk, die Geschenke	礼物	名词
+2	人际情感·1	991	Hoffnung	die Hoffnung, die Hoffnungen	希望	名词
+2	人际情感·2	766	genauso	genauso	同样地	副词
+2	人际情感·2	783	heiraten	heiraten (heiratet, heiratete, hat geheiratet)	结婚	动词
+2	人际情感·2	793	stolz	stolz	骄傲的	形容词
+2	人际情感·2	806	Beziehung	die Beziehung, die Beziehungen	关系	名词
+2	人际情感·2	810	Ehre	die Ehre, die Ehren	荣誉	名词
+2	人际情感·2	841	unglaublich	unglaublich	难以置信的	形容词
+2	人际情感·2	854	stören	stören (stört, störte, hat gestört)	打扰	动词
+2	人际情感·2	882	Kontakt	der Kontakt, die Kontakte	联系	名词
+2	人际情感·2	896	zwingen	zwingen (zwingt, zwang, hat gezwungen)	强迫	动词
+2	人际情感·2	912	leiden	leiden (leidet, litt, hat gelitten)	受苦；忍受（nicht leiden können）	动词
+2	人际情感·2	933	Partner	der Partner, die Partner	伴侣；合作伙伴	名词
+2	人际情感·2	962	trennen	trennen (trennt, trennte, hat getrennt)	分开	动词
+2	人际情感·2	972	Seele	die Seele, die Seelen	灵魂	名词
+2	人际情感·2	987	Erinnerung	die Erinnerung, die Erinnerungen	回忆	名词
+2	基础词·1	617	allerdings	allerdings	不过	副词
+2	基础词·1	657	selber	selber	自己（口语）	副词
+2	基础词·1	732	alleine	alleine	独自（口语）	副词
+2	基础词·1	785	wenigstens	wenigstens	至少	副词
+2	基础词·1	786	jedoch	jedoch	然而	副词
+2	基础词·1	802	heraus	heraus	出来	副词
+2	基础词·1	1000	fort	fort	离开	副词
+2	基础词·1	1014	wohin	wohin	去哪里	副词
+2	基础词·1	1036	dahin	dahin	到那里	副词
+2	基础词·1	1135	miteinander	miteinander	相互	副词
+2	基础词·1	1355	bereiten	bereiten (bereitet, bereitete, hat bereitet)	准备	动词
+2	基础词·1	1361	wovon	wovon	关于什么	副词
+2	基础词·1	1453	wofür	wofür	为了什么	副词
+2	基础词·1	1482	worauf	worauf	在什么上	副词
+2	基础词·2	673	überall	überall	到处	副词
+2	基础词·2	754	runter	runter	下来（口语）	副词
+2	基础词·2	881	darin	darin	在其中	副词
+2	基础词·2	1010	hinaus	hinaus	出去	副词
+2	基础词·2	1096	rum	rum	到处，转（口语 herum）	副词
+2	基础词·2	1099	herum	herum	周围；转	副词
+2	基础词·2	1226	daraus	daraus	从中	副词
+2	基础词·2	1360	mitten	mitten	在中间	副词
+2	基础词·2	1405	wozu	wozu	为何	副词
+2	基础词·2	1468	absehen	absehen (sieht ab, sah ab, hat abgesehen)	除了（abgesehen von）	动词
+2	作息爱好·1	694	interessant	interessant	有趣的	形容词
+2	作息爱好·1	711	deswegen	deswegen	因此	副词
+2	作息爱好·1	719	cool	cool	酷的	形容词
+2	作息爱好·1	741	merken	merken (merkt, merkte, hat gemerkt)	注意到；记住（sich merken）	动词
+2	作息爱好·1	765	planen	planen (plant, plante, hat geplant)	计划	动词
+2	作息爱好·1	788	tanzen	tanzen (tanzt, tanzte, hat getanzt)	跳舞	动词
+2	作息爱好·1	813	Party	die Party, die Partys	派对	名词
+2	作息爱好·1	826	Bewegung	die Bewegung, die Bewegungen	运动；动作	名词
+2	作息爱好·1	902	treiben	treiben (treibt, trieb, hat getrieben)	驱赶；从事（Sport treiben）	动词
+2	作息爱好·1	966	Lied	das Lied, die Lieder	歌	名词
+2	作息爱好·1	1431	aufstehen	aufstehen (steht auf, stand auf, ist aufgestanden)	起床	动词
+2	作息爱好·1	1857	aufwachen	aufwachen (wacht auf, wachte auf, ist aufgewacht)	醒来	动词
+2	作息爱好·2	727	lustig	lustig	有趣的，好笑的	形容词
+2	作息爱好·2	738	daher	daher	因此	副词
+2	作息爱好·2	758	nochmal	nochmal	再一次（口语）	副词
+2	作息爱好·2	762	Schritt	der Schritt, die Schritte	步	名词
+2	作息爱好·2	774	aufhören	aufhören (hört auf, hörte auf, hat aufgehört)	停止	动词
+2	作息爱好·2	798	Band	das Band, die Bänder	乐队；（书的）卷	名词
+2	作息爱好·2	825	Interesse	das Interesse, die Interessen	兴趣；利益	名词
+2	作息爱好·2	837	beschäftigen	beschäftigen (beschäftigt, beschäftigte, hat beschäftigt)	忙于（sich beschäftigen mit）	动词
+2	作息爱好·2	954	verbringen	verbringen (verbringt, verbrachte, hat verbracht)	度过	动词
+2	作息爱好·2	970	Runde	die Runde, die Runden	一轮；圈	名词
+2	作息爱好·2	1471	Theater	das Theater, die Theater	剧院	名词
+2	银行保险合同·1	181	Bank	die Bank, die Bänke	银行；长椅	名词
+2	银行保险合同·1	421	Vertrag	der Vertrag, die Verträge	合同	名词
+2	银行保险合同·1	428	arm	arm (ärmer, am ärmsten)	穷的	形容词
+2	银行保险合同·1	486	Wert	der Wert, die Werte	价值；值得（wert sein）	名词
+2	银行保险合同·1	496	Konto	das Konto, die Konten	账户	名词
+2	银行保险合同·1	540	reich	reich	富有的	形容词
+2	银行保险合同·1	546	Versicherung	die Versicherung, die Versicherungen	保险	名词
+2	银行保险合同·1	706	besitzen	besitzen (besitzt, besaß, hat besessen)	拥有	动词
+2	银行保险合同·1	718	Sicherheit	die Sicherheit, die Sicherheiten	安全	名词
+2	银行保险合同·1	745	Beitrag	der Beitrag, die Beiträge	贡献；会费	名词
+2	银行保险合同·1	763	schützen	schützen (schützt, schützte, hat geschützt)	保护	动词
+2	银行保险合同·1	769	kündigen	kündigen (kündigt, kündigte, hat gekündigt)	解约；辞职	动词
+2	银行保险合同·1	1030	Überweisung	die Überweisung, die Überweisungen	转账；转诊单	名词
+2	银行保险合同·1	1260	Rente	die Rente, die Renten	养老金	名词
+2	银行保险合同·1	1589	Kreditkarte	die Kreditkarte, die Kreditkarten	信用卡	名词
+2	日常物品·1	698	grün	grün	绿色的	形容词
+2	日常物品·1	776	brechen	brechen (bricht, brach, hat gebrochen)	打破	动词
+2	日常物品·1	779	greifen	greifen (greift, griff, hat gegriffen)	抓	动词
+2	日常物品·1	794	verstecken	verstecken (versteckt, versteckte, hat versteckt)	藏	动词
+2	日常物品·1	811	behalten	behalten (behält, behielt, hat behalten)	保留	动词
+2	日常物品·1	869	blau	blau	蓝色的	形容词
+2	日常物品·1	957	drücken	drücken (drückt, drückte, hat gedrückt)	按；压	动词
+2	日常物品·1	1820	Papier	das Papier, die Papiere	纸	名词
+2	日常物品·1	1860	Pullover	der Pullover, die Pullover	毛衣	名词
+2	问候和自我介绍·1	695	total	total	完全（口语）	副词
+2	问候和自我介绍·1	703	absolut	absolut	绝对	副词
+2	问候和自我介绍·1	729	aussehen	aussehen (sieht aus, sah aus, hat ausgesehen)	看起来	动词
+2	问候和自我介绍·1	733	entschuldigen	entschuldigen (entschuldigt, entschuldigte, hat entschuldigt)	原谅；道歉（sich entschuldigen）	动词
+2	问候和自我介绍·1	740	Mama	die Mama, die Mamas	妈妈	名词
+2	问候和自我介绍·1	842	Gast	der Gast, die Gäste	客人	名词
+2	问候和自我介绍·1	1568	Oma	die Oma, die Omas	奶奶	名词
+2	问候和自我介绍·1	1756	chinesisch	chinesisch	中国的；中文的	形容词
+2	问候和自我介绍·1	1785	Tante	die Tante, die Tanten	阿姨，姑姑	名词
+2	住房家具·1	737	Boden	der Boden, die Böden	地面	名词
+2	住房家具·1	1383	putzen	putzen (putzt, putzte, hat geputzt)	打扫	动词
+2	住房家具·1	1430	Heizung	die Heizung, die Heizungen	暖气	名词
+2	住房家具·1	1460	Vermieter	der Vermieter, die Vermieter	房东	名词
+2	住房家具·1	1536	Schlafzimmer	das Schlafzimmer, die Schlafzimmer	卧室	名词
+2	住房家具·1	1549	Kaution	die Kaution, die Kautionen	押金（租房）	名词
+2	媒体科技·1	697	starten	starten (startet, startete, hat gestartet)	开始；启动	动词
+2	媒体科技·1	739	aufnehmen	aufnehmen (nimmt auf, nahm auf, hat aufgenommen)	接收；录制	动词
+2	媒体科技·1	760	verbinden	verbinden (verbindet, verband, hat verbunden)	连接	动词
+2	媒体科技·1	770	System	das System, die Systeme	系统	名词
+2	媒体科技·1	778	Daten	die Daten (Pl.)	数据	名词
+2	求职职场·1	708	wirken	wirken (wirkt, wirkte, hat gewirkt)	起作用；显得	动词
+2	求职职场·1	710	Weise	die Weise, die Weisen	方式（auf diese Weise）	名词
+2	求职职场·1	723	verwenden	verwenden (verwendet, verwendete, hat verwendet)	使用	动词
+2	求职职场·1	735	Unternehmen	das Unternehmen, die Unternehmen	公司，企业	名词
+2	求职职场·1	1519	Arbeitgeber	der Arbeitgeber, die Arbeitgeber	雇主	名词
+2	求职职场·2	724	Erfolg	der Erfolg, die Erfolge	成功	名词
+2	求职职场·2	749	Firma	die Firma, die Firmen	公司	名词
+2	求职职场·2	787	verändern	verändern (verändert, veränderte, hat verändert)	改变	动词
+2	求职职场·2	796	ähnlich	ähnlich	相似的	形容词
+2	求职职场·2	1587	arbeitslos	arbeitslos	失业的	形容词
+2	数字·1	874	Meter	der/das Meter, die Meter	米	名词
+2	数字·1	988	Hälfte	die Hälfte, die Hälften	一半	名词
+2	数字·1	1669	zwölf	zwölf	十二	数词
+2	数字·1	1893	null	null	零	数词
+2	办手续·1	1421	Gebühr	die Gebühr, die Gebühren	费用	名词
+2	办手续·1	1424	beantragen	beantragen (beantragt, beantragte, hat beantragt)	申请	动词
+2	办手续·1	1560	Ausländer	der Ausländer, die Ausländer	外国人	名词
+2	购物付钱·表达·1	4075	verschwenderisch	verschwenderisch	浪费的	形容词
+2	作息爱好·表达·1	761	plötzlich	plötzlich	突然	副词
+2	作息爱好·表达·1	808	großartig	großartig	了不起的	形容词
+2	作息爱好·表达·1	816	ständig	ständig	不断的	形容词
+2	作息爱好·表达·1	831	zumindest	zumindest	至少	副词
+2	作息爱好·表达·1	838	nämlich	nämlich	就是说；因为	副词
+2	作息爱好·表达·1	963	indem	indem	通过（某种方式）	连词
+2	作息爱好·表达·1	978	selten	selten	少见的	形容词
+2	作息爱好·表达·1	980	dadurch	dadurch	由此	副词
+2	问候和自我介绍·表达·1	771	willkommen	willkommen	欢迎	形容词
+2	问候和自我介绍·表达·1	855	bitten	bitten (bittet, bat, hat gebeten)	请求	动词
+2	问候和自我介绍·表达·1	875	übrigens	übrigens	顺便说一下	副词
+2	问候和自我介绍·表达·1	879	unbedingt	unbedingt	一定，无论如何	副词
+2	问候和自我介绍·表达·1	899	wunderbar	wunderbar	美妙的	形容词
+2	问候和自我介绍·表达·1	929	ebenfalls	ebenfalls	同样	副词
+2	人际情感·表达·1	844	komisch	komisch	奇怪的	形容词
+2	人际情感·表达·1	859	verrückt	verrückt	疯狂的	形容词
+2	人际情感·表达·1	886	hübsch	hübsch	漂亮的	形容词
+2	人际情感·表达·1	926	traurig	traurig	伤心的	形容词
+2	人际情感·表达·1	931	jedenfalls	jedenfalls	无论如何	副词
+2	人际情感·表达·1	940	blöd	blöd	蠢的（口语）	形容词
+2	人际情感·表达·1	951	weder	weder	既不（weder…noch）	连词
+2	人际情感·表达·1	1439	aufgeregt	aufgeregt	激动的；紧张的	形容词
+3	方向和城里的地方·1	90	Stadt	die Stadt, die Städte	城市	名词
+3	方向和城里的地方·1	412	Kirche	die Kirche, die Kirchen	教堂	名词
+3	方向和城里的地方·1	663	Straße	die Straße, die Straßen	街道	名词
+3	方向和城里的地方·1	876	irgendwo	irgendwo	在某处	副词
+3	方向和城里的地方·1	1002	näher	näher	更近的；更详细的	副词
+3	方向和城里的地方·1	1055	Zeichen	das Zeichen, die Zeichen	符号；信号	名词
+3	方向和城里的地方·1	1228	Ecke	die Ecke, die Ecken	角落	名词
+3	方向和城里的地方·1	1413	hierher	hierher	到这里	副词
+3	方向和城里的地方·1	1763	Schild	der Schild, die Schilde	牌子；盾	名词
+3	方向和城里的地方·1	2008	Hamburg	Hamburg	汉堡	名词
+3	方向和城里的地方·1	2173	Halle	die Halle, die Hallen	大厅	名词
+3	方向和城里的地方·1	2440	Standort	der Standort, die Standorte	地点	名词
+3	方向和城里的地方·1	2786	reinkommen	reinkommen (kommt rein, kam rein, ist reingekommen)	进来	动词
+3	方向和城里的地方·1	3117	reinschauen	reinschauen (schaut rein, schaute rein, hat reingeschaut)	进来看一眼	动词
+3	方向和城里的地方·2	182	dort	dort	那里	副词
+3	方向和城里的地方·2	420	Museum	das Museum, die Museen	博物馆	名词
+3	方向和城里的地方·2	712	Berlin	Berlin	柏林	名词
+3	方向和城里的地方·2	904	Gebäude	das Gebäude, die Gebäude	建筑物	名词
+3	方向和城里的地方·2	1059	Innenstadt	die Innenstadt, die Innenstädte	市中心	名词
+3	方向和城里的地方·2	1230	Ausgang	der Ausgang, die Ausgänge	出口	名词
+3	方向和城里的地方·2	1435	verlaufen	verlaufen (verläuft, verlief, ist verlaufen)	进行；迷路（sich verlaufen）	动词
+3	方向和城里的地方·2	1766	zentral	zentral	中心的	形容词
+3	方向和城里的地方·2	2067	vorn	vorn	在前面	副词
+3	方向和城里的地方·2	2226	Block	der Block, die Blöcke	街区；本子	名词
+3	方向和城里的地方·2	2460	Bezirk	der Bezirk, die Bezirke	区	名词
+3	方向和城里的地方·2	2804	Einwohner	der Einwohner, die Einwohner	居民	名词
+3	方向和城里的地方·2	3116	rüberkommen	rüberkommen (kommt rüber, kam rüber, ist rübergekommen)	过来	动词
+3	方向和城里的地方·3	196	verloren	verloren	丢失的；迷路的	形容词
+3	方向和城里的地方·3	443	oben	oben	在上面	副词
+3	方向和城里的地方·3	757	befinden	befinden (befindet, befand, hat befunden)	位于（sich befinden）	动词
+3	方向和城里的地方·3	935	entfernt	entfernt	远的；去除了的	形容词
+3	方向和城里的地方·3	1092	Kreis	der Kreis, die Kreise	圆圈；县	名词
+3	方向和城里的地方·3	1241	aufhalten	aufhalten (hält auf, hielt auf, hat aufgehalten)	阻止；逗留（sich aufhalten）	动词
+3	方向和城里的地方·3	1562	Westen	der Westen, kein Pl.	西方	名词
+3	方向和城里的地方·3	1772	München	München	慕尼黑	名词
+3	方向和城里的地方·3	2082	daneben	daneben	在旁边；偏了	副词
+3	方向和城里的地方·3	2255	Abstand	der Abstand, die Abstände	距离	名词
+3	方向和城里的地方·3	2530	Frankfurt	Frankfurt	法兰克福	名词
+3	方向和城里的地方·3	2820	Hauptstadt	die Hauptstadt, die Hauptstädte	首都	名词
+3	方向和城里的地方·3	3990	Altstadt	die Altstadt, die Altstädte	老城区	名词
+3	方向和城里的地方·4	254	nah	nah (näher, am nächsten)	近的；下一个（nächst）	形容词
+3	方向和城里的地方·4	530	rechts	rechts	右边	副词
+3	方向和城里的地方·4	764	Lage	die Lage, die Lagen	位置；处境	名词
+3	方向和城里的地方·4	955	hinten	hinten	在后面	副词
+3	方向和城里的地方·4	1141	Eingang	der Eingang, die Eingänge	入口	名词
+3	方向和城里的地方·4	1248	vorne	vorne	在前面	副词
+3	方向和城里的地方·4	1684	Wien	Wien	维也纳	名词
+3	方向和城里的地方·4	1887	Region	die Region, die Regionen	地区	名词
+3	方向和城里的地方·4	2125	rauskommen	rauskommen (kommt raus, kam raus, ist rausgekommen)	出来	动词
+3	方向和城里的地方·4	2292	weitergehen	weitergehen (geht weiter, ging weiter, ist weitergegangen)	继续走	动词
+3	方向和城里的地方·4	2586	Kita	die Kita, die Kitas	托儿所（Kita）	名词
+3	方向和城里的地方·4	3066	Spielplatz	der Spielplatz, die Spielplätze	游乐场	名词
+3	方向和城里的地方·4	4813	Fundbüro	das Fundbüro, die Fundbüros	失物招领处	名词
+3	方向和城里的地方·5	274	Richtung	die Richtung, die Richtungen	方向	名词
+3	方向和城里的地方·5	605	Bibliothek	die Bibliothek, die Bibliotheken	图书馆	名词
+3	方向和城里的地方·5	790	Nähe	die Nähe, kein Pl.	附近	名词
+3	方向和城里的地方·5	960	Tor	das Tor, die Tore	大门；球门	名词
+3	方向和城里的地方·5	1146	Mitte	die Mitte, die Mitten	中间	名词
+3	方向和城里的地方·5	1286	Kreuzung	die Kreuzung, die Kreuzungen	十字路口	名词
+3	方向和城里的地方·5	1693	weisen	weisen (weist, wies, hat gewiesen)	指向	动词
+3	方向和城里的地方·5	1901	Süden	der Süden, kein Pl.	南方	名词
+3	方向和城里的地方·5	2127	Zentrum	das Zentrum, die Zentren	中心	名词
+3	方向和城里的地方·5	2304	Hafen	der Hafen, die Häfen	港口	名词
+3	方向和城里的地方·5	2727	Turm	der Turm, die Türme	塔	名词
+3	方向和城里的地方·5	3109	Fußgängerzone	die Fußgängerzone, die Fußgängerzonen	步行街	名词
+3	方向和城里的地方·5	5257	geradeaus	geradeaus	直走	副词
+3	方向和城里的地方·6	379	Ort	der Ort, die Orte	地方	名词
+3	方向和城里的地方·6	635	unten	unten	在下面	副词
+3	方向和城里的地方·6	800	link	link	左边的	形容词
+3	方向和城里的地方·6	976	Rathaus	das Rathaus, die Rathäuser	市政厅	名词
+3	方向和城里的地方·6	1224	Gegend	die Gegend, die Gegenden	地区；一带	名词
+3	方向和城里的地方·6	1298	Brücke	die Brücke, die Brücken	桥	名词
+3	方向和城里的地方·6	1745	Osten	der Osten, kein Pl.	东方	名词
+3	方向和城里的地方·6	1938	eintreten	eintreten (tritt ein, trat ein, ist eingetreten)	进入	动词
+3	方向和城里的地方·6	2169	hingehen	hingehen (geht hin, ging hin, ist hingegangen)	去（那里）	动词
+3	方向和城里的地方·6	2402	westlich	westlich	西方的	形容词
+3	方向和城里的地方·6	2737	Entfernung	die Entfernung, die Entfernungen	距离	名词
+3	方向和城里的地方·6	3115	raufgehen	raufgehen (geht rauf, ging rauf, ist raufgegangen)	上去	动词
+3	方向和城里的地方·7	384	Platz	der Platz, die Plätze	位置；广场	名词
+3	方向和城里的地方·7	644	Park	der Park, die Parks	公园	名词
+3	方向和城里的地方·7	828	links	links	在左边	副词
+3	方向和城里的地方·7	1011	Kindergarten	der Kindergarten, die Kindergärten	幼儿园	名词
+3	方向和城里的地方·7	1225	Toilette	die Toilette, die Toiletten	厕所	名词
+3	方向和城里的地方·7	1338	Ampel	die Ampel, die Ampeln	红绿灯	名词
+3	方向和城里的地方·7	1747	ober	ober	上面的	形容词
+3	方向和城里的地方·7	1979	herkommen	herkommen (kommt her, kam her, ist hergekommen)	过来	动词
+3	方向和城里的地方·7	2129	betreten	betreten (betritt, betrat, hat betreten)	进入	动词
+3	方向和城里的地方·7	2432	herein	herein	进来	副词
+3	方向和城里的地方·7	2795	Friedhof	der Friedhof, die Friedhöfe	墓地	名词
+3	方向和城里的地方·7	3114	runtergehen	runtergehen (geht runter, ging runter, ist runtergegangen)	下去	动词
+3	时间日期·1	35	als	als	作为；比（比较级后）；当…时（过去）	连词
+3	时间日期·1	38	noch	noch	还	副词
+3	时间日期·1	57	schon	schon	已经	副词
+3	时间日期·1	82	Jahr	das Jahr, die Jahre	年	名词
+3	时间日期·1	213	Morgen	der Morgen, die Morgen	早上	名词
+3	时间日期·1	264	Nacht	die Nacht, die Nächte	夜晚	名词
+3	时间日期·1	348	frei	frei	自由的；空的	形容词
+3	时间日期·1	574	Wochenende	das Wochenende, die Wochenenden	周末	名词
+3	时间日期·1	743	Sekunde	die Sekunde, die Sekunden	秒	名词
+3	时间日期·1	1211	Freitag	der Freitag, die Freitage	星期五	名词
+3	时间日期·1	1348	Montag	der Montag, die Montage	星期一	名词
+3	时间日期·1	1491	September	der September, die September	九月	名词
+3	时间日期·1	1691	März	der März, die Märze	三月	名词
+3	时间日期·1	2055	Mittag	der Mittag, die Mittage	中午	名词
+3	时间日期·1	2384	Jahrzehnt	das Jahrzehnt, die Jahrzehnte	十年	名词
+3	时间日期·1	2822	abwarten	abwarten (wartet ab, wartete ab, hat abgewartet)	等待	动词
+3	时间日期·1	5218	Vormittag	der Vormittag, die Vormittage	上午	名词
+3	时间日期·2	58	dann	dann	然后	副词
+3	时间日期·2	63	jetzt	jetzt	现在	副词
+3	时间日期·2	89	erst	erst	才；首先	副词
+3	时间日期·2	101	Zeit	die Zeit, die Zeiten	时间	名词
+3	时间日期·2	232	morgen	morgen	明天	副词
+3	时间日期·2	270	Abend	der Abend, die Abende	晚上	名词
+3	时间日期·2	365	beginnen	beginnen (beginnt, begann, hat begonnen)	开始	动词
+3	时间日期·2	578	Anfang	der Anfang, die Anfänge	开始	名词
+3	时间日期·2	755	Weihnachten	das Weihnachten, die Weihnachten	圣诞节	名词
+3	时间日期·2	1232	Augenblick	der Augenblick, die Augenblicke	瞬间	名词
+3	时间日期·2	1374	Dauer	die Dauer, die Dauern	持续时间	名词
+3	时间日期·2	1501	Juli	der Juli, die Julis	七月	名词
+3	时间日期·2	1835	Dezember	der Dezember, die Dezember	十二月	名词
+3	时间日期·2	2058	Februar	der Februar, die Februare	二月	名词
+3	时间日期·2	2624	Gegenwart	die Gegenwart, kein Pl.	现在；在场	名词
+3	时间日期·2	2896	Mitternacht	die Mitternacht, die Mitternächte	午夜	名词
+3	时间日期·3	108	Tag	der Tag, die Tage	天；白天	名词
+3	时间日期·3	125	vielleicht	vielleicht	也许	副词
+3	时间日期·3	128	nun	nun	现在；那么	副词
+3	时间日期·3	165	gerade	gerade	刚刚；正在；直的	副词
+3	时间日期·3	250	Ende	das Ende, die Enden	结束；末尾	名词
+3	时间日期·3	272	Stunde	die Stunde, die Stunden	小时	名词
+3	时间日期·3	450	früh	früh	早的	形容词
+3	时间日期·3	586	anfangen	anfangen (fängt an, fing an, hat angefangen)	开始	动词
+3	时间日期·3	915	Feiertag	der Feiertag, die Feiertage	节假日	名词
+3	时间日期·3	1254	Samstag	der Samstag, die Samstage	星期六	名词
+3	时间日期·3	1386	Nachmittag	der Nachmittag, die Nachmittage	下午	名词
+3	时间日期·3	1591	Juni	der Juni, die Junis	六月	名词
+3	时间日期·3	1904	Dienstag	der Dienstag, die Dienstage	星期二	名词
+3	时间日期·3	2084	jederzeit	jederzeit	随时	副词
+3	时间日期·3	2651	vergangen	vergangen	过去的	形容词
+3	时间日期·3	2978	Datum	das Datum, die Daten	日期	名词
+3	时间日期·4	122	heute	heute	今天	副词
+3	时间日期·4	167	gleich	gleich	马上；相同的	副词
+3	时间日期·4	257	Woche	die Woche, die Wochen	周	名词
+3	时间日期·4	291	Minute	die Minute, die Minuten	分钟	名词
+3	时间日期·4	321	etwa	etwa	大约	副词
+3	时间日期·4	363	bereits	bereits	已经	副词
+3	时间日期·4	459	Sonntag	der Sonntag, die Sonntage	星期天	名词
+3	时间日期·4	607	halb	halb	一半的	形容词
+3	时间日期·4	1049	ewig	ewig	永远的	形容词
+3	时间日期·4	1264	April	der April, die Aprile	四月	名词
+3	时间日期·4	1429	Weile	die Weile, kein Pl.	一会儿	名词
+3	时间日期·4	1592	vergehen	vergehen (vergeht, verging, ist vergangen)	消逝	动词
+3	时间日期·4	1984	Januar	der Januar, die Januare	一月	名词
+3	时间日期·4	2228	verschieben	verschieben (verschiebt, verschob, hat verschoben)	推迟	动词
+3	时间日期·4	2679	pünktlich	pünktlich	准时的	形容词
+3	时间日期·4	3053	Ostern	das Ostern, die Ostern	复活节	名词
+3	时间日期·5	142	Moment	der Moment, die Momente	片刻；时刻	名词
+3	时间日期·5	258	kurz	kurz (kürzer, am kürzesten)	短的	形容词
+3	时间日期·5	308	letzt	letzt	最后的	形容词
+3	时间日期·5	395	bald	bald (eher, am ehesten)	很快，不久	副词
+3	时间日期·5	430	endlich	endlich	终于	副词
+3	时间日期·5	465	vorbei	vorbei	过去了；经过	副词
+3	时间日期·5	534	nächst	nächst	下一个；最近的	形容词
+3	时间日期·5	620	Geburtstag	der Geburtstag, die Geburtstage	生日	名词
+3	时间日期·5	1130	Vergangenheit	die Vergangenheit, die Vergangenheiten	过去	名词
+3	时间日期·5	1273	heutig	heutig	今天的	形容词
+3	时间日期·5	1450	nachts	nachts	在夜里	副词
+3	时间日期·5	1667	Oktober	der Oktober, die Oktober	十月	名词
+3	时间日期·5	2026	Donnerstag	der Donnerstag, die Donnerstage	星期四	名词
+3	时间日期·5	2324	absagen	absagen (sagt ab, sagte ab, hat abgesagt)	取消	动词
+3	时间日期·5	2723	Ewigkeit	die Ewigkeit, die Ewigkeiten	永恒	名词
+3	时间日期·5	3059	Silvester	der/das Silvester, die Silvester	除夕	名词
+3	时间日期·6	211	spät	spät (später, am spätesten)	晚的	形容词
+3	时间日期·6	261	Uhr	die Uhr, die Uhren	钟表；…点钟	名词
+3	时间日期·6	330	Monat	der/das Monat, die Monate	月	名词
+3	时间日期·6	487	gestern	gestern	昨天	副词
+3	时间日期·6	514	früher	früher	以前	副词
+3	时间日期·6	548	eher	eher	更早；宁可	副词
+3	时间日期·6	562	dauern	dauern (dauert, dauerte, hat gedauert)	持续	动词
+3	时间日期·6	667	Beginn	der Beginn, die Beginne	开始	名词
+3	时间日期·6	1184	Zeitpunkt	der Zeitpunkt, die Zeitpunkte	时间点	名词
+3	时间日期·6	1339	Mai	der Mai, die Maie	五月	名词
+3	时间日期·6	1459	August	der August, die Auguste	八月	名词
+3	时间日期·6	1687	November	der November, die November	十一月	名词
+3	时间日期·6	2039	Mittwoch	der Mittwoch, die Mittwoche	星期三	名词
+3	时间日期·6	2362	zukünftig	zukünftig	未来的	形容词
+3	时间日期·6	2762	jährlich	jährlich	每年的	形容词
+3	时间日期·6	4646	Uhrzeit	die Uhrzeit, die Uhrzeiten	时间（钟点）	名词
+3	交通·1	151	Zug	der Zug, die Züge	火车	名词
+3	交通·1	410	Unfall	der Unfall, die Unfälle	事故	名词
+3	交通·1	523	Fahrrad	das Fahrrad, die Fahrräder	自行车	名词
+3	交通·1	665	Parkplatz	der Parkplatz, die Parkplätze	停车场	名词
+3	交通·1	997	verpassen	verpassen (verpasst, verpasste, hat verpasst)	错过	动词
+3	交通·1	1221	Gleis	das Gleis, die Gleise	轨道；站台	名词
+3	交通·1	1530	Fahrer	der Fahrer, die Fahrer	司机	名词
+3	交通·1	1739	Motor	der Motor, die Motoren	发动机	名词
+3	交通·1	1957	Haltestelle	die Haltestelle, die Haltestellen	车站（公交）	名词
+3	交通·1	2447	Abfahrt	die Abfahrt, die Abfahrten	出发	名词
+3	交通·1	2665	bremsen	bremsen (bremst, bremste, hat gebremst)	刹车	动词
+3	交通·1	2689	behindern	behindern (behindert, behinderte, hat behindert)	妨碍	动词
+3	交通·1	2770	Warnung	die Warnung, die Warnungen	警告	名词
+3	交通·1	2868	absetzen	absetzen (setzt ab, setzte ab, hat abgesetzt)	放下；放下车	动词
+3	交通·1	3038	Fahrplan	der Fahrplan, die Fahrpläne	时刻表	名词
+3	交通·2	214	fahren	fahren (fährt, fuhr, ist gefahren)	开车；乘车去	动词
+3	交通·2	449	ankommen	ankommen (kommt an, kam an, ist angekommen)	到达	动词
+3	交通·2	549	langsam	langsam	慢的	形容词
+3	交通·2	678	Bahn	die Bahn, die Bahnen	铁路	名词
+3	交通·2	1079	stoppen	stoppen (stoppt, stoppte, hat gestoppt)	停止	动词
+3	交通·2	1234	Anschluss	der Anschluss, die Anschlüsse	连接；转车	名词
+3	交通·2	1570	Fahrzeug	das Fahrzeug, die Fahrzeuge	车辆	名词
+3	交通·2	1897	platt	platt	平的；没气的（轮胎）	形容词
+3	交通·2	1975	Verkehr	der Verkehr, die Verkehre	交通	名词
+3	交通·2	2450	Geschwindigkeit	die Geschwindigkeit, die Geschwindigkeiten	速度	名词
+3	交通·2	2696	Motorrad	das Motorrad, die Motorräder	摩托车	名词
+3	交通·2	2917	zurückgehen	zurückgehen (geht zurück, ging zurück, ist zurückgegangen)	回去	动词
+3	交通·2	3093	Busfahrer	der Busfahrer, die Busfahrer	公交司机	名词
+3	交通·3	267	Bus	der Bus, des Busses, die Busse	公交车	名词
+3	交通·3	476	Bahnhof	der Bahnhof, die Bahnhöfe	火车站	名词
+3	交通·3	559	steigen	steigen (steigt, stieg, ist gestiegen)	上升；上车（einsteigen）	动词
+3	交通·3	832	lösen	lösen (löst, löste, hat gelöst)	解决；（票）购买（Fahrkarte lösen）	动词
+3	交通·3	1132	Tankstelle	die Tankstelle, die Tankstellen	加油站	名词
+3	交通·3	1251	wenden	wenden (wendet, wendete, hat gewandt)	转向	动词
+3	交通·3	1675	Station	die Station, die Stationen	站；病房	名词
+3	交通·3	1898	Fahrkarte	die Fahrkarte, die Fahrkarten	车票	名词
+3	交通·3	2022	Taxi	das/der Taxi, die Taxis	出租车	名词
+3	交通·3	2461	umkehren	umkehren (kehrt um, kehrte um, hat umgekehrt)	掉头	动词
+3	交通·3	2736	ausfallen	ausfallen (fällt aus, fiel aus, ist ausgefallen)	取消；掉落	动词
+3	交通·3	2940	Einstieg	der Einstieg, die Einstiege	上车；入门	名词
+3	交通·3	4046	Bahnsteig	der Bahnsteig, die Bahnsteige	站台	名词
+3	交通·4	333	Auto	das Auto, die Autos	汽车	名词
+3	交通·4	484	erreichen	erreichen (erreicht, erreichte, hat erreicht)	到达；联系上	动词
+3	交通·4	582	einsteigen	einsteigen (steigt ein, stieg ein, ist eingestiegen)	上车	动词
+3	交通·4	833	unterwegs	unterwegs	在路上	副词
+3	交通·4	1158	Flugzeug	das Flugzeug, die Flugzeuge	飞机	名词
+3	交通·4	1287	Linie	die Linie, die Linien	线；路线	名词
+3	交通·4	1702	Strecke	die Strecke, die Strecken	路程	名词
+3	交通·4	1903	anhalten	anhalten (hält an, hielt an, hat angehalten)	停住	动词
+3	交通·4	2367	Straßenbahn	die Straßenbahn, die Straßenbahnen	有轨电车	名词
+3	交通·4	2494	Anhänger	der Anhänger, die Anhänger	拥护者；挂车	名词
+3	交通·4	2796	blockieren	blockieren (blockiert, blockierte, hat blockiert)	堵住	动词
+3	交通·4	2975	krachen	krachen (kracht, krachte, hat gekracht)	撞击	动词
+3	交通·4	4530	Strafzettel	der Strafzettel, die Strafzettel	罚单	名词
+3	交通·5	334	Flughafen	der Flughafen, die Flughäfen	机场	名词
+3	交通·5	503	Ticket	das Ticket, die Tickets	票	名词
+3	交通·5	590	fliegen	fliegen (fliegt, flog, ist geflogen)	飞	动词
+3	交通·5	834	Führerschein	der Führerschein, die Führerscheine	驾照	名词
+3	交通·5	1169	steuern	steuern (steuert, steuerte, hat gesteuert)	驾驶，控制	动词
+3	交通·5	1496	Achtung	die Achtung, kein Pl.	注意！	名词
+3	交通·5	1724	abfahren	abfahren (fährt ab, fuhr ab, ist abgefahren)	出发（车）	动词
+3	交通·5	1912	zurückkommen	zurückkommen (kommt zurück, kam zurück, ist zurückgekommen)	回来	动词
+3	交通·5	2397	umsteigen	umsteigen (steigt um, stieg um, ist umgestiegen)	换乘	动词
+3	交通·5	2517	parken	parken (parkt, parkte, hat geparkt)	停车	动词
+3	交通·5	2836	biegen	biegen (biegt, bog, hat gebogen)	弯；拐弯	动词
+3	交通·5	3036	S-Bahn	die S-Bahn, die S-Bahnen	城铁	名词
+3	交通·5	4796	Schwarzfahren	das Schwarzfahren, kein Pl.	逃票	名词
+3	交通·6	376	abholen	abholen (holt ab, holte ab, hat abgeholt)	接（人）	动词
+3	交通·6	508	U-Bahn	die U-Bahn, die U-Bahnen	地铁	名词
+3	交通·6	627	aussteigen	aussteigen (steigt aus, stieg aus, ist ausgestiegen)	下车	动词
+3	交通·6	924	Verspätung	die Verspätung, die Verspätungen	延误	名词
+3	交通·6	1192	erwischen	erwischen (erwischt, erwischte, hat erwischt)	抓住；赶上	动词
+3	交通·6	1524	Vorsicht	die Vorsicht, kein Pl.	小心	名词
+3	交通·6	1728	Stau	der Stau, die Staus	堵车	名词
+3	交通·6	1940	Reifen	der Reifen, die Reifen	轮胎	名词
+3	交通·6	2439	Hauptbahnhof	der Hauptbahnhof, die Hauptbahnhöfe	中央火车站	名词
+3	交通·6	2523	Tunnel	der Tunnel, die Tunnel	隧道	名词
+3	交通·6	2865	tanken	tanken (tankt, tankte, hat getankt)	加油	动词
+3	交通·6	3037	Monatskarte	die Monatskarte, die Monatskarten	月票	名词
+3	旅行天气自然·1	180	Grad	der Grad, die Grade	度（温度）	名词
+3	旅行天气自然·1	252	Land	das Land, die Länder	国家；乡下	名词
+3	旅行天气自然·1	292	Urlaub	der Urlaub, die Urlaube	休假	名词
+3	旅行天气自然·1	341	kalt	kalt (kälter, am kältesten)	冷的	形容词
+3	旅行天气自然·1	463	warm	warm (wärmer, am wärmsten)	暖和的	形容词
+3	旅行天气自然·1	532	trotzdem	trotzdem	尽管如此	副词
+3	旅行天气自然·1	543	Schnee	der Schnee, kein Pl.	雪	名词
+3	旅行天气自然·1	633	Flug	der Flug, die Flüge	航班	名词
+3	旅行天气自然·1	683	Luft	die Luft, die Lüfte	空气	名词
+3	旅行天气自然·1	701	Blick	der Blick, die Blicke	目光；景色	名词
+3	旅行天气自然·1	705	obwohl	obwohl	虽然	连词
+3	旅行天气自然·1	781	Feuer	das Feuer, die Feuer	火	名词
+3	旅行天气自然·1	799	gefährlich	gefährlich	危险的	形容词
+3	旅行天气自然·1	1114	See	der See, die Seen	湖；海（die See）	名词
+3	旅行天气自然·1	1259	regnen	regnen (regnet, regnete, hat geregnet)	下雨	动词
+3	旅行天气自然·1	1417	Blume	die Blume, die Blumen	花	名词
+3	旅行天气自然·2	228	Welt	die Welt, die Welten	世界	名词
+3	旅行天气自然·2	263	Regen	der Regen, die Regen	雨	名词
+3	旅行天气自然·2	295	Wind	der Wind, die Winde	风	名词
+3	旅行天气自然·2	397	Wetter	das Wetter, die Wetter	天气	名词
+3	旅行天气自然·2	502	heiß	heiß (heißer, am heißesten)	热的	形容词
+3	旅行天气自然·2	569	Hund	der Hund, die Hunde	狗	名词
+3	旅行天气自然·2	638	draußen	draußen	在外面	副词
+3	旅行天气自然·2	687	Schiff	das Schiff, die Schiffe	船	名词
+3	旅行天气自然·2	747	Erde	die Erde, die Erden	地球；土	名词
+3	旅行天气自然·2	789	Himmel	der Himmel, die Himmel	天空	名词
+3	旅行天气自然·2	866	Gepäck	das Gepäck, kein Pl.	行李	名词
+3	旅行天气自然·2	1125	Frankreich	Frankreich	法国	名词
+3	旅行天气自然·2	1366	Ankunft	die Ankunft, die Ankünfte	到达	名词
+3	旅行天气自然·2	1522	China	China	中国	名词
+3	旅行天气自然·3	233	Sonne	die Sonne, die Sonnen	太阳	名词
+3	旅行天气自然·3	269	Reise	die Reise, die Reisen	旅行	名词
+3	旅行天气自然·3	317	Hotel	das Hotel, die Hotels	酒店	名词
+3	旅行天气自然·3	451	Dorf	das Dorf, die Dörfer	村庄	名词
+3	旅行天气自然·3	542	Koffer	der Koffer, die Koffer	行李箱	名词
+3	旅行天气自然·3	592	tief	tief	深的	形容词
+3	旅行天气自然·3	643	Deutschland	Deutschland	德国	名词
+3	旅行天气自然·3	689	Tier	das Tier, die Tiere	动物	名词
+3	旅行天气自然·3	773	Start	der Start, die Starts	开始；起飞	名词
+3	旅行天气自然·3	797	aufgeben	aufgeben (gibt auf, gab auf, hat aufgegeben)	放弃；寄存（Gepäck aufgeben）	动词
+3	旅行天气自然·3	969	Baum	der Baum, die Bäume	树	名词
+3	旅行天气自然·3	1220	Katze	die Katze, die Katzen	猫	名词
+3	旅行天气自然·3	1385	Ausflug	der Ausflug, die Ausflüge	郊游	名词
+3	旅行天气自然·3	1566	Fluss	der Fluss, die Flüsse	河	名词
+3	问候和自我介绍·1	1017	geboren	geboren	出生的（geboren）	形容词
+3	问候和自我介绍·1	1078	erwachsen	erwachsen	成年的	形容词
+3	问候和自我介绍·1	1111	schade	schade	可惜的	形容词
+3	问候和自我介绍·1	1276	Wiedersehen	das Wiedersehen, die Wiedersehen	再见（Auf Wiedersehen）	名词
+3	问候和自我介绍·1	1277	herzlich	herzlich	衷心的	形容词
+3	问候和自我介绍·1	1343	sorry	sorry	对不起（口语）	感叹词
+3	问候和自我介绍·1	1716	danken	danken (dankt, dankte, hat gedankt)	感谢	动词
+3	问候和自我介绍·1	1917	männlich	männlich	男性的	形容词
+3	问候和自我介绍·1	1950	verabschieden	verabschieden (verabschiedet, verabschiedete, hat verabschiedet)	告别（sich verabschieden）	动词
+3	问候和自我介绍·1	2360	aufwachsen	aufwachsen (wächst auf, wuchs auf, ist aufgewachsen)	长大	动词
+3	问候和自我介绍·1	2564	Kindheit	die Kindheit, kein Pl.	童年	名词
+3	问候和自我介绍·1	2837	Berliner	der Berliner, die Berliner	柏林人；柏林的	名词
+3	问候和自我介绍·1	3195	ledig	ledig	未婚的	形容词
+3	问候和自我介绍·1	3830	Geschwister	das Geschwister, die Geschwister	兄弟姐妹	名词
+3	问候和自我介绍·1	4821	Wohnort	der Wohnort, die Wohnorte	居住地	名词
+3	问候和自我介绍·2	1035	stammen	stammen (stammt, stammte, hat gestammt)	来自	动词
+3	问候和自我介绍·2	1098	Schüler	der Schüler, die Schüler	学生（中小学）	名词
+3	问候和自我介绍·2	1393	vollkommen	vollkommen	完全的	形容词
+3	问候和自我介绍·2	1543	selbstverständlich	selbstverständlich	理所当然	副词
+3	问候和自我介绍·2	1553	Amerikaner	der Amerikaner, die Amerikaner	美国人	名词
+3	问候和自我介绍·2	1617	ausgezeichnet	ausgezeichnet	出色的	形容词
+3	问候和自我介绍·2	1769	Abschluss	der Abschluss, die Abschlüsse	毕业；结束	名词
+3	问候和自我介绍·2	1928	Geburt	die Geburt, die Geburten	出生	名词
+3	问候和自我介绍·2	2056	Nachname	der Nachname, des Nachnamens, die Nachnamen	姓	名词
+3	问候和自我介绍·2	2393	Bildung	die Bildung, die Bildungen	教育	名词
+3	问候和自我介绍·2	2569	blond	blond	金发的	形容词
+3	问候和自我介绍·2	2965	Chinese	der Chinese, des Chinesen, die Chinesen	中国人	名词
+3	问候和自我介绍·2	3233	Großvater	der Großvater, die Großväter	祖父，外祖父	名词
+3	问候和自我介绍·2	4817	Geburtsdatum	das Geburtsdatum, die Geburtsdaten	出生日期	名词
+3	问候和自我介绍·2	4955	Studentin	die Studentin, die Studentinnen	女大学生	名词
+3	问候和自我介绍·3	1046	Papa	der Papa, die Papas	爸爸	名词
+3	问候和自我介绍·3	1223	empfangen	empfangen (empfängt, empfing, hat empfangen)	接待	动词
+3	问候和自我介绍·3	1573	Glückwunsch	der Glückwunsch, die Glückwünsche	祝贺	名词
+3	问候和自我介绍·3	1685	angenehm	angenehm	舒适的；愉快的	形容词
+3	问候和自我介绍·3	1849	Erwachsene	der/die Erwachsene, die Erwachsenen (ein Erwachsener / eine Erwachsene)	成年人	名词
+3	问候和自我介绍·3	1930	jugendliche	jugendliche	青少年的；青少年	形容词
+3	问候和自我介绍·3	1993	top	top	顶级的	形容词
+3	问候和自我介绍·3	2215	prima	prima	很好	形容词
+3	问候和自我介绍·3	2281	Franzose	der Franzose, des Franzosen, die Franzosen	法国人	名词
+3	问候和自我介绍·3	2474	Russe	der Russe, des Russen, die Russen	俄国人	名词
+3	问候和自我介绍·3	2746	Cousin	der Cousin, die Cousins	表兄弟	名词
+3	问候和自我介绍·3	3000	verwandt	verwandt	有亲戚关系的	形容词
+3	问候和自我介绍·3	3657	Großmutter	die Großmutter, die Großmütter	祖母，外祖母	名词
+3	问候和自我介绍·3	4818	Geburtsort	der Geburtsort, die Geburtsorte	出生地	名词
+3	数字·1	1003	Prozent	das Prozent, die Prozente	百分比	名词
+3	数字·1	1314	Höhe	die Höhe, die Höhen	高度	名词
+3	数字·1	1425	Kilometer	der/das Kilometer, die Kilometer	公里	名词
+3	数字·1	1611	vierte	vierte	第四	数词
+3	数字·1	1895	plus	plus	加	副词
+3	数字·1	2247	Viertel	das/der Viertel, die Viertel	四分之一；城区	名词
+3	数字·1	2421	mittlere	mittlere	中等的	形容词
+3	数字·1	2730	Tonne	die Tonne, die Tonnen	吨；桶	名词
+3	数字·1	2808	dreimal	dreimal	三次	副词
+3	数字·1	2831	exakt	exakt	精确的	形容词
+3	数字·1	3417	Telefonnummer	die Telefonnummer, die Telefonnummern	电话号码	名词
+3	数字·1	4379	Gramm	das Gramm, die Gramme	克	名词
+3	数字·2	1212	Zahl	die Zahl, die Zahlen	数字	名词
+3	数字·2	1333	rechnen	rechnen (rechnet, rechnete, hat gerechnet)	计算	动词
+3	数字·2	1490	doppelt	doppelt	双倍的	形容词
+3	数字·2	1658	zweimal	zweimal	两次	副词
+3	数字·2	2151	Durchschnitt	der Durchschnitt, die Durchschnitte	平均	名词
+3	数字·2	2249	fünfte	fünfte	第五	数词
+3	数字·2	2443	betragen	betragen (beträgt, betrug, hat betragen)	共计	动词
+3	数字·2	2744	Kilo	das/der Kilo, die Kilo	公斤	名词
+3	数字·2	2844	Länge	die Länge, die Längen	长度	名词
+3	数字·2	3650	zwanzig	zwanzig	二十	数词
+3	数字·2	5529	fünfzig	fünfzig	五十	数词
+3	数字·3	1267	dritte	dritte	第三	数词
+3	数字·3	1335	Einheit	die Einheit, die Einheiten	单位	名词
+3	数字·3	1585	Maß	das Maß, die Maße	尺度，量	名词
+3	数字·3	1845	Milliarde	die Milliarde, die Milliarden	十亿	名词
+3	数字·3	2220	elf	elf	十一	数词
+3	数字·3	2268	Dutzend	das Dutzend, die Dutzende	一打	名词
+3	数字·3	2529	ausrechnen	ausrechnen (rechnet aus, rechnete aus, hat ausgerechnet)	算出	动词
+3	数字·3	2771	maximal	maximal	最大的	形容词
+3	数字·3	3230	Liter	der/das Liter, die Liter	升	名词
+3	数字·3	4337	dreißig	dreißig	三十	数词
+3	数字·3	5840	fünfzehn	fünfzehn	十五	数词
+3	身体看病·1	117	Termin	der Termin, die Termine	预约	名词
+3	身体看病·1	217	Schmerz	der Schmerz, die Schmerzen	疼痛	名词
+3	身体看病·1	327	stark	stark (stärker, am stärksten)	强的	形容词
+3	身体看病·1	380	Hilfe	die Hilfe, die Hilfen	帮助	名词
+3	身体看病·1	456	Medikament	das Medikament, die Medikamente	药品	名词
+3	身体看病·1	521	Gesicht	das Gesicht, die Gesichter	脸	名词
+3	身体看病·1	672	Kraft	die Kraft, die Kräfte	力量	名词
+3	身体看病·1	777	Gesundheit	die Gesundheit, kein Pl.	健康	名词
+3	身体看病·1	1089	Apotheke	die Apotheke, die Apotheken	药店	名词
+3	身体看病·1	1294	müde	müde	累的	形容词
+3	身体看病·1	1540	wehtun	wehtun (tut weh, tat weh, hat wehgetan)	疼	动词
+3	身体看病·2	129	Arzt	der Arzt, die Ärzte	医生	名词
+3	身体看病·2	278	Hand	die Hand, die Hände	手	名词
+3	身体看病·2	328	Auge	das Auge, die Augen	眼睛	名词
+3	身体看病·2	416	gesund	gesund (gesünder, am gesündesten)	健康的	形容词
+3	身体看病·2	497	verletzt	verletzt	受伤的	形容词
+3	身体看病·2	566	retten	retten (rettet, rettete, hat gerettet)	救	动词
+3	身体看病·2	702	Körper	der Körper, die Körper	身体	名词
+3	身体看病·2	824	Fieber	das Fieber, die Fieber	发烧	名词
+3	身体看病·2	1136	Zahnarzt	der Zahnarzt, die Zahnärzte	牙医	名词
+3	身体看病·2	1305	Krankenwagen	der Krankenwagen, die Krankenwagen	救护车	名词
+3	身体看病·3	187	Krankenhaus	das Krankenhaus, die Krankenhäuser	医院	名词
+3	身体看病·3	325	krank	krank (kränker, am kränksten)	生病的	形容词
+3	身体看病·3	360	Kopf	der Kopf, die Köpfe	头	名词
+3	身体看病·3	439	Herz	das Herz, des Herzens, die Herzen	心	名词
+3	身体看病·3	520	Praxis	die Praxis, die Praxen	诊所；实践	名词
+3	身体看病·3	659	verletzen	verletzen (verletzt, verletzte, hat verletzt)	弄伤	动词
+3	身体看病·3	720	bewegen	bewegen (bewegt, bewegte, hat bewegt)	移动	动词
+3	身体看病·3	939	Notfall	der Notfall, die Notfälle	紧急情况	名词
+3	身体看病·3	1194	Tablette	die Tablette, die Tabletten	药片	名词
+3	身体看病·3	1415	Husten	der Husten, die Husten	咳嗽	名词
+3	基础词·1	1545	aufpassen	aufpassen (passt auf, passte auf, hat aufgepasst)	注意	动词
+3	基础词·1	1721	darunter	darunter	在下面；其中	副词
+3	基础词·1	1827	drüber	drüber	关于这（口语）	副词
+3	基础词·1	1902	hinein	hinein	进去	副词
+3	基础词·1	2090	nieder	nieder	向下（nieder mit）	副词
+3	基础词·1	2097	soviel	soviel	这么多	副词
+3	基础词·1	2306	auseinander	auseinander	分开	副词
+3	基础词·1	2353	woanders	woanders	在别处	副词
+3	基础词·1	2412	wonach	wonach	按照什么	副词
+3	基础词·1	2413	worum	worum	关于什么	副词
+3	基础词·1	2871	gratis	gratis	免费	副词
+3	基础词·2	1720	womit	womit	用什么	副词
+3	基础词·2	1731	ran	ran	靠近（口语）	副词
+3	基础词·2	1829	rüber	rüber	过去（口语）	副词
+3	基础词·2	1921	drüben	drüben	在那边	副词
+3	基础词·2	2185	woran	woran	在什么上	副词
+3	基础词·2	2348	vorwärts	vorwärts	向前	副词
+3	基础词·2	2403	worüber	worüber	关于什么	副词
+3	基础词·2	2716	hinweg	hinweg	越过	副词
+3	基础词·2	2867	hinzu	hinzu	加上	副词
+3	基础词·2	2923	hierbei	hierbei	在此	副词
+3	新闻社会·1	144	Polizei	die Polizei, die Polizeien	警察（局）	名词
+3	新闻社会·1	220	Gott	der Gott, die Götter	上帝；神	名词
+3	新闻社会·1	303	Glaube	der Glaube, des Glaubens, kein Pl.	信仰；相信	名词
+3	新闻社会·1	331	Geschichte	die Geschichte, die Geschichten	历史；故事	名词
+3	新闻社会·1	547	Wahl	die Wahl, die Wahlen	选择；选举	名词
+3	新闻社会·1	565	König	der König, die Könige	国王	名词
+3	新闻社会·1	640	Opfer	das Opfer, die Opfer	受害者；牺牲	名词
+3	新闻社会·1	685	Tat	die Tat, die Taten	行为；罪行	名词
+3	新闻社会·1	717	Bericht	der Bericht, die Berichte	报告	名词
+3	新闻社会·1	721	Regierung	die Regierung, die Regierungen	政府	名词
+3	新闻社会·1	722	Staat	der Staat, die Staaten	国家（政权）	名词
+3	新闻社会·1	725	Gesellschaft	die Gesellschaft, die Gesellschaften	社会；公司	名词
+3	新闻社会·1	751	Gesetz	das Gesetz, die Gesetze	法律	名词
+3	新闻社会·1	1488	Diebstahl	der Diebstahl, die Diebstähle	盗窃	名词
+3	日常物品·1	1027	Farbe	die Farbe, die Farben	颜色	名词
+3	日常物品·1	1038	richten	richten (richtet, richtete, hat gerichtet)	对准；整理	动词
+3	日常物品·1	1093	Maschine	die Maschine, die Maschinen	机器	名词
+3	日常物品·1	1097	Zeug	das Zeug, die Zeuge	东西（口语）	名词
+3	日常物品·1	1131	Ring	der Ring, die Ringe	戒指	名词
+3	日常物品·1	2003	Socke	die Socke, die Socken	袜子	名词
+3	日常物品·1	2144	Sack	der Sack, die Säcke	袋子	名词
+3	日常物品·1	2152	Briefmarke	die Briefmarke, die Briefmarken	邮票	名词
+3	日常物品·1	2176	Schal	der Schal, die Schals	围巾	名词
+3	人际情感·1	661	sterben	sterben (stirbt, starb, ist gestorben)	死	动词
+3	时间日期·表达·1	550	damals	damals	当时	副词
+3	时间日期·表达·1	553	irgendwie	irgendwie	不知怎么地	副词
+3	时间日期·表达·1	581	wahrscheinlich	wahrscheinlich	很可能	副词
+3	时间日期·表达·1	693	bisher	bisher	迄今为止	副词
+3	时间日期·表达·1	775	vorher	vorher	之前	副词
+3	时间日期·表达·1	858	sobald	sobald	一…就	连词
+3	时间日期·表达·1	878	solange	solange	只要	连词
+3	时间日期·表达·1	946	irgendwann	irgendwann	总有一天	副词
+3	时间日期·表达·1	1382	längst	längst	早就	副词
+3	时间日期·表达·1	1900	sicherlich	sicherlich	肯定	副词
+3	时间日期·表达·1	2116	beinahe	beinahe	差点	副词
+3	时间日期·表达·1	2155	einst	einst	曾经	副词
+3	时间日期·表达·1	2233	derzeit	derzeit	目前	副词
+3	时间日期·表达·1	2583	anschließend	anschließend	接着	副词
+3	时间日期·表达·9	952	vermutlich	vermutlich	大概	副词
+3	时间日期·表达·9	1117	gewiss	gewiss	某种；确定的	形容词
+3	时间日期·表达·9	1119	rund	rund	圆的；大约	形容词
+3	时间日期·表达·9	1138	diesmal	diesmal	这次	副词
+3	时间日期·表达·9	1173	jemals	jemals	曾经	副词
+3	时间日期·表达·9	1191	gleichzeitig	gleichzeitig	同时	副词
+3	时间日期·表达·9	1201	enden	enden (endet, endete, hat geendet)	结束	动词
+3	时间日期·表达·9	1315	davor	davor	在这之前	副词
+3	时间日期·表达·9	1858	definitiv	definitiv	肯定	副词
+3	时间日期·表达·9	1913	momentan	momentan	目前	副词
+3	时间日期·表达·9	2128	vorhin	vorhin	刚才	副词
+3	时间日期·表达·9	2265	rechtzeitig	rechtzeitig	及时	副词
+3	时间日期·表达·9	2476	umso	umso	更加（umso besser）	副词
+3	时间日期·表达·9	2620	kürzlich	kürzlich	最近	副词
+3	作息爱好·表达·1	994	zuvor	zuvor	之前	副词
+3	作息爱好·表达·1	995	soweit	soweit	就…而言；到这个程度	副词
+3	问候和自我介绍·表达·1	2408	bestens	bestens	极好	副词
+3	问候和自我介绍·表达·1	2506	unheimlich	unheimlich	阴森的；非常（口语）	形容词
+3	问候和自我介绍·表达·1	2681	allzu	allzu	太	副词
+3	问候和自我介绍·表达·1	2740	bedauern	bedauern (bedauert, bedauerte, hat bedauert)	遗憾	动词
+3	问候和自我介绍·表达·1	2805	bedanken	bedanken (bedankt, bedankte, hat bedankt)	道谢（sich bedanken）	动词
+3	问候和自我介绍·表达·1	2810	gratulieren	gratulieren (gratuliert, gratulierte, hat gratuliert)	祝贺	动词
