@@ -19,7 +19,7 @@ import { buy as buyItem, openShop, refresh as refreshShop, sell as sellItem } fr
 import { hourGold, rank, resMax, respec, respecCost, spent } from '../core/classes';
 import { noteVisit } from '../core/redname';
 import { BLESSINGS, blessCount, blessScale, bossFloor, canDescend, descend, endRift, offerBlessings, RIFT, riftAct, riftItemLevel, riftOpen, riftWord, silenceLeft, startRift, takeBlessing } from '../core/rift';
-import { GLASSES_FROM, makeItem, QUALITY_ZH, rollQuality, SLOT_ZH } from '../core/loot';
+import { makeItem, slotsAt, QUALITY_ZH, rollQuality, SLOT_ZH } from '../core/loot';
 import { applyLoss, applyWin, postFightHeal } from '../core/outcomes';
 import { defaultRng, type Rng } from '../core/rng';
 import { atLeastHalfShare, flushSkill, gapZh, instantGuiming, kindOf, recordAnswer, reviewedByWriting, stageOf } from '../core/srs';
@@ -355,8 +355,8 @@ export class Controller {
     save(this.state);
   }
 
-  speak(text: string): void {
-    speak(text, this.state.settings.tts);
+  speak(text: string, rate?: number): void {
+    speak(text, this.state.settings.tts, rate);
   }
 
   voiceNote(): string {
@@ -446,6 +446,15 @@ export class Controller {
             { who: HILDE, text: '拿着。站台上捡的，镜片裂了一片，还能用。' },
             { who: SYS, text: `【眼镜】${g.name}已经戴上：怪蓄力的那一下砸到你身上会轻 ${Math.round(g.main * 100)}%。下一只蓄大招的怪，看看伤害。` },
           );
+        }
+        break;
+      case 34:
+        if (!s.flags.phonesGift) {
+          s.flags.phonesGift = true;
+          const g = makeItem(this.rng, level, 'white', 'phones');
+          if (!s.equipped.phones) s.equipped.phones = g;
+          else if (s.bag.length < CONFIG.loot.bagSize) s.bag.push(g);
+          lines.push({ who: SYS, text: `【耳机】${g.name}已经戴上：听力题（听音、回音怪、听段题、盲听、听写）伤害 +${Math.round(g.main * 100)}%。` });
         }
         break;
       case 2:
@@ -1549,7 +1558,7 @@ export class Controller {
     const s = this.state;
     const region = s.region ?? 1;
     const i = tradeInfo(s, region);
-    const slots: Slot[] = s.level >= GLASSES_FROM ? ['pen', 'coat', 'amulet', 'dict', 'glasses'] : ['pen', 'coat', 'amulet', 'dict'];
+    const slots: Slot[] = slotsAt(s.level);
     const price = i.free ? '这次免费（新解锁的档）' : `花 ${i.cost} 片碎片（余额 ${shardBalance(s, region)}）`;
     say([{ who: SYS, text: `【碎片换档】本区第 ${i.tier} 档（物品等级 ${tierIlvl(region, i.tier)}），${price}。换哪个部位？笔的档加伤害，外套的档加生命，护符的档加穿透；品质和副词缀随机。` }], undefined, [
       ...slots.map((sl) => ({

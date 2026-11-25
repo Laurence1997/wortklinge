@@ -127,7 +127,7 @@ export interface WordProgress {
 }
 
 export type Quality = 'white' | 'green' | 'purple' | 'orange' | 'red';
-export type Slot = 'pen' | 'coat' | 'amulet' | 'dict' | 'glasses';
+export type Slot = 'pen' | 'coat' | 'amulet' | 'dict' | 'glasses' | 'phones';
 
 export interface Affix {
   key: AffixKey;

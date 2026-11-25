@@ -19,7 +19,7 @@ import { maxHp, now, type GameState } from './state';
 import type { Word, WordProgress } from './types';
 import { hasArticleQuestion, WORDS } from '../data/words';
 import { sameMeaning } from './screen';
-import { GLASSES_FROM, itemScore, makeItem } from './loot';
+import { itemScore, makeItem, slotsAt } from './loot';
 import { tierIlvl } from './forge';
 
 export const PLACE = {
@@ -360,7 +360,7 @@ export function applyPlacement(s: GameState, run: PlaceRun, t = now(s), _opts: {
   if (gained.length && region > 1 && !s.flags[`entryKit_${region}`]) {
     s.flags[`entryKit_${region}`] = true;
     const ilvl = tierIlvl(region, 0);
-    for (const slot of (ilvl >= GLASSES_FROM ? ['pen', 'coat', 'amulet', 'dict', 'glasses'] : ['pen', 'coat', 'amulet', 'dict']) as Array<'pen' | 'coat' | 'amulet' | 'dict' | 'glasses'>) {
+    for (const slot of slotsAt(ilvl)) {
       const it = { ...makeItem(Math.random, ilvl, 'white', slot), tier: 0, region };
       const cur = s.equipped[slot];
       if (!cur || itemScore(cur) < itemScore(it)) s.equipped[slot] = it;

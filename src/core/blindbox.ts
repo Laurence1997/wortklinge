@@ -25,6 +25,7 @@ const NOUN: Record<Slot, string> = {
   amulet: 'Ein kleines Amulett.',
   dict: 'Ein dickes Wörterbuch.',
   glasses: 'Eine klare Brille.',
+  phones: 'Ein leichter Kopfhörer.',
 };
 const RARE: Partial<Record<Quality, string>> = { green: 'Nicht schlecht.', purple: 'Selten.', orange: 'Sehr selten!' };
 const PRICE_KILLS: Partial<Record<Quality, number>> = { green: 20, purple: 80, orange: 400 };
@@ -35,6 +36,7 @@ const NOUN_ADV: Record<Slot, string> = {
   amulet: 'Ein Amulett, dessen Herkunft niemand kennt.',
   dict: 'Ein Wörterbuch, das angeblich jedes Wort enthält.',
   glasses: 'Eine Brille, durch die man mehr sieht als andere.',
+  phones: 'Ein Kopfhörer, mit dem man sogar das Schweigen hört.',
 };
 const RARE_ADV: Partial<Record<Quality, string>> = { purple: 'Von erlesener Qualität.', orange: 'Ein wahres Meisterstück, kaum noch zu finden.' };
 

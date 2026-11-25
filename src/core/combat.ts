@@ -8,8 +8,11 @@ import { between, makeRng, pick, shuffle, type Rng } from './rng';
 import { contextDueWords, contextFail, contextPass, gapZh, reviewedByWriting, reviewMon, failVerify, retire, setGuiming, kindOf, stageOf, overdueSteps, verifyOf, type Kind, type Stage } from './srs';
 import { typoOk } from './cut';
 import { placedCheck, placedPick } from './placement';
+import { blindLine, blindTask, LISTEN, passageFor, passageTask, rollListen } from './listening';
 import { fillGems, gemSum } from './gems';
 import { announces, insightOptions, LIAR, liarIntent, TELL_ZH } from './liar';
+import { PHONES_PER_TIER } from './loot';
+import { itemTier } from './state';
 import { addGearKill, gear, affinityOf, affixTotal, attack, engraved, critChance, gearPen, hintsPerFight, maxHp, now, type GameState } from './state';
 import type { Element, Intent, Move, Word } from './types';
 import { gradeCompose } from './aiPractice';
@@ -348,6 +351,11 @@ export interface Battle {
   b2Mon?: B2Mon;
   /** 会说谎的怪 (151, 暂定): its announcement turns and 洞察 state. */
   liar?: import('./liar').LiarState;
+  /** 听段题 (34) / 盲听 (91): this monster opens with a listening question; done once answered. */
+  listenMon?: import('./listening').ListenKind;
+  listenDone?: boolean;
+  /** Replays left on the listening question (1, +1 with 「Wie bitte?」). */
+  replays?: number;
   /** 言石 刻满 this turn (grammars): the controller pays the XP. */
   gemFilled?: import('./gram/task').GramSys[];
   /** Sentence attacks used on this monster this fight (each pattern once, in tag order). */
@@ -547,6 +555,14 @@ export function startBattle(
   if (!b.perfekt && !b.notice && !b.mirror && !b.structMon && !b.pronMon && !b.b2Mon && !tutorial && !opts.trial && !opts.elite && !opts.isEcho && kind !== 'new' && s.level >= LIAR.from && rng() < LIAR.chance) {
     b.liar = {};
     b.log.push({ text: '会说谎的怪：它每 3 回合预告一次下一招，大约一半是假话。假话一定有破绽（第二虚拟式、angeblich、前后矛盾）。按「洞察」花一回合看穿它。', tone: 'info' });
+  }
+  // 听段题 (34) / 盲听 (91): about 1 in 8 field monsters opens with a listening question.
+  if (!b.perfekt && !b.notice && !b.mirror && !b.structMon && !b.pronMon && !b.b2Mon && !b.liar && !tutorial && !opts.trial && !opts.elite && !opts.isEcho && kind !== 'new') {
+    const lk = rollListen(s.level, word, rng);
+    if (lk) {
+      b.listenMon = lk;
+      b.log.push({ text: lk === 'passage' ? '听段怪：它先播一段话，不给文字。听懂了回答它的问题（可以免费重听一次）。' : '盲听：它说一句话，不给文字，打出缺的那个词（可以免费重听一次）。', tone: 'info' });
+    }
   }
   b.intent = nextIntent(s, b, rng);
   perfektGuard(s, b);
@@ -1378,6 +1394,15 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
   function ladderQ(): Question {
   if (am === 'attack' && b.saying && !b.sayingDone && !inPack) return sayingQuestion(s, b.saying, rng);
   // 审查修订: once an extra-damage question has brought it to 1 HP, the last blow has to answer its own word.
+  if (am === 'attack' && b.listenMon && !b.listenDone && !b.finishOwn) {
+    const p = b.listenMon === 'passage' ? passageFor(w) : null;
+    const line = b.listenMon === 'blind' ? blindLine(w, rng) : null;
+    const t = p ? passageTask(p, rng) : line ? blindTask(w, line) : null;
+    if (t) {
+      b.replays = LISTEN.replays + (b.fx.charm?.replay ?? 0);
+      return { ...gramQuestion(t), listen: t.full };
+    }
+  }
   if (am === 'attack' && b.notice && !b.finishOwn) {
     const n = noticeById(b.notice.id);
     if (n) return gramQuestion(noticeTask(n, b.notice.i, rng));
@@ -2062,6 +2087,10 @@ export function resolveTurn(
     if (q.type === 'sentence') b.sxUsed = (b.sxUsed ?? 0) + 1;
     if (q.gram) b.gramAsked = (b.gramAsked ?? 0) + 1;
     if (q.gram?.sys === 'notice' && b.notice) b.notice.i += 1;
+    if (q.gram?.sys === 'listen' || q.gram?.sys === 'blind') {
+      b.listenDone = true;
+      log.push({ text: `原文：${q.gram.full ?? ''}${q.gram.zh ? `（${q.gram.zh}）` : ''}`, tone: 'info' });
+    }
     // 词族秘境: a mixed-up contrast only marks the word 易混 (审查修订: no progress is taken back).
     if (q.gram?.mix && !ok && s.words[b.word.id]) {
       const p = s.words[b.word.id];
@@ -2184,7 +2213,7 @@ export function resolveTurn(
       const afterWrong = b.wrongStreak > 0;
       b.wrongStreak = 0;
       if (q.type === 'callout') b.named = true;
-      if (q.type !== 'saying' && !q.review) b.step += 1;
+      if (q.type !== 'saying' && !q.review && q.gram?.sys !== 'listen') b.step += 1; // 听段题 doesn't move the ladder
       s.combo += 1;
       if (readRight && move !== 'skill') s.combo += 1; // 读对意图并出对克制招式，连击额外 +1
       talentOnRight(s, b, q, log, afterWrong);
@@ -2268,6 +2297,8 @@ export function resolveTurn(
         if (!q.whispered) for (const g of fillGems(s, gsys)) (b.gemFilled ??= []).push(g.sys);
         const gDmg = gemSum(s, gsys, 'dmg');
         if (gDmg) mult *= 1 + gDmg; // 言石
+        const phones = gear(s).phones;
+        if (phones && listenQ(q)) mult *= 1 + phones.main + PHONES_PER_TIER * itemTier(phones, s.region ?? 1); // 耳机
         if (b.liar?.boost) {
           mult *= LIAR.boost;
           b.liar.boost = false;
@@ -2866,7 +2897,7 @@ function irregularQ(b: Battle, q: Question): boolean {
 /** 听力题: pick by ear (听整句选意思), 回音怪, 听写. */
 /** 审查修订: damage that doesn't come from answering the monster's own word (语境复习, 告示/信件, 镜像, 结构魔). */
 export function extraHit(q: Question): boolean {
-  return !!q.review || ['notice', 'mirror', 'struct'].includes(q.gram?.sys ?? '');
+  return !!q.review || ['notice', 'mirror', 'struct', 'listen'].includes(q.gram?.sys ?? '');
 }
 
 function listenQ(q: Question): boolean {

@@ -3,6 +3,7 @@ import { DEFAULT_LOOK } from '../core/look';
 import type { Battle, Question, TurnReport } from '../core/combat';
 import { count as itemCount, itemsOpen, tabletHeal } from '../core/items';
 import { CHARM, equippedCharms } from '../core/charms';
+import { listenRate } from '../core/listening';
 import { bestHeard, plateZh, castMs, gcdMs, parryWindowMs, realtimeOn, voiceOpen } from '../core/combat';
 import { availableMoves, chorusMates, canHint, comboTier, effArmor, moveReady, poolReady, needsPhase, phaseOf, resName, stancesFor, teachPhase, readTarget, readRecall, readShown, phaseWrongWhy } from '../core/combat';
 import { articleSlip, clarity, shadowOk } from '../core/shadow';
@@ -270,7 +271,7 @@ export class BattleUI {
     this.phaseNag = false;
     this.move = move;
     this.question = this.ctrl.askQuestion(move, move === 'skill' ? this.skillId : undefined);
-    if (this.question.listen) this.ctrl.speak(this.question.listen);
+    if (this.question.listen) this.ctrl.speak(this.question.listen, this.question.gram?.sys === 'listen' || this.question.gram?.sys === 'blind' ? listenRate(this.ctrl.state.level) : undefined);
     this.echoSetup();
     // Listening step: the monster says its own name, the player picks the meaning.
     if (this.question.type === 'pickZh' && this.question.focus) this.ctrl.speak(this.question.focus);
@@ -1127,6 +1128,11 @@ export class BattleUI {
     wrap.append(h('div.focus', { style: (focusColor ? `color:${focusColor};` : '') + long }, qq.focus));
     this.input = null;
     // 告示怪 / 信件怪 / 文章群怪: the text the questions are about.
+    // 听段题 / 盲听: no text before answering; a free replay (or two with 「Wie bitte?」).
+    if ((qq.gram?.sys === 'listen' || qq.gram?.sys === 'blind') && qq.listen && this.phase === 'answer') {
+      const left = this.b.replays ?? 0;
+      wrap.append(h('div.hud-row', h('button.btn.small', { disabled: left <= 0, onclick: () => { this.b.replays = left - 1; this.ctrl.speak(qq.listen!, listenRate(this.ctrl.state.level)); this.render(); } }, `🔁 重听（还剩 ${left} 次）`)));
+    }
     if (qq.gram?.passage) wrap.append(h('div.passage', { style: 'white-space:pre-wrap;font-size:15px;line-height:1.5;border:1px solid var(--line, #553);padding:8px 10px;margin:6px 0;max-height:220px;overflow:auto' }, qq.gram.passage));
     // 齐鸣 (rev 234): write each same-stance mate's own word (with the article); each right one is hit.
     this.mateBoxes = [];

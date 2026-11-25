@@ -164,5 +164,7 @@ GRAM_UNLOCK_TEXT[33] = [...(GRAM_UNLOCK_TEXT[33] ?? []), '附赠动作：喊秘�
 GRAM_UNLOCK_TEXT[50] = [...(GRAM_UNLOCK_TEXT[50] ?? []), '俚语秘术：俚语只对写明的场合管用，用错会反噬。NPC 支线最后一环和商店的流浪商人卷轴给俚语'];
 GRAM_UNLOCK_TEXT[81] = [...(GRAM_UNLOCK_TEXT[81] ?? []), '秘术栏 +1（共 2 格）'];
 GRAM_UNLOCK_TEXT[21] = [...(GRAM_UNLOCK_TEXT[21] ?? []), '说服段（AI 对话，要登录）：用德语说服房东、书记员、室友……对房东官员用 Sie，对同龄人用 du'];
+GRAM_UNLOCK_TEXT[34] = [...(GRAM_UNLOCK_TEXT[34] ?? []), '耳机（第 6 个部位）：听力题伤害更高', '听段怪：野外有的怪先播一段话，不给文字，听懂了回答问题（免费重听一次）'];
+GRAM_UNLOCK_TEXT[91] = [...(GRAM_UNLOCK_TEXT[91] ?? []), '盲听：怪说一句话不给文字，打出缺的词；听段题语速更快'];
 GRAM_UNLOCK_TEXT[62] = [...(GRAM_UNLOCK_TEXT[62] ?? []), '言石：在篝火用碎片合成，每颗刻一条学过的语法，镶进紫装或橙装；答对这条语法的题就触发它的效果。遗忘宝箱起必出一颗'];
 for (const [lv, lines] of Object.entries(GRAM_UNLOCK_TEXT)) UNLOCK_TEXT[Number(lv)] = [...(UNLOCK_TEXT[Number(lv)] ?? []), ...lines];

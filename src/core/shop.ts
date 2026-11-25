@@ -22,6 +22,7 @@ export const SLOT_NOUN: Record<Slot, { nom: string; acc: string; zh: string }> =
   amulet: { nom: 'das Amulett', acc: 'das Amulett', zh: '护符' },
   dict: { nom: 'das Wörterbuch', acc: 'das Wörterbuch', zh: '词典' },
   glasses: { nom: 'die Brille', acc: 'die Brille', zh: '眼镜' },
+  phones: { nom: 'der Kopfhörer', acc: 'den Kopfhörer', zh: '耳机' },
 };
 
 export const BARGAIN_LINES = ['Geht das billiger?', 'Das ist zu teuer.', 'Gibt es einen Rabatt?'];

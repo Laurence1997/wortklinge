@@ -67,7 +67,9 @@ export type GramSys =
   | 'numbers'
   | 'rewrite'
   | 'timeline'
-  | 'register';
+  | 'register'
+  | 'listen'
+  | 'blind';
 
 export interface GramTask {
   sys: GramSys;

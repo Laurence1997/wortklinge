@@ -276,7 +276,7 @@ export class Panels {
       return h('div.grid2', left, right);
     }
     right.append(h('h3', { style: 'margin-top:0' }, '已装备'));
-    for (const slot of ['pen', 'coat', 'amulet', 'dict', 'glasses'] as Slot[]) {
+    for (const slot of ['pen', 'coat', 'amulet', 'dict', 'glasses', 'phones'] as Slot[]) {
       const it = s.equipped[slot];
       right.append(
         h(
@@ -932,7 +932,7 @@ export class Panels {
     // Wishlist.
     const wishSlot = h('select', { onchange: (e: Event) => { shop.wish.slot = ((e.target as HTMLSelectElement).value || undefined) as Slot | undefined; this.ctrl.persist(); } }) as HTMLSelectElement;
     wishSlot.append(h('option', { value: '' }, '任意部位'));
-    for (const sl of ['pen', 'coat', 'amulet', 'dict', 'glasses'] as Slot[]) wishSlot.append(h('option', { value: sl, selected: shop.wish.slot === sl }, SLOT_ZH[sl]));
+    for (const sl of ['pen', 'coat', 'amulet', 'dict', 'glasses', 'phones'] as Slot[]) wishSlot.append(h('option', { value: sl, selected: shop.wish.slot === sl }, SLOT_ZH[sl]));
     const wishAffix = h('select', { onchange: (e: Event) => { shop.wish.affix = ((e.target as HTMLSelectElement).value || undefined) as AffixKey | undefined; this.ctrl.persist(); } }) as HTMLSelectElement;
     wishAffix.append(h('option', { value: '' }, '任意词条'));
     for (const k of Object.keys(AFFIX_ZH) as AffixKey[]) wishAffix.append(h('option', { value: k, selected: shop.wish.affix === k }, AFFIX_ZH[k](0).replace(/[+\-]?0(\.0)?%?/, '').trim() || k));

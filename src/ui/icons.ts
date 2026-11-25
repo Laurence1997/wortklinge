@@ -142,7 +142,7 @@ export function monsterIcon(art: MonArt, scale = 2, dead = false, cls = 'icon', 
 /** Map figures for NPCs (same tiles as their dialog portraits). */
 export const NPC_TILE: Record<string, number> = { hilde: 111, greta: 84, mira: 99, konrad: 86, brandt: 85, examiner: 96, weber: 100, lina: 88 };
 
-export const SLOT_TILE: Record<Slot, number> = { pen: 130, coat: 102, amulet: 101, dict: 66, glasses: 60 };
+export const SLOT_TILE: Record<Slot, number> = { pen: 130, coat: 102, amulet: 101, dict: 66, glasses: 60, phones: 60 };
 
 /** Speaker → portrait tile; shadow until the person is restored. */
 const PEOPLE: Array<[RegExp, number, string?]> = [
