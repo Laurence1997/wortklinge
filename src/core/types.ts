@@ -87,6 +87,8 @@ export interface WordProgress {
   ivl?: number;
   /** 语境复习: every review passed (or the one 30-day spot check of a clean 归名): no more reviews. */
   ctxDone?: boolean;
+  /** 入学测试 (2026-11-25): 推定会 since this time: counts as 归名 on trust, spot-checked one per fight. */
+  placed?: number;
   /** A context review was answered wrong: back in the field as a 半名 review monster (复发中). */
   lapsed?: boolean;
   /** Before 归名: a wrong answer or a 低语 on it (a clean 归名 skips the review schedule, rev 51). */

@@ -41,7 +41,7 @@ const inScope = (w: Word, scope: ScreenScope) => scope === 'all' || String(w.reg
 /** 2026-11-23 Lucas: a learned word is one the HUD counts as 归名 (retired, or 归名 and not due), so the summary
  *  line and the HUD agree and the examiner never asks a word you already know. A 归名 word that comes due counts
  *  as 半名 in both places and can be asked again. */
-const learned = (s: GameState, w: Word) => stageOf(s, w) === 3;
+const learned = (s: GameState, w: Word) => stageOf(s, w) === 3 && !s.words[w.id]?.placed;
 
 /** Words this scope can still ask: everything but learned, tutorial and chest words. */
 export function screenPool(s: GameState, scope: ScreenScope): Word[] {
@@ -64,7 +64,7 @@ export interface ScreenRun {
   wrong: number;
   /** Asked this session (a round ends after one pass through the pool). */
   asked: Set<string>;
-  last?: { ok: boolean; skipped: boolean; word: Word; wrote?: Word; verdict?: Verdict; input: string; scene?: SceneDef };
+  last?: { ok: boolean; skipped: boolean; word: Word; wrote?: Word; verdict?: Verdict; input: string; scene?: SceneDef; placed?: boolean };
   over: boolean;
 }
 
@@ -86,6 +86,12 @@ export function startScreen(s: GameState, scope: ScreenScope): ScreenRun {
 /** Retire a word found in town (never met → it joins the wordbook as named and retired). */
 export function screenRetire(s: GameState, w: Word, t = now(s)): SceneDef | undefined {
   const p = s.words[w.id];
+  // 入学测试: a 推定会 word already paid its XP through the entry level; retire it without storing more.
+  const wasPlaced = !!p?.placed && !p.retired;
+  if (p) {
+    delete p.placed;
+    if (wasPlaced) delete p.ctxDone;
+  }
   if (!p) s.words[w.id] = { stage: 3, due: t + CONFIG.srs.recheck, firstSeen: t, lastSeen: t, relapse: 0, correct: 1, wrong: 0, read: 0, write: 1, retired: t };
   else {
     p.correct += 1;
@@ -93,6 +99,7 @@ export function screenRetire(s: GameState, w: Word, t = now(s)): SceneDef | unde
     retire(s, w, t);
   }
   const sc = homeScene(w.id);
+  if (wasPlaced) return undefined;
   if (sc) {
     const pend = screenSave(s).pending;
     pend[sc.id] = [...new Set([...(pend[sc.id] ?? []), w.id])];
@@ -129,9 +136,10 @@ export function answerScreen(s: GameState, run: ScreenRun, input: string, skip =
       }
     }
     if (hit) {
+      const placed = !!s.words[hit.id]?.placed && !isRetired(s.words[hit.id]);
       const scene = isRetired(s.words[hit.id]) ? undefined : screenRetire(s, hit);
       run.cut.push(hit);
-      run.last = { ok: true, skipped: false, word: w, wrote: hit, verdict, input: input.trim(), scene };
+      run.last = { ok: true, skipped: false, word: w, wrote: hit, verdict, input: input.trim(), scene, placed };
     } else {
       run.wrong += 1;
       run.last = { ok: false, skipped: false, word: w, verdict, input: input.trim() };

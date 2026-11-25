@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { gradeMoechte, gradeTyped, normalize } from '../src/core/grading';
-import { fullForm, WORD_BY_ID, WORDS } from '../src/data/words';
+import { WORD_BY_ID, WORDS } from '../src/data/words';
 import { SCENES } from '../src/data/world';
 import { DIARY, parseLine } from '../src/data/diary';
 import { newGame, addXp, migrate, migrateSrs2, attack, gearTier, addGearKill, affinityOf } from '../src/core/state';
@@ -15,7 +15,6 @@ import { pickSpawns } from '../src/core/spawn';
 import { CONJ } from '../src/data/verbs';
 import { pronounClozes, EXAMPLES } from '../src/core/cloze';
 import { UNLOCK } from '../src/core/unlocks';
-import { answerDuel } from '../src/core/duel';
 
 const T0 = new Date('2026-11-20T10:00:00').getTime();
 
@@ -1134,19 +1133,6 @@ describe('2026-11-21: 低语, 越区引导, reviews, 怪的台词', () => {
     const b = startBattle(s, WORD_BY_ID['tee'], makeRng(1));
     expect(b.kind).toBe('due');
     expect(b.monster.lvl).toBe(9);
-  });
-  it('跳区考核: 16 of 20 passes, failing early ends it', async () => {
-    const { startJumpExam, JUMP } = await import('../src/core/duel');
-    const s = newGame('T', 'student', T0);
-    s.level = 7;
-    const d = startJumpExam(s, makeRng(1));
-    expect(d.queue.length).toBe(JUMP.words);
-    for (let i = 0; i < 16; i++) answerDuel(s, d, fullForm(d.queue[0]));
-    expect(d.over).toBe('win');
-    const d2 = startJumpExam(s, makeRng(2));
-    for (let i = 0; i < 5; i++) answerDuel(s, d2, 'zzz');
-    expect(d2.over).toBe('lose');
-    expect(s.hp).toBeGreaterThan(0);
   });
   it('the monster mumbles its own example sentence without its name', async () => {
     const { voiceLine } = await import('../src/core/cloze');

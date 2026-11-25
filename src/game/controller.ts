@@ -1,6 +1,6 @@
 import { loadPron, pronCached } from '../ui/phoneme';
 import { icon, setRestored, SLOT_TILE } from '../ui/icons';
-import { answerDuel, duelPool, JUMP, startJumpExam, type Duel } from '../core/duel';
+import { answerPlacement, applyPlacement, canPlaceToday, regionFor, startPlacement, stopPlacement, type PlaceRun } from '../core/placement';
 import { answerScreen, claimScene, SCREEN, startScreen, type ScreenRun, type ScreenScope } from '../core/screen';
 import type { Look } from '../core/look';
 // The game controller: owns the save, runs battles and tutorials, and glues the
@@ -263,8 +263,10 @@ export class Controller {
     this.refresh();
     if (rollDay(this.state)) this.scene.spawnAll();
     if (this.state.region === 2 && startQuest(this.state, 'main2')) questEvent(this.state, 'enterMarket');
-    if (!this.state.flags.intro) this.intro();
-    else this.welcomeBack();
+    if (!this.state.flags.intro) {
+      if (!this.state.flags.placeAsked) this.askPlacement();
+      else this.intro();
+    } else this.welcomeBack();
   }
 
   wordById(id: string): Word | undefined {
@@ -381,11 +383,14 @@ export class Controller {
   }
 
   /** Lessons tied to a level (游戏设计 › 新手引导). */
-  private onLevelUp(level: number) {
+  /** `quiet` (入学测试 jumps): set the level's flags and gifts but say nothing; the caller shows one summary. */
+  private onLevelUp(level: number, quiet = false) {
     const s = this.state;
     this.milestone(`lv${level}`);
-    sfx.levelUp();
-    banner(`Lv ${level}`, (UNLOCK_TEXT[level] ?? [])[0] ?? '');
+    if (!quiet) {
+      sfx.levelUp();
+      banner(`Lv ${level}`, (UNLOCK_TEXT[level] ?? [])[0] ?? '');
+    }
     const unlocked = UNLOCK_TEXT[level] ?? [];
     const lines: Line[] = unlocked.map((t) => ({ who: SYS, text: `【新能力】${t}` }));
     if (grantStarter(s)) lines.push({ who: SYS, text: `【物品栏】送你 ${itemCount(s, 'hint')} 张低语纸条和 ${itemCount(s, 'tablet')} 片药片。${CONSUMABLE.hint.zh}：${CONSUMABLE.hint.use}。${CONSUMABLE.tablet.zh}：${CONSUMABLE.tablet.use}。篝火休息会把纸条补到 3 张。` });
@@ -453,7 +458,7 @@ export class Controller {
         lines.push({ who: SYS, text: '粮仓尽头，秤房的门开了。里面那个东西只认数字：价签上写多少，就用德语说多少。' });
         break;
     }
-    if (lines.length) say(lines);
+    if (lines.length && !quiet) say(lines);
     this.scene.restyleAll();
   }
 
@@ -764,6 +769,10 @@ export class Controller {
     if (r.killer) this.killer = r.killer;
     if (r.review) {
       const rv = r.review;
+      if (rv.placed) {
+        logLine(rv.ok ? `✓ 抽查 · ${fullForm(rv.word)}：确认会了，斩杀` : `抽查没答上：${fullForm(rv.word)} 会作为复习怪跟着你。`, rv.ok ? 'good' : 'bad');
+        if (rv.reverted) toast(`这一段的词抽查错得多，剩下 ${rv.reverted} 个推定会的词改成复习怪，跟着你练`, 'gold');
+      } else
       logLine(rv.ok ? `✓ 复习 · ${fullForm(rv.word)}，${rv.next ? `下次 ${gapZh(rv.next)}` : '不用再复习了'}` : `复习没答上：${fullForm(rv.word)} 复发了，会作为复习怪回到野外。`, rv.ok ? 'good' : 'bad');
       if (rv.ok) this.dailyTick(undefined, true);
     }
@@ -855,7 +864,10 @@ export class Controller {
           { who: SYS, text: '牙一颗颗掉下来。它又是一块面包了。' },
           { who: SYS, text: '【归名】这次是借你的。以后要在不同的三天各打败它一次，最后一下默写全名' },
           { who: HILDE, text: '……真叫回来了。东边回声巷，这种东西到处都是。去吧。火我守着。' },
-        ]);
+        ], () => {
+          const target = regionFor(s.level);
+          if (target > (s.region ?? 1)) this.offerPlaceTravel(target);
+        });
       } else {
         if (!keepEntity) this.scene.removeMonster(m, res.kill.guiming || b.cutReady ? 'guiming' : 'scatter');
         if (b.cutReady) {
@@ -1427,7 +1439,7 @@ export class Controller {
     if (written >= 0.7 && !s.flags[`moveOn${region}`]) {
       s.flags[`moveOn${region}`] = true;
       lines.push({ who: region === 1 ? HILDE : '守火人', text: `这片的名字你写得出七成了（${Math.round(written * 100)}%）。这里的东西认得你了，不会再扑上来。往更深的野外走走，或者去找考官。` });
-      if (region === 1) lines.push({ who: SYS, text: '【跳区考核】主城考官那里：先过首领的限时对话，再默写下一区 20 个词，写对 16 个直接升到 11 级' });
+      lines.push({ who: SYS, text: '【分级考核】主城考官那里每天可以考一次：测你会到哪一级，会的直接跳过，等级只往上调' });
     }
     // 篝火日记 (Lv16+, 2026-11-22): once a day, write a few sentences with words fought today.
     const jw = this.journalOffer();
@@ -1461,7 +1473,11 @@ export class Controller {
   private talkExaminer() {
     const s = this.state;
     const region = s.region ?? 1;
-    if (s.level < SCREEN.fromLevel) return say([{ who: '考官', text: `「Noch nicht.」${SCREEN.fromLevel} 级再来。` }]);
+    if (s.level < SCREEN.fromLevel)
+      return say([{ who: '考官', text: `「Noch nicht.」筛选 ${SCREEN.fromLevel} 级再来。不过你要是以前学过德语，可以先考分级考核。` }], undefined, [
+        ...(canPlaceToday(s) ? [{ label: '分级考核（测你会到哪一级）', act: () => this.openPlacement(true) }] : []),
+        { label: '先不了', act: () => {} },
+      ]);
     void region;
     const intro = !s.flags.screenIntro;
     s.flags.screenIntro = true;
@@ -1480,7 +1496,7 @@ export class Controller {
       ...scopes.map((x) => ({ label: x.label, act: () => (this.milestone('screen'), this.panels.showScreen(startScreen(s, x.scope))) })),
       ...(s.level >= BREAK.from && !s.flags.a1Passed ? [{ label: 'A1 突破试炼', act: () => this.breakExam() }] : []),
       ...(s.level >= BREAK.from && s.flags.a1Passed && !s.flags.a1Grammar ? [{ label: '补考语法', act: () => this.grammarRetake() }] : []),
-      ...(this.canJump() ? [{ label: `跳区考核（升到 ${JUMP.toLevel} 级）`, act: () => this.jumpExam() }] : []),
+      ...(canPlaceToday(s) ? [{ label: '分级考核（测你会到哪一级）', act: () => this.openPlacement(true) }] : []),
       { label: '先不了', act: () => {} },
     ]);
   }
@@ -1534,60 +1550,83 @@ export class Controller {
     this.persist();
   }
 
-  /** 跳区考核 is for region 1 players below the region-2 start level who still have region-2 words to write. */
-  private canJump(): boolean {
-    const s = this.state;
-    return (s.region ?? 1) === 1 && s.level < JUMP.toLevel && duelPool(s, 2).length >= JUMP.words;
+  // ---- 入学测试 / 分级考核 (2026-11-25) -------------------------------------------------------
+
+  /** New game (daily = false) or the examiner's once-a-day 分级考核. */
+  openPlacement(daily: boolean): void {
+    this.panels.showPlacement(daily);
   }
 
-  private jumpPending = false;
-
-  /** Step 1: this region's boss conversation (no 40% gate); step 2: write 16 of 20 region-2 words. */
-  private jumpExam() {
-    const s = this.state;
-    say([
-      { who: '考官', text: '「Springen?」想跳过去，先让门后那个认得你，再写下一区的 20 个词，写对 16 个。' },
-      { who: SYS, text: `【跳区考核】过了：首领算打赢，直接升到 ${JUMP.toLevel} 级，写对的词当场归名。没过不罚，随时再来` },
-    ], () => {
-      if (s.flags.bossKills) this.panels.showDuel(startJumpExam(s, Math.random));
-      else {
-        this.jumpPending = true;
-        this.openBoss();
-      }
-    });
+  canPlaceNow(): boolean {
+    return canPlaceToday(this.state);
   }
 
-  private passJump() {
-    const s = this.state;
-    const gained: number[] = [];
-    while (s.level < JUMP.toLevel) gained.push(++s.level);
-    s.xp = 0;
-    s.hp = maxHp(s);
-    banner('跳区考核通过', `升到 ${s.level} 级 · 门后是面包集市`);
-    for (const l of gained) this.onLevelUp(l);
-    this.refresh();
-    this.persist();
+  placeStart(band: number): void {
+    const run = startPlacement(this.state, this.rng, band);
+    this.panels.setPlaceRun(run);
   }
 
-  /** Called by the duel panel after each answer. */
-  duelAnswer(d: Duel, input: string): void {
-    const r = answerDuel(this.state, d, input);
-    const l = d.last;
-    if (l) {
-      const tag = d.exam ? '跳区考核' : '默写对决';
-      logLine(l.ok ? `${tag}：${zhWithPos(l.word)} 你写 ${l.input} ✓ +${l.xp} 经验` : `${tag}：${zhWithPos(l.word)} 你写 ${l.input || '（空）'} ✗，正确：${fullForm(l.word)}`, l.ok ? 'good' : 'bad');
-      if (l.hit) logLine(`  考官出手：你受到 ${l.hit} 伤害`, 'bad');
-    }
-    if (d.exam) {
-      for (const l of r.levelUp?.levels ?? []) this.onLevelUp(l);
-      if (d.over === 'win') this.passJump();
+  placeAnswer(run: PlaceRun, input: string, skip = false): void {
+    answerPlacement(this.state, run, input, this.rng, skip);
+    const l = run.last;
+    if (l) logLine(`入学测试：${zhWithPos(l.word)} ${l.res === 'ok' ? `✓ ${fullForm(l.word)}` : l.res === 'half' ? `差一点 · ${fullForm(l.word)}` : `✗ ${fullForm(l.word)}`}`, l.res === 'ok' ? 'good' : 'bad');
+  }
+
+  placeStop(run: PlaceRun): void {
+    stopPlacement(run);
+  }
+
+  /** Apply the result (levels without a lesson each; one summary comes when the panel closes). */
+  placeFinish(run: PlaceRun, daily: boolean): void {
+    if (!run.outcome) {
+      stopPlacement(run);
+      const o = applyPlacement(this.state, run, undefined, { daily });
+      for (const l of o.gained) this.onLevelUp(l, true);
       this.refresh();
       this.persist();
-      return;
     }
-    for (const l of r.levelUp?.levels ?? []) this.onLevelUp(l);
+    this.panels.setPlaceRun(run);
+  }
+
+  /** The test panel closed: apply what was answered, sum up the levels, then carry on (the opening for a new game). */
+  placeClosed(run: PlaceRun | null, daily: boolean): void {
+    const s = this.state;
+    if (run && !run.outcome && run.results.length) {
+      stopPlacement(run);
+      const o = applyPlacement(s, run, undefined, { daily });
+      for (const l of o.gained) this.onLevelUp(l, true);
+    }
+    s.flags.placeAsked = true;
     this.refresh();
     this.persist();
+    const o = run?.outcome;
+    const next = () => {
+      if (!s.flags.intro) return this.intro();
+      if (o && o.region > (s.region ?? 1)) this.offerPlaceTravel(o.region);
+    };
+    if (!o?.gained.length) return next();
+    banner(`Lv ${o.level}`, '分级入场');
+    sfx.levelUp();
+    const heads = o.gained.map((l) => ((UNLOCK_TEXT[l] ?? [])[0] ? `${l} 级 ${(UNLOCK_TEXT[l] ?? [])[0].split(/[：:，,]/)[0]}` : '')).filter(Boolean);
+    const lines: Line[] = [{ who: SYS, text: `【跳到 ${o.level} 级】这一路的功能都开了，每样第一次出现时还会提示。按 H 能看怎么玩。` }];
+    for (let i = 0; i < heads.length; i += 8) lines.push({ who: SYS, text: heads.slice(i, i + 8).join(' · ') });
+    say(lines, next);
+  }
+
+  private offerPlaceTravel(region: number): void {
+    const zh = ['', '余烬营地', '面包集市', '铁轨镇'][region];
+    say([{ who: HILDE, text: `你叫得出的名字比我想的多。这片营地留不住你，去${zh}吧。` }], undefined, [
+      { label: `去${zh}`, act: () => this.travel(region as RegionId) },
+      { label: '先在这里转转', act: () => toast('以后在大地图（M）上随时能过去') },
+    ]);
+  }
+
+  /** New game: asked once before the opening. */
+  private askPlacement(): void {
+    say([{ who: SYS, text: '开始之前：你学过德语吗？学过的话，先测一下你会多少词，会的直接跳过。' }], undefined, [
+      { label: '没学过，从头开始', act: () => { this.state.flags.placeAsked = true; this.persist(); this.intro(); } },
+      { label: '学过一些，先测一下（5 到 10 分钟）', act: () => this.openPlacement(false) },
+    ]);
   }
 
   /** 全量筛选: called by the panel after each answer (skip = 「不会，下一个」). */
@@ -1605,15 +1644,6 @@ export class Controller {
     }
     this.refresh();
     this.persist();
-  }
-
-  /** 跳区考核 from the screening summary (offered when a region is mostly retired). */
-  startJump(): void {
-    if (this.canJump()) this.jumpExam();
-  }
-
-  canJumpNow(): boolean {
-    return this.canJump();
   }
 
   private talkNpc(id: string) {
@@ -2206,14 +2236,10 @@ export class Controller {
       const lines: Line[] = BOSS.outro.map((t) => ({ who: SYS, text: t }));
       lines.push({ who: SYS, text: `获得 ${CONFIG.xp.boss} 经验、120 金币和 ${drops.length} 件装备（按 C 查看）。` });
       const learnable = Object.values(SKILLS).filter((k) => k.boss === 1 && !s.skills.includes(k.id));
-      const jump = this.jumpPending;
-      this.jumpPending = false;
       const after = () => {
         for (const l of lv.levels) this.onLevelUp(l);
         this.refresh();
         this.persist();
-        // 跳区考核 step 2 right after the boss.
-        if (jump) window.setTimeout(() => say([{ who: '考官', text: '「Gut. Jetzt schreib.」下一区的 20 个词，写对 16 个。' }], () => this.panels.showDuel(startJumpExam(s, Math.random))), 400);
       };
       if (dailyFirst && learnable.length && has(s.level, 'skills')) {
         lines.push({ who: SYS, text: '它说过的话，你能留下一句。【句子技能 R】写对整句释放。选一句：' });
@@ -2233,7 +2259,6 @@ export class Controller {
         say(lines, after);
       }
     } else {
-      this.jumpPending = false;
       sfx.death();
       s.hp = maxHp(s);
       this.scene.teleportToBonfire();
