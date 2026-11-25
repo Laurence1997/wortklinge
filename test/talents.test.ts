@@ -186,3 +186,45 @@ describe('即时战', () => {
     expect(t.monsterDamage).toBe(0);
   });
 });
+
+describe('开口作答', () => {
+  it('a said answer counts as 认得, never 会写; open from 34, not in quiet mode', async () => {
+    const { voiceOpen, bestHeard } = await import('../src/core/combat');
+    const s = newGame('T', 'student');
+    s.level = 40;
+    s.hp = 99999;
+    const b = startBattle(s, noun, makeRng(1));
+    b.monster.hp = b.monster.maxHp = 99999;
+    const q = { type: 'typed' as const, prompt: '', focus: '', withArticle: true, answer: 'der Apfel' };
+    expect(voiceOpen(s, b, q)).toBe(true);
+    s.settings.quiet = true;
+    expect(voiceOpen(s, b, q)).toBe(false);
+    s.settings.quiet = false;
+    expect(bestHeard(['Dr. Apfel', 'der Apfel.'], 'der Apfel')).toBe('der Apfel.');
+    const r = resolveTurn(s, b, 'attack', { ...q, voiced: true, spoken: true }, 'der Apfel', makeRng(2));
+    expect(r.correct).toBe(true);
+    expect(b.writeOk ?? 0).toBe(0);
+    expect(b.readOk).toBe(1);
+  });
+});
+
+describe('完美言灵', () => {
+  it('clause or modifier detection', async () => {
+    const { hasClauseOrModifier } = await import('../src/core/combat');
+    expect(hasClauseOrModifier('Ich bleibe zu Hause, weil ich krank bin.')).toBe(true);
+    expect(hasClauseOrModifier('Ich kaufe einen roten Apfel.')).toBe(true);
+    expect(hasClauseOrModifier('Das ist der Mann, der hier wohnt.')).toBe(true);
+    expect(hasClauseOrModifier('Ich kaufe einen Apfel.')).toBe(false);
+  });
+});
+
+describe('结构魔', () => {
+  it('weil clause: verb to the end, separable verbs join', async () => {
+    const { weilClause } = await import('../src/core/combat');
+    expect(weilClause('Ich muss heute arbeiten.')).toBe('weil ich heute arbeiten muss');
+    expect(weilClause('Ich stehe um sieben Uhr auf.')).toBe('weil ich um sieben Uhr aufstehe');
+    expect(weilClause('Wir trinken Kaffee.')).toBe('weil wir Kaffee trinken');
+    expect(weilClause('Heute trinke ich Kaffee.')).toBeNull();
+    expect(weilClause('Trinkst du Kaffee?')).toBeNull();
+  });
+});

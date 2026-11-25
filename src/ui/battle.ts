@@ -2,7 +2,7 @@ import { icon, monsterTile, heroIcon } from './icons';
 import { DEFAULT_LOOK } from '../core/look';
 import type { Battle, Question, TurnReport } from '../core/combat';
 import { count as itemCount, itemsOpen, tabletHeal } from '../core/items';
-import { castMs, gcdMs, parryWindowMs, realtimeOn } from '../core/combat';
+import { bestHeard, castMs, gcdMs, parryWindowMs, realtimeOn, voiceOpen } from '../core/combat';
 import { availableMoves, chorusMates, canHint, comboTier, effArmor, moveReady, poolReady, needsPhase, phaseOf, resName, shownDe, stancesFor, teachPhase, readTarget, readRecall, readShown, phaseWrongWhy } from '../core/combat';
 import { articleSlip, clarity, shadowOk } from '../core/shadow';
 import { has } from '../core/unlocks';
@@ -496,6 +496,28 @@ export class BattleUI {
     }
     this.startCast();
     this.render();
+  }
+
+  private voiceMsg = '';
+
+  /** 开口作答: hold to speak; the best heard version is sent as the answer (spoken = 认得, never 会写). */
+  async voiceAnswer(): Promise<void> {
+    const q = this.question;
+    if (!q || this.phase !== 'answer' || listening() || !canListen()) return;
+    this.voiceMsg = '录音中……说出答案，松开结束';
+    this.render();
+    const heard = await listenOnce({ hold: true });
+    if (this.question !== q || this.phase !== 'answer') return;
+    if (!heard?.length) {
+      this.voiceMsg = heard === null ? '' : '没听清，再说一次，或者直接打字';
+      this.render();
+      return;
+    }
+    this.voiceMsg = '';
+    const pick = bestHeard(heard, q.answer ?? '');
+    q.spoken = true;
+    q.voiced = true;
+    this.submit(pick);
   }
 
   /** 直接叫名: the next attack question is a plain dictation. */
@@ -1077,9 +1099,18 @@ export class BattleUI {
         }
       });
       this.input = input;
+      // 开口作答 (34 级起可选；83 级起首领对话等处必修): say the answer instead of typing it.
+      const voice = voiceOpen(this.ctrl.state, this.b, qq) && this.phase === 'answer' ? h('button.btn', { title: '按住说，松开就交（算「认得」，不算「会写」）' }, listening() ? '在听……' : '🎤 说出来') : '';
+      if (voice) {
+        voice.addEventListener('pointerdown', (e) => {
+          e.preventDefault();
+          void this.voiceAnswer();
+        });
+      }
       wrap.append(
-        h('div.typing', input, umlautButtons(input), h('button.btn.primary', { disabled: this.phase !== 'answer', onclick: () => this.submit(input.value) }, '出招 ↵')),
+        h('div.typing', input, umlautButtons(input), voice, h('button.btn.primary', { disabled: this.phase !== 'answer', onclick: () => this.submit(input.value) }, '出招 ↵')),
       );
+      if (this.voiceMsg) wrap.append(h('div.small', { style: 'color:var(--gold, #ffcf4a)' }, this.voiceMsg));
     }
     if (this.phase === 'result' && r) {
       const fb = h(`div.feedback.${r.correct ? 'ok' : 'no'}`);

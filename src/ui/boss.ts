@@ -2,6 +2,8 @@ import { portrait } from './icons';
 import type { BossFight, BossVerdict } from '../core/boss';
 import { maxHp } from '../core/state';
 import { rank } from '../core/classes';
+import { VOICE } from '../core/combat';
+import { canListen, listenOnce, listening } from './listen';
 import { BOSS as BOSS1 } from '../data/boss';
 import { BOSS2 } from '../data/boss2';
 import { BOSS3, boardText } from '../data/boss3';
@@ -119,7 +121,22 @@ export class BossUI {
           this.submit(input.value);
         }
       });
-      panel.append(h('div.row', input, umlautButtons(input), h('button.btn.primary', { onclick: () => this.submit(input.value) }, '回答 ↵')));
+      // 开口作答: 34 级起可选；83 级起首领对话以开口为主（打字作为退路仍然可以交）.
+      const st = this.ctrl.state;
+      const canVoice = st.level >= VOICE.from && !st.settings.quiet && canListen();
+      const mic = canVoice ? h(st.level >= VOICE.required ? 'button.btn.primary' : 'button.btn', { title: '按住说，松开就交' }, '🎤 说出来') : '';
+      if (mic) {
+        mic.addEventListener('pointerdown', (e) => {
+          e.preventDefault();
+          if (listening()) return;
+          mic.textContent = '在听……松开就交';
+          void listenOnce({ hold: true }).then((heard) => {
+            mic.textContent = '🎤 说出来';
+            if (heard?.length) this.submit(heard[0]);
+          });
+        });
+      }
+      panel.append(h('div.row', input, umlautButtons(input), mic, h(st.level >= VOICE.required && canVoice ? 'button.btn' : 'button.btn.primary', { onclick: () => this.submit(input.value) }, canVoice && st.level >= VOICE.required ? '打字交 ↵' : '回答 ↵')));
       window.setTimeout(() => input.focus(), 0);
     } else if (this.last) {
       const v = this.last;

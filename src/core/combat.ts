@@ -65,6 +65,8 @@ export interface Question {
   ms?: number;
   /** Answered by reading aloud (读音攻击). */
   spoken?: boolean;
+  /** 开口作答: the answer was said, not typed — counts as 认得, never as 会写 or the 归名 blow. */
+  voiced?: boolean;
   /** 静听: extra time on this question's quick line. */
   earMs?: number;
   /** 格位连锁: the same noun in another case, asked right after; right → one more hit ×1.5, the monster doesn't act. */
@@ -265,6 +267,8 @@ export interface Battle {
   phaseTaught?: number;
   /** 「Nächster Halt!」: this monster's armor is one tier down for the whole fight. */
   armorDown?: boolean;
+  /** 结构魔 (B1 红名): its questions ask subordinate-clause word order; other answers hit for half. */
+  structMon?: boolean;
   /** 搭配记忆 / 乘隙: turns left with its armor one tier down. */
   armorDownT?: number;
   /** 格位连锁: a follow-up question is due now; chainAt = the turn it was last offered (once per 3 turns). */
@@ -497,6 +501,11 @@ export function startBattle(
   if (!b.perfekt && !b.notice && !tutorial && !opts.trial && !opts.elite && s.level >= MIRROR.from && kind !== 'new' && hasMirror(word) && rng() < MIRROR.chance) {
     b.mirror = true;
     b.log.push({ text: `镜像怪：${word.de} 照出了你的样子——这一战考反身代词（mich / dich / sich…）。`, tone: 'info' });
+  }
+  // 结构魔 (B1 红名): a verb you have met sometimes comes as a weil-worm — it drags the verb to the end of the clause.
+  if (!b.perfekt && !b.notice && !b.mirror && !tutorial && !opts.trial && !opts.elite && s.level >= STRUCT.from && kind !== 'new' && word.pos === 'v' && structTasks(word).length && rng() < STRUCT.chance) {
+    b.structMon = true;
+    b.log.push({ text: `结构魔：weil 蠕虫缠在 ${word.de} 上，把动词拖到了句尾。用从句语序回答（…, weil ich … 动词），别的招式只刮掉一半。`, tone: 'info' });
   }
   b.intent = nextIntent(s, b, rng);
   perfektGuard(s, b);
@@ -1312,6 +1321,11 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
     const t = echoTask(s, w, rng);
     if (t) return { type: 'pickDe', echo: t, prompt: `回音怪：${t.target} 还是 ${t.partner}？`, focus: t.target, options: echoOptions(t, rng), answer: t.target };
   }
+  // 结构魔: every other attack question is the weil clause.
+  if (am === 'attack' && b.structMon && b.qIndex % 2 === 0) {
+    const t = structTasks(w);
+    if (t.length) return gramQuestion(t[Math.floor(rng() * t.length)], null);
+  }
   // 语法线 (0.7–0.8): once a system is open, the word monster sometimes asks it on its own word (first time with its board).
   if (am === 'attack' && !fresh && !b.tutorial && !b.trial && !b.pluralMon && !b.verify && !b.gramDungeon && (b.stage >= 1 || b.kind !== 'new')) {
     const g = gramFor(s, w, rng, b.gramAsked ?? 0);
@@ -1857,12 +1871,13 @@ export function resolveTurn(
   const clozeTyped = q.type === 'cloze' && q.clozeMode !== 'pick';
   // 墨水风暴 with every form right counts as written (rev 234: it can be the 归名 blow).
   const stormAll = q.type === 'storm' && !!q.forms && verdict.word?.id === b.word.id;
-  const typedQ = q.type === 'typed' || q.type === 'sentence' || q.type === 'conj' || q.type === 'plural' || clozeTyped || stormAll;
+  const typedQ = !q.voiced && (q.type === 'typed' || q.type === 'sentence' || q.type === 'conj' || q.type === 'plural' || clozeTyped || stormAll);
   const kills: Battle[] = [];
   let lastHitter: Battle | null = null;
   let playerDamage = 0;
   let crit = false;
   let newSpell = false;
+  let perfect = false;
   let element: Element | null = null;
   /** 词性三相 result of this hit: right = weak point, wrong = resisted (Lv6+), soft = wrong but not punished yet. */
   let phaseFx: TurnReport['phase'] = null;
@@ -1913,7 +1928,8 @@ export function resolveTurn(
     if (!q.review && !q.partner && q.type !== 'saying' && !ok) b.wrongs = (b.wrongs ?? 0) + 1;
     if (ok && !q.whispered && !q.review && !q.partner && q.type === 'cloze') b.usedOk = true;
     if (ok && !q.whispered && !q.review && !q.partner) {
-      if (q.type === 'typed' || q.type === 'conj' || q.type === 'plural' || q.type === 'sentence' || stormAll || (q.type === 'cloze' && q.clozeMode !== 'pick')) {
+      if (q.voiced) b.readOk = (b.readOk ?? 0) + 1; // 开口作答: 认得, not 会写
+      else if (q.type === 'typed' || q.type === 'conj' || q.type === 'plural' || q.type === 'sentence' || stormAll || (q.type === 'cloze' && q.clozeMode !== 'pick')) {
         b.writeOk = (b.writeOk ?? 0) + 1;
         if (!b.phrase) reviewedByWriting(s, verdict.word ?? b.word); // 写对就算复习 (rev 51)
         else for (const id of Object.keys(s.words)) if (WORD_BY_ID[id] && hasWord(`${b.phrase.a} ${b.phrase.b}`, WORD_BY_ID[id])) reviewedByWriting(s, WORD_BY_ID[id]);
@@ -1924,6 +1940,8 @@ export function resolveTurn(
     if (!b.firstTry && !q.review && !q.partner && writtenQ) b.firstTry = !ok || q.whispered ? 'bad' : b.spellSeen ? 'ok' : 'dict';
     if (q.partner) {
       /* 复习伙伴: company, not a test — nothing on either word's record */
+    } else if (q.voiced) {
+      /* 开口作答: says nothing about spelling, so no 斩杀 check either way */
     } else if (!q.review) cutFx = cutCheck(s, b, q, input, ok);
     else {
       reviewFx = reviewAnswer(s, b, q, ok);
@@ -2072,6 +2090,10 @@ export function resolveTurn(
         } else if (b.stage === 0 && b.kind === 'new' && !b.firstCorrectDone) {
           crit = true;
           newSpell = true;
+        } else if (perfectSpell(s, q, input, ok)) {
+          // 完美言灵 (B1 起): a flawless sentence with a clause or a modifier — a sure crit at ×2.5.
+          crit = true;
+          perfect = true;
         } else if ((s.flags.wortgewalt as number) > 0) {
           crit = true;
         } else if (critWasReady) {
@@ -2083,7 +2105,10 @@ export function resolveTurn(
         }
         if (q.type !== 'saying') b.firstCorrectDone = true;
         tf.sharp = 0;
-        if (crit) mult *= critMultFor(s, q, typedLike);
+        if (perfect) {
+          mult *= rank(s, 'xiushi') ? 2.8 : PERFECT.mult;
+          log.push({ text: '完美言灵：整句没错，还用了从句或修饰语。', tone: 'crit' });
+        } else if (crit) mult *= critMultFor(s, q, typedLike);
         // 护甲和破甲: a hard question (or writing through a guard) breaks the armor for this hit and the next two.
         const stanceMove = move === 'attack' || move === 'inscribe' || move === 'whisper' || move === 'chorus' || move === 'sentence';
         if (stanceMove && needsPhase(b)) {
@@ -2124,6 +2149,7 @@ export function resolveTurn(
         } else if (phaseFx === 'wrong') log.push({ text: `${b.phase ?? '无'} 相被抵抗：${phaseWrongWhy(b)}。护甲翻倍。`, tone: 'bad' });
         else if (phaseFx === 'soft') log.push({ text: `${b.phase ? `${b.phase} 相不对` : '没选相'}：这里要 ${ph}${b.pluralMon ? '（复数一律 die）' : phaseCase(b) === 'acc' ? '（第四格）' : phaseCase(b) === 'dat' ? '（第三格）' : ''}。这一级还不罚，选对了护甲降一档。`, tone: 'sys' });
         mult *= talentDamage(s, b, q, { typedLike, clozeTyped, tier, phaseRight: phaseFx === 'right', broken: wasBroken || tier === 2, log });
+        if (b.structMon && q.gram?.sys !== 'struct') mult *= STRUCT.otherMult;
         const judged = b.judgement;
         if (judged) {
           mult *= 2;
@@ -2829,4 +2855,73 @@ export function gcdMs(s: GameState, q: Question, ok: boolean): number {
 /** The parry window at the end of an attack's cast (弹反 talent: 1.5 s). */
 export function parryWindowMs(s: GameState): number {
   return (rank(s, 'tanfan') ? 1.5 : REALTIME.parryWindow) * 1000;
+}
+
+// ---- 开口作答 (游戏设计「开口说的路线」) ---------------------------------------------------------------
+// 34 级起 any typed answer may be said instead (optional); judged on whether it is understood, not on accent.
+// A said answer is 认得: no 会写, no 斩杀 check, never the 归名 blow.
+
+export const VOICE = { from: 34, required: 83 };
+
+export function voiceOpen(s: GameState, b: Battle, q: Question): boolean {
+  if (s.level < VOICE.from || b.curse === 'silence' || s.settings.quiet) return false;
+  return !q.options && !q.boxes?.length && !q.ult && !q.echo && !q.mates?.length && !q.directName;
+}
+
+/** The recogniser's alternatives: one that matches the answer (ignoring case and punctuation) wins, else the first. */
+export function bestHeard(heard: string[], answer: string): string {
+  const k = (x: string) => x.toLowerCase().replace(/[.,!?;:„“"']/g, '').replace(/\s+/g, ' ').trim();
+  return heard.find((x) => k(x) === k(answer)) ?? heard[0];
+}
+
+// ---- 完美言灵 (B1 起; 游戏设计「暴击」) ---------------------------------------------------------------
+// A written sentence with no mistake that uses a subordinate clause or a modifier: a sure crit at ×2.5 (修饰 ×2.8).
+// It is one of the sure crits (they never stack); the 6× single-hit cap still holds.
+
+export const PERFECT = { from: 81, mult: 2.5 };
+const CLAUSE_RE = /(^|,\s*)(weil|dass|wenn|ob|obwohl|als|damit|bevor|nachdem|während|seit|bis|sodass|falls)\b|,\s*(der|die|das|den|dem|deren|dessen|denen|wo|was)\s/i;
+const MODIFIER_RE = /\b(ein|eine|einen|einem|einer|der|die|das|den|dem|des|mein|meine|meinen|meinem|dein|deine|sein|seine|ihr|ihre|kein|keine|keinen)\s+[a-zäöüß]+(e|en|er|es|em)\s+[A-ZÄÖÜ][a-zäöüß]+/;
+
+export function hasClauseOrModifier(text: string): boolean {
+  return CLAUSE_RE.test(text) || MODIFIER_RE.test(text);
+}
+
+function perfectSpell(s: GameState, q: Question, input: string, ok: boolean): boolean {
+  if (s.level < PERFECT.from || !ok || q.whispered || q.voiced) return false;
+  const sentence = q.write === 'compose' || q.write === 'link' || q.type === 'sentence';
+  return sentence && input.trim().split(/\s+/).length >= 4 && hasClauseOrModifier(input);
+}
+
+// ---- 结构魔 (B1 红名怪; 游戏设计「怪物图谱」连词和从句) ------------------------------------------------
+// The weil worm: the word's own main-clause examples turned into a weil clause, the conjugated verb at the end
+// (Ich muss heute arbeiten. → …, weil ich heute arbeiten muss.; Ich stehe um sieben auf. → …, weil ich um sieben
+// aufstehe.). Only simple sentences that start with a pronoun subject and the verb are used.
+
+export const STRUCT = { from: 81, chance: 0.2, otherMult: 0.5 };
+const SUBJ = ['Ich', 'Du', 'Er', 'Sie', 'Es', 'Wir', 'Ihr', 'Man'];
+const PARTICLES = ['ab', 'an', 'auf', 'aus', 'ein', 'mit', 'nach', 'vor', 'zu', 'zurück', 'weg', 'los', 'fest', 'fern', 'her', 'hin', 'um', 'bei', 'vorbei', 'weiter', 'zusammen'];
+
+/** The weil clause of a simple main clause, or null. */
+export function weilClause(de: string): string | null {
+  const m = /^([A-ZÄÖÜ][a-zäöüß]*) ([a-zäöüß]+)( [^,;:?!]+)?\.$/.exec(de.trim());
+  if (!m || !SUBJ.includes(m[1])) return null;
+  const subj = m[1] === 'Sie' || m[1] === 'Ihr' || m[1] === 'Man' || m[1] === 'Es' ? (m[1] === 'Sie' ? 'sie' : m[1].toLowerCase()) : m[1].toLowerCase();
+  const verb = m[2];
+  const rest = (m[3] ?? '').trim().split(' ').filter(Boolean);
+  const last = rest[rest.length - 1];
+  if (last && PARTICLES.includes(last)) return `weil ${[subj, ...rest.slice(0, -1)].join(' ')} ${last}${verb}`;
+  return `weil ${[subj, ...rest].join(' ')} ${verb}`;
+}
+
+export function structTasks(w: Word): GramTask[] {
+  const out: GramTask[] = [];
+  for (const line of EXAMPLES[w.id] ?? []) {
+    const p = parse(line);
+    if (!p) continue;
+    const de = `${p.before}${p.blank}${p.after}`.replace(/\s+/g, ' ').trim();
+    const c = weilClause(de);
+    if (!c) continue;
+    out.push({ sys: 'struct', prompt: '结构魔：把这句改成 weil 从句（动词放句尾），只写 weil 开头的那半句', focus: `Ich bleibe hier, … \n${de}（${p.zh}）`, answer: c, alts: [`${c}.`, `, ${c}`, `Ich bleibe hier, ${c}`, `Ich bleibe hier, ${c}.`], tier: 2, rule: '从句里变位动词放句末：weil ich heute arbeiten muss；可分动词在句末合起来：weil ich um sieben aufstehe。', full: `Ich bleibe hier, ${c}.`, zh: p.zh, wordId: w.id });
+  }
+  return out;
 }

@@ -28,7 +28,8 @@ export type GramSys =
   | 'wordform'
   | 'adj'
   | 'notice'
-  | 'article';
+  | 'article'
+  | 'struct';
 
 export interface GramTask {
   sys: GramSys;

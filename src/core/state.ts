@@ -37,6 +37,8 @@ export interface Settings {
   /** 即时战 (81): false = keep turn-based (no quick-answer bonus); slow = casts ×1.5. */
   realtime?: boolean;
   realtimeSlow?: boolean;
+  /** 安静模式: no speaking asked; spoken-only tasks wait as 口语委托. */
+  quiet?: boolean;
 }
 
 export interface GameState {
