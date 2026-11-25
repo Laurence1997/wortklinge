@@ -109,7 +109,11 @@ describe('0.6.x 例句补齐', () => {
   it('every word outside the tutorial has an example sentence, so no monster falls back to stock attack lines', () => {
     // 6000 词导入: a list sentence gets its blank only where the word's form is found in it (scripts/build_lexicon.py);
     // the few without one (about 2 %) fall back to stock lines until their sentences are rewritten.
-    const missing = WORDS.filter((w) => !w.tutorial && w.family !== 'truhe' && !EXAMPLES[w.id]?.length);
-    expect(missing.length / WORDS.length).toBeLessThan(0.03);
+    // B2 words (121–160) come in articles, which carry their context; the list has fewer sentences for them.
+    const b2 = (w: (typeof WORDS)[number]) => (w.region ?? 1) >= 13;
+    const missing = WORDS.filter((w) => !b2(w) && !w.tutorial && w.family !== 'truhe' && !EXAMPLES[w.id]?.length);
+    expect(missing.length / WORDS.filter((w) => !b2(w)).length).toBeLessThan(0.03);
+    const missingB2 = WORDS.filter((w) => b2(w) && !EXAMPLES[w.id]?.length);
+    expect(missingB2.length / WORDS.filter(b2).length).toBeLessThan(0.2);
   });
 });

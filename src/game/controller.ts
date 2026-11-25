@@ -53,7 +53,7 @@ import { BOSS3 } from '../data/boss3';
 import { LATER_BOSS, laterBossGold, laterBossXp } from '../data/bossesLater';
 import { ERODE_DEF, ERODE_DEFS, REGION_DEF } from '../data/zones';
 import { erodeOpen } from '../core/erosion';
-import { levelCapFor, nextStage, STAGE_DEF, stagePassed, trialDue, type Stage } from '../core/stages';
+import { levelCapFor, nextStage, STAGE_DEF, stagePassFlag, stagePassed, trialDue, type Stage } from '../core/stages';
 import { LINA } from '../data/lina';
 import { WEBER, WEBER_POOL, usesDu } from '../data/weber';
 import { answerExam, BREAK, BREAK_EARLY, examPassed, PART_ZH, startExam, startGrammarExam, type Exam } from '../core/breakthrough';
@@ -1388,7 +1388,7 @@ export class Controller {
   interact(it: { kind: string; data?: string }): void {
     if (it.kind === 'bonfire') this.rest();
     else if (it.kind === 'npc') this.talkNpc(it.data ?? 'hilde');
-    else if (it.kind === 'door') this.knockDoor();
+    else if (it.kind === 'door') this.knockDoor(it.data);
     else if (it.kind === 'gate') this.travel((Number(it.data) || Math.max(1, this.state.region - 1)) as RegionId);
     else if (it.kind === 'sign') {
       const w = WORD_BY_ID[it.data!];
@@ -1472,7 +1472,7 @@ export class Controller {
     const region = s.region ?? 1;
     if (s.level < SCREEN.fromLevel)
       return say([{ who: '考官', text: `「Noch nicht.」筛选 ${SCREEN.fromLevel} 级再来。不过你要是以前学过德语，可以先考分级考核。` }], undefined, [
-        ...(nextStage(s.flags) === 'A2' || nextStage(s.flags) === 'B1' ? [{ label: `${nextStage(s.flags)} 突破试炼${s.level < STAGE_DEF[nextStage(s.flags)!].cap ? '（提前考）' : ''}`, act: () => this.stageExam(nextStage(s.flags)!) }] : []),
+        ...(nextStage(s.flags) && nextStage(s.flags) !== 'A1' ? [{ label: `${nextStage(s.flags)} 突破试炼${s.level < STAGE_DEF[nextStage(s.flags)!].cap ? '（提前考）' : ''}`, act: () => this.stageExam(nextStage(s.flags)!) }] : []),
         ...(canPlaceAgain(s) ? [{ label: '分级考核（测你会到哪一级）', act: () => this.openPlacement(true) }] : [{ label: `分级考核（再归名或斩杀 ${placeAgainIn(s)} 个词就能再考）`, act: () => {} }]),
         { label: '先不了', act: () => {} },
       ]);
@@ -2492,10 +2492,13 @@ export class Controller {
 
   /** A boss door. 蚀变 (rev 341): once a segment is open, its boss waits behind an old door (停摆的钟 at 铁轨镇's
    *  末班站台, 驳回书 in 租屋城's hall), offered next to the door's own boss. */
-  private knockDoor() {
+  private knockDoor(scene?: string) {
     const r = this.state.region;
+    // A 蚀变 boss with a scene of its own (枯林之母 in 林底): that scene's button leads straight to it.
+    const here = scene ? ERODE_DEFS.find((x) => x.scene === scene && erodeOpen(this.state, x.seg)) : undefined;
+    if (here) return this.knockLater(here.seg);
     const own = () => (REGION_DEF[r] ? this.knockLater(r) : r === 3 ? this.knockRegion3() : r === 2 ? this.knockRegion2() : this.knock());
-    const e = ERODE_DEFS.find((x) => x.bossRegion === r && erodeOpen(this.state, x.seg));
+    const e = ERODE_DEFS.find((x) => x.bossRegion === r && !x.scene && erodeOpen(this.state, x.seg));
     if (!e) return own();
     const b = LATER_BOSS[e.seg]!;
     say([{ who: SYS, text: `门后有两种声音。一种是你熟悉的，一种是${e.zh}之后才有的。` }], undefined, [
@@ -2515,7 +2518,9 @@ export class Controller {
       say([{ who: d.doorZh, text: `门后有什么在等你。它还不想见你。（${b.level} 级）` }]);
       return;
     }
-    const share = atLeastHalfShare(s, WORDS.filter((w) => w.region === r && w.family !== 'truhe'));
+    // C1 regions and 蚀变④ add no words (rev 488): nothing to learn first, the door only waits for the level.
+    const own = WORDS.filter((w) => w.region === r && w.family !== 'truhe');
+    const share = own.length ? atLeastHalfShare(s, own) : 1;
     if (share < CONFIG.boss.halfNameShare && !this.dev) {
       say([{ who: d.doorZh, text: `门没动。这一区的词它还不认得你。（打到半名：${Math.round(share * 100)}% / ${Math.round(CONFIG.boss.halfNameShare * 100)}%）` }]);
       return;
@@ -2600,14 +2605,14 @@ export class Controller {
   private stageExamDone(stage: Stage) {
     const s = this.state;
     if (stagePassed(s.flags, stage)) return;
-    s.flags[stage === 'A2' ? 'a2Passed' : 'b1Passed'] = true;
+    s.flags[stagePassFlag(stage)] = true;
     s.flags.title = STAGE_DEF[stage].title;
     banner(`${stage} 突破试炼通过`, `称号「${STAGE_DEF[stage].title}」`);
     // XP kept at the cap (up to one level) now counts.
     const lv = addXp(s, 0);
     say([
       { who: '考官', text: '「Bestanden.」章盖好了。' },
-      { who: SYS, text: stage === 'B1' ? '【B1 突破】第一阶段学完了。B2 的区域以后开放。' : `【${stage} 突破】等级上限升到 ${levelCapFor(s.flags)}。` },
+      { who: SYS, text: stage === 'B2' ? `【B2 突破】等级上限升到 ${levelCapFor(s.flags)}。从这里开始是 C1：不再有新词，只用你学过的词。` : `【${stage} 突破】等级上限升到 ${levelCapFor(s.flags)}。` },
     ], () => {
       for (const l of lv.levels) this.onLevelUp(l);
       this.refresh();

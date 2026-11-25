@@ -14,11 +14,12 @@ import { ERODE_DEFS, REGION_DEFS, fieldLevels, fieldScenes, regionLevels } from 
 import { laterReady, purified } from '../src/core/erosion';
 import { eligible } from '../src/core/spawn';
 import { LATER_BOSSES, laterBossXp } from '../src/data/bossesLater';
+import { B2_BOSSES } from '../src/data/bossesB2';
 import { generateMap, isBlocked, zonesOf } from '../src/game/map';
 
 describe('0.7/0.8 区域数据', () => {
-  it('the seven new regions have a town, 3 fields of scenes with words in the field band, a door and a hidden path', () => {
-    expect(REGION_DEFS.map((d) => d.region)).toEqual([4, 5, 6, 7, 9, 10, 12]);
+  it('the new regions have a town, 3 fields of scenes with words in the field band, a door and a hidden path', () => {
+    expect(REGION_DEFS.map((d) => d.region)).toEqual([4, 5, 6, 7, 9, 10, 12, 13, 14, 16, 17, 18, 20]);
     for (const r of [1, 2, 3, ...REGION_DEFS.map((d) => d.region)]) {
       const ss = SCENES.filter((s) => s.region === r);
       const fields = ss.filter((s) => s.type === 'field');
@@ -27,10 +28,13 @@ describe('0.7/0.8 区域数据', () => {
       for (const f of fieldScenes(r)) expect(f.length, `r${r}`).toBeGreaterThanOrEqual(4);
       expect(fields.length, `r${r}`).toBe(fieldScenes(r).flat().length);
       expect(ss.some((s) => s.type === 'door')).toBe(true);
-      const hide = ss.find((s) => s.type === 'hidden')!;
+      const hide = ss.find((s) => s.type === 'hidden' && s.hiddenBy)!;
       expect(WORD_BY_ID[hide.hiddenBy!], `r${r} hidden sign`).toBeTruthy();
       expect(zonesOf(r as never).filter((z) => z.monsters).length).toBe(nf);
+      // C1 (17, 18, 20: rev 488) adds no words; their scenes spawn review and challenge monsters.
+      const c1 = r === 17 || r === 18 || r === 20;
       fields.forEach((sc) => {
+        if (c1) return expect(sc.words, sc.id).toEqual([]);
         expect(sc.words!.length, sc.id).toBeGreaterThan(0);
         expect(sc.words).toEqual(SCENE_WORDS[sc.id]);
         const fi = 'abcde'.indexOf(sc.id.split('-')[1][0]);
@@ -52,15 +56,16 @@ describe('0.7/0.8 区域数据', () => {
     expect(new Set(WORDS.map((w) => w.id)).size).toBe(WORDS.length);
   });
 
-  it('each region chains to the next; 7 → 9 and 10 → 12 open with the 蚀变 boss in between', () => {
-    const want: Array<[number, number, string]> = [[3, 4, 'boss3Kills'], [4, 5, 'boss4Kills'], [5, 6, 'boss5Kills'], [6, 7, 'boss6Kills'], [7, 9, 'boss8Kills'], [9, 10, 'boss9Kills'], [10, 12, 'boss11Kills']];
+  it('each region chains to the next; 7 → 9, 10 → 12, 14 → 16 and 18 → 20 open with the 蚀变 boss in between', () => {
+    const want: Array<[number, number, string]> = [[3, 4, 'boss3Kills'], [4, 5, 'boss4Kills'], [5, 6, 'boss5Kills'], [6, 7, 'boss6Kills'], [7, 9, 'boss8Kills'], [9, 10, 'boss9Kills'], [10, 12, 'boss11Kills'],
+      [12, 13, 'boss12Kills'], [13, 14, 'boss13Kills'], [14, 16, 'boss15Kills'], [16, 17, 'boss16Kills'], [17, 18, 'boss17Kills'], [18, 20, 'boss19Kills']];
     for (const [r, to, flag] of want) {
       const on = SCENES.find((s) => s.region === r && s.gate === to)!;
       expect(on, `r${r} onward`).toBeTruthy();
       expect(on.openFlag).toBe(flag);
     }
-    expect(SCENES.some((s) => s.region === 12 && s.openFlag)).toBe(false);
-    const back: Record<number, number> = { 4: 3, 5: 4, 6: 5, 7: 6, 9: 7, 10: 9, 12: 10 };
+    expect(SCENES.some((s) => s.region === 20 && s.openFlag)).toBe(false);
+    const back: Record<number, number> = { 4: 3, 5: 4, 6: 5, 7: 6, 9: 7, 10: 9, 12: 10, 13: 12, 14: 13, 16: 14, 17: 16, 18: 17, 20: 18 };
     for (const d of REGION_DEFS) expect(SCENE_BY_ID[`r${d.region}-hub`].gate).toBe(back[d.region]);
     expect(routeTo('r4-hub', 'r4-door')).not.toBeNull();
     for (const d of REGION_DEFS) for (const sc of SCENES.filter((s) => s.region === d.region)) expect(routeTo(`r${d.region}-hub`, sc.id), sc.id).not.toBeNull();
@@ -144,17 +149,18 @@ describe('0.7/0.8 首领', () => {
   });
 
   it('every question accepts its own model answer, over many draws', () => {
-    for (const b of LATER_BOSSES)
+    for (const b of [...LATER_BOSSES, ...B2_BOSSES])
       for (let seed = 1; seed <= 40; seed++)
         for (const q of b.questions(makeRng(seed))) {
-          const model = normalize(q.model.replace('{name}', 'Lucas').split(' / ')[0]);
-          expect(q.accept.some((re) => re.test(model)), `${b.name} ${q.id}: «${model}»`).toBe(true);
+          const raw = q.model.replace('{name}', 'Lucas').split(' / ')[0];
+          const model = normalize(raw);
+          expect(q.grade ? q.grade(raw).ok : q.accept.some((re) => re.test(model)), `${b.name} ${q.id}: «${model}»`).toBe(true);
           expect(q.ask.length).toBeGreaterThan(0);
         }
   });
 
   it('a fight can be won with model answers and refills its queue', () => {
-    for (const b of LATER_BOSSES) {
+    for (const b of [...LATER_BOSSES, ...B2_BOSSES]) {
       const s = newGame('Lucas', 'student');
       s.level = b.level;
       const rng = makeRng(7);

@@ -228,12 +228,14 @@ export function answerExam(e: Exam, input: string): void {
  *  B1: 其余过去式、被动过去式、属格、属格介词、与格反身、n 变化名词 (two items get a second question). */
 type ItemGen = (w: Word, rng: Rng) => GramTask | null;
 const L = (k: keyof typeof LINE_GENS): ItemGen => (w, rng) => LINE_GENS[k]!(w, rng);
-export const STAGE_GRAMMAR: Record<'A2' | 'B1', ItemGen[]> = {
+export const STAGE_GRAMMAR: Record<'A2' | 'B1' | 'B2', ItemGen[]> = {
   A2: [(w, rng) => adjTask(w, rng, 80), L('twoway'), (w, rng) => mirrorTask(w, rng, 80), praetModalTask, L('k2'), L('relative'), L('passive'), L('plq')],
   B1: [praetTask, L('passPast'), L('genitive'), L('genPrep'), (w, rng) => (w.pos === 'v' ? mirrorTask(w, rng, 120) : null), L('nDecl'), praetTask, L('genitive')],
+  // B2 (160): until the B2 grammar is in, the B1 items plus the 101–111 ones (暂定).
+  B2: [L('nomAdj'), L('dblConj'), L('tempClause'), L('nDecl'), L('passPast'), L('genPrep'), L('relative'), L('plq')],
 };
 
-export function stageGrammarQs(s: GameState, rng: Rng, stage: 'A2' | 'B1', words: Word[]): ExamQ[] {
+export function stageGrammarQs(s: GameState, rng: Rng, stage: 'A2' | 'B1' | 'B2', words: Word[]): ExamQ[] {
   const out: ExamQ[] = [];
   const used = new Set<string>();
   // Items with no fitting sentence among this pool fall back to any word in the list.

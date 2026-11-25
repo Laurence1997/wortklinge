@@ -8,7 +8,7 @@
 // Grammar per segment follows 游戏设计 十六「语法线」 (rev 341): wo/wohin (4), comparatives (5), Konjunktiv II (6),
 // contract reading + passive (7), 蚀变① als/wenn + Plusquamperfekt/nachdem, indirect questions, lassen (8, its
 // door is 铁轨镇's 末班站台), reasons with weil + relative clauses (9), listening (10), 蚀变② formal complaint with
-// n-Deklination, nominalised adjectives, Partizip I (11, 驳回书 in 租屋城), reflexive + preposition (12). 枯林之母 moved past 120 with 林底 (PARKED_BOSSES).
+// n-Deklination, nominalised adjectives, Partizip I (11, 驳回书 in 租屋城), reflexive + preposition (12). 枯林之母 is now the 蚀变③ boss (src/data/bossesB2.ts).
 
 import type { BossQuestion } from './boss';
 import { numDe } from './boss2';
@@ -16,6 +16,7 @@ import { normalize } from '../core/grading';
 import { pick, shuffle, type Rng } from '../core/rng';
 import type { LaterRegionNo } from '../core/types';
 import { xpToNext } from '../core/config';
+import { B2_BOSSES } from './bossesB2';
 
 export interface LaterBoss {
   region: LaterRegionNo;
@@ -407,33 +408,6 @@ const BROADCAST = (rng: Rng): BossQuestion[] => {
   return [...first, ...rest];
 };
 
-// ---- 林底 · 枯林之母 (parked past 120 with 林底; nature and environment; weil) --------------------------------------------------------
-
-const FOREST = (rng: Rng): BossQuestion[] => {
-  const first = [
-    q('animals', ['Welche Tiere leben im Wald?', 'Welche Tiere kennst du im Wald?'], '问森林里有哪些动物',
-      [`(?:fuchs|fuechse|reh|rehe|hirsch|vogel|voegel|wildschwein|eule|eichhoernchen|baer|wolf|woelfe|hase|hasen|igel|maus|maeuse|specht|ameise|kaefer|schlange)`], 'Im Wald leben Füchse, Rehe und Vögel.'),
-    q('why', ['Warum ist der Wald wichtig?', 'Warum sollen wir die Bäume schützen?'], '问森林为什么重要（weil 从句，动词放最后）',
-      [`^(?:weil|da) .+ (?:ist|sind|gibt|geben|macht|machen|braucht|brauchen|leben|lebt|produziert|produzieren|schuetzt|schuetzen|reinigt|haben|hat)$`, `^der wald (?:gibt|macht|ist|schuetzt|produziert)`], 'Weil die Bäume uns Luft zum Atmen geben.',
-      { traps: [[/^weil (?:der wald ist|die baeume sind|es gibt)/, 'weil 从句里动词放最后：weil der Wald wichtig ist。']] }),
-    q('do', ['Was tust du für die Umwelt?', 'Was kann man für die Umwelt tun?'], '问你能为环境做什么',
-      [`^(?:ich|man|wir) (?:kann |koennen |sollte |sollten )?(?:trenne|trennen|fahre|fahren|spare|sparen|kaufe|kaufen|benutze|benutzen|esse|essen|nehme|nehmen|recycle|pflanze|pflanzen|schalte|schalten|${S})`], 'Ich trenne meinen Müll und fahre mit dem Fahrrad.'),
-  ];
-  const rest = [
-    q('waste', ['Trennst du deinen Müll?', 'Wohin kommt eine leere Flasche?'], '问你分不分垃圾',
-      [`${lead}ich trenne`, `(?:glascontainer|altglas|pfand|gelbe sack|gelben sack|gelbe tonne|in den|in die|zurueck)`], 'Ja, ich trenne meinen Müll. Die Flasche kommt in den Glascontainer.'),
-    q('season', ['Wie ist das Wetter im Herbst?', 'Was passiert im Winter im Wald?'], '问秋天 / 冬天的天气和森林',
-      [`(?:es ist|es wird|es regnet|es schneit|kalt|windig|neblig|nass|die blaetter|blaetter fallen|schnee)`], 'Im Herbst ist es windig und die Blätter fallen.'),
-    q('bike', ['Fährst du lieber mit dem Fahrrad oder mit dem Auto? Warum?', 'Was ist besser für die Umwelt: Bus oder Auto?'], '问你更喜欢哪种出行、为什么',
-      [`(?:lieber mit dem|der bus ist besser|das fahrrad ist besser|besser|weil)`], 'Ich fahre lieber mit dem Fahrrad, weil es gesund ist.'),
-    q('saving', ['Wie kann man Wasser sparen?', 'Wie spart man Energie zu Hause?'], '问怎么省水 / 省电',
-      [`^(?:man kann|man sollte|ich|wir|kurz|weniger|das licht|duschen)`], 'Man kann kürzer duschen.'),
-    q('if', ['Was würdest du tun, wenn der Wald stirbt?', 'Was wäre, wenn es keine Bäume mehr gäbe?'], '假设问题（würde / wäre）',
-      [`(?:ich wuerde|wuerde ich|es waere|waere es|wir wuerden|man wuerde|dann gaebe)`], 'Ich würde neue Bäume pflanzen.'),
-  ];
-  return talk(rng, first, rest);
-};
-
 // ---- 11 · 蚀变② · 驳回书 Der Ablehnungsbescheid in 租屋城's old hall (游戏设计 四 区表 row 11, Lucas 2026-11-25) ------
 // A living rejection letter. Three parts in order: ① read the letter on screen and name the reason (and the deadline),
 // ② write the Widerspruch: fill formal sentences with n-Deklination (dem Kunden), nominalised adjectives (der
@@ -593,18 +567,8 @@ export const LATER_BOSSES: LaterBoss[] = [
   },
 ];
 
-/** Bosses of parked regions (林底 · 枯林之母, past level 120). Not in the game. */
-export const PARKED_BOSSES: Array<Omit<LaterBoss, 'region'> & { region: number }> = [
-  {
-    region: 11, name: '枯林之母', de: 'Die Mutter des Totholzes', level: 108, hp: 12, title: '让林子说话的人',
-    intro: ['枯林中心有一棵比天还高的树。树皮上是一张疲惫的脸，枝条上挂满了没有名字的动物。', '「Niemand kennt uns mehr. Warum sollte ich grün werden?」', '系统：说自然、动物和环境，说理由用 weil，说假设用 würde。'],
-    outro: ['第一片绿叶从枝头冒出来，接着是第二片。', '「… danke.」树闭上眼睛，林子里的鸟开始叫了。', '系统：林底的动物都有了名字。'],
-    healLine: 'Die Blätter fallen wieder.', healZh: '叶子又落了。（它要回血！下一题答对才能打断）',
-    questions: FOREST,
-  },
-];
-
-export const LATER_BOSS: Partial<Record<number, LaterBoss>> = Object.fromEntries(LATER_BOSSES.map((b) => [b.region, b]));
+/** All bosses from region 4 on: 4–12 here, 13–20 (121–200 级, rev 488) in src/data/bossesB2.ts. */
+export const LATER_BOSS: Partial<Record<number, LaterBoss>> = Object.fromEntries([...LATER_BOSSES, ...B2_BOSSES].map((b) => [b.region, b]));
 
 /** First-kill XP ≈ 30% of the boss level's level-up XP (游戏设计 五, same ratio as 晚点之王's 1000 at Lv28). */
 export function laterBossXp(level: number): number {

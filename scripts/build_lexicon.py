@@ -59,7 +59,16 @@ FIELD_PLAN = {
     ],
 }
 FIELD_KEYS = 'abcde'
-MAP_REGIONS = [1, 2, 3, 4, 5, 6, 7, 9, 10, 12]
+MAP_REGIONS = [1, 2, 3, 4, 5, 6, 7, 9, 10, 12, 13, 14, 16, 17, 18, 20]
+# 121–200 级 (游戏设计 rev 488): B2 regions 13, 14, 16 and 蚀变③ (15) take the 2000 words 6001–8000 (《B2词分区》, one
+# segment and situation per word). New words only come in 文章群怪 (article groups), so each of these regions gets
+# B2_SCENES article scenes. C1 (17, 18, 20 and 蚀变④ 19) adds no words: their scenes are empty and spawn review and
+# challenge monsters from everything learned (src/core/spawn.ts).
+B2_SCENES = 28
+B2_ERODE_GROUP = 10
+C1_SCENES = 28
+C1_ERODE_HOSTS = 46
+ERODE_SEGS = ((8, (1, 2, 3)), (11, (1, 2, 3, 4, 5, 6, 7)), (15, (4, 5, 6, 7)), (19, (9, 10, 12)))
 
 # Monster families (look and a few quests): by region and situation for nouns, by part of speech otherwise.
 NOUN_FAMILY = {
@@ -83,6 +92,9 @@ def slug(s):
     s = s.lower().replace('ä', 'ae').replace('ö', 'oe').replace('ü', 'ue').replace('ß', 'ss').replace('é', 'e')
     return re.sub(r'^-|-$', '', re.sub(r'[^a-z0-9]+', '-', s))
 
+
+# Hand-written names for regions 1–3 (游戏设计: 场景名可改，主题不改), matching their diary pages (src/data/diary.ts).
+SCENE_NAMES = {'r1-a1': '搬家日', 'r1-a2': '新公寓', 'r1-a3': '浴室灯', 'r1-a4': '周末报纸', 'r1-a5': '空冰箱', 'r1-a6': '停运地铁', 'r1-a7': '无人图书馆', 'r1-b1': '门铃', 'r1-b2': '敞开的门', 'r1-b3': '面条晚餐', 'r1-b4': '车站超市', 'r1-b5': '警察局', 'r1-b6': '黑色信件', 'r1-b7': '小村来客', 'r1-b8': '空药店', 'r1-c1': '街角摊位', 'r1-c2': '雪中篝火', 'r1-c3': '无人驾驶的公交', 'r1-c4': '楼梯间', 'r1-c5': '数人头', 'r1-c6': '无声电影', 'r1-d1': '第一个消失的词', 'r1-d2': '寻照片', 'r1-d3': '空集市', 'r1-d4': '窗前烛光', 'r1-d5': '门口的陌生人', 'r1-d6': '低垂的太阳', 'r1-d7': '新房客', 'r1-d8': '市政厅门口', 'r1-e1': '发烧', 'r1-e2': '无名包裹', 'r1-e3': '教堂前老树', 'r1-e4': '空办公室', 'r1-e5': '加油站', 'r1-e6': '每页签名', 'r1-e7': '无人敲的钟', 'r1-e8': '镜子前', 'r2-a1': '面包房', 'r2-a2': '黄围裙', 'r2-a3': '生日蛋糕', 'r2-a4': '新时刻表', 'r2-a5': '莉娜的秘密', 'r2-a6': '冷咖啡', 'r2-a7': '照常营业', 'r2-b1': '取面包', 'r2-b2': '服装店', 'r2-b3': '集市摊', 'r2-b4': '试衣间镜子', 'r2-b5': '一公斤苹果', 'r2-b6': '肉铺', 'r2-b7': '药妆店', 'r2-c1': '土耳其小店', 'r2-c2': '半夜晾衣', 'r2-c3': '院墙记号', 'r2-c4': '小酒馆', 'r2-c5': '满屋客人', 'r2-c6': '不发车的站', 'r2-c7': '派对录像', 'r2-d1': '空出的楼下', 'r2-d2': '站前怪光', 'r2-d3': '半个站名', 'r2-d4': '窗帘后', 'r2-d5': '正午甜点', 'r2-d6': '旧相机', 'r2-e1': '冷卧室', 'r2-e2': '路上的面包', 'r2-e3': '站台守望', 'r2-e4': '藏起的车票', 'r2-e5': '父亲的话', 'r2-e6': '开演之前', 'r2-e7': '冰河桥', 'r3-a1': '纸做的火车', 'r3-a2': '旧票展览', 'r3-a3': '轨间戒指', 'r3-a4': '吞名售票机', 'r3-a5': '热隧道', 'r3-a6': '地下室电话', 'r3-b1': '停电城区', 'r3-b2': '低语时刻表', 'r3-b3': '无名来信', 'r3-b4': '售票窗口', 'r3-b5': '站台法官', 'r3-b6': '失窃照片', 'r3-c1': '看守人', 'r3-c2': '跳蚤市场', 'r3-c3': '停摆的钟', 'r3-c4': '车站办公室', 'r3-c5': '无名印章', 'r3-c6': '不变的红灯', 'r3-c7': '红裙', 'r3-c8': '冷炉', 'r3-d1': '候车下午', 'r3-d2': '候车室电脑', 'r3-d3': '查票员', 'r3-d4': '被拿走的箱子', 'r3-d5': '车站诊所', 'r3-d6': '名单', 'r3-d7': '白衬衫', 'r3-d8': '不动的钟', 'r3-e1': '逃出医院', 'r3-e2': '脏咖啡馆', 'r3-e3': '学生证', 'r3-e4': '站台琴声', 'r3-e5': '站台边营地', 'r3-e6': '往南', 'r3-e7': '白发', 'r3-e8': '烟味之夜'}
 
 def read_tsv(name):
     with open(DATA / name, newline='', encoding='utf-8') as f:
@@ -337,9 +349,25 @@ def make_perfekt(inf, three, sentences):
     return None
 
 
+# Added to wortschatz.tsv after 《进场景第 1 版》 was cut (word-list thread, 8f3664c).
+ADDED_AFTER_SHEET = {'morgen'}
+
+
 # ---- build ------------------------------------------------------------------------------------------------------
 def main():
     words_tsv = {r['排名']: r for r in read_tsv('wortschatz.tsv')}
+    # The scene sheet was cut from an older rank order; find each word by its lemma (closest rank wins),
+    # so inserted words (morgen, 2026-11-25) don't shift everything after them.
+    rows_by_lemma = defaultdict(list)
+    for r in words_tsv.values():
+        rows_by_lemma[r['原形'].strip()].append(r)
+    used_ranks = set()
+
+    def row_for(x):
+        cands = rows_by_lemma.get(x['原形'].strip())
+        if not cands:
+            return words_tsv[str(x['排名'])]
+        return min(cands, key=lambda r: (r['排名'] in used_ranks, abs(int(r['排名']) - int(x['排名']))))
     extra = defaultdict(list)
     for r in read_tsv('beispiele.tsv'):
         if r['例句']:
@@ -385,6 +413,45 @@ def main():
     for seg in segs:
         segs[seg] = merge_tiny(cut_articles(segs[seg]))
 
+    # B2 (13–16): words grouped by situation in list order, cut into article scenes (map regions) or 蚀变 groups.
+    b2 = defaultdict(list)
+    for r in read_tsv('b2-v1.tsv'):
+        r['先后'] = '后'
+        b2[int(r['段'])].append(r)
+    for seg, rows in sorted(b2.items()):
+        by_sit = OrderedDict()
+        for x in sorted(rows, key=lambda x: int(x['排名'])):
+            by_sit.setdefault(x['情境'] or '通用', []).append(x)
+        groups = OrderedDict()
+
+        def put(name, chunk):
+            for j, x in enumerate(chunk):
+                x['批次'] = '第1批' if j < FIRST_BATCH else '第2批'
+                x['_art'] = True
+                x['场景'] = name
+            groups[name] = chunk
+        if seg == 15:
+            # 蚀变③: groups of about ten per situation, hung on old scenes of the same situation.
+            for sit, xs in by_sit.items():
+                n = max(1, round(len(xs) / B2_ERODE_GROUP))
+                for k in range(n):
+                    put(f'{sit}·{k + 1}', xs[k * len(xs) // n:(k + 1) * len(xs) // n])
+        else:
+            # New region: B2_SCENES even scenes over the words sorted by situation (a scene may span two).
+            xs = [x for v in by_sit.values() for x in v]
+            n = B2_SCENES
+            count = defaultdict(int)
+            for k in range(n):
+                chunk = xs[k * len(xs) // n:(k + 1) * len(xs) // n]
+                sit = chunk[0]['情境'] or '通用'
+                count[sit] += 1
+                put(f'{sit}·{count[sit]}', chunk)
+        segs[seg] = groups
+    # C1 (17–20): empty scenes; 蚀变④ hosts carry no new words either.
+    for seg in (17, 18, 20):
+        segs[seg] = OrderedDict((f'回顾·{k + 1}', []) for k in range(C1_SCENES))
+    segs[19] = OrderedDict((f'回潮·{k + 1}', []) for k in range(C1_ERODE_HOSTS))
+
     # ---- fields and scene ids of map regions ----
     scene_list = []  # dicts: id, region, field, zone, name, group, rows, situation
     fields_out = {}
@@ -394,9 +461,12 @@ def main():
         if region in FIELD_PLAN:
             plan = FIELD_PLAN[region]
             assigned = [[] for _ in plan]
+            # Lucas 2026-11-25: 4–5 fields of about 8 scenes each. A field takes the groups of its situations until
+            # it is full; the rest go to the emptiest field.
+            cap = -(-len(names) // len(plan))
             for name in names:
                 sit = situation_of(name)
-                fi = next((i for i, f in enumerate(plan) if sit in f[3]), None)
+                fi = next((i for i, f in enumerate(plan) if sit in f[3] and len(assigned[i]) < cap), None)
                 if fi is None:
                     fi = min(range(len(plan)), key=lambda i: len(assigned[i]))
                 assigned[fi].append(name)
@@ -416,12 +486,15 @@ def main():
                 })
 
     # ---- words ----
-    seen = set()
+    seen = {'truhe'}  # the 宝箱怪's own word (src/data/words.ts); the list's Truhe becomes truhe-2
     by_lemma = {}
     words = []
 
     def card_word(rank, x, region, zone, scene, lvl, erode=None):
-        r = dict(words_tsv[str(rank)])
+        src = row_for(x)
+        used_ranks.add(src['排名'])
+        rank = src['排名']
+        r = dict(src)
         r.update(CORRECTIONS.get(r['原形'].strip(), {}))
         de = r['原形'].strip()
         cat = r['词性']
@@ -480,7 +553,7 @@ def main():
         m = re.search(r'梯子：(.+?) 的进阶说法', x.get('备注') or '')
         if m:
             w['_ladder'] = m.group(1).strip()
-        sit = r['情境'] or situation_of(x['场景'])
+        sit = r['情境'] or x.get('情境') or situation_of(x['场景'])
         w['situation'] = sit
         fam = NOUN_FAMILY.get((region, sit)) if pos in ('n', 'name') else None
         w['family'] = fam or {'n': 'kram', 'name': 'schild', 'v': 'nachhall', 'adj': 'echo', 'phr': 'echo', 'num': 'zahlwurm', 'q': 'schild'}[pos]
@@ -527,6 +600,31 @@ def main():
         words_by_id[w['id']] = w
         s['words'].append(w['id'])
 
+    # Words added to the list after the scene sheet was cut (the sheet leaves out function words on purpose,
+    # so only these): next to the word ranked just before them, in a scene of the same situation with the fewest words.
+    scene_by_id = {s['id']: s for s in scene_list}
+    rank_scene = {w['rank']: w['scene'] for w in words if w.get('rank')}
+    sheet_lemmas = {x['原形'].strip() for g in segs.values() for rows in g.values() for x in rows}
+    for rk in range(1, 6001):
+        r = words_tsv.get(str(rk))
+        if not r or r['原形'].strip() not in ADDED_AFTER_SHEET or r['原形'].strip() in sheet_lemmas or str(rk) in used_ranks:
+            continue
+        prev = next((rank_scene[q] for q in range(rk - 1, 0, -1) if q in rank_scene), scene_list[0]['id'])
+        region = scene_by_id[prev]['region']
+        sit = r['情境']
+        cands = [s for s in scene_list if s['region'] == region and s['situation'] == sit]
+        if not cands:
+            same = [s for s in scene_list if s['situation'] == sit]
+            cands = [s for s in same if s['region'] == min(t['region'] for t in same)] if same else [scene_by_id[prev]]
+        region = cands[0]['region']
+        s = min(cands, key=lambda c: len(c['words']))
+        lvl = max(words_by_id[i]['lvl'] for i in s['words'])
+        x = {'原形': r['原形'], '排名': rk, '场景': s['group'], '语体': r['语体'], '批次': '第2批' if len(s['words']) >= FIRST_BATCH else '第1批'}
+        w = card_word(rk, x, region, s['zone'], s['id'], lvl)
+        words_by_id[w['id']] = w
+        s['words'].append(w['id'])
+        print('added from list:', r['原形'], '->', s['id'], file=sys.stderr)
+
     # 蚀变: host scenes.
     host_of_word = {}
     for s in scene_list:
@@ -534,7 +632,7 @@ def main():
             host_of_word[wid] = s['id']
     taken = {}
     eroded_out = []
-    for seg, regions in ((8, (1, 2, 3)), (11, (1, 2, 3, 4, 5, 6, 7))):
+    for seg, regions in ERODE_SEGS:
         lo, hi = (seg - 1) * 10 + 1, seg * 10
         hosts = [s for s in scene_list if s['region'] in regions]
         names = list(segs[seg])
@@ -598,6 +696,23 @@ def main():
             if p:
                 perf[w['de']] = p
 
+    # Perfekt sentences written for verbs whose list examples have none (data/wortschatz/perfekt-v1.tsv, regions 1–3).
+    # The list's three forms give aux and participle, except where they are wrong (PERFEKT_FIX).
+    PERFEKT_FIX = {'schaffen': 'hat geschafft', 'auffallen': 'ist aufgefallen', 'bewegen': 'hat bewegt', 'verwenden': 'hat verwendet'}
+    verbs = {w['de']: w for w in words if w['pos'] == 'v'}
+    for r in read_tsv('perfekt-v1.tsv'):
+        w = verbs.get(r['原形'])
+        if not w or w['de'] in perf:
+            continue
+        three = w.get('three', '')
+        if w['de'] in PERFEKT_FIX:
+            three = ' · '.join([*(x.strip() for x in three.split('·')[:-1]), PERFEKT_FIX[w['de']]])
+        p = make_perfekt(w['de'], three, [(r['例句'], r['中文'])])
+        if p:
+            perf[w['de']] = p
+        else:
+            print('  perfekt-v1: no match for', w['de'], three)
+
     # ---- scene names ----
     def short_zh(zh):
         z = re.sub(r'（.*?）|\(.*?\)', '', zh).split('；')[0].split('，')[0].strip()
@@ -605,21 +720,26 @@ def main():
 
     wmap = {w['id']: w for w in words}
     for s in scene_list:
+        if not s['words']:
+            s['name'] = s['group']
+            continue
         lead = next((wmap[i] for i in s['words'] if wmap[i]['pos'] in ('n',)), wmap[s['words'][0]])
-        if s['group'].startswith('文章群怪'):
+        if s['group'].startswith('文章群怪') or wmap[s['words'][0]].get('art_pool'):
             s['name'] = f'残页 · {short_zh(lead["zh"])}'
         elif '表达' in s['group']:
             s['name'] = f'{s["situation"]} · 说法'
         else:
             s['name'] = f'{s["situation"]} · {short_zh(lead["zh"])}'
+        if s['id'] in SCENE_NAMES:
+            s['name'] = SCENE_NAMES[s['id']]
 
     # ---- write ----
     def row(w):
         f = [w['id'], w['de'], w.get('art', ''), '+' if w.get('plOnly') else w.get('pl', ''), w['zh'], w['pos'], w['family'],
              str(w['lvl']), w['zone'], w['scene'], str(w['region']), str(w.get('erode', '')), str(w.get('batch', '')),
              w.get('after', ''), w.get('digit', ''), str(w['order']), str(w['rank']), w.get('reg', ''), '1' if w.get('art_pool') else '',
-             w.get('ex', '')]
-        for v in f[:-1]:
+             w.get('ex', ''), w.get('situation', '')]
+        for v in f:
             assert '\t' not in v, v
         return '\t'.join(v.replace('\t', ' ') for v in f)
 
@@ -638,7 +758,7 @@ def main():
     out.append('];')
     out.append('')
     out.append('/** 蚀变 groups: [host scene id, segment, word ids]. */')
-    out.append('export const LEX_ERODED: Array<[string, 8 | 11, string[]]> = [')
+    out.append('export const LEX_ERODED: Array<[string, 8 | 11 | 15 | 19, string[]]> = [')
     for e in eroded_out:
         out.append('  ' + json.dumps([e['scene'], e['seg'], e['words']], ensure_ascii=False) + ',')
     out.append('];')
@@ -667,7 +787,7 @@ def main():
         for s in sc:
             per[s['field']] += 1
         sizes = [len(s['words']) for s in sc]
-        print(f'  region {region}: {len(sc)} scenes, fields {dict(per)}, words {sum(sizes)} ({min(sizes)}–{max(sizes)} per scene), eroded hosts {sum(1 for s in sc if s["id"] in taken)}')
+        print(f'  region {region}: {len(sc)} scenes, fields {dict(per)}, words {sum(sizes)} ({min(sizes, default=0)}–{max(sizes, default=0)} per scene), eroded hosts {sum(1 for s in sc if s["id"] in taken)}')
 
 
 if __name__ == '__main__':

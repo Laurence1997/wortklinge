@@ -2,9 +2,9 @@
 // Each scene sits on a tile of the old 0.4 map (`at`), so saved positions, echoes, packs (same scene = within
 // CONFIG.pack.radiusTiles) and the online presence all keep working with tile coordinates.
 // Fields keep the 0.4 word pools (zone); a 0.4 field of 10 monsters became 4 scenes × CONFIG.map.slots.
-import type { ZoneId } from '../core/types';
+import type { ErodeSeg, ZoneId } from '../core/types';
 import type { NpcId, RegionId } from '../game/map';
-import { REGION_DEF, REGION_DEFS, fieldScenes, nextMapRegion, prevMapRegion, regionLevels, type RegionDef } from './zones';
+import { ERODE_DEFS, REGION_DEF, REGION_DEFS, fieldScenes, nextMapRegion, prevMapRegion, regionLevels, type RegionDef } from './zones';
 import { ERODED_SCENE_WORDS, ERODED_SEG, SCENE_WORDS, WORD_BY_ID } from './words';
 import { LEX_FIELDS, LEX_SCENES } from './lexicon';
 
@@ -38,7 +38,7 @@ export interface SceneDef {
   words?: string[];
   /** 0.7/0.8 蚀变: the scene's advanced word group (segment `erodeSeg`), on top of its own words. */
   eroded?: string[];
-  erodeSeg?: 8 | 11;
+  erodeSeg?: ErodeSeg;
 }
 
 export interface AreaDef {
@@ -185,11 +185,21 @@ function laterRegion(d: RegionDef): RegionLayout {
   const fields = fieldSceneDefs(r, 4);
   let no = 4 + fields.length;
   const door: SceneDef = { id: `${p}-door`, region: r, no: no++, zh: d.doorZh, type: 'door', at: DOOR_AT, door: true };
-  const hide: SceneDef = { id: `${p}-hide`, region: r, no: no++, zh: d.hiddenZh, type: 'hidden', zone: `${p}c` as ZoneId, slots: 2, at: HIDE_AT, hiddenBy: signWord(r, 2, ''), lucky: 3 };
+  const hide: SceneDef = { id: `${p}-hide`, region: r, no: no++, zh: d.hiddenZh, type: 'hidden', zone: `${p}c` as ZoneId, slots: 2, at: HIDE_AT, hiddenBy: signWord(r, 2, d.hiddenSign ?? ''), lucky: 3 };
   // The road on: opens with this region's boss, or with the 蚀变 boss that stands between (7 → 蚀变① → 9).
   const onward: SceneDef | undefined = next ? { id: `${p}-onward`, region: r, no: no++, zh: d.onwardZh, type: 'road', at: ONWARD_AT, gate: next as RegionId, openFlag: `boss${next - 1}Kills` } : undefined;
   const links: Array<[string, string]> = [[`${p}-hub`, `${p}-stand`], [`${p}-hub`, `${p}-x`], ...fieldLinks(fields, `${p}-x`, door, hide, onward)];
-  return { scenes: [...town, ...fields, door, hide, ...(onward ? [onward] : [])], links };
+  const extra: SceneDef[] = [];
+  // 蚀变 bosses with a scene of their own (枯林之母 deep in 林底): drawn once the segment opens, off the last field.
+  for (const e of ERODE_DEFS) {
+    if (e.bossRegion !== r || !e.scene) continue;
+    const at = { x: 69, y: 12 };
+    const last = fields.filter((f) => f.zone === `${p}c`);
+    const from = [...last].sort((a, b) => Math.hypot(a.at.x - at.x, a.at.y - at.y) - Math.hypot(b.at.x - at.x, b.at.y - at.y))[0];
+    extra.push({ id: e.scene, region: r, no: no++, zh: e.doorZh.replace(/深处$/, ''), type: 'hidden', zone: `${p}c` as ZoneId, slots: 2, at, door: true, openFlag: `boss${e.after}Kills`, lucky: 3 });
+    links.push([from.id, e.scene], [hide.id, e.scene]);
+  }
+  return { scenes: [...town, ...fields, door, hide, ...(onward ? [onward] : []), ...extra], links };
 }
 
 const LAYOUTS: RegionLayout[] = [earlyRegion(1), earlyRegion(2), earlyRegion(3), ...REGION_DEFS.map(laterRegion)];
