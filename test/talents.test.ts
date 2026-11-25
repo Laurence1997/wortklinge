@@ -12,13 +12,13 @@ const give = (s: GameState, ranks: Record<string, number>) => Object.assign(((s.
 const noun = WORDS.find((w) => w.de === 'Apfel')!;
 
 describe('talent nodes', () => {
-  it('cooldown nodes: 墨渍 / 稳步 / 封印熟练, and 墨水充盈 halves a full storm', () => {
+  it('cooldown nodes: 墨渍 / 稳步 / 封印熟练 (墨水充盈 was cut)', () => {
     const s = newGame('T', 'student');
     s.level = 61;
     expect(poolCdFor(s, 'storm')).toBe(4);
     give(s, { mozi: 1, wenbu: 2, fengyin: 2, mochong: 1 });
     expect(poolCdFor(s, 'storm')).toBe(3);
-    expect(poolCdFor(s, 'storm', true)).toBe(2);
+    expect(poolCdFor(s, 'storm', true)).toBe(3);
     expect(poolCdFor(s, 'steady')).toBe(3);
     expect(poolCdFor(s, 'seal')).toBe(4);
   });
@@ -31,35 +31,6 @@ describe('talent nodes', () => {
     const g = gradeStorm(noun, forms, input, true);
     expect(g.n).toBe(forms.length - 1);
     expect(g.all).toBe(false);
-  });
-
-  it('稳固: 稳住 becomes this monster’s typed question and covers 3 misses', () => {
-    const s = newGame('T', 'student');
-    s.level = 30;
-    s.hp = 99999;
-    s.loadout = ['steady'];
-    give(s, { wengu: 1 });
-    const b = startBattle(s, noun, makeRng(1));
-    b.monster.hp = b.monster.maxHp = 99999;
-    const q = makeQuestion(s, b, 'skill', makeRng(2), 'steady');
-    expect(q.type).toBe('steady');
-    expect(q.options).toBeUndefined();
-    const r = resolveTurn(s, b, 'skill', q, q.answer!, makeRng(3));
-    expect(r.correct).toBe(true);
-    expect(b.cfx.guard).toBe(3);
-  });
-
-  it('不慌: a wrong answer halves the combo instead of clearing it', () => {
-    const s = newGame('T', 'student');
-    s.level = 30;
-    s.hp = 99999;
-    give(s, { buhuang: 1 });
-    const b = startBattle(s, noun, makeRng(1));
-    b.monster.hp = b.monster.maxHp = 99999;
-    s.combo = 9;
-    const q = makeQuestion(s, b, 'attack', makeRng(2));
-    resolveTurn(s, b, 'attack', q, 'völlig falsch', makeRng(3));
-    expect(s.combo).toBe(4);
   });
 
   it('改过: the right answer after a wrong one heals 3% per point', () => {

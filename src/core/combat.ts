@@ -24,7 +24,7 @@ import { B2_CFG, B2_MON, b2Task, rollB2Mon, type B2Mon } from './b2mons';
 import { echoOptions, echoTask, notePron, PRON_MON, pronMonOk, type EchoTask } from './pron';
 import { count } from './items';
 import { fullForm, genderOf, hasArticleQuestion, WORD_BY_ID, WORDS, zhWithPos } from '../data/words';
-import { canTarget, collocOf, gradeSplit, loadout, MULT, POOL, SEAL_TURNS, splitOf, type PoolId, type SplitTask } from './skillPool';
+import { canTarget, collocOf, gradeSplit, combatSkills, MULT, POOL, SEAL_TURNS, splitOf, type PoolId, type SplitTask } from './skillPool';
 import { SAYING_CFG, SAYINGS } from '../data/sayings';
 import { expectedSentence, gradeSentence, nextPattern, PATTERNS, sentenceTags, type Pattern } from './sentence';
 import { PERFEKT, perfektFull, perfektParts } from '../data/perfekt';
@@ -844,7 +844,7 @@ export function availableMoves(s: GameState, b: Battle, alive = 1, mates = alive
   if (has(s.level, 'inscribe')) moves.push('inscribe');
   if (has(s.level, 'chorus') && alive > 1 && mates > 0) moves.push('chorus');
   if (has(s.level, 'sentence')) moves.push('sentence');
-  if (loadout(s).length && !b.tutorial) moves.push('skill');
+  if (combatSkills(s).length && !b.tutorial) moves.push('skill');
   return moves;
 }
 
@@ -888,7 +888,7 @@ export function hintOf(b: Battle, q: Question): Question {
 
 /** Whether a move can be used right now (cooldown, resource). */
 export function moveReady(s: GameState, b: Battle, move: Move): boolean {
-  if (move === 'skill') return loadout(s).some((id) => poolReady(s, b, id));
+  if (move === 'skill') return combatSkills(s).some((id) => poolReady(s, b, id));
   if (move === 'inscribe') return !b.cfx.inscribeCd;
   // 低语 is free, but a word you were hinted on is asked again without it first.
   if (move === 'whisper') return b.curse !== 'forget' && !b.hinted && !s.words[b.word.id]?.hinted;
@@ -899,7 +899,7 @@ export function moveReady(s: GameState, b: Battle, move: Move): boolean {
 
 /** 技能池: this skill is off cooldown and can target this monster's word. */
 export function poolReady(s: GameState, b: Battle, id: PoolId): boolean {
-  return loadout(s).includes(id) && !(b.poolCd[id] ?? 0) && canTarget(id, b.word) && !b.phrase;
+  return combatSkills(s).includes(id) && !(b.poolCd[id] ?? 0) && canTarget(id, b.word) && !b.phrase;
 }
 
 /** Share of a hit this monster's armor stops, for the given question tier (0.4 战斗修正版):
@@ -1222,7 +1222,7 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
   };
   if (move === 'skill') {
     // 技能池 (游戏设计 十): every skill asks a layer of the target's own word that the plain attack doesn't.
-    const id = ((skillId as PoolId) && POOL[skillId as PoolId] ? skillId : loadout(s).find((x) => poolReady(s, b, x)) ?? 'storm') as PoolId;
+    const id = ((skillId as PoolId) && POOL[skillId as PoolId] ? skillId : combatSkills(s).find((x) => poolReady(s, b, x)) ?? 'storm') as PoolId;
     const sk = POOL[id];
     if (id === 'steady') {
       // 天赋「稳固」: this monster's typed question instead of a choice; right → 3 covered misses.
@@ -2320,8 +2320,10 @@ export function resolveTurn(
         } else if (critWasReady) {
           crit = true;
           cfx.critReady = false;
+        } else if (speedCrit(s, q)) {
+          crit = true;
         } else {
-          const chance = Math.min(CONFIG.player.critCap, critChance(s) + (tf.sharp ?? 0) + quickCritBonus(s, q) + (b.fx.charm?.crit ?? 0));
+          const chance = Math.min(CONFIG.player.critCap, critChance(s) + (tf.sharp ?? 0) + (b.fx.charm?.crit ?? 0));
           crit = rng() < chance;
         }
         if (q.type !== 'saying') b.firstCorrectDone = true;
@@ -2916,9 +2918,12 @@ export function isQuick(s: GameState, q: Question): boolean {
   return s.level >= QUICK_FROM && q.ms !== undefined && q.ms <= quickLineMs(q) + (q.earMs ?? 0);
 }
 
-/** 抢答: quick-answer crit chance. */
-function quickCritBonus(s: GameState, q: Question): number {
-  return isQuick(s, q) ? 0.05 * rank(s, 'qiangda') : 0;
+/** 速答暴击 (2026-11-25): right inside the first half of the quick line is a sure crit; 抢答 widens it to 60% / 70%.
+ *  Boss dialogue has no speed crit (审查修订). */
+export function speedCrit(s: GameState, q: Question): boolean {
+  if (!isQuick(s, q) || q.ms === undefined) return false;
+  const share = 0.5 + 0.1 * rank(s, 'qiangda');
+  return q.ms <= (quickLineMs(q) + (q.earMs ?? 0)) * share;
 }
 
 /** Crit multiplier with 笔力 (typed) and 快刃 (quick), capped at ×3. */
@@ -3008,7 +3013,7 @@ function talentDamage(s: GameState, b: Battle, q: Question, c: { typedLike: bool
   if (c.typedLike && !tf.whispered && r('wutishi')) add += 0.1;
   if (writing && (b.wrongs ?? 0) > 0) add += 0.15 * r('biji');
   // 守势
-  if (s.hp < maxHp(s) * 0.3) add += 0.1 * r('gangyi');
+  if (s.hp < maxHp(s) * 0.3) add += 0.2 * r('gangyi');
   // 言辞
   if (isFinisher(q)) add += 0.05 * r('chengju');
   if (q.write === 'link') add += 0.08 * r('lianci');
@@ -3034,7 +3039,7 @@ function talentDamage(s: GameState, b: Battle, q: Question, c: { typedLike: bool
   if (listenQ(q)) add += 0.06 * r('tingyin');
   if (quick && s.combo >= 10) add += 0.1 * r('lianzhu');
   if (c.typedLike && q.ms !== undefined && q.ms <= 5000) add += 0.04 * r('suji');
-  if (q.pool === 'dictate') add += 0.06 * r('erchong');
+  if (q.pool === 'dictate' || q.gram?.sys === 'blind') add += 0.06 * r('erchong');
   if (tf.preempt) {
     add += 0.08 * r('qiangxian');
     tf.preempt = false;
@@ -3066,7 +3071,7 @@ function talentEndTurn(s: GameState, b: Battle, _q: Question, ok: boolean, inter
 
 /** 一气呵成: every answer this fight right within 8 s → XP +3% per point. */
 export function quickFightXp(s: GameState, b: Battle): number {
-  return b.cfx.tf && !b.cfx.tf.slow ? 1 + 0.03 * rank(s, 'yiqi') : 1;
+  return b.cfx.tf && !b.cfx.tf.slow ? 1 + 0.04 * rank(s, 'yiqi') : 1;
 }
 
 // ---- 格位连锁 (秩序 大天赋) ---------------------------------------------------------------------------
@@ -3153,7 +3158,7 @@ export function castMs(s: GameState, b: Battle): number {
 /** Global cooldown after an answer (疾行 −0.2 s per point), and the stagger after a wrong choice answer. */
 export function gcdMs(s: GameState, q: Question, ok: boolean): number {
   if (!ok && q.options?.length) return REALTIME.stagger * 1000;
-  return Math.round((REALTIME.gcd - 0.2 * rank(s, 'jixing')) * 1000);
+  return Math.round((REALTIME.gcd - 0.3 * rank(s, 'jixing')) * 1000);
 }
 
 /** The parry window at the end of an attack's cast (弹反 talent: 1.5 s). */

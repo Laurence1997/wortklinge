@@ -1,3 +1,4 @@
+import { carriesShout } from '../core/skillPool';
 import { track } from '../net/social';
 import { noteGram, stampBoard } from '../core/board';
 import { TICK_TURN } from '../core/combat';
@@ -18,7 +19,7 @@ import { CHEST_ZH, CHESTS, lockWord, openChest, type ChestKind } from '../core/c
 import { playChest } from '../ui/chestFx';
 import { gradeTyped } from '../core/grading';
 import { buy as buyItem, openShop, refresh as refreshShop, sell as sellItem } from '../core/shop';
-import { hourGold, rank, resMax, respec, respecCost, spent } from '../core/classes';
+import { hourGold, rank, resetOldTree, resMax, respec, respecCost, spent } from '../core/classes';
 import { noteVisit } from '../core/redname';
 import { BLESSINGS, blessCount, blessScale, bossFloor, canDescend, descend, endRift, offerBlessings, RIFT, riftAct, riftItemLevel, riftOpen, riftWord, silenceLeft, startRift, takeBlessing } from '../core/rift';
 import { makeItem, slotsAt, QUALITY_ZH, rollQuality, SLOT_ZH } from '../core/loot';
@@ -62,7 +63,7 @@ import { answerExam, BREAK, BREAK_EARLY, examPassed, PART_ZH, startExam, startGr
 import { DUNGEON, RULES, type Rule } from '../data/dungeon';
 import { OPINION, opinionRule, pickClaim } from '../core/opinion';
 import { addGearKill, stampTiers } from '../core/state';
-import { bossRed, salvage, shardBalance, tierIlvl, tradeInfo, tradeShards, tradesOpen } from '../core/forge';
+import { bossRed, rollSetDrop, salvage, shardBalance, tierIlvl, tradeInfo, tradeShards, tradesOpen } from '../core/forge';
 import { aiOpinion, AI_TUTOR, aiEssay, aiGrade, aiGradeText, duelTurn, knownWords, persuadeTurn, wordForms, type AiGrade } from '../net/aiTutor';
 import { DUEL, DUEL_SCENES, duelTurns, type DuelScene } from '../data/grammar/duels';
 import { drawPractice } from '../core/aiPractice';
@@ -124,6 +125,8 @@ export class Controller {
       const depth = endRift(state);
       window.setTimeout(() => toast(`上次的裂隙之行在第 ${depth} 层断了：祝福和药片留在了里面`), 1500);
     }
+    // 天赋树瘦身 (2026-11-25): an old 15-node tree gets every point back once.
+    if (resetOldTree(state)) window.setTimeout(() => toast('天赋树改版了（每个方向 8 个节点）：你的天赋点已经全部免费退回，按 T 重新点。', 'gold'), 3000);
     // Levels gained when an old save was re-levelled on the faster curve: play their lessons once.
     const catchUp = String(state.flags.catchUpLevels ?? '');
     if (catchUp) {
@@ -611,7 +614,8 @@ export class Controller {
         say([{ who: SYS, text: '【锈名】这只遗忘之物拖了太久，名字生了锈：拖得越久血越多，奖励和普通怪一样。按时复习最划算。它不会逃，也不会追你。' }]);
       }
       // 怪物诅咒 (0.6, 25 级): about one in ten carries 遗忘 or 沉默; the first one after the hall gate is certain.
-      if (s.level >= CONFIG.curse.from && !m.isEcho && (s.flags.curseNext || this.rng() < CONFIG.curse.chance)) {
+      // 一场最多一种特殊层 (瘦身 2026-11-25): a 锈名 monster rolls no curse (it stays a plain one).
+      if (s.level >= CONFIG.curse.from && !m.isEcho && !this.battle.rusty && (s.flags.curseNext || this.rng() < CONFIG.curse.chance)) {
         const first = !!s.flags.curseNext;
         delete s.flags.curseNext;
         this.battle.curse = first ? 'forget' : this.rng() < 0.5 ? 'forget' : 'silence';
@@ -872,7 +876,7 @@ export class Controller {
   shoutCharm(id: string, input: string): { res: ShoutResult; report: TurnReport | null } | null {
     const s = this.state;
     const b = this.battle;
-    if (!b || b.outcome || b.tutorial || !equippedCharms(s).some((c) => c.id === id)) return null;
+    if (!b || b.outcome || b.tutorial || !equippedCharms(s, carriesShout(s)).some((c) => c.id === id)) return null;
     const res = shoutCharm(s, b.fx, id, input, { struct: !!b.structMon, cursed: !!b.curse, pack: this.pack.filter((x) => !x.outcome).length > 1, red: !!b.structMon, challenge: !!b.challenge, elite: !!b.elite, hour: berlinHour() });
     if (res.special === 'curse') delete b.curse;
     b.log.push({ text: res.text, tone: res.ok && !res.backfire ? 'good' : 'bad' });
@@ -1149,7 +1153,7 @@ export class Controller {
         if (res.kill.guiming) this.milestone('guiming');
         if (res.drop) {
           (res.drop.quality === 'orange' || res.drop.quality === 'red' ? sfx.orange : sfx.loot)();
-          toast(`掉落：${res.drop.name}（${{ white: '普通', green: '优秀', purple: '史诗', orange: '传说', red: '红装' }[res.drop.quality]}）`, res.drop.quality === 'white' ? '' : 'gold', icon(SLOT_TILE[res.drop.slot], 1, false, `slot-icon q-${res.drop.quality}`));
+          toast(`掉落：${res.drop.name}（${QUALITY_ZH[res.drop.quality]}）`, res.drop.quality === 'white' ? '' : 'gold', icon(SLOT_TILE[res.drop.slot], 1, false, `slot-icon q-${res.drop.quality}`));
           if (!s.flags.taughtGear) {
             s.flags.taughtGear = true;
             say([{ who: SYS, text: '【装备】C 打开角色，点「穿上」' }]);
@@ -1304,7 +1308,7 @@ export class Controller {
     for (const id of slangOwed(s, (q) => !!questState(s, q as QuestId)?.done)) {
       grantSlang(s, id);
       const c = CHARM_BY_ID[id];
-      toast(`俚语秘术「${c.de}」：${c.zh}。到词汇本最下面带上它。`, 'gold');
+      toast(`俚语「${c.de}」：${c.zh}。在单词本最下面选它，再把「俚语」技能带进技能格。`, 'gold');
     }
   }
 
@@ -2471,7 +2475,7 @@ export class Controller {
       // 首领宝箱 comes home whatever happens next.
       const il = riftItemLevel(s, s.level);
       const red = bossRed(s, this.rng, { riftFloor: r.floor });
-      if (red && s.bag.length < CONFIG.loot.bagSize) (s.bag.push(red), sfx.orange(), banner('红装', red.name));
+      if (red && s.bag.length < CONFIG.loot.bagSize) (s.bag.push(red), sfx.orange(), banner('套装最高档', red.name));
       this.gotChest(s.level >= RIFT.deepFrom && r.floor >= 10 ? 'gold' : 'iron', il);
       this.persist();
       return say([{ who: SYS, text: `第 ${r.floor} 层的首领倒下了，掉下一只宝箱。` }], undefined, [
@@ -3100,14 +3104,15 @@ export class Controller {
     return v;
   }
 
-  /** 红装 (111 级): every boss kill may drop one (1%, the 60th boss without one always). */
+  /** 套装 (101) and 套装最高档 (111, 原红装): a boss kill may drop a set piece of this region. */
   private bossRedDrop(): void {
     const s = this.state;
     const red = bossRed(s, this.rng);
-    if (!red || s.bag.length >= CONFIG.loot.bagSize) return;
-    s.bag.push(red);
+    const piece = red ?? rollSetDrop(s, s.region ?? 1, this.rng, true);
+    if (!piece || s.bag.length >= CONFIG.loot.bagSize) return;
+    s.bag.push(piece);
     sfx.orange();
-    banner('红装', red.name);
+    banner(red ? '套装最高档' : '套装', piece.name);
   }
 
   finishBoss(): void {

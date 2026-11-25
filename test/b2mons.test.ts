@@ -78,32 +78,12 @@ describe('B2 怪种', () => {
   });
 });
 
-import { ADV_BLIND, blindBoxes, boxLabel, boxPrice, buyBox } from '../src/core/blindbox';
 import { addXp } from '../src/core/state';
 import { MASTERY, masteryFree, spendMastery } from '../src/core/mastery';
 import { affixTotal } from '../src/core/state';
 import { xpToNext } from '../src/core/config';
 
-describe('高级盲盒摊、言灵精通', () => {
-  it('advanced boxes from 131: dearer, purple or orange, B2 labels; bought ones come back advanced', () => {
-    const s = newGame('T', 'student');
-    s.level = 130;
-    expect(blindBoxes(s, makeRng(1)).some((b) => b.adv)).toBe(false);
-    s.level = 131;
-    const boxes = blindBoxes(s, makeRng(1));
-    const adv = boxes.filter((b) => b.adv);
-    expect(adv.length).toBe(ADV_BLIND.boxes);
-    for (const b of adv) {
-      expect(['purple', 'orange']).toContain(b.quality);
-      expect(boxLabel(b).length).toBeGreaterThan(20);
-      expect(boxPrice(s, b)).toBeGreaterThan(boxPrice(s, { ...b, adv: false }));
-    }
-    s.gold = 1e9;
-    const i = boxes.findIndex((b) => b.adv);
-    expect(buyBox(s, i, makeRng(2), 99).ok).toBe(true);
-    expect(blindBoxes(s, makeRng(3))[i].adv).toBe(true);
-  });
-
+describe('言灵精通', () => {
   it('at max level experience turns into mastery points, spent on small bonuses', () => {
     const s = newGame('T', 'student');
     s.level = 200;

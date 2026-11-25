@@ -1,3 +1,4 @@
+import { rollSetDrop } from './forge';
 import { CHALLENGE_CFG, noteFirstTry } from './challenge';
 import { pityOrange } from './forge';
 import { quickFightXp, type Battle } from './combat';
@@ -144,6 +145,11 @@ export function applyWin(s: GameState, b: Battle, rng: Rng, opts: { heal?: boole
         bagFull = true;
         drop = null;
       } else s.bag.push(drop);
+    }
+    // 主题套装 (101): only from this region's monsters and bosses.
+    if (!drop && !bagFull) {
+      const piece = rollSetDrop(s, w.region ?? s.region ?? 1, rng);
+      if (piece && s.bag.length < CONFIG.loot.bagSize) s.bag.push((drop = piece));
     }
   }
 

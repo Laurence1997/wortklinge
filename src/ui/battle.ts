@@ -14,7 +14,7 @@ import { STAGE_ZH } from '../core/srs';
 import { maxHp } from '../core/state';
 import type { Move } from '../core/types';
 import { FAMILIES } from '../data/families';
-import { loadout, POOL, type PoolId } from '../core/skillPool';
+import { carriesShout, combatSkills, POOL, type PoolId } from '../core/skillPool';
 import { resMax } from '../core/classes';
 import { fullForm, genderOf, WORD_BY_ID, zhWithPos } from '../data/words';
 import type { Controller } from '../game/controller';
@@ -289,14 +289,14 @@ export class BattleUI {
     const r = this.ctrl.shoutCharm(id, input);
     this.charmId = null;
     if (!r) return;
-    logLine(`秘术：${r.res.text}`, r.res.ok && !r.res.backfire ? 'good' : 'bad');
+    logLine(`喊出：${r.res.text}`, r.res.ok && !r.res.backfire ? 'good' : 'bad');
     if (!r.report) {
       this.render();
       return;
     }
     stopListening();
     this.report = r.report;
-    this.question = { type: 'steady', prompt: '喊出秘术', focus: r.res.text, item: true };
+    this.question = { type: 'steady', prompt: '喊出短句', focus: r.res.text, item: true };
     this.move = 'item';
     this.phase = 'result';
     this.lastValue = '';
@@ -346,7 +346,7 @@ export class BattleUI {
   private charmRow(): HTMLElement | string {
     const s = this.ctrl.state;
     const b = this.b;
-    const list = equippedCharms(s);
+    const list = equippedCharms(s, carriesShout(s));
     if (!list.length || b.tutorial) return '';
     const used = b.fx.charm?.used ?? [];
     const row = h('div.hud-row.small');
@@ -355,7 +355,7 @@ export class BattleUI {
         disabled: this.phase !== 'choose' || used.includes(c.id),
         onclick: () => { this.charmId = this.charmId === c.id ? null : c.id; this.render(); },
         title: `${c.zh}：${c.fx}${c.kind === 'slang' ? `（只对${(c as { when?: string }).when}）` : ''}。打出整句生效，每场一次；${s.level < CHARM.bonusFrom ? '占一回合（33 级起不占回合）' : '附赠动作，不占回合'}`,
-      }, used.includes(c.id) ? `秘术 ✓ ${c.zh}` : `秘术 · ${c.zh}`));
+      }, used.includes(c.id) ? `${c.kind === 'slang' ? '俚语' : '短句'} ✓ ${c.zh}` : `${c.kind === 'slang' ? '俚语' : '短句'} · ${c.zh}`));
     }
     if (this.charmId && this.phase === 'choose') {
       const c = list.find((x) => x.id === this.charmId);
@@ -759,7 +759,7 @@ export class BattleUI {
         return true;
       }
       const si = BattleUI.SKILL_KEYS.indexOf(k.toUpperCase());
-      const lo = loadout(this.ctrl.state);
+      const lo = combatSkills(this.ctrl.state);
       if (si >= 0 && lo[si]) {
         this.chooseSkill(lo[si]);
         return true;
@@ -929,7 +929,7 @@ export class BattleUI {
         if (mv === 'sentence' && !moveReady(s, b, mv)) continue;
         // 技能池: one button per skill in the loadout.
         if (mv === 'skill') {
-          loadout(s).forEach((id, i) => {
+          combatSkills(s).forEach((id, i) => {
             const sk = POOL[id];
             const cd = b.poolCd[id] ?? 0;
             const ok = poolReady(s, b, id);

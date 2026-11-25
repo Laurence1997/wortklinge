@@ -1,6 +1,6 @@
-// 秘术栏 (游戏设计 九「短句卡和俚语秘术」+「短句卡和俚语效果表」, 2026-11-25, values 暂定).
-// One slot (two from B1 = 81), not counted in the skill slots. A short card (3 级) or a slang line (50 级) goes in it.
-// Each fight it can be shouted once: type the whole sentence and its effect lands on numbers only (damage, HP, hits
+// 短句 / 俚语 (游戏设计 九「短句卡和俚语效果表」; Lucas 2026-11-25 瘦身: the 秘术栏 is gone). Two pool skills: 「短句」
+// (owned with the first card, 3 级) and 「俚语」 (50 级) take a skill slot each; before the slots open at 10, 「短句」 is
+// carried free. Each skill holds one pick (a card / a slang line) chosen in the wordbook. Each fight it can be shouted once: type the whole sentence and its effect lands on numbers only (damage, HP, hits
 // taken, drops, XP, gold, the monster's pace), never on learning. Before 33 shouting takes the turn (the monsters act);
 // from 33 it is a bonus action (附赠动作). Slang only works on the situation it names; the wrong one backfires: no
 // effect, and this fight's next wrong answer is hit +50%.
@@ -136,8 +136,9 @@ export const CARDS: CharmDef[] = SAYINGS.filter((x) => CARD_FX[x.id]).map((x) =>
 
 export const CHARM_BY_ID: Record<string, CharmDef | SlangDef> = Object.fromEntries([...CARDS, ...SLANG].map((c) => [c.id, c]));
 
+/** Kept for the panel: how many picks can be live (one card, plus one slang line from 50). */
 export function charmSlots(level: number): number {
-  return level < CHARM.from ? 0 : level >= CHARM.twoSlotsFrom ? 2 : 1;
+  return level < CHARM.from ? 0 : level >= CHARM.slangFrom ? 2 : 1;
 }
 
 export function ownsCharm(s: GameState, id: string): boolean {
@@ -147,17 +148,31 @@ export function ownsCharm(s: GameState, id: string): boolean {
   return s.level >= CHARM.slangFrom && !!s.slang?.[id];
 }
 
-/** The equipped charms still valid (owned, within the slot count). */
-export function equippedCharms(s: GameState): CharmDef[] {
-  return (s.charms ?? []).filter((id) => ownsCharm(s, id)).slice(0, charmSlots(s.level)).map((id) => CHARM_BY_ID[id]);
+/** The pick of each kind: the chosen card / slang line, else the first one owned. */
+export function charmPick(s: GameState, kind: CharmKind): CharmDef | null {
+  const chosen = (s.charms ?? []).find((id) => CHARM_BY_ID[id]?.kind === kind && ownsCharm(s, id));
+  if (chosen) return CHARM_BY_ID[chosen];
+  return [...CARDS, ...SLANG].find((c) => c.kind === kind && ownsCharm(s, c.id)) ?? null;
 }
 
-/** Toggle a charm in the slots: a full bar drops its oldest. */
+/** The charms live in this fight: the 「短句」 / 「俚语」 skill carried, with its pick. */
+export function equippedCharms(s: GameState, carried?: { saying: boolean; slang: boolean }): CharmDef[] {
+  const c = carried ?? { saying: s.level >= CHARM.from, slang: s.level >= CHARM.slangFrom };
+  const out: CharmDef[] = [];
+  const card = c.saying ? charmPick(s, 'card') : null;
+  const slang = c.slang ? charmPick(s, 'slang') : null;
+  if (card) out.push(card);
+  if (slang) out.push(slang);
+  return out;
+}
+
+/** Choose the pick for its skill (one card, one slang line). Choosing the current pick clears it. */
 export function equipCharm(s: GameState, id: string): void {
-  if (!ownsCharm(s, id)) return;
+  const c = CHARM_BY_ID[id];
+  if (!c || !ownsCharm(s, id)) return;
   const cur = (s.charms ?? []).filter((x) => ownsCharm(s, x));
   if (cur.includes(id)) s.charms = cur.filter((x) => x !== id);
-  else s.charms = [...cur, id].slice(-charmSlots(s.level));
+  else s.charms = [...cur.filter((x) => CHARM_BY_ID[x].kind !== c.kind), id];
 }
 
 export function grantSlang(s: GameState, id: string): boolean {

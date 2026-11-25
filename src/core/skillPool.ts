@@ -9,7 +9,9 @@ import { CONJ } from '../data/verbs';
 import { PREP_VERBS } from '../data/grammar/prepVerbs';
 import { WORDS } from '../data/words';
 
-export type PoolId = 'storm' | 'steady' | 'split' | 'colloc' | 'seal' | 'dictate';
+export type PoolId = 'storm' | 'steady' | 'split' | 'colloc' | 'seal' | 'dictate' | 'saying' | 'slang';
+/** 短句 / 俚语 (瘦身 2026-11-25): shouted in the charm row, no cooldown, once a fight; they only take a slot. */
+export const SHOUT_IDS: PoolId[] = ['saying', 'slang'];
 
 export interface PoolSkill {
   id: PoolId;
@@ -29,9 +31,11 @@ export const POOL: Record<PoolId, PoolSkill> = {
   colloc: { id: 'colloc', zh: '搭配', lv: 41, cd: 4, asks: '这个词的固定搭配（warten auf）', effect: '伤害 ×1.6，写对算「会用」。没有搭配的词不能放' },
   seal: { id: 'seal', zh: '格之封印', lv: 61, cd: 6, asks: '把这个词放进要变格或变位的短句', effect: '这只怪 2 回合内不能蓄力，在蓄的清零；首领无效' },
   dictate: { id: 'dictate', zh: '听写', lv: 81, cd: 4, asks: '听它喊出例句，打出被挖掉的词，不给中文', effect: '伤害 ×1.3' },
+  saying: { id: 'saying', zh: '短句', lv: 3, cd: 0, asks: '打出带上的那张短句卡的整句', effect: '每场喊一次，效果看卡（单词本里选卡）；33 级起不占回合' },
+  slang: { id: 'slang', zh: '俚语', lv: 50, cd: 0, asks: '在对的场合打出带上的那条俚语', effect: '每场喊一次，场合对才生效，用错有反噬（单词本里选）；不占回合' },
 };
 
-export const POOL_ORDER: PoolId[] = ['storm', 'steady', 'split', 'colloc', 'seal', 'dictate'];
+export const POOL_ORDER: PoolId[] = ['storm', 'steady', 'split', 'colloc', 'seal', 'dictate', 'saying', 'slang'];
 export const SLOTS: Array<[number, number]> = [[61, 4], [30, 3], [10, 2]];
 export const POOL_FROM = 10;
 export const SEAL_TURNS = 2;
@@ -44,13 +48,29 @@ export function slotCount(level: number): number {
 }
 
 /** Skills you own: everything handed over by your level (the pool opens at 10, after the region-1 boss). */
-export function owned(s: Pick<GameState, 'level' | 'pool'>): PoolId[] {
+export function owned(s: Pick<GameState, 'level' | 'pool'> & Partial<Pick<GameState, 'sayings' | 'slang'>>): PoolId[] {
   if (s.level < POOL_FROM) return [];
-  return POOL_ORDER.filter((id) => s.level >= POOL[id].lv || s.pool?.includes(id));
+  return POOL_ORDER.filter((id) => {
+    if (id === 'saying') return s.level >= POOL.saying.lv && Object.values(s.sayings ?? {}).some(Boolean);
+    if (id === 'slang') return s.level >= POOL.slang.lv && Object.values(s.slang ?? {}).some(Boolean);
+    return s.level >= POOL[id].lv || s.pool?.includes(id);
+  });
+}
+
+/** Cooldown skills carried (the 「技能」 move); 短句 / 俚语 are shouted from their own row. */
+export function combatSkills(s: Pick<GameState, 'level' | 'pool' | 'loadout'> & Partial<Pick<GameState, 'sayings' | 'slang'>>): PoolId[] {
+  return loadout(s).filter((id) => !SHOUT_IDS.includes(id));
+}
+
+/** Is 「短句」 / 「俚语」 carried? Before the slots open (10), 「短句」 comes free. */
+export function carriesShout(s: Pick<GameState, 'level' | 'pool' | 'loadout'> & Partial<Pick<GameState, 'sayings' | 'slang'>>): { saying: boolean; slang: boolean } {
+  if (s.level < POOL_FROM) return { saying: s.level >= POOL.saying.lv, slang: false };
+  const lo = loadout(s);
+  return { saying: lo.includes('saying'), slang: lo.includes('slang') };
 }
 
 /** Skills taken into battle: the player's pick (only owned ones, up to the slots), else the first owned ones. */
-export function loadout(s: Pick<GameState, 'level' | 'pool' | 'loadout'>): PoolId[] {
+export function loadout(s: Pick<GameState, 'level' | 'pool' | 'loadout'> & Partial<Pick<GameState, 'sayings' | 'slang'>>): PoolId[] {
   const own = owned(s);
   const n = slotCount(s.level);
   const pick = (s.loadout ?? []).filter((id): id is PoolId => own.includes(id as PoolId));

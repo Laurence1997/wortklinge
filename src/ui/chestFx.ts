@@ -9,7 +9,7 @@ import { icon, SLOT_TILE } from './icons';
 import { h } from './dom';
 
 const ORDER: Quality[] = ['white', 'green', 'purple', 'orange'];
-const Q_ZH: Record<Quality, string> = { white: '普通', green: '优秀', purple: '史诗', orange: '传说', red: '红装' };
+const Q_ZH: Record<Quality, string> = { white: '普通', green: '优秀', purple: '史诗', orange: '传说', red: '套装最高档' };
 const Q_COLOR: Record<Quality, string> = { white: '#cfc6be', green: '#5fdc7f', purple: '#b07cff', orange: '#ff9a3a', red: '#ff3a3a' };
 /** Closed / open chest tiles (Tiny Dungeon 90 front closed, 91 open; same view so the lid visibly opens). */
 const TILE: Record<ChestKind, [number, number]> = { wood: [90, 91], forgotten: [90, 91], iron: [90, 91], gold: [90, 91] };

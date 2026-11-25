@@ -600,26 +600,27 @@ describe('classes and talents', () => {
     expect(s.hp).toBeLessThan(hp);
   });
 
-  it('talent points: 1 per level at 12–30, 1 per 2 levels to 200; rows gate at 4/8/12/16, big at 20; respec', async () => {
+  it('talent points: 1 per 2 levels at 12–30, per 3 to 120, per 2 to 200; rows gate at 3/6/9, big at 12; respec', async () => {
     const { learn, talentPoints, respec, respecCost, spent, rank, TALENT_TREE } = await import('../src/core/classes');
     const s = newGame('T', 'student');
     s.level = 11;
     expect(talentPoints(s)).toBe(0);
     s.level = 30;
-    expect(talentPoints(s)).toBe(19);
+    expect(talentPoints(s)).toBe(10);
     s.level = 120;
-    expect(talentPoints(s)).toBe(64);
+    expect(talentPoints(s)).toBe(40);
     s.level = 200;
-    expect(talentPoints(s)).toBe(104);
-    for (const br of ['bifeng', 'shoushi', 'yanci', 'zhixu', 'xunjie']) expect(TALENT_TREE.filter((t) => t.branch === br).length).toBe(15);
+    expect(talentPoints(s)).toBe(80);
+    for (const br of ['bifeng', 'shoushi', 'yanci', 'zhixu', 'xunjie']) expect(TALENT_TREE.filter((t) => t.branch === br).length).toBe(8);
     s.level = 40;
-    expect(learn(s, 'critRun')).toBe(false); // row 2: 4 points in 笔锋 first
-    for (let i = 0; i < 3; i++) learn(s, 'bifeng');
+    learn(s, 'bifeng');
+    learn(s, 'bifeng');
+    expect(learn(s, 'critRun')).toBe(false); // row 2: 3 points in 笔锋 first
+    learn(s, 'bifeng');
     expect(learn(s, 'bifeng')).toBe(false); // max 3
-    learn(s, 'changci');
     expect(learn(s, 'critRun')).toBe(true);
-    expect(learn(s, 'tengxie')).toBe(false); // big: 20 points
-    expect(spent(s)).toBe(5);
+    expect(learn(s, 'tengxie')).toBe(false); // big: 12 points
+    expect(spent(s)).toBe(4);
     s.level = 60;
     (s.talents as Record<string, Record<string, number>>).shared.erchong = 1;
     expect(rank(s, 'erchong')).toBe(0); // 81 级起

@@ -63,7 +63,7 @@ export function slotsAt(ilvl: number): Slot[] {
 }
 
 export const SLOT_ZH: Record<Slot, string> = { pen: '笔', coat: '外套', amulet: '护符', dict: '词典', glasses: '眼镜', phones: '耳机' };
-export const QUALITY_ZH: Record<Quality, string> = { white: '普通', green: '优秀', purple: '史诗', orange: '传说', red: '红装' };
+export const QUALITY_ZH: Record<Quality, string> = { white: '普通', green: '优秀', purple: '史诗', orange: '传说', red: '套装最高档' };
 
 export const AFFIX_ZH: Record<AffixKey, (v: number) => string> = {
   dmg: (v) => `伤害 +${pct(v)}`,

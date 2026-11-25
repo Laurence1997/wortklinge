@@ -1,5 +1,6 @@
-// 装备掉落规则 (游戏设计 九): 红装 (111 级: 首领 1%、满级后裂隙第 10 层以上首领 3%, 连续 60 个首领没红下一个必红),
-// 橙装保底 150 件, 主题套装 (101 级, 2 件和 4 件各有奖励).
+// 装备掉落规则 (游戏设计 九): 主题套装 (101 级, 2 件和 4 件各有奖励) only drops from that region's monsters and bosses;
+// 套装最高档 (原红装, Lucas 2026-11-25 瘦身并入套装; 111 级: 首领 1%、满级后裂隙第 10 层以上首领 3%, 连续 60 个首领没有
+// 下一个必出) is a set piece of the region at the top quality (stored as quality 'red'). 橙装保底 150 件.
 // 铁匠打造和拓印 were cut (Lucas 2026-11-25, 「按推荐」): 碎片换装备 at the bonfire instead (九「碎片换装备」): the
 // shard 累计 unlocks tier n at 40 × n², the 余额 pays (first trade of a tier free, then 10 × n); quality and affixes
 // rolled as a drop; unwanted gear can be broken back into about 3 shards of the region you are in.
@@ -14,7 +15,6 @@ import { makeItem, rollQuality } from './loot';
 import type { Rng } from './rng';
 import type { GameState } from './state';
 import type { Affix, AffixKey, Item, Quality, Slot } from './types';
-import { WORDS } from '../data/words';
 import { AREAS } from '../data/world';
 
 export const FORGE = {
@@ -22,9 +22,9 @@ export const FORGE = {
   redFrom: 111,
   /** 暂定: gold per set piece, in hours of gold. */
   setGold: 0.5,
-  /** 暂定: region materials per set piece, and the drop chance per kill in that region. */
-  setMats: 12,
-  matChance: 0.15,
+  /** 暂定: chance of a set piece per kill in a region, and per boss kill there (101+). */
+  setKill: 0.02,
+  setBoss: 0.2,
   /** 红装 and 橙装 drop rules (九). */
   redBoss: 0.01,
   redRiftBoss: 0.03,
@@ -34,7 +34,7 @@ export const FORGE = {
 };
 
 export interface ForgeSave {
-  /** Region materials (主题套装), by region number. */
+  /** Old: region materials for crafting sets (crafting cut; kept so old saves load). */
   mats?: Record<string, number>;
   /** Drops since the last orange; bosses since the last red. */
   orangePity?: number;
@@ -128,8 +128,8 @@ export function pityOrange(s: GameState, q: Quality, maxQ: Quality): Quality {
   return q;
 }
 
-/** A boss went down: maybe a red item (1%; 3% for rift bosses on floor 10+ after max level; the 60th boss without one
- *  always). Null before 111. */
+/** A boss went down: maybe a 套装最高档 piece of this region (1%; 3% for rift bosses on floor 10+ after max level;
+ *  the 60th boss without one always). Null before 111. */
 export function bossRed(s: GameState, rng: Rng, opts: { riftFloor?: number } = {}): Item | null {
   if (s.level < FORGE.redFrom) return null;
   const f = forge(s);
@@ -138,7 +138,7 @@ export function bossRed(s: GameState, rng: Rng, opts: { riftFloor?: number } = {
   f.redPity = (f.redPity ?? 0) + 1;
   if (rng() >= p && f.redPity < FORGE.redPity) return null;
   f.redPity = 0;
-  return makeItem(rng, s.level, 'red');
+  return setPiece(s, s.region ?? 1, rng, 'red');
 }
 
 // ---- 主题套装 -----------------------------------------------------------------------------------------------
@@ -171,34 +171,20 @@ export function setDef(region: number): SetDef | null {
   return { region, zh: `${a.zh}套`, two: { key, value }, four: FOUR_CYCLE[(region - 1) % FOUR_CYCLE.length] };
 }
 
-export function mats(s: GameState, region: number): number {
-  return forge(s).mats?.[String(region)] ?? 0;
-}
-
-/** A kill in a region may drop one of its materials (from 101). */
-export function rollMat(s: GameState, region: number, rng: Rng): boolean {
-  if (s.level < FORGE.setFrom || !setDef(region) || rng() >= FORGE.matChance) return false;
-  const f = forge(s);
-  f.mats ??= {};
-  f.mats[String(region)] = (f.mats[String(region)] ?? 0) + 1;
-  return true;
-}
-
-/** Make one set piece: materials + gold + a met word of that region, spelt (no letters spent: the materials pay). */
-export function craftSet(s: GameState, region: number, slot: Slot, input: string, rng: Rng): ForgeResult & { item?: Item } {
+/** A set piece of a region (purple, or the top tier 'red'). Null where the region has no set. */
+export function setPiece(s: GameState, region: number, rng: Rng, q: Quality = 'purple', slot?: Slot): Item | null {
   const d = setDef(region);
-  if (!d || s.level < FORGE.setFrom) return { ok: false, why: `${FORGE.setFrom} 级开主题套装。` };
-  if (mats(s, region) < FORGE.setMats) return { ok: false, why: `素材不够（要 ${FORGE.setMats}，有 ${mats(s, region)}）。` };
-  const word = WORDS.find((w) => (w.region ?? 1) === region && s.words[w.id] && w.de === input.trim());
-  if (!word) return { ok: false, why: `打出一个你在${d.zh.replace('套', '')}见过的词（大小写要对）。` };
-  const g = goldFor(s, FORGE.setGold);
-  if (s.gold < g) return { ok: false, why: `金币不够（要 ${g}）。` };
-  s.gold -= g;
-  forge(s).mats![String(region)] -= FORGE.setMats;
-  const it = makeItem(rng, s.level, 'purple', slot);
+  if (!d) return null;
+  const it = makeItem(rng, s.level, q, slot);
   it.set = region;
-  it.name = `${d.zh}·${it.name}`;
-  return { ok: true, item: it };
+  it.name = `${d.zh}${q === 'red' ? '·最高档' : ''}·${it.name}`;
+  return it;
+}
+
+/** 101+: a kill (or a boss) in a region may drop one of its set pieces. */
+export function rollSetDrop(s: GameState, region: number, rng: Rng, boss = false): Item | null {
+  if (s.level < FORGE.setFrom || s.rift || rng() >= (boss ? FORGE.setBoss : FORGE.setKill)) return null;
+  return setPiece(s, region, rng);
 }
 
 /** Pieces of each set you wear. */
