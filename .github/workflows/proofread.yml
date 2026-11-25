@@ -9,6 +9,10 @@ on:
     paths: ['src/data/**', 'src/core/**', 'src/ui/**', 'src/game/**', 'scripts/proof/**', 'proof/**']
   workflow_dispatch:
     inputs:
+      deepseek:
+        description: 'Also run the DeepSeek cross-check (costs a few 角; only new or changed sentences are sent)'
+        type: boolean
+        default: true
       tatoeba:
         description: 'Also compare with Tatoeba native sentences (downloads ~100 MB)'
         type: boolean
@@ -55,7 +59,9 @@ jobs:
           path: proof/out/deepseek-cache.json
           key: deepseek-${{ github.run_id }}
           restore-keys: deepseek-
-      - name: DeepSeek cross-check (skipped until the DEEPSEEK_API_KEY secret exists)
+      # Costs a little money per run, so only when started by hand (Actions → 德语校对 → Run workflow → tick DeepSeek).
+      - name: DeepSeek cross-check (manual runs only)
+        if: github.event_name == 'workflow_dispatch' && inputs.deepseek
         env:
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
         run: npx vite-node scripts/proof/deepseek.ts
