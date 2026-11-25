@@ -13,7 +13,7 @@ import sys, csv, os
 from openpyxl import load_workbook
 
 COLS = ['排名','卡片','原形','冠词','复数','属格(仅不规则)','动词三形','比较级(仅不规则)','词性','中文','标签','游戏里已有','例句','例句中文','例句出处','来源','备注']
-OPTIONAL = ['词族','近义词组','语体','形近词','德语释义']  # newer columns; an older xlsx without them still imports
+OPTIONAL = ['词族','近义词组','语体','先后','情境','功能线','宿主情境','场景','形近词','德语释义']  # newer columns; an older xlsx without them still imports
 OUT = os.path.join(os.path.dirname(__file__), '..', 'data', 'wortschatz', 'wortschatz.tsv')
 
 def main(path):
