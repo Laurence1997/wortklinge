@@ -589,7 +589,7 @@ export class Controller {
       }
       if (this.battle.rusty && !s.flags.rustyTaught) {
         s.flags.rustyTaught = true;
-        say([{ who: SYS, text: '【锈名】这只遗忘之物拖了太久，名字生了锈：高 1 级、血多三成。打败它经验和金币翻倍，必掉 1 片碎片。它不会逃，也不会追你。' }]);
+        say([{ who: SYS, text: '【锈名】这只遗忘之物拖了太久，名字生了锈：拖得越久血越多，奖励和普通怪一样。按时复习最划算。它不会逃，也不会追你。' }]);
       }
       // 怪物诅咒 (0.6, 25 级): about one in ten carries 遗忘 or 沉默; the first one after the hall gate is certain.
       if (s.level >= CONFIG.curse.from && !m.isEcho && (s.flags.curseNext || this.rng() < CONFIG.curse.chance)) {
@@ -1547,7 +1547,7 @@ export class Controller {
     const trades = ti.can;
     const tradeOpt = trades ? [{ label: free ? '碎片换档（免费）' : `碎片换档（${ti.cost} 片）`, act: () => this.shardTrade() }] : [];
     if (jw) {
-      lines.push({ who: SYS, text: `【篝火日记】今天打过 ${jw.map((w) => w.de).join('、')}。用它们写两三句话？不判对错，只提示查得出的错。` });
+      lines.push({ who: SYS, text: `【篝火日记】今天打过 ${jw.map((w) => `「${w.zh}」`).join('、')}。用它们写两三句话？每天一篇，登录后 AI 批改。` });
       say(lines, undefined, [{ label: '写日记', act: () => this.panels.showJournal(jw) }, ...tradeOpt, { label: '今天不写', act: () => undefined }]);
     } else if (trades) say(lines, undefined, [...tradeOpt, { label: '先不换', act: () => undefined }]);
     else say(lines);
@@ -1874,6 +1874,19 @@ export class Controller {
     this.persist();
     this.refresh();
     toast(`${it.name} 鉴定好了${f.misses.length ? '' : '：每条词缀都挑了更好的那个'}`, 'gold');
+  }
+
+  /** 审查修订: the one 「AI 对话」 entry at a camp; each mode inside keeps its own rules. */
+  openAiHub(): void {
+    const s = this.state;
+    if (!s.owner) return say([{ who: SYS, text: 'AI 对话要登录才能用（在云端）。' }]);
+    const n = s.flags.aiPayDay === dayKey(now(s)) ? ((s.flags.aiPayN as number) ?? 0) : 0;
+    const modes = [
+      ...(s.level >= DUEL.from ? [{ label: '⚔ 决斗场：用德语把一件事办完', act: () => this.openDuel() }] : []),
+      ...(s.level >= AI_TUTOR.grade ? [{ label: '✎ 批改造句：用一个词写一句', act: () => this.openAiSentence() }] : []),
+      ...(s.level >= AI_TUTOR.essay ? [{ label: '📝 小作文：用 3 个词写 3–5 句', act: () => this.openEssay() }] : []),
+    ];
+    say([{ who: SYS, text: `【AI 对话】选一种。决斗场每天前 ${CONFIG.aiPaidPerDay} 场给金币和经验（今天已经 ${Math.min(n, CONFIG.aiPaidPerDay)} 场），之后只算复习。篝火日记在篝火休息时写。` }], undefined, [...modes, { label: '先不了', act: () => undefined }]);
   }
 
   // ---- 决斗场 · AI 对话 (10, rev 459) ----------------------------------------------------------------

@@ -198,8 +198,8 @@ export const CONFIG = {
   /** 晚点之王 (0.6 第 5 块, Lv28): HP 8; rewards as 吞秤者, XP scaled by the level curve. */
   /** 幽灵检票员 Lina (0.6 第 5 块): Lv25+, after Konrad's quest; 30 s a question, HP 5. */
   lina: { hp: 5, seconds: 30, fromLevel: 25 },
-  /** 锈名 (0.6 第 6 块, 27 级). */
-  rusty: { from: 27, overdue: 3, hpMult: 1.3, rewardMult: 2, shards: 1 },
+  /** 锈名 (27 级): 审查修订 — the look of 越久越肥 layers 3–4, no stats of its own. */
+  rusty: { from: 27, overdue: 3 },
   /** 刻字孔 (0.6 第 6 块, 25 级). */
   /** 语气词孔: auch / denn from 25; mal / doch from 45 (暂定: +20% on a right 终结技 whose sentence uses the particle in
    *  its pattern — mal in a request, doch anywhere; repeats in the last 5 sentences pay 100/70/50/30%, three different

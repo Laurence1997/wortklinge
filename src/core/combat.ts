@@ -307,7 +307,7 @@ export interface Battle {
   teachFin?: boolean;
   /** 怪物诅咒 (0.6, 25 级): 遗忘 = no 低语 and no Chinese hints; 沉默 = no 读出来 / 跟读. A hard question right lifts it. */
   curse?: 'forget' | 'silence';
-  /** 锈名 (0.6, 27 级): a long-overdue review monster, fatter and paying double. */
+  /** 锈名 (27 级): the rusted look of a review monster 3+ intervals overdue (越久越肥 layers 3–4). */
   rusty?: boolean;
   /** 审查修订: sentences shown in this fight (normalized), kept out of writing questions. */
   seenLines?: string[];
@@ -432,11 +432,11 @@ export function startBattle(
   // 审查修订 B2: Lv1–5 a challenge monster is your level (the 1–5 cap of 0 above), +2 from Lv6.
   const lvl = challenge ? s.level + (s.level <= 5 ? 0 : CHALLENGE_CFG.levelAbove) : opts.isEcho ? Math.min(word.lvl, s.level) : isReview ? Math.max(word.lvl, s.level) : s.flags[`zoneOk_${word.zone}`] ? word.lvl : Math.min(word.lvl, s.level + CONFIG.monster.maxAbove(s.level));
   const overdue = overdueSteps(s, word, t);
-  // 锈名 (0.6, 27 级): a review monster 3+ intervals overdue rusts: one level up, ×1.3 HP, double reward.
+  // 锈名 (27 级): 审查修订 — only the look of 越久越肥 layers 3–4 (3+ intervals overdue); the HP comes from 越久越肥.
   const rusty = isReview && overdue >= CONFIG.rusty.overdue && s.level >= CONFIG.rusty.from && !opts.tutorial && !opts.elite;
-  const st = monsterStats(rusty ? lvl + 1 : lvl, stage, kind, overdue);
-  const hp0 = rusty ? Math.round(st.hp * CONFIG.rusty.hpMult) : st.hp;
-  const monster: MonsterState = { lvl: rusty ? lvl + 1 : lvl, hp: hp0, maxHp: hp0, dmg: st.dmg, vulnerable: 0, burn: 0, poison: 0, chilled: false, broken: 0 };
+  const st = monsterStats(lvl, stage, kind, overdue);
+  const hp0 = st.hp;
+  const monster: MonsterState = { lvl, hp: hp0, maxHp: hp0, dmg: st.dmg, vulnerable: 0, burn: 0, poison: 0, chilled: false, broken: 0 };
   const tutorial = opts.tutorial ?? null;
   if (tutorial === 'loss') {
     monster.lvl = s.level + 6;

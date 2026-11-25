@@ -493,9 +493,9 @@ export class Panels {
     const j = this.journalState!;
     const wrap = h('div');
     wrap.append(
-      h('p', '用下面 3 个今天打过的词，写两三句你自己的话。写什么都行：今天去了哪儿、看见了什么、想要什么。'),
+      h('p', '用下面 3 个今天打过的词（给的是中文，德语要自己想起来）写两三句你自己的话。写什么都行：今天去了哪儿、看见了什么、想要什么。登录后 AI 会批改，每天一篇。'),
       h('p.small.muted', '这里不判对错。「检查」只会指出规则能确定的错：没用到给的词、冠词和名词对不上、ich / du / er 后面的动词形式不对。查不出的就不管。写完记进日记，每天第一篇给一点经验。'),
-      h('div.row', ...j.words.map((w) => h('span.tag', `${w.art ? `${w.art} ` : ''}${w.de} · ${w.zh}`))),
+      h('div.row', ...j.words.map((w) => h('span.tag', `「${w.zh}」${w.art ? '（名词，带冠词）' : ''}`))), // 审查修订: the words in Chinese, so writing them is recall
     );
     if (j.saved !== null) {
       wrap.append(h('div.feedback.ok', j.saved ? `记进日记了。经验 +${j.saved}` : '记进日记了。'), h('pre.small', j.text));

@@ -318,9 +318,8 @@ export class NodeNav {
     if (sc.id === 'r3-hide' && this.s.level >= DUNGEON.from) things.push(h('button.btn.primary', { disabled: busy, onclick: () => this.w.ctrl.enterDungeon() }, '🚪 进入零号站台（规则表地下城）'));
     // 语法秘境 (0.7–0.8): entered from a region's camp.
     if (sc.type === 'camp' && sc.bonfire && this.s.level >= RIFT.from) things.push(h('button.btn', { disabled: busy, onclick: () => this.w.ctrl.enterRift() }, '🌀 裂隙（白板 roguelite）'));
-    if (sc.type === 'camp' && sc.bonfire && this.s.level >= DUEL.from) things.push(h('button.btn', { disabled: busy, onclick: () => this.w.ctrl.openDuel() }, '⚔ 决斗场（AI 对话）'));
-    if (sc.type === 'camp' && sc.bonfire && this.s.level >= AI_TUTOR.grade) things.push(h('button.btn', { disabled: busy, onclick: () => this.w.ctrl.openAiSentence() }, '✎ AI 批改造句'));
-    if (sc.type === 'camp' && sc.bonfire && this.s.level >= AI_TUTOR.essay) things.push(h('button.btn', { disabled: busy, onclick: () => this.w.ctrl.openEssay() }, '📝 小作文（AI 批改）'));
+    // 审查修订: one 「AI 对话」 entry; the modes (决斗场, AI 批改造句, 小作文) are inside.
+    if (sc.type === 'camp' && sc.bonfire && this.s.level >= Math.min(DUEL.from, AI_TUTOR.grade)) things.push(h('button.btn', { disabled: busy, onclick: () => this.w.ctrl.openAiHub() }, '💬 AI 对话'));
     if (sc.type === 'camp' && sc.bonfire && this.s.level >= PARTNER.from) things.push(h('button.btn', { disabled: busy, onclick: () => this.w.ctrl.choosePartner() }, '🤝 复习伙伴'));
     if (sc.type === 'camp' && sc.bonfire && this.s.level >= GRAM_DUNGEON.from.ablaut) things.push(h('button.btn', { disabled: busy, onclick: () => this.w.ctrl.enterGramDungeon() }, '📜 语法秘境'));
     if (sc.bonfire && has(this.s.level, 'dailies')) things.push(h('button.btn', { disabled: busy, onclick: () => this.w.ctrl.showDailies() }, '📋 每日委托'));
