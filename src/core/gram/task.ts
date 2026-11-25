@@ -62,7 +62,12 @@ export type GramSys =
   | 'hinHer'
   | 'k2Past'
   | 'b2Conj'
-  | 'concess';
+  | 'concess'
+  | 'report'
+  | 'numbers'
+  | 'rewrite'
+  | 'timeline'
+  | 'register';
 
 export interface GramTask {
   sys: GramSys;
@@ -90,6 +95,11 @@ export interface GramTask {
   lock?: { i: number; of: number };
   /** The word this task is about, when it is a real word in the word list. */
   wordId?: string;
+  /** Typed answers graded by key words instead of the whole answer (改写怪: 「规则查关键词」): every group needs one
+   *  of its spellings (normalized) in the input. */
+  keys?: string[][];
+  /** Asked by a special monster (B2 怪种): its own hits land in full, other moves graze it. */
+  special?: boolean;
 }
 
 const strip = (s: string) =>
@@ -115,7 +125,11 @@ export function gradeGram(t: GramTask, input: string): GramVerdict {
   const accepted = [t.answer, ...(t.alts ?? [])];
   let ok: boolean;
   if (t.options) ok = input === t.answer || (t.alts ?? []).includes(input);
-  else {
+  else if (t.keys) {
+    const k = ` ${normalize(input)} `;
+    const words = k.trim().split(' ').filter(Boolean).length;
+    ok = words >= Math.ceil(normalize(t.answer).split(' ').length / 2) && t.keys.every((g) => g.some((x) => k.includes(` ${x} `)));
+  } else {
     const k = gramKey(input).replace(/\bbitte\b/g, '').replace(/\s+/g, ' ').trim();
     ok = accepted.some((a) => gramKey(a).replace(/\bbitte\b/g, '').replace(/\s+/g, ' ').trim() === k);
   }

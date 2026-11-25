@@ -15,6 +15,7 @@ import { clozeModeAt, noteCloze } from './adaptive';
 import { gradeLink, gradeOrder, gradeSlot, linkTask, orderTask, SLOT_RECENT, slotNouns, slotTask, WRITE_CHANCE, type SlotTask } from './writing';
 import type { LinkRow } from '../data/links';
 import { has } from './unlocks';
+import { B2_CFG, B2_MON, b2Task, rollB2Mon, type B2Mon } from './b2mons';
 import { echoOptions, echoTask, notePron, PRON_MON, pronMonOk, type EchoTask } from './pron';
 import { count } from './items';
 import { fullForm, genderOf, hasArticleQuestion, WORD_BY_ID, WORDS, zhWithPos } from '../data/words';
@@ -333,6 +334,8 @@ export interface Battle {
   echoDone?: boolean;
   /** 发音怪 (83): every attack question is its sound pair. */
   pronMon?: boolean;
+  /** B2 怪种 (转述怪, 数字怪, 改写怪, 时间线怪, 三语域怪, 回顾怪): every other attack question is its own. */
+  b2Mon?: B2Mon;
   /** Sentence attacks used on this monster this fight (each pattern once, in tag order). */
   sxUsed?: number;
   /** 终极技能 (30 级): used this fight; how many of its two blanks were right. */
@@ -514,6 +517,14 @@ export function startBattle(
   if (!b.perfekt && !b.notice && !b.mirror && !b.structMon && !tutorial && !opts.trial && !opts.elite && !opts.isEcho && s.level >= PRON_MON.from && kind !== 'new' && pronMonOk(word) && rng() < PRON_MON.chance) {
     b.pronMon = true;
     b.log.push({ text: `发音怪：${word.de} 只认清楚的发音——每一击都要分清它和它的近音词。别的招式只擦过它。`, tone: 'info' });
+  }
+  // B2 怪种 (121+): a word monster sometimes comes as one of the kinds open at your level.
+  if (!b.perfekt && !b.notice && !b.mirror && !b.structMon && !b.pronMon && !tutorial && !opts.trial && !opts.elite && !opts.isEcho && !challenge && kind !== 'new' && word.pos !== 'phr') {
+    const k = rollB2Mon(s, word, rng);
+    if (k) {
+      b.b2Mon = k;
+      b.log.push({ text: `${B2_MON[k].log}别的招式只擦过它。`, tone: 'info' });
+    }
   }
   b.intent = nextIntent(s, b, rng);
   perfektGuard(s, b);
@@ -1337,6 +1348,11 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
   if (am === 'attack' && b.structMon && b.qIndex % 2 === 0) {
     const t = structTasks(w);
     if (t.length) return gramQuestion(t[Math.floor(rng() * t.length)], null);
+  }
+  // B2 怪种: every other attack question is the monster's own kind.
+  if (am === 'attack' && b.b2Mon && b.qIndex % 2 === 0) {
+    const t = b2Task(s, w, rng, b.b2Mon);
+    if (t) return gramQuestion(t, null);
   }
   // 语法线 (0.7–0.8): once a system is open, the word monster sometimes asks it on its own word (first time with its board).
   if (am === 'attack' && !fresh && !b.tutorial && !b.trial && !b.pluralMon && !b.verify && !b.gramDungeon && (b.stage >= 1 || b.kind !== 'new')) {
@@ -2163,6 +2179,7 @@ export function resolveTurn(
         mult *= talentDamage(s, b, q, { typedLike, clozeTyped, tier, phaseRight: phaseFx === 'right', broken: wasBroken || tier === 2, log });
         if (b.structMon && q.gram?.sys !== 'struct') mult *= STRUCT.otherMult;
         if (b.pronMon && !q.echo) mult *= PRON_MON.otherMult;
+        if (b.b2Mon && !q.gram?.special) mult *= B2_CFG.otherMult;
         const judged = b.judgement;
         if (judged) {
           mult *= 2;

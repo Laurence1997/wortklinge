@@ -19,6 +19,10 @@ interface Line {
 
 const tidy = (s: string) => s.replace(/\s+/g, ' ').replace(/\s+([.,!?])/g, '$1').trim();
 
+export function exampleLines(w: Word): Line[] {
+  return lines(w);
+}
+
 function lines(w: Word): Line[] {
   const out: Line[] = [];
   for (const l of EXAMPLES[w.id] ?? []) {

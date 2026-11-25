@@ -134,6 +134,17 @@ const GRAM_UNLOCK_TEXT: Record<number, string[]> = {
   41: ['形容词词尾：ein guter Tee、das gute Brot'],
   43: ['复习伙伴：带一个归名的词一起打，答对它的例句题它就和你一起出手'],
   81: ['过去式（所有动词）、变音秘境过去式层、镜像怪第三格（Ich wasche mir die Hände）、文章群怪'],
+  // B2–C1 (游戏设计 四「121–200 级」): grammar line and the new monster kinds.
+  121: ['第一虚拟式：转述别人的话（Er sagte, er sei krank.）', '转述怪：把它的话用第一虚拟式转述出来'],
+  125: ['功能动词结构：eine Entscheidung treffen、Rücksicht nehmen'],
+  131: ['不用 werden 的被动：sein + zu、sich lassen、-bar', '数字怪：读图表，说清涨了多少（um）、涨到多少（auf）'],
+  135: ['书面介词：aufgrund、infolge、angesichts、mithilfe'],
+  141: ['hin 和 her：朝说话人来是 her，离开是 hin', '改写怪：把大白话改成书面名词式（weil es regnet → wegen des Regens）'],
+  161: ['第二虚拟式过去时：Ich hätte dich angerufen. / als ob', '时间线怪：把打乱的记载按先后排好'],
+  165: ['sofern、indem、soweit、wohingegen'],
+  171: ['zwar … aber、einerseits … andererseits'],
+  181: ['三语域怪：同一件事的口语、正式、书面说法'],
+  191: ['回顾怪：从走过的路上捡回旧词和旧句式'],
 };
 // 技能池 (游戏设计 十): skills handed over by level, and the extra slots.
 GRAM_UNLOCK_TEXT[15] = [...(GRAM_UNLOCK_TEXT[15] ?? []), '新技能「拆词」：复合词写出两部分、可分动词拆开写进短句。答对破甲 3 下（按 T 放进出战栏）'];
