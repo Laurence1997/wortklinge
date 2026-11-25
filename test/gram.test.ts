@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { newGame } from '../src/core/state';
 import { makeRng } from '../src/core/rng';
-import { makeQuestion, resolveTurn, startBattle } from '../src/core/combat';
+import { makeQuestion, phaseRight, resolveTurn, stancesFor, startBattle } from '../src/core/combat';
 import { gradeGram } from '../src/core/gram/task';
 import { datPronTask, nichtTask, timePrepTask } from '../src/core/gram/a1b';
 import { adjEnding, adjTask } from '../src/core/gram/adj';
@@ -96,5 +96,22 @@ describe('grammar on word monsters', () => {
     const r = resolveTurn(s, b, 'attack', q, 'zzz', makeRng(4));
     expect(b.cfx.res).toBe(2);
     expect(r.log.some((l) => l.text.includes('言灵反噬'))).toBe(true);
+  });
+});
+
+describe('kein stance', () => {
+  it('a line that needs keinen swaps the ein buttons for kein ones (same keys), and only keinen lands', () => {
+    const s = newGame('T', 'student', T0);
+    s.level = 8;
+    const w = WORDS.find((x) => x.id === 'ausweis')!;
+    const b = startBattle(s, w, makeRng(1));
+    b.pluralMon = false;
+    b.intent = { ...b.intent, caseArt: 'keinen' };
+    const st = stancesFor(s.level, b);
+    expect(st).toEqual(['der', 'die', 'das', 'den', 'kein', 'keine', 'keinen']);
+    expect(phaseRight(b, 'keinen')).toBe(true);
+    expect(phaseRight(b, 'den')).toBe(false);
+    b.intent = { ...b.intent, caseArt: 'den' };
+    expect(stancesFor(s.level, b)).toContain('einen');
   });
 });

@@ -169,12 +169,14 @@ export type Case = 'nom' | 'acc' | 'dat';
 /** 格位姿态: the stances (articles) that can be picked, in key order 1–9, 0. */
 export const STANCES = ['der', 'die', 'das', 'den', 'ein', 'eine', 'einen', 'dem', 'einem', 'einer'] as const;
 /** haben / sein (0.6, region 3 Lv21+): the Perfekt stance of verb monsters. */
-export type Stance = (typeof STANCES)[number] | 'haben' | 'sein';
+/** kein stance (语法线 5, Lucas 2026-11-25): on a line whose slot needs kein, these replace the ein buttons. */
+export const KEIN_STANCES = ['kein', 'keine', 'keinen', 'keinem', 'keiner'] as const;
+export type Stance = (typeof STANCES)[number] | (typeof KEIN_STANCES)[number] | 'haben' | 'sein';
 const CASE_OF: Record<'m' | 'f' | 'n' | 'pl', Partial<Record<Stance, Case>>> = {
-  m: { der: 'nom', ein: 'nom', den: 'acc', einen: 'acc', dem: 'dat', einem: 'dat' },
-  f: { die: 'nom', eine: 'nom', der: 'dat', einer: 'dat' },
-  n: { das: 'nom', ein: 'nom', dem: 'dat', einem: 'dat' },
-  pl: { die: 'nom', den: 'dat' },
+  m: { der: 'nom', ein: 'nom', den: 'acc', einen: 'acc', dem: 'dat', einem: 'dat', kein: 'nom', keinen: 'acc', keinem: 'dat' },
+  f: { die: 'nom', eine: 'nom', der: 'dat', einer: 'dat', keine: 'nom', keiner: 'dat' },
+  n: { das: 'nom', ein: 'nom', dem: 'dat', einem: 'dat', kein: 'nom', keinem: 'dat' },
+  pl: { die: 'nom', den: 'dat', keine: 'nom', keinen: 'dat' },
 };
 
 /** Which case an article shows for a noun of this gender (die Tasse = nom/acc → nom), or null when it doesn't fit. */
@@ -188,7 +190,7 @@ export function slotArticle(w: Word, n: number): string | null {
   const parsed = (EXAMPLES[w.id] ?? []).map(parse).filter((x): x is NonNullable<typeof x> => !!x);
   if (!parsed.length) return null;
   const first = parsed[n % parsed.length].blank.split(' ')[0].toLowerCase();
-  return (STANCES as readonly string[]).includes(first) ? first : null;
+  return (STANCES as readonly string[]).includes(first) || (KEIN_STANCES as readonly string[]).includes(first) ? first : null;
 }
 
 const PREPS = new Set(['in', 'an', 'auf', 'mit', 'zu', 'von', 'bei', 'aus', 'nach', 'für', 'durch', 'um', 'ohne', 'gegen', 'neben', 'über', 'unter', 'vor', 'hinter', 'zwischen', 'im', 'am', 'zum', 'zur', 'vom', 'beim']);

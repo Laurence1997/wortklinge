@@ -712,7 +712,7 @@ export function phaseOf(b: Battle): Stance | null {
 export function phasePair(b: Battle): Stance[] {
   const ph = phaseOf(b);
   if (!ph) return [];
-  if (b.perfekt || b.pluralMon || !b.intent?.caseArt) return [ph];
+  if (b.perfekt || b.pluralMon || !b.intent?.caseArt || ph.startsWith('kein')) return [ph];
   const g = genderOf(b.word);
   const c = phaseCase(b);
   if (!g) return [ph];
@@ -742,7 +742,7 @@ export function phaseWrongWhy(b: Battle): string {
   if (!ph || !b.intent?.caseArt || b.pluralMon) return b.pluralMon ? '复数一律 die' : `它不是 ${b.phase ?? '这个'} 词`;
   const c = phaseCase(b);
   // Neuter/feminine forms look the same in nom and acc, so only a form that shows its case names it.
-  const why = [ph.startsWith('ein') ? '不定冠词' : '定冠词', ...(c === 'acc' ? ['第四格'] : c === 'dat' ? ['第三格'] : [])].join('，');
+  const why = [ph.startsWith('kein') ? '否定 kein' : ph.startsWith('ein') ? '不定冠词' : '定冠词', ...(c === 'acc' ? ['第四格'] : c === 'dat' ? ['第三格'] : [])].join('，');
   const pair = phasePair(b);
   if (pair.length > 1) {
     const cz = c === 'acc' ? '第四格' : c === 'dat' ? '第三格' : g2(b) ? '第一格' : '';
@@ -769,6 +769,11 @@ export function stancesFor(level: number, b?: Battle): Stance[] {
   const out: Stance[] = ['der', 'die', 'das'];
   if (level >= CONFIG.phase.accFrom) out.push('den', 'ein', 'eine', 'einen');
   if (level >= CONFIG.phase.datFrom) out.push('dem', 'einem', 'einer');
+  // kein stance (Lucas 2026-11-25): a line that needs kein swaps the ein buttons for kein ones, same keys.
+  if (b?.intent?.caseArt?.startsWith('kein') && !b.pluralMon) {
+    const swap: Partial<Record<Stance, Stance>> = { ein: 'kein', eine: 'keine', einen: 'keinen', einem: 'keinem', einer: 'keiner' };
+    return out.map((x) => swap[x] ?? x);
+  }
   return out;
 }
 
