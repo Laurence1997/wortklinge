@@ -66,6 +66,8 @@ import { DUEL, DUEL_SCENES, duelTurns, type DuelScene } from '../data/grammar/du
 import { drawPractice } from '../core/aiPractice';
 import { noticeById } from '../core/gram/notice';
 import { partnerChoices, partnerOf, setPartner } from '../core/gram/partner';
+import { craftGem, GEM, GEM_KIND_ZH, gemGrammars, gemItems, gemText, gemTitle, setGem, unsetGem } from '../core/gems';
+import type { GramSys } from '../core/gram/task';
 import { berlinHour, CHARM, CHARM_BY_ID, equippedCharms, grantSlang, shoutCharm, SLANG, slangOwed, type ShoutResult } from '../core/charms';
 import { cleared, floorRun, floorsOf, GRAM_DUNGEON, markCleared, type DungeonKind, type Floor } from '../core/gram/dungeons';
 import { fullForm, hasArticleQuestion, WORD_BY_ID, WORDS, zhWithPos } from '../data/words';
@@ -1188,6 +1190,7 @@ export class Controller {
       return;
     }
     const r = openChest(this.state, kind, ilvl, this.rng);
+    if (r.gem) toast(`${QUALITY_ZH[r.gem.q]}${gemText(r.gem)}（在篝火镶嵌）`, 'gold');
     if (this.state.settings.chestAnim !== false) {
       playChest({ kind, title: CHEST_ZH[kind], result: r }, () => this.refresh(), this.chestSfx);
       return;
@@ -1427,6 +1430,59 @@ export class Controller {
     this.panels.render();
   }
 
+  /** 言石 at the bonfire (62): craft behind a 言灵锁, set into a purple / orange item, take out for shards. */
+  gemMenu(): void {
+    const s = this.state;
+    const bal = s.shardBal?.[String(s.region ?? 1)] ?? 0;
+    const lines: Line[] = [];
+    if (!s.flags.gemSeen) {
+      s.flags.gemSeen = true;
+      lines.push({ who: SYS, text: `【言石】每颗刻着一条你学过的语法。合成花 ${GEM.craftCost} 片碎片，答一道言灵锁（最该复习的词）：答对品质掷两次取好的。镶进紫装或橙装，答对这条语法的题就触发它的效果（伤害、回血、穿透或减伤）。言石跟着装备走；取下来换到别的装备要 ${GEM.moveCost} 片。语气词孔另算，不会被挤掉。` });
+    }
+    const worn = gemItems(s).filter((it) => it.gem);
+    lines.push({ who: SYS, text: `本区碎片 ${bal} 片 · 背包里的言石 ${(s.gems ?? []).length} 颗${worn.length ? ` · 已镶 ${worn.map((it) => `「${it.name}」${gemTitle(it.gem!.sys)}`).join('、')}` : ''}` });
+    const gs = gemGrammars(s);
+    say(lines, undefined, [
+      ...(gs.length ? [{ label: `合成（${GEM.craftCost} 片）`, act: () => this.gemCraftPick() }] : []),
+      ...((s.gems ?? []).length && gemItems(s).length ? [{ label: '镶嵌', act: () => this.gemSetPick() }] : []),
+      ...(worn.length ? [{ label: `取下（${GEM.moveCost} 片）`, act: () => say([{ who: SYS, text: '从哪件取下？' }], undefined, [...worn.map((it) => ({ label: `「${it.name}」${gemTitle(it.gem!.sys)}`, act: () => { const r = unsetGem(s, it.id); toast(r.ok ? '取下了，放回言石袋' : r.why!); this.refresh(); this.persist(); } })), { label: '算了', act: () => undefined }]) }] : []),
+      { label: '回去', act: () => undefined },
+    ]);
+  }
+
+  private gemCraftPick(): void {
+    const s = this.state;
+    const gs = gemGrammars(s).slice(-12);
+    say([{ who: SYS, text: '刻哪条语法？' }], undefined, [
+      ...gs.map((sys) => ({
+        label: gemTitle(sys),
+        act: () => {
+          const bal = s.shardBal?.[String(s.region ?? 1)] ?? 0;
+          if (bal < GEM.craftCost) return say([{ who: SYS, text: `碎片不够（要 ${GEM.craftCost} 片，本区余额 ${bal}）。` }]);
+          this.singleTask = { kind: 'gem', itemId: '', sys };
+          this.boss = startBoss(s, this.rng, 6); // 言灵锁: the most overdue word
+          setPrompt(null);
+          this.bossUI.open(this.boss);
+        },
+      })),
+      { label: '算了', act: () => undefined },
+    ]);
+  }
+
+  private gemSetPick(): void {
+    const s = this.state;
+    say([{ who: SYS, text: '镶哪颗？' }], undefined, [
+      ...(s.gems ?? []).slice(0, 8).map((g) => ({
+        label: `${QUALITY_ZH[g.q]} ${gemTitle(g.sys)} · ${GEM_KIND_ZH[g.kind]}`,
+        act: () => say([{ who: SYS, text: `${gemText(g)}。镶进哪件？（已有言石的会换下来放回袋子）` }], undefined, [
+          ...gemItems(s).slice(0, 8).map((it) => ({ label: `「${it.name}」${it.gem ? `（现在：${gemTitle(it.gem.sys)}）` : ''}`, act: () => { setGem(s, g.id, it.id); toast(`「${it.name}」镶上了言石`, 'gold'); this.refresh(); this.persist(); } })),
+          { label: '算了', act: () => undefined },
+        ]),
+      })),
+      { label: '算了', act: () => undefined },
+    ]);
+  }
+
   /** 碎片换档 at the bonfire: pick a slot for a piece at the tier unlocked in this region. */
   private shardTrade(): void {
     const s = this.state;
@@ -1622,11 +1678,14 @@ export class Controller {
     const ti = tradeInfo(s, region);
     if (free) lines.push({ who: SYS, text: `【碎片换档】本区解锁了第 ${ti.tier} 档：这次换一件免费${free > 1 ? `（还有 ${free} 次免费）` : ''}。` });
     const trades = ti.can;
-    const tradeOpt = trades ? [{ label: free ? '碎片换档（免费）' : `碎片换档（${ti.cost} 片）`, act: () => this.shardTrade() }] : [];
+    const tradeOpt = [
+      ...(trades ? [{ label: free ? '碎片换档（免费）' : `碎片换档（${ti.cost} 片）`, act: () => this.shardTrade() }] : []),
+      ...(s.level >= GEM.from ? [{ label: '言石', act: () => this.gemMenu() }] : []),
+    ];
     if (jw) {
       lines.push({ who: SYS, text: `【篝火日记】今天打过 ${jw.map((w) => `「${w.zh}」`).join('、')}。用它们写两三句话？每天一篇，登录后 AI 批改。` });
       say(lines, undefined, [{ label: '写日记', act: () => this.panels.showJournal(jw) }, ...tradeOpt, { label: '今天不写', act: () => undefined }]);
-    } else if (trades) say(lines, undefined, [...tradeOpt, { label: '先不换', act: () => undefined }]);
+    } else if (tradeOpt.length) say(lines, undefined, [...tradeOpt, { label: '先不换', act: () => undefined }]);
     else say(lines);
     if (s.flags.teachRest) s.flags.teachRest = false;
     this.refresh();
@@ -1929,12 +1988,20 @@ export class Controller {
   /** 幽灵检票员 Lina: entering a timetable-hall scene may bring her (Lv25+, after Konrad's quest). */
   private gretaPlain = false;
   /** The one-question task the which-6 conversation is for (Mira's 鉴定 or Greta's 刻字). */
-  singleTask: { kind: 'identify' | 'engrave'; itemId: string; word?: 'auch' | 'denn' | 'mal' | 'doch' } | null = null;
+  singleTask: { kind: 'identify' | 'engrave' | 'gem'; itemId: string; word?: 'auch' | 'denn' | 'mal' | 'doch'; sys?: GramSys } | null = null;
 
   private finishIdentify(f: BossFight) {
     const s = this.state;
     const task = this.singleTask;
     this.singleTask = null;
+    if (task?.kind === 'gem') {
+      const r = craftGem(s, task.sys!, f.misses.length === 0, this.rng);
+      if (r.ok) toast(`合成了${QUALITY_ZH[r.gem!.q]}${gemText(r.gem!)}${f.misses.length ? '' : '（言灵锁答对，掷了两次）'}`, 'gold');
+      else toast(r.why!);
+      this.persist();
+      this.refresh();
+      return;
+    }
     if (task?.kind === 'engrave') {
       const it = socketItems(s).find((x) => x.id === task.itemId);
       if (!it) return;

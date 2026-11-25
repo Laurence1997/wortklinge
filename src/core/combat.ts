@@ -8,6 +8,7 @@ import { between, makeRng, pick, shuffle, type Rng } from './rng';
 import { contextDueWords, contextFail, contextPass, gapZh, reviewedByWriting, reviewMon, failVerify, retire, setGuiming, kindOf, stageOf, overdueSteps, verifyOf, type Kind, type Stage } from './srs';
 import { typoOk } from './cut';
 import { placedCheck, placedPick } from './placement';
+import { gemSum } from './gems';
 import { announces, insightOptions, LIAR, liarIntent, TELL_ZH } from './liar';
 import { addGearKill, gear, affinityOf, affixTotal, attack, engraved, critChance, gearPen, hintsPerFight, maxHp, now, type GameState } from './state';
 import type { Element, Intent, Move, Word } from './types';
@@ -2220,6 +2221,9 @@ export function resolveTurn(
         const g = genderOf(b.word);
         mult *= comboMult(s.combo);
         mult *= charmDamage(s, b, typedLike);
+        const gsys = q.gram?.sys;
+        const gDmg = gemSum(s, gsys, 'dmg');
+        if (gDmg) mult *= 1 + gDmg; // 言石
         if (b.liar?.boost) {
           mult *= LIAR.boost;
           b.liar.boost = false;
@@ -2276,7 +2280,7 @@ export function resolveTurn(
         // 按性别的伤害词缀 (游戏设计 九): only on a right stance; a 复数怪 has no gender bonus.
         if (phaseFx === 'right' && !b.pluralMon) mult *= 1 + affixTotal(s, g === 'm' ? 'vsMasc' : g === 'f' ? 'vsFem' : g === 'n' ? 'vsNeut' : '-');
         const chorusMult = mult; // 齐鸣: the mates take the same hit before their own armor
-        mult *= 1 - armor;
+        mult *= 1 - armor * (1 - Math.min(0.9, gemSum(s, q.gram?.sys, 'pen'))); // 言石 穿透
         const ph = phaseOf(b);
         if (phaseFx === 'right') {
           b.phaseHit = true;
@@ -2315,6 +2319,8 @@ export function resolveTurn(
         }
 
         m.hp -= playerDamage;
+        const gHeal = gemSum(s, q.gram?.sys, 'heal');
+        if (gHeal) s.hp = Math.min(maxHp(s), s.hp + Math.max(1, Math.round(maxHp(s) * gHeal))); // 言石 回血
         s.stats.maxHit = Math.max(s.stats.maxHit, playerDamage);
         if (crit) s.stats.crits += 1;
         if (charging || intent.kind === 'heal' || intent.kind === 'flee') interrupted = true;
@@ -2474,7 +2480,7 @@ export function resolveTurn(
   const monsterCrit = target.wrongStreak >= 2;
   const wrongReduce = ok ? 0 : affixTotal(s, 'wrongDmgReduce');
   // 铁壁: the turn the right stance landed, hits on you are lighter.
-  const takenMult = phaseFx === 'right' ? 1 - 0.05 * rank(s, 'tiebi') : 1;
+  const takenMult = (phaseFx === 'right' ? 1 - 0.05 * rank(s, 'tiebi') : 1) * (ok && !itemTurn ? 1 - Math.min(0.5, gemSum(s, q.gram?.sys, 'guard')) : 1);
   const chillMult = (m.chilled ? CONFIG.status.iceDamageMult : 1) * (1 + CONFIG.armor.monsterDmgPerLevelBelow * Math.max(0, m.lvl - s.level));
 
   const hitPlayer = (raw: number) => {

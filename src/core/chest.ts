@@ -3,6 +3,7 @@
 // Iron and gold chests carry a 言灵锁: write the word you most need to review and each item's
 // quality is rolled twice, keeping the better one. A wrong answer still opens the chest.
 
+import { GEM, gemGrammars, makeGem, type Gem } from './gems';
 import { CONFIG } from './config';
 import { makeItem } from './loot';
 import { pityOrange } from './forge';
@@ -53,6 +54,8 @@ export interface ChestResult {
   bagFull: number;
   /** 开箱动画: the quality rolls per item that went into the bag (two when the 言灵锁 was written right). */
   rolls: Quality[][];
+  /** 言石 from a forgotten chest (62+). */
+  gem?: Gem;
 }
 
 export function openChest(s: GameState, kind: ChestKind, ilvl: number, rng: Rng, lockOk = false): ChestResult {
@@ -81,5 +84,12 @@ export function openChest(s: GameState, kind: ChestKind, ilvl: number, rng: Rng,
   }
   const gold = def.goldKills ? def.goldKills * CONFIG.gold.perKill(ilvl) : 0;
   s.gold += gold;
-  return { items, gold, rerolled: def.locked && lockOk, bagFull, rolls };
+  // 言石 (62 级): the forgotten chest always holds one, of a grammar you have been taught.
+  let gem: Gem | undefined;
+  const gs = gemGrammars(s);
+  if (kind === 'forgotten' && s.level >= GEM.from && gs.length) {
+    gem = makeGem(gs[Math.floor(rng() * gs.length)], rng);
+    (s.gems ??= []).push(gem);
+  }
+  return { items, gold, rerolled: def.locked && lockOk, bagFull, rolls, gem };
 }

@@ -169,4 +169,6 @@ export interface Item {
    *  full in that region, half in the next one, not further on (as the old 「上一区档位减半」). */
   tier?: number;
   region?: number;
+  /** 言石 (62 级): the gem set in this purple / orange item. */
+  gem?: import('./gems').Gem;
 }
