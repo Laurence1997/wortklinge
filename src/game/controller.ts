@@ -61,13 +61,14 @@ import { DUNGEON, RULES, type Rule } from '../data/dungeon';
 import { OPINION, opinionRule, pickClaim } from '../core/opinion';
 import { addGearKill, stampTiers } from '../core/state';
 import { bossRed, salvage, shardBalance, tierIlvl, tradeInfo, tradeShards, tradesOpen } from '../core/forge';
-import { aiOpinion, AI_TUTOR, aiEssay, aiGrade, aiGradeText, duelTurn, knownWords, wordForms, type AiGrade } from '../net/aiTutor';
+import { aiOpinion, AI_TUTOR, aiEssay, aiGrade, aiGradeText, duelTurn, knownWords, persuadeTurn, wordForms, type AiGrade } from '../net/aiTutor';
 import { DUEL, DUEL_SCENES, duelTurns, type DuelScene } from '../data/grammar/duels';
 import { drawPractice } from '../core/aiPractice';
 import { noticeById } from '../core/gram/notice';
 import { partnerChoices, partnerOf, setPartner } from '../core/gram/partner';
 import { allGems, craftGem, recarve, recarveChoices, GEM, GEM_KIND_ZH, gemGrammars, gemItems, gemText, gemTitle, setGem, unsetGem } from '../core/gems';
 import type { GramSys } from '../core/gram/task';
+import { PERSUADE, PERSUADE_SCENES, type PersuadeScene } from '../core/persuade';
 import { ltCheck } from '../net/languageTool';
 import { berlinHour, CHARM, CHARM_BY_ID, equippedCharms, grantSlang, shoutCharm, SLANG, slangOwed, type ShoutResult } from '../core/charms';
 import { cleared, floorRun, floorsOf, GRAM_DUNGEON, markCleared, type DungeonKind, type Floor } from '../core/gram/dungeons';
@@ -2089,6 +2090,7 @@ export class Controller {
       ...(s.level >= DUEL.from ? [{ label: '⚔ 决斗场：用德语把一件事办完', act: () => this.openDuel() }] : []),
       ...(s.level >= AI_TUTOR.grade ? [{ label: '✎ 批改造句：用一个词写一句', act: () => this.openAiSentence() }] : []),
       ...(s.level >= AI_TUTOR.essay ? [{ label: '📝 小作文：用 3 个词写 3–5 句', act: () => this.openEssay() }] : []),
+      ...(s.level >= PERSUADE.from ? [{ label: '🗣 说服段：用德语说服一个人', act: () => this.openPersuade() }] : []),
     ];
     say([{ who: SYS, text: `【AI 对话】选一种。决斗场每天前 ${CONFIG.aiPaidPerDay} 场给金币和经验（今天已经 ${Math.min(n, CONFIG.aiPaidPerDay)} 场），之后只算复习。篝火日记在篝火休息时写。` }], undefined, [...modes, { label: '先不了', act: () => undefined }]);
   }
@@ -2160,6 +2162,68 @@ export class Controller {
       }
       const need = run.targets.filter((w) => !run.used.has(w.id)).map((w) => `「${w.zh}」`); // 审查修订: targets in Chinese
       say(lines, () => this.panels.ask(d.npc, `${r.de}${need.length ? `\n（还要用上：${need.join('、')}；第 ${turns + 1}/${run.turns} 轮）` : `\n（第 ${turns + 1}/${run.turns} 轮）`}`, (text: string) => (text.trim() ? this.duelStep(run, h2, text.trim()) : say([{ who: SYS, text: '你转身走了。' }]))));
+    });
+  }
+
+  // ---- 说服段 (21, AI 对话; the story's persuasion scenes use persuade() with their own scene) -------------------
+  openPersuade(): void {
+    const s = this.state;
+    if (!s.owner) return say([{ who: SYS, text: '说服段要登录才能用（AI 对话在云端）。' }]);
+    const lines: Line[] = [];
+    if (!s.flags.persuadeSeen) {
+      s.flags.persuadeSeen = true;
+      lines.push({ who: SYS, text: `【说服段】AI 扮演一个人，你用德语说服他，最多 ${PERSUADE.rounds} 轮。说到点子上他才会答应。对房东、官员用 Sie，对室友、同事用 du；用错他会当场指出，这一轮不算。没说服不罚，可以重来，第二次起他会透露自己在意什么。` });
+    }
+    lines.push({ who: SYS, text: '选一个人：' });
+    say(lines, undefined, [...PERSUADE_SCENES.map((p) => ({ label: `${s.flags[`persuaded_${p.id}`] ? '✓ ' : ''}${p.title}`, act: () => this.persuade(p, () => undefined) })), { label: '先不', act: () => undefined }]);
+  }
+
+  /** Run one persuasion. `onWin` after the NPC is convinced; `onNoAi` when the AI can't be reached (the story then
+   *  falls back to fighting through). */
+  persuade(p: PersuadeScene, onWin: () => void, onNoAi?: () => void): void {
+    const s = this.state;
+    const key = `persuade_${p.id}`;
+    const attempt = ((s.flags[key] as number) ?? 0) + 1;
+    s.flags[key] = attempt;
+    const run = { p, attempt, known: knownWords(s), onWin, onNoAi, rounds: 0 };
+    say([{ who: SYS, text: `${p.intro}${attempt >= 2 ? '（第二次了，留意他在意什么）' : ''}` }], () => this.persuadeStep(run, [], ''));
+  }
+
+  private persuadeStep(run: { p: PersuadeScene; attempt: number; known: string[]; onWin: () => void; onNoAi?: () => void; rounds: number }, history: Array<{ who: 'npc' | 'me'; de: string }>, reply: string): void {
+    const s = this.state;
+    const p = run.p;
+    toast('……');
+    void persuadeTurn({ scene: p.scene, cares: p.cares, formal: p.formal, argue: s.level >= PERSUADE.argueFrom }, run.attempt, history, reply, s.level, run.known).then((r) => {
+      if ('error' in r) {
+        say([{ who: SYS, text: r.error === 'model' ? 'AI 暂时不可用，说服段这次不出结果。' : aiErrorZh(r.error) }]);
+        run.onNoAi?.();
+        return;
+      }
+      const h2 = [...history, ...(reply ? [{ who: 'me' as const, de: reply }] : []), { who: 'npc' as const, de: r.de }];
+      // A round with the wrong Sie / du doesn't count.
+      if (reply && !r.registerWrong) run.rounds += 1;
+      const counted = run.rounds;
+      const lines: Line[] = [...(r.note ? [{ who: '纠错', text: r.note }] : []), { who: p.npc, text: `${r.de}\n（${r.zh}）` }];
+      if (r.registerWrong) lines.push({ who: SYS, text: `称呼用错了（这里要用 ${p.formal ? 'Sie' : 'du'}），这一轮不算。` });
+      if (r.convinced) {
+        s.flags[`persuaded_${p.id}`] = true;
+        const today = dayKey(now(s));
+        if (s.flags.aiPayDay !== today) (s.flags.aiPayDay = today), (s.flags.aiPayN = 0);
+        s.flags.aiPayN = ((s.flags.aiPayN as number) ?? 0) + 1;
+        const paid = (s.flags.aiPayN as number) <= CONFIG.aiPaidPerDay;
+        const gold = paid ? Math.round(DUEL.goldPerLevel * s.level) : 0;
+        s.gold += gold;
+        lines.push({ who: SYS, text: `说服了！${paid ? `金币 +${gold}` : `今天前 ${CONFIG.aiPaidPerDay} 场 AI 对话的奖励已领完`}` });
+        this.persist();
+        this.refresh();
+        return say(lines, run.onWin);
+      }
+      if (counted >= PERSUADE.rounds) {
+        lines.push({ who: SYS, text: '这次没说服他。不罚，可以再来；下次他会透露自己在意什么。' });
+        this.persist();
+        return say(lines);
+      }
+      say(lines, () => this.panels.ask(p.npc, `${r.de}\n（第 ${counted + 1}/${PERSUADE.rounds} 轮 · 用 ${p.formal ? 'Sie' : 'du'}）`, (text: string) => (text.trim() ? this.persuadeStep(run, h2, text.trim()) : say([{ who: SYS, text: '你转身走了。' }]))));
     });
   }
 

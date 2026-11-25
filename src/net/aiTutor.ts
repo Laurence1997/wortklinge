@@ -89,3 +89,16 @@ export interface AiOpinion {
 export function aiOpinion(claim: string, reply: string, level: number, known: string[] = []) {
   return call<AiOpinion>({ mode: 'opinion', claim, reply, level, known });
 }
+
+export interface PersuadeLine {
+  de: string;
+  zh: string;
+  note: string;
+  convinced: boolean;
+  registerWrong: boolean;
+}
+
+/** 说服段: one round with the NPC (the duel engine). */
+export function persuadeTurn(p: { scene: string; cares: string; formal: boolean; argue: boolean }, attempt: number, history: Array<{ who: 'npc' | 'me'; de: string }>, reply: string, level: number, known: string[] = []) {
+  return call<PersuadeLine>({ mode: 'persuade', ...p, attempt, history, reply, level, known });
+}

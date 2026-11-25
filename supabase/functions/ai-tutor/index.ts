@@ -56,6 +56,23 @@ interface DuelReq {
   known?: string[];
 }
 
+interface PersuadeReq {
+  mode: 'persuade';
+  /** Who the NPC is and what the player wants from it (Chinese). */
+  scene: string;
+  /** What the NPC really cares about (Chinese; revealed as a hint from the second try). */
+  cares: string;
+  /** Sie (officials, landlords) or du (peers). */
+  formal: boolean;
+  attempt: number;
+  history: Array<{ who: 'npc' | 'me'; de: string }>;
+  reply: string;
+  level?: number;
+  known?: string[];
+  /** 171+: the argument must have a claim, reasons, an example, a rebuttal and a conclusion. */
+  argue?: boolean;
+}
+
 interface OpinionReq {
   mode: 'opinion';
   /** The monster's claim (German). */
@@ -155,6 +172,14 @@ const OPINION_SYS = `你在一款学德语的游戏里当辩论裁判。怪物�
 德语错误不影响判定，但在 errors 里指出最重要的最多 2 处，用中文简短说明。
 只输出 JSON：{"ok":true|false,"note":"中文一句话：为什么说得通或说不通","errors":[{"bad":"错的部分","fix":"改法","why":"中文一句话"}],"better":"更好的一两句德语回应（简短，只用玩家学过的词）"}`;
 
+// 说服段 (游戏设计 任务, Lucas 2026-11-25): the model plays an NPC the player must talk round, in the duel engine.
+const PERSUADE_SYS = `你在一款学德语的游戏里扮演一个需要被说服的人物，和玩家用简单德语对话（按给的等级调整用词）。
+人物有自己在意的东西（给在「它在意」里）。玩家只有说到点子上（回应你在意的东西、给出合理的理由或让步）你才会被说服；空话、命令、威胁不算。
+称呼规则：场景要求 Sie 时，玩家对你用 du/dich/dir/dein 就是用错了；要求 du 时用 Sie 也算用错。用错时 register_wrong 为 true，你在 de 里用人物的口吻当场指出（例如 „Wir duzen uns nicht.“），这一轮不算数。
+需要论证时（argue=true），玩家要有论点、理由、例子、反驳、结论，缺得多就不被说服。
+第 2 次及以后尝试（attempt≥2）时，在对话里自然透露你在意什么。每次只说一两句。
+只输出 JSON：{"de":"你说的德语","zh":"中文翻译","note":"对玩家上一句德语最重要的一处纠错，中文，可为空","convinced":true|false,"register_wrong":true|false}`;
+
 let lastPing = 0;
 let lastPingOk = false;
 
@@ -182,7 +207,7 @@ Deno.serve(async (req) => {
     return Response.json({ ok: r.ok, status: r.status, model: MODEL, why }, { headers: h });
   }
   if (!auth.startsWith('Bearer ')) return Response.json({ error: 'login' }, { status: 401, headers: h });
-  let body: GradeReq | DuelReq | EssayReq | OpinionReq;
+  let body: GradeReq | DuelReq | EssayReq | OpinionReq | PersuadeReq;
   try {
     body = await req.json();
   } catch {
@@ -241,6 +266,17 @@ Deno.serve(async (req) => {
     const bare = (x: string) => norm(x).trim().replace(/^(der|die|das|sich) /, '');
     const bad = new Set((Array.isArray(out.json.bad) ? out.json.bad : []).map((x: unknown) => bare(clip(x, 60))));
     return Response.json({ de: clip(out.json.de, 400), zh: clip(out.json.zh, 400), note: clip(out.json.note, 300), done: !!out.json.done, used: used.filter((id) => !bad.has(bare(targets.find((t) => t.id === id)!.de))), model: out.model }, { headers: h });
+  }
+  if (body.mode === 'persuade') {
+    const reply = clip(body.reply, 400).trim();
+    const history = (Array.isArray(body.history) ? body.history : []).slice(-12).map((x) => `${x.who === 'npc' ? '人物' : '玩家'}：${clip(x.de, 300)}`);
+    const q = await takeQuota(auth, 'duel');
+    if (q === 'unauth') return Response.json({ error: 'login' }, { status: 401, headers: h });
+    if (!q) return Response.json({ error: 'quota' }, { status: 429, headers: h });
+    const user = `场景：${clip(body.scene, 400)}\n它在意：${clip(body.cares, 200)}\n称呼：${body.formal ? 'Sie' : 'du'}\n第 ${Number(body.attempt) || 1} 次尝试\n需要论证：${body.argue ? '是' : '否'}\n玩家等级：${Number(body.level) || 21}\n${knownLine(body.known)}\n对话：\n${history.join('\n')}\n玩家：${reply || '（开始对话，你先说）'}`;
+    const out = await chat(PERSUADE_SYS, user);
+    if (!out) return Response.json({ error: 'model' }, { status: 502, headers: h });
+    return Response.json({ de: clip(out.json.de, 400), zh: clip(out.json.zh, 400), note: clip(out.json.note, 300), convinced: !!out.json.convinced && !out.json.register_wrong, registerWrong: !!out.json.register_wrong, model: out.model }, { headers: h });
   }
   if (body.mode === 'opinion') {
     const reply = clip(body.reply, 600).trim();
