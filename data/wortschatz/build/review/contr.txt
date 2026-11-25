@@ -1,0 +1,11 @@
+im|prep|在…里（= in dem）
+am|prep|在…旁/在某天（= an dem）
+zum|prep|去…（= zu dem）
+zur|prep|去…（= zu der）
+vom|prep|从…（= von dem）
+beim|prep|在…时/在…那里（= bei dem）
+ins|prep|进…里（= in das）
+ans|prep|到…边（= an das）
+aufs|prep|到…上（= auf das，口语）
+fürs|prep|为了…（= für das，口语）
+ums|prep|围绕/关于（= um das，口语）
