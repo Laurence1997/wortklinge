@@ -4,7 +4,7 @@ name: 词表情境标注 (word list situation labels)
 # back to the same branch. Runs on a push that changes the script (or by hand). Costs a little money per run.
 on:
   push:
-    paths: ['scripts/wortschatz/label_luna.py', '.github/workflows/wortschatz-label.yml']
+    paths: ['scripts/wortschatz/label_luna.py', 'scripts/wortschatz/label_luna2.py', '.github/workflows/wortschatz-label.yml']
   workflow_dispatch:
     inputs:
       limit:
@@ -28,7 +28,9 @@ jobs:
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           LIMIT: ${{ inputs.limit || '0' }}
-        run: python3 scripts/wortschatz/label_luna.py
+        run: |
+          python3 scripts/wortschatz/label_luna.py
+          python3 scripts/wortschatz/label_luna2.py
       - name: Commit labels
         run: |
           git config user.name 'github-actions[bot]'
