@@ -3,21 +3,25 @@
 // colours; 蚀变 maps and bosses recolour them to the dark ramp. Things without a face (food, objects, places) get a pair
 // of eyes so they read as creatures. Words without a 类别 yet use the 抽象 kind.
 
-export type SheetId = 'd' | 't' | 'f' | 'b';
+/** Art packs (Tiny Dungeon, Town, Farm, Battle) and 'c' = drawn in code (src/data/drawnArt.ts). */
+export type SheetId = 'd' | 't' | 'f' | 'b' | 'c';
+import { DRAWN, DRAWN_PAL } from '../data/drawnArt';
 export type MonKind = 'food' | 'item' | 'animal' | 'person' | 'place' | 'abstract';
 export interface MonArt {
   sheet: SheetId;
   n: number;
   eyes?: boolean;
+  /** Word id of a code-drawn look (sheet 'c'). */
+  key?: string;
 }
 
-export const SHEET_URL: Record<SheetId, string> = {
+export const SHEET_URL: Record<Exclude<SheetId, 'c'>, string> = {
   d: './art/kenney-tiny-dungeon.png',
   t: './art/kenney-tiny-town.png',
   f: './art/kenney-tiny-farm.png',
   b: './art/kenney-tiny-battle.png',
 };
-const COLS: Record<SheetId, number> = { d: 12, t: 12, f: 12, b: 18 };
+const COLS: Record<SheetId, number> = { d: 12, t: 12, f: 12, b: 18, c: 1 };
 
 const a = (sheet: SheetId, n: number, eyes = false): MonArt => ({ sheet, n, eyes });
 /** Variants per kind (people avoid the tiles the NPCs use). */
@@ -45,24 +49,41 @@ const EYES_ON: Record<string, boolean> = { food: true, item: true, place: true }
 export function wordArt(w: { id: string; cat?: string; look?: string }): MonArt {
   const own = OWN_LOOKS && w.look ? /^([dtfb])(\d+)$/.exec(w.look) : null;
   if (own) return { sheet: own[1] as SheetId, n: +own[2], eyes: !!EYES_ON[monKind(w.cat)] };
+  if (OWN_LOOKS && DRAWN[w.id]) return { sheet: 'c', n: 0, key: w.id };
   const pool = KIND_POOL[monKind(w.cat)];
   let h = 0;
   for (const ch of w.id) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
   return pool[h % pool.length];
 }
 
-export const artKey = (art: MonArt) => `${art.sheet}${art.n}${art.eyes ? 'e' : ''}`;
+export const artKey = (art: MonArt) => (art.key ? `c-${art.key}` : `${art.sheet}${art.n}${art.eyes ? 'e' : ''}`);
+
+/** A code-drawn look as a 16×16 canvas (eyes are part of the drawing). */
+function drawnCanvas(id: string): HTMLCanvasElement {
+  const cv = document.createElement('canvas');
+  cv.width = cv.height = 16;
+  const ctx = cv.getContext('2d')!;
+  (DRAWN[id] ?? '').split('/').forEach((row, y) =>
+    [...row].forEach((ch, x) => {
+      if (ch === '.' || !DRAWN_PAL[ch]) return;
+      ctx.fillStyle = DRAWN_PAL[ch];
+      ctx.fillRect(x, y, 1, 1);
+    }),
+  );
+  return cv;
+}
 
 const lum = (r: number, g: number, b: number) => (0.299 * r + 0.587 * g + 0.114 * b) / 255;
 const rgb = (hex: string) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
 
 /** The monster as a 16×16 canvas: own colours (ramp = null) or recoloured by brightness onto a dark ramp. */
-export function monsterCanvas(sheet: CanvasImageSource, art: MonArt, ramp: readonly string[] | null): HTMLCanvasElement {
+export function monsterCanvas(sheet: CanvasImageSource | null, art: MonArt, ramp: readonly string[] | null): HTMLCanvasElement {
   const cv = document.createElement('canvas');
   cv.width = cv.height = 16;
   const ctx = cv.getContext('2d', { willReadFrequently: true })!;
   const cols = COLS[art.sheet];
-  ctx.drawImage(sheet, (art.n % cols) * 16, Math.floor(art.n / cols) * 16, 16, 16, 0, 0, 16, 16);
+  if (art.sheet === 'c') ctx.drawImage(drawnCanvas(art.key ?? ''), 0, 0);
+  else if (sheet) ctx.drawImage(sheet, (art.n % cols) * 16, Math.floor(art.n / cols) * 16, 16, 16, 0, 0, 16, 16);
   const img = ctx.getImageData(0, 0, 16, 16);
   const d = img.data;
   if (art.eyes) {
