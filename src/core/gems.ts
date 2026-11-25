@@ -19,6 +19,12 @@ export interface Gem {
   sys: GramSys;
   q: GemQ;
   kind: GemKind;
+  /** 刻满 progress: right answers on its grammar while worn. */
+  fill?: number;
+  /** Times it was filled: each adds a small step to its effect. */
+  step?: number;
+  /** Filled and waiting for its free re-carve. */
+  recarve?: boolean;
 }
 
 export const GEM = {
@@ -32,6 +38,12 @@ export const GEM = {
   qMult: { white: 1, green: 1.5, purple: 2.2, orange: 3 } as Record<GemQ, number>,
   /** 暂定 base: dmg +6% · heal 2% max HP · pen 4% armor ignored · guard −6% hits taken this turn. */
   base: { dmg: 0.06, heal: 0.02, pen: 0.04, guard: 0.06 } as Record<GemKind, number>,
+  /** 刻满 (Lucas 2026-11-25, N 暂定): right answers to fill; then a reward, +20% effect per fill, a free re-carve. */
+  fillN: 15,
+  stepAdd: 0.2,
+  fillShards: 5,
+  /** Share of the XP to the next level. */
+  fillXp: 0.01,
 };
 
 export const GEM_Q: GemQ[] = ['white', 'green', 'purple', 'orange'];
@@ -42,13 +54,13 @@ export function gemTitle(sys: GramSys): string {
 }
 
 export function gemValue(g: Gem): number {
-  return GEM.base[g.kind] * GEM.qMult[g.q];
+  return GEM.base[g.kind] * GEM.qMult[g.q] * (1 + GEM.stepAdd * (g.step ?? 0));
 }
 
 export function gemText(g: Gem): string {
   const v = Math.round(gemValue(g) * 1000) / 10;
   const what = g.kind === 'dmg' ? `伤害 +${v}%` : g.kind === 'heal' ? `回 ${v}% 生命` : g.kind === 'pen' ? `无视 ${v}% 护甲` : `这回合受到伤害 −${v}%`;
-  return `「${gemTitle(g.sys)}」言石：答对这条语法的题时${what}`;
+  return `「${gemTitle(g.sys)}」言石：答对这条语法的题时${what}${g.recarve ? '（已刻满，可免费重刻）' : ` · 刻满 ${g.fill ?? 0}/${GEM.fillN}`}`;
 }
 
 /** Grammars a gem can carry: the boards this player has seen. */
@@ -131,4 +143,43 @@ export function gemsFor(s: GameState, sys: GramSys | undefined): Gem[] {
 /** Sum of a kind over the gems firing on this grammar. */
 export function gemSum(s: GameState, sys: GramSys | undefined, kind: GemKind): number {
   return gemsFor(s, sys).filter((g) => g.kind === kind).reduce((a, g) => a + gemValue(g), 0);
+}
+
+/** A right answer on `sys`: worn gems of it fill up. Returns the gems that just filled (reward paid by the caller). */
+export function fillGems(s: GameState, sys: GramSys | undefined): Gem[] {
+  const out: Gem[] = [];
+  for (const g of gemsFor(s, sys)) {
+    if (g.recarve) continue;
+    g.fill = (g.fill ?? 0) + 1;
+    if (g.fill >= GEM.fillN) {
+      g.fill = 0;
+      g.step = (g.step ?? 0) + 1;
+      g.recarve = true;
+      s.gemFull = [...new Set([...(s.gemFull ?? []), g.sys])];
+      const k = String(s.region ?? 1);
+      s.shardBal = { ...(s.shardBal ?? {}), [k]: (s.shardBal?.[k] ?? 0) + GEM.fillShards };
+      out.push(g);
+    }
+  }
+  return out;
+}
+
+/** Grammars a filled gem may be re-carved to for free: taught, never filled before (Lucas 2026-11-25). */
+export function recarveChoices(s: GameState): GramSys[] {
+  const full = new Set(s.gemFull ?? []);
+  return gemGrammars(s).filter((x) => !full.has(x));
+}
+
+/** All gems, worn or in the bag. */
+export function allGems(s: GameState): Gem[] {
+  return [...(s.gems ?? []), ...gemItems(s).flatMap((it) => (it.gem ? [it.gem] : []))];
+}
+
+export function recarve(s: GameState, gemId: string, sys: GramSys): boolean {
+  const g = allGems(s).find((x) => x.id === gemId);
+  if (!g?.recarve || !recarveChoices(s).includes(sys)) return false;
+  g.sys = sys;
+  g.fill = 0;
+  g.recarve = false;
+  return true;
 }

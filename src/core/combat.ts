@@ -8,7 +8,7 @@ import { between, makeRng, pick, shuffle, type Rng } from './rng';
 import { contextDueWords, contextFail, contextPass, gapZh, reviewedByWriting, reviewMon, failVerify, retire, setGuiming, kindOf, stageOf, overdueSteps, verifyOf, type Kind, type Stage } from './srs';
 import { typoOk } from './cut';
 import { placedCheck, placedPick } from './placement';
-import { gemSum } from './gems';
+import { fillGems, gemSum } from './gems';
 import { announces, insightOptions, LIAR, liarIntent, TELL_ZH } from './liar';
 import { addGearKill, gear, affinityOf, affixTotal, attack, engraved, critChance, gearPen, hintsPerFight, maxHp, now, type GameState } from './state';
 import type { Element, Intent, Move, Word } from './types';
@@ -115,6 +115,10 @@ export interface Question {
   chorus?: boolean;
   /** 终极技能 (30 级): the two blanks of the frame, in order. */
   ult?: string[];
+  /** 终极技能最终形态「提示词造句」(97): the two hint word ids; the sentence is checked (rules → LanguageTool → AI)
+   *  before the turn, and the result lands here. */
+  prompt97?: { hints: string[] };
+  ultGrade?: 'full' | 'target' | 'fail';
   /** 终极技能: the German frame with two ___. */
   frame?: string;
   /** A1 写作 (2026-11-22): 排句 / 槽位造句 (on a cloze slot) or 连句 (a finisher). */
@@ -344,6 +348,8 @@ export interface Battle {
   b2Mon?: B2Mon;
   /** 会说谎的怪 (151, 暂定): its announcement turns and 洞察 state. */
   liar?: import('./liar').LiarState;
+  /** 言石 刻满 this turn (grammars): the controller pays the XP. */
+  gemFilled?: import('./gram/task').GramSys[];
   /** Sentence attacks used on this monster this fight (each pattern once, in tag order). */
   sxUsed?: number;
   /** 终极技能 (30 级): used this fight; how many of its two blanks were right. */
@@ -842,6 +848,19 @@ export function canHint(s: GameState, b: Battle, move: Move, q: Question | null)
 }
 
 /** The placeholder question of a 药片 turn (物品栏): nothing is asked. */
+/** 终极技能最终形态 (97, 游戏设计 六). */
+export const ULT97 = { from: 97, full: 3, target: 1.5, sweep: 0.5 };
+
+/** Two hint words for 提示词造句: learned (归名 or written) words other than the target, in Chinese. */
+export function ult97Hints(s: GameState, w: Word, rng: Rng): string[] {
+  const pool = Object.entries(s.words)
+    .filter(([id, p]) => id !== w.id && WORD_BY_ID[id] && WORD_BY_ID[id].pos !== 'phr' && !WORD_BY_ID[id].digit && (p.stage === 3 || (p.write ?? 0) > 0))
+    .map(([id]) => id);
+  const out: string[] = [];
+  while (out.length < 2 && pool.length) out.push(...pool.splice(Math.floor(rng() * pool.length), 1));
+  return out;
+}
+
 export const ITEM_TURN: Question = { type: 'steady', prompt: '吃药片', focus: '', item: true };
 /** 即时战: the placeholder for a cast bar running out. */
 export const TICK_TURN: Question = { type: 'steady', prompt: '', focus: '', item: true, tick: true };
@@ -1273,6 +1292,21 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
     const UND: Pattern[] = ['moechte', 'brauche', 'suche', 'habe', 'nehme'];
     // 终极技能 (30 级, 句型填空版): the first finisher of a fight gives the frame and two blanks: this monster
     // and another noun from your wordbook that fits the same pattern.
+    // 97: 提示词造句 (logged in only: the AI judges the meaning; without it the cloze version stays).
+    if (s.level >= ULT97.from && !b.ultUsed && s.owner) {
+      const hints = ult97Hints(s, w, rng);
+      if (hints.length === 2) {
+        const hz = hints.map((id) => `「${WORD_BY_ID[id].zh}」`).join('');
+        return {
+          type: 'sentence',
+          prompt: `终极技能 · 提示词造句：用上它的词和两个提示词${hz}造一句。全用上且没错 ×${ULT97.full}，还横扫场上每只怪；只用上它的词 ×${ULT97.target}`,
+          focus: `${plateZh(w)} + ${hints.map((id) => WORD_BY_ID[id].zh).join(' + ')}`,
+          answer: '',
+          ult: [],
+          prompt97: { hints },
+        };
+      }
+    }
     if (fin && fin.pattern && PATTERNS[fin.pattern].art !== 'none' && has(s.level, 'ultimate') && !b.ultUsed) {
       const pat = fin.pattern;
       const known = WORDS.filter((x) => x.id !== w.id && !!x.art && !!s.words[x.id] && sentenceTags(x).includes(pat));
@@ -1697,6 +1731,11 @@ export function gradeQuestion(s: GameState, b: Battle, q: Question, input: strin
       if (q.write === 'link' && q.link) {
         const ok = gradeLink(input, q.link);
         return { ok, notes: ok ? [] : [`正确答案：${q.answer}`], correct: q.answer!, word: ok ? b.word : undefined };
+      }
+      if (q.prompt97) {
+        const g = q.ultGrade ?? 'fail';
+        b.ultHits = g === 'full' ? 2 : g === 'target' ? 1 : 0;
+        return { ok: g !== 'fail', notes: [], correct: input, word: g !== 'fail' ? b.word : undefined };
       }
       if (q.ult) {
         // 终极技能: the two blanks come joined with |, each graded on its own (Bitte/gern ignored like sentences).
@@ -2191,7 +2230,11 @@ export function resolveTurn(
         }
         if (q.inscribed) mult *= CONFIG.tech.inscribeMult;
         if (rt && q.spoken) mult *= REALTIME.spokenMult; // 即时战: 开口说对的攻击伤害 +20%
-        if (q.ult) {
+        if (q.prompt97) {
+          const full = b.ultHits === 2;
+          mult *= full ? ULT97.full : ULT97.target;
+          log.push({ text: full ? `提示词造句：三个词都用上了，×${ULT97.full}，横扫！` : `提示词造句：只用上了它的词，×${ULT97.target}。`, tone: 'good' });
+        } else if (q.ult) {
           const full = b.ultHits === 2;
           mult *= full ? CONFIG.ultimate.both : CONFIG.ultimate.one;
           log.push({ text: full ? `终极技能：两个空都对，×${CONFIG.ultimate.both}。` : `终极技能：对了一个空，×${CONFIG.ultimate.one}。`, tone: 'good' });
@@ -2222,6 +2265,7 @@ export function resolveTurn(
         mult *= comboMult(s.combo);
         mult *= charmDamage(s, b, typedLike);
         const gsys = q.gram?.sys;
+        if (!q.whispered) for (const g of fillGems(s, gsys)) (b.gemFilled ??= []).push(g.sys);
         const gDmg = gemSum(s, gsys, 'dmg');
         if (gDmg) mult *= 1 + gDmg; // 言石
         if (b.liar?.boost) {
@@ -2319,6 +2363,18 @@ export function resolveTurn(
         }
 
         m.hp -= playerDamage;
+        // 提示词造句 sweep: every other monster takes half, never below 1 HP (the last blow answers its own word).
+        if (q.prompt97 && b.ultHits === 2 && multi) {
+          const hit: string[] = [];
+          for (const o of alive0) {
+            if (o === b || o.outcome) continue;
+            const d = Math.min(o.monster.hp - 1, Math.round(playerDamage * ULT97.sweep));
+            if (d <= 0) continue;
+            o.monster.hp -= d;
+            hit.push(String(d));
+          }
+          if (hit.length) log.push({ text: `横扫：其余的怪各吃 ${hit.join('、')}。`, tone: 'good' });
+        }
         const gHeal = gemSum(s, q.gram?.sys, 'heal');
         if (gHeal) s.hp = Math.min(maxHp(s), s.hp + Math.max(1, Math.round(maxHp(s) * gHeal))); // 言石 回血
         s.stats.maxHit = Math.max(s.stats.maxHit, playerDamage);

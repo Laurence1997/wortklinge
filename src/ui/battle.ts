@@ -75,6 +75,7 @@ export class BattleUI {
   private charmId: string | null = null;
   /** 洞察: the three readings are on screen. */
   private probing = false;
+  private ult97Busy = false;
   // 回音怪 (2026-11-23): the pair's two options, re-reads used, the last message, a judgement in progress.
   private echoOpts: string[] = [];
   private echoTries = 0;
@@ -411,6 +412,20 @@ export class BattleUI {
 
   submit(value: string): void {
     if (this.phase !== 'answer' || !this.question) return;
+    // 提示词造句 (97): the sentence is checked first (rules → LanguageTool → AI), then the turn runs.
+    if (this.question.prompt97 && !this.question.ultGrade) {
+      if (this.ult97Busy) return;
+      this.ult97Busy = true;
+      this.question.ms ??= Math.round(performance.now() - this.askedAt);
+      const q = this.question;
+      logLine('提示词造句：检查中……', 'info');
+      void this.ctrl.ultCheck(q, value).then((notes) => {
+        this.ult97Busy = false;
+        for (const n of notes) logLine(`  ${n}`, q.ultGrade === 'fail' ? 'bad' : 'info');
+        if (this.question === q && this.phase === 'answer') this.submit(value);
+      });
+      return;
+    }
     if (this.question.mates?.length) value = [value, ...this.mateBoxes.map((x) => x.value)].join('|');
     // 答题用时 (速记 / A2 快答 / 一气呵成): from the question showing to the answer.
     this.question.ms ??= Math.round(performance.now() - this.askedAt);

@@ -61,13 +61,14 @@ import { DUNGEON, RULES, type Rule } from '../data/dungeon';
 import { OPINION, opinionRule, pickClaim } from '../core/opinion';
 import { addGearKill, stampTiers } from '../core/state';
 import { bossRed, salvage, shardBalance, tierIlvl, tradeInfo, tradeShards, tradesOpen } from '../core/forge';
-import { aiOpinion, AI_TUTOR, aiEssay, aiGrade, aiGradeText, duelTurn, knownWords, type AiGrade } from '../net/aiTutor';
+import { aiOpinion, AI_TUTOR, aiEssay, aiGrade, aiGradeText, duelTurn, knownWords, wordForms, type AiGrade } from '../net/aiTutor';
 import { DUEL, DUEL_SCENES, duelTurns, type DuelScene } from '../data/grammar/duels';
 import { drawPractice } from '../core/aiPractice';
 import { noticeById } from '../core/gram/notice';
 import { partnerChoices, partnerOf, setPartner } from '../core/gram/partner';
-import { craftGem, GEM, GEM_KIND_ZH, gemGrammars, gemItems, gemText, gemTitle, setGem, unsetGem } from '../core/gems';
+import { allGems, craftGem, recarve, recarveChoices, GEM, GEM_KIND_ZH, gemGrammars, gemItems, gemText, gemTitle, setGem, unsetGem } from '../core/gems';
 import type { GramSys } from '../core/gram/task';
+import { ltCheck } from '../net/languageTool';
 import { berlinHour, CHARM, CHARM_BY_ID, equippedCharms, grantSlang, shoutCharm, SLANG, slangOwed, type ShoutResult } from '../core/charms';
 import { cleared, floorRun, floorsOf, GRAM_DUNGEON, markCleared, type DungeonKind, type Floor } from '../core/gram/dungeons';
 import { fullForm, hasArticleQuestion, WORD_BY_ID, WORDS, zhWithPos } from '../data/words';
@@ -875,6 +876,42 @@ export class Controller {
     return { res, report };
   }
 
+  /** 提示词造句 (97): rules (all three words used, forms accepted) → LanguageTool → AI meaning. Sets q.ultGrade. */
+  async ultCheck(q: Question, input: string): Promise<string[]> {
+    const s = this.state;
+    const b = this.battle;
+    if (!b || !q.prompt97) return [];
+    const text = input.trim();
+    const toks = text.toLowerCase().replace(/[.,!?;:"„“()]/g, ' ').split(/\s+/).filter(Boolean);
+    const uses = (w: Word) => {
+      const forms = wordForms(w).map((x) => x.toLowerCase());
+      const stem = w.de.toLowerCase().replace(/(en|n|e)$/, '');
+      return toks.some((t) => forms.includes(t) || (stem.length >= 4 && t.startsWith(stem)) || forms.some((f) => f.includes(' ') && text.toLowerCase().includes(f)));
+    };
+    const target = uses(b.word);
+    const hintsUsed = q.prompt97.hints.filter((id) => uses(WORD_BY_ID[id])).length;
+    const notes: string[] = [];
+    if (!target || toks.length < 3) {
+      q.ultGrade = 'fail';
+      return [toks.length < 3 ? '要写一整句。' : `没用上它的词（${fullForm(b.word)}）。`];
+    }
+    const lt = await ltCheck(text);
+    if (lt?.length) {
+      q.ultGrade = 'fail';
+      return lt.slice(0, 3).map((m) => (m.bad ? `「${m.bad}」${m.fix ? `→「${m.fix}」` : ''}：${m.message}` : m.message));
+    }
+    if (lt === null) notes.push('（语法检查连不上，这次跳过）');
+    const r = await aiGrade(text, b.word, `终极技能：用 ${[b.word, ...q.prompt97.hints.map((id) => WORD_BY_ID[id])].map((w) => w.de).join('、')} 造一句意思通顺的句子`, s.level, knownWords(s));
+    if ('error' in r) notes.push(r.error === 'model' ? 'AI 暂时不可用，这次只按规则和语法检查判。' : `${aiErrorZh(r.error)}这次只按规则和语法检查判。`);
+    else if (!r.ok) {
+      q.ultGrade = 'fail';
+      return [...r.errors.map((x) => (x.bad ? `「${x.bad}」→「${x.fix}」：${x.why}` : x.why)), ...(r.better ? [`可以这样写：${r.better}`] : [])];
+    }
+    q.ultGrade = hintsUsed === 2 ? 'full' : 'target';
+    if (hintsUsed < 2) notes.push(`提示词只用上了 ${hintsUsed} 个。`);
+    return notes;
+  }
+
   /** 洞察 (会说谎的怪): spend the turn on 「它在说谎吗，破绽在哪里」. Right: its move misses and the next hit ×1.5. */
   insight(choice: string): { right: boolean; answer: string; line: string; zh: string; report: TurnReport } | null {
     const s = this.state;
@@ -929,6 +966,13 @@ export class Controller {
     }
     const r = resolveTurn(s, b, move, q, input, this.rng, this.pack, this.realtime ? 'act' : undefined);
     if (r.killer) this.killer = r.killer;
+    // 言石 刻满: XP + shards, one step stronger, a free re-carve waits at the bonfire.
+    for (const sys of b.gemFilled ?? []) {
+      const lv = addXp(s, Math.round(xpToNext(s.level) * GEM.fillXp));
+      toast(`言石「${gemTitle(sys)}」刻满了：效果升一档，+${GEM.fillShards} 碎片。到篝火可以免费重刻成没练过的语法。`, 'gold');
+      for (const l of lv.levels) this.onLevelUp(l);
+    }
+    b.gemFilled = undefined;
     if (r.review) {
       const rv = r.review;
       if (rv.placed) {
@@ -1443,10 +1487,26 @@ export class Controller {
     lines.push({ who: SYS, text: `本区碎片 ${bal} 片 · 背包里的言石 ${(s.gems ?? []).length} 颗${worn.length ? ` · 已镶 ${worn.map((it) => `「${it.name}」${gemTitle(it.gem!.sys)}`).join('、')}` : ''}` });
     const gs = gemGrammars(s);
     say(lines, undefined, [
+      ...(allGems(s).some((g) => g.recarve) && recarveChoices(s).length ? [{ label: '免费重刻（刻满的言石）', act: () => this.gemRecarvePick() }] : []),
       ...(gs.length ? [{ label: `合成（${GEM.craftCost} 片）`, act: () => this.gemCraftPick() }] : []),
       ...((s.gems ?? []).length && gemItems(s).length ? [{ label: '镶嵌', act: () => this.gemSetPick() }] : []),
       ...(worn.length ? [{ label: `取下（${GEM.moveCost} 片）`, act: () => say([{ who: SYS, text: '从哪件取下？' }], undefined, [...worn.map((it) => ({ label: `「${it.name}」${gemTitle(it.gem!.sys)}`, act: () => { const r = unsetGem(s, it.id); toast(r.ok ? '取下了，放回言石袋' : r.why!); this.refresh(); this.persist(); } })), { label: '算了', act: () => undefined }]) }] : []),
       { label: '回去', act: () => undefined },
+    ]);
+  }
+
+  private gemRecarvePick(): void {
+    const s = this.state;
+    const ready = allGems(s).filter((g) => g.recarve);
+    say([{ who: SYS, text: '重刻哪颗？品质和刻满攒下的档都保留。' }], undefined, [
+      ...ready.slice(0, 6).map((g) => ({
+        label: `${QUALITY_ZH[g.q]} ${gemTitle(g.sys)} · ${GEM_KIND_ZH[g.kind]}`,
+        act: () => say([{ who: SYS, text: '换成哪条？（刻满过的语法不再列出）' }], undefined, [
+          ...recarveChoices(s).slice(-12).map((sys) => ({ label: gemTitle(sys), act: () => { recarve(s, g.id, sys); toast(`重刻成「${gemTitle(sys)}」`, 'gold'); this.refresh(); this.persist(); } })),
+          { label: '算了', act: () => undefined },
+        ]),
+      })),
+      { label: '算了', act: () => undefined },
     ]);
   }
 
