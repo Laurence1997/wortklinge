@@ -165,8 +165,8 @@ const OVERLAY = new Set<number>([T.Tree, T.Crate]);
 const FLOORISH = new Set<number>([T.Ground, T.Ash, T.Road, T.Rubble]);
 
 const tinted = new Map<string, HTMLCanvasElement>();
-function townTile(sheet: CanvasImageSource, tile: number, ramp: number[]): HTMLCanvasElement {
-  const key = `${tile}:${ramp.join('')}`;
+function townTile(sheet: CanvasImageSource, tile: number, ramp: number[], palette: readonly string[] = MAP_SHADES): HTMLCanvasElement {
+  const key = `${tile}:${ramp.join('')}:${palette.join('')}`;
   const hit = tinted.get(key);
   if (hit) return hit;
   const cv = document.createElement('canvas');
@@ -175,7 +175,7 @@ function townTile(sheet: CanvasImageSource, tile: number, ramp: number[]): HTMLC
   ctx.drawImage(sheet, (tile % TOWN_COLS) * 16, Math.floor(tile / TOWN_COLS) * 16, 16, 16, 0, 0, 16, 16);
   const img = ctx.getImageData(0, 0, 16, 16);
   const d = img.data;
-  const shades = ramp.map((i) => MAP_SHADES[i]).map((h) => [1, 3, 5].map((k) => parseInt(h.slice(k, k + 2), 16)));
+  const shades = ramp.map((i) => palette[i]).map((h) => [1, 3, 5].map((k) => parseInt(h.slice(k, k + 2), 16)));
   // Stretch each tile's own brightness range over the ramp, so pale tiles (stone, walls) keep their detail.
   const lums: number[] = [];
   for (let i = 0; i < d.length; i += 4) lums.push(d[i + 3] < 8 ? -1 : (0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]) / 255);
@@ -205,6 +205,8 @@ export function renderMapCanvas(m: MapData, sheet?: CanvasImageSource | null, hi
   const c = cv.getContext('2d')!;
   c.imageSmoothingEnabled = false;
   const set = TOWN[(REGION_DEF[m.region]?.look ?? m.region ?? 1) as 1 | 2 | 3] ?? TOWN[1];
+  // 0.7/0.8: a region may bring its own colours (src/data/zones.ts `palette`); default is the red-black ramp.
+  const pal = REGION_DEF[m.region]?.palette ?? MAP_SHADES;
   for (let y = 0; y < MAP_H; y++)
     for (let x = 0; x < MAP_W; x++) {
       const t = m.tiles[idx(x, y)];
@@ -217,8 +219,8 @@ export function renderMapCanvas(m: MapData, sheet?: CanvasImageSource | null, hi
       const dark = hidden.some((h) => Math.abs(h.x - x) <= 4 && Math.abs(h.y - y) <= 4);
       const ramp = dark ? RAMP_HIDDEN : FLOORISH.has(t) ? RAMP_FLOOR : RAMP_WALL;
       const pickOf = (xs: number[]) => xs[(seed >>> 3) % xs.length];
-      if (OVERLAY.has(t)) c.drawImage(townTile(sheet!, pickOf(set[T.Ground]!), dark ? RAMP_HIDDEN : RAMP_FLOOR), x * TILE, y * TILE);
-      c.drawImage(townTile(sheet!, pickOf(list), OVERLAY.has(t) && !dark ? RAMP_WALL : ramp), x * TILE, y * TILE);
+      if (OVERLAY.has(t)) c.drawImage(townTile(sheet!, pickOf(set[T.Ground]!), dark ? RAMP_HIDDEN : RAMP_FLOOR, pal), x * TILE, y * TILE);
+      c.drawImage(townTile(sheet!, pickOf(list), OVERLAY.has(t) && !dark ? RAMP_WALL : ramp, pal), x * TILE, y * TILE);
     }
   return cv;
 }

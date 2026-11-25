@@ -6,11 +6,11 @@
 // flags: m = usable in "Ich möchte …", t = tutorial word
 // Other rows: 'de | 中文'
 
-import type { Article, FamilyId, Pos, Word, ZoneId } from '../core/types';
+import type { Article, FamilyId, Pos, RegionNo, Word, ZoneId } from '../core/types';
 import { REGION2_GROUPS } from './words2';
 import { REGION3_GROUPS } from './words3';
-import { FIELD_KEYS, REGION_DEFS, fieldLevels } from './zones';
-import { PLACEHOLDER_PER_SCENE, SCENE_ROWS } from './zoneWords';
+import { ERODE_DEFS, FIELD_KEYS, REGION_DEFS, fieldLevels, regionLevels } from './zones';
+import { FIRST_BATCH, PLACEHOLDER_PER_SCENE, SCENE_ROWS } from './zoneWords';
 
 interface Group {
   family: FamilyId;
@@ -380,51 +380,77 @@ function build(): Word[] {
 
 /** 0.7/0.8: word ids of each region 4–12 scene (r4-a1 …), filled by buildLater. */
 export const LATER_SCENE_WORDS: Record<string, string[]> = {};
+/** 蚀变 word groups by old scene id (src/data/zones.ts ERODE_DEFS). */
+export const ERODED_SCENE_WORDS: Record<string, string[]> = {};
 
 const POS_FAMILY: Partial<Record<Pos, FamilyId>> = { n: 'kram', v: 'nachhall', adj: 'echo', phr: 'echo', num: 'zahlwurm', q: 'schild', name: 'schild' };
 
-/** Regions 4–12 (src/data/zones.ts): each scene's rows from zoneWords.ts, or ten stand-in nouns from regions 1–3
+/** Regions 4–12 (src/data/zones.ts): each scene's rows from zoneWords.ts, or stand-in nouns from regions 1–3
  *  (`ph<region>-<id>`, `base` = the copied word) until the 6000-word list is imported. Levels spread over the field's
- *  band in route order, like regions 1–3. */
+ *  band in route order, like regions 1–3. Rows past FIRST_BATCH are the scene's second batch. Then the 蚀变 layers:
+ *  a second word group on old scenes, at the segment's level (`erode`, `region` = segment, `after` = base word). */
 function buildLater(early: Word[], seen: Set<string>): Word[] {
   const out: Word[] = [];
   // Stand-ins: nouns with a plural and an example-ready id, region 3 first (closest in level and topic), rotating.
-  const pool = [...early.filter((w) => w.region === 3), ...early.filter((w) => w.region === 2), ...early.filter((w) => w.region === 1)].filter(
-    (w) => w.pos === 'n' && !!w.art && !!w.pl && w.pl !== '-' && !w.plOnly && !w.tutorial && w.family !== 'truhe',
-  );
+  const ok = (w: Word) => w.pos === 'n' && !!w.art && !!w.pl && w.pl !== '-' && !w.plOnly && !w.tutorial && w.family !== 'truhe';
+  const pool = [...early.filter((w) => w.region === 3), ...early.filter((w) => w.region === 2), ...early.filter((w) => w.region === 1)].filter(ok);
   let next = 0;
+  const claim = (id: string) => {
+    while (seen.has(id)) id += '-2';
+    seen.add(id);
+    return id;
+  };
+  /** One scene's words: its rows, or stand-ins from `bases` (each word knows its scene and batch). */
+  const fill = (key: string, scene: string, zone: ZoneId, region: RegionNo, lvlAt: (i: number, n: number) => number, bases: () => Word, extra: Partial<Word> = {}) => {
+    const rows = SCENE_ROWS[key];
+    const ids: string[] = [];
+    const push = (w: Word, i: number) => {
+      w.id = claim(w.id);
+      w.region = region;
+      w.scene = scene;
+      if (i >= FIRST_BATCH) w.batch = 2;
+      ids.push(w.id);
+      out.push(w);
+    };
+    if (rows?.length)
+      rows.forEach((row, i) => {
+        const [body, after] = row.split(' > ').map((x) => x.trim());
+        const w = parseLaterRow(body, zone, lvlAt(i, rows.length));
+        if (w) push({ ...w, ...extra, ...(after ? { after } : {}) }, i);
+      });
+    else
+      for (let i = 0; i < PLACEHOLDER_PER_SCENE && pool.length; i++) {
+        const b = bases();
+        const root = b.base ?? b.id;
+        push({ ...b, id: `ph${region}-${root}`, base: root, zone, lvl: lvlAt(i, PLACEHOLDER_PER_SCENE), moechte: undefined, ex: undefined, batch: undefined, ...extra, ...(extra.erode ? { after: b.id } : {}) }, i);
+      }
+    return ids;
+  };
   for (const d of REGION_DEFS) {
     d.fields.forEach((f, fi) => {
       const [lo, hi] = fieldLevels(d.region, fi as 0 | 1 | 2);
       const zone = `r${d.region}${FIELD_KEYS[fi]}` as ZoneId;
+      const n = f.scenes.length;
       f.scenes.forEach((_, si) => {
         const scene = `r${d.region}-${FIELD_KEYS[fi]}${si + 1}`;
-        const rows = SCENE_ROWS[scene];
-        const ids: string[] = [];
-        // Scene si of 8 covers its share of the band; rows inside it climb within that share.
-        const lvlAt = (i: number, n: number) => Math.round(lo + (hi - lo) * ((si + (n > 1 ? i / (n - 1) : 0)) / 8));
-        if (rows?.length) {
-          rows.forEach((row, i) => {
-            const w = parseLaterRow(row, zone, lvlAt(i, rows.length));
-            if (!w) return;
-            w.region = d.region;
-            while (seen.has(w.id)) w.id += '-2';
-            seen.add(w.id);
-            ids.push(w.id);
-            out.push(w);
-          });
-        } else {
-          for (let i = 0; i < PLACEHOLDER_PER_SCENE && pool.length; i++) {
-            const b = pool[next++ % pool.length];
-            let id = `ph${d.region}-${b.id}`;
-            while (seen.has(id)) id += '-2';
-            seen.add(id);
-            ids.push(id);
-            out.push({ ...b, id, base: b.id, zone, region: d.region, lvl: lvlAt(i, PLACEHOLDER_PER_SCENE), moechte: undefined, ex: undefined });
-          }
-        }
-        LATER_SCENE_WORDS[scene] = ids;
+        // Scene si of n covers its share of the band; rows inside it climb within that share.
+        const lvlAt = (i: number, k: number) => Math.round(lo + (hi - lo) * ((si + (k > 1 ? i / (k - 1) : 0)) / n));
+        LATER_SCENE_WORDS[scene] = fill(scene, scene, zone, d.region, lvlAt, () => pool[next++ % pool.length]);
       });
+    });
+  }
+  // 蚀变: stand-ins copy the old scene's own words where it has its group here (regions 4–7), else nouns of its
+  // field (regions 1–3), so 「基础词写对过一次才出进阶词」 already works on them.
+  const byId = new Map([...early, ...out].map((w) => [w.id, w]));
+  for (const e of ERODE_DEFS) {
+    const [lo, hi] = regionLevels(e.seg);
+    e.scenes.forEach((x, k) => {
+      const own = (LATER_SCENE_WORDS[x.scene] ?? []).map((id) => byId.get(id)!).filter(ok);
+      const field = early.filter((w) => w.zone === x.zone && ok(w));
+      const bases = own.length ? own : field.length ? field : pool;
+      let j = k;
+      const lvlAt = (i: number, n: number) => Math.round(lo + (hi - lo) * ((k + (n > 1 ? i / (n - 1) : 0)) / e.scenes.length));
+      ERODED_SCENE_WORDS[x.scene] = fill(`${x.scene}@${e.seg}`, x.scene, x.zone, e.seg, lvlAt, () => bases[j++ % bases.length], { erode: e.seg });
     });
   }
   return out;

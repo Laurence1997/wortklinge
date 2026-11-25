@@ -2,10 +2,10 @@
 // Each scene sits on a tile of the old 0.4 map (`at`), so saved positions, echoes, packs (same scene = within
 // CONFIG.pack.radiusTiles) and the online presence all keep working with tile coordinates.
 // Fields keep the 0.4 word pools (zone); a 0.4 field of 10 monsters became 4 scenes × CONFIG.map.slots.
-import type { LaterRegionNo, ZoneId } from '../core/types';
+import type { ZoneId } from '../core/types';
 import type { NpcId, RegionId } from '../game/map';
-import { FIELD_KEYS, REGION_DEFS, regionLevels, type RegionDef } from './zones';
-import { LATER_SCENE_WORDS } from './words';
+import { ERODE_DEFS, FIELD_KEYS, REGION_DEFS, nextMapRegion, prevMapRegion, regionLevels, type RegionDef } from './zones';
+import { ERODED_SCENE_WORDS, LATER_SCENE_WORDS } from './words';
 
 export type SceneType = 'camp' | 'field' | 'road' | 'door' | 'hidden';
 
@@ -35,6 +35,9 @@ export interface SceneDef {
   lucky?: number;
   /** 0.6 场景记忆法: the fixed word group (word ids) this field scene's monsters come from. */
   words?: string[];
+  /** 0.7/0.8 蚀变: the scene's advanced word group (segment `erodeSeg`), on top of its own words. */
+  eroded?: string[];
+  erodeSeg?: 8 | 11;
 }
 
 export interface AreaDef {
@@ -59,20 +62,23 @@ export const AREAS_LATER = ['议会堡 · B2', '铸币场 · B2', '观星台 · 
 
 // ---- 0.7 + 0.8 · regions 4–12, generated from src/data/zones.ts on the region-3 street plan ----------------
 
-/** Region-3 positions (tiles) reused by every later region: field A north, B south, C east. */
+/** Positions (tiles) shared by every new region 4–12: town west, field A north, B south, C east, each field a
+ *  snake through a grid 7 tiles apart (room for 10 scenes, 6+ tiles between any two). */
 const PLAN = {
   hub: { x: 13, y: 24 }, stand: { x: 15, y: 30 }, x: { x: 22, y: 24 }, cx: { x: 51, y: 22 },
-  a: [{ x: 28, y: 16 }, { x: 28, y: 9 }, { x: 35, y: 9 }, { x: 39, y: 3 }, { x: 44, y: 14 }, { x: 44, y: 22 }, { x: 47, y: 4 }, { x: 35, y: 18 }],
-  b: [{ x: 28, y: 33 }, { x: 28, y: 40 }, { x: 35, y: 41 }, { x: 38, y: 27 }, { x: 42, y: 34 }, { x: 35, y: 34 }, { x: 49, y: 35 }, { x: 47, y: 42 }],
-  c: [{ x: 56, y: 13 }, { x: 65, y: 13 }, { x: 61, y: 7 }, { x: 56, y: 31 }, { x: 62, y: 19 }, { x: 68, y: 34 }, { x: 56, y: 40 }, { x: 63, y: 40 }],
+  a: [[27, 19], [27, 12], [27, 5], [34, 5], [34, 12], [34, 19], [41, 19], [41, 12], [41, 5], [48, 5]],
+  b: [[27, 30], [27, 37], [27, 43], [34, 43], [34, 37], [34, 30], [41, 30], [41, 37], [41, 43], [48, 43]],
+  c: [[56, 16], [56, 9], [63, 9], [63, 16], [61, 24], [57, 31], [64, 31], [63, 38], [56, 38], [60, 44]],
   door: { x: 68, y: 24 }, hide: { x: 69, y: 4 }, onward: { x: 69, y: 44 },
-};
+} as const;
+const at = ([x, y]: readonly [number, number]) => ({ x, y });
 
 function laterScenes(d: RegionDef): SceneDef[] {
-  const r = d.region as LaterRegionNo;
+  const r = d.region;
   const p = `r${r}`;
+  const next = nextMapRegion(r);
   const out: SceneDef[] = [
-    { id: `${p}-hub`, region: r, no: 1, zh: d.hubZh, type: 'camp', at: PLAN.hub, npcs: ['hilde', 'examiner'], bonfire: true, gate: (r - 1) as RegionId },
+    { id: `${p}-hub`, region: r, no: 1, zh: d.hubZh, type: 'camp', at: PLAN.hub, npcs: ['hilde', 'examiner'], bonfire: true, gate: prevMapRegion(r) as RegionId },
     { id: `${p}-stand`, region: r, no: 2, zh: d.standZh, type: 'camp', at: PLAN.stand, npcs: ['mira', 'greta'] },
     { id: `${p}-x`, region: r, no: 3, zh: d.crossZh, type: 'road', at: PLAN.x },
   ];
@@ -82,26 +88,35 @@ function laterScenes(d: RegionDef): SceneDef[] {
     if (k === 'c') out.push({ id: `${p}-cx`, region: r, no: no++, zh: d.gateCZh, type: 'road', at: PLAN.cx });
     f.scenes.forEach((name, si) => {
       const id = `${p}-${k}${si + 1}`;
-      out.push({ id, region: r, no: no++, zh: `${f.zh}${si === 0 ? '口' : si === 7 ? '尽头' : ''} · ${name}`, type: 'field', zone: `${p}${k}` as ZoneId, at: PLAN[k][si], words: LATER_SCENE_WORDS[id] ?? [] });
+      const end = si === 0 ? '口' : si === f.scenes.length - 1 ? '尽头' : '';
+      out.push({ id, region: r, no: no++, zh: `${f.zh}${end} · ${name}`, type: 'field', zone: `${p}${k}` as ZoneId, at: at(PLAN[k][si]), words: LATER_SCENE_WORDS[id] ?? [] });
     });
   });
   out.push({ id: `${p}-door`, region: r, no: no++, zh: d.doorZh, type: 'door', at: PLAN.door, door: true });
   out.push({ id: `${p}-hide`, region: r, no: no++, zh: d.hiddenZh, type: 'hidden', zone: `${p}c` as ZoneId, slots: 2, at: PLAN.hide, hiddenBy: (LATER_SCENE_WORDS[`${p}-c2`] ?? [])[0], lucky: 3 });
-  if (r < 12) out.push({ id: `${p}-onward`, region: r, no: no++, zh: d.onwardZh, type: 'road', at: PLAN.onward, gate: (r + 1) as RegionId, openFlag: `boss${r}Kills` });
+  // The road on: opens with this region's boss, or with the 蚀变 boss that stands between (7 → 蚀变① → 9).
+  if (next) out.push({ id: `${p}-onward`, region: r, no: no++, zh: d.onwardZh, type: 'road', at: PLAN.onward, gate: next as RegionId, openFlag: `boss${next - 1}Kills` });
   return out;
 }
 
-/** Same paths as region 3 (hub → crossroads → three fields, door behind C, hidden path off C2, onward off C7). */
-function laterLinks(r: number): Array<[string, string]> {
-  const p = `r${r}`;
-  const L: Array<[string, string]> = [
-    ['hub', 'stand'], ['hub', 'x'],
-    ['x', 'a1'], ['a1', 'a2'], ['a2', 'a3'], ['a3', 'a4'], ['a4', 'a7'], ['a3', 'a5'], ['a1', 'a8'], ['a8', 'a6'], ['a5', 'a6'], ['a5', 'a7'],
-    ['x', 'b1'], ['b1', 'b4'], ['b1', 'b6'], ['b1', 'b2'], ['b2', 'b3'], ['b6', 'b5'], ['b4', 'b5'], ['b3', 'b8'], ['b5', 'b7'], ['b7', 'b8'],
-    ['x', 'cx'], ['cx', 'c1'], ['c1', 'c3'], ['c3', 'c2'], ['c1', 'c5'], ['c2', 'c5'], ['cx', 'c4'], ['c4', 'c6'], ['c4', 'c7'], ['c7', 'c8'], ['c6', 'c8'],
-    ['c8', 'door'], ['c5', 'door'], ['c2', 'hide'],
-  ];
-  if (r < 12) L.push(['c7', 'onward']);
+/** Each field is a snake (scene n → n+1) with rungs between grid neighbours; door behind C5 and the last C scenes,
+ *  hidden path off C3 (next to it), onward road off C8. */
+function laterLinks(d: RegionDef): Array<[string, string]> {
+  const p = `r${d.region}`;
+  const L: Array<[string, string]> = [['hub', 'stand'], ['hub', 'x'], ['x', 'a1'], ['x', 'b1'], ['x', 'cx'], ['cx', 'c1']];
+  d.fields.forEach((f, fi) => {
+    const k = FIELD_KEYS[fi];
+    const pts = PLAN[k];
+    const n = f.scenes.length;
+    for (let i = 0; i < n; i++)
+      for (let j = i + 1; j < n; j++) {
+        const dd = Math.hypot(pts[i][0] - pts[j][0], pts[i][1] - pts[j][1]);
+        if (j === i + 1 || dd <= 7.5) L.push([`${k}${i + 1}`, `${k}${j + 1}`]);
+      }
+  });
+  const nc = d.fields[2].scenes.length;
+  L.push(['c5', 'door'], ['c7', 'door'], ['c3', 'hide']);
+  if (nextMapRegion(d.region)) L.push([`c${Math.min(8, nc)}`, 'onward'], [`c${nc}`, 'onward']);
   return L.map(([a, b]) => [`${p}-${a}`, `${p}-${b}`]);
 }
 
@@ -232,10 +247,22 @@ export const LINKS: Array<[string, string]> = [
   ['r3-x', 'r3-fx'], ['r3-fx', 'r3-f1'], ['r3-f1', 'r3-f3'], ['r3-f3', 'r3-f2'], ['r3-f1', 'r3-f5'], ['r3-f2', 'r3-f5'],
   ['r3-fx', 'r3-f4'], ['r3-f4', 'r3-f6'], ['r3-f4', 'r3-f7'], ['r3-f7', 'r3-f8'], ['r3-f6', 'r3-f8'],
   ['r3-f8', 'r3-door'], ['r3-f5', 'r3-door'], ['r3-f2', 'r3-hide'], ['r3-f7', 'r3-onward'],
-  ...REGION_DEFS.flatMap((d) => laterLinks(d.region)),
+  ...REGION_DEFS.flatMap(laterLinks),
 ];
 
 export const SCENE_BY_ID: Record<string, SceneDef> = Object.fromEntries(SCENES.map((s) => [s.id, s]));
+
+// 蚀变 (游戏设计 rev 341): old scenes carry a second word group, segment 8 or 11 (src/data/zones.ts ERODE_DEFS).
+for (const e of ERODE_DEFS)
+  for (const x of e.scenes) {
+    const sc = SCENE_BY_ID[x.scene];
+    if (sc) Object.assign(sc, { eroded: ERODED_SCENE_WORDS[x.scene] ?? [], erodeSeg: e.seg });
+  }
+
+/** Each word's home scene: its own group, or the 蚀变 group of an old scene. */
+export const HOME_SCENE: Record<string, SceneDef> = Object.fromEntries(
+  SCENES.flatMap((sc) => [...(sc.words ?? []), ...(sc.eroded ?? [])].map((w) => [w, sc] as const)),
+);
 
 export function scenesOf(region: RegionId): SceneDef[] {
   return SCENES.filter((s) => s.region === region);

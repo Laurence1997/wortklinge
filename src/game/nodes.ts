@@ -9,14 +9,15 @@ import { has } from '../core/unlocks';
 import { toast } from '../ui/feedback';
 import { needsVerify, stageOf } from '../core/srs';
 import { eligible, fieldCleared } from '../core/spawn';
+import { erodeOpen, purified } from '../core/erosion';
 import type { ZoneId } from '../core/types';
 import { WORD_BY_ID, fullForm } from '../data/words';
-import { AREAS, AREAS_LATER, SCENE_BY_ID, SCENES, neighbours, nearestScene, routeTo, scenesOf, type SceneDef } from '../data/world';
+import { AREAS, AREAS_LATER, HOME_SCENE, SCENE_BY_ID, SCENES, neighbours, nearestScene, routeTo, scenesOf, type SceneDef } from '../data/world';
 import { online } from '../net/online';
 import { h } from '../ui/dom';
 import { sfx } from './audio';
 import { ZONES, TILE, type NpcId } from './map';
-import { REGION_DEF, REGION_DEFS } from '../data/zones';
+import { REGION_DEF, REGION_DEFS, regionLevels } from '../data/zones';
 import type { MonsterEntity, WorldScene } from './WorldScene';
 
 const NPC_ZH: Record<NpcId, string> = { hilde: '守火人 Hilde', greta: '导师 Greta', mira: '商人 Mira', konrad: '面包师傅 Konrad', examiner: '考官', brandt: '站长 Herr Brandt', lina: 'Lina', weber: '秩序会 Frau Weber' };
@@ -24,7 +25,7 @@ const GATE_ZH: Record<number, string> = { 1: '穿过门回余烬营地', 2: '过
 const OFFSETS = [[-28, -6], [28, -6], [0, -24], [-28, 16], [28, 16], [0, -38]];
 
 /** 0.6: each word's home scene (from the scene word groups). */
-const HOME: Record<string, SceneDef> = Object.fromEntries(SCENES.flatMap((sc) => (sc.words ?? []).map((w) => [w, sc] as const)));
+const HOME = HOME_SCENE; // own groups + 蚀变 groups (src/data/world.ts)
 
 export const anchorPx = (sc: SceneDef) => ({ x: sc.at.x * TILE + 8, y: sc.at.y * TILE + 8 });
 
@@ -290,6 +291,15 @@ export class NodeNav {
     this.w.ctrl.encounter(m);
   }
 
+  /** 蚀变 (rev 341): an open 蚀变 scene says so; once all its advanced words are gone it reads 已净化. */
+  private erodeTag(sc: SceneDef): HTMLElement | string {
+    if (!sc.erodeSeg || !erodeOpen(this.s, sc.erodeSeg)) return '';
+    const lv = regionLevels(sc.erodeSeg).join('–');
+    return purified(this.s, sc.eroded, sc.erodeSeg)
+      ? h('span.small', { style: 'color:var(--gold, #ffcf4a)' }, ' · 已净化')
+      : h('span.small', { style: 'color:#c06cff' }, ` · 蚀变 Lv ${lv}`);
+  }
+
   private render(): void {
     const sc = this.here;
     const busy = this.hopping || this.w.ctrl.uiBlocking();
@@ -314,7 +324,7 @@ export class NodeNav {
       .map((x) => h('button.btn', { disabled: busy, onclick: () => this.travel(x.id) }, `→ ${x.no} ${x.zh}`));
     const peers = [...online.peers.values()].filter((p) => nearestScene(this.w.map.region, p.x, p.y).id === sc.id).map((p) => p.nick);
     this.panel.replaceChildren(
-      h('div.sp-head', h('b', `${sc.no} · ${sc.zh}`), h('span.muted', zone ? ` ${zone.zh} · ${zone.levels}` : sc.type === 'camp' ? ' 安全区' : '')),
+      h('div.sp-head', h('b', `${sc.no} · ${sc.zh}`), h('span.muted', zone ? ` ${zone.zh} · ${zone.levels}` : sc.type === 'camp' ? ' 安全区' : ''), this.erodeTag(sc)),
       this.claimMsg?.scene === sc.id ? h('div.small', { style: 'color:var(--gold, #ffcf4a)' }, this.claimMsg.text) : '',
       sceneArtCanvas(sc.id, this.s) ?? '',
       sc.zone

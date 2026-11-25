@@ -10,6 +10,7 @@ import type { Word, ZoneId } from './types';
 import { has } from './unlocks';
 import { WORDS } from '../data/words';
 import { prioritise } from './wordImport';
+import { laterReady } from './erosion';
 
 export interface SpawnPick {
   word: Word;
@@ -32,7 +33,7 @@ export function zoneMinLevel(zone: ZoneId): number {
 export function eligible(s: GameState, w: Word): boolean {
   if (w.family === 'truhe') return false; // 宝箱怪 only appears as a rare spawn
   if (!has(s.level, 'typing') && !w.art) return false;
-  return true;
+  return laterReady(s, w); // 0.7/0.8: 蚀变 words and second batches (src/core/erosion.ts)
 }
 
 export function pickSpawns(s: GameState, zone: ZoneId, count: number, alive: Set<string>, rng: Rng, opts: { phraseOk?: boolean } = {}): SpawnPick[] {

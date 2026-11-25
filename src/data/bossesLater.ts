@@ -5,9 +5,11 @@
 // clause on screen (`visual`) are made fresh each fight, so they can't be learned by heart.
 //
 // Written by Claude; needs a native-speaker check (they go through the same proofreading as the other data).
-// Grammar per region follows 游戏设计 十六「语法线」: wo/wohin (4), comparatives (5), Konjunktiv II (6), contract
-// reading + passive (7), als/wenn (8), relative clauses (9), listening (10), reasons with weil (11), reflexive +
-// preposition (12).
+// Grammar per segment follows 游戏设计 十六「语法线」 (rev 341): wo/wohin (4), comparatives (5), Konjunktiv II (6),
+// contract reading + passive (7), 蚀变① als/wenn + Plusquamperfekt/nachdem, indirect questions, lassen (8, its
+// door is 铁轨镇's 末班站台), reasons with weil + relative clauses (9), listening (10), 蚀变② formal complaint with
+// n-Deklination, nominalised adjectives, Partizip I (11, door in 租屋城; 游戏设计 says 「新首领待设计」, this one
+// follows its suggestion), reflexive + preposition (12). 枯林之母 moved past 120 with 林底 (PARKED_BOSSES).
 
 import type { BossQuestion } from './boss';
 import { numDe } from './boss2';
@@ -308,7 +310,7 @@ const SMALLPRINT = (rng: Rng): BossQuestion[] => {
   return talk(rng, first, rest);
 };
 
-// ---- 8 · 钟楼城 · 停摆的钟 (als / wenn, Perfekt and Präteritum mixed) ------------------------------------------
+// ---- 8 · 蚀变① · 停摆的钟 at 铁轨镇's 末班站台 (als / wenn, Perfekt and Präteritum mixed, nachdem, indirect questions, lassen) ------------------------------------------
 
 const VERB2 = '(?:war|hatte|habe|bin|konnte|musste|wollte|ging|kam|wohnte|spielte|lernte|las|fuhr|machte|sah|traf|ass|trank|blieb|lebte|kochte|arbeitete|schlief|lief|hat|ist|wurde)';
 
@@ -338,7 +340,14 @@ const CLOCK = (rng: Rng): BossQuestion[] => {
     q('hobby', ['Was machen Sie in Ihrer Freizeit?', 'Haben Sie ein Hobby?'], '问你的爱好',
       [`(?:mein hobby ist|meine hobbys sind|ich ${S} gern|in meiner freizeit|${S} ich gern)`], 'In meiner Freizeit spiele ich Fußball.'),
     q('day', ['Wann stehen Sie normalerweise auf?', 'Wann gehen Sie ins Bett?'], '问你几点起床 / 睡觉（作息）',
-      [`^(?:ich stehe .*auf|ich gehe .*bett|um )`, `(?:um \\d+|um ${S}) (?:uhr)?`], 'Ich stehe um sieben Uhr auf.'),
+      [`^(?:ich stehe .*auf|ich gehe .*bett|um )`, `(?:um \\d+|um ${S}) (?:uhr)?`], 'Ich stehe um sieben Uhr auf.'),    q('nachdem', ['Was haben Sie gemacht, nachdem Sie gegessen hatten?', 'Und was war, nachdem Sie angekommen waren?'], '讲「做完一件事以后」（nachdem + 过去完成时，主句动词在前）',
+      [`^nachdem ich .+ (?:hatte|war) ${VERB2} \\w+`], 'Nachdem ich gegessen hatte, ging ich spazieren.',
+      { traps: [[/^nachdem ich .+ (?:habe|bin) /, 'nachdem 从句用过去完成时：nachdem ich gegessen hatte / angekommen war。']] }),
+    q('indirect', ['Wissen Sie noch, wann das war?', 'Wissen Sie noch, wo Sie damals gewohnt haben?'], '它问你还记不记得（间接疑问句，动词放最后）',
+      [`(?:ich weiss|weiss ich) (?:nicht |nicht mehr |noch |genau |leider )*(?:wann|wo|ob|wie|was) .+ (?:war|wohnte|habe|hatte|bin|ist|wurde)$`], 'Ich weiß nicht mehr, wann das war.',
+      { traps: [[/(?:wann|wo) (?:war|wohnte) (?:das|ich)$/, '间接疑问句里动词放最后：…, wann das war。']] }),
+    q('lassen', ['Haben Sie Ihr Fahrrad selbst repariert?', 'Haben Sie Ihre Haare selbst geschnitten?'], '不是自己做的，是让别人做的（lassen）',
+      [`(?:lasse|liess|lassen)`], 'Nein, ich lasse das machen.'),
   ];
   return talk(rng, first, rest);
 };
@@ -397,7 +406,7 @@ const BROADCAST = (rng: Rng): BossQuestion[] => {
   return [...first, ...rest];
 };
 
-// ---- 11 · 林底 · 枯林之母 (nature and environment; weil) --------------------------------------------------------
+// ---- 林底 · 枯林之母 (parked past 120 with 林底; nature and environment; weil) --------------------------------------------------------
 
 const FOREST = (rng: Rng): BossQuestion[] => {
   const first = [
@@ -420,6 +429,45 @@ const FOREST = (rng: Rng): BossQuestion[] => {
       [`^(?:man kann|man sollte|ich|wir|kurz|weniger|das licht|duschen)`], 'Man kann kürzer duschen.'),
     q('if', ['Was würdest du tun, wenn der Wald stirbt?', 'Was wäre, wenn es keine Bäume mehr gäbe?'], '假设问题（würde / wäre）',
       [`(?:ich wuerde|wuerde ich|es waere|waere es|wir wuerden|man wuerde|dann gaebe)`], 'Ich würde neue Bäume pflanzen.'),
+  ];
+  return talk(rng, first, rest);
+};
+
+// ---- 11 · 蚀变② · 驳回书 in 租屋城's hall (formal complaint and appeal: n-Deklination, nominalised adjectives,
+// Partizip I as an adjective, formal letter phrases; reasons with weil) -----------------------------------------
+
+const COMPLAINT = (rng: Rng): BossQuestion[] => {
+  const first = [
+    q('concern', ['Worum geht es?', 'Was ist Ihr Anliegen?'], '问你来办什么事（正式投诉：sich beschweren über / Widerspruch einlegen）',
+      [`(?:ich moechte (?:mich )?(?:ueber|beschweren|widerspruch|einspruch|reklamieren)|es geht um|ich beschwere mich|ich lege (?:widerspruch|einspruch))`], 'Ich möchte mich über die Heizung beschweren.',
+      { traps: [[/^ich moechte beschweren/, '反身动词别漏 mich：Ich möchte mich beschweren.']] }),
+    q('since', ['Seit wann besteht das Problem?', 'Seit wann ist das so?'], '问问题从什么时候开始',
+      [`^(?:seit|schon seit|das problem besteht seit|es ist seit)`], 'Seit drei Wochen funktioniert die Heizung nicht.'),
+    q('whom', ['Mit wem haben Sie schon gesprochen?', 'Wen haben Sie schon gefragt?'], '问你已经找过谁（n 变化名词：den Nachbarn / Herrn / Kollegen）',
+      [`(?:mit|habe) (?:dem|einem|meinem|den|einen|meinen) (?:nachbarn|kollegen|kunden|patienten|praktikanten|studenten|hausmeister|vermieter|arzt|berater|herrn)`, `(?:mit|habe) herrn \w+`],
+      'Ich habe schon mit dem Nachbarn gesprochen.',
+      { traps: [[/(?:dem|einem|meinem|den|einen|meinen) (?:nachbar|kollege|kunde|patient|praktikant|student|herr)(?:$| )/, 'n 变化名词除了主格都加 -n / -en：mit dem Nachbarn, den Kollegen, Herrn Müller。'], [/mit herr \w+/, 'mit Herrn Müller（Herr 是 n 变化名词）。']] }),
+  ];
+  const rest = [
+    q('news', ['Gibt es etwas Neues?', 'Möchten Sie noch etwas Wichtiges sagen?'], '它问有没有新情况（形容词当名词：etwas Neues / nichts Wichtiges）',
+      [`(?:etwas|nichts|viel|wenig|alles) (?:neues|wichtiges|anderes|gutes|besonderes|schlechtes|weiteres)`, `das (?:wichtigste|beste|schlimmste|neueste)`], 'Nein, nichts Neues. Das Wichtigste ist: Die Heizung ist kaputt.',
+      { traps: [[/(?:etwas|nichts) (?:neu|wichtig|anders|gut|schlecht)(?:$| )/, '形容词当名词要加词尾：etwas Neues、nichts Wichtiges。']] }),
+    q('rising', ['Die Kosten steigen jeden Monat. Worüber beschweren Sie sich also?', 'Die Preise steigen immer weiter. Was ist das Problem?'], '用第一分词作形容词（die steigenden Kosten）',
+      [`(?:steigend|wachsend|gestiegen)`], 'Ich beschwere mich über die steigenden Kosten.'),
+    q('missing', ['In Ihrem Antrag fehlt noch ein Dokument. Was machen Sie?', 'Ein Formular fehlt noch. Was schreiben Sie uns?'], '说你会补交缺的材料（das fehlende Dokument）',
+      [`(?:fehlend|ich schicke|ich reiche|nachreichen|nachschicken|bringe .*mit|schicke .*nach|reiche .*nach)`], 'Ich schicke das fehlende Dokument nächste Woche.'),
+    q('letter', ['Sie schreiben uns einen Brief. Wie beginnen Sie?', 'Wie fängt ein offizieller Brief an?'], '正式信件怎么开头',
+      [`sehr geehrte`], 'Sehr geehrte Damen und Herren,',
+      { traps: [[/^(?:hallo|liebe|lieber|hi|guten tag)/, '正式信件开头：Sehr geehrte Damen und Herren。']] }),
+    q('demand', ['Was erwarten Sie jetzt von uns?', 'Was sollen wir Ihrer Meinung nach tun?'], '提出你的要求（礼貌而正式）',
+      [`(?:ich (?:erwarte|bitte|moechte|fordere)|bitte (?:reparieren|pruefen|erstatten|antworten|schicken)|koennten sie|wuerden sie)`], 'Ich bitte Sie, die Heizung bis Freitag zu reparieren.'),
+    q('deadline', ['Bis wann brauchen Sie eine Antwort?', 'Wann sollen wir das erledigen?'], '给一个期限',
+      [`^(?:bis|innerhalb|spaetestens|in ${S} (?:tagen|wochen)|noch diese woche|sofort)`], 'Bis Ende des Monats, bitte.'),
+    q('reason', ['Warum ist das für Sie so wichtig?', 'Warum können Sie nicht warten?'], '说理由（weil 从句，动词放最后）',
+      [`^(?:weil|da) .+ (?:ist|sind|habe|hat|kann|muss|brauche|braucht|friere|wohne|wohnen|zahle|bekomme|arbeite|wird)$`], 'Weil ich mit einem kleinen Kind in der Wohnung wohne.',
+      { traps: [[/^weil (?:ich habe|ich bin|ich kann|ich muss|es ist|wir haben) /, 'weil 从句里动词放最后：weil ich ein kleines Kind habe。']] }),
+    q('close', ['Und wie beenden Sie den Brief?', 'Wie schließen Sie einen offiziellen Brief?'], '正式信件怎么结尾',
+      [`mit freundlichen gruessen`], 'Mit freundlichen Grüßen'),
   ];
   return talk(rng, first, rest);
 };
@@ -486,8 +534,8 @@ export const LATER_BOSSES: LaterBoss[] = [
   },
   {
     region: 8, name: '停摆的钟', de: 'Die stehende Uhr', level: 78, hp: 11, title: '讲得出往事的人',
-    intro: ['钟楼顶上，一只巨大的钟面朝下躺着。指针停在一个不存在的时间。', '「Damals … immer … einmal … Ich weiß nicht mehr, wann.」它把过去的事搅成一团。', '系统：讲往事。只发生一次的用 als，每次都这样的用 wenn；从句后面主句动词在前。'],
-    outro: ['指针动了。先是一下，然后一格一格地走起来。', '「… es war einmal.」钟说完，城里所有的钟同时敲响。', '系统：钟楼城的人开始讲昨天的事了。A2 的最后一扇门在考官那里。'],
+    intro: ['末班站台上，一只巨大的钟面朝下躺在铁轨中间。指针停在一个不存在的时间。', '「Damals … immer … einmal … Ich weiß nicht mehr, wann.」它把过去的事搅成一团。', '系统：讲往事。只发生一次的用 als，每次都这样的用 wenn；从句后面主句动词在前。做完一件事以后用 nachdem 加过去完成时。'],
+    outro: ['指针动了。先是一下，然后一格一格地走起来。', '「… es war einmal.」钟说完，铁轨镇所有的钟同时敲响。', '系统：营地、集市和铁轨镇的人开始讲昨天的事了。A2 的最后一扇门在考官那里。'],
     healLine: 'Die Zeit bleibt stehen.', healZh: '时间停住了。（它要回血！下一题答对才能打断）',
     questions: CLOCK,
   },
@@ -506,11 +554,11 @@ export const LATER_BOSSES: LaterBoss[] = [
     questions: BROADCAST,
   },
   {
-    region: 11, name: '枯林之母', de: 'Die Mutter des Totholzes', level: 108, hp: 12, title: '让林子说话的人',
-    intro: ['枯林中心有一棵比天还高的树。树皮上是一张疲惫的脸，枝条上挂满了没有名字的动物。', '「Niemand kennt uns mehr. Warum sollte ich grün werden?」', '系统：说自然、动物和环境，说理由用 weil，说假设用 würde。'],
-    outro: ['第一片绿叶从枝头冒出来，接着是第二片。', '「… danke.」树闭上眼睛，林子里的鸟开始叫了。', '系统：林底的动物都有了名字。'],
-    healLine: 'Die Blätter fallen wieder.', healZh: '叶子又落了。（它要回血！下一题答对才能打断）',
-    questions: FOREST,
+    region: 11, name: '驳回书', de: 'Der Ablehnungsbescheid', level: 108, hp: 12, title: '据理力争的人',
+    intro: ['登记大厅蚀变了。窗口后面没有人，只有一封信坐在椅子上，信封上盖着红章：「Abgelehnt.」', '「Ihr Widerspruch ist unbegründet. Der Nächste, bitte.」', '系统：这是一场正式的投诉和申诉。讲清楚问题、讲理由、提要求；den Nachbarn、etwas Neues、die steigenden Kosten 这些说法都用得上。'],
+    outro: ['信封上的红章一点一点褪成了蓝色：「Stattgegeben.」', '「… Ihrem Widerspruch wird stattgegeben.」它把自己折好，塞进一个写着你名字的信封。', '系统：旧城里那些正式的说法回来了。最后一段在心巷。'],
+    healLine: 'Ihr Antrag wird noch geprüft.', healZh: '您的申请还在审核。（它要回血！下一题答对才能打断）',
+    questions: COMPLAINT,
   },
   {
     region: 12, name: '冷漠', de: 'Die Gleichgültigkeit', level: 118, hp: 12, title: '在乎的人',
@@ -518,6 +566,17 @@ export const LATER_BOSSES: LaterBoss[] = [
     outro: ['冷漠第一次皱了一下眉，然后，它哭了。', '「… es ist mir nicht egal.」这句话说完，它变成了一个普通的、会难过的人。', '系统：心巷的人开始互相打招呼了。B1 的最后一扇门在考官那里。'],
     healLine: 'Das ist mir egal.', healZh: '我无所谓。（它要回血！下一题答对才能打断）',
     questions: COLD,
+  },
+];
+
+/** Bosses of parked regions (林底 · 枯林之母, past level 120). Not in the game. */
+export const PARKED_BOSSES: Array<Omit<LaterBoss, 'region'> & { region: number }> = [
+  {
+    region: 11, name: '枯林之母', de: 'Die Mutter des Totholzes', level: 108, hp: 12, title: '让林子说话的人',
+    intro: ['枯林中心有一棵比天还高的树。树皮上是一张疲惫的脸，枝条上挂满了没有名字的动物。', '「Niemand kennt uns mehr. Warum sollte ich grün werden?」', '系统：说自然、动物和环境，说理由用 weil，说假设用 würde。'],
+    outro: ['第一片绿叶从枝头冒出来，接着是第二片。', '「… danke.」树闭上眼睛，林子里的鸟开始叫了。', '系统：林底的动物都有了名字。'],
+    healLine: 'Die Blätter fallen wieder.', healZh: '叶子又落了。（它要回血！下一题答对才能打断）',
+    questions: FOREST,
   },
 ];
 

@@ -51,10 +51,10 @@ const ROWS: Row[] = [
   ['nachrichten', 10, 'wieViel', '预报', [['Und nun die Nachrichten.', '下面播报新闻。'], ['Hier ist der Wetterbericht.', '下面是天气预报。'], ['Die Lage bleibt angespannt.', '局势依然紧张。']]],
   ['eilmeldung', 10, 'wieBitte', '插播', [['Wir unterbrechen für eine Eilmeldung.', '我们插播一条快讯。'], ['Achtung, eine Durchsage!', '注意，现在广播！'], ['Das ist eine wichtige Meldung.', '这是一条重要消息。']]],
   ['dasWarens', 10, 'naechsterHalt', '收播', [['Das waren die Nachrichten.', '新闻播报完毕。'], ['Bis morgen um die gleiche Zeit.', '明天同一时间再见。'], ['Und jetzt zum Sport.', '下面是体育新闻。']]],
-  // 11 · 枯林之母
-  ['blaetterFallen', 11, 'freutMich', '新叶', [['Die Blätter wachsen wieder.', '叶子又长出来了。'], ['Der Wald wird wieder grün.', '森林又绿了。'], ['Im Frühling blüht alles.', '春天万物开花。']]],
-  ['waldSchuetzt', 11, 'zuTeuer', '林荫', [['Der Wald schützt uns.', '森林保护我们。'], ['Die Bäume geben uns Schatten.', '树给我们遮阴。'], ['Hier ist es ruhig und sicher.', '这里安静又安全。']]],
-  ['weilBaeume', 11, 'verpasst', '扎根', [['Weil die Bäume uns Luft geben.', '因为树给我们空气。'], ['Weil wir die Natur brauchen.', '因为我们需要自然。'], ['Weil alles zusammenhängt.', '因为一切都是相连的。']]],
+  // 11 · 驳回书 (蚀变②; 枯林之母 moved past 120 with 林底, 游戏设计 rev 341)
+  ['widerspruch', 11, 'wieBitte', '异议', [['Ich lege Widerspruch ein.', '我提出异议。'], ['Damit bin ich nicht einverstanden.', '我对此不同意。'], ['Das kann ich so nicht akzeptieren.', '我不能这样接受。']]],
+  ['fehlendeUnterlagen', 11, 'naechsterHalt', '补交', [['Ich reiche die fehlenden Unterlagen nach.', '我补交缺少的材料。'], ['Anbei finden Sie alle Dokumente.', '附件里是全部文件。'], ['Das Wichtigste habe ich schon geschickt.', '最重要的我已经寄了。']]],
+  ['stattgegeben', 11, 'freutMich', '准予', [['Ihrem Widerspruch wird stattgegeben.', '您的异议获准。'], ['Wir haben Ihren Antrag geprüft.', '我们审核了您的申请。'], ['Mit freundlichen Grüßen.', '此致敬礼。']]],
   // 12 · 冷漠
   ['nichtEgal', 12, 'zugFaehrtAb', '在乎', [['Das ist mir nicht egal.', '这对我不是无所谓的。'], ['Du bist mir wichtig.', '你对我很重要。'], ['Ich mache mir Sorgen um dich.', '我担心你。']]],
   ['freueMichAufDich', 12, 'freutMich', '期待', [['Ich freue mich auf dich.', '我很期待见到你。'], ['Ich freue mich über deinen Besuch.', '你来看我，我很高兴。'], ['Schön, dass du da bist.', '你在真好。']]],

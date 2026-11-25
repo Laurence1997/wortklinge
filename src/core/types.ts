@@ -29,6 +29,14 @@ export interface Word {
   region?: RegionNo;
   /** 0.7/0.8 placeholder (src/data/zoneWords.ts): the region 1–3 word this stand-in copies (examples are shared). */
   base?: string;
+  /** 0.7/0.8 (游戏设计 rev 341): the field scene whose word group this word belongs to (regions 4–12 and 蚀变 words). */
+  scene?: string;
+  /** 0.7/0.8: second batch of its scene (row 9+), opens once half the scene's words are 半名 (游戏设计 四「每个区域」). */
+  batch?: 2;
+  /** 0.7/0.8 蚀变 word of segment 8 or 11: lives in an old scene, `region` is the segment (level band, gear, trials). */
+  erode?: 8 | 11;
+  /** 蚀变: the word this is the advanced form of; spawns once that one was written right once, 推定会 or 斩杀. */
+  after?: string;
   /** Short example sentence shown in the 图鉴 card once 归名. */
   ex?: string;
 }
@@ -37,8 +45,11 @@ export type FamilyId = 'zahnding' | 'echo' | 'zahlwurm' | 'sippe' | 'schild' | '
 /** Region 1: camp, echogasse, schilderstrasse, aschehof. Region 2 (面包集市): markt (city), gemuesegasse, waagegasse, kornspeicher. */
 export type ZoneId = 'camp' | 'echogasse' | 'schilderstrasse' | 'aschehof' | 'markt' | 'gemuesegasse' | 'waagegasse' | 'kornspeicher' | 'gleisdorf' | 'bahnhofstrasse' | 'altstadt' | 'fahrplanhalle' | LaterZoneId;
 /** 0.7/0.8 regions 4–12 (src/data/zones.ts): r4hub is the town, r4a / r4b / r4c its three fields. */
-export type LaterZoneId = `r${LaterRegionNo}${'hub' | 'a' | 'b' | 'c'}`;
+export type LaterZoneId = `r${MapRegionNo}${'hub' | 'a' | 'b' | 'c'}`;
+/** Segments 4–12 (游戏设计 rev 341: 8 and 11 are 蚀变 on old maps, the rest are new regions with their own map). */
 export type LaterRegionNo = 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
+/** Later segments that have a map of their own. */
+export type MapRegionNo = 4 | 5 | 6 | 7 | 9 | 10 | 12;
 export type RegionNo = 1 | 2 | 3 | LaterRegionNo;
 
 /** flee = 宝箱怪 / rare monster shouting 「Ich muss los!」: kill it this turn or it runs. */

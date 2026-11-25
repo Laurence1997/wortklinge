@@ -48,7 +48,8 @@ import { BOSS } from '../data/boss';
 import { BOSS2 } from '../data/boss2';
 import { BOSS3 } from '../data/boss3';
 import { LATER_BOSS, laterBossGold, laterBossXp } from '../data/bossesLater';
-import { REGION_DEF } from '../data/zones';
+import { ERODE_DEF, ERODE_DEFS, REGION_DEF } from '../data/zones';
+import { erodeOpen } from '../core/erosion';
 import { levelCapFor, STAGE_DEF, stagePassed, trialDue, type Stage } from '../core/stages';
 import { LINA } from '../data/lina';
 import { WEBER, WEBER_POOL, usesDu } from '../data/weber';
@@ -64,7 +65,7 @@ import { BossUI } from '../ui/boss';
 import { advance, banner, dialogHasChoices, dialogOpen, say, setPrompt, toast, type Line } from '../ui/feedback';
 import { logLine } from '../ui/gamelog';
 import { ACHIEVEMENTS, NOTES } from '../data/achievements';
-import { SCENE_BY_ID } from '../data/world';
+import { AREAS, SCENES, SCENE_BY_ID } from '../data/world';
 import { dropPages, pageNo, pageRegion, readPage, regionRestored, restorePage } from '../core/diary';
 import { SAYING_CFG, SAYINGS } from '../data/sayings';
 import { renderHud } from '../ui/hud';
@@ -1395,7 +1396,7 @@ export class Controller {
   interact(it: { kind: string; data?: string }): void {
     if (it.kind === 'bonfire') this.rest();
     else if (it.kind === 'npc') this.talkNpc(it.data ?? 'hilde');
-    else if (it.kind === 'door') (REGION_DEF[this.state.region] ? this.knockLater(this.state.region) : this.state.region === 3 ? this.knockRegion3() : this.state.region === 2 ? this.knockRegion2() : this.knock());
+    else if (it.kind === 'door') this.knockDoor();
     else if (it.kind === 'gate') this.travel((Number(it.data) || Math.max(1, this.state.region - 1)) as RegionId);
     else if (it.kind === 'sign') {
       const w = WORD_BY_ID[it.data!];
@@ -2170,11 +2171,26 @@ export class Controller {
     window.setTimeout(() => say(lines), 0);
   }
 
-  /** The boss door of a region 4–12 (游戏设计 四: shows once 40% of the region's words are at least 半名). */
+  /** A boss door. 蚀变 (rev 341): once a segment is open, its boss waits behind an old door (停摆的钟 at 铁轨镇's
+   *  末班站台, 驳回书 in 租屋城's hall), offered next to the door's own boss. */
+  private knockDoor() {
+    const r = this.state.region;
+    const own = () => (REGION_DEF[r] ? this.knockLater(r) : r === 3 ? this.knockRegion3() : r === 2 ? this.knockRegion2() : this.knock());
+    const e = ERODE_DEFS.find((x) => x.bossRegion === r && erodeOpen(this.state, x.seg));
+    if (!e) return own();
+    const b = LATER_BOSS[e.seg]!;
+    say([{ who: SYS, text: `门后有两种声音。一种是你熟悉的，一种是${e.zh}之后才有的。` }], undefined, [
+      { label: `${e.doorAct}（${b.name}）`, act: () => this.knockLater(e.seg) },
+      { label: '找原来的首领', act: own },
+      { label: '先不去', act: () => undefined },
+    ]);
+  }
+
+  /** The boss door of a region 4–12 or a 蚀变 segment (游戏设计 四: shows once 40% of its words are at least 半名). */
   private knockLater(r: number) {
     const s = this.state;
     const b = LATER_BOSS[r];
-    const d = REGION_DEF[r];
+    const d = REGION_DEF[r] ?? ERODE_DEF[r];
     if (!b || !d) return;
     if (s.level < b.level) {
       say([{ who: d.doorZh, text: `门后有什么在等你。它还不想见你。（${b.level} 级）` }]);
@@ -2230,7 +2246,7 @@ export class Controller {
     banner(`${b.name}倒下了`, first ? `首杀：传说装备 + 称号「${b.title}」` : dailyFirst ? '金箱' : '铁箱');
     const lines: Line[] = b.outro.map((t) => ({ who: SYS, text: t }));
     lines.push({ who: SYS, text: `获得 ${xp} 经验、${gold} 金币和一个${dailyFirst ? '金' : '铁'}箱。` });
-    if (first && r < 12) lines.push({ who: SYS, text: `去${REGION_DEF[r + 1]!.zh}的路开了：${REGION_DEF[r]!.onwardZh}（第三片野外里）。` });
+    if (first) lines.push(...this.afterBossLines(r));
     const after = () => {
       for (const l of lv.levels) this.onLevelUp(l);
       this.refresh();
@@ -2253,6 +2269,17 @@ export class Controller {
         })),
       );
     } else say(lines, after);
+  }
+
+  /** What opens when boss `r` falls for the first time: a 蚀变 segment (7 → 蚀变①, 10 → 蚀变②) or the road on. */
+  private afterBossLines(r: number): Line[] {
+    const e = ERODE_DEFS.find((x) => x.after === r);
+    if (e) return e.open.map((text) => ({ who: SYS, text }));
+    const road = SCENES.find((sc) => sc.openFlag === `boss${r}Kills` && sc.gate);
+    if (!road) return [];
+    const to = AREAS.find((a) => a.region === road.gate);
+    const via = REGION_DEF[road.region] ? `（${REGION_DEF[road.region]!.zh}第三片野外里）` : '';
+    return [{ who: SYS, text: `去${to?.zh ?? '下一区'}的路开了：${road.zh}${via}。` }];
   }
 
   /** A2 (80) and B1 (120) 突破试炼: the A1 format on this stage's words (游戏设计 七). */

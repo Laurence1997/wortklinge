@@ -1,4 +1,5 @@
-// 0.7 + 0.8 · regions 4–12: data checks for the generated scenes, stand-in words, bosses, skills and trial gates.
+// 0.7 + 0.8 · regions 4–12 (游戏设计 rev 341: 8 and 11 are 蚀变 on old maps): generated scenes, stand-in words,
+// 蚀变 layers, two-batch scenes, bosses, skills and trial gates.
 import { describe, expect, it } from 'vitest';
 import { newGame, addXp } from '../src/core/state';
 import { makeRng } from '../src/core/rng';
@@ -8,19 +9,24 @@ import { levelCapFor, trialDue } from '../src/core/stages';
 import { startExam, examParts } from '../src/core/breakthrough';
 import { EXAMPLES } from '../src/core/cloze';
 import { UNLOCK } from '../src/core/unlocks';
-import { WORDS, WORD_BY_ID, LATER_SCENE_WORDS } from '../src/data/words';
+import { WORDS, WORD_BY_ID, LATER_SCENE_WORDS, ERODED_SCENE_WORDS } from '../src/data/words';
 import { SCENES, SCENE_BY_ID, routeTo } from '../src/data/world';
-import { REGION_DEFS, fieldLevels } from '../src/data/zones';
+import { ERODE_DEFS, REGION_DEFS, fieldLevels, regionLevels } from '../src/data/zones';
+import { laterReady, purified } from '../src/core/erosion';
+import { eligible } from '../src/core/spawn';
 import { LATER_BOSSES, laterBossXp } from '../src/data/bossesLater';
 import { SKILLS } from '../src/data/skills';
 import { generateMap, isBlocked, zonesOf } from '../src/game/map';
 
 describe('0.7/0.8 区域数据', () => {
-  it('every region 4–12 has a town, 3 fields × 8 scenes with words in the field band, a door and a hidden path', () => {
+  it('the seven new regions have a town, 3 fields × 9–10 scenes with words in the field band, a door and a hidden path', () => {
+    expect(REGION_DEFS.map((d) => d.region)).toEqual([4, 5, 6, 7, 9, 10, 12]);
     for (const d of REGION_DEFS) {
       const ss = SCENES.filter((s) => s.region === d.region);
       const fields = ss.filter((s) => s.type === 'field');
-      expect(fields.length, `r${d.region}`).toBe(24);
+      for (const f of d.fields) expect(f.scenes.length, `r${d.region} ${f.zh}`).toBeGreaterThanOrEqual(9);
+      for (const f of d.fields) expect(f.scenes.length, `r${d.region} ${f.zh}`).toBeLessThanOrEqual(10);
+      expect(fields.length, `r${d.region}`).toBe(d.fields.reduce((n, f) => n + f.scenes.length, 0));
       expect(ss.some((s) => s.type === 'door')).toBe(true);
       const hide = ss.find((s) => s.type === 'hidden')!;
       expect(WORD_BY_ID[hide.hiddenBy!], `r${d.region} hidden sign`).toBeTruthy();
@@ -51,14 +57,18 @@ describe('0.7/0.8 区域数据', () => {
     expect(new Set(WORDS.map((w) => w.id)).size).toBe(WORDS.length);
   });
 
-  it('each region chains to the next: gate back from the town, road on after the boss', () => {
-    for (let r = 3; r <= 11; r++) {
-      const on = SCENES.find((s) => s.region === r && s.gate === r + 1)!;
+  it('each region chains to the next; 7 → 9 and 10 → 12 open with the 蚀变 boss in between', () => {
+    const want: Array<[number, number, string]> = [[3, 4, 'boss3Kills'], [4, 5, 'boss4Kills'], [5, 6, 'boss5Kills'], [6, 7, 'boss6Kills'], [7, 9, 'boss8Kills'], [9, 10, 'boss9Kills'], [10, 12, 'boss11Kills']];
+    for (const [r, to, flag] of want) {
+      const on = SCENES.find((s) => s.region === r && s.gate === to)!;
       expect(on, `r${r} onward`).toBeTruthy();
-      expect(on.openFlag).toBe(`boss${r}Kills`);
+      expect(on.openFlag).toBe(flag);
     }
-    for (const d of REGION_DEFS) expect(SCENE_BY_ID[`r${d.region}-hub`].gate).toBe(d.region - 1);
+    expect(SCENES.some((s) => s.region === 12 && s.openFlag)).toBe(false);
+    const back: Record<number, number> = { 4: 3, 5: 4, 6: 5, 7: 6, 9: 7, 10: 9, 12: 10 };
+    for (const d of REGION_DEFS) expect(SCENE_BY_ID[`r${d.region}-hub`].gate).toBe(back[d.region]);
     expect(routeTo('r4-hub', 'r4-door')).not.toBeNull();
+    for (const d of REGION_DEFS) for (const sc of SCENES.filter((s) => s.region === d.region)) expect(routeTo(`r${d.region}-hub`, sc.id), sc.id).not.toBeNull();
   });
 
   it('the street maps are generated and every scene stands on open ground', () => {
@@ -67,6 +77,58 @@ describe('0.7/0.8 区域数据', () => {
       expect(m.region).toBe(d.region);
       for (const sc of SCENES.filter((s) => s.region === d.region)) expect(isBlocked(m, sc.at.x, sc.at.y), sc.id).toBe(false);
     }
+  });
+});
+
+describe('0.7/0.8 蚀变和两批开', () => {
+  it('蚀变① picks ~28 scenes of regions 1–3, 蚀变② ~4 per region 1–7; words stand at the segment level', () => {
+    const [e8, e11] = ERODE_DEFS;
+    expect(e8.scenes.length).toBe(28);
+    expect(new Set(e8.scenes.map((x) => SCENE_BY_ID[x.scene].region))).toEqual(new Set([1, 2, 3]));
+    for (let r = 1; r <= 7; r++) expect(e11.scenes.filter((x) => SCENE_BY_ID[x.scene].region === r).length, `r${r}`).toBe(4);
+    for (const e of ERODE_DEFS) {
+      const [lo, hi] = regionLevels(e.seg);
+      for (const x of e.scenes) {
+        const sc = SCENE_BY_ID[x.scene];
+        expect(sc.type, x.scene).toBe('field');
+        expect(sc.zone).toBe(x.zone);
+        expect(sc.erodeSeg).toBe(e.seg);
+        expect(sc.eroded).toEqual(ERODED_SCENE_WORDS[x.scene]);
+        for (const id of sc.eroded!) {
+          const w = WORD_BY_ID[id];
+          expect(w.erode).toBe(e.seg);
+          expect(w.region).toBe(e.seg);
+          expect(w.lvl).toBeGreaterThanOrEqual(lo);
+          expect(w.lvl).toBeLessThanOrEqual(hi);
+          expect(WORD_BY_ID[w.after!], `${id} after`).toBeTruthy();
+        }
+      }
+    }
+  });
+
+  it('a 蚀变 word waits for its boss and its base word; the second batch for half the group', () => {
+    const s = newGame('T', 'student');
+    s.level = 75;
+    const id = ERODED_SCENE_WORDS['r3-f2'][0];
+    const w = WORD_BY_ID[id];
+    expect(laterReady(s, w)).toBe(false);
+    s.flags.boss7Kills = 1;
+    expect(laterReady(s, w)).toBe(false); // base never written
+    s.words[w.after!] = { stage: 1, due: 0, write: 1 } as never;
+    expect(laterReady(s, w)).toBe(true);
+    expect(eligible(s, w)).toBe(true);
+    const group = SCENE_BY_ID['r3-f2'].eroded!;
+    expect(purified(s, group, 8)).toBe(false);
+    for (const g of group) s.words[g] = { stage: 3, due: 0, retired: 1 } as never;
+    expect(purified(s, group, 8)).toBe(true);
+    // Two batches in a new region scene: rows 9+ wait until half the group is 半名.
+    const ids = LATER_SCENE_WORDS['r4-a1'];
+    const late = WORD_BY_ID[ids[8]];
+    expect(late.batch).toBe(2);
+    expect(WORD_BY_ID[ids[7]].batch).toBeUndefined();
+    expect(laterReady(s, late)).toBe(false);
+    for (const g of ids.slice(0, Math.ceil(ids.length / 2))) s.words[g] = { stage: 2, due: 0 } as never;
+    expect(laterReady(s, late)).toBe(true);
   });
 });
 
