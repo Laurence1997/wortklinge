@@ -21,14 +21,14 @@ SYS_ABS = f"""你在给德语学习游戏的词表分组，玩家是在德国生
 - 「通用」：只留给最基础、到处都用的日常词（machen、geben、nehmen、gut、groß、neu、Leute、Mensch、Ding、Sache）。
 - 或者一个具体情境（如果这个词其实明显属于某个生活场合）：{'、'.join(HOSTS)}。
 s 为「讨论说理」时，再给 h（宿主情境）：从具体情境里选这个词最自然先用到的一个，例如 Problem→住房家具（房子出问题），Erfahrung→求职职场，Lösung→办手续。其他情况 h 为空。
-按词本身的意思判断。只回 JSON：{{"r": [{{"i": 排名, "s": "...", "h": "..."}}, ...]}}，每个输入词一条。"""
+按词本身的意思判断。只回 JSON：{{"r": [{{"i": 排名（照抄第一列的数字）, "w": "原形（照抄第二列）", "s": "...", "h": "..."}}, ...]}}，每个输入词一条。"""
 
 SYS_MED = f"""你在给德语学习游戏的词表分组，玩家是在德国生活的中国人。下面的词上一轮被标成「媒体科技」。请把每个词分到：
 - 「媒体科技」：手机、网络、电脑、电视、应用、社交媒体、拍照等日常科技和媒体使用（Handy、Video、Internet、herunterladen、Akku）。
 - 「新闻社会」：新闻里才常见的犯罪、警察、法庭、法律、政治、战争、历史、宗教，以及影视剧里的词（Mord、verhaften、Regierung、Krieg、Zombie、Vampir）。
 - 或者一个更合适的具体情境：{'、'.join(h for h in HOSTS if h != '媒体科技')}。
 s 为「新闻社会」时，再给 h（宿主情境）：从具体情境里选这个词在德国生活中最可能先碰到的一个，例如 Polizei→方向和城里的地方，Gesetz→办手续，Diebstahl→交通（车上被偷），Regierung→媒体科技（看新闻）。其他情况 h 为空。
-只回 JSON：{{"r": [{{"i": 排名, "s": "...", "h": "..."}}, ...]}}，每个输入词一条。"""
+只回 JSON：{{"r": [{{"i": 排名（照抄第一列的数字）, "w": "原形（照抄第二列）", "s": "...", "h": "..."}}, ...]}}，每个输入词一条。"""
 
 
 def call(args):
@@ -44,12 +44,16 @@ def call(args):
                 j = json.load(r)
             txt = j['choices'][0]['message']['content']
             out = {}
+            ranks = {int(x['排名']): x['原形'] for x in batch}
             for e in json.loads(txt[txt.find('{'):txt.rfind('}') + 1])['r']:
+                try: i = int(e['i'])
+                except Exception: continue
+                if ranks.get(i) != e.get('w'): continue   # the model must echo rank and word; a mismatch is dropped
                 s = e.get('s', '')
                 if s not in allowed: continue
                 h = e.get('h', '') if s == needs_host and e.get('h') in HOSTS else ''
                 if s == needs_host and not h: continue
-                out[int(e['i'])] = (s, h)
+                out[i] = (s, h)
             print(f"batch {batch[0]['排名']}: {len(out)}/{len(batch)}", flush=True)
             return out
         except urllib.error.HTTPError as e:

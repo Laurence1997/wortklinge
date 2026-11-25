@@ -28,7 +28,7 @@ SYSTEM = f"""你在给一个德语学习游戏的词表分组。玩家是在德�
    从这 10 条里选一条：{'、'.join(FUN)}。具体名词、动作动词、普通形容词、介词、代词、数词一律留空 ""。
 3. h（宿主情境）：只在 f 非空时填，从情境列表里选这个词最自然先用到的一个（不能是「通用」），例如 vielleicht→时间日期（约时间），leider→问候客套（婉拒），weil→作息爱好（讲经历），bitte→吃喝（点餐），trotzdem→旅行天气自然（下雨也出门），sehr→问候客套（Danke sehr）。f 为空时 h 为空。f 非空时 s 填「通用」。
    情态动词、助动词不算表达类（f 留空）。
-只回 JSON：{{"r": [{{"i": 排名, "s": "...", "f": "...", "h": "..."}}, ...]}}，每个输入词一条，不要解释。"""
+只回 JSON：{{"r": [{{"i": 排名（照抄第一列的数字）, "w": "原形（照抄第二列）", "s": "...", "f": "...", "h": "..."}}, ...]}}，每个输入词一条，不要解释。"""
 
 
 def call(batch):
@@ -44,7 +44,11 @@ def call(batch):
             txt = j['choices'][0]['message']['content']
             res = json.loads(txt[txt.find('{'):txt.rfind('}') + 1])['r']
             out = {}
+            ranks = {int(x['排名']): x['原形'] for x in batch}
             for e in res:
+                try:
+                    if ranks.get(int(e['i'])) != e.get('w'): continue
+                except Exception: continue
                 s = e.get('s', '') if e.get('s') in SIT else ''
                 f = e.get('f', '') if e.get('f') in FUN else ''
                 h = e.get('h', '') if f and e.get('h') in SIT and e.get('h') != '通用' else ''
