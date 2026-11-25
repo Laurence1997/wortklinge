@@ -10,9 +10,14 @@ on:
   workflow_dispatch:
     inputs:
       deepseek:
-        description: 'Also run the DeepSeek cross-check (costs a few 角; only new or changed sentences are sent)'
+        description: 'Also run the AI cross-check (GPT-6 Luna by default, about 0.02 USD per full run; only new or changed sentences are sent)'
         type: boolean
         default: true
+      model:
+        description: 'Model (gpt-* uses the OPENAI_API_KEY secret)'
+        type: choice
+        options: [deepseek-flash, deepseek-v4-pro, gpt-6-luna, gpt-6.2-astra]
+        default: gpt-6-luna
       tatoeba:
         description: 'Also compare with Tatoeba native sentences (downloads ~100 MB)'
         type: boolean
@@ -56,7 +61,7 @@ jobs:
       - name: Restore DeepSeek cache
         uses: actions/cache@v4
         with:
-          path: proof/out/deepseek-cache.json
+          path: proof/out/deepseek-cache*.json
           key: deepseek-${{ github.run_id }}
           restore-keys: deepseek-
       # Costs a little money per run, so only when started by hand (Actions → 德语校对 → Run workflow → tick DeepSeek).
@@ -64,7 +69,15 @@ jobs:
         if: github.event_name == 'workflow_dispatch' && inputs.deepseek
         env:
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
-        run: npx vite-node scripts/proof/deepseek.ts
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          DEEPSEEK_MODEL: ${{ inputs.model || 'gpt-6-luna' }}
+        # Lucas 2026-11-25: Luna by default; when the OpenAI balance runs out (exit 3) the same run continues with DeepSeek.
+        run: |
+          set +e
+          npx vite-node scripts/proof/deepseek.ts
+          code=$?
+          if [ $code -eq 3 ]; then DEEPSEEK_MODEL=deepseek-flash npx vite-node scripts/proof/deepseek.ts; code=$?; fi
+          exit $code
       - name: Tatoeba
         if: (github.event_name == 'workflow_dispatch' && inputs.tatoeba) || contains(github.event.head_commit.message, '[tatoeba]')
         run: |
@@ -77,4 +90,4 @@ jobs:
           path: |
             proof/out/*.md
             proof/out/*.json
-            !proof/out/deepseek-cache.json
+            !proof/out/deepseek-cache*.json
