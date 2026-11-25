@@ -17,10 +17,9 @@ import { playChest } from '../ui/chestFx';
 import { gradeTyped } from '../core/grading';
 import { buy as buyItem, openShop, refresh as refreshShop, sell as sellItem } from '../core/shop';
 import { rank, resMax, respec, respecCost, spent } from '../core/classes';
-import { bossRed } from '../core/forge';
 import { noteVisit } from '../core/redname';
 import { BLESSINGS, blessCount, blessScale, bossFloor, canDescend, descend, endRift, offerBlessings, RIFT, riftAct, riftItemLevel, riftOpen, riftWord, silenceLeft, startRift, takeBlessing } from '../core/rift';
-import { makeItem } from '../core/loot';
+import { GLASSES_FROM, makeItem, QUALITY_ZH, SLOT_ZH } from '../core/loot';
 import { applyLoss, applyWin, postFightHeal } from '../core/outcomes';
 import { defaultRng, type Rng } from '../core/rng';
 import { atLeastHalfShare, flushSkill, gapZh, instantGuiming, kindOf, recordAnswer, reviewedByWriting, stageOf } from '../core/srs';
@@ -60,6 +59,7 @@ import { WEBER, WEBER_POOL, usesDu } from '../data/weber';
 import { answerExam, BREAK, BREAK_EARLY, examPassed, PART_ZH, startExam, startGrammarExam, type Exam } from '../core/breakthrough';
 import { DUNGEON, RULES, type Rule } from '../data/dungeon';
 import { OPINION, opinionRule, pickClaim } from '../core/opinion';
+import { bossRed, salvage, tierIlvl, tradedTier, tradeShards, tradesOpen } from '../core/forge';
 import { aiOpinion, AI_TUTOR, aiEssay, aiGrade, aiGradeText, duelTurn, knownWords, type AiGrade } from '../net/aiTutor';
 import { DUEL, DUEL_SCENES, duelTurns, type DuelScene } from '../data/grammar/duels';
 import { drawPractice } from '../core/aiPractice';
@@ -1346,6 +1346,37 @@ export class Controller {
     return r;
   }
 
+  /** 分解: a bag item becomes shards of the region you are in. */
+  salvageItem(id: string): void {
+    const r = salvage(this.state, id);
+    toast(r.ok ? `分解了，本区碎片 +${r.shards}` : r.why ?? '分解不了');
+    this.refresh();
+    this.persist();
+    this.panels.render();
+  }
+
+  /** 碎片换装备 at the bonfire: pick a slot for the next tier reached in this region. */
+  private shardTrade(): void {
+    const s = this.state;
+    const region = s.region ?? 1;
+    const tier = tradedTier(s, region) + 1;
+    const slots: Slot[] = s.level >= GLASSES_FROM ? ['pen', 'coat', 'amulet', 'dict', 'glasses'] : ['pen', 'coat', 'amulet', 'dict'];
+    say([{ who: SYS, text: `【碎片换装备】本区第 ${tier} 档（物品等级 ${tierIlvl(region, tier)}）。换哪个部位？品质和副词缀随机。` }], undefined, [
+      ...slots.map((sl) => ({
+        label: SLOT_ZH[sl],
+        act: () => {
+          const r = tradeShards(s, region, sl, this.rng);
+          if (!r.ok) return say([{ who: SYS, text: r.why! }]);
+          banner('碎片换装备', r.item!.name);
+          logLine(`碎片换装备：${r.item!.name}（${QUALITY_ZH[r.item!.quality]}），放进了背包`, 'good');
+          this.refresh();
+          this.persist();
+        },
+      })),
+      { label: '下次再换', act: () => undefined },
+    ]);
+  }
+
   shopSell(id: string): void {
     const g = sellItem(this.state, id);
     if (g) toast(`卖掉了，+${g} 金币`);
@@ -1513,10 +1544,15 @@ export class Controller {
     }
     // 篝火日记 (Lv16+, 2026-11-22): once a day, write a few sentences with words fought today.
     const jw = this.journalOffer();
+    // 碎片换装备 (九): a tier reached in this region can be traded for a piece here.
+    const trades = tradesOpen(s, region);
+    if (trades) lines.push({ who: SYS, text: `【碎片换装备】本区碎片够换 ${trades} 件了（第 ${tradedTier(s, region) + 1} 档起）。` });
+    const tradeOpt = trades ? [{ label: '碎片换装备', act: () => this.shardTrade() }] : [];
     if (jw) {
       lines.push({ who: SYS, text: `【篝火日记】今天打过 ${jw.map((w) => w.de).join('、')}。用它们写两三句话？不判对错，只提示查得出的错。` });
-      say(lines, undefined, [{ label: '写日记', act: () => this.panels.showJournal(jw) }, { label: '今天不写', act: () => undefined }]);
-    } else say(lines);
+      say(lines, undefined, [{ label: '写日记', act: () => this.panels.showJournal(jw) }, ...tradeOpt, { label: '今天不写', act: () => undefined }]);
+    } else if (trades) say(lines, undefined, [...tradeOpt, { label: '先不换', act: () => undefined }]);
+    else say(lines);
     if (s.flags.teachRest) s.flags.teachRest = false;
     this.refresh();
     this.persist();

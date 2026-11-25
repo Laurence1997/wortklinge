@@ -1,10 +1,16 @@
 // 装备掉落规则 (游戏设计 九): 红装 (111 级: 首领 1%、满级后裂隙第 10 层以上首领 3%, 连续 60 个首领没红下一个必红),
 // 橙装保底 150 件, 主题套装 (101 级, 2 件和 4 件各有奖励).
-// 铁匠打造和拓印 were cut (Lucas 2026-11-25, 「按推荐」): gear comes from 碎片 at camp instead; how set pieces are
-// obtained waits for the docs thread. Numbers marked 暂定 are not in the doc yet.
+// 铁匠打造和拓印 were cut (Lucas 2026-11-25, 「按推荐」): 碎片换装备 at the bonfire instead (九「碎片换装备」): reaching
+// 40 × n² shards in a region lets you pick a slot and take that slot's tier-n piece of the region, quality and
+// affixes rolled as a drop; unwanted gear can be broken back into about 3 shards of the region you are in.
+// How set pieces are obtained waits for the docs thread. Numbers marked 暂定 are not in the doc yet.
 
 import { hourGold } from './classes';
-import { makeItem } from './loot';
+import { CONFIG } from './config';
+import { has } from './unlocks';
+import { addGearKill, regionTier } from './state';
+import { regionLevels } from '../data/zones';
+import { makeItem, rollQuality } from './loot';
 import type { Rng } from './rng';
 import type { GameState } from './state';
 import type { Affix, AffixKey, Item, Quality, Slot } from './types';
@@ -44,6 +50,48 @@ export function goldFor(s: GameState, hours: number): number {
 export interface ForgeResult {
   ok: boolean;
   why?: string;
+}
+
+// ---- 碎片换装备 ----------------------------------------------------------------------------------------------
+
+/** 暂定 (九 says 「一件约 3 片」). One trade per tier reached (暂定: the doc doesn't say whether a tier trades again). */
+export const SHARD = { salvage: 3 };
+
+const tradedKey = (region: number) => `shardTrade_${region}`;
+export function tradedTier(s: GameState, region: number): number {
+  return (s.flags[tradedKey(region)] as number) ?? 0;
+}
+/** Tiers reached in this region that have not been traded yet. */
+export function tradesOpen(s: GameState, region: number): number {
+  return Math.max(0, regionTier(s, region) - tradedTier(s, region));
+}
+
+/** Item level of a region's tier n: the region's first level + n (九「换装节奏和物品等级」). */
+export function tierIlvl(region: number, tier: number): number {
+  const start = region <= 3 ? (region - 1) * 10 + 1 : regionLevels(region)[0];
+  return start + tier;
+}
+
+/** Trade the next untraded tier of this region for a piece in the chosen slot. */
+export function tradeShards(s: GameState, region: number, slot: Slot, rng: Rng, bagSize = CONFIG.loot.bagSize): ForgeResult & { item?: Item } {
+  if (!tradesOpen(s, region)) return { ok: false, why: '这一区还没攒够下一档的碎片。' };
+  if (s.bag.length >= bagSize) return { ok: false, why: '背包满了，先卖掉或分解一些。' };
+  const tier = tradedTier(s, region) + 1;
+  const maxQ: Quality = has(s.level, 'purple') ? 'orange' : 'green';
+  const q = pityOrange(s, rollQuality(rng, maxQ), maxQ);
+  const it = makeItem(rng, tierIlvl(region, tier), q, slot);
+  s.flags[tradedKey(region)] = tier;
+  s.bag.push(it);
+  return { ok: true, item: it };
+}
+
+/** Break a bag item into shards of the region you are in. */
+export function salvage(s: GameState, itemId: string): ForgeResult & { shards?: number } {
+  const i = s.bag.findIndex((x) => x.id === itemId);
+  if (i < 0) return { ok: false, why: '背包里没有这件。' };
+  s.bag.splice(i, 1);
+  addGearKill(s, s.region ?? 1, 1, SHARD.salvage);
+  return { ok: true, shards: SHARD.salvage };
 }
 
 // ---- 保底: 橙装 150 件, 红装 60 个首领 -------------------------------------------------------------------------

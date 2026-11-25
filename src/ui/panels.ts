@@ -1012,10 +1012,10 @@ export class Panels {
         ),
       );
     }
-    wrap.append(h('h3', `卖掉背包里的东西（卖价是买价的五分之一）`));
+    wrap.append(h('h3', `卖掉或分解背包里的东西（卖价是买价的五分之一；分解得 3 片本区碎片）`));
     const bag = h('div.bag');
     for (const it of s.bag) {
-      bag.append(h(`div.item.${it.quality}`, h('div', this.itemBody(it)), h('div.acts', h('button.btn.ghost', { onclick: () => this.ctrl.shopSell(it.id) }, `卖 ${sellPrice(s, it)}`))));
+      bag.append(h(`div.item.${it.quality}`, h('div', this.itemBody(it)), h('div.acts', h('button.btn.ghost', { onclick: () => this.ctrl.shopSell(it.id) }, `卖 ${sellPrice(s, it)}`), h('button.btn.ghost', { title: '分解成本区碎片', onclick: () => this.ctrl.salvageItem(it.id) }, '分解'))));
     }
     if (!s.bag.length) bag.append(h('p.muted.small', '背包是空的。'));
     wrap.append(bag);
