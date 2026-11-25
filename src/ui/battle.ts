@@ -200,7 +200,7 @@ export class BattleUI {
     this.readMsg = '';
     const rt = canListen() ? readTarget(this.ctrl.state, this.b) : null;
     if (rt) window.setTimeout(() => this.ctrl.speak(readShown(this.b, rt)), 1800);
-    if (moves.length === 1 && !rt && !this.b.cutReady && !(needsPhase(this.b) && !this.b.phase)) this.choose(moves[0]);
+    if (moves.length === 1 && !rt && !this.b.cutReady && !this.b.directOffer && !(needsPhase(this.b) && !this.b.phase)) this.choose(moves[0]);
     else {
       this.phase = 'choose';
       this.question = null;
@@ -413,6 +413,13 @@ export class BattleUI {
       return;
     }
     this.render();
+  }
+
+  /** 直接叫名: the next attack question is a plain dictation. */
+  directName(): void {
+    if (this.phase !== 'choose' || !this.b.directOffer || this.b.outcome) return;
+    this.b.direct = true;
+    this.choose('attack');
   }
 
   /** 斩杀: the verified monster dies on the spot. */
@@ -646,7 +653,10 @@ export class BattleUI {
     // 斩杀: a verified word dies in one click (XP and drops as usual).
     if (b.cutReady && !b.outcome)
       movesEl.append(h('button.btn.primary', { disabled: this.phase !== 'choose', onclick: () => this.cut(), title: '斩杀（Enter）：你会写它了，一键秒杀，经验和掉落照拿' }, h('kbd', 'Enter'), '斩杀', h('small', '一键秒杀 · 以后不用再背')));
-    if (moves.length > 1 || b.cutReady) {
+    // 直接叫名 (Lucas 2026-11-25): first meeting only, before its first question.
+    if (b.directOffer && !b.cutReady && !b.outcome)
+      movesEl.append(h('button.btn', { disabled: this.phase !== 'choose', onclick: () => this.directName(), title: '你本来就会这个词？不看提示写出来（名词带冠词），写对直接斩杀；写错照常学，不罚' }, '直接叫名', h('small', '会就写，写对直接斩杀')));
+    if (moves.length > 1 || b.cutReady || b.directOffer) {
       for (const mv of moves) {
         // 2026-11-22 精简出手按钮: the finisher shows only when the resource bar is full.
         if (mv === 'sentence' && !moveReady(s, b, mv)) continue;

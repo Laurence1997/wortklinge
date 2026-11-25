@@ -11,6 +11,7 @@ import { placedCheck, placedPick } from './placement';
 import { addGearKill, affinityOf, affixTotal, attack, engraved, critChance, gearPen, hintsPerFight, maxHp, now, type GameState } from './state';
 import type { Element, Intent, Move, Word } from './types';
 import { gradeCompose } from './aiPractice';
+import { clozeModeAt, noteCloze } from './adaptive';
 import { gradeLink, gradeOrder, gradeSlot, linkTask, orderTask, SLOT_RECENT, slotNouns, slotTask, WRITE_CHANCE, type SlotTask } from './writing';
 import type { LinkRow } from '../data/links';
 import { has } from './unlocks';
@@ -21,7 +22,7 @@ import { SKILLS, skillLine, skillLinesOpen } from '../data/skills';
 import { SAYING_CFG, SAYINGS } from '../data/sayings';
 import { expectedSentence, gradeSentence, nextPattern, PATTERNS, sentenceTags, type Pattern } from './sentence';
 import { PERFEKT, perfektFull, perfektParts } from '../data/perfekt';
-import { EXAMPLES, caseOf, clozeWhy, maskZh, pronounClozes, slotArticle, type Case, type Stance, clozeModeFor, clozeOptions, exampleSplits, gradeCloze, hasExamples, makeCloze, parse, showsWord, twoBlank, voiceLine, wholeSentence, type ClozeMode } from './cloze';
+import { EXAMPLES, caseOf, clozeWhy, maskZh, pronounClozes, slotArticle, type Case, type Stance, clozeOptions, exampleSplits, gradeCloze, hasExamples, makeCloze, parse, showsWord, twoBlank, voiceLine, wholeSentence, type ClozeMode } from './cloze';
 import { CONJ, PERSON_LABEL, type Person } from '../data/verbs';
 import { QTYPES, type QKey } from '../data/questionTypes';
 import { CLASSES, critRunNeeded, rank, resMax, shieldReflect, wrongHitShare, type ClassId } from './classes';
@@ -82,6 +83,8 @@ export interface Question {
   review?: string;
   /** 句中默写 (练中学): a typed cloze on the word's own example with no letters shown; counts as 会写 for 斩杀. */
   dict?: boolean;
+  /** 直接叫名: right → retired on the spot (全量筛选 rule, 30-day 回响); wrong → learn it as usual, no penalty. */
+  directName?: boolean;
   /** 复习伙伴 (43): this cloze is on the partner word (id); right → it strikes with you. */
   partner?: string;
   /** 药片 turn (物品栏): nothing to answer. */
@@ -305,6 +308,10 @@ export interface Battle {
   verifyDone?: boolean;
   /** 斩杀: verified — the 「可斩杀」 button kills it on the spot, and its kill retires the word. */
   cutReady?: boolean;
+  /** 直接叫名 (Lucas 2026-11-25): a word met for the first time offers an unhinted dictation before its first question. */
+  directOffer?: boolean;
+  /** The player took the 直接叫名 offer: the next attack question is that dictation. */
+  direct?: boolean;
   /** 斩杀: this fight showed the word's spelling (a question with the German on screen, or a wrong answer's
    *  correction), so a typed answer after it no longer counts as 会写. */
   spellSeen?: boolean;
@@ -438,6 +445,8 @@ export function startBattle(
   }
   b.intent = nextIntent(s, b, rng);
   perfektGuard(s, b);
+  // 直接叫名: only on the very first meeting, once typing is open, never in teaching, trial, elite or phrase fights.
+  if (kind === 'new' && !s.words[word.id] && has(s.level, 'typing') && !tutorial && !opts.trial && !opts.elite && !opts.isEcho && !challenge && !b.pluralMon && word.family !== 'truhe' && word.pos !== 'phr') b.directOffer = true;
   return b;
 }
 
@@ -1053,6 +1062,8 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
     const form = s.level >= 11 && hasExamples(w) ? clozeQ(s, w, rng, 'form') : null;
     return (form && form.clozeMode === 'form' ? form : null) ?? sentenceQ();
   };
+  // 直接叫名 (Lucas 2026-11-25): plain dictation, no hint, nouns with the article.
+  if (b.direct && move === 'attack') return { ...bareTyped(), directName: true, prompt: `直接叫名：不看提示写出它${isNoun ? '（带冠词）' : ''}。写对直接斩杀，写错照常学、不罚` };
   // 斩杀 (0.6.x): a verification fight opens with typing, no hint (nouns with the article).
   if (b.verify && !b.verifyDone && move === 'attack') {
     const v = typed();
@@ -1289,7 +1300,7 @@ function whisperOf(q: Question, w: Word): Question {
 }
 
 /** 完形填空 for this word at the player's level, or null when no sentence fits. */
-export function clozeQ(s: GameState, w: Word, rng: Rng, mode: ClozeMode = clozeModeFor(s.level)): Question | null {
+export function clozeQ(s: GameState, w: Word, rng: Rng, mode: ClozeMode = clozeModeAt(s)): Question | null {
   // ihn / sie / es (0.5, Lv7+): now and then the cloze asks for the pronoun instead (counts as 填变形).
   if (s.level >= CONFIG.phase.accFrom && mode !== 'pick') {
     const pr = pronounClozes(w);
@@ -1728,6 +1739,8 @@ export function resolveTurn(
   rng: Rng,
   pack: Battle[] = [b],
 ): TurnReport {
+  if (q.directName) return directTurn(s, b, q, input);
+  b.directOffer = false; // the offer stands only before the first question
   const log: LogLine[] = [];
   const multi = pack.length > 1;
   const tagOf = (x: Battle) => (multi ? `${(x.named || x.stage > 0) && !x.verify ? (x.spellSeen ? fullForm(x.word) : halfName(x)) : '它'} ` : '它');
@@ -1739,6 +1752,8 @@ export function resolveTurn(
   const m = b.monster;
   const intent = b.intent;
   const ok = verdict.ok;
+  // 题型跟准确率走: plain example clozes on the target count toward the step up / down.
+  if (q.type === 'cloze' && !q.write && !q.review && !q.partner && !q.dict && !q.gram) noteCloze(s, ok);
   // 点名 that names another monster in the pack hits that one for half damage (and counts as wrong).
   const stray = q.type === 'callout' && !ok ? alive0.find((x) => x !== b && x.word.art === input) ?? null : null;
   const clozeTyped = q.type === 'cloze' && q.clozeMode !== 'pick';
@@ -2323,6 +2338,33 @@ export function resolveTurn(
   syncShared(b, pack);
   const outcome: Battle['outcome'] = pack.every((x) => x.outcome === 'win') ? 'win' : s.hp <= 0 ? 'lose' : b.outcome;
   return finish(s, b, { correct: ok, verdict, playerDamage, crit, newSpell, monsterDamage, parried, element, log, outcome, readRight, kills, killer, phase: phaseFx, ...cutFx.report, review: reviewFx });
+}
+
+/** 直接叫名 answered: not a combat turn (nobody hits). Right → retired now and 可斩杀; wrong → the spelling is shown and
+ *  the word is learned as usual. Either way the offer is gone. */
+function directTurn(s: GameState, b: Battle, q: Question, input: string): TurnReport {
+  b.direct = false;
+  b.directOffer = false;
+  const w = b.word;
+  const verdict = gradeTyped(input, w, !!q.withArticle);
+  const log: LogLine[] = [];
+  const t = now(s);
+  let cut: TurnReport['cut'];
+  if (verdict.ok) {
+    s.words[w.id] ??= { stage: 1, due: t, firstSeen: t, lastSeen: t, relapse: 0, correct: 0, wrong: 0, read: 0 };
+    const p = s.words[w.id];
+    p.correct += 1;
+    p.write = (p.write ?? 0) + 1;
+    p.lastSeen = t;
+    retire(s, w, t);
+    b.cutReady = true;
+    cut = 'ready';
+    log.push({ text: `✓ 直接叫名：${fullForm(w)}，你本来就会。可以斩杀了（30 天后回响抽查一次）`, tone: 'good' });
+  } else {
+    b.spellSeen = true;
+    log.push({ text: `没叫出来：${fullForm(w)}。没关系，照常学它。`, tone: 'info' });
+  }
+  return finish(s, b, { correct: verdict.ok, verdict, playerDamage: 0, crit: false, newSpell: false, monsterDamage: 0, parried: false, element: null, log, outcome: b.outcome, readRight: false, kills: [], killer: null, cut });
 }
 
 function finish(_s: GameState, b: Battle, r: TurnReport): TurnReport {

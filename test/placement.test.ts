@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { newGame, migrate, type GameState } from '../src/core/state';
 import { makeRng } from '../src/core/rng';
-import { answerPlacement, applyPlacement, bandCount, bandOf, bandSamples, canPlaceToday, gradePlace, isPlaced, levelFor, placedCheck, placedPick, placeWords, regionFor, startPlacement, stopPlacement, topPassed, type PlaceRun } from '../src/core/placement';
+import { answerPlacement, applyPlacement, bandCount, bandOf, bandSamples, canPlaceAgain, placeAgainIn, PLACE, gradePlace, isPlaced, levelFor, placedCheck, placedPick, placeWords, regionFor, startPlacement, stopPlacement, topPassed, type PlaceRun } from '../src/core/placement';
 import { answerScreen, screenPool, startScreen } from '../src/core/screen';
 import { contextQuestion, startBattle } from '../src/core/combat';
 import { kindOf, reviewMon, stageOf } from '../src/core/srs';
@@ -128,7 +128,13 @@ describe('入学测试', () => {
     const o = applyPlacement(s, run, undefined, { daily: true });
     expect(o.gained).toEqual([]);
     expect(s.level).toBe(25);
-    expect(canPlaceToday(s)).toBe(false);
+    expect(canPlaceAgain(s)).toBe(false);
+    // Again after 30 more words 归名 or 斩杀 (Lucas 2026-11-25).
+    const fresh = placeWords().filter((w) => !s.words[w.id]).slice(0, PLACE.retakeAfter);
+    for (const w of fresh.slice(0, -1)) s.words[w.id] = { stage: 3, due: T0 + 9e9, firstSeen: T0, lastSeen: T0, relapse: 0, correct: 1, wrong: 0, read: 1 };
+    expect(placeAgainIn(s)).toBe(1);
+    s.words[fresh.slice(-1)[0].id] = { stage: 2, due: T0, firstSeen: T0, lastSeen: T0, relapse: 0, correct: 1, wrong: 0, read: 1, retired: T0 };
+    expect(canPlaceAgain(s)).toBe(true);
   });
 
   it('推定会 spot checks: right retires, wrong turns into a review monster, a bad band reverts', () => {

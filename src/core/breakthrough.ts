@@ -49,11 +49,16 @@ export interface Exam {
   over: boolean;
 }
 
+/** Only words you met; taken early (提前考, Lucas 2026-11-25) or with under 40 met, the whole stage's list. */
 function pool(s: GameState): Word[] {
   const ok = (w: Word) => (w.region ?? 1) <= 3 && w.pos !== 'phr' && !w.digit && !w.tutorial;
   const met = WORDS.filter((w) => ok(w) && s.words[w.id]);
-  return met.length >= 40 ? met : WORDS.filter(ok);
+  return met.length >= 40 && s.level >= BREAK.from ? met : WORDS.filter(ok);
 }
+
+/** 突破试炼可以提前考 (Lucas 2026-11-25): open at the examiner from the level 全量筛选 opens; passing early opens the
+ *  cap at 30 with no second test. */
+export const BREAK_EARLY = true;
 
 function sentenceOf(w: Word): { de: string; zh: string } | null {
   for (const line of EXAMPLES[w.id] ?? []) {

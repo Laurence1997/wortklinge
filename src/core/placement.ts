@@ -15,7 +15,7 @@ import { CONFIG } from './config';
 import { gradeTyped, levenshtein, normalize, type Verdict } from './grading';
 import { shuffle, type Rng } from './rng';
 import { retire, stageOf } from './srs';
-import { dayKey, maxHp, now, type GameState } from './state';
+import { maxHp, now, type GameState } from './state';
 import type { Word, WordProgress } from './types';
 import { hasArticleQuestion, WORDS } from '../data/words';
 import { sameMeaning } from './screen';
@@ -35,6 +35,8 @@ export const PLACE = {
   /** 推定会 spot checks: this many wrong in one band and over this share → the band's rest turns into review monsters. */
   revertFails: 3,
   revertShare: 0.4,
+  /** 分级考核 again after this many more words 归名 or 斩杀 since the last test (Lucas 2026-11-25, replaces once a day). */
+  retakeAfter: 30,
 };
 
 export type PlaceRes = 'ok' | 'half' | 'wrong' | 'skip';
@@ -96,9 +98,23 @@ export function bandSamples(): Word[][] {
   return out;
 }
 
-/** 分级考核 can be taken once per game day (the new-game test doesn't count). */
-export function canPlaceToday(s: GameState, t = now(s)): boolean {
-  return s.flags.placeDay !== dayKey(t);
+/** Words the player really knows: retired or 归名, not 推定会. */
+export function learnedCount(s: GameState): number {
+  let n = 0;
+  for (const p of Object.values(s.words)) if ((p.retired || p.stage === 3) && !isPlaced(p)) n++;
+  return n;
+}
+
+/** How many more words to 归名 / 斩杀 before 分级考核 can be taken again (0 = now). Old saves that took it before this
+ *  rule (no count stored) may take it again at once. */
+export function placeAgainIn(s: GameState): number {
+  const at = s.flags.placeKnown;
+  if (typeof at !== 'number') return 0;
+  return Math.max(0, at + PLACE.retakeAfter - learnedCount(s));
+}
+
+export function canPlaceAgain(s: GameState): boolean {
+  return placeAgainIn(s) === 0;
 }
 
 export interface PlaceRun {
@@ -287,7 +303,7 @@ const FAR = 9e15;
 
 /** Turn the answers into progress, level and open regions. Only ever raises the level; never touches words you
  *  have already started, except that a right answer retires them. */
-export function applyPlacement(s: GameState, run: PlaceRun, t = now(s), opts: { daily?: boolean } = {}): PlaceOutcome {
+export function applyPlacement(s: GameState, run: PlaceRun, t = now(s), _opts: { daily?: boolean } = {}): PlaceOutcome {
   if (run.outcome) return run.outcome;
   const top = topPassed(run);
   const passed = (b: number) => b <= top;
@@ -337,7 +353,7 @@ export function applyPlacement(s: GameState, run: PlaceRun, t = now(s), opts: { 
   for (let r = 2; r <= region; r++) s.flags[`seenArea${r}`] = true;
   const prev = s.placement;
   s.placement = { at: t, level: levelFor(top), top: Math.max(top, prev?.top ?? -1), checks: prev?.checks ?? {} };
-  if (opts.daily) s.flags.placeDay = dayKey(t);
+  s.flags.placeKnown = learnedCount(s);
   s.flags.placeAsked = true;
   run.outcome = { top, level, gained, region, retired, half, gaps, placed };
   return run.outcome;

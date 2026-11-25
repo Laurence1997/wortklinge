@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { newGame } from '../src/core/state';
 import { contextFail, contextPass, recordKill } from '../src/core/srs';
 import { CONFIG, DAY } from '../src/core/config';
-import { WORD_BY_ID } from '../src/data/words';
+import { WORD_BY_ID, WORDS } from '../src/data/words';
 
 const T0 = new Date('2026-11-22T12:00:00').getTime();
 const R = CONFIG.srs.respawn;
@@ -77,5 +77,65 @@ describe('练中学 (rev 425)', () => {
       if (q.type === 'pickZh' && q.prompt.includes('听整句')) seen = true;
     }
     expect(seen).toBe(true);
+  });
+});
+
+describe('直接叫名 (Lucas 2026-11-25)', () => {
+  const w = WORDS.find((x) => x.pos === 'n' && x.art && !x.tutorial && x.family !== 'truhe' && x.lvl <= 3)!;
+  it('first meeting offers it; right → retired and 可斩杀, nobody hits', async () => {
+    const { newGame } = await import('../src/core/state');
+    const { startBattle, makeQuestion, resolveTurn } = await import('../src/core/combat');
+    const { makeRng } = await import('../src/core/rng');
+    const s = newGame('T', 'student');
+    s.level = 5;
+    const b = startBattle(s, w, makeRng(1));
+    expect(b.directOffer).toBe(true);
+    b.direct = true;
+    const q = makeQuestion(s, b, 'attack', makeRng(1));
+    expect(q.directName).toBe(true);
+    const hp = s.hp;
+    const r = resolveTurn(s, b, 'attack', q, `${w.art} ${w.de}`, makeRng(1));
+    expect(r.correct).toBe(true);
+    expect(b.cutReady).toBe(true);
+    expect(s.words[w.id].retired).toBeTruthy();
+    expect(s.hp).toBe(hp);
+    expect(b.directOffer).toBe(false);
+  });
+  it('wrong → no penalty, learned as usual; not offered on a word already met', async () => {
+    const { newGame } = await import('../src/core/state');
+    const { startBattle, makeQuestion, resolveTurn } = await import('../src/core/combat');
+    const { makeRng } = await import('../src/core/rng');
+    const s = newGame('T', 'student');
+    s.level = 5;
+    const b = startBattle(s, w, makeRng(1));
+    b.direct = true;
+    const q = makeQuestion(s, b, 'attack', makeRng(1));
+    const hp = s.hp;
+    const r = resolveTurn(s, b, 'attack', q, 'xyz', makeRng(1));
+    expect(r.correct).toBe(false);
+    expect(s.hp).toBe(hp);
+    expect(s.words[w.id]?.retired).toBeFalsy();
+    s.words[w.id] = { stage: 1, due: Date.now(), firstSeen: 0, lastSeen: 0, relapse: 0, correct: 0, wrong: 1, read: 0 };
+    expect(startBattle(s, w, makeRng(2)).directOffer).toBeFalsy();
+  });
+});
+
+describe('题型跟准确率走 (Lucas 2026-11-25)', () => {
+  it('30 cloze answers at 90%+ step up, under 60% step back, never below the level floor', async () => {
+    const { newGame } = await import('../src/core/state');
+    const { clozeModeAt, noteCloze } = await import('../src/core/adaptive');
+    const s = newGame('T', 'student');
+    s.level = 8; // floor: base
+    expect(clozeModeAt(s)).toBe('base');
+    for (let i = 0; i < 30; i++) noteCloze(s, i !== 0); // 29/30
+    expect(clozeModeAt(s)).toBe('form');
+    for (let i = 0; i < 30; i++) noteCloze(s, i % 2 === 0); // 50%
+    expect(clozeModeAt(s)).toBe('base');
+    for (let i = 0; i < 30; i++) noteCloze(s, false);
+    expect(clozeModeAt(s)).toBe('base');
+    s.level = 3; // floor pick, typing open → can go to base, not form
+    s.flags.clozeShift = 0;
+    for (let k = 0; k < 2; k++) for (let i = 0; i < 30; i++) noteCloze(s, true);
+    expect(clozeModeAt(s)).toBe('base');
   });
 });

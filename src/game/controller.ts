@@ -1,6 +1,6 @@
 import { loadPron, pronCached } from '../ui/phoneme';
 import { icon, setRestored, SLOT_TILE } from '../ui/icons';
-import { answerPlacement, applyPlacement, canPlaceToday, regionFor, startPlacement, stopPlacement, type PlaceRun } from '../core/placement';
+import { answerPlacement, applyPlacement, canPlaceAgain, placeAgainIn, regionFor, startPlacement, stopPlacement, type PlaceRun } from '../core/placement';
 import { answerScreen, claimScene, SCREEN, startScreen, type ScreenRun, type ScreenScope } from '../core/screen';
 import type { Look } from '../core/look';
 // The game controller: owns the save, runs battles and tutorials, and glues the
@@ -49,7 +49,7 @@ import { BOSS2 } from '../data/boss2';
 import { BOSS3 } from '../data/boss3';
 import { LINA } from '../data/lina';
 import { WEBER, WEBER_POOL, usesDu } from '../data/weber';
-import { answerExam, BREAK, examPassed, PART_ZH, startExam, startGrammarExam, type Exam } from '../core/breakthrough';
+import { answerExam, BREAK, BREAK_EARLY, examPassed, PART_ZH, startExam, startGrammarExam, type Exam } from '../core/breakthrough';
 import { DUNGEON, RULES, type Rule } from '../data/dungeon';
 import { AI_TUTOR, aiEssay, aiGrade, aiGradeText, duelTurn, knownWords, type AiGrade } from '../net/aiTutor';
 import { DUEL, DUEL_SCENES, duelTurns, type DuelScene } from '../data/grammar/duels';
@@ -808,7 +808,9 @@ export class Controller {
       }
       if (!this.fightOver() && b.outcome) this.retarget();
     }
-    recordAnswer(s, b.word, r.correct);
+    // 直接叫名 missed: no penalty, so it isn't counted as a wrong answer either.
+    const free = !!q.directName && !r.correct;
+    if (!free) recordAnswer(s, b.word, r.correct);
     flushSkill(s, b.word, b);
     // 场景精英 ③ 造句 (rev 459): from level 10 a logged-in player's sentence also goes to the AI teacher. The rule check
     // already decided the hit; when the AI finds a real mistake the rule missed, the word gets a slip (shorter review gap).
@@ -827,7 +829,7 @@ export class Controller {
     if (r.correct) this.checkDiary();
     const log = todayLog(s);
     if (r.correct) log.correct += 1;
-    else log.wrong += 1;
+    else if (!free) log.wrong += 1;
     // Feedback.
     if (r.correct) (r.crit ? sfx.crit : sfx.correct)();
     else sfx.wrong();
@@ -1508,7 +1510,7 @@ export class Controller {
     const region = s.region ?? 1;
     if (s.level < SCREEN.fromLevel)
       return say([{ who: '考官', text: `「Noch nicht.」筛选 ${SCREEN.fromLevel} 级再来。不过你要是以前学过德语，可以先考分级考核。` }], undefined, [
-        ...(canPlaceToday(s) ? [{ label: '分级考核（测你会到哪一级）', act: () => this.openPlacement(true) }] : []),
+        ...(canPlaceAgain(s) ? [{ label: '分级考核（测你会到哪一级）', act: () => this.openPlacement(true) }] : [{ label: `分级考核（再归名或斩杀 ${placeAgainIn(s)} 个词就能再考）`, act: () => {} }]),
         { label: '先不了', act: () => {} },
       ]);
     void region;
@@ -1527,9 +1529,9 @@ export class Controller {
       ...(intro ? [{ who: SYS, text: '【全量筛选】只给中文，名词连冠词写。写对的词直接斩杀，经验存在它住的场景，走到那里就领。不会就跳过，什么都不扣。' }] : []),
     ], undefined, [
       ...scopes.map((x) => ({ label: x.label, act: () => (this.milestone('screen'), this.panels.showScreen(startScreen(s, x.scope))) })),
-      ...(s.level >= BREAK.from && !s.flags.a1Passed ? [{ label: 'A1 突破试炼', act: () => this.breakExam() }] : []),
-      ...(s.level >= BREAK.from && s.flags.a1Passed && !s.flags.a1Grammar ? [{ label: '补考语法', act: () => this.grammarRetake() }] : []),
-      ...(canPlaceToday(s) ? [{ label: '分级考核（测你会到哪一级）', act: () => this.openPlacement(true) }] : []),
+      ...((s.level >= BREAK.from || BREAK_EARLY) && !s.flags.a1Passed ? [{ label: s.level >= BREAK.from ? 'A1 突破试炼' : 'A1 突破试炼（提前考）', act: () => this.breakExam() }] : []),
+      ...((s.level >= BREAK.from || BREAK_EARLY) && s.flags.a1Passed && !s.flags.a1Grammar ? [{ label: '补考语法', act: () => this.grammarRetake() }] : []),
+      ...(canPlaceAgain(s) ? [{ label: '分级考核（测你会到哪一级）', act: () => this.openPlacement(true) }] : [{ label: `分级考核（再归名或斩杀 ${placeAgainIn(s)} 个词就能再考）`, act: () => {} }]),
       { label: '先不了', act: () => {} },
     ]);
   }
@@ -1537,7 +1539,7 @@ export class Controller {
   /** A1 突破试炼 (30 级): 听 读 写 语法 8 questions each, 5 right per part. */
   private breakExam() {
     say([
-      { who: '考官', text: '「Die Prüfung A1. Hören, Lesen, Schreiben, Grammatik.」听、读、写、语法，各八题。只考你见过的词。' },
+      { who: '考官', text: `「Die Prüfung A1. Hören, Lesen, Schreiben, Grammatik.」听、读、写、语法，各八题。${this.state.level >= BREAK.from ? '只考你见过的词。' : '你还没到 30 级，这次从整个 A1 词表里抽；过了，到 30 级不用再考。'}` },
       { who: SYS, text: `【A1 突破试炼】每部分对 ${BREAK.pass} 题算过。不挨打，没过不罚，随时再考` },
     ], () => this.panels.showExam(startExam(this.state, Math.random)));
   }
@@ -1577,7 +1579,7 @@ export class Controller {
     banner('A1 突破试炼通过', '称号「A1 突破者」');
     say([
       { who: '考官', text: '「Bestanden.」章盖好了。' },
-      { who: SYS, text: '【A1 突破】这一阶段学完了。A2 的区域在 0.7 开放；在那之前经验替你存着，最多存一级。' },
+      { who: SYS, text: s.level >= BREAK.from ? '【A1 突破】这一阶段学完了。A2 的区域在 0.7 开放；在那之前经验替你存着，最多存一级。' : '【A1 突破 · 提前】章先盖上了。到 30 级时上限直接打开，不用再考。' },
     ]);
     this.refresh();
     this.persist();
@@ -1585,13 +1587,13 @@ export class Controller {
 
   // ---- 入学测试 / 分级考核 (2026-11-25) -------------------------------------------------------
 
-  /** New game (daily = false) or the examiner's once-a-day 分级考核. */
+  /** New game (daily = false) or the examiner's 分级考核 (again after 30 more words learned). */
   openPlacement(daily: boolean): void {
     this.panels.showPlacement(daily);
   }
 
   canPlaceNow(): boolean {
-    return canPlaceToday(this.state);
+    return canPlaceAgain(this.state);
   }
 
   placeStart(band: number): void {

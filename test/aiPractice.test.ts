@@ -14,7 +14,7 @@ describe('AI practice words', () => {
   it('takes 半名 and due words, never retired or new ones; due first', () => {
     const s = newGame('T', 'student');
     const t = Date.now();
-    const p = (stage: 1 | 2 | 3, due: number, retired = false) => ({ stage, due, firstSeen: 0, lastSeen: t - DAY, relapse: 0, correct: 1, wrong: 0, read: 1, ...(retired ? { retired: true } : {}) });
+    const p = (stage: 1 | 2 | 3, due: number, retired = false) => ({ stage, due, firstSeen: 0, lastSeen: t - DAY, relapse: 0, correct: 1, wrong: 0, read: 1, ...(retired ? { retired: t } : {}) });
     s.words[nouns[0].id] = p(2, t + DAY); // 半名, not due
     s.words[nouns[1].id] = p(3, t - 10 * DAY); // 归名, review due
     s.words[nouns[2].id] = p(3, t + 5 * DAY, true); // retired
