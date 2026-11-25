@@ -198,15 +198,15 @@ function townTile(sheet: CanvasImageSource, tile: number, ramp: number[], palett
 
 /** The whole static map as one canvas (cheap to render, crisp when scaled). With the Town sheet loaded the ground,
  *  walls, roofs, rubble, trees and crates use Kenney tiles; `hidden` are tile spots of hidden side paths. */
-export function renderMapCanvas(m: MapData, sheet?: CanvasImageSource | null, hidden: Array<{ x: number; y: number }> = []): HTMLCanvasElement {
+export function renderMapCanvas(m: MapData, sheet?: CanvasImageSource | null, hidden: Array<{ x: number; y: number }> = [], shades: readonly string[] = MAP_SHADES): HTMLCanvasElement {
   const cv = document.createElement('canvas');
   cv.width = MAP_W * TILE;
   cv.height = MAP_H * TILE;
   const c = cv.getContext('2d')!;
   c.imageSmoothingEnabled = false;
   const set = TOWN[(REGION_DEF[m.region]?.look ?? m.region ?? 1) as 1 | 2 | 3] ?? TOWN[1];
-  // 0.7/0.8: a region may bring its own colours (src/data/zones.ts `palette`); default is the red-black ramp.
-  const pal = REGION_DEF[m.region]?.palette ?? MAP_SHADES;
+  // 0.7/0.8 各区色调: the caller passes the region's map shades (src/game/palette.ts); default is the red-black map.
+  const pal = shades;
   for (let y = 0; y < MAP_H; y++)
     for (let x = 0; x < MAP_W; x++) {
       const t = m.tiles[idx(x, y)];

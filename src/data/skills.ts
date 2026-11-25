@@ -1,5 +1,4 @@
 // Sentence skills: lines the region-1 boss says. Beat it, then keep one of its sentences as a skill.
-import { LATER_SKILLS } from './skillsLater';
 
 export interface Skill {
   id: string;
@@ -10,11 +9,8 @@ export interface Skill {
   lines: Array<{ de: string; zh: string }>;
   effect: string;
   cooldown: number;
-  /** Which boss teaches it (1 = 无名的邻居, 2 = 吞秤者, 3 = 晚点之王; 4 = 秩序会声望第 2 档; 0.7/0.8: 104–112 =
-   *  the region 4–12 boss, see skillsLater.ts). */
-  boss: number;
-  /** 0.7/0.8: the region 1–3 skill whose effect this one uses (combat looks effects up by this id). */
-  as?: string;
+  /** Which boss teaches it (1 = 无名的邻居, 2 = 吞秤者, 3 = 晚点之王; 4 = 秩序会声望第 2 档). */
+  boss: 1 | 2 | 3 | 4;
 }
 
 /** Lines unlocked so far: the first, plus one per 5 casts. */
@@ -185,6 +181,4 @@ export const SKILLS: Record<string, Skill> = {
     cooldown: 99,
     boss: 4,
   },
-  // 0.7 + 0.8: region 4–12 bosses (skillsLater.ts).
-  ...LATER_SKILLS,
 };

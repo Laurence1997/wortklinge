@@ -15,7 +15,6 @@ import { ERODE_DEFS, REGION_DEFS, fieldLevels, regionLevels } from '../src/data/
 import { laterReady, purified } from '../src/core/erosion';
 import { eligible } from '../src/core/spawn';
 import { LATER_BOSSES, laterBossXp } from '../src/data/bossesLater';
-import { SKILLS } from '../src/data/skills';
 import { generateMap, isBlocked, zonesOf } from '../src/game/map';
 
 describe('0.7/0.8 区域数据', () => {
@@ -164,12 +163,29 @@ describe('0.7/0.8 首领', () => {
     }
   });
 
-  it('three sentence skills per boss, each reusing an existing effect', () => {
-    for (const b of LATER_BOSSES) {
-      const ks = Object.values(SKILLS).filter((k) => k.boss === 100 + b.region);
-      expect(ks.length, b.name).toBe(3);
-      for (const k of ks) expect(SKILLS[k.as!]?.boss).toBeLessThanOrEqual(4);
-    }
+});
+
+describe('0.7/0.8 驳回书', () => {
+  it('three parts in order; du is stamped and heals; Frau Weber doubles one answer at half HP', () => {
+    const qs = LATER_BOSSES.find((b) => b.region === 11)!.questions(makeRng(5));
+    expect(qs.slice(0, 2).map((q) => q.id)).toEqual(['reason', 'frist']);
+    expect(qs.slice(2, 5).every((q) => q.id.startsWith('fill-'))).toBe(true);
+    expect(qs.slice(5, 8).map((q) => q.id).sort()).toEqual(['attest', 'kaution', 'klausel']);
+    const s = newGame('Lucas', 'student');
+    s.level = 108;
+    const rng = makeRng(9);
+    const f = startBoss(s, rng, 7, undefined, 11);
+    answerBoss(s, f, f.current.model.split(' / ')[0], rng);
+    expect(f.hp).toBe(7);
+    const v = answerBoss(s, f, 'hey, kannst du mir helfen', rng);
+    expect(v.healed).toBe(true);
+    expect(f.hp).toBe(8);
+    let turns = 0;
+    while (f.hp > 4 && turns++ < 10) answerBoss(s, f, f.current.model.split(' / ')[0], rng);
+    expect(f.assist).toBe('ready');
+    const hp = f.hp;
+    answerBoss(s, f, f.current.model.split(' / ')[0], rng);
+    expect(f.hp).toBe(hp - 2);
   });
 });
 

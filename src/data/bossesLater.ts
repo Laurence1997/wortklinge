@@ -8,8 +8,7 @@
 // Grammar per segment follows 游戏设计 十六「语法线」 (rev 341): wo/wohin (4), comparatives (5), Konjunktiv II (6),
 // contract reading + passive (7), 蚀变① als/wenn + Plusquamperfekt/nachdem, indirect questions, lassen (8, its
 // door is 铁轨镇's 末班站台), reasons with weil + relative clauses (9), listening (10), 蚀变② formal complaint with
-// n-Deklination, nominalised adjectives, Partizip I (11, door in 租屋城; 游戏设计 says 「新首领待设计」, this one
-// follows its suggestion), reflexive + preposition (12). 枯林之母 moved past 120 with 林底 (PARKED_BOSSES).
+// n-Deklination, nominalised adjectives, Partizip I (11, 驳回书 in 租屋城), reflexive + preposition (12). 枯林之母 moved past 120 with 林底 (PARKED_BOSSES).
 
 import type { BossQuestion } from './boss';
 import { numDe } from './boss2';
@@ -30,6 +29,8 @@ export interface LaterBoss {
   outro: string[];
   healLine: string;
   healZh: string;
+  /** 驳回书: du or slang is stamped 「abgelehnt」 and heals it; Frau Weber helps once (src/core/boss.ts). */
+  formal?: boolean;
   /** A fresh question queue: the fixed opening first, then the rest shuffled. */
   questions: (rng: Rng) => BossQuestion[];
 }
@@ -433,45 +434,66 @@ const FOREST = (rng: Rng): BossQuestion[] => {
   return talk(rng, first, rest);
 };
 
-// PLACEHOLDER: 蚀变②'s boss is still 「待设计」 (游戏设计, 0.7–0.8 开发资料索引 「还没定的」). This draft follows the
-// doc's suggestion so the chain 10 → 蚀变② → 12 can be played; replace it once Lucas decides.
-// ---- 11 · 蚀变② · 驳回书 in 租屋城's hall (formal complaint and appeal: n-Deklination, nominalised adjectives,
-// Partizip I as an adjective, formal letter phrases; reasons with weil) -----------------------------------------
+// ---- 11 · 蚀变② · 驳回书 Der Ablehnungsbescheid in 租屋城's old hall (游戏设计 四 区表 row 11, Lucas 2026-11-25) ------
+// A living rejection letter. Three parts in order: ① read the letter on screen and name the reason (and the deadline),
+// ② write the Widerspruch: fill formal sentences with n-Deklination (dem Kunden), nominalised adjectives (der
+// Verantwortliche) and Partizip I (die steigende Miete), ③ answer its three rebuttals (housing: deposit, doctor:
+// sick note, contract: clause) with Sie and polite forms. `formal`: du or slang makes it stamp 「abgelehnt」 and heal
+// (src/core/boss.ts); every right formal answer cracks a piece of the stamp. Frau Weber steps in once (half HP).
+
+interface Letter {
+  reason: { de: string; acc: string; model: string; zh: string };
+  weeks: number;
+}
+
+const REASONS: Letter['reason'][] = [
+  { de: 'weil die erforderlichen Unterlagen nicht vollständig vorliegen', acc: '(?:unterlagen|dokumente|papiere|nicht vollstaendig|fehlen)', model: 'Weil Unterlagen fehlen.', zh: '材料不全' },
+  { de: 'weil Sie die Frist nicht eingehalten haben', acc: '(?:frist|zu spaet|nicht eingehalten|verpasst|versaeumt)', model: 'Weil ich die Frist nicht eingehalten habe.', zh: '错过期限' },
+  { de: 'weil Ihr Einkommen über der zulässigen Grenze liegt', acc: '(?:einkommen|zu viel|verdiene|grenze|zu hoch)', model: 'Weil mein Einkommen zu hoch ist.', zh: '收入超标' },
+  { de: 'weil die Wohnung für Ihren Haushalt zu groß ist', acc: '(?:wohnung|zu gross|groesse|quadratmeter|haushalt)', model: 'Weil die Wohnung zu groß ist.', zh: '房子太大' },
+];
+
+function makeLetter(rng: Rng): Letter {
+  return { reason: pick(rng, REASONS), weeks: pick(rng, [2, 4]) };
+}
+
+function letterText(l: Letter): string {
+  return `Sehr geehrte/r Antragsteller/in,\nIhr Antrag auf Wohngeld wird abgelehnt, ${l.reason.de}.\nGegen diesen Bescheid können Sie innerhalb von ${l.weeks === 2 ? 'zwei' : 'vier'} Wochen Widerspruch einlegen.\nMit freundlichen Grüßen\nIhr Amt`;
+}
+
+/** ② Widerspruch: a formal sentence with a gap, the base form in brackets. */
+const FILLS: Array<{ id: string; gap: string; base: string; acc: string; model: string; zh: string; trap: [RegExp, string] }> = [
+  { id: 'kunde', gap: 'Ich habe bereits mit ___ gesprochen.', base: 'der Nachbar', acc: '(?:mit )?dem nachbarn', model: 'dem Nachbarn', zh: 'n 变化名词（第三格）', trap: [/dem nachbar$/, 'Nachbar 是 n 变化名词：dem Nachbarn。'] },
+  { id: 'herr', gap: 'Ich habe ___ Müller schon zweimal geschrieben.', base: 'Herr', acc: '^herrn', model: 'Herrn', zh: 'n 变化名词（Herr → Herrn）', trap: [/^herr(?: |$)/, 'Herr 除了主格都是 Herrn。'] },
+  { id: 'verantwortlich', gap: 'Bitte leiten Sie meinen Brief an ___ weiter.', base: 'verantwortlich, der …', acc: '(?:an )?den verantwortlichen', model: 'den Verantwortlichen', zh: '形容词名词化（第四格）', trap: [/den verantwortliche$/, '形容词当名词照形容词变：den Verantwortlichen。'] },
+  { id: 'zustaendig', gap: '___ hat meinen Antrag nicht richtig gelesen.', base: 'zuständig, der …', acc: '^der zustaendige', model: 'Der Zuständige', zh: '形容词名词化（主格）', trap: [/^der zustaendigen/, '主格单数：der Zuständige。'] },
+  { id: 'neues', gap: 'Seit meinem Antrag gibt es etwas ___.', base: 'neu', acc: '^(?:etwas )?neues$', model: 'Neues', zh: '形容词名词化（etwas + -es）', trap: [/^(?:etwas )?neu$/, 'etwas 后面的形容词名词化：etwas Neues。'] },
+  { id: 'steigend', gap: 'Der Grund für meinen Antrag ist ___ Miete.', base: 'steigen', acc: '^die steigende(?: miete)?$', model: 'die steigende', zh: '第一分词作形容词', trap: [/steigend(?:en)?(?: miete)?$/, '第一分词 = 不定式 + d，再加形容词词尾：die steigende Miete。'] },
+  { id: 'fehlend', gap: 'Anbei sende ich Ihnen ___ Unterlagen.', base: 'fehlen', acc: '^die fehlenden(?: unterlagen)?$', model: 'die fehlenden', zh: '第一分词作形容词（复数）', trap: [/fehlende(?: unterlagen)?$/, '复数 die 后面形容词词尾 -en：die fehlenden Unterlagen。'] },
+];
 
 const COMPLAINT = (rng: Rng): BossQuestion[] => {
-  const first = [
-    q('concern', ['Worum geht es?', 'Was ist Ihr Anliegen?'], '问你来办什么事（正式投诉：sich beschweren über / Widerspruch einlegen）',
-      [`(?:ich moechte (?:mich )?(?:ueber|beschweren|widerspruch|einspruch|reklamieren)|es geht um|ich beschwere mich|ich lege (?:widerspruch|einspruch))`], 'Ich möchte mich über die Heizung beschweren.',
-      { traps: [[/^ich moechte beschweren/, '反身动词别漏 mich：Ich möchte mich beschweren.']] }),
-    q('since', ['Seit wann besteht das Problem?', 'Seit wann ist das so?'], '问问题从什么时候开始',
-      [`^(?:seit|schon seit|das problem besteht seit|es ist seit)`], 'Seit drei Wochen funktioniert die Heizung nicht.'),
-    q('whom', ['Mit wem haben Sie schon gesprochen?', 'Wen haben Sie schon gefragt?'], '问你已经找过谁（n 变化名词：den Nachbarn / Herrn / Kollegen）',
-      [`(?:mit|habe) (?:dem|einem|meinem|den|einen|meinen) (?:nachbarn|kollegen|kunden|patienten|praktikanten|studenten|hausmeister|vermieter|arzt|berater|herrn)`, `(?:mit|habe) herrn \w+`],
-      'Ich habe schon mit dem Nachbarn gesprochen.',
-      { traps: [[/(?:dem|einem|meinem|den|einen|meinen) (?:nachbar|kollege|kunde|patient|praktikant|student|herr)(?:$| )/, 'n 变化名词除了主格都加 -n / -en：mit dem Nachbarn, den Kollegen, Herrn Müller。'], [/mit herr \w+/, 'mit Herrn Müller（Herr 是 n 变化名词）。']] }),
+  const l = makeLetter(rng);
+  const v = letterText(l);
+  const part1 = [
+    q('reason', ['Haben Sie den Bescheid gelesen? Warum wurde Ihr Antrag abgelehnt?', 'Lesen Sie selbst. Warum lehnen wir ab?'], `①读驳回书：被拒的理由（${l.reason.zh}）`,
+      [l.reason.acc], l.reason.model, { visual: v }),
+    q('frist', ['Bis wann können Sie Widerspruch einlegen?', 'Wie viel Zeit haben Sie für einen Widerspruch?'], '①读驳回书：申诉期限',
+      [`(?:innerhalb (?:von )?)?${numRe(l.weeks)} wochen`], `Innerhalb von ${l.weeks === 2 ? 'zwei' : 'vier'} Wochen.`, { visual: v }),
   ];
-  const rest = [
-    q('news', ['Gibt es etwas Neues?', 'Möchten Sie noch etwas Wichtiges sagen?'], '它问有没有新情况（形容词当名词：etwas Neues / nichts Wichtiges）',
-      [`(?:etwas|nichts|viel|wenig|alles) (?:neues|wichtiges|anderes|gutes|besonderes|schlechtes|weiteres)`, `das (?:wichtigste|beste|schlimmste|neueste)`], 'Nein, nichts Neues. Das Wichtigste ist: Die Heizung ist kaputt.',
-      { traps: [[/(?:etwas|nichts) (?:neu|wichtig|anders|gut|schlecht)(?:$| )/, '形容词当名词要加词尾：etwas Neues、nichts Wichtiges。']] }),
-    q('rising', ['Die Kosten steigen jeden Monat. Worüber beschweren Sie sich also?', 'Die Preise steigen immer weiter. Was ist das Problem?'], '用第一分词作形容词（die steigenden Kosten）',
-      [`(?:steigend|wachsend|gestiegen)`], 'Ich beschwere mich über die steigenden Kosten.'),
-    q('missing', ['In Ihrem Antrag fehlt noch ein Dokument. Was machen Sie?', 'Ein Formular fehlt noch. Was schreiben Sie uns?'], '说你会补交缺的材料（das fehlende Dokument）',
-      [`(?:fehlend|ich schicke|ich reiche|nachreichen|nachschicken|bringe .*mit|schicke .*nach|reiche .*nach)`], 'Ich schicke das fehlende Dokument nächste Woche.'),
-    q('letter', ['Sie schreiben uns einen Brief. Wie beginnen Sie?', 'Wie fängt ein offizieller Brief an?'], '正式信件怎么开头',
-      [`sehr geehrte`], 'Sehr geehrte Damen und Herren,',
-      { traps: [[/^(?:hallo|liebe|lieber|hi|guten tag)/, '正式信件开头：Sehr geehrte Damen und Herren。']] }),
-    q('demand', ['Was erwarten Sie jetzt von uns?', 'Was sollen wir Ihrer Meinung nach tun?'], '提出你的要求（礼貌而正式）',
-      [`(?:ich (?:erwarte|bitte|moechte|fordere)|bitte (?:reparieren|pruefen|erstatten|antworten|schicken)|koennten sie|wuerden sie)`], 'Ich bitte Sie, die Heizung bis Freitag zu reparieren.'),
-    q('deadline', ['Bis wann brauchen Sie eine Antwort?', 'Wann sollen wir das erledigen?'], '给一个期限',
-      [`^(?:bis|innerhalb|spaetestens|in ${S} (?:tagen|wochen)|noch diese woche|sofort)`], 'Bis Ende des Monats, bitte.'),
-    q('reason', ['Warum ist das für Sie so wichtig?', 'Warum können Sie nicht warten?'], '说理由（weil 从句，动词放最后）',
-      [`^(?:weil|da) .+ (?:ist|sind|habe|hat|kann|muss|brauche|braucht|friere|wohne|wohnen|zahle|bekomme|arbeite|wird)$`], 'Weil ich mit einem kleinen Kind in der Wohnung wohne.',
-      { traps: [[/^weil (?:ich habe|ich bin|ich kann|ich muss|es ist|wir haben) /, 'weil 从句里动词放最后：weil ich ein kleines Kind habe。']] }),
-    q('close', ['Und wie beenden Sie den Brief?', 'Wie schließen Sie einen offiziellen Brief?'], '正式信件怎么结尾',
-      [`mit freundlichen gruessen`], 'Mit freundlichen Grüßen'),
-  ];
-  return talk(rng, first, rest);
+  const part2 = shuffle(rng, FILLS).slice(0, 3).map((f) =>
+    q(`fill-${f.id}`, [`Ihr Widerspruch, bitte. Ergänzen Sie: «${f.gap}»`, `Schreiben Sie weiter: «${f.gap}»`], `②写申诉：填空（${f.base}，${f.zh}）`,
+      [f.acc], f.model, { visual: `Widerspruch\n${f.gap}\n（${f.base}）`, traps: [f.trap] }));
+  const polite: [RegExp, string] = [/^(?:nein|stimmt nicht|falsch|quatsch)$/, '只说「不对」不够。用 Sie 礼貌地说明：Doch, ich habe … Hier ist …'];
+  const part3 = shuffle(rng, [
+    q('kaution', ['Sie haben die Kaution nie bezahlt.', 'Laut unseren Unterlagen fehlt Ihre Kaution.'], '③答辩住房：押金你交过（用 Sie，礼貌）',
+      [`(?:ich habe die kaution|die kaution habe ich|ueberwiesen|bezahlt|beleg|quittung|nachweis|kontoauszug)`], 'Doch, ich habe die Kaution im März überwiesen. Hier ist der Beleg.', { traps: [polite] }),
+    q('attest', ['Sie haben sich nicht krankgemeldet.', 'Für die Zeit fehlt uns eine Krankmeldung.'], '③答辩看病：你交过病假条',
+      [`(?:krankmeldung|krankschreibung|attest|bescheinigung|vom arzt|beim arzt|krankgemeldet|krankgeschrieben)`], 'Ich habe die Krankmeldung vom Arzt rechtzeitig abgegeben.', { traps: [polite] }),
+    q('klausel', ['Laut Vertrag haben Sie keinen Anspruch.', 'Im Vertrag steht nichts davon.'], '③答辩合同：引条款反驳',
+      [`(?:laut|im vertrag steht|paragraf|paragraph|klausel|absatz|seite|steht mir|habe ich anspruch|unwirksam)`], 'Laut Paragraph fünf habe ich einen Anspruch darauf.', { traps: [polite] }),
+  ]);
+  return [...part1, ...part2, ...part3];
 };
 
 // ---- 12 · 心巷 · 冷漠 Gleichgültigkeit (feelings; reflexive verbs with a preposition) --------------------------
@@ -556,8 +578,8 @@ export const LATER_BOSSES: LaterBoss[] = [
     questions: BROADCAST,
   },
   {
-    region: 11, name: '驳回书', de: 'Der Ablehnungsbescheid', level: 108, hp: 12, title: '据理力争的人',
-    intro: ['登记大厅蚀变了。窗口后面没有人，只有一封信坐在椅子上，信封上盖着红章：「Abgelehnt.」', '「Ihr Widerspruch ist unbegründet. Der Nächste, bitte.」', '系统：这是一场正式的投诉和申诉。讲清楚问题、讲理由、提要求；den Nachbarn、etwas Neues、die steigenden Kosten 这些说法都用得上。'],
+    region: 11, name: '驳回书', de: 'Der Ablehnungsbescheid', level: 108, hp: 8, title: '据理力争的人', formal: true,
+    intro: ['登记大厅蚀变了。窗口后面没有人，只有一封信坐在椅子上，信封上盖着红章：「Abgelehnt.」', '「Ihr Antrag wird abgelehnt. Der Nächste, bitte.」', '系统：三段。①读懂驳回书；②写申诉，往正式句子里填词；③答它的三条反驳。对它说 du 或者太口语，它就盖章回血；正式说法用对，印章裂开一块。'],
     outro: ['信封上的红章一点一点褪成了蓝色：「Stattgegeben.」', '「… Ihrem Widerspruch wird stattgegeben.」它把自己折好，塞进一个写着你名字的信封。', '系统：旧城里那些正式的说法回来了。最后一段在心巷。'],
     healLine: 'Ihr Antrag wird noch geprüft.', healZh: '您的申请还在审核。（它要回血！下一题答对才能打断）',
     questions: COMPLAINT,

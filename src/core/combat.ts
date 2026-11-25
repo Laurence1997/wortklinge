@@ -1657,35 +1657,34 @@ export function resolveTurn(
         const before = skillLinesOpen(sk, s.skillUses[sk.id] ?? 0);
         s.skillUses[sk.id] = (s.skillUses[sk.id] ?? 0) + 1;
         if (skillLinesOpen(sk, s.skillUses[sk.id]) > before) log.push({ text: `「${sk.zh}」解锁了新的说法，下次放它时会考。`, tone: 'sys' });
-        const fxId = sk.as ?? sk.id; // 0.7/0.8 boss skills reuse a region 1–3 effect
-        if (fxId === 'keineAhnung') {
+        if (sk.id === 'keineAhnung') {
           b.fx.shield = true;
           log.push({ text: `「${said}」——字在你身前立成一面墙。`, tone: 'good' });
-        } else if (fxId === 'wieBitte') {
+        } else if (sk.id === 'wieBitte') {
           interrupted = true;
           log.push({ text: `「${said}」——它愣住了。`, tone: 'good' });
-        } else if (fxId === 'zuTeuer') {
+        } else if (sk.id === 'zuTeuer') {
           b.fx.cheap = true;
           log.push({ text: `「${said}」——它们下手轻了一半。`, tone: 'good' });
-        } else if (fxId === 'wieViel') {
+        } else if (sk.id === 'wieViel') {
           b.fx.peek = 2;
           log.push({ text: `「${said}」——接下来两回合，它们要蓄力你会提前知道。`, tone: 'good' });
-        } else if (fxId === 'stimmtSo') {
+        } else if (sk.id === 'stimmtSo') {
           b.fx.stimmt = true;
           log.push({ text: `「${said}」——这一场，金币翻倍。`, tone: 'good' });
-        } else if (fxId === 'zugFaehrtAb') {
+        } else if (sk.id === 'zugFaehrtAb') {
           b.fx.doubleNext = true;
           log.push({ text: `「${said}」——下一题答对，伤害翻倍。`, tone: 'good' });
-        } else if (fxId === 'verpasst') {
+        } else if (sk.id === 'verpasst') {
           b.fx.keepRes = true;
           log.push({ text: `「${said}」——下一次答错不丢资源。`, tone: 'good' });
-        } else if (fxId === 'naechsterHalt') {
+        } else if (sk.id === 'naechsterHalt') {
           b.fx.nextHalt = true;
           log.push({ text: `「${said}」——打倒它，下一只怪护甲降一档。`, tone: 'good' });
-        } else if (fxId === 'wiederholen') {
+        } else if (sk.id === 'wiederholen') {
           b.fx.swap = true;
           log.push({ text: `「${said}」——之后有一题，你可以请它换一题。`, tone: 'good' });
-        } else if (fxId === 'freutMich') {
+        } else if (sk.id === 'freutMich') {
           const heal = Math.round(maxHp(s) * 0.3);
           s.hp = Math.min(maxHp(s), s.hp + heal);
           log.push({ text: `「${said}」——生命 +${heal}。`, tone: 'good' });

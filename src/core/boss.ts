@@ -34,7 +34,12 @@ export interface BossFight {
   turn: number;
   outcome: null | 'win' | 'lose';
   misses: Array<{ asked: string; answer: string; model: string }>;
+  /** 驳回书: Frau Weber's help (ready = the next right answer counts twice). */
+  assist?: 'ready' | 'used';
 }
+
+/** 驳回书: du towards an office, or slang. */
+const RUDE = /\b(?:du|dich|dir|dein|deine|deinen|deinem|deiner|hey|hi|ey|krass|bock|alter|digga|nee|noe|quatsch)\b/;
 
 /** First-time and later time limits of the region 4–12 bosses (as 吞秤者 and 晚点之王). */
 export const LATER_BOSS_SECONDS = { first: 45, later: 30 };
@@ -181,8 +186,22 @@ export function answerBoss(s: GameState, f: BossFight, input: string, rng: Rng, 
     f.turn += 1;
     return { ok, note, model, damageTaken: 0, healed: false };
   }
+  // 驳回书 (游戏设计 四, row 11): du or slang is stamped 「abgelehnt」 and heals it; a right formal answer cracks the
+  // stamp. Frau Weber steps in once at half HP: the next right answer cracks two pieces.
+  const formal = f.which === 7 && !!LATER_BOSS[f.region ?? 0]?.formal;
+  if (formal && !timedOut && RUDE.test(n)) {
+    s.combo = 0;
+    f.misses.push({ asked: f.asked, answer: input, model });
+    f.hp = Math.min(f.maxHp, f.hp + 1);
+    f.turn += 1;
+    return { ok: false, note: '「Abgelehnt.」它盖了个章，回了血。对机关要用 Sie 和正式说法。', model, damageTaken: 0, healed: true };
+  }
   if (ok) {
-    f.hp -= 1;
+    f.hp -= formal && f.assist === 'ready' ? 2 : 1;
+    if (formal && f.assist === 'ready') {
+      f.assist = 'used';
+      note = 'Frau Weber 在旁边点头：「Genau so.」印章裂开了两块。';
+    }
     s.combo += 1;
   } else {
     s.combo = 0;
@@ -205,6 +224,10 @@ export function answerBoss(s: GameState, f: BossFight, input: string, rng: Rng, 
     if (f.hp <= CONFIG.boss.healAt && !f.healUsed) {
       f.healing = true;
       f.healUsed = true;
+    }
+    if (formal && !f.assist && f.hp <= f.maxHp / 2) {
+      f.assist = 'ready';
+      note = (note ? note + ' ' : '') + 'Frau Weber 从门口走进来：「Ich helfe Ihnen. Bleiben Sie höflich.」下一句答对，印章裂开两块。';
     }
     // 晚点之王 at half HP: «Der Zug hat zehn Minuten Verspätung.» Every time on the board moves ten minutes on.
     if (f.board && !f.board.delay && f.hp <= f.maxHp / 2) {

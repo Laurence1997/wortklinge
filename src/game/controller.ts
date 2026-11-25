@@ -2222,7 +2222,8 @@ export class Controller {
   }
 
   /** Region 4–12 boss rewards, as 吞秤者 / 晚点之王: gold chest on the first kill each day (iron after), orange +
-   *  title the first time, one of its three sentences as a skill; XP ≈ 30% of the boss level's level-up (游戏设计 五). */
+   *  title + one more gold chest the first time (Lucas 2026-11-25: replaces the sentence-skill pick); XP ≈ 30% of the
+   *  boss level's level-up (游戏设计 五). */
   private finishLater(f: BossFight) {
     const s = this.state;
     const r = f.region!;
@@ -2241,11 +2242,12 @@ export class Controller {
       const o = makeItem(this.rng, s.level, 'orange');
       if (s.bag.length < CONFIG.loot.bagSize) s.bag.push(o);
       s.flags.title = b.title;
+      this.chestQueue.push({ kind: 'gold', ilvl: s.level });
     }
     sfx.orange();
-    banner(`${b.name}倒下了`, first ? `首杀：传说装备 + 称号「${b.title}」` : dailyFirst ? '金箱' : '铁箱');
+    banner(`${b.name}倒下了`, first ? `首杀：传说装备 + 称号「${b.title}」+ 金箱` : dailyFirst ? '金箱' : '铁箱');
     const lines: Line[] = b.outro.map((t) => ({ who: SYS, text: t }));
-    lines.push({ who: SYS, text: `获得 ${xp} 经验、${gold} 金币和一个${dailyFirst ? '金' : '铁'}箱。` });
+    lines.push({ who: SYS, text: `获得 ${xp} 经验、${gold} 金币和一个${dailyFirst ? '金' : '铁'}箱${first ? '，首杀再加一个金箱' : ''}。` });
     if (first) lines.push(...this.afterBossLines(r));
     const after = () => {
       for (const l of lv.levels) this.onLevelUp(l);
@@ -2253,22 +2255,7 @@ export class Controller {
       this.persist();
       this.nextChest();
     };
-    const learnable = Object.values(SKILLS).filter((k) => k.boss === 100 + r && !s.skills.includes(k.id));
-    if (dailyFirst && learnable.length) {
-      lines.push({ who: SYS, text: '它说过的话，你能留下一句。【句子技能 R】选一句：' });
-      say(
-        lines,
-        undefined,
-        learnable.map((k) => ({
-          label: `${k.de}（${k.zh}：${k.effect}）`,
-          act: () => {
-            s.skills = [k.id, ...s.skills].slice(0, 3);
-            toast(`学会句子技能：${k.de}`, 'gold');
-            after();
-          },
-        })),
-      );
-    } else say(lines, after);
+    say(lines, after);
   }
 
   /** What opens when boss `r` falls for the first time: a 蚀变 segment (7 → 蚀变①, 10 → 蚀变②) or the road on. */

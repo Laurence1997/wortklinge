@@ -30,9 +30,9 @@ export interface FieldDef {
 
 export interface RegionDef {
   region: MapRegionNo;
-  /** Map colours, darkest first (ground, walls, roofs, light): four #rrggbb steps the Kenney tiles are recoloured
-   *  to. Left out = the red-black of regions 1–3 (Lucas 2026-11-25: later maps may change style). */
-  palette?: [string, string, string, string];
+  /** 各区色调 (游戏设计 十三): five #rrggbb steps, dark → light, that map tiles, NPCs and monsters are stretched over
+   *  (src/game/palette.ts). Left out = the red-black of regions 1–3. */
+  palette?: [string, string, string, string, string];
   /** 主城 (游戏设计 四 table). */
   zh: string;
   de: string;
@@ -63,6 +63,7 @@ export interface RegionDef {
 export const REGION_DEFS: RegionDef[] = [
   {
     region: 4, zh: '租屋城', de: 'Mietshausen', theme: '住房、家具、办手续', stage: 'A2', look: 3,
+    palette: ['#120d08', '#3d2e1f', '#6b5236', '#c79a5b', '#f5dcb0'],
     hubZh: '租屋城门房', standZh: '门房摊位', crossZh: '看房路口', gateCZh: '市民局门口',
     fields: [
       { zh: '看房街', de: 'Besichtigungsgasse', style: 'houses', scenes: ['门铃面板', '楼梯间', '客厅', '厨房', '浴室', '卧室', '阳台', '地下室', '房屋广告'] },
@@ -75,6 +76,7 @@ export const REGION_DEFS: RegionDef[] = [
   },
   {
     region: 5, zh: '泉疗镇', de: 'Heilbrunn', theme: '身体、健康、看医生', stage: 'A2', look: 2,
+    palette: ['#0f1006', '#34361a', '#5e6230', '#c2c95a', '#f3f6c8'],
     hubZh: '泉水广场', standZh: '广场药摊', crossZh: '疗养路口', gateCZh: '诊所长廊入口',
     fields: [
       { zh: '浴场街', de: 'Badgasse', style: 'houses', scenes: ['更衣室', '温泉池', '桑拿房', '按摩床', '体重秤', '淋浴间', '休息椅', '泉眼', '浴场规定'] },
@@ -87,6 +89,7 @@ export const REGION_DEFS: RegionDef[] = [
   },
   {
     region: 6, zh: '雾港', de: 'Nebelhafen', theme: '旅行、天气、度假', stage: 'A2', look: 3,
+    palette: ['#070b12', '#1c2a3d', '#34506e', '#7fa6cf', '#dbe8f5'],
     hubZh: '雾港码头', standZh: '码头货摊', crossZh: '港口路口', gateCZh: '灯塔栈桥入口',
     fields: [
       { zh: '旅行社街', de: 'Reisegasse', style: 'shops', scenes: ['旅行社', '换钱处', '行李店', '地图墙', '护照处', '酒店前台', '青年旅舍', '纪念品店', '订票网站'] },
@@ -99,6 +102,7 @@ export const REGION_DEFS: RegionDef[] = [
   },
   {
     region: 7, zh: '印章城', de: 'Stempelstadt', theme: '银行、保险、合同', stage: 'A2', look: 1,
+    palette: ['#0e0712', '#2f1a3d', '#533070', '#a066d6', '#ead4ff'],
     hubZh: '印章城交易所', standZh: '交易所柜台', crossZh: '盖章路口', gateCZh: '合同馆入口',
     fields: [
       { zh: '银行街', de: 'Bankstraße', style: 'shops', scenes: ['开户窗口', '取款机', '转账单', '账户流水', '信用卡', '贷款桌', '保险箱', '利息板', '网上银行'] },
@@ -111,6 +115,7 @@ export const REGION_DEFS: RegionDef[] = [
   },
   {
     region: 9, zh: '工坊城', de: 'Werkhalle', theme: '求职、职场', stage: 'B1', look: 3,
+    palette: ['#0d0b09', '#2e2924', '#574a3d', '#e07a2e', '#ffd2a1'],
     hubZh: '工坊大门', standZh: '工坊食堂', crossZh: '传送带路口', gateCZh: '人事楼入口',
     fields: [
       { zh: '招聘街', de: 'Jobbörse', style: 'shops', scenes: ['招聘栏', '简历桌', '求职信', '证书柜', '职业介绍所', '实习生角', '兼职板', '电话面试', '求职网站', '劳动局'] },
@@ -123,6 +128,7 @@ export const REGION_DEFS: RegionDef[] = [
   },
   {
     region: 10, zh: '电波塔', de: 'Funkturm', theme: '媒体、新闻、科技', stage: 'B1', look: 1,
+    palette: ['#020d0a', '#0a2e22', '#145a40', '#2fd88a', '#b8ffd9'],
     hubZh: '电波塔底', standZh: '报刊亭', crossZh: '信号路口', gateCZh: '播音楼入口',
     fields: [
       { zh: '报刊街', de: 'Zeitungsgasse', style: 'shops', scenes: ['报摊', '头条', '天气版', '体育版', '广告栏', '读者来信', '杂志架', '印刷机', '社论'] },
@@ -135,6 +141,7 @@ export const REGION_DEFS: RegionDef[] = [
   },
   {
     region: 12, zh: '心巷', de: 'Herzgasse', theme: '人际关系、情感', stage: 'B1', look: 1,
+    palette: ['#12060c', '#3d1430', '#6e2456', '#e0559e', '#ffd0ea'],
     hubZh: '心巷口', standZh: '花店', crossZh: '牵手路口', gateCZh: '冷漠之屋门前',
     fields: [
       { zh: '邻里巷', de: 'Nachbarschaft', style: 'houses', scenes: ['邻居门口', '生日聚会', '借东西', '道歉信', '吵架以后', '帮忙搬家', '邀请卡', '告别', '婚礼'] },
@@ -191,6 +198,8 @@ export interface ErodeDef {
   doorAct: string;
   /** Said when it opens. */
   open: string[];
+  /** 蚀变① has its own ramp (游戏设计 十三); 蚀变② darkens each old map's own (src/game/palette.ts). */
+  palette?: [string, string, string, string, string];
   scenes: ErodeScene[];
 }
 
@@ -199,6 +208,7 @@ const sc = (zone: ZoneId, ...ids: string[]): ErodeScene[] => ids.map((scene) => 
 export const ERODE_DEFS: ErodeDef[] = [
   {
     seg: 8, zh: '蚀变①「钟停之后」', stage: 'A2', after: 7, bossRegion: 3,
+    palette: ['#0c0303', '#331010', '#521717', '#8f2a2a', '#f08a3c'],
     doorZh: '停摆的末班站台', doorAct: '走上停摆的末班站台',
     open: [
       '印章城的章盖完了。可你回头看的时候，来时的路变了颜色。',
