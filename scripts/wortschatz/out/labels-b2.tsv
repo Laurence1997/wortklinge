@@ -2,11 +2,13 @@
 6001	Menschenleben	社会政治辩论		
 6002	Röhre	住房家具		
 6003	Ferse	身体看病		
+6004	neuerdings	通用	时间先后	社会政治辩论
 6005	Hormon	身体看病		
 6006	Faschist	社会政治辩论		
 6007	Schätzung	经济金钱消费环境		
 6008	Zeitverschwendung	文化艺术科学教育		
 6009	Vielfalt	社会政治辩论		
+6010	monatelang	通用	时间先后	身体看病
 6011	Garderobe	住房家具		
 6012	Passage	住房家具		
 6013	brauchbar	经济金钱消费环境		
@@ -41,6 +43,7 @@
 6042	erhältlich	经济金钱消费环境		
 6043	Parlament	社会政治辩论		
 6044	Simulation	文化艺术科学教育		
+6045	vorgestern	通用	时间先后	旅行天气自然
 6046	kuppeln	经济金钱消费环境		
 6047	Pinguin	旅行天气自然		
 6048	Vorzug	经济金钱消费环境		
@@ -124,6 +127,7 @@
 6126	Gerichtshof	社会政治辩论		
 6127	Jurist	社会政治辩论		
 6128	Tablett	住房家具		
+6129	regelrecht	通用	程度与频率	文化艺术科学教育
 6130	nachschauen	文化艺术科学教育		
 6131	Treibstoff	经济金钱消费环境		
 6132	Dialekt	文化艺术科学教育		
@@ -157,6 +161,7 @@
 6160	Häuschen	住房家具		
 6161	veranlassen	社会政治辩论		
 6162	Chirurgie	身体看病		
+6163	diesbezüglich	通用	观点与评价	银行保险合同
 6164	mündlich	文化艺术科学教育		
 6165	tschechisch	文化艺术科学教育		
 6166	Seuche	身体看病		
@@ -165,6 +170,7 @@
 6169	verabreichen	身体看病		
 6170	vorsätzlich	社会政治辩论		
 6171	Bronze	文化艺术科学教育		
+6172	vielmals	通用	请求与礼貌	旅行天气自然
 6173	literarisch	文化艺术科学教育		
 6174	beträchtlich	经济金钱消费环境		
 6175	alarmieren	社会政治辩论		
@@ -204,16 +210,20 @@
 6209	kanadisch	旅行天气自然		
 6210	Verteilung	经济金钱消费环境		
 6211	Zufriedenheit	文化艺术科学教育		
+6212	üblicherweise	通用	程度与频率	经济金钱消费环境
 6213	Dortmund	旅行天气自然		
 6214	stationieren	社会政治辩论		
+6215	bitteschön	通用	请求与礼貌	经济金钱消费环境
 6216	reinlassen	住房家具		
 6217	separat	通用		
 6218	Mittelmeer	旅行天气自然		
+6219	viermal	通用	程度与频率	身体看病
 6220	Gleichung	文化艺术科学教育		
 6221	zurückbleiben	旅行天气自然		
 6222	heimisch	旅行天气自然		
 6223	Einzug	住房家具		
 6224	loyal	社会政治辩论		
+6225	wochenlang	通用	时间先后	身体看病
 6226	radioaktiv	文化艺术科学教育		
 6227	Brieftasche	银行保险合同		
 6228	Anhaltspunkt	社会政治辩论		
@@ -248,6 +258,7 @@
 6257	Superheld	文化艺术科学教育		
 6258	Skizze	文化艺术科学教育		
 6259	Gewissheit	社会政治辩论		
+6260	weitgehend	通用	程度与频率	社会政治辩论
 6261	Lebensunterhalt	经济金钱消费环境		
 6262	Manipulation	社会政治辩论		
 6263	Kreativität	文化艺术科学教育		
@@ -265,6 +276,7 @@
 6275	Soße	住房家具		
 6276	Heiligkeit	社会政治辩论		
 6277	hysterisch	文化艺术科学教育		
+6278	andernfalls	通用	条件与假设	银行保险合同
 6279	Gewand	文化艺术科学教育		
 6280	Balken	住房家具		
 6281	verhängen	社会政治辩论		
@@ -274,8 +286,10 @@
 6285	Kleinkind	身体看病		
 6286	amtlich	社会政治辩论		
 6287	Traube	住房家具		
+6288	meinerseits	通用	观点与评价	社会政治辩论
 6289	fortführen	社会政治辩论		
 6290	Scheinwerfer	经济金钱消费环境		
+6291	geschweige	通用	程度与频率	经济金钱消费环境
 6292	foltern	社会政治辩论		
 6293	Diktatur	社会政治辩论		
 6294	Ranch	旅行天气自然		
@@ -295,6 +309,7 @@
 6308	ächzen	身体看病		
 6309	Europäer	社会政治辩论		
 6310	Ansprache	社会政治辩论		
+6311	tagelang	通用	时间先后	旅行天气自然
 6312	Augenbraue	身体看病		
 6313	Taschenlampe	住房家具		
 6314	Regenbogen	旅行天气自然		
@@ -308,6 +323,7 @@
 6322	Kupfer	经济金钱消费环境		
 6323	verschlingen	经济金钱消费环境		
 6324	Phantom	文化艺术科学教育		
+6325	nunmehr	通用	时间先后	社会政治辩论
 6326	Hypothek	银行保险合同		
 6327	unbegrenzt	银行保险合同		
 6328	Bluse	经济金钱消费环境		
@@ -346,6 +362,7 @@
 6361	scheu	文化艺术科学教育		
 6362	Markierung	文化艺术科学教育		
 6363	wiedererkennen	文化艺术科学教育		
+6364	zwischendurch	通用	时间先后	住房家具
 6365	widerfahren	社会政治辩论		
 6366	Neuanfang	社会政治辩论		
 6367	Eindringling	社会政治辩论		
@@ -367,6 +384,7 @@
 6383	blutig	社会政治辩论		
 6384	vorbeigehen	旅行天气自然		
 6385	preisgeben	社会政治辩论		
+6386	halbwegs	通用	程度与频率	住房家具
 6387	Moos	旅行天气自然		
 6388	Rabe	旅行天气自然		
 6389	nuklear	社会政治辩论		
@@ -394,6 +412,7 @@
 6411	anmerken	社会政治辩论		
 6412	vermehren	旅行天气自然		
 6413	norwegisch	旅行天气自然		
+6414	nacheinander	通用	时间先后	身体看病
 6415	Freilassung	社会政治辩论		
 6416	aufrechterhalten	社会政治辩论		
 6417	Hinblick	社会政治辩论		
@@ -437,8 +456,10 @@
 6455	rücksichtslos	社会政治辩论		
 6456	zischen	通用		
 6457	Christentum	社会政治辩论		
+6458	infolge	通用	原因与结果	社会政治辩论
 6459	erkunden	旅行天气自然		
 6460	knallhart	经济金钱消费环境		
+6461	ungeachtet	通用	转折与让步	社会政治辩论
 6462	brummen	通用		
 6463	Entzug	身体看病		
 6464	Zuhörer	文化艺术科学教育		
@@ -500,6 +521,7 @@
 6520	unbemerkt	社会政治辩论		
 6521	Bücherei	文化艺术科学教育		
 6522	Apokalypse	社会政治辩论		
+6523	zwangsläufig	通用	原因与结果	社会政治辩论
 6524	Adel	社会政治辩论		
 6525	Amtszeit	社会政治辩论		
 6526	irrelevant	社会政治辩论		
@@ -589,6 +611,7 @@
 6610	Mitmensch	社会政治辩论		
 6611	Nerd	文化艺术科学教育		
 6612	lindern	身体看病		
+6613	dementsprechend	通用	原因与结果	经济金钱消费环境
 6614	Übersetzer	文化艺术科学教育		
 6615	Arbeitstag	经济金钱消费环境		
 6616	Munition	社会政治辩论		
@@ -603,6 +626,7 @@
 6625	Aufenthaltsort	社会政治辩论		
 6626	Ventil	住房家具		
 6627	Unfug	社会政治辩论		
+6628	mitunter	通用	程度与频率	文化艺术科学教育
 6629	Joker	文化艺术科学教育		
 6630	erringen	社会政治辩论		
 6631	Inder	社会政治辩论		
@@ -636,6 +660,7 @@
 6659	Kinderspiel	文化艺术科学教育		
 6660	Kundin	经济金钱消费环境		
 6661	anschaffen	住房家具		
+6662	moin	通用	请求与礼貌	旅行天气自然
 6663	anlässlich	通用		
 6664	Betreuer	文化艺术科学教育		
 6665	Glaubwürdigkeit	社会政治辩论		
@@ -718,6 +743,7 @@
 6742	hasten	旅行天气自然		
 6743	Geschäftspartner	经济金钱消费环境		
 6744	benommen	身体看病		
+6745	folglich	通用	原因与结果	社会政治辩论
 6746	zauberhaft	文化艺术科学教育		
 6747	Offenbarung	社会政治辩论		
 6748	Mus	经济金钱消费环境		
@@ -757,6 +783,7 @@
 6782	Polo	文化艺术科学教育		
 6783	Kairo	旅行天气自然		
 6784	koreanisch	文化艺术科学教育		
+6785	höchstwahrscheinlich	通用	推测与可能	旅行天气自然
 6786	Gemeinderat	社会政治辩论		
 6787	Aktivist	社会政治辩论		
 6788	verunsichern	文化艺术科学教育		
@@ -779,15 +806,18 @@
 6805	Maulwurf	旅行天气自然		
 6806	strafbar	社会政治辩论		
 6807	sachlich	社会政治辩论		
+6808	allemal	通用	观点与评价	经济金钱消费环境
 6809	wärmen	身体看病		
 6810	vorbildlich	文化艺术科学教育		
 6811	ätzend	文化艺术科学教育		
 6812	irgendwohin	旅行天气自然		
+6813	drittens	通用	时间先后	社会政治辩论
 6814	Kreuzfahrt	旅行天气自然		
 6815	Bikini	身体看病		
 6816	Fingerabdruck	社会政治辩论		
 6817	Anleihe	银行保险合同		
 6818	erwünscht	社会政治辩论		
+6819	voraussichtlich	通用	推测与可能	旅行天气自然
 6820	Pelz	经济金钱消费环境		
 6821	Lumpen	住房家具		
 6822	abkühlen	身体看病		
@@ -897,6 +927,7 @@
 6926	verdrehen	社会政治辩论		
 6927	schädlich	旅行天气自然		
 6928	Koran	社会政治辩论		
+6929	vermehrt	通用	程度与频率	经济金钱消费环境
 6930	Aufsichtsrat	经济金钱消费环境		
 6931	Lesung	文化艺术科学教育		
 6932	zieren	住房家具		
@@ -928,6 +959,7 @@
 6958	Einzelfall	社会政治辩论		
 6959	Lachs	经济金钱消费环境		
 6960	Mentor	文化艺术科学教育		
+6961	zeitweise	通用	时间先后	旅行天气自然
 6962	Pin	银行保险合同		
 6963	Tablet	文化艺术科学教育		
 6964	Kellnerin	经济金钱消费环境		
@@ -1007,6 +1039,7 @@
 7038	verirrt	旅行天气自然		
 7039	Gratulation	社会政治辩论		
 7040	erfrischen	身体看病		
+7041	irre	通用	情绪反应	文化艺术科学教育
 7042	Vorrang	经济金钱消费环境		
 7043	Maximum	文化艺术科学教育		
 7044	Senat	社会政治辩论		
@@ -1080,6 +1113,7 @@
 7112	vertuschen	社会政治辩论		
 7113	geborgen	文化艺术科学教育		
 7114	Pfosten	住房家具		
+7115	ehemals	通用	时间先后	社会政治辩论
 7116	rothaarig	文化艺术科学教育		
 7117	Schwiegermutter	社会政治辩论		
 7118	vorantreiben	经济金钱消费环境		
@@ -1198,6 +1232,7 @@
 7231	Anbau	住房家具		
 7232	verschmelzen	文化艺术科学教育		
 7233	Tick	文化艺术科学教育		
+7234	vorab	通用	时间先后	银行保险合同
 7235	Heidelberg	旅行天气自然		
 7236	magnetisch	文化艺术科学教育		
 7237	überschätzen	社会政治辩论		
@@ -1228,6 +1263,7 @@
 7262	Schwiegervater	住房家具		
 7263	Pionier	文化艺术科学教育		
 7264	simulieren	文化艺术科学教育		
+7265	höllisch	通用	情绪反应	身体看病
 7266	Mineral	旅行天气自然		
 7267	miserabel	通用		
 7268	teuflisch	文化艺术科学教育		
@@ -1249,9 +1285,11 @@
 7284	ununterbrochen	经济金钱消费环境		
 7285	Kalb	旅行天气自然		
 7286	Rumpf	身体看病		
+7287	derweil	通用	时间先后	文化艺术科学教育
 7288	Beule	身体看病		
 7289	klappern	住房家具		
 7290	Heu	旅行天气自然		
+7291	fortan	通用	时间先后	文化艺术科学教育
 7292	Nachtschicht	经济金钱消费环境		
 7293	anderweitig	通用		
 7294	Dozent	文化艺术科学教育		
@@ -1424,6 +1462,7 @@
 7461	Taste	文化艺术科学教育		
 7462	erläutern	社会政治辩论		
 7463	Scheich	社会政治辩论		
+7464	zumeist	通用	程度与频率	社会政治辩论
 7465	einsatzbereit	经济金钱消费环境		
 7466	niesen	身体看病		
 7467	auswerten	文化艺术科学教育		
@@ -1454,6 +1493,7 @@
 7492	Anwohner	社会政治辩论		
 7493	Kanton	社会政治辩论		
 7494	Schlinge	社会政治辩论		
+7495	vorwiegend	通用	程度与频率	经济金钱消费环境
 7496	Verdienst	经济金钱消费环境		
 7497	Getriebe	经济金钱消费环境		
 7498	Debüt	文化艺术科学教育		
@@ -1478,6 +1518,7 @@
 7517	Zebra	旅行天气自然		
 7518	einweisen	身体看病		
 7519	Absolvent	文化艺术科学教育		
+7520	andermal	通用	时间先后	旅行天气自然
 7521	Romanze	文化艺术科学教育		
 7522	Cockpit	经济金钱消费环境		
 7523	kränken	社会政治辩论		
@@ -1499,6 +1540,7 @@
 7539	hinhören	文化艺术科学教育		
 7540	überspringen	文化艺术科学教育		
 7541	Wanze	住房家具		
+7542	nachhinein	通用	时间先后	社会政治辩论
 7543	Marsch	社会政治辩论		
 7544	Sizilien	旅行天气自然		
 7545	Innovation	经济金钱消费环境		
@@ -1651,6 +1693,7 @@
 7692	umfallen	身体看病		
 7693	absitzen	社会政治辩论		
 7694	Verachtung	社会政治辩论		
+7695	bestenfalls	通用	推测与可能	经济金钱消费环境
 7696	Areal	旅行天气自然		
 7697	siegreich	文化艺术科学教育		
 7698	Mob	社会政治辩论		
@@ -1668,6 +1711,8 @@
 7710	Erdnuss	经济金钱消费环境		
 7711	Lama	旅行天气自然		
 7712	Lebenszeit	社会政治辩论		
+7713	fünfmal	通用	程度与频率	身体看病
+7714	seinerzeit	通用	时间先后	社会政治辩论
 7715	schrill	文化艺术科学教育		
 7716	Eintrittskarte	文化艺术科学教育		
 7717	verankern	社会政治辩论		
@@ -1713,6 +1758,7 @@
 7757	durchschauen	社会政治辩论		
 7758	Verehrer	文化艺术科学教育		
 7759	auswärts	旅行天气自然		
+7760	obendrein	通用	程度与频率	经济金钱消费环境
 7761	Kader	社会政治辩论		
 7762	Abdruck	文化艺术科学教育		
 7763	Synagoge	社会政治辩论		
@@ -1736,6 +1782,7 @@
 7781	Schnur	住房家具		
 7782	stumpf	住房家具		
 7783	Fachmann	经济金钱消费环境		
+7784	andersrum	通用	转折与让步	住房家具
 7785	Serbien	旅行天气自然		
 7786	Ersatzteil	经济金钱消费环境		
 7787	Wertschätzung	社会政治辩论		
@@ -1774,6 +1821,7 @@
 7820	Espresso	经济金钱消费环境		
 7821	dominant	文化艺术科学教育		
 7822	Renovierung	住房家具		
+7823	ungemein	通用	程度与频率	文化艺术科学教育
 7824	Rendezvous	社会政治辩论		
 7825	Gemahlin	社会政治辩论		
 7826	Errungenschaft	文化艺术科学教育		
@@ -1815,9 +1863,11 @@
 7862	Taiwan	旅行天气自然		
 7863	Erneuerung	经济金钱消费环境		
 7864	Intrige	社会政治辩论		
+7865	abwechselnd	通用	时间先后	住房家具
 7866	Kathedrale	文化艺术科学教育		
 7867	Nominierung	文化艺术科学教育		
 7868	Repräsentant	社会政治辩论		
+7869	igitt	通用	情绪反应	住房家具
 7870	Truhe	住房家具		
 7871	Turnhalle	文化艺术科学教育		
 7872	dehnen	身体看病		
@@ -1826,6 +1876,7 @@
 7875	lässig	文化艺术科学教育		
 7876	Wahlkampf	社会政治辩论		
 7877	deprimieren	身体看病		
+7878	servus	通用	请求与礼貌	旅行天气自然
 7879	grenzenlos	文化艺术科学教育		
 7880	Interaktion	社会政治辩论		
 7881	Karren	经济金钱消费环境		
@@ -1844,6 +1895,7 @@
 7894	tropisch	旅行天气自然		
 7895	Halbinsel	旅行天气自然		
 7896	Deo	身体看病		
+7897	grauenhaft	通用	情绪反应	文化艺术科学教育
 7898	verschärfen	社会政治辩论		
 7899	persisch	文化艺术科学教育		
 7900	Angreifer	社会政治辩论		

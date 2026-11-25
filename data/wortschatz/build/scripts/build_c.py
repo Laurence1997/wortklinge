@@ -55,16 +55,15 @@ for l in list(SYN):
 # 先后（方案 §14，Lucas 2026-11-25：不按欧标分级，以沟通为主，只当默认顺序不当门槛）
 # 沟通优先度 = 排名；标「生活」或游戏里已有 ×0.5；只标「影视」×1.5；≤1000 先，≤3000 中，其余后
 def layer(o):
-  if o['rank']>6000: return ''
   p=o['rank']
   if '生活' in o['tags'] or o['src']=='生活词表' or o['game']: p*=0.5
   elif '影视' in o['tags']: p*=1.5
   return '先' if p<=1000 else '中' if p<=3000 else '后'
 LAB={}
-_lp='/home/user/wortklinge/scripts/wortschatz/out/labels.tsv'
-if os.path.exists(_lp):
-  for r in csv.DictReader(open(_lp,encoding='utf-8'),delimiter='\t'):
-    if r['原形'] in _byl: LAB[r['原形']]=(r['情境'],r['功能线'],r['宿主情境'])
+for _lp in ('/home/user/wortklinge/scripts/wortschatz/out/labels-b2.tsv','/home/user/wortklinge/scripts/wortschatz/out/labels.tsv'):  # b2 first: words now ranked >6000 use the B2 scheme
+  if os.path.exists(_lp):
+    for r in csv.DictReader(open(_lp,encoding='utf-8'),delimiter='\t'):
+      if r['原形'] in _byl and r['原形'] not in LAB: LAB[r['原形']]=(r['情境'],r['功能线'],r['宿主情境'])
 ZHFIX={'Überweisung':'转账；转诊单'}
 for o in rows:
   if o['lemma'] in ZHFIX: o['zh']=ZHFIX[o['lemma']]
