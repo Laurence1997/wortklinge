@@ -1,3 +1,4 @@
+import { LETTER_BY_ID, LETTER_CFG, readLetter } from '../core/letters';
 import { push as pushCloud } from '../net/cloud';
 import { loadPassages } from '../data/passages';
 import { carriesShout } from '../core/skillPool';
@@ -254,6 +255,14 @@ export class Controller {
     logLine(`${why}，经验 +${xp}`, 'good');
     for (const l of lv.levels) this.onLevelUp(l);
     this.refresh();
+  }
+
+  /** 失语者的遗书: first read of a letter gives a share of the XP to the next level (暂定 3%). */
+  letterRead(id: string): void {
+    const s = this.state;
+    if (!readLetter(s, id)) return;
+    this.diaryXp(Math.max(1, Math.round(xpToNext(s.level) * LETTER_CFG.xpShare)), `读完遗书「${LETTER_BY_ID[id]?.title ?? id}」`);
+    this.persist();
   }
 
   /** 纸条: a story note found as a drop, kept in the codex. */
@@ -1718,6 +1727,7 @@ export class Controller {
     else if (it.kind === 'npc') this.talkNpc(it.data ?? 'hilde');
     else if (it.kind === 'adv' && it.data) this.talkAdventurer(it.data);
     else if (it.kind === 'door') this.knockDoor(it.data);
+    else if (it.kind === 'letter' && it.data) this.panels.showLetter(it.data);
     else if (it.kind === 'gate') this.travel((Number(it.data) || Math.max(1, this.state.region - 1)) as RegionId);
     else if (it.kind === 'sign') {
       const w = WORD_BY_ID[it.data!];

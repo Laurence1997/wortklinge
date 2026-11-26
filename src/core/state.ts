@@ -93,6 +93,8 @@ export interface GameState {
   challenge?: import('./challenge').ChallengeSave;
   /** 语法线 (0.7–0.8): boards seen, dungeon floors cleared, review partner. Optional: absent = nothing yet. */
   gram?: import('./gram/boards').GramSave;
+  /** 失语者的遗书 (1.0): letter id → time first read. */
+  letters?: Record<string, number>;
   /** 排行榜 counters (optional; refreshed before each save). */
   board?: import('./board').BoardSave;
   /** Recent timed answers (冒险者 PK: the rival's accuracy and pace follow these). */

@@ -1,3 +1,4 @@
+import { isRead, lettersIn } from '../core/letters';
 import { accentOf } from '../ui/theme';
 import { npcFigure } from '../ui/icons';
 import { RIFT } from '../core/rift';
@@ -340,6 +341,7 @@ export class NodeNav {
     const eb = ERODE_DEFS.find((e) => e.scene === sc.id);
     if (sc.door) things.push(h('button.btn', { onclick: ia('door', sc.id) }, eb ? eb.doorAct : REGION_DEF[this.w.map.region] ? REGION_DEF[this.w.map.region]!.doorAct : this.w.map.region === 3 ? '走上末班站台' : this.w.map.region === 2 ? '推开秤房的门' : '敲门'));
     if (sc.gate) things.push(h('button.btn', { onclick: ia('gate', String(sc.gate)) }, GATE_ZH[sc.gate]));
+    for (const l of lettersIn(this.s, sc.id)) things.push(h('button.btn', { onclick: ia('letter', l.id) }, `✉ 遗书「${l.title}」${isRead(this.s, l.id) ? '（已读）' : ''}`));
     for (const sg of sc.signs ?? []) things.push(h('button.btn', { onclick: ia('sign', sg) }, stageOf(this.s, WORD_BY_ID[sg]) >= 3 ? `路牌：${fullForm(WORD_BY_ID[sg])}` : '路牌：▒▒▒'));
     const exits = neighbours(sc.id)
       .map((id) => SCENE_BY_ID[id])

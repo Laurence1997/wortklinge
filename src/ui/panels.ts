@@ -38,6 +38,7 @@ import { canListen, lastConfidence, listening, listenOnce, stopHold } from './li
 import { clarity, shadowOk } from '../core/shadow';
 import { DIARY, DIARY_WRITER, type DiaryBlank } from '../data/diary';
 import { AREAS, SCENE_BY_ID } from '../data/world';
+import { archive, isRead, LETTER_BY_ID, LETTER_CFG } from '../core/letters';
 import { blanksOf, checkBlank, DIARY_MISSES, DIARY_XP, lineText, pageLines, pageNo, pageRegion, pageState } from '../core/diary';
 import { lookPicker, originPicker } from './title';
 import { CONSUMABLE, cap as itemCap, count as itemCount, itemPrice, type Consumable } from '../core/items';
@@ -45,7 +46,7 @@ import { matchRows, mergeImport, readTable } from '../core/wordImport';
 import { checkJournal, type JournalHint } from '../core/journal';
 import { BARGAIN_LINES, ensureShop, price, refreshCost, sellPrice, SLOT_NOUN } from '../core/shop';
 
-export type PanelName = 'hero' | 'talents' | 'quests' | 'codex' | 'words' | 'data' | 'account' | 'settings' | 'help' | 'shop' | 'chest' | 'quiz' | 'screen' | 'bigmap' | 'diary' | 'ask' | 'exam' | 'journal' | 'place';
+export type PanelName = 'hero' | 'talents' | 'quests' | 'codex' | 'words' | 'data' | 'account' | 'settings' | 'help' | 'shop' | 'chest' | 'quiz' | 'screen' | 'bigmap' | 'diary' | 'ask' | 'exam' | 'journal' | 'place' | 'letter';
 
 export class Panels {
   open: PanelName | null = null;
@@ -99,6 +100,7 @@ export class Panels {
       window.setTimeout(() => a.onAnswer(''), 0);
     }
     if (this.open === 'journal') this.journalState = null;
+    if (this.open === 'letter') this.letter = null;
     if (this.open === 'quiz' && this.quiz) {
       const q = this.quiz;
       this.quiz = null;
@@ -225,6 +227,15 @@ export class Panels {
       window.setTimeout(() => (el.querySelector('textarea.journal') as HTMLTextAreaElement | null)?.focus(), 0);
       return;
     }
+    if (this.open === 'letter' && this.letter) {
+      const l = LETTER_BY_ID[this.letter.id];
+      panel.append(h('h2', h('span', `✉ ${l.title}`), h('button.btn.ghost', { onclick: () => this.close() }, '合上 Esc')), this.letterBody());
+      clear(el).append(panel);
+      el.onclick = (e) => {
+        if (e.target === el) this.close();
+      };
+      return;
+    }
     if (this.open === 'diary' && this.diary) {
       panel.append(h('h2', h('span', portrait('Jonas', 2) ?? '', `日记残页 · 第 ${pageRegion(this.diary.scene)} 区第 ${pageNo(this.diary.scene)} 页`), h('button.btn.ghost', { onclick: () => this.close() }, '合上 Esc')), this.diaryBody());
       clear(el).append(panel);
@@ -249,13 +260,13 @@ export class Panels {
       if (this.buying !== null) window.setTimeout(() => (el.querySelector('input.buy-line') as HTMLInputElement | null)?.focus(), 0);
       return;
     }
-    const titles: Record<Exclude<PanelName, 'shop' | 'chest' | 'quiz' | 'screen' | 'bigmap' | 'diary' | 'ask' | 'exam' | 'journal' | 'place'>, string> = { hero: '角色与装备', talents: '技能与天赋', quests: '任务', codex: '图鉴', words: '单词本', data: '数据与存档', account: '账号与排行', settings: '设置', help: '怎么玩' };
+    const titles: Record<Exclude<PanelName, 'shop' | 'chest' | 'quiz' | 'screen' | 'bigmap' | 'diary' | 'ask' | 'exam' | 'journal' | 'place' | 'letter'>, string> = { hero: '角色与装备', talents: '技能与天赋', quests: '任务', codex: '图鉴', words: '单词本', data: '数据与存档', account: '账号与排行', settings: '设置', help: '怎么玩' };
     const tabs = h('div.tabs');
-    (Object.keys(titles) as Array<Exclude<PanelName, 'shop' | 'chest' | 'quiz' | 'screen' | 'bigmap' | 'diary' | 'ask' | 'exam' | 'journal' | 'place'>>).forEach((k) =>
+    (Object.keys(titles) as Array<Exclude<PanelName, 'shop' | 'chest' | 'quiz' | 'screen' | 'bigmap' | 'diary' | 'ask' | 'exam' | 'journal' | 'place' | 'letter'>>).forEach((k) =>
       tabs.append(h(`button.btn${this.open === k ? '.on' : ''}`, { onclick: () => this.show(k) }, titles[k])),
     );
-    panel.append(h('h2', h('span', titles[this.open as Exclude<PanelName, 'shop' | 'chest' | 'quiz' | 'screen' | 'bigmap' | 'diary' | 'ask' | 'exam' | 'journal' | 'place'>]), h('button.btn.ghost', { onclick: () => this.close() }, '关闭 Esc')), tabs);
-    const body = { journal: () => h('div'), exam: () => h('div'), ask: () => h('div'), diary: () => h('div'), bigmap: () => h('div'), shop: () => h('div'), chest: () => h('div'), quiz: () => h('div'), place: () => h('div'), screen: () => h('div'), hero: () => this.hero(), talents: () => this.talents(), quests: () => this.questsBody(), codex: () => this.codex(), words: () => this.wordbook(), data: () => this.data(), account: () => this.account(), settings: () => this.settings(), help: () => this.help() }[this.open]();
+    panel.append(h('h2', h('span', titles[this.open as Exclude<PanelName, 'shop' | 'chest' | 'quiz' | 'screen' | 'bigmap' | 'diary' | 'ask' | 'exam' | 'journal' | 'place' | 'letter'>]), h('button.btn.ghost', { onclick: () => this.close() }, '关闭 Esc')), tabs);
+    const body = { letter: () => h('div'), journal: () => h('div'), exam: () => h('div'), ask: () => h('div'), diary: () => h('div'), bigmap: () => h('div'), shop: () => h('div'), chest: () => h('div'), quiz: () => h('div'), place: () => h('div'), screen: () => h('div'), hero: () => this.hero(), talents: () => this.talents(), quests: () => this.questsBody(), codex: () => this.codex(), words: () => this.wordbook(), data: () => this.data(), account: () => this.account(), settings: () => this.settings(), help: () => this.help() }[this.open]();
     panel.append(body);
     clear(el).append(panel);
     el.onclick = (e) => {
@@ -570,6 +581,54 @@ export class Panels {
       det.append(h('summary', `以前的日记（${(s.journal ?? []).length} 篇）`), ...past.map((e) => h('p.small', h('b', e.day), ' ', e.text)));
       wrap.append(det);
     }
+    return wrap;
+  }
+
+  // ---- 失语者的遗书 (1.0) ----------------------------------------------------------------
+
+  private letter: { id: string; zh: Set<number> } | null = null;
+
+  showLetter(id: string): void {
+    if (!LETTER_BY_ID[id]) return;
+    this.letter = { id, zh: new Set() };
+    this.show('letter');
+  }
+
+  private letterBody(): HTMLElement {
+    const lt = this.letter!;
+    const l = LETTER_BY_ID[lt.id];
+    const s = this.ctrl.state;
+    const wrap = h('div.letter-page');
+    wrap.append(h('p.small.muted', `${l.region} 区第 ${l.n} 封 · 写信的人：${l.from}${l.main === 'Ilse' && !l.from.includes('Ilse') ? '（Ilse 的信）' : ''}。德语一段一段读，读不懂的段落点「看中文」。`));
+    l.de.forEach((para, i) => {
+      const row = h('div.letter-para');
+      row.append(h('p.letter-de', para));
+      if (lt.zh.has(i)) row.append(h('p.small.muted.letter-zh', l.zh[i] ?? ''));
+      row.append(
+        h('div.letter-acts',
+          h('button.btn.ghost.tiny', { onclick: () => { if (lt.zh.has(i)) lt.zh.delete(i); else lt.zh.add(i); this.render(); } }, lt.zh.has(i) ? '收起中文' : '看中文'),
+          h('button.btn.ghost.tiny', { title: '听这一段', onclick: () => this.ctrl.speak(para) }, '听'),
+        ),
+      );
+      wrap.append(row);
+    });
+    if (l.words.length) wrap.append(h('p.small', `本区的词：${l.words.join('、')}`));
+    if (l.grammar) wrap.append(h('p.small', `语法：${l.grammar}`));
+    if (isRead(s, l.id)) {
+      if (l.clue) wrap.append(h('p.small', { style: 'color:var(--gold, #ffcf4a)' }, `线索：${l.clue}`));
+      wrap.append(h('p.small.muted', '已收进单词本的「档案」，可以随时重读。'));
+    } else wrap.append(h('button.btn.primary', { onclick: () => { this.ctrl.letterRead(l.id); this.render(); } }, `读完了，收进档案（经验 +${Math.round(LETTER_CFG.xpShare * 100)}% 到下一级）`));
+    return wrap;
+  }
+
+  /** 档案: read letters by region, Ilse's line first. */
+  private letterArchive(): HTMLElement | string {
+    const a = archive(this.ctrl.state);
+    if (!a.byRegion.length) return '';
+    const wrap = h('div.sp-sec');
+    wrap.append(h('h3', '档案 · 失语者的遗书'));
+    if (a.main.length) wrap.append(h('p.small', 'Ilse 的信：', ...a.main.map((l) => h('button.btn.ghost.tiny', { onclick: () => this.showLetter(l.id) }, `${l.region}-${l.n} ${l.title}`))));
+    for (const r of a.byRegion) wrap.append(h('p.small', `${r.region} 区（${r.letters.length}/${r.total}）：`, ...r.letters.map((l) => h('button.btn.ghost.tiny', { onclick: () => this.showLetter(l.id) }, l.title))));
     return wrap;
   }
 
@@ -1457,6 +1516,7 @@ export class Panels {
       }
     }
     if (!Object.keys(s.words).length) wrap.append(h('p', '还没有见过的词。出去打几只怪吧。'));
+    wrap.append(this.letterArchive());
     // Importing a word list is a one-off setup step: it sits at the end, after the player's own words (0.8 UI pass).
     wrap.append(this.importBox());
     return wrap;

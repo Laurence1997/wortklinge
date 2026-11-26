@@ -290,6 +290,11 @@ label.toggle { display: flex; gap: 8px; align-items: center; padding: 6px 0; }
 .diary-line.reading { border-left-color: var(--gold, #ffcf4a); background: rgba(255, 207, 74, .06); }
 .diary-blank { display: inline-flex; flex-direction: column; align-items: center; vertical-align: middle; line-height: 1.2; margin: 0 3px; }
 .diary-blank small { font-size: 11px; opacity: .7; }
+.letter-page { max-width: 680px; }
+.letter-para { margin: 10px 0; padding: 4px 10px; border-left: 2px solid rgba(255, 207, 74, .35); }
+.letter-de { font-size: 17px; line-height: 1.7; margin: 0; font-family: Georgia, "Times New Roman", serif; }
+.letter-zh { margin: 4px 0 0; }
+.letter-acts { display: flex; gap: 6px; margin-top: 4px; }
 .diary-blank .base { opacity: .55; font-style: italic; }
 .diary-blank b.filled { color: #9fe28a; }
 .diary-blank b.revealed { color: #ffb05a; }
