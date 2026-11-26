@@ -519,3 +519,8 @@ body.bright .board-ex { color: #1f6b5c; }
 .passage::-webkit-scrollbar-track { background: rgba(0, 0, 0, .06); border-radius: 5px; }
 .passage::-webkit-scrollbar-thumb { background: rgba(120, 90, 40, .55); border-radius: 5px; }
 .passage-hint { margin: 0 0 6px; }
+
+/* Boss stage stays dark even when the boss is opened from a bright map: keep the line, its hint and 再听 light. */
+#boss > .ask { color: #eadfd2; }
+#boss > .askzh, #boss > .row .askzh { color: #b8a8a0; }
+#boss > .row .btn.ghost { color: #eadfd2; border-color: #7a2a32; background: transparent; }
