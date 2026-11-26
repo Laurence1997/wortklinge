@@ -26,3 +26,4 @@
 10:05 UTC  128 min  searches 1299  pages 1913 (usable 605)  requests ok 1191 errors 139
 10:06 UTC  129 min  searches 1309  pages 1913 (usable 605)  requests ok 1201 errors 140
 10:11 UTC  134 min  searches 1309  pages 2993 (usable 1359)  requests ok 1255 errors 145
+10:15 UTC  138 min  searches 1309  pages 3738 (usable 1867)  requests ok 1293 errors 149
