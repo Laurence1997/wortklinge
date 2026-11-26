@@ -83,20 +83,6 @@ open_words = sorted({w for s in seg for w in seg[s] - claimed[s]})
 todo = [w for w in open_words if w not in cache['search']]
 print(f'{len(open_words)} segment words without an article, {len(todo)} still to search', flush=True)
 
-stopped = False
-for k, w in enumerate(todo, 1):
-    j = get({'action': 'query', 'list': 'search', 'srsearch': cased[w], 'srlimit': 2, 'srnamespace': 0, 'srprop': ''})
-    if j is None: stopped = True; break
-    cache['search'][w] = [h['title'] for h in j.get('query', {}).get('search', [])]
-    save()
-    if k % 100 == 0: print(f"searched {k}/{len(todo)} (ok {stats['ok']}, errors {stats['err']}, {int((time.time()-T0)/60)} min)", flush=True)
-save(True)
-
-BAD_TITLE = re.compile(r'Begriffsklärung|^Liste ')
-titles = sorted({t for w in open_words for t in cache['search'].get(w, []) if not BAD_TITLE.search(t)})
-need = [t for t in titles if t not in cache['pages']]
-print(f'{len(titles)} candidate pages, {len(need)} still to fetch', flush=True)
-
 CUT = re.compile(r'^==+\s*(Literatur|Weblinks|Einzelnachweise|Siehe auch|Anmerkungen|Quellen|Filmografie|Diskografie|Werke|Schriften|Auszeichnungen|Belege|Fußnoten)\s*==+.*', re.M | re.S)
 DROP_TAGS = {'ref', 'gallery', 'table', 'math', 'score', 'timeline', 'imagemap', 'references', 'syntaxhighlight', 'pre', 'chem'}
 def plain(wikitext):
@@ -117,30 +103,55 @@ def plain(wikitext):
         if n >= 1200: break
     return paras if n >= 200 else None
 
-for i in range(0, len(need), 50):
-    chunk = need[i:i + 50]
-    j = get({'action': 'query', 'prop': 'revisions', 'rvprop': 'content|ids', 'rvslots': 'main', 'redirects': 1,
-             'titles': '|'.join(chunk)}, post=True)
+def fetch_pages(need):
+    """Wikitext of up to 50 pages per request → plain paragraphs, cached. False when downloads had to stop."""
+    for i in range(0, len(need), 20):
+        chunk = need[i:i + 20]
+        j = get({'action': 'query', 'prop': 'revisions', 'rvprop': 'content|ids', 'rvslots': 'main', 'redirects': 1,
+                 'titles': '|'.join(chunk)}, post=True)
+        if j is None: return False
+        q = j.get('query', {})
+        alias = {}
+        for m in q.get('normalized', []) + q.get('redirects', []): alias[m['to']] = alias.get(m['from'], m['from'])
+        got = set()
+        for p in q.get('pages', []):
+            src = alias.get(p.get('title'), p.get('title'))
+            rv = (p.get('revisions') or [{}])[0]
+            txt = rv.get('slots', {}).get('main', {}).get('content')
+            if txt and re.search(r'\{\{\s*Begriffsklärung', txt): txt = None
+            res = None
+            if txt and not p.get('missing'):
+                try: paras = plain(txt[:60000])
+                except Exception: paras = None
+                if paras: res = [p['title'], str(rv.get('revid', '')), paras]
+            cache['pages'][src] = res; got.add(src)
+        if not j:  # refused (4xx): don't ask again
+            for t in chunk: cache['pages'].setdefault(t, None)
+        save()
+        if (i // 20) % 10 == 0: print(f"fetched {min(i + 20, len(need))}/{len(need)} (ok {stats['ok']}, errors {stats['err']}, {int((time.time()-T0)/60)} min)", flush=True)
+    save(True)
+    return True
+
+# Pass 1: the page named like the word itself (most nouns have one), 50 per request, no search needed.
+stopped = not fetch_pages([cased[w] for w in open_words if cased[w] not in cache['pages']])
+print(f"direct pages: {sum(1 for w in open_words if cache['pages'].get(cased[w]))} of {len(open_words)} words have one", flush=True)
+# Pass 2: search the words without a page of their own.
+todo = [w for w in todo if not cache['pages'].get(cased[w])]
+print(f'{len(todo)} words still to search', flush=True)
+for k, w in enumerate(todo if not stopped else [], 1):
+    j = get({'action': 'query', 'list': 'search', 'srsearch': cased[w], 'srlimit': 2, 'srnamespace': 0, 'srprop': ''})
     if j is None: stopped = True; break
-    q = j.get('query', {})
-    alias = {}
-    for m in q.get('normalized', []) + q.get('redirects', []): alias[m['to']] = alias.get(m['from'], m['from'])
-    got = set()
-    for p in q.get('pages', []):
-        src = alias.get(p.get('title'), p.get('title'))
-        rv = (p.get('revisions') or [{}])[0]
-        txt = rv.get('slots', {}).get('main', {}).get('content')
-        res = None
-        if txt and not p.get('missing'):
-            try: paras = plain(txt)
-            except Exception: paras = None
-            if paras: res = [p['title'], str(rv.get('revid', '')), paras]
-        cache['pages'][src] = res; got.add(src)
-    if not j:  # refused (4xx): don't ask again
-        for t in chunk: cache['pages'].setdefault(t, None)
+    cache['search'][w] = [h['title'] for h in j.get('query', {}).get('search', [])]
     save()
-    if (i // 50) % 10 == 0: print(f"fetched {min(i + 50, len(need))}/{len(need)} (ok {stats['ok']}, errors {stats['err']}, {int((time.time()-T0)/60)} min)", flush=True)
+    if k % 100 == 0: print(f"searched {k}/{len(todo)} (ok {stats['ok']}, errors {stats['err']}, {int((time.time()-T0)/60)} min)", flush=True)
 save(True)
+
+BAD_TITLE = re.compile(r'Begriffsklärung|^Liste ')
+titles = sorted({t for w in open_words for t in cache['search'].get(w, []) + [cased[w]] if not BAD_TITLE.search(t)})
+need = [t for t in titles if t not in cache['pages']]
+print(f'{len(titles)} candidate pages, {len(need)} still to fetch', flush=True)
+
+if not stopped: stopped = not fetch_pages(need)
 left = len([t for t in titles if t not in cache['pages']])
 print(f"downloads {'stopped early' if stopped else 'complete'}: {len(cache['search'])}/{len(open_words)} words searched, {len(titles) - left}/{len(titles)} pages fetched", flush=True)
 
