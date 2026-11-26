@@ -36,8 +36,9 @@ export function stagePassFlag(stage: Stage): string {
 
 export function levelCapFor(flags: Record<string, unknown> | undefined): number {
   const f = flags ?? {};
-  for (const d of STAGES) if (!stagePassed(f, d.stage)) return Math.min(CONFIG.levelCap, d.cap);
-  return CONFIG.levelCap;
+  const top = Math.min(CONFIG.levelCap, CONFIG.releaseCap);
+  for (const d of STAGES) if (!stagePassed(f, d.stage)) return Math.min(top, d.cap);
+  return top;
 }
 
 /** The trial a player at this level may take now (the first unpassed stage whose cap they have reached). */

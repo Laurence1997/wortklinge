@@ -1172,6 +1172,15 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
     const ex = exampleOf(w, rng);
     return { type: 'pickZh', prompt: ex ? `听整句，选出 ${fullForm(w)} 的意思：「${ex}」` : '它在说什么？选出意思', focus: fullForm(w), options: opts, answer: w.zh };
   };
+  // 审查 C3 (Lucas 11-26「按推荐」): the name plate already shows the meaning, so 「选中文意思」 is only the
+  // first-meeting teaching round. A word met before hears the whole sentence and picks the German word instead.
+  const listenDe = (): Question => {
+    const ex = exampleOf(w, rng);
+    if (!ex) return pickDe();
+    const opts = shuffle(rng, [w.de, ...distractors(rng, w, 'de', 2)]);
+    return { type: 'pickDe', prompt: '听整句，选出你听到的那个词', focus: '🔊 …', listen: ex, full: ex, options: opts, answer: w.de };
+  };
+  const meaning = (): Question => (b.kind === 'new' && b.stage === 0 ? pickZh() : listenDe());
   // 练中学 (rev 425): 写 = 句中默写 (the word blanked in its example, the whole Chinese given, no letters);
   // plain 看中文写 only for words without an example.
   const typed = (): Question => dictQ(w, rng) ?? bareTyped();
@@ -1431,7 +1440,7 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
   // typing when the word has no example); ③ 写 typing (conjugation for verbs).
   if (am === 'attack' && b.elite) {
     if (b.elite.seg === 0 || !canType) {
-      const rec: Array<() => Question> = isNoun ? [article, pickZh, pickDe] : [pickZh, pickDe];
+      const rec: Array<() => Question> = isNoun ? [article, meaning, pickDe] : [meaning, pickDe];
       return rec[b.step % rec.length]();
     }
     if (b.elite.seg === 1) return (hasExamples(w) ? clozeQ(s, w, rng) : null) ?? (canConj ? conj() : typed());
@@ -1448,7 +1457,7 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
   }
 
   // Normal attack.
-  if (b.tutorial === 'loss') return isNoun ? article() : pickZh();
+  if (b.tutorial === 'loss') return isNoun ? article() : meaning();
   // 半名 and due: the killing blow must be typed, so offer typing.
   if (b.stage === 2 && b.kind === 'due' && canType) return typed();
   // 回音怪 (2026-11-23): a word with a minimal-pair partner sometimes asks the pair instead (once per fight).
@@ -1485,9 +1494,9 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
   // question twice in a row (Lucas, playtest 2026-11-19: three der clicks in a row is boring).
   // New words: article → hear it and pick the meaning → type it (once typing is unlocked).
   // 完形填空: words with example sentences get the cloze into the ladder (Lucas 2026-11-20).
-  const cl = hasExamples(w) || (isNoun && has(s.level, 'slot')) ? () => writeQ() ?? (hasExamples(w) ? clozeQ(s, w, rng) : null) ?? (isNoun ? article() : pickZh()) : null;
+  const cl = hasExamples(w) || (isNoun && has(s.level, 'slot')) ? () => writeQ() ?? (hasExamples(w) ? clozeQ(s, w, rng) : null) ?? (isNoun ? article() : meaning()) : null;
   if (canConj) {
-    const verbLadder = b.stage === 0 ? [pickZh, cl ?? conj, conj, pickDe] : [conj, cl ?? pickDe, conj, pickZh];
+    const verbLadder = b.stage === 0 ? [meaning, cl ?? conj, conj, pickDe] : [conj, cl ?? pickDe, conj, meaning];
     return verbLadder[b.step % verbLadder.length]();
   }
   if (b.pluralDue && canType) {
@@ -1505,8 +1514,8 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
     const ladder2: Array<() => Question> =
       b.stage === 0
         ? isNoun
-          ? lv6 ? [article, cl, typed, cl] : [article, cl, pickZh, cl]
-          : lv6 ? [pickZh, cl, typed, cl] : [pickZh, cl, pickDe, cl]
+          ? lv6 ? [article, cl, typed, cl] : [article, cl, meaning, cl]
+          : lv6 ? [meaning, cl, typed, cl] : [meaning, cl, pickDe, cl]
         : lv6
           ? [cl, typed, cl, isNoun ? article : pickDe]
           : canType
@@ -1517,15 +1526,15 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
   const ladder: Array<() => Question> =
     b.stage === 0
       ? isNoun
-        ? [article, pickZh, ...(canType ? [typed] : []), pickDe]
-        : [pickZh, pickDe, ...(canType ? [typed] : [])]
+        ? [article, meaning, ...(canType ? [typed] : []), pickDe]
+        : [meaning, pickDe, ...(canType ? [typed] : [])]
       : isNoun
         ? canType
           ? [article, typed, pickDe]
-          : [article, pickDe, pickZh]
+          : [article, pickDe, meaning]
         : canType
-          ? [pickDe, typed, pickZh]
-          : [pickDe, pickZh];
+          ? [pickDe, typed, meaning]
+          : [pickDe, meaning];
   return ladder[b.step % ladder.length]();
   }
 }
