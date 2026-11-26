@@ -4,3 +4,4 @@
 08:07 UTC  10 min  searches 221  pages 1913 (usable 605)  requests ok 113 errors 11
 08:12 UTC  15 min  searches 271  pages 1913 (usable 605)  requests ok 163 errors 16
 08:17 UTC  20 min  searches 322  pages 1913 (usable 605)  requests ok 214 errors 21
+08:22 UTC  25 min  searches 373  pages 1913 (usable 605)  requests ok 265 errors 26
