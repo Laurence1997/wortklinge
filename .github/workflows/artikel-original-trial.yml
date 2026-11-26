@@ -25,7 +25,7 @@ jobs:
     timeout-minutes: 240
     env:
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-      SEG: '13'
+      SEG: '13 14'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
