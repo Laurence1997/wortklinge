@@ -57,7 +57,10 @@ jobs:
           restore-keys: wiki-
       - name: Wikipedia pool
         if: env.ARTIKEL != '-1'
-        run: python3 -u scripts/wortschatz/artikel_wiki_pool.py || echo "Wikipedia pool failed"
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898233+github-actions[bot]@users.noreply.github.com'
+          python3 -u scripts/wortschatz/artikel_wiki_pool.py || echo "Wikipedia pool failed"
       - name: Save Wikipedia cache
         if: always() && env.ARTIKEL != '-1'
         uses: actions/cache/save@v4

@@ -29,20 +29,31 @@ def tsv(p): return list(csv.DictReader(open(p, encoding='utf-8'), delimiter='\t'
 UA = {'User-Agent': 'wortklinge-content/1.0 (language-learning game; GitHub Actions)', 'Accept-Encoding': 'gzip'}
 API = 'https://de.wikipedia.org/w/api.php'
 
+stats = {'ok': 0, 'err': 0}
+last_ok = [time.time()]
 cache = {'search': {}, 'pages': {}}
 if os.path.exists(CACHE):
     cache = json.load(gzip.open(CACHE, 'rt', encoding='utf-8'))
 print(f"cache: {len(cache['search'])} searches, {len(cache['pages'])} pages", flush=True)
 last_save = [time.time()]
+PROGRESS = os.path.join(D, 'build', 'wiki-progress.txt')
+def report():
+    """A one-line progress file pushed to the branch, so the run can be followed while it works (GitHub shows logs only at the end)."""
+    if not os.environ.get('GITHUB_ACTIONS'): return
+    pages = cache['pages']
+    line = (f"{time.strftime('%H:%M UTC', time.gmtime())}  {int((time.time()-T0)/60)} min  searches {len(cache['search'])}  "
+            f"pages {len(pages)} (usable {sum(1 for v in pages.values() if v)})  requests ok {stats['ok']} errors {stats['err']}\n")
+    open(PROGRESS, 'a').write(line)
+    os.system(f"cd {ROOT} && git add {PROGRESS} && git commit -qm 'Wikipedia pool progress' && "
+              "(git pull --rebase --autostash -q && git push -q || true) >/dev/null 2>&1")
 def save(force=False):
     if force or time.time() - last_save[0] > 300:
         tmp = CACHE + '.tmp'
         with gzip.open(tmp, 'wt', encoding='utf-8') as f: json.dump(cache, f, ensure_ascii=False)
         os.replace(tmp, CACHE); last_save[0] = time.time()
+        report()
 def out_of_time(): return time.time() - T0 > BUDGET
 
-stats = {'ok': 0, 'err': 0}
-last_ok = [time.time()]
 def get(params, post=False):
     """One request at a time, 1 s apart; on 429/5xx/maxlag wait as Wikipedia asks. None when out of time or refused 30 min."""
     q = urllib.parse.urlencode({**params, 'format': 'json', 'formatversion': 2, 'maxlag': 5})
