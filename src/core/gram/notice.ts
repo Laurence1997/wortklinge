@@ -8,8 +8,8 @@ import type { GramTask } from './task';
 
 export const NOTICE_CFG = { from: 15, chance: 0.12, articleFrom: 81, articleChance: 0.08 };
 
-export function noticeFor(zone: string, rng: Rng): Notice | null {
-  const ns = NOTICES.filter((n) => n.zone === zone);
+export function noticeFor(zone: string, rng: Rng, region?: number): Notice | null {
+  const ns = NOTICES.filter((n) => n.zone === zone || (region !== undefined && n.region === region));
   return ns.length ? ns[Math.floor(rng() * ns.length)] : null;
 }
 

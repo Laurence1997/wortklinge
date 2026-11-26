@@ -15,6 +15,8 @@ export interface Notice {
   id: string;
   zone: string;
   kind: 'notice' | 'letter' | 'article';
+  /** B2 notices and letters (1.0): by region instead of zone; any field monster of that region may carry one. */
+  region?: number;
   title: string;
   text: string;
   qs: NoticeQ[];

@@ -535,7 +535,7 @@ export function startBattle(
   b.perfekt = opts.struct ? false : perfektBattle(s, word, kind, rng, !!tutorial || !!opts.trial);
   // 告示怪 / 信件怪 (15): now and then a field monster of a zone with a notice carries it.
   if (!b.perfekt && !opts.struct && !tutorial && !opts.trial && !opts.elite && !opts.isEcho && !challenge && s.level >= NOTICE_CFG.from && kind !== 'new' && rng() < NOTICE_CFG.chance) {
-    const n = s.level >= NOTICE_CFG.articleFrom && rng() < NOTICE_CFG.articleChance / NOTICE_CFG.chance ? (c1ArticleFor(s.region ?? 1, rng) ?? articleFor(rng)) : noticeFor(word.zone, rng);
+    const n = s.level >= NOTICE_CFG.articleFrom && rng() < NOTICE_CFG.articleChance / NOTICE_CFG.chance ? (c1ArticleFor(s.region ?? 1, rng) ?? articleFor(rng)) : noticeFor(word.zone, rng, word.region);
     if (n) {
       b.notice = { id: n.id, i: 0 };
       b.log.push({ text: `${KIND_ZH[n.kind]}：它身上${n.kind === 'article' ? '带着一篇文章' : '贴着一张'}「${n.title}」。读懂它，答对上面的问题才打得中。`, tone: 'info' });
