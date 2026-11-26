@@ -18,6 +18,7 @@ have = {r['网址'] for r in rows}
 added = []
 for a in json.load(open(sys.argv[2])):
     title, rev, src = pages[a['t']]
+    src = [x.replace('\xad', '') for x in src]  # soft hyphens never belong in game text
     paras = []
     for grp in a['p']:
         parts = []
