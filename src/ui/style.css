@@ -402,3 +402,6 @@ body:has(#dialog:not([hidden])) #chat input { display: none; }
 .slot > .btn, .slot > span.small.muted { margin-left: auto; flex: none; align-self: center; }
 .slot.dim .k { color: var(--muted); }
 #chat .game-log { height: auto; min-height: 48px; max-height: 190px; }
+/* Tabbed panels keep one size, so the tabs don't jump when switching between short and long pages. */
+#modal .panel:has(> .tabs) { width: min(1000px, 100%); height: min(860px, calc(100vh - 32px)); }
+:root { accent-color: var(--red); }
