@@ -556,3 +556,20 @@ body.bright .hud-stats > div { background: rgba(120, 80, 30, .07); }
 .hud-stats b { font: 700 15px/1.2 var(--mono); color: var(--ink); }
 .hud-stats span { font-size: 11px; color: var(--muted); }
 .hud-zone { display: flex; justify-content: space-between; gap: 8px; margin-top: 8px; padding-top: 6px; border-top: 1px dashed var(--line); font-size: 12px; color: var(--muted); }
+/* 标题页明亮版 (Lucas 2026-11-26: 登录界面也换风格). Same cream panels and ember accent as the camp; the title keeps a
+   faint red offset as the only trace of the horror. */
+body.bright #title { background: radial-gradient(ellipse at 50% 38%, #fffaf0 0%, #f6ead2 55%, #e4cfa8 100%); }
+body.bright #title h1 { color: var(--accent); text-shadow: -2px 0 rgba(200, 30, 50, .28), 2px 2px 0 rgba(90, 40, 10, .25); }
+body.bright #title h1 small { color: #2d2118; }
+body.bright #title .lore { color: #6b5a48; }
+body.bright #title .ver { color: #a08a70; }
+body.bright #title .form input, body.bright #title .form select, body.bright #title .login input, body.bright #title .create-steps input { background: #fff; color: var(--ink); border-color: var(--line-hi); }
+body.bright #title .login input:focus { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+body.bright #title .hero-card { background: radial-gradient(circle at 50% 70%, rgba(255, 150, 60, .25), #fffaf0 70%); border-color: var(--line-hi); }
+body.bright #title .hero-preview canvas { filter: drop-shadow(0 2px 0 rgba(90, 50, 10, .25)); }
+body.bright #title .step i, body.bright #title .seg.on { background: var(--accent); border-color: var(--accent); }
+body.bright #title .swatch { border-color: #fff; box-shadow: 0 0 0 1px #c9b28c; }
+body.bright #title .swatch.on { border-color: #fff; box-shadow: 0 0 0 2px var(--accent); }
+body.bright #title .origin-card { background: #fff; border-color: var(--line); }
+body.bright #title .origin-card.on { background: #fbf0dc; border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+body.bright #title .origin-card .de { color: #8a5a00; }

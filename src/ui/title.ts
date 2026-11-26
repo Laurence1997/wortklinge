@@ -1,3 +1,4 @@
+import { applyTheme } from './theme';
 import { heroIcon } from './icons';
 import { DEFAULT_LOOK, HAIR_COLORS, LOOK_OPTIONS, type Look } from '../core/look';
 import type { GameState } from '../core/state';
@@ -57,6 +58,7 @@ export function showTitle(opts: {
 }): void {
   const el = $('title');
   el.hidden = false;
+  applyTheme(true, 1); // 标题页跟日常区一样明亮 (Lucas 11-26)
   const name = h('input', { type: 'text', maxlength: 16, placeholder: '比如 Lucas', autocomplete: 'off' }) as HTMLInputElement;
   const preview = h('div.hero-preview');
   const card = h('div.hero-card', preview, h('div.hero-name', '……'), h('div.hero-origin'));
@@ -149,7 +151,7 @@ export function showTitle(opts: {
   );
   box.append(
     opts.account ?? '',
-    h('div.ver', `v${opts.version} · 第 1–12 区（1–120 级） · 请用电脑上的 Chrome 打开，开声音`),
+    h('div.ver', `v${opts.version} · 第 1–20 区（1–200 级） · 请用电脑上的 Chrome 打开，开声音`),
   );
   clear(el).append(box);
   drawCard();
