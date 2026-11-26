@@ -1740,7 +1740,7 @@ export class Panels {
     ];
     const wrap = h('div');
     for (const [k, v] of rows) wrap.append(h('div.stat', h('span', { style: 'width:90px;flex:none' }, k), h('span', { style: 'text-align:right' }, v)));
-    wrap.append(h('p.small.muted', `第 1–20 区（1–200 级）。当前 ${s.level} 级，等级上限 ${levelCapFor(s.flags)}（过突破试炼再往上）。`));
+    wrap.append(h('p.small.muted', `1–${CONFIG.releaseCap} 级已开放。当前 ${s.level} 级，等级上限 ${levelCapFor(s.flags)}（过突破试炼再往上）。`));
     return wrap;
   }
 }

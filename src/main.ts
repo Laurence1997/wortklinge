@@ -2,7 +2,7 @@ import { applyTheme } from './ui/theme';
 import Phaser from 'phaser';
 import './ui/style.css';
 import { checkImport, importPrompt, load, markSaved, newGame, save, saveRaw, setSaveHook } from './core/state';
-import { cloud, initCloud, mustChangePassword, needsNickname, push, schedulePush, syncOnBoot } from './net/cloud';
+import { cloud, initCloud, mustChangePassword, needsNickname, push, schedulePush, setNickname, syncOnBoot } from './net/cloud';
 import { loginView } from './ui/account';
 import { $ } from './ui/dom';
 import { mountLogBox } from './ui/logbox';
@@ -74,7 +74,7 @@ function loginOnly() {
     h(
       'div.box',
       h('h1', 'Wortklinge', h('small', '失 语 纪 元')),
-      h('div.lore', '一夜之间，无名之物吃掉了世界的名字。', h('br'), '面包长出牙齿，街牌在低语，幸存者只剩嗯嗯啊啊。', h('br'), '你在篝火旁醒来。叫对一个名字，它就会变回原样。'),
+      h('div.lore', '一夜之间，无名之物吃掉了世界的名字。', h('br'), '面包长出牙齿，街牌在低语，幸存者只能发出含混的声音。', h('br'), '你在篝火旁醒来。叫对一个名字，它就会变回原样。'),
       inner,
       h('div.ver', `v${VERSION} · 请用电脑上的 Chrome 打开，开声音`),
     ),
@@ -83,7 +83,8 @@ function loginOnly() {
 }
 
 function title(existing: ReturnType<typeof load>) {
-const account = h('p.small.muted', `已登录 ${cloud.profile?.nickname ?? cloud.session?.user.email ?? ''} · 云存档${cloud.status === 'offline' ? '暂时连不上，先存本地，联网后自动同步' : '已同步'}`);
+// Lucas 11-26: the title greets you by your character's name; the account nickname (排行榜) only when there is no save.
+const account = h('p.small.muted', `已登录 ${existing?.name ?? cloud.profile?.nickname ?? cloud.session?.user.email ?? ''} · 云存档${cloud.status === 'offline' ? '暂时连不上，先存本地，联网后自动同步' : '已同步'}`);
 showTitle({
   account,
   existing,
@@ -96,6 +97,10 @@ showTitle({
     s.look = look;
     s.owner = cloud.session?.user.id;
     save(s, true);
+    // A new character's name becomes the leaderboard / chat nickname too, so the game uses one name (Lucas 11-26).
+    // If someone else already has it the old nickname stays and the account panel can change it.
+    if (cloud.session && cloud.profile && cloud.profile.nickname !== name.trim())
+      void setNickname(s, name).then((err) => err && toast(`排行榜昵称没改成「${name.trim()}」：${err}。可以在「账号」里改。`, 'bad'));
     boot(s);
   },
   onImport: (text) => {

@@ -580,3 +580,7 @@ body.bright #title .swatch.on { border-color: #fff; box-shadow: 0 0 0 2px var(--
 body.bright #title .origin-card { background: #fff; border-color: var(--line); }
 body.bright #title .origin-card.on { background: #fbf0dc; border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
 body.bright #title .origin-card .de { color: #8a5a00; }
+#title .confirm-new { width: min(420px, 100%); margin: 18px auto 0; padding: 16px 18px; display: grid; gap: 10px; text-align: center; }
+#title .confirm-new p { margin: 0; line-height: 1.6; }
+#title .confirm-new input { width: 100%; padding: 9px 10px; font-size: 15px; background: #000; color: var(--ink); border: 1px solid var(--line-hi); }
+body.bright #title .confirm-new input { background: #fff; }

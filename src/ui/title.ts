@@ -1,4 +1,6 @@
 import { applyTheme } from './theme';
+import { CONFIG } from '../core/config';
+import { LATER_BOSS } from '../data/bossesLater';
 import { heroIcon } from './icons';
 import { DEFAULT_LOOK, HAIR_COLORS, LOOK_OPTIONS, type Look } from '../core/look';
 import type { GameState } from '../core/state';
@@ -95,7 +97,7 @@ export function showTitle(opts: {
       'div.lore',
       '一夜之间，无名之物吃掉了世界的名字。',
       h('br'),
-      '面包长出牙齿，街牌在低语，幸存者只剩嗯嗯啊啊。',
+      '面包长出牙齿，街牌在低语，幸存者只能发出含混的声音。',
       h('br'),
       '你在篝火旁醒来。叫对一个名字，它就会变回原样。',
     ),
@@ -122,11 +124,35 @@ export function showTitle(opts: {
   }
   if (folded) {
     const unfold = h('button.btn.ghost.small', { style: 'margin-top:18px' }, opts.existing ? '开始一个新角色（会覆盖当前存档）' : '我确定没有角色，新建一个') as HTMLButtonElement;
-    unfold.onclick = () => {
+    const open = () => {
       unfold.remove();
       form.hidden = false;
       box.classList.add('wide');
       name.focus();
+    };
+    // Lucas 11-26: a new character overwrites the save, so with a save present you first type its name to confirm.
+    unfold.onclick = () => {
+      const ex = opts.existing;
+      if (!ex) return open();
+      const typed = h('input', { type: 'text', autocomplete: 'off', spellcheck: 'false', placeholder: ex.name }) as HTMLInputElement;
+      const go = h('button.btn.primary', { disabled: true }, '确认，新建角色') as HTMLButtonElement;
+      const check = () => (go.disabled = typed.value.trim() !== ex.name.trim());
+      typed.addEventListener('input', check);
+      typed.addEventListener('keydown', (e) => e.key === 'Enter' && !go.disabled && go.click());
+      go.onclick = () => {
+        confirmBox.remove();
+        open();
+      };
+      const back = h('button.btn', { onclick: () => (confirmBox.remove(), box.append(h('div', unfold))) }, '算了');
+      const confirmBox = h(
+        'div.panel.confirm-new',
+        h('p', `新角色会覆盖「${ex.name} · Lv ${ex.level}」的存档，进度找不回来。`),
+        h('p.small.muted', `确定的话，输入现在的角色名「${ex.name}」：`),
+        typed,
+        h('div.row', { style: 'justify-content:center' }, back, go),
+      );
+      unfold.parentElement?.replaceWith(confirmBox);
+      typed.focus();
     };
     box.append(h('div', unfold));
   }
@@ -151,7 +177,7 @@ export function showTitle(opts: {
   );
   box.append(
     opts.account ?? '',
-    h('div.ver', `v${opts.version} · 第 1–20 区（1–200 级） · 请用电脑上的 Chrome 打开，开声音`),
+    h('div.ver', `v${opts.version} · 第 1–${releasedRegions()} 区（1–${CONFIG.releaseCap} 级） · 请用电脑上的 Chrome 打开，开声音`),
   );
   clear(el).append(box);
   drawCard();
@@ -200,4 +226,10 @@ export function lookPicker(start: Look = DEFAULT_LOOK, onChange?: (l: Look) => v
   });
   draw();
   return { el: row, value: () => ({ ...cur }) };
+}
+
+/** Regions open in this release: every region whose boss level is within the release cap (read from the data, so the
+ *  title footer follows the cap instead of being written by hand). */
+function releasedRegions(): number {
+  return Math.max(3, ...Object.values(LATER_BOSS).filter((b) => b && b.level <= CONFIG.releaseCap).map((b) => b!.region));
 }
