@@ -410,3 +410,4 @@ body:has(#dialog:not([hidden])) #chat input { display: none; }
 body:has(#dialog:not([hidden])) #chat .chat-tabs .fold, body:has(#dialog:not([hidden])) #chat .chat-online { display: none; }
 #dialog .choices .btn { font-size: 14px; padding: 8px 14px; }
 #dialog .choices .btn:hover:not(:disabled) { background: #3a0d14; }
+.adv-fig { width: 24px; height: 24px; image-rendering: pixelated; vertical-align: middle; margin-right: 4px; }

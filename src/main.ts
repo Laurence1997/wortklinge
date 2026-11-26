@@ -15,7 +15,7 @@ import { toast } from './ui/feedback';
 import { setReportVersion } from './net/report';
 import { loadPassages } from './data/passages';
 
-const VERSION = '0.8.2';
+const VERSION = '0.8.3';
 setReportVersion(VERSION);
 // 审查 B3: the dev menu (+1 级 …) only on localhost or a dev build, never on the live site.
 const dev = new URLSearchParams(location.search).has('dev') && (import.meta.env.DEV || ['localhost', '127.0.0.1'].includes(location.hostname));

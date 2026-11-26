@@ -1,3 +1,4 @@
+import { npcFigure } from '../ui/icons';
 import { RIFT } from '../core/rift';
 import { adventurersIn } from '../core/adventurers';
 // 0.5 小世界: point-and-click scenes on top of the 0.4 map. The world scene keeps drawing the map, monsters and
@@ -327,7 +328,7 @@ export class NodeNav {
     const npcs: NpcId[] = [...(sc.npcs ?? []), ...(sc.id === 'r3-platz' && this.s.flags.linaFreed ? (['lina'] as NpcId[]) : [])];
     for (const n of npcs) things.push(h('button.btn', { onclick: ia('npc', n) }, NPC_ZH[n]));
     // 游荡的冒险者: the AI players standing in this scene now (name plate always says AI).
-    for (const a of adventurersIn(sc, !!sc.erodeSeg && erodeOpen(this.s, sc.erodeSeg))) things.push(h('button.btn.adv', { onclick: ia('adv', a.id), title: a.origin }, h('span.ai-tag', 'AI'), ` ${a.name}${a.erode ? '（被困的幸存者）' : ''}`));
+    for (const a of adventurersIn(sc, !!sc.erodeSeg && erodeOpen(this.s, sc.erodeSeg))) things.push(h('button.btn.adv', { onclick: ia('adv', a.id), title: a.origin }, npcFigure(a.name, 1.5, 'adv-fig'), h('span.ai-tag', 'AI'), ` ${a.name}${a.erode ? '（被困的幸存者）' : ''}`));
     const eb = ERODE_DEFS.find((e) => e.scene === sc.id);
     if (sc.door) things.push(h('button.btn', { onclick: ia('door', sc.id) }, eb ? eb.doorAct : REGION_DEF[this.w.map.region] ? REGION_DEF[this.w.map.region]!.doorAct : this.w.map.region === 3 ? '走上末班站台' : this.w.map.region === 2 ? '推开秤房的门' : '敲门'));
     if (sc.gate) things.push(h('button.btn', { onclick: ia('gate', String(sc.gate)) }, GATE_ZH[sc.gate]));

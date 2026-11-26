@@ -64,3 +64,22 @@ describe('冒险者', () => {
     expect(pkPaidLeft(s)).toBe(0);
   });
 });
+
+// 固定角色 (Lucas 2026-11-26): every adventurer and scene NPC has its own drawn figure; no name is used twice.
+describe('冒险者固定角色', async () => {
+  const { CAST } = await import('../src/data/cast');
+  const { NPC_ART } = await import('../src/data/npcArt');
+  it('each cast member has a figure, names are unique and not a named NPC', () => {
+    const names = CAST.map((c) => c.name);
+    expect(new Set(names).size).toBe(names.length);
+    for (const n of names) {
+      expect(NPC_ART[n]?.split('/')).toHaveLength(16);
+      expect(['Hilde', 'Greta', 'Mira', 'Konrad', 'Brandt', 'Weber', 'Lina', 'Jonas', 'Mia']).not.toContain(n);
+    }
+    const figs = Object.values(NPC_ART);
+    expect(new Set(figs).size).toBeGreaterThanOrEqual(figs.length - 1); // Vermieter = Herr Brandl
+  });
+  it('蚀变 segments have their own survivors', () => {
+    for (const seg of [8, 11, 15, 19]) expect(adventurersOf(seg, true).length).toBeGreaterThanOrEqual(2);
+  });
+});

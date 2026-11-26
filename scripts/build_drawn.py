@@ -20,7 +20,13 @@ def main():
         f = r.split('\t')
         ids.setdefault(f[1], f[0])
     blocks, cur, name = {}, [], None
-    for line in (ROOT / 'data/monster-art/sprites.txt').read_text(encoding='utf-8').split('\n'):
+    # sprites-gen.txt (batch 2, from scripts/gen_sprites.py) first, so a hand-drawn block in sprites.txt wins
+    src = ''
+    for f in ('sprites-gen.txt', 'sprites.txt'):
+        p = ROOT / 'data/monster-art' / f
+        if p.exists():
+            src += p.read_text(encoding='utf-8') + '\n'
+    for line in src.split('\n'):
         if line.startswith('#'):
             continue
         if line.startswith('= '):
