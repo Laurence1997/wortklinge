@@ -29,7 +29,7 @@ export const POOL: Record<PoolId, PoolSkill> = {
   steady: { id: 'steady', zh: '稳住', lv: 10, cd: 5, asks: '一道简单题：选意思或选冠词', effect: '答对：接下来 2 次答错不扣血、不断连击；答错只保 1 次。不造成伤害' },
   split: { id: 'split', zh: '拆词', lv: 15, cd: 5, asks: '复合词写出两部分、可分动词拆开写进短句、派生词写出基础词', effect: '破甲 3 下（同难题）。拆不开的词不能放' },
   colloc: { id: 'colloc', zh: '搭配', lv: 41, cd: 4, asks: '这个词的固定搭配（warten auf）', effect: '伤害 ×1.6，写对算「会用」。没有搭配的词不能放' },
-  seal: { id: 'seal', zh: '格之封印', lv: 61, cd: 6, asks: '把这个词放进要变格或变位的短句', effect: '这只怪 2 回合内不能蓄力，在蓄的清零；首领无效' },
+  seal: { id: 'seal', zh: '格之封印', lv: 61, cd: 6, asks: '把这个词放进要变格或变位的短句', effect: '伤害 ×1.4，写对破甲 3 下（同难题）；对精英和首领怪也有效' },
   dictate: { id: 'dictate', zh: '听写', lv: 81, cd: 4, asks: '听它喊出例句，打出被挖掉的词，不给中文', effect: '伤害 ×1.3' },
   saying: { id: 'saying', zh: '短句', lv: 3, cd: 0, asks: '打出带上的那张短句卡的整句', effect: '每场喊一次，效果看卡（单词本里选卡）；33 级起不占回合' },
   slang: { id: 'slang', zh: '俚语', lv: 50, cd: 0, asks: '在对的场合打出带上的那条俚语', effect: '每场喊一次，场合对才生效，用错有反噬（单词本里选）；不占回合' },
@@ -38,9 +38,8 @@ export const POOL: Record<PoolId, PoolSkill> = {
 export const POOL_ORDER: PoolId[] = ['storm', 'steady', 'split', 'colloc', 'seal', 'dictate', 'saying', 'slang'];
 export const SLOTS: Array<[number, number]> = [[61, 4], [30, 3], [10, 2]];
 export const POOL_FROM = 10;
-export const SEAL_TURNS = 2;
 export const SPLIT_BREAK = true;
-export const MULT: Partial<Record<PoolId, number>> = { colloc: 1.6, dictate: 1.3 };
+export const MULT: Partial<Record<PoolId, number>> = { colloc: 1.6, dictate: 1.3, seal: 1.4 };
 
 export function slotCount(level: number): number {
   for (const [lv, n] of SLOTS) if (level >= lv) return n;

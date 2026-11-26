@@ -127,6 +127,9 @@ export interface WordProgress {
 }
 
 export type Quality = 'white' | 'green' | 'purple' | 'orange' | 'red';
+/** 传说效果 (暂定 values, src/core/loot.ts LEGENDARY). */
+export type Legendary = 'articleJudgement' | 'inkCrit' | 'comboHeal' | 'listenEcho';
+
 export type Slot = 'pen' | 'coat' | 'amulet' | 'dict' | 'glasses' | 'phones';
 
 export interface Affix {
@@ -157,8 +160,8 @@ export interface Item {
   /** Main stat: atk for pen, hp for coat, crit (fraction) for amulet, hints for dict. */
   main: number;
   affixes: Affix[];
-  /** Orange legendary effect key. */
-  legendary?: 'articleJudgement';
+  /** Orange / red legendary effect key (系统审查 2026-11-26: four kinds; different kinds stack, the same kind does not). */
+  legendary?: Legendary;
   /** 紫装德语鉴定 (0.6, 23 级): affixes hidden and inactive until Mira identifies it. */
   unidentified?: boolean;
   /** 语气词孔 (审查修订: 刻字孔 and the mal/doch slot are one): '' = open; auch / denn from 25, mal / doch from 45. */

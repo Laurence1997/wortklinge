@@ -2,9 +2,9 @@ import { loadPron, MODEL_MB, pronForget, pronStatus } from './phoneme';
 import { icon, SLOT_TILE, portrait } from './icons';
 import { CONFIG, xpToNext } from '../core/config';
 import { levelCapFor } from '../core/stages';
-import { AFFIX_ZH, itemScore, mainStatText, QUALITY_ZH, requiredLevel, SLOT_ZH } from '../core/loot';
+import { AFFIX_ZH, itemScore, LEGENDARY, mainStatText, QUALITY_ZH, requiredLevel, SLOT_ZH } from '../core/loot';
 import { cutStatus, kindOf, progressSummary, reviewMon, stageOf, STAGE_ZH } from '../core/srs';
-import { affinityOf, attack, critChance, dayKey, hintsPerFight, maxHp, now } from '../core/state';
+import { affinityOf, attack, critChance, dayKey, maxHp, now } from '../core/state';
 import type { AffixKey, Item, Slot, Word } from '../core/types';
 import { has, UNLOCK } from '../core/unlocks';
 import { BLIND_FROM, blindBoxes, boxLabel, boxPrice, buyBox } from '../core/blindbox';
@@ -298,7 +298,7 @@ export class Panels {
       ['生命', `${s.hp} / ${maxHp(s)}`],
       ['攻击', String(Math.round(attack(s)))],
       ['暴击率', `${(critChance(s) * 100).toFixed(1)}%`],
-      ['低语纸条上限', String(5 + hintsPerFight(s))],
+      ['低语纸条上限', '5'],
       ['金币', String(s.gold)],
       ['最高连击', String(s.bestCombo)],
       ['击杀 / 死亡', `${s.stats.kills} / ${s.stats.deaths}`],
@@ -1306,7 +1306,7 @@ export class Panels {
       ...(it.unidentified ? [h('div.aff', { style: 'color:var(--muted)' }, `未鉴定：${it.affixes.length} 条词缀还没生效（找 Mira 鉴定）`)] : it.affixes.map((a) => h('div.aff', AFFIX_ZH[a.key](a.value)))),
       it.socket === undefined ? '' : h('div.aff', { style: 'color:var(--gold, #ffcf4a)' }, it.socket === '' ? '语气词孔：空的（找导师 Greta 刻 auch、denn，45 级起 mal、doch）' : it.socket === 'auch' ? '语气词 auch：齐鸣打到的其他怪伤害 +20%' : it.socket === 'denn' ? '语气词 denn：难题答对伤害 +20%' : it.socket === 'mal' ? '语气词 mal：终结技整句在请求句里用上 mal，伤害 +20%' : '语气词 doch：终结技整句里用上 doch，伤害 +20%'),
       it.gem ? h('div.aff', { style: 'color:#7fd6ff' }, `${QUALITY_ZH[it.gem.q]}${gemText(it.gem)}`) : '',
-      it.legendary ? h('div.aff', { style: 'color:var(--q-orange)' }, '传说：冠词审判——答对一道冠词题后，下一击伤害翻倍') : '',
+      it.legendary ? h('div.aff', { style: 'color:var(--q-orange)' }, `传说：${LEGENDARY[it.legendary].zh}——${LEGENDARY[it.legendary].fx}`) : '',
     );
   }
 
@@ -1494,14 +1494,14 @@ export class Panels {
       const equipBtn = (id: string) => h('button.btn.small' + (on.has(id) ? '.primary' : ''), { onclick: () => { equipCharm(s, id); this.ctrl.persist(); this.render(); } }, on.has(id) ? '已选' : '选这张');
       for (const x of SAYINGS) {
         const c = CHARM_BY_ID[x.id];
-        if (s.sayings?.[x.id]) tb.append(h('tr', h('td', `${x.a} ${x.b}`), h('td', x.zh), h('td', x.when), h('td.small', c ? c.fx : ''), h('td', c ? equipBtn(x.id) : '')));
+        if (s.sayings?.[x.id]) tb.append(h('tr', h('td', `${x.a} ${x.b}`), h('td', x.zh), h('td', x.when), h('td.small', c ? c.fx : ''), h('td', on.has(x.id) ? h('span.small', '这场') : '')));
         else locked.append(h('tr', h('td', `${x.a} ……`), h('td.small.muted', phraseIds.has(x.id) ? '金色「残句」怪：接上、听懂、写出整句' : '接句怪：接上下半句'), h('td.small', c ? c.fx : '')));
       }
       // 还没收到的卡折起来：开局一张都没有时，整页不该被 20 行问号占满。
       const rest = SAYINGS.length - got.length;
       wrap.append(
         h('h3', `短句卡（${got.length} / ${SAYINGS.length}）`),
-        h('p.small.muted', `大部分卡从野外金色的「残句」怪身上掉；怪的词正好在这句里时，接句怪也会喊它。在这里选一张给「短句」技能（10 级前自动带上，之后要在技能格里带上）：战斗里打出整句生效，每场一次；${s.level < CHARM.bonusFrom ? '33 级前喊一次占一回合' : '不占回合'}。`),
+        h('p.small.muted', `大部分卡从野外金色的「残句」怪身上掉；怪的词正好在这句里时，接句怪也会喊它。「短句」技能每场从你收到的卡里轮换抽一张（10 级前自动带上，之后要在技能格里带上）：战斗里打出整句生效，每场一次；${s.level < CHARM.bonusFrom ? '33 级前喊一次占一回合' : '不占回合'}。`),
         got.length ? tb : h('p.small.muted', '还没有收到短句卡。'),
         rest ? h('details', h('summary.small', `还没收到的 ${rest} 张（看看能从哪儿收）`), locked) : '',
       );

@@ -560,7 +560,7 @@ export const LATER_BOSSES: LaterBoss[] = [
   },
   {
     region: 12, name: '冷漠', de: 'Die Gleichgültigkeit', level: 118, hp: 12, title: '在乎的人',
-    intro: ['最后那扇门后面什么都没有。没有颜色，没有声音，只有一个声音在说：「Das ist mir egal.」', '它不攻击你。它只是等着你也说「egal」。', '系统：第一只神格。说出你的感受、你在乎的人和事。说「egal」只会让它更强。'],
+    intro: ['最后那扇门后面什么都没有。没有颜色，没有声音，只有一个声音在说：「Das ist mir egal.」', '它不攻击你。它只是等着你也说「egal」。', '系统：说出你的感受、你在乎的人和事。说「egal」只会让它更强。'],
     outro: ['冷漠第一次皱了一下眉，然后，它哭了。', '「… es ist mir nicht egal.」这句话说完，它变成了一个普通的、会难过的人。', '系统：心巷的人开始互相打招呼了。B1 的最后一扇门在考官那里。'],
     healLine: 'Das ist mir egal.', healZh: '我无所谓。（它要回血！下一题答对才能打断）',
     questions: COLD,

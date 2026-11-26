@@ -148,8 +148,19 @@ export function ownsCharm(s: GameState, id: string): boolean {
   return s.level >= CHARM.slangFrom && !!s.slang?.[id];
 }
 
-/** The pick of each kind: the chosen card / slang line, else the first one owned. */
+/** 短句卡轮换 (系统审查 2026-11-26): each fight draws one of your collected cards (not the last one when you have
+ *  two or more), so the shout keeps being a different sentence. */
+export function rotateCard(s: GameState, rng: () => number): void {
+  const own = CARDS.filter((c) => ownsCharm(s, c.id)).map((c) => c.id);
+  if (!own.length) return;
+  const pool = own.length > 1 ? own.filter((id) => id !== s.flags.cardRot) : own;
+  s.flags.cardRot = pool[Math.floor(rng() * pool.length)];
+}
+
+/** The pick of each kind: this fight's drawn card; the chosen slang line, else the first one owned. */
 export function charmPick(s: GameState, kind: CharmKind): CharmDef | null {
+  const rot = s.flags.cardRot as string | undefined;
+  if (kind === 'card' && rot && ownsCharm(s, rot)) return CHARM_BY_ID[rot];
   const chosen = (s.charms ?? []).find((id) => CHARM_BY_ID[id]?.kind === kind && ownsCharm(s, id));
   if (chosen) return CHARM_BY_ID[chosen];
   return [...CARDS, ...SLANG].find((c) => c.kind === kind && ownsCharm(s, c.id)) ?? null;

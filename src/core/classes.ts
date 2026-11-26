@@ -50,7 +50,7 @@ export const TALENT_TREE: TalentDef[] = [
     ['changju', '长句笔', 3, 3, (r) => `句中默写和终结技整句答对伤害 +${p(4, r)}%`],
     ['fengli', '锋利', 3, 2, (r) => `答对难题后，下一击暴击率 +${p(10, r)}%`],
     ['dingming', '定名', 4, 2, (r) => `归名一击伤害 +${p(15, r)}%`],
-    ['tengxie', '誊写', 5, 1, () => '难题破甲从 3 下延长到 4 下'],
+    ['tengxie', '誊写', 5, 1, () => '难题破甲从 3 下延长到 5 下；破甲期间打字题伤害 +25%'],
   ]),
   ...rows('shoushi', [
     ['houpi', '硬皮', 1, 3, (r) => `生命 +${p(5, r)}%`],
@@ -254,5 +254,5 @@ export function critRunNeeded(s: GameState): number {
 }
 
 export function hpBonus(s: GameState): number {
-  return 0.05 * rank(s, 'houpi') + 0.05 * rank(s, 'houjia') + starHpBonus(s);
+  return 0.05 * rank(s, 'houpi') + starHpBonus(s);
 }

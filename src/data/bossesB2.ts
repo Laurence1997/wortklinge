@@ -423,7 +423,7 @@ export const B2_BOSSES: LaterBoss[] = [
   },
   {
     region: 14, name: '贪婪', de: 'Die Gier', level: 138, hp: 12, title: '肯放手的人',
-    intro: ['金库里堆满了没有数字的硬币。硬币堆成一张脸，一只手伸向你的口袋。', '「Mehr. Immer mehr. Gib mir alles.」', '系统：神格。每一轮它都要拿走你一点东西。用条件句（Wenn …, dann …）和让步句（Zwar …, aber …）说服它放手；看图表时说清楚涨跌多少。'],
+    intro: ['金库里堆满了没有数字的硬币。硬币堆成一张脸，一只手伸向你的口袋。', '「Mehr. Immer mehr. Gib mir alles.」', '系统：每一轮它都要拿走你一点东西。用条件句（Wenn …, dann …）和让步句（Zwar …, aber …）说服它放手；看图表时说清楚涨跌多少。'],
     outro: ['硬币一枚一枚滚落，那只手慢慢松开了。', '「… es ist genug.」它说完，金库里只剩下一枚普通的硬币。', '系统：铸币场的硬币上又有了数字。人们开始算一算值不值。'],
     healLine: 'Das gehört alles mir.', healZh: '这些全是我的。（它要回血！下一题答对才能打断）',
     questions: GREED,
@@ -437,7 +437,7 @@ export const B2_BOSSES: LaterBoss[] = [
   },
   {
     region: 16, name: '伪装', de: 'Der Schein', level: 158, hp: 13, title: '看得穿面具的人',
-    intro: ['主舞台上，一个戴着面具的人在演独角戏。他每说一句，面具就换一张。', '「Ich bin König. Ich bin Bettler. Ich bin du.」', '系统：神格。它交替说真话和假话。抓住前后矛盾，用 Konjunktiv I 转述它的话，把长句压成分词定语和名词式。'],
+    intro: ['主舞台上，一个戴着面具的人在演独角戏。他每说一句，面具就换一张。', '「Ich bin König. Ich bin Bettler. Ich bin du.」', '系统：它交替说真话和假话。抓住前后矛盾，用 Konjunktiv I 转述它的话，把长句压成分词定语和名词式。'],
     outro: ['最后一张面具掉在地上，下面什么都没有。', '「… es war nur Theater.」舞台的灯一盏一盏熄灭。', '系统：面具剧场散场了。B2 的最后一扇门在考官那里。'],
     healLine: 'Der Vorhang fällt noch nicht.', healZh: '幕还没落。（它要回血！下一题答对才能打断）',
     questions: MASK,
@@ -458,7 +458,7 @@ export const B2_BOSSES: LaterBoss[] = [
   },
   {
     region: 19, name: '虚无', de: 'Das Nichts', level: 188, hp: 14, title: '换个说法也能说的人',
-    intro: ['空白的播音间里没有声音，连红灯都是灰的。一个透明的影子坐在麦克风前，把词一个一个吸走。', '「Ohne Wort kein Gedanke. Ohne Gedanke nichts.」', '系统：神格。它抽走一个词，你就换一种说法说同一个意思；它要你换语域，你就在口语、正式、书面之间换。'],
+    intro: ['空白的播音间里没有声音，连红灯都是灰的。一个透明的影子坐在麦克风前，把词一个一个吸走。', '「Ohne Wort kein Gedanke. Ohne Gedanke nichts.」', '系统：它抽走一个词，你就换一种说法说同一个意思；它要你换语域，你就在口语、正式、书面之间换。'],
     outro: ['影子吸不动了。被抽走的词一个个落回原处，带着新的颜色。', '「… es gibt immer noch ein anderes Wort.」影子说完，散成了杂音。', '系统：9–12 区的颜色回来了。最后一区在天平庭后面。'],
     healLine: 'Noch ein Wort weniger.', healZh: '又少了一个词。（它要回血！下一题答对才能打断）',
     questions: NOTHING,

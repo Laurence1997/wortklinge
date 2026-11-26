@@ -284,8 +284,9 @@ export function critChance(s: GameState): number {
   return CONFIG.player.baseCrit + (gear(s).amulet?.main ?? 0) + 0.08 * blessed(s, 'crit');
 }
 
-export function hintsPerFight(s: GameState): number {
-  return gear(s).dict?.main ?? 0;
+/** 词典 no longer raises the note cap (系统审查 2026-11-26: its main stat is now typed damage). */
+export function hintsPerFight(_s: GameState): number {
+  return 0;
 }
 
 /** 刻字 (0.6, 25 级): how many worn items carry this particle. */
@@ -530,3 +531,7 @@ export function importPrompt(next: GameState, cur: GameState | null): string {
   return `将用 ${next.name}（Lv ${next.level}，${day(next.savedAt)}）替换${cur ? `当前的 ${cur.name}（Lv ${cur.level}）` : '当前存档'}。确定吗？`;
 }
 
+/** Is a legendary effect of this kind worn (any slot)? */
+export function wearsLegend(s: GameState, k: import('./types').Legendary): boolean {
+  return Object.values(gear(s)).some((it) => it?.legendary === k);
+}

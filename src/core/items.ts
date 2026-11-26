@@ -29,7 +29,7 @@ export function count(s: GameState, k: Consumable): number {
   return (s.flags[FLAG[k]] as number) || 0;
 }
 
-/** 词典's main stat raises the 纸条 cap (it used to be 「每场提示 N 次」, which nothing read). */
+/** 纸条 cap: fixed (词典 no longer raises it, 系统审查 2026-11-26). */
 export function cap(s: GameState, k: Consumable): number {
   return k === 'hint' ? CONFIG.items.hintCap + hintsPerFight(s) : CONFIG.items.tabletCap;
 }
