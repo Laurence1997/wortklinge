@@ -4,7 +4,7 @@
 // Like 结构魔: the monster is still a word monster; every other attack question is its own kind, other moves only
 // graze it. Chances and the share of questions are 暂定 (not in the doc).
 //
-// Not here: 开口表达观点 (AI), 说谎的怪 (rules pending), 说服段 (AI).
+// Not here: 开口表达观点 (AI), 说服段 (AI). (说谎的怪 removed, Lucas 2026-11-26.)
 
 import { shuffle, type Rng } from './rng';
 import type { GameState } from './state';

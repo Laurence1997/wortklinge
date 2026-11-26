@@ -10,7 +10,6 @@ import { typoOk } from './cut';
 import { isPlaced, placedCheck, placedPick, regionFor } from './placement';
 import { blindLine, blindTask, LISTEN, passageFor, passageTask, rollListen } from './listening';
 import { fillGems, gemSum } from './gems';
-import { announces, insightOptions, LIAR, liarIntent, TELL_ZH } from './liar';
 import { PHONES_PER_TIER } from './loot';
 import { itemTier } from './state';
 import { addGearKill, gear, affinityOf, affixTotal, attack, engraved, critChance, gearPen, hintsPerFight, maxHp, now, type GameState } from './state';
@@ -352,8 +351,6 @@ export interface Battle {
   pronMon?: boolean;
   /** B2 怪种 (转述怪, 数字怪, 改写怪, 时间线怪, 三语域怪, 回顾怪): every other attack question is its own. */
   b2Mon?: B2Mon;
-  /** 会说谎的怪 (151, 暂定): its announcement turns and 洞察 state. */
-  liar?: import('./liar').LiarState;
   /** 听段题 (34) / 盲听 (91): this monster opens with a listening question; done once answered. */
   listenMon?: import('./listening').ListenKind;
   listenDone?: boolean;
@@ -575,13 +572,8 @@ export function startBattle(
       b.log.push({ text: `${B2_MON[k].log}别的招式只擦过它。`, tone: 'info' });
     }
   }
-  // 会说谎的怪 (151, 暂定): every 3 turns it announces its next move; about half are lies with a readable tell.
-  if (!b.perfekt && !b.notice && !b.mirror && !b.structMon && !b.pronMon && !b.b2Mon && !tutorial && !opts.trial && !opts.elite && !opts.isEcho && kind !== 'new' && s.level >= LIAR.from && rng() < LIAR.chance) {
-    b.liar = {};
-    b.log.push({ text: '会说谎的怪：它每 3 回合预告一次下一招，大约一半是假话。假话一定有破绽（第二虚拟式、angeblich、前后矛盾）。按「洞察」花一回合看穿它。', tone: 'info' });
-  }
   // 听段题 (34) / 盲听 (91): about 1 in 8 field monsters opens with a listening question.
-  if (!b.perfekt && !b.notice && !b.mirror && !b.structMon && !b.pronMon && !b.b2Mon && !b.liar && !tutorial && !opts.trial && !opts.elite && !opts.isEcho && kind !== 'new') {
+  if (!b.perfekt && !b.notice && !b.mirror && !b.structMon && !b.pronMon && !b.b2Mon && !tutorial && !opts.trial && !opts.elite && !opts.isEcho && kind !== 'new') {
     const lk = rollListen(s.level, word, rng);
     if (lk) {
       b.listenMon = lk;
@@ -729,19 +721,6 @@ function nextIntent(s: GameState, b: Battle, rng: Rng): Intent {
     const reads = !!b.word.art && s.level >= CONFIG.phase.accFrom;
     const v = voiceLine(b.word, b.turn, reads ? caseOk : undefined);
     if (v) intent = { ...intent, line: v.line, zh: v.zh, full: v.full, fullZh: v.fullZh, caseArt: reads && caseOk(v.idx) ? slotArticle(b.word, v.idx)! : undefined };
-  }
-  // 会说谎的怪: on announcement turns the line is its claim; a lie turns into a plain attack.
-  if (b.liar) {
-    b.liar.claim = undefined;
-    b.liar.probed = false;
-    if (!tut && announces(b.turn) && intent.kind !== 'flee' && intent.kind !== 'charge' && b.chargeIn === undefined) {
-      const r = liarIntent(intent, rng);
-      intent = r.intent;
-      b.liar.claim = r.line;
-      const o = insightOptions(r.line, rng);
-      b.liar.options = o.options;
-      b.liar.answer = o.answer;
-    }
   }
   // 格位姿态: the stance stays picked while the case stays the same; a line in another case asks for a new pick.
   if (b.intent) b.phasePrev = { phase: b.phase, affinityPaid: b.affinityPaid, c: lineCase(b, b.intent) };
@@ -2379,11 +2358,6 @@ export function resolveTurn(
         if (gDmg) mult *= 1 + gDmg; // 言石
         const phones = gear(s).phones;
         if (phones && listenQ(q)) mult *= 1 + phones.main + PHONES_PER_TIER * itemTier(phones, s.region ?? 1); // 耳机
-        if (b.liar?.boost) {
-          mult *= LIAR.boost;
-          b.liar.boost = false;
-          log.push({ text: `看穿之后这一击 ×${LIAR.boost}。`, tone: 'good' });
-        }
 
         // Crits: forced ones first (接句怪, 初识暴击), then the random roll.
         if (q.type === 'saying') {
@@ -2671,18 +2645,13 @@ export function resolveTurn(
   };
 
   const cf = b.fx.charm;
-  const lie = b.liar?.claim?.tell ? b.liar.claim : null;
-  if (b === target && b.liar?.dodge) {
-    b.liar.dodge = false;
-    say({ text: '你看穿了它：这一下落空。', tone: 'good' });
-  } else if (b === target && (cf?.delay ?? 0) > 0 && !b.outcome && intent.kind !== 'wait' && intent.kind !== 'defend' && !interrupted) {
+  if (b === target && (cf?.delay ?? 0) > 0 && !b.outcome && intent.kind !== 'wait' && intent.kind !== 'defend' && !interrupted) {
     cf!.delay! -= 1;
     say({ text: '它被你那句话拖住了，这回合没出手。', tone: 'good' });
   } else if ((interrupted && b === target) || chorusStopped.has(b)) {
     // 「Wie bitte?」 cancels silently; a charge (on the target, or a mate hit by 齐鸣) says it broke.
     if (intent.kind === 'charge') say({ text: '打断了！它憋的那口气散了。', tone: 'good' });
   } else {
-    if (lie && b === target && monsterDamage === 0) say({ text: `它说谎了：「${lie.de}」（${TELL_ZH[lie.tell!].replace('假话：', '')}）`, tone: 'bad' });
     switch (intent.kind) {
       case 'attack': {
         let per = m.dmg * dmgMult * chillMult * (monsterCrit ? 1.5 : 1);
