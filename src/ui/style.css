@@ -137,6 +137,8 @@ body.bright #vignette { background: radial-gradient(ellipse at 50% 48%, rgba(0,0
 table.log { width: 100%; border-collapse: collapse; font-size: 13px; }
 table.log th, table.log td { border-bottom: 1px solid #2a151a; padding: 5px 6px; text-align: right; font-family: var(--mono); }
 table.log th:first-child, table.log td:first-child { text-align: left; }
+table.log.text th, table.log.text td { text-align: left; font-family: inherit; }
+details > summary { cursor: pointer; color: var(--muted, #a99); margin: 6px 0; }
 .muted { color: var(--muted); }
 .small { font-size: 12px; }
 .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }

@@ -1411,16 +1411,24 @@ export class Panels {
     if (s.level >= SAYING_CFG.fromLevel) {
       const got = SAYINGS.filter((x) => s.sayings?.[x.id]);
       const phraseIds = new Set(phraseCards().map((x) => x.id));
-      const tb = h('table.log');
-      tb.append(h('tr', h('th', '短句'), h('th', '中文'), h('th', '什么时候说'), h('th', '效果'), h('th', '')));
+      const head = () => h('tr', h('th', '短句'), h('th', '中文'), h('th', '什么时候说'), h('th', '效果'), h('th', ''));
+      const tb = h('table.log.text', head());
+      const locked = h('table.log.text', h('tr', h('th', '短句'), h('th', '怎么收'), h('th', '效果')));
       const on = new Set(equippedCharms(s).map((c) => c.id));
       const equipBtn = (id: string) => h('button.btn.small' + (on.has(id) ? '.primary' : ''), { onclick: () => { equipCharm(s, id); this.ctrl.persist(); this.render(); } }, on.has(id) ? '已选' : '选这张');
       for (const x of SAYINGS) {
-        const have = !!s.sayings?.[x.id];
         const c = CHARM_BY_ID[x.id];
-        tb.append(h('tr', h('td', have ? `${x.a} ${x.b}` : `${x.a} ……`), h('td', have ? x.zh : '？'), h('td', have ? x.when : (phraseIds.has(x.id) ? '野外金色的「残句」怪：接上、听懂、写出整句就能收下' : '在野外遇到喊这句的接句怪，接上下半句就能收下')), h('td.small', c ? c.fx : ''), h('td', have && c ? equipBtn(x.id) : '')));
+        if (s.sayings?.[x.id]) tb.append(h('tr', h('td', `${x.a} ${x.b}`), h('td', x.zh), h('td', x.when), h('td.small', c ? c.fx : ''), h('td', c ? equipBtn(x.id) : '')));
+        else locked.append(h('tr', h('td', `${x.a} ……`), h('td.small.muted', phraseIds.has(x.id) ? '金色「残句」怪：接上、听懂、写出整句' : '接句怪：接上下半句'), h('td.small', c ? c.fx : '')));
       }
-      wrap.append(h('h3', `短句卡（${got.length} / ${SAYINGS.length}）`), h('p.small.muted', `大部分卡从野外金色的「残句」怪身上掉；怪的词正好在这句里时，接句怪也会喊它。在这里选一张给「短句」技能（10 级前自动带上，之后要在技能格里带上）：战斗里打出整句生效，每场一次；${s.level < CHARM.bonusFrom ? '33 级前喊一次占一回合' : '不占回合'}。`), tb);
+      // 还没收到的卡折起来：开局一张都没有时，整页不该被 20 行问号占满。
+      const rest = SAYINGS.length - got.length;
+      wrap.append(
+        h('h3', `短句卡（${got.length} / ${SAYINGS.length}）`),
+        h('p.small.muted', `大部分卡从野外金色的「残句」怪身上掉；怪的词正好在这句里时，接句怪也会喊它。在这里选一张给「短句」技能（10 级前自动带上，之后要在技能格里带上）：战斗里打出整句生效，每场一次；${s.level < CHARM.bonusFrom ? '33 级前喊一次占一回合' : '不占回合'}。`),
+        got.length ? tb : h('p.small.muted', '还没有收到短句卡。'),
+        rest ? h('details', h('summary.small', `还没收到的 ${rest} 张（看看能从哪儿收）`), locked) : '',
+      );
       if (s.level >= CHARM.slangFrom) {
         const st = h('table.log');
         st.append(h('tr', h('th', '俚语'), h('th', '中文'), h('th', '场合'), h('th', '效果'), h('th', '')));
