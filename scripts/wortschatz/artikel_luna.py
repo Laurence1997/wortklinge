@@ -41,7 +41,7 @@ for r in tsv(os.path.join(D, 'build', 'artikel', 'pool.tsv')): pool.setdefault(r
 have = tsv(OUT)
 claimed = {s: set() for s in segw}
 used_titles = {r['标题'] for r in have} | {r['网址'] for r in have}
-for r in have:
+for r in have + tsv(os.path.join(D, 'artikel-b2-original.tsv')):  # words an original article already carries
     for w in r['新词'].split(', '):
         if w: claimed.setdefault(r['段'], set()).add(w.lower())
 

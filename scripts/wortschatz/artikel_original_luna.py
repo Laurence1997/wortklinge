@@ -27,7 +27,8 @@ if not KEY:
     print('OPENAI_API_KEY is not set: skipping.'); sys.exit(0)
 MODEL = os.environ.get('MODEL', 'gpt-6-luna')
 LIMIT = int(os.environ.get('LIMIT') or 0)
-OUT = os.environ.get('OUT') or os.path.join(D, 'artikel-b2.tsv')
+OUT = os.environ.get('OUT') or os.path.join(D, 'artikel-b2-original.tsv')
+SEG = set((os.environ.get('SEG') or '').replace(',', ' ').split())  # e.g. '13' or '13 14'; empty = all
 COLS = ['id', '段', '标题', '例句', '例句中文', '新词', '注释', '题目', '词数', '来源', '网址', '修订号', '许可证', '改编说明']
 csv.field_size_limit(10**8)
 def tsv(p): return list(csv.DictReader(open(p, encoding='utf-8'), delimiter='\t')) if os.path.exists(p) else []
@@ -37,7 +38,7 @@ b2 = tsv(os.path.join(D, 'build', 'b2-v1.tsv'))
 known |= {r['原形'].lower() for r in b2}
 have = tsv(OUT)
 claimed = defaultdict(set)
-for r in have:
+for r in have + tsv(os.path.join(D, 'artikel-b2.tsv')):
     for w in r['新词'].split(', '):
         if w: claimed[r['段']].add(w.lower())
 
@@ -94,7 +95,7 @@ PLAN = """下面是一串德语 B2 词（同一个大情境）。把它们分成
 只输出 JSON：{"groups":[{"topic":"中文话题","words":["原形", …]}],"rest":["原形", …]}"""
 by = defaultdict(list)
 for r in b2:
-    if r['原形'].lower() not in claimed[r['段']]: by[(r['段'], r['情境'])].append(r)
+    if r['原形'].lower() not in claimed[r['段']] and (not SEG or r['段'] in SEG): by[(r['段'], r['情境'])].append(r)
 chunks = [(s, sit, rs[i:i + 70]) for (s, sit), rs in sorted(by.items()) for i in range(0, len(rs), 70)]
 def plan_chunk(ch):
     s, sit, rs = ch
@@ -117,6 +118,11 @@ if LIMIT and len(groups) > LIMIT:
     step = len(groups) / LIMIT; groups = [groups[int(i * step)] for i in range(LIMIT)]
 print(f"{len(have)} articles so far; {sum(len(v) for v in by.values())} open words; writing {len(groups)} original articles", flush=True)
 
+import random
+FIRST = 'Anna Ben Clara David Emine Felix Greta Hannes Ida Jakob Katrin Lars Leonie Malte Nadine Ole Paula Rainer Selin Tobias Ulrike Vincent Wiebke Yusuf Zoe Birgit Dennis Elif Frank Heike Igor Jana Kai Lena Marco Nils Petra Ralf Sandra Timo Ute Wolfgang Aylin Bernd Carla Dirk Esra Gisela Henrik Inga'.split()
+LAST = 'Albrecht Bauer Demir Ebert Fuchs Graf Hahn Jansen Kaiser Lorenz Möller Nowak Otto Pohl Roth Seidel Thiel Ulrich Vogel Winkler Yilmaz Ziegler Brandt Dietrich Engel Franke Günther Horn Jung Kraus Lange Marx Neumann Peters Richter Schulz Arnold Böhm Kühn Sommer'.split()
+CITIES = 'Bielefeld Regensburg Kiel Erfurt Ulm Oldenburg Potsdam Würzburg Trier Rostock Heilbronn Gießen Paderborn Koblenz Jena Flensburg Ingolstadt Kassel Osnabrück Bamberg Lübeck Saarbrücken Wuppertal Halle Augsburg Freiburg Darmstadt Magdeburg Siegen Konstanz'.split()
+
 def qs_ok(qs):
     out = []
     for q in qs or []:
@@ -129,7 +135,9 @@ def qs_ok(qs):
 def work(g):
     s, sit, topic, rs = g
     tgt = [r['原形'] for r in rs]
-    a = call(WRITE, f"情境：{sit}\n话题：{topic or '自己选一个贴情境的具体日常话题'}\n目标词：" + ', '.join(f"{r['原形']}（{r['词性']}）" for r in rs), effort='medium')
+    rnd = random.Random('|'.join(tgt))
+    seed = f"如果需要人名，从这些里挑：{', '.join(rnd.sample(FIRST, 3))}；姓：{', '.join(rnd.sample(LAST, 3))}；如果需要城市：{rnd.choice(CITIES)}（也可以不写城市）\n"
+    a = call(WRITE, seed + f"情境：{sit}\n话题：{topic or '自己选一个贴情境的具体日常话题'}\n目标词：" + ', '.join(f"{r['原形']}（{r['词性']}）" for r in rs), effort='medium')
     if not a: return ('bad', sit, None)
     paras = [str(p).strip().replace('｜', ' ') for p in a.get('paras') or [] if str(p).strip()]
     qs = qs_ok(a.get('questions'))
@@ -169,7 +177,7 @@ for r in rows:
     if r.get('id'): n[r['段']] = max(n.get(r['段'], 0), int(r['id'].rsplit('-', 1)[1]))
 for r in rows:
     if not r.get('id'):
-        n[r['段']] = n.get(r['段'], 0) + 1; r['id'] = f"b2-{r['段']}-{n[r['段']]:03d}"
+        n[r['段']] = n.get(r['段'], 0) + 1; r['id'] = f"b2o-{r['段']}-{n[r['段']]:03d}"
 rows.sort(key=lambda r: r['id'])
 with open(OUT, 'w', encoding='utf-8', newline='') as f:
     w = csv.DictWriter(f, fieldnames=COLS, delimiter='\t', lineterminator='\n'); w.writeheader(); w.writerows(rows)
