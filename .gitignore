@@ -6,3 +6,4 @@ dist-single/
 proof/out/
 proof/tatoeba/
 data/wortschatz/build/artikel/
+data/wortschatz/build/wiki-cache/

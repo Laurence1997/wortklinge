@@ -15,6 +15,9 @@ on:
       artikel:
         description: 'Articles: how many new ones (0 = all, -1 = skip)'
         default: '5'
+      wiki_minutes:
+        description: 'Wikipedia downloads: minutes before scoring what it has (the next run continues)'
+        default: '200'
 
 permissions:
   contents: write
@@ -26,11 +29,12 @@ concurrency:
 jobs:
   content:
     runs-on: ubuntu-latest
-    timeout-minutes: 300
+    timeout-minutes: 350
     env:
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       HOEREN: ${{ github.event.inputs.hoeren || '0' }}
       ARTIKEL: ${{ github.event.inputs.artikel || '-1' }}
+      WIKI_MINUTES: ${{ github.event.inputs.wiki_minutes || '200' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -42,9 +46,24 @@ jobs:
         run: LIMIT=$HOEREN python3 scripts/wortschatz/hoeren_luna.py
       - name: Wikinews pool
         if: env.ARTIKEL != '-1'
-        run: |
-          python3 scripts/wortschatz/artikel_pool.py
-          python3 scripts/wortschatz/artikel_wiki_pool.py || echo "Wikipedia pool skipped (rate limit)"
+        run: python3 scripts/wortschatz/artikel_pool.py
+      # Searches and fetched pages survive between runs, so a slow or stopped run is never lost.
+      - name: Restore Wikipedia cache
+        if: env.ARTIKEL != '-1'
+        uses: actions/cache/restore@v4
+        with:
+          path: data/wortschatz/build/wiki-cache
+          key: wiki-${{ github.run_id }}
+          restore-keys: wiki-
+      - name: Wikipedia pool
+        if: env.ARTIKEL != '-1'
+        run: python3 -u scripts/wortschatz/artikel_wiki_pool.py || echo "Wikipedia pool failed"
+      - name: Save Wikipedia cache
+        if: always() && env.ARTIKEL != '-1'
+        uses: actions/cache/save@v4
+        with:
+          path: data/wortschatz/build/wiki-cache
+          key: wiki-${{ github.run_id }}
       - name: Articles
         if: env.ARTIKEL != '-1'
         run: LIMIT=$ARTIKEL python3 scripts/wortschatz/artikel_luna.py
@@ -54,7 +73,7 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898233+github-actions[bot]@users.noreply.github.com'
           rm -f data/wortschatz/build/artikel/dewikinews.xml.bz2
-          git add -A data/wortschatz
+          git add -A data/wortschatz ':!data/wortschatz/build/wiki-cache'
           git diff --cached --quiet && exit 0
           git commit -m 'Content: listening passages and B2 articles (Luna)'
           for i in 1 2 3; do git pull --rebase -q && git push && break; sleep 5; done
