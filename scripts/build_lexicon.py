@@ -374,6 +374,11 @@ def main():
     for r in sorted(read_tsv('beispiele-6000.tsv'), key=lambda r: int(r['序号'] or 0)):
         if r['例句'].strip():
             extra[r['原形'].strip()].append((r['例句'].strip(), r['例句中文'].strip()))
+    # 介词空 (0.8.6): one or two sentences with the 动介搭配 for the 13 pairing verbs whose examples lacked it.
+    # Its braces are dropped: mark() puts its own (it skips sentences that already have them).
+    for r in read_tsv('beispiele-praep-nachtrag.tsv'):
+        if r['例句'].strip():
+            extra[r['原形'].strip()].append((re.sub(r'[{}]', '', r['例句'].strip()), r['例句中文'].strip()))
     scenes_tsv = read_tsv('szenen-v1.tsv')
     grammar = read_tsv('grammatik-v1.tsv')
 
