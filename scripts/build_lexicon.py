@@ -369,6 +369,11 @@ def main():
     for r in read_tsv('beispiele.tsv'):
         if r['例句']:
             extra[r['原形']].append((r['例句'].strip(), r['例句中文'].strip()))
+    # 14482 proofread examples for the first 6000 words (例句 thread, merged 2026-11-25): 2 per word, 3 in regions 1–3,
+    # one per verb preposition and per common sense. Duplicates of the sentences above are skipped later.
+    for r in sorted(read_tsv('beispiele-6000.tsv'), key=lambda r: int(r['序号'] or 0)):
+        if r['例句'].strip():
+            extra[r['原形'].strip()].append((r['例句'].strip(), r['例句中文'].strip()))
     scenes_tsv = read_tsv('szenen-v1.tsv')
     grammar = read_tsv('grammatik-v1.tsv')
 

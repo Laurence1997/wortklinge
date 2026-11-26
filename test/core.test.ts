@@ -10,7 +10,7 @@ import { newGame, addXp, migrate, migrateSrs2, attack, gearTier, addGearKill, af
 import { applyWin } from '../src/core/outcomes';
 import { recordKill, kindOf, stageOf, contextDue, contextPass, contextFail, reviewMon, reviewedByWriting } from '../src/core/srs';
 import { CONFIG, DAY, HOUR, monsterHpAt, xpToNext } from '../src/core/config';
-import { startBattle, makeQuestion, resolveTurn, spillStorm, effArmor, affinityMatch, qTier, linkPack, moveReady, phaseOf, phaseRight, chorusMates, availableMoves, alignPairs } from '../src/core/combat';
+import { startBattle, makeQuestion, resolveTurn, spillStorm, effArmor, affinityMatch, qTier, linkPack, moveReady, phaseOf, phaseRight, chorusMates, availableMoves, alignPairs, voiceCases } from '../src/core/combat';
 import { makeRng } from '../src/core/rng';
 import { makeItem } from '../src/core/loot';
 import { answerBoss, startBoss } from '../src/core/boss';
@@ -419,6 +419,7 @@ describe('region 2: packs, conjugation, plurals', () => {
     expect(d.monster.hp).toBe(500);
     // Right stance: the mate takes the same pre-armor hit and its charge breaks.
     a.chorusCd = d.chorusCd = c.chorusCd = 0;
+    a.intent = { ...a.intent, kind: 'attack', hits: 1, caseArt: undefined }; // the name stance, like its charging mate
     a.phase = 'der';
     d.intent = { ...d.intent, kind: 'charge', hits: 1, caseArt: undefined };
     const hp0 = s.hp;
@@ -441,6 +442,7 @@ describe('region 2: packs, conjugation, plurals', () => {
       p.forEach((x) => (x.intent = { ...x.intent, kind: 'attack' }));
       alignPairs(s, p);
       if (!p.every((x) => x.intent.caseArt)) continue;
+      if (!(['nom', 'acc', 'dat'] as const).some((c) => p.every((x) => voiceCases(s, x).includes(c)))) continue; // no shared case
       checked++;
       expect(phaseRight(p[1], phaseOf(p[0])!)).toBe(true);
     }
@@ -1420,7 +1422,7 @@ describe('0.5 ihn/sie: pronoun clozes from accusative example sentences', () => 
     expect(p[0].answer).toBe('ihn');
   });
   it('skips subjects after sein and slots behind bitte / mir (pronoun word order)', () => {
-    expect(pronounClozes(WORD_BY_ID.flasche)).toHaveLength(0); // «Wo ist die Flasche?»
+    expect(pronounClozes(WORD_BY_ID.flasche).filter((c) => /^Wo ist/.test(c.shown))).toHaveLength(0); // «Wo ist die Flasche?»
     expect(pronounClozes(WORD_BY_ID.lampe)).toHaveLength(0); // «Mach bitte die Lampe an» → would need «Mach sie bitte an»
   });
   it('only from Lv7, inside cloze questions', () => {

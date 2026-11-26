@@ -747,14 +747,16 @@ function plainVoice(s: GameState, b: Battle): boolean {
 }
 
 /** Cases this monster has a line for at this level. */
-function voiceCases(s: GameState, b: Battle): Case[] {
+export function voiceCases(s: GameState, b: Battle): Case[] {
   const g = genderOf(b.word);
   const open = casesOpen(s.level);
   const n = (EXAMPLES[b.word.id] ?? []).length;
   const out = new Set<Case>();
   for (let i = 0; i < n; i++) {
-    const c = caseOf(g, slotArticle(b.word, i));
-    if (c && open.includes(c)) out.add(c);
+    const a = slotArticle(b.word, i);
+    const c = caseOf(g, a);
+    // kein lines don't count: a pair reads plain lines (voiceIn skips kein too).
+    if (c && open.includes(c) && !a?.startsWith('kein')) out.add(c);
   }
   return [...out];
 }
@@ -789,6 +791,8 @@ export function alignPairs(s: GameState, pack: Battle[]): void {
     let want: Case = 'nom';
     if (free.length === g.length) {
       const both = (['nom', 'acc', 'dat'] as Case[]).filter((c) => g.every((x) => voiceCases(s, x).includes(c)));
+      // No case both have a line in (e.g. Tisch has only acc / dat examples): they can't read one case; leave them.
+      if (!both.length) continue;
       const lead = lineCase(g[0], g[0].intent);
       want = both.includes(lead) ? lead : both[g[0].turn % Math.max(1, both.length)] ?? 'nom';
     } else if (free.length < g.length) want = 'nom';

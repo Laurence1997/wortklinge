@@ -15,7 +15,7 @@ import { importJson } from './core/state';
 import { toast } from './ui/feedback';
 import { setReportVersion } from './net/report';
 
-const VERSION = '0.8.0';
+const VERSION = '0.8.1';
 setReportVersion(VERSION);
 const dev = new URLSearchParams(location.search).has('dev');
 
