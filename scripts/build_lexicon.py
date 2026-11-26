@@ -379,6 +379,11 @@ def main():
     for r in read_tsv('beispiele-praep-nachtrag.tsv'):
         if r['例句'].strip():
             extra[r['原形'].strip()].append((re.sub(r'[{}]', '', r['例句'].strip()), r['例句中文'].strip()))
+    # B2 grammar sentences (proofreading thread); the 语法 column is reference only.
+    if (DATA / 'beispiele-grammatik-b2.tsv').exists():
+        for r in read_tsv('beispiele-grammatik-b2.tsv'):
+            if r['例句'].strip():
+                extra[r['原形'].strip()].append((re.sub(r'[{}]', '', r['例句'].strip()), r['例句中文'].strip()))
     scenes_tsv = read_tsv('szenen-v1.tsv')
     grammar = read_tsv('grammatik-v1.tsv')
 
