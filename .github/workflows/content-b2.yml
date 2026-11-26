@@ -1,0 +1,58 @@
+name: 听段题和 B2 文章 (listening passages and B2 articles)
+
+# hoeren_luna.py: one 听段 per word from zone 4 on → data/wortschatz/hoeren-6000.tsv
+# artikel_pool.py + artikel_luna.py: abridged German Wikinews articles for B2 segments 13–16 → data/wortschatz/artikel-b2.tsv
+# Runs on a push that changes one of the scripts or this file (trial sizes below), or by hand with a size.
+# Commits the results back to the same branch. Costs cents for a trial, a few dollars for everything.
+on:
+  push:
+    paths: ['scripts/wortschatz/hoeren_luna.py', 'scripts/wortschatz/artikel_pool.py', 'scripts/wortschatz/artikel_luna.py', '.github/workflows/content-b2.yml']
+  workflow_dispatch:
+    inputs:
+      hoeren:
+        description: '听段: how many new passages (0 = all, -1 = skip)'
+        default: '30'
+      artikel:
+        description: 'Articles: how many new ones (0 = all, -1 = skip)'
+        default: '5'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: content-b2-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  content:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      HOEREN: ${{ github.event.inputs.hoeren || '30' }}
+      ARTIKEL: ${{ github.event.inputs.artikel || '5' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install simplemma mwparserfromhell
+      - name: Listening passages
+        if: env.HOEREN != '-1'
+        run: LIMIT=$HOEREN python3 scripts/wortschatz/hoeren_luna.py
+      - name: Wikinews pool
+        if: env.ARTIKEL != '-1'
+        run: python3 scripts/wortschatz/artikel_pool.py
+      - name: Articles
+        if: env.ARTIKEL != '-1'
+        run: LIMIT=$ARTIKEL python3 scripts/wortschatz/artikel_luna.py
+      - name: Commit
+        if: always()
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898233+github-actions[bot]@users.noreply.github.com'
+          rm -f data/wortschatz/build/artikel/dewikinews.xml.bz2
+          git add -A data/wortschatz
+          git diff --cached --quiet && exit 0
+          git commit -m 'Content: listening passages and B2 articles (Luna)'
+          git pull --rebase -q && git push

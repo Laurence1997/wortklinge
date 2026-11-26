@@ -5,3 +5,4 @@ dist-single/
 .DS_Store
 proof/out/
 proof/tatoeba/
+data/wortschatz/build/artikel/
