@@ -1,6 +1,7 @@
 import { articleB2ById, ARTICLE_B2_CFG, isArticleWord } from '../core/gram/articleB2';
 import { loadArticlesB2, loadArticlesC1 } from '../data/articlesB2';
 import { revealLines, SYSTEM_TYPOS } from '../data/reveal17';
+import { WEBER18 } from '../data/weber18';
 import { LETTER_BY_ID, LETTER_CFG, readLetter } from '../core/letters';
 import { push as pushCloud } from '../net/cloud';
 import { loadPassages } from '../data/passages';
@@ -3168,6 +3169,11 @@ export class Controller {
     banner(`${b.name}倒下了`, first ? `首杀：传说装备 + 称号「${b.title}」+ 金箱` : chest === 'gold' ? '金箱' : chest ? '铁箱' : '今天的宝箱已领完');
     const lines: Line[] = b.outro.map((t) => ({ who: SYS, text: t }));
     lines.push({ who: SYS, text: `获得 ${xp} 经验、${gold} 金币${chest ? `和一个${chest === 'gold' ? '金' : '铁'}箱` : ''}。` });
+    // 18 区 Frau Weber 的选择 (Lucas 2026-11-26): once, after the first win over 审判者.
+    if (first && r === 18 && !s.flags.weber18) {
+      s.flags.weber18 = true;
+      lines.push(...WEBER18.map((l) => (l.who === 'weber' ? { who: 'Frau Weber', text: `「${l.de}」\n（${l.text}）` } : { who: SYS, text: l.text })));
+    }
     if (first) lines.push(...this.afterBossLines(r));
     const after = () => {
       for (const l of lv.levels) this.onLevelUp(l);

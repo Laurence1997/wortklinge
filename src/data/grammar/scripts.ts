@@ -1,7 +1,7 @@
 // 剧本模式 (游戏设计 五「决斗场」: 原剧场副本并进决斗场, Lucas 2026-11-25; 十五 151「剧本模式新剧本」): the player plays a
 // role line by line from a script, the AI plays the other part and answers. It runs on the duel engine (target words,
 // rewards and the daily paid count are the duel's) and opens from an adventurer, like its chat.
-// 暂定: the mode opens with the adventurer chat (10 级); the doc only says 151 adds scripts. Scripts below 151 are
+// Opens with the adventurer chat at 10 级 (Lucas 2026-11-26 按推荐); 151+ adds scripts. Scripts below 151 are
 // everyday scenes; 151+ ones belong to 16 面具剧场's themes (culture, art, science, education).
 
 export interface Script {
