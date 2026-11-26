@@ -1,4 +1,5 @@
-import { SCENES, scenesOf } from '../data/world';
+import { neighbours, SCENES, scenesOf } from '../data/world';
+import { applyTheme } from '../ui/theme';
 import { RED, redAsleep, redEligible } from '../core/redname';
 import { OPINION, opinionEligible } from '../core/opinion';
 import { elitePick, type ElitePick } from '../core/elite';
@@ -140,7 +141,7 @@ export class WorldScene extends Phaser.Scene {
     const W = MAP_W * TILE;
     const H = MAP_H * TILE;
     this.cameras.main.setBounds(0, 0, W, H);
-    document.body.classList.toggle('bright', this.bright);
+    applyTheme(this.bright, region);
     this.cameras.main.setBackgroundColor(this.bright ? BRIGHT[region].fog : PAL.void);
 
     // Light sources.
@@ -501,6 +502,16 @@ export class WorldScene extends Phaser.Scene {
     m.container.setScale(m.kind === 'shadow' ? 0.85 : 1);
   }
 
+  private plateNear(m: MonsterEntity): boolean {
+    const here = this.nodes?.here?.id;
+    if (!here || !m.node) return true;
+    return m.node === here || neighbours(here).includes(m.node);
+  }
+
+  refreshPlates(): void {
+    for (const m of this.monsters) this.updateGlyph(m);
+  }
+
   /** 名牌 (Lucas 2026-11-25): the meaning in Chinese once you have met the word; glitch for a word never met and for
    *  蚀变 words. No German letters, no article. */
   updateGlyph(m: MonsterEntity) {
@@ -508,6 +519,12 @@ export class WorldScene extends Phaser.Scene {
     if (m.phrase) {
       const x = SAYINGS.find((y) => y.id === m.phrase);
       m.label.setText(x ? `${x.a} …` : '……');
+      return;
+    }
+    // 0.8.4 (Lucas 11-26「按推荐」): only monsters in your scene and the scenes next to it wear a name plate; far
+    // ones show just their figure, so a new character's map is not a sea of glitches.
+    if (!this.plateNear(m)) {
+      m.label.setText('');
       return;
     }
     const rnd = () => GLITCH[Math.floor(Math.random() * GLITCH.length)];

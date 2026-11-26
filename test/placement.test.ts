@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { newGame, migrate, type GameState } from '../src/core/state';
 import { makeRng } from '../src/core/rng';
-import { answerPlacement, applyPlacement, bandCount, bandOf, bandSamples, canPlaceAgain, placeAgainIn, PLACE, gradePlace, isPlaced, levelFor, placedCheck, placedPick, placeWords, regionFor, startPlacement, stopPlacement, topPassed, type PlaceRun } from '../src/core/placement';
+import { answerPlacement, applyPlacement, bandCount, bandOf, bandRange, bandSamples, canPlaceAgain, placeAgainIn, PLACE, gradePlace, isPlaced, levelFor, placedCheck, placedPick, placeWords, regionFor, startPlacement, stopPlacement, topPassed, type PlaceRun } from '../src/core/placement';
 import { answerScreen, screenPool, startScreen } from '../src/core/screen';
 import { contextQuestion, startBattle } from '../src/core/combat';
 import { kindOf, reviewMon, stageOf } from '../src/core/srs';
@@ -29,12 +29,16 @@ function play(s: GameState, run: PlaceRun, knows: number, rng = makeRng(9)) {
 }
 
 describe('入学测试', () => {
-  it('bands cover levels 1–30 in steps of 3, with sample words', () => {
-    expect(bandCount()).toBe(10);
+  it('bands cover levels 1–30 in steps of 3, then 31–120 in steps of 5, with sample words', () => {
+    expect(bandCount()).toBe(28);
+    expect(bandRange(10)).toEqual([31, 35]);
+    expect(bandRange(27)).toEqual([116, 120]);
+    expect(levelFor(27)).toBe(120);
+    expect(regionFor(65)).toBe(7);
     expect(levelFor(-1)).toBe(1);
     expect(levelFor(0)).toBe(4);
     expect(levelFor(6)).toBe(22);
-    expect(levelFor(9)).toBe(30);
+    expect(levelFor(9)).toBe(31);
     expect(regionFor(10)).toBe(1);
     expect(regionFor(13)).toBe(2);
     expect(regionFor(22)).toBe(3);
@@ -198,5 +202,19 @@ describe('入学测试', () => {
     const back = migrate(JSON.parse(JSON.stringify(s)))!;
     expect(back.placement?.top).toBe(o.top);
     expect(Object.values(back.words).filter((p) => p.placed).length).toBe(o.placed);
+  });
+
+  it('placing past a stage stands in for its trial; A1 still owes the grammar part', async () => {
+    const { stagePassed, levelCapFor } = await import('../src/core/stages');
+    const s = newGame('T', 'student');
+    const run = startPlacement(s, makeRng(1), 0);
+    for (let i = 0; i <= 19; i++) run.passed.add(i); // 1–80
+    stopPlacement(run);
+    applyPlacement(s, run);
+    expect(s.level).toBe(81);
+    expect(stagePassed(s.flags, 'A1')).toBe(true);
+    expect(stagePassed(s.flags, 'A2')).toBe(true);
+    expect(s.flags.a1Grammar).toBeFalsy();
+    expect(levelCapFor(s.flags)).toBe(120);
   });
 });

@@ -22,7 +22,7 @@ import type { Controller } from '../game/controller';
 import { $, clear, h, umlautButtons } from './dom';
 import { BREAK, examParts, examPassed, PART_ZH, type Exam } from '../core/breakthrough';
 import { pendingScenes, regionLeft, type ScreenRun } from '../core/screen';
-import { bandCount, bandRange, bandSamples, levelFor, regionFor, topPassed, type PlaceRun } from '../core/placement';
+import { bandCount, bandRange, bandSamples, levelFor, PLACE, regionFor, topPassed, type PlaceRun } from '../core/placement';
 import { CHEST_ZH, type ChestKind } from '../core/chest';
 import { playChest } from './chestFx';
 import { favour, FAVOUR, QUESTS, type QuestId } from '../core/quests';
@@ -37,7 +37,7 @@ import { ACHIEVEMENTS, NOTES } from '../data/achievements';
 import { canListen, lastConfidence, listening, listenOnce, stopHold } from './listen';
 import { clarity, shadowOk } from '../core/shadow';
 import { DIARY, DIARY_WRITER, type DiaryBlank } from '../data/diary';
-import { SCENE_BY_ID } from '../data/world';
+import { AREAS, SCENE_BY_ID } from '../data/world';
 import { blanksOf, checkBlank, DIARY_MISSES, DIARY_XP, lineText, pageLines, pageNo, pageRegion, pageState } from '../core/diary';
 import { lookPicker, originPicker } from './title';
 import { CONSUMABLE, cap as itemCap, count as itemCount, itemPrice, type Consumable } from '../core/items';
@@ -712,33 +712,38 @@ export class Panels {
     const wrap = h('div');
     const run = pl.run;
     if (!run) {
+      // 0.8.3 反馈: the test looks like a scene with the 考官, bands grouped by stage as tiles, up to 120.
       wrap.append(
-        h('p', '测一下你已经会多少词。会的直接跳过，从你还不会的地方开始打。约 5 到 10 分钟，随时可以结束。'),
-        h('p.small.muted', '只给中文，打德语，名词连冠词写（der Tee）。不会就点「不会」，不扣任何东西。测出来的等级只会往上调。'),
-        h('p', h('b', '先看看下面每一段的词，点你大概认识到的那一段：')),
+        h('div.place-head', portrait('考官', 3) ?? '', h('div', h('div.place-say', '「Was kannst du schon?」'), h('div.small.muted', '测一下你已经会多少词：会的直接斩杀，从你还不会的地方开始打。约 5 到 15 分钟，随时可以结束。只给中文，打德语，名词带冠词（der Tee）。不会就点「不会」，不扣任何东西，测出的等级只会往上调。'))),
+        h('p.place-ask', '扫一眼每段的词，点你大概认识到的那一段：'),
       );
       const samples = bandSamples();
       const n = bandCount();
-      const list = h('div', { style: 'display:flex;flex-direction:column;gap:6px;margin:8px 0' });
-      for (let i = 0; i < n; i++) {
-        const [lo, hi] = bandRange(i);
-        list.append(
-          h(
-            'button.btn',
-            { style: 'text-align:left;display:flex;gap:12px;align-items:baseline', onclick: () => this.ctrl.placeStart(i) },
-            h('b', { style: 'min-width:86px' }, `${lo}–${hi} 级`),
-            h('span', samples[i].map((w) => fullForm(w)).join(' · ')),
-          ),
-        );
+      const groups: Array<[string, number, number]> = [['A1 · 1–30 级', 1, 30], ['A2 · 31–80 级', 31, 80], ['B1 · 81–120 级', 81, 120]];
+      for (const [label, glo, ghi] of groups) {
+        const grid = h('div.place-grid');
+        for (let i = 0; i < n; i++) {
+          const [lo, hi] = bandRange(i);
+          if (lo < glo || lo > ghi) continue;
+          grid.append(
+            h(
+              'button.place-band',
+              { onclick: () => this.ctrl.placeStart(i), title: samples[i].map((w) => fullForm(w)).join(' · ') },
+              h('b', `${lo}–${hi}`),
+              h('span', samples[i].slice(0, 3).map((w) => fullForm(w)).join(' · ')),
+            ),
+          );
+        }
+        if (grid.childElementCount) wrap.append(h('div.place-stage', label), grid);
       }
-      wrap.append(list, h('div.row', h('button.btn.primary', { onclick: () => this.ctrl.placeStart(0) }, '不确定，从头开始测')));
+      wrap.append(h('div.row', { style: 'margin-top:12px' }, h('button.btn.primary', { onclick: () => this.ctrl.placeStart(0) }, '不确定，从头开始测')));
       return wrap;
     }
     const top = topPassed(run);
     const lv = levelFor(top);
     if (run.outcome) {
       const o = run.outcome;
-      const rz = ['', '余烬营地', '面包集市', '铁轨镇'][o.region];
+      const rz = o.region === 1 ? '余烬营地' : AREAS.find((a) => a.region === o.region)?.zh ?? '';
       wrap.append(
         h('h3', o.gained.length ? `测完了：从 ${o.level} 级起步，进第 ${o.region} 区「${rz}」。` : top < 0 ? '测完了：从头开始最合适。' : `测完了：你现在的等级已经够了（测出 ${levelFor(top)} 级）。`),
         h('p', `写对 ${o.retired} 个，直接斩杀。` + (o.half ? `冠词或拼写差一点的 ${o.half} 个记成半名，野外再写对一次就归名。` : '')),
@@ -749,7 +754,10 @@ export class Panels {
       return wrap;
     }
     const [lo, hi] = bandRange(run.band);
-    wrap.append(h('p.small.muted', `正在测 ${lo}–${hi} 级的词 · 这一段 ${run.right} / ${run.asked} · 目前测出：${top < 0 ? '从头开始' : `${lv} 级起步（第 ${regionFor(lv)} 区）`}`));
+    const need = run.extended ? PLACE.per + PLACE.extra : PLACE.per;
+    const mine = run.results.filter((r) => r.band === run.band).slice(-run.asked);
+    const pips = h('div.place-pips', ...Array.from({ length: need }, (_, k) => h(`i${mine[k] ? (mine[k].res === 'ok' || mine[k].res === 'half' ? '.ok' : '.no') : ''}`)));
+    wrap.append(h('div.place-progress', h('b', `${lo}–${hi} 级`), pips, h('span.small.muted', `目前测出：${top < 0 ? '从头开始' : `${lv} 级起步（第 ${regionFor(lv)} 区）`}`)));
     const l = run.last;
     if (l) {
       const fb = h(`div.feedback.${l.res === 'ok' ? 'ok' : 'no'}`);
@@ -796,9 +804,10 @@ export class Panels {
       }
     });
     wrap.append(
-      h('div.focus', { style: 'font-size:28px;margin:10px 0' }, zhWithPos(w)),
-      h('div.typing', input, umlautButtons(input), h('button.btn.primary', { onclick: go }, '写 ↵'), h('button.btn', { onclick: skip }, '不会')),
-      h('div.row', h('button.btn.ghost', { onclick: () => { this.ctrl.placeStop(run); this.render(); } }, '后面都不会了，结束')),
+      h('div.place-word', zhWithPos(w)),
+      h('div.place-typing', input, h('button.btn.primary', { onclick: go }, '写 ↵'), h('button.btn', { onclick: skip }, '不会')),
+      h('div.place-typing', umlautButtons(input)),
+      h('div.place-typing', h('button.btn.ghost.small', { onclick: () => { this.ctrl.placeStop(run); this.render(); } }, '后面都不会了，结束')),
     );
     return wrap;
   }
@@ -891,7 +900,7 @@ export class Panels {
       }
     });
     wrap.append(
-      h('div.focus', { style: 'font-size:28px;margin:10px 0' }, zhWithPos(w)),
+      h('div.place-word', zhWithPos(w)),
       h('div.typing', input, umlautButtons(input), h('button.btn.primary', { onclick: go }, '写 ↵'), h('button.btn', { onclick: skip }, '不会，下一个')),
       run.cut.length || run.skipped || run.wrong ? h('details', h('summary.small.muted', '结算'), ...summary()) : '',
     );
@@ -1271,10 +1280,16 @@ export class Panels {
     wrap.append(filters);
     const grid = h('div.codex');
     const t = now(s);
+    let unseen = 0;
     for (const w of WORDS) {
       if (this.codexFilter !== 'all' && w.family !== this.codexFilter) continue;
       const st = stageOf(s, w, t);
       const seen = st > 0;
+      // 0.8.4: words not met yet are only counted (a new character used to open a wall of 「？？？」 cards).
+      if (!seen) {
+        unseen++;
+        continue;
+      }
       const gg = genderOf(w);
       const g = gg ? { m: 'der', f: 'die', n: 'das', pl: 'pl' }[gg] : null;
       const due = seen && kindOf(s, w, t) === 'due';
@@ -1288,7 +1303,9 @@ export class Panels {
         ),
       );
     }
-    wrap.append(grid);
+    if (grid.childElementCount) wrap.append(grid);
+    else wrap.append(h('p.muted', '还没遇见过这一类的怪。出去打几只吧。'));
+    if (unseen) wrap.append(h('p.small.muted', { style: 'margin-top:10px' }, `还有 ${unseen} 个词没遇见过，遇见后会出现在这里。`));
     return wrap;
   }
 

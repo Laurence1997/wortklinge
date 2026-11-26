@@ -25,8 +25,9 @@ export const STAGE_DEF: Record<Stage, StageDef> = Object.fromEntries(STAGES.map(
 
 /** A1 needs all four parts (saves from before the grammar part keep a1Passed but owe a1Grammar). */
 export function stagePassed(flags: Record<string, unknown>, stage: Stage): boolean {
-  if (stage === 'A1') return !!flags.a1Passed && !!flags.a1Grammar;
-  return !!flags[stagePassFlag(stage)];
+  // 入学测试 placed past the stage (flags.placeA1 …) counts too (Lucas 11-26); A1 still offers 补考语法.
+  if (stage === 'A1') return !!flags.a1Passed && (!!flags.a1Grammar || !!flags.placeA1);
+  return !!flags[stagePassFlag(stage)] || !!flags[`place${stage}`];
 }
 
 /** The save flag of a passed stage after A1. */

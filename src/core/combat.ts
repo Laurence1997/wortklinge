@@ -2,7 +2,7 @@
 // you pick a counter, then answer a question. You act first.
 
 import { CONFIG, DAY, HOUR, monsterHpAt, playerBaseHp } from './config';
-import { gradeTyped, normalize, type Verdict } from './grading';
+import { gradeTyped, levenshtein, normalize, type Verdict } from './grading';
 import { ELEMENT_ZH, generateIntent, INTENT_ZH } from './intents';
 import { between, makeRng, pick, shuffle, type Rng } from './rng';
 import { contextDueWords, contextFail, contextPass, gapZh, reviewedByWriting, reviewMon, failVerify, retire, setGuiming, kindOf, stageOf, overdueSteps, verifyOf, type Kind, type Stage } from './srs';
@@ -24,6 +24,7 @@ import { B2_CFG, B2_MON, b2Task, rollB2Mon, type B2Mon } from './b2mons';
 import { echoOptions, echoTask, notePron, PRON_MON, pronMonOk, type EchoTask } from './pron';
 import { count } from './items';
 import { fullForm, genderOf, hasArticleQuestion, WORD_BY_ID, WORDS, zhWithPos } from '../data/words';
+import { LEX_REL } from '../data/lexicon';
 import { canTarget, collocOf, gradeSplit, combatSkills, MULT, POOL, SEAL_TURNS, splitOf, type PoolId, type SplitTask } from './skillPool';
 import { SAYING_CFG, SAYINGS } from '../data/sayings';
 import { expectedSentence, gradeSentence, nextPattern, PATTERNS, sentenceTags, type Pattern } from './sentence';
@@ -847,6 +848,28 @@ function distractors(rng: Rng, w: Word, field: 'de' | 'zh', n: number): string[]
   return out;
 }
 
+/** 审查 C3 跟进 (Lucas 11-26 选 1): wrong options for 听整句选德语 must fit the sentence just as well, so only the ear
+ *  decides: same part of speech (nouns: same article), and sounding or looking close (形近 from relations.tsv first,
+ *  then the closest spellings). */
+export function soundAlikes(rng: Rng, w: Word, n: number): string[] {
+  const fits = (x: Word) => x.id !== w.id && x.pos === w.pos && x.de !== w.de && !synonym(w, x) && (!w.art || x.art === w.art) && !x.tutorial && x.pos !== 'phr';
+  const out: string[] = [];
+  for (const id of LEX_REL[w.id]?.[2] ?? []) {
+    const x = WORD_BY_ID[id];
+    if (x && fits(x) && !out.includes(x.de)) out.push(x.de);
+    if (out.length >= n) return shuffle(rng, out);
+  }
+  const me = normalize(w.de);
+  const near = WORDS.filter(fits)
+    .map((x) => ({ de: x.de, d: levenshtein(me, normalize(x.de)) + Math.abs(x.de.length - w.de.length) * 0.3 + (x.de[0]?.toLowerCase() === w.de[0]?.toLowerCase() ? 0 : 0.8) }))
+    .sort((a, b) => a.d - b.d);
+  for (const x of near) {
+    if (!out.includes(x.de)) out.push(x.de);
+    if (out.length >= n) break;
+  }
+  return out.length >= n ? shuffle(rng, out) : [...out, ...distractors(rng, w, 'de', n - out.length)];
+}
+
 /** Moves on the bar. 0.4: no sentence button (the whole sentence is the finisher); 铭刻 / 齐鸣 change the next question.
  *  2026-11-22 (Lucas, 精简出手按钮): 低语 is no longer a move on the bar but a hint taken after the question is shown (canHint). */
 export function availableMoves(s: GameState, b: Battle, alive = 1, mates = alive - 1): Move[] {
@@ -1177,10 +1200,11 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
   const listenDe = (): Question => {
     const ex = exampleOf(w, rng);
     if (!ex) return pickDe();
-    const opts = shuffle(rng, [w.de, ...distractors(rng, w, 'de', 2)]);
+    const opts = shuffle(rng, [w.de, ...soundAlikes(rng, w, 2)]);
     return { type: 'pickDe', prompt: '听整句，选出你听到的那个词', focus: '🔊 …', listen: ex, full: ex, options: opts, answer: w.de };
   };
-  const meaning = (): Question => (b.kind === 'new' && b.stage === 0 ? pickZh() : listenDe());
+  // Words met before go to 句中默写 when typing is open; the listening choice is only a bridge before that.
+  const meaning = (): Question => (b.kind === 'new' && b.stage === 0 ? pickZh() : (canType && hasExamples(w) ? clozeQ(s, w, rng) : null) ?? listenDe());
   // 练中学 (rev 425): 写 = 句中默写 (the word blanked in its example, the whole Chinese given, no letters);
   // plain 看中文写 only for words without an example.
   const typed = (): Question => dictQ(w, rng) ?? bareTyped();

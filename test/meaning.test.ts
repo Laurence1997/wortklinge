@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { newGame } from '../src/core/state';
 import { WORDS } from '../src/data/words';
-import { makeQuestion, startBattle } from '../src/core/combat';
+import { makeQuestion, soundAlikes, startBattle } from '../src/core/combat';
 import { makeRng } from '../src/core/rng';
 
 // 审查 C3: the name plate shows the meaning, so a word met before is never asked 「选中文意思」.
@@ -25,5 +25,18 @@ describe('C3 选中文意思只留给初见', () => {
       }
     }
     expect(asked).toBeGreaterThan(50);
+  });
+});
+
+describe('C3 跟进: 听整句选德语 options all fit the sentence', () => {
+  it('wrong options share the part of speech (and the article for nouns) and sound close', () => {
+    for (const w of WORDS.filter((x) => x.region <= 3 && (x.pos === 'n' || x.pos === 'v') && !x.tutorial).slice(0, 60)) {
+      const opts = soundAlikes(makeRng(1), w, 2);
+      expect(opts).toHaveLength(2);
+      for (const o of opts) {
+        const x = WORDS.find((y) => y.de === o && y.pos === w.pos && (!w.art || y.art === w.art));
+        expect(x, `${w.de}: ${o}`).toBeTruthy();
+      }
+    }
   });
 });

@@ -21,10 +21,12 @@ import { hasArticleQuestion, WORDS } from '../data/words';
 import { sameMeaning } from './screen';
 import { itemScore, makeItem, slotsAt } from './loot';
 import { tierIlvl } from './forge';
+import { STAGES } from './stages';
 
 export const PLACE = {
-  /** Monster levels per band. */
+  /** Monster levels per band (1–30), and above 30. */
   band: 3,
+  bandHigh: 5,
   /** Words asked per band, and the extra ones when it is borderline. */
   per: 5,
   extra: 3,
@@ -58,8 +60,11 @@ export function placeWords(): Word[] {
   return WORDS.filter((w) => !w.tutorial && w.family !== 'truhe' && w.pos !== 'phr' && w.lvl <= PLACE_CAP);
 }
 
+/** Bands: 3 levels each up to 30 (A1, unchanged so old saves keep their band keys), then 5 levels each (A2, B1; edges on 80 and 120). */
+const A1_BANDS = 30 / 3;
 export function bandOf(w: Pick<Word, 'lvl'>): number {
-  return Math.floor((w.lvl - 1) / PLACE.band);
+  if (w.lvl <= 30) return Math.floor((w.lvl - 1) / PLACE.band);
+  return A1_BANDS + Math.floor((w.lvl - 31) / PLACE.bandHigh);
 }
 
 export function bandCount(): number {
@@ -67,7 +72,9 @@ export function bandCount(): number {
 }
 
 export function bandRange(i: number): [number, number] {
-  return [i * PLACE.band + 1, Math.min(PLACE_CAP, (i + 1) * PLACE.band)];
+  if (i < A1_BANDS) return [i * PLACE.band + 1, Math.min(PLACE_CAP, (i + 1) * PLACE.band)];
+  const j = i - A1_BANDS;
+  return [31 + j * PLACE.bandHigh, Math.min(PLACE_CAP, 30 + (j + 1) * PLACE.bandHigh)];
 }
 
 /** Entry level when bands 0..top are passed (top = -1: none). */
@@ -75,12 +82,12 @@ export function levelFor(top: number): number {
   return top < 0 ? 1 : Math.min(PLACE_CAP, bandRange(top)[1] + 1);
 }
 
-/** 分级考核 only reaches the end of A1 until the 6000-word list is imported (regions 4–12 are stand-ins). */
-export const PLACE_CAP = 30;
+/** 分级考核 reaches the end of the released content (0.8: 120, regions 1–12; Lucas 11-26). */
+export const PLACE_CAP = Math.min(CONFIG.levelCap, CONFIG.releaseCap);
 
-/** Region you start in at that level (region 2 from 11, region 3 from 21). */
-export function regionFor(level: number): 1 | 2 | 3 {
-  return level >= 21 ? 3 : level >= 11 ? 2 : 1;
+/** Region you start in at that level (10 levels per region). */
+export function regionFor(level: number): number {
+  return Math.max(1, Math.min(Math.ceil(PLACE_CAP / 10), Math.ceil(level / 10)));
 }
 
 /** 推定会 words are 归名 on trust: they count as known but have not been written yet. */
@@ -297,7 +304,7 @@ export interface PlaceOutcome {
   level: number;
   /** Levels gained (empty when the test did not raise the level). */
   gained: number[];
-  region: 1 | 2 | 3;
+  region: number;
   retired: number;
   half: number;
   gaps: number;
@@ -345,6 +352,14 @@ export function applyPlacement(s: GameState, run: PlaceRun, t = now(s), _opts: {
     if (!passed(bandOf(w)) || seen.has(w.id) || s.words[w.id]) continue;
     s.words[w.id] = { stage: 3, due: FAR, ctxDone: true, placed: t, firstSeen: t, lastSeen: t, relapse: 0, correct: 0, wrong: 0, read: 0, write: 0 };
     placed++;
+  }
+  // 0.8.3 (Lucas 11-26「按推荐」): passing every band of a stage stands in for that stage's 突破试炼 words; it no
+  // longer caps the level. A1's grammar part is still owed (补考语法 at the 考官), but does not block levelling.
+  const topLevel = top < 0 ? 0 : bandRange(top)[1];
+  for (const d of STAGES) {
+    if (d.cap > topLevel) break;
+    if (d.stage === 'A1') s.flags.a1Passed = true;
+    s.flags[`place${d.stage}`] = true;
   }
   const level = Math.max(s.level, levelFor(top));
   const gained: number[] = [];

@@ -1960,7 +1960,7 @@ export class Controller {
   }
 
   private offerPlaceTravel(region: number): void {
-    const zh = ['', '余烬营地', '面包集市', '铁轨镇'][region];
+    const zh = region === 1 ? '余烬营地' : AREAS.find((a) => a.region === region)?.zh ?? `第 ${region} 区`;
     say([{ who: HILDE, text: `你叫得出的名字比我想的多。这片营地留不住你，去${zh}吧。` }], undefined, [
       { label: `去${zh}`, act: () => this.travel(region as RegionId) },
       { label: '先在这里转转', act: () => toast('以后在大地图（M）上随时能过去') },

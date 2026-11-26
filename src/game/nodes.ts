@@ -1,3 +1,4 @@
+import { accentOf } from '../ui/theme';
 import { npcFigure } from '../ui/icons';
 import { RIFT } from '../core/rift';
 import { adventurersIn } from '../core/adventurers';
@@ -77,7 +78,7 @@ export class NodeNav {
     if (this.here.type === 'road') this.s.flags[`road_${this.here.id}`] = true;
     // The 0.4 street map stays underneath (scenes stand on its tiles) but is veiled, so routes and monsters read first.
     this.veil?.destroy();
-    this.veil = this.w.add.rectangle(0, 0, 8000, 8000, 0x07040a, CONFIG.map.veil).setOrigin(0).setDepth(-1);
+    this.veil = this.w.add.rectangle(0, 0, 8000, 8000, this.w.bright ? 0xfffaf0 : 0x07040a, this.w.bright ? CONFIG.map.veil * 0.4 : CONFIG.map.veil).setOrigin(0).setDepth(-1);
     this.place();
     this.draw();
   }
@@ -89,6 +90,7 @@ export class NodeNav {
   }
 
   private place(): void {
+    this.w.refreshPlates();
     const p = anchorPx(this.here);
     this.w.player.setPosition(p.x, p.y + 14).setDepth(3002);
     this.s.pos = { x: p.x, y: p.y };
@@ -221,6 +223,7 @@ export class NodeNav {
   /** 全量筛选: the words you named in town live here → pay their stored XP (one line in the scene panel). */
   private claimMsg: { scene: string; text: string } | null = null;
   private claim(): void {
+    this.w.refreshPlates();
     const r = this.w.ctrl.claimScene(this.here.id);
     if (r) {
       this.claimMsg = { scene: this.here.id, text: `你在城里认出的 ${r.words} 个词就住在这里 · +${r.xp} 经验` };
@@ -236,25 +239,30 @@ export class NodeNav {
     this.labels = [];
     const g = (this.gfx = this.w.add.graphics().setDepth(3000));
     const list = scenesOf(this.w.map.region).filter(this.revealed);
+    // 明亮画风: route and circles in the region's accent on a bright map; dark red on 蚀变 maps.
+    const bright = this.w.bright;
+    const accent = parseInt(accentOf(this.w.map.region).slice(1), 16);
     for (const a of list)
       for (const id of neighbours(a.id)) {
         const b = SCENE_BY_ID[id];
         if (!this.revealed(b) || a.id > b.id) continue;
         const pa = anchorPx(a);
         const pb = anchorPx(b);
-        g.lineStyle(2, b.type === 'hidden' || a.type === 'hidden' ? 0xb8963a : 0x7a2630, 0.7);
+        g.lineStyle(bright ? 3 : 2, b.type === 'hidden' || a.type === 'hidden' ? 0xb8963a : bright ? accent : 0x7a2630, bright ? 0.85 : 0.7);
         g.lineBetween(pa.x, pa.y, pb.x, pb.y);
       }
     for (const sc of list) {
       const p = anchorPx(sc);
-      const color = sc.type === 'camp' ? 0xffb347 : sc.type === 'door' ? 0xff2040 : sc.type === 'hidden' ? 0xffcf4a : sc.type === 'road' ? 0x9a8a80 : 0xc23040;
-      g.fillStyle(0x07040a, 0.85).fillCircle(p.x, p.y, 9);
-      g.lineStyle(sc === this.here ? 2 : 1, sc === this.here ? 0xffffff : color, 1).strokeCircle(p.x, p.y, 9);
+      const color = bright
+        ? sc.type === 'door' ? 0xc0392b : sc.type === 'hidden' ? 0xb8963a : sc.type === 'road' ? 0x8a7a68 : accent
+        : sc.type === 'camp' ? 0xffb347 : sc.type === 'door' ? 0xff2040 : sc.type === 'hidden' ? 0xffcf4a : sc.type === 'road' ? 0x9a8a80 : 0xc23040;
+      g.fillStyle(bright ? 0xfffaf0 : 0x07040a, bright ? 0.95 : 0.85).fillCircle(p.x, p.y, 9);
+      g.lineStyle(sc === this.here ? 2.5 : bright ? 1.5 : 1, sc === this.here ? (bright ? 0x2d2118 : 0xffffff) : color, 1).strokeCircle(p.x, p.y, 9);
       // 全量筛选: XP waiting here (待领) → a small gold dot beside the circle until it is claimed.
       if (this.s.screen?.pending?.[sc.id]?.length) g.fillStyle(0xffcf4a, 1).fillCircle(p.x + 9, p.y - 8, 2.5);
       this.labels.push(
         this.w.add
-          .text(p.x, p.y, String(sc.no), { fontFamily: '"Courier New", monospace', fontSize: '8px', color: '#e8dccf', resolution: 4 })
+          .text(p.x, p.y, String(sc.no), { fontFamily: '"Courier New", monospace', fontSize: '8px', color: bright ? '#2d2118' : '#e8dccf', fontStyle: bright ? 'bold' : '', resolution: 4 })
           .setOrigin(0.5)
           .setDepth(3001),
       );
