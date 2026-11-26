@@ -13,6 +13,7 @@ import { WorldScene } from './game/WorldScene';
 import { showTitle } from './ui/title';
 import { toast } from './ui/feedback';
 import { setReportVersion } from './net/report';
+import { loadPassages } from './data/passages';
 
 const VERSION = '0.8.2';
 setReportVersion(VERSION);
@@ -21,6 +22,7 @@ const dev = new URLSearchParams(location.search).has('dev') && (import.meta.env.
 
 function boot(state: ReturnType<typeof newGame>) {
   const ctrl = new Controller(state, dev);
+  if (state.level >= 30) void loadPassages(); // 听段 from 34: its own chunk, fetched once the player is close
   (window as unknown as { wk: Controller }).wk = ctrl; // handy for debugging in the console
   const logBox = mountLogBox();
   joinWorld(() => ({ level: ctrl.state.level, hidden: !!ctrl.state.settings.hideBoard }));

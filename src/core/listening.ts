@@ -30,9 +30,15 @@ export const LISTEN = {
 
 export type ListenKind = 'passage' | 'blind';
 
+let byWord: Map<string, Passage> | null = null;
+let indexed = 0;
 export function passageFor(w: Word): Passage | null {
-  const list = PASSAGES.filter((p) => p.wordId === w.id);
-  return list.length ? list[0] : null;
+  if (!byWord || indexed !== PASSAGES.length) {
+    indexed = PASSAGES.length;
+    byWord = new Map();
+    for (const p of PASSAGES) if (!byWord.has(p.wordId)) byWord.set(p.wordId, p);
+  }
+  return byWord.get(w.id) ?? null;
 }
 
 /** A sentence for 盲听: one of the word's examples with its form blanked (none starting with the blank). */
