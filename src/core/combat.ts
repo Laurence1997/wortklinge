@@ -1464,7 +1464,8 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
   // typing when the word has no example); ③ 写 typing (conjugation for verbs).
   if (am === 'attack' && b.elite) {
     if (b.elite.seg === 0 || !canType) {
-      const rec: Array<() => Question> = isNoun ? [article, meaning, pickDe] : [meaning, pickDe];
+      const recog = (): Question => (b.kind === 'new' && b.stage === 0 ? pickZh() : listenDe());
+      const rec: Array<() => Question> = isNoun ? [article, recog, pickDe] : [recog, pickDe];
       return rec[b.step % rec.length]();
     }
     if (b.elite.seg === 1) return (hasExamples(w) ? clozeQ(s, w, rng) : null) ?? (canConj ? conj() : typed());

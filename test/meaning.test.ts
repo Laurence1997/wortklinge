@@ -30,7 +30,7 @@ describe('C3 选中文意思只留给初见', () => {
 
 describe('C3 跟进: 听整句选德语 options all fit the sentence', () => {
   it('wrong options share the part of speech (and the article for nouns) and sound close', () => {
-    for (const w of WORDS.filter((x) => x.region <= 3 && (x.pos === 'n' || x.pos === 'v') && !x.tutorial).slice(0, 60)) {
+    for (const w of WORDS.filter((x) => (x.region ?? 99) <= 3 && (x.pos === 'n' || x.pos === 'v') && !x.tutorial).slice(0, 60)) {
       const opts = soundAlikes(makeRng(1), w, 2);
       expect(opts).toHaveLength(2);
       for (const o of opts) {
