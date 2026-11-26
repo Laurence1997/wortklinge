@@ -1,4 +1,5 @@
 import { push as pushCloud } from '../net/cloud';
+import { loadPassages } from '../data/passages';
 import { carriesShout } from '../core/skillPool';
 import { track } from '../net/social';
 import { noteGram, stampBoard } from '../core/board';
@@ -438,6 +439,7 @@ export class Controller {
   /** Lessons tied to a level (游戏设计 › 新手引导). */
   /** `quiet` (入学测试 jumps): set the level's flags and gifts but say nothing; the caller shows one summary. */
   private onLevelUp(level: number, quiet = false) {
+    if (level >= 30) void loadPassages();
     void track();
     const s = this.state;
     this.milestone(`lv${level}`);

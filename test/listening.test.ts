@@ -4,7 +4,7 @@ import { WORDS } from '../src/data/words';
 import { makeQuestion, resolveTurn, startBattle } from '../src/core/combat';
 import { makeRng } from '../src/core/rng';
 import { blindLine, LISTEN, passageTask, rollListen } from '../src/core/listening';
-import { PASSAGES } from '../src/data/passages';
+import { loadPassages, PASSAGES } from '../src/data/passages';
 import { slotsAt } from '../src/core/loot';
 
 // 听段题 (34) / 盲听 (91) and 耳机.
@@ -14,7 +14,7 @@ describe('听力', () => {
     expect(slotsAt(33)).not.toContain('phones');
     expect(slotsAt(34)).toContain('phones');
   });
-  it('blind listening only from 91 (no passage data yet)', () => {
+  it('blind listening only from 91 (word without a passage)', () => {
     const always = () => 0;
     expect(rollListen(90, w, always)).toBeNull();
     expect(rollListen(91, w, always)).toBe('blind');
@@ -40,5 +40,15 @@ describe('听力', () => {
     expect(b.step).toBe(step);
     expect(b.listenDone).toBe(true);
     PASSAGES.pop();
+  });
+});
+
+describe('听段 data (hoeren-6000.tsv)', () => {
+  it('every passage points at a real word and has three distinct answers', async () => {
+    await loadPassages();
+    const ids = new Set(WORDS.map((x) => x.id));
+    expect(PASSAGES.length).toBeGreaterThan(4000);
+    const bad = PASSAGES.filter((p) => !ids.has(p.wordId) || new Set([p.answer, ...p.wrong]).size < 3 || !p.lines.length);
+    expect(bad.map((p) => p.id)).toEqual([]);
   });
 });
