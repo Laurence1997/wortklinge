@@ -3255,3 +3255,16 @@ export function structTasks(w: Word): GramTask[] {
   }
   return out;
 }
+
+/** 审查 C1 / C2 / C5 (2026-11-26): does the monster's shown line give this question's answer away (a grammar blank in the
+ *  same sentence, a perfect participle read out, the word twice in one example)? Then it only mumbles while answering. */
+export function lineLeaks(line: string | undefined, q: Question | null | undefined): boolean {
+  if (!line || !q) return false;
+  const norm = (x: string) => ` ${x.toLowerCase().replace(/[^a-zäöüß\s]/g, ' ').replace(/\s+/g, ' ').trim()} `;
+  const l = norm(line.replace(/…\s*mmh\s*…/g, ' '));
+  const answers = [q.answer, ...(q.alts ?? []), ...(q.gram?.alts ?? [])].filter((a): a is string => !!a);
+  return answers.some((a) => {
+    const n = norm(a).trim();
+    return n.length >= 2 && l.includes(` ${n} `);
+  });
+}

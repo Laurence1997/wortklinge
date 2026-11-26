@@ -4,7 +4,7 @@ import type { Battle, Question, TurnReport } from '../core/combat';
 import { count as itemCount, itemsOpen, tabletHeal } from '../core/items';
 import { CHARM, equippedCharms } from '../core/charms';
 import { listenRate } from '../core/listening';
-import { bestHeard, plateZh, castMs, gcdMs, parryWindowMs, realtimeOn, voiceOpen } from '../core/combat';
+import { bestHeard, lineLeaks, plateZh, castMs, gcdMs, parryWindowMs, realtimeOn, voiceOpen } from '../core/combat';
 import { availableMoves, chorusMates, canHint, comboTier, effArmor, moveReady, poolReady, needsPhase, phaseOf, resName, stancesFor, teachPhase, readTarget, readRecall, readShown, phaseWrongWhy } from '../core/combat';
 import { articleSlip, clarity, shadowOk } from '../core/shadow';
 import { has } from '../core/unlocks';
@@ -690,7 +690,7 @@ export class BattleUI {
     this.ctrl.setTarget(i);
     if (this.b === before) return;
     if (this.phase === 'answer') this.question = this.ctrl.askQuestion(this.move);
-    this.ctrl.speak(this.b.intent.line);
+    this.speakLine();
     this.render();
   }
 
@@ -796,7 +796,7 @@ export class BattleUI {
       return true;
     }
     if (k === 'v') {
-      this.ctrl.speak(this.b.intent.line);
+      this.speakLine();
       return true;
     }
     return false;
@@ -865,7 +865,7 @@ export class BattleUI {
         // 审查修订: the line often is the word's own example — while a finisher / ultimate or 直接叫名 is answered it
         // only mumbles.
         ...(() => {
-          const mum = b.direct || (this.phase === 'answer' && (this.move === 'sentence' || !!this.question?.ult));
+          const mum = b.direct || (this.phase === 'answer' && (this.move === 'sentence' || !!this.question?.ult || lineLeaks(it.line, this.question)));
           return [h('div.line', mum ? '… mmh …' : it.line), h('div.zh', !mum && this.zhShown && this.b.curse !== 'forget' ? plainZh(it.zh) : '')];
         })(),
         b.queued?.kind === 'charge' ? h('div.zh', { style: 'color:var(--gold, #ffcf4a)' }, '看穿 · 它下回合要蓄力') : '',
@@ -881,7 +881,7 @@ export class BattleUI {
           : '',
         h(
           'div.ib',
-          h('button.btn', { onclick: () => this.ctrl.speak(it.line), title: '再听一遍（V）' }, '🔊 再听'),
+          h('button.btn', { onclick: () => this.speakLine(), title: '再听一遍（V）' }, '🔊 再听'),
           this.b.curse === 'forget' ? '' : h('button.btn', { onclick: () => { this.zhShown = !this.zhShown; this.render(); }, title: '中文（Z）' }, this.zhShown ? '隐藏中文' : '看中文'),
           this.phase === 'choose' ? this.shadowRow() : '',
         ),
@@ -1082,11 +1082,18 @@ export class BattleUI {
         h('div.nm', { style: `color:${color}` }, dead ? (pb.pluralMon ? `die ${w.pl}` : fullForm(w)) : nameGlyph(pb, this.phase === 'answer' && asksMeaning(this.question)), elTag && !dead ? h('span.tag', { style: 'margin-left:4px;font-size:10px' }, elTag) : ''),
         pb.pluralMon && !dead ? h('span.tag.echo', '复数怪 · 一律 die') : '',
         bar('hp', pb.monster.hp, pb.monster.maxHp, `${pb.monster.hp} / ${pb.monster.maxHp}`),
-        dead ? '' : h('div.it', it.line),
+        dead ? '' : h('div.it', this.phase === 'answer' && lineLeaks(it.line, this.question) ? '…mmh…' : it.line),
       );
       wrap.append(card);
     });
     return wrap;
+  }
+
+  /** 审查 C1/C2: while answering, never read out a line that contains the answer (a participle, an article …). */
+  private speakLine(): void {
+    const line = this.b.intent.line;
+    if (this.phase === 'answer' && lineLeaks(line, this.question)) return;
+    this.ctrl.speak(line);
   }
 
   private renderQuestion(qq: Question): HTMLElement {
