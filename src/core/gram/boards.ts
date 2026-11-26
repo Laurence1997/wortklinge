@@ -30,6 +30,8 @@ export const BOARDS: Partial<Record<GramSys, Board>> = {
   mirror: { title: '规则怪谈 · 镜子里的自己', lines: ['反身动词：动作回到自己身上，要配 mich / dich / sich。', 'Ich freue mich. Er wäscht sich.'], shows: /\b(mich|dich|sich)\b/ },
   prep: { title: '规则怪谈 · 动词锁着介词', lines: ['有些动词固定配一个介词：warten auf, denken an, sich freuen über。', '介词后面的格也是固定的，要一起记。'] },
   ablaut: { title: '规则怪谈 · 变音的血统', lines: ['强变化动词按元音变化分成几族：e → i（nehmen → nimmt），a → ä（fahren → fährt）。', '同族的动词变法一样，学会一个，同族都会。'] },
+  prepDat: { title: '规则怪谈 · 永远接第三格的介词', lines: ['mit、bei、von、zu、aus、nach、seit 后面永远用第三格。', '阳性、中性 dem，阴性 der，复数 den（名词加 -n）。', '常缩写：zum、zur、beim、vom：Ich fahre mit dem Bus zur Arbeit.'], shows: /\b(mit|bei|von|aus|nach|seit) (dem|der|einem|einer)\b|\b(zum|zur|beim|vom) [A-ZÄÖÜ]/ },
+  prepAcc: { title: '规则怪谈 · 永远接第四格的介词', lines: ['für、ohne、gegen、durch、um 后面永远用第四格。', '只有阳性会变：der → den，ein → einen；阴性、中性、复数不变。', 'Das ist für den Chef. Ich gehe ohne meinen Schirm.'], shows: /\b(für|ohne|gegen|durch) (den|die|das|einen|eine|ein)\b/ },
   twoway: { title: '规则怪谈 · 在哪里，还是去哪里', lines: ['in、an、auf、über、unter、vor、hinter、neben、zwischen 是双向介词。', '在哪里（Wo?）用第三格：Das Buch liegt auf dem Tisch.', '去哪里、放到哪里（Wohin?）用第四格：Ich lege das Buch auf den Tisch.'], shows: /\b(in|an|auf|unter|neben) (dem|den)\b/ },
   woher: { title: '规则怪谈 · zum、beim、vom', lines: ['去人或店那里：zum Arzt, zur Post。', '在那里：beim Arzt, bei der Post。从那里来：vom Arzt, von der Post。', '城市和国家：nach Berlin / in Berlin / aus Berlin。'], shows: /\b(zum|beim|vom|zur) [A-ZÄÖÜ]/ },
   posVerb: { title: '规则怪谈 · 放下和放着', lines: ['stellen / legen / hängen：把东西放过去（动作），Wohin? + 第四格。', 'stehen / liegen / hängen：东西在那儿（状态），Wo? + 第三格。', 'Ich stelle die Vase auf den Tisch. → Die Vase steht auf dem Tisch.'], shows: /\b(steht|liegt|stellt|legt|stehen|liegen)\b/ },
@@ -110,6 +112,8 @@ export interface GramSave {
   prep?: string[];
   /** 词族秘境: cleared floors. */
   wordfam?: string[];
+  /** 介词空 / 介词秘境: right and asked per preposition (p:auf) and kind (c:two). */
+  prepStat?: Record<string, [number, number]>;
   /** 复习伙伴 (43): the 归名 word that fights along. */
   partner?: string;
 }

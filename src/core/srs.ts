@@ -188,6 +188,15 @@ export function reviewedByWriting(s: GameState, w: Word, t = now(s)): void {
   else p.due = Math.max(p.due, t + gapOf(p));
 }
 
+/** 介词空 right (游戏设计 六): one review of the word, like a written answer, but it never confirms a 推定会 word
+ *  (the word itself was not written). */
+export function reviewedByUse(s: GameState, w: Word, t = now(s)): void {
+  const p = s.words[w.id];
+  if (!p || p.placed || p.retired || p.stage !== 3 || p.ctxDone) return;
+  if (t >= p.due) contextPass(s, w, t);
+  else p.due = Math.max(p.due, t + gapOf(p));
+}
+
 /** Words whose context question is due, most overdue first. */
 export function contextDueWords(s: GameState, t = now(s)): string[] {
   return Object.entries(s.words)

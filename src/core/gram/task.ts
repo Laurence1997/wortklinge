@@ -7,12 +7,15 @@
 // punctuation, ae/oe/ue/ss), so a rule check never calls a right answer wrong.
 
 import { normalize } from '../grading';
+import { gradePrep, type PrepInfo } from './prepGrade';
 
 /** Which grammar system asked. Also the key of the 规则怪谈看板 that teaches it (boards.ts). */
 export type GramSys =
   | 'kein'
   | 'nicht'
   | 'timePrep'
+  | 'prepDat'
+  | 'prepAcc'
   | 'datPron'
   | 'mein'
   | 'modal'
@@ -104,6 +107,8 @@ export interface GramTask {
   special?: boolean;
   /** 词族秘境 contrast: the other word of the pair; a wrong answer marks this word 易混 with it. */
   mix?: string;
+  /** 介词空 (blank: true) and the 介词秘境: the preposition and its kind, for the error weights and the grading. */
+  pb?: PrepInfo;
 }
 
 const strip = (s: string) =>
@@ -126,6 +131,10 @@ export interface GramVerdict {
 /** Grade a grammar task. Choice: exact option. Typed: the answer or an alt, normalized; a trailing bitte or
  *  punctuation never matters. */
 export function gradeGram(t: GramTask, input: string): GramVerdict {
+  if (t.pb?.blank) {
+    const v = t.options ? (input === t.answer ? { ok: true } : gradePrep(input, t.answer, t.pb)) : gradePrep(input, t.answer, t.pb);
+    return { ok: v.ok, notes: v.ok ? (t.full ? [t.full] : []) : [`正确答案：${t.answer}`, ...(t.full ? [t.full] : []), v.why ?? t.rule], correct: t.answer };
+  }
   const accepted = [t.answer, ...(t.alts ?? [])];
   let ok: boolean;
   if (t.options) ok = input === t.answer || (t.alts ?? []).includes(input);

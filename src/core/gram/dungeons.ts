@@ -20,6 +20,7 @@ import { LEX_REL } from '../../data/lexicon';
 import { WORD_BY_ID } from '../../data/words';
 import { EXAMPLES, parse } from '../cloze';
 import type { GramTask } from './task';
+import { normalize } from '../grading';
 import { praetFull, strongOf } from './praet';
 
 export type DungeonKind = 'ablaut' | 'prep' | 'wordfam';
@@ -268,6 +269,7 @@ export function prepTask(w: Word, floor: string, lock: number, rng: Rng): GramTa
       zh: r.exZh,
       lock: lockInfo,
       wordId: w.id,
+      pb: { prep: normalize(r.prep), cat: 'verb' },
     };
   }
   const k = r.kasus as 'A' | 'D';
@@ -283,6 +285,7 @@ export function prepTask(w: Word, floor: string, lock: number, rng: Rng): GramTa
     zh: r.exZh,
     lock: lockInfo,
     wordId: w.id,
+    pb: { prep: normalize(r.prep), cat: 'verb' },
   };
 }
 

@@ -499,3 +499,11 @@ body.bright .diary-line.reading { background: rgba(168, 106, 0, .08); }
 body.bright .feedback.ok { color: var(--good); }
 body.bright #chat .chat-tabs .tab.on { color: var(--accent); background: #fffdf8; border-color: var(--line-hi); }
 body.bright .b-intent .line { color: var(--ink); text-shadow: none; } body.bright .b-intent .zh { color: #8a5a00; }
+
+/* 规则怪谈看板 (0.8.5): readable on both themes. */
+.board { border: 1px solid #7a5cff; background: rgba(60, 30, 120, 0.25); padding: 8px 12px; margin: 4px 0 8px; line-height: 1.55; }
+.board-title { color: #c3a9ff; font-weight: bold; margin-bottom: 4px; }
+.board-ex { color: #9fd; }
+body.bright .board { border-color: #6a4fd8; background: #f1edff; color: #2a2340; }
+body.bright .board-title { color: #4a2fb8; }
+body.bright .board-ex { color: #1f6b5c; }

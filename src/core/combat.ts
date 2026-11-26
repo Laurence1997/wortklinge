@@ -5,7 +5,7 @@ import { CONFIG, DAY, HOUR, monsterHpAt, playerBaseHp } from './config';
 import { gradeTyped, levenshtein, normalize, type Verdict } from './grading';
 import { ELEMENT_ZH, generateIntent, INTENT_ZH } from './intents';
 import { between, makeRng, pick, shuffle, type Rng } from './rng';
-import { contextDueWords, contextFail, contextPass, gapZh, reviewedByWriting, reviewMon, failVerify, retire, setGuiming, kindOf, stageOf, overdueSteps, verifyOf, type Kind, type Stage } from './srs';
+import { contextDueWords, contextFail, contextPass, gapZh, reviewedByUse, reviewedByWriting, reviewMon, failVerify, retire, setGuiming, kindOf, stageOf, overdueSteps, verifyOf, type Kind, type Stage } from './srs';
 import { typoOk } from './cut';
 import { isPlaced, placedCheck, placedPick, regionFor } from './placement';
 import { blindLine, blindTask, LISTEN, passageFor, passageTask, rollListen } from './listening';
@@ -37,6 +37,7 @@ import { gradeStorm, stormForms, type StormForm } from './storm';
 import { gradeGram, gramKey, type GramTask } from './gram/task';
 import { gramFor } from './gram/hook';
 import { boardDue, markBoard, type ShownBoard } from './gram/boards';
+import { notePrep, prepBlankTask, PREP_CFG } from './gram/prepBlank';
 import { dungeonTask } from './gram/dungeons';
 import { hasMirror, mirrorTask, MIRROR } from './gram/mirror';
 import { partnerOf } from './gram/partner';
@@ -1519,7 +1520,15 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
   // question twice in a row (Lucas, playtest 2026-11-19: three der clicks in a row is boring).
   // New words: article → hear it and pick the meaning → type it (once typing is unlocked).
   // 完形填空: words with example sentences get the cloze into the ladder (Lucas 2026-11-20).
-  const cl = hasExamples(w) || (isNoun && has(s.level, 'slot')) ? () => writeQ() ?? (hasExamples(w) ? clozeQ(s, w, rng) : null) ?? (isNoun ? article() : meaning()) : null;
+  // 介词空 (游戏设计 六, rev 707): takes about 1/5 (1/4 from 31) of the cloze slots when the word's own sentence has
+  // an open preposition phrase.
+  const prepQ = (): Question | null => {
+    if (am !== 'attack' || fresh || b.tutorial || b.trial || !canType || (b.kind === 'new' && b.stage === 0)) return null;
+    if (rng() >= (s.level >= PREP_CFG.highFrom ? PREP_CFG.shareHigh : PREP_CFG.shareLow)) return null;
+    const t = prepBlankTask(s, w, rng, (full) => seenNow.has(lineKey(full)));
+    return t ? gramQuestion(t, boardDue(s, t.sys)) : null;
+  };
+  const cl = hasExamples(w) || (isNoun && has(s.level, 'slot')) ? () => prepQ() ?? writeQ() ?? (hasExamples(w) ? clozeQ(s, w, rng) : null) ?? (isNoun ? article() : meaning()) : null;
   if (canConj) {
     const verbLadder = b.stage === 0 ? [meaning, cl ?? conj, conj, pickDe] : [conj, cl ?? pickDe, conj, meaning];
     return verbLadder[b.step % verbLadder.length]();
@@ -2131,7 +2140,9 @@ export function resolveTurn(
   if (!itemTurn) {
     b.qIndex += 1;
     if (q.type === 'sentence') b.sxUsed = (b.sxUsed ?? 0) + 1;
-    if (q.gram) b.gramAsked = (b.gramAsked ?? 0) + 1;
+    if (q.gram && !q.gram.pb?.blank) b.gramAsked = (b.gramAsked ?? 0) + 1;
+    // 介词空 / 介词秘境: per-preposition and per-kind accuracy (more questions where you miss, 3-choice below 60%).
+    if (q.gram?.pb && !q.whispered) notePrep(s, q.gram.pb, ok);
     if (q.gram?.sys === 'notice' && b.notice) b.notice.i += 1;
     if (q.gram?.sys === 'listen' || q.gram?.sys === 'blind') {
       b.listenDone = true;
@@ -2173,6 +2184,11 @@ export function resolveTurn(
     if (!taughtNow && !q.review && !q.partner && q.type !== 'saying' && (!ok || q.whispered)) b.flawed = true;
     if (!taughtNow && !q.review && !q.partner && q.type !== 'saying' && !ok) b.wrongs = (b.wrongs ?? 0) + 1;
     if (ok && !q.whispered && !q.review && !q.partner && q.type === 'cloze' && !shownWords) b.usedOk = true;
+    // 介词空 right: one review of the word and 会用 (not 会写).
+    if (ok && !q.whispered && q.gram?.pb?.blank) {
+      b.usedOk = true;
+      reviewedByUse(s, b.word);
+    }
     if (ok && !q.whispered && !q.review && !q.partner && !taughtNow) {
       if (q.voiced || shownWords) b.readOk = (b.readOk ?? 0) + 1; // 开口作答 / 抄词块: 认得, not 会写
       else if (q.type === 'typed' || q.type === 'conj' || q.type === 'plural' || q.type === 'sentence' || stormAll || (q.type === 'cloze' && q.clozeMode !== 'pick')) {
@@ -2929,7 +2945,7 @@ function formQ(q: Question): boolean {
 
 /** 格位题: the article or case the sentence needs. */
 function caseQ(b: Battle, q: Question): boolean {
-  if (q.gram) return ['kein', 'datPron', 'mein', 'prep', 'timePrep', 'adj', 'article'].includes(q.gram.sys);
+  if (q.gram) return ['kein', 'datPron', 'mein', 'prep', 'timePrep', 'prepDat', 'prepAcc', 'twoway', 'adj', 'article'].includes(q.gram.sys);
   if (q.write === 'slot') return true;
   return q.type === 'cloze' && q.clozeMode === 'form' && !!b.word.art;
 }
@@ -3006,6 +3022,11 @@ export function starOf(s: GameState, q: Question): string | null {
     : sys === 'modal' ? 'modal'
     : sys === 'sep' ? 'separable'
     : sys === 'adj' ? 'adjEnd'
+    : q.gram?.pb?.blank && q.gram.pb.kase === 'D' && q.gram.pb.cat !== 'two' ? 'dat'
+    : q.gram?.pb?.blank && q.gram.pb.kase === 'A' && q.gram.pb.cat !== 'two' ? 'acc'
+    : sys === 'prepDat' ? 'dat'
+    : sys === 'twoway' ? 'twoway'
+    : sys === 'prepAcc' ? 'acc'
     : sys === 'prep' || sys === 'timePrep' ? 'twoway'
     : sys === 'datPron' ? 'dat'
     : sys === 'kein' || sys === 'mein' || sys === 'article' ? 'article'

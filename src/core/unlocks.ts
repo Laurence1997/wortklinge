@@ -146,6 +146,12 @@ const GRAM_UNLOCK_TEXT: Record<number, string[]> = {
   181: ['三语域怪：同一件事的口语、正式、书面说法'],
   191: ['回顾怪：从走过的路上捡回旧词和旧句式'],
 };
+// 介词空 (游戏设计 六, rev 707): the cloze sometimes blanks the preposition (+ article) of the word's own sentence.
+GRAM_UNLOCK_TEXT[10] = [...(GRAM_UNLOCK_TEXT[10] ?? []), '介词空：填空题有时挖掉的是介词和冠词（___ Montag → Am）。缩写和全写都算（im = in dem）'];
+GRAM_UNLOCK_TEXT[15] = [...(GRAM_UNLOCK_TEXT[15] ?? []), '介词空 · 固定格：mit / bei / von / zu / aus / nach / seit + 第三格，für / ohne / gegen / durch / um + 第四格'];
+GRAM_UNLOCK_TEXT[32] = [...(GRAM_UNLOCK_TEXT[32] ?? []), '介词空 · 双向介词：在哪里（wo）第三格，去哪里（wohin）第四格；前 20 题会标出 wo / wohin'];
+GRAM_UNLOCK_TEXT[41] = [...(GRAM_UNLOCK_TEXT[41] ?? []), '介词空 · 动介搭配：warte ___ Bus → auf den'];
+GRAM_UNLOCK_TEXT[91] = [...(GRAM_UNLOCK_TEXT[91] ?? []), '介词空 · 属格介词：wegen / trotz / während + 第二格'];
 // 技能池 (游戏设计 十): skills handed over by level, and the extra slots.
 GRAM_UNLOCK_TEXT[15] = [...(GRAM_UNLOCK_TEXT[15] ?? []), '新技能「拆词」：复合词写出两部分、可分动词拆开写进短句。答对破甲 3 下（按 T 放进出战栏）'];
 GRAM_UNLOCK_TEXT[30] = [...(GRAM_UNLOCK_TEXT[30] ?? []), '技能格 +1（共 3 格）'];

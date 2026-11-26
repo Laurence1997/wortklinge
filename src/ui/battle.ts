@@ -1123,10 +1123,9 @@ export class BattleUI {
       wrap.append(
         h(
           'div.board',
-          { style: 'border:1px solid #7a5cff;background:rgba(60,30,120,.25);padding:8px 12px;margin:4px 0 8px;line-height:1.55' },
-          h('div', { style: 'color:#c3a9ff;font-weight:bold;margin-bottom:4px' }, qq.board.title),
+          h('div.board-title', qq.board.title),
           ...qq.board.lines.map((l) => h('div', l)),
-          ...(qq.board.examples.length ? [h('div', { style: 'margin-top:4px;color:#9fd' }, '你见过的句子：'), ...qq.board.examples.map((x) => h('div', { style: 'color:#9fd' }, `· ${x}`))] : []),
+          ...(qq.board.examples.length ? [h('div.board-ex', { style: 'margin-top:4px' }, '你见过的句子：'), ...qq.board.examples.map((x) => h('div.board-ex', `· ${x}`))] : []),
         ),
       );
     wrap.append(h('div.prompt', h('span', qq.prompt), tags ? h('span.tag', tags) : '', hintBtn));
