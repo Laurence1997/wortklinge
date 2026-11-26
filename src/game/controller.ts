@@ -76,6 +76,7 @@ import { addGearKill, stampTiers } from '../core/state';
 import { bossRed, rollSetDrop, salvage, shardBalance, tierIlvl, tradeInfo, tradeShards, tradesOpen } from '../core/forge';
 import { aiOpinion, AI_TUTOR, aiEssay, aiGrade, aiGradeText, duelTurn, knownWords, persuadeTurn, wordForms, type AiGrade } from '../net/aiTutor';
 import { DUEL, DUEL_SCENES, duelTurns, type DuelScene } from '../data/grammar/duels';
+import { scriptPrompt, scriptsFor, type Script } from '../data/grammar/scripts';
 import { drawPractice } from '../core/aiPractice';
 import { noticeById } from '../core/gram/notice';
 import { partnerChoices, partnerOf, setPartner } from '../core/gram/partner';
@@ -106,7 +107,7 @@ const HILDE = '守火人 Hilde';
 const GRETA = '导师 Greta';
 const MIRA = '商人 Mira';
 
-type DuelRun = { d: DuelScene; turns: number; targets: Word[]; used: Set<string>; known: string[]; clean: number; grammar?: string[]; voice?: boolean; onIdle?: () => void };
+type DuelRun = { d: DuelScene; turns: number; targets: Word[]; used: Set<string>; known: string[]; clean: number; grammar?: string[]; voice?: boolean; onIdle?: () => void; cues?: string[] };
 
 export class Controller {
   state: GameState;
@@ -2182,6 +2183,7 @@ export class Controller {
     lines.push({ who, text: `${a.origin}。（${a.manner}）` });
     say(lines, undefined, [
       { label: '💬 聊天（德语）', act: () => this.chatAdventurer(a) },
+      { label: '🎭 剧本模式（演一场戏）', act: () => this.openScripts(a) },
       { label: `⚔ PK（今天还有 ${pkPaidLeft(s)} 场有奖励）`, act: () => this.pkAdventurer(a) },
       { label: '走开', act: () => undefined },
     ]);
@@ -2200,6 +2202,29 @@ export class Controller {
       voice: true,
       onIdle: () => say([{ who: `${a.name}（AI）`, text: '……（在发呆）' }, { who: SYS, text: 'AI 暂时不可用，冒险者在发呆。可以和它 PK。' }], undefined, [{ label: '⚔ PK', act: () => this.pkAdventurer(a) }, { label: '走开', act: () => undefined }]),
     });
+  }
+
+  /** 剧本模式 (十五 151; opens from an adventurer): the player plays a role from a script, the AI the other part. */
+  private openScripts(a: Adventurer): void {
+    const s = this.state;
+    if (!s.owner) return say([{ who: SYS, text: '剧本模式要登录才能用（AI 在云端）。' }]);
+    const lines: Line[] = [];
+    if (!s.flags.scriptSeen) {
+      s.flags.scriptSeen = true;
+      lines.push({ who: SYS, text: '【剧本模式】你演剧本里的一个角色，每轮照提示说一句德语，AI 演另一方接话。提示只说这句要做什么，怎么说你自己定。和聊天一样给你 3–5 个要用上的词，奖励也一样。' });
+    }
+    lines.push({ who: `${a.name}（AI）`, text: '我来演对手。挑一个剧本：' });
+    say(lines, undefined, [...scriptsFor(s.level).map((sc) => ({ label: `${sc.title}（你演${sc.role}）`, act: () => this.startScript(a, sc) })), { label: '先不', act: () => undefined }]);
+  }
+
+  private startScript(a: Adventurer, sc: Script): void {
+    const d: DuelScene = { id: `script-${sc.id}`, title: `剧本「${sc.title}」`, npc: sc.npc, scene: scriptPrompt(sc) };
+    say([{ who: SYS, text: `🎭 ${sc.title}\n${sc.setting}\n你演：${sc.role}。对手：${sc.npc}（${a.name} 来演）。` }], () =>
+      this.startDuel(d, {
+        cues: sc.beats,
+        onIdle: () => say([{ who: `${a.name}（AI）`, text: '……（忘词了）' }, { who: SYS, text: 'AI 暂时不可用，剧本模式先演不了。可以和它 PK。' }], undefined, [{ label: '⚔ PK', act: () => this.pkAdventurer(a) }, { label: '走开', act: () => undefined }]),
+      }),
+    );
   }
 
   private pkAdventurer(a: Adventurer): void {
@@ -2249,11 +2274,11 @@ export class Controller {
     say(lines, undefined, [...DUEL_SCENES.map((d) => ({ label: d.title, act: () => this.startDuel(d) })), { label: '先不', act: () => {} }]);
   }
 
-  private startDuel(d: DuelScene, opt: { grammar?: string[]; voice?: boolean; onIdle?: () => void } = {}): void {
+  private startDuel(d: DuelScene, opt: { grammar?: string[]; voice?: boolean; onIdle?: () => void; cues?: string[] } = {}): void {
     const s = this.state;
     const [a, b] = DUEL.words;
     const targets = drawPractice(s, a + Math.floor(this.rng() * (b - a + 1)), this.rng);
-    const run: DuelRun = { d, turns: duelTurns(s.level, this.rng), targets, used: new Set<string>(), known: knownWords(s), clean: 0, ...opt };
+    const run: DuelRun = { d, turns: opt.cues?.length ?? duelTurns(s.level, this.rng), targets, used: new Set<string>(), known: knownWords(s), clean: 0, ...opt };
     if (targets.length) say([{ who: SYS, text: `这场要用上的词（用德语说出来）：${targets.map((w) => `「${w.zh}」`).join('、')}。最多 ${run.turns} 轮。` }], () => this.duelStep(run, [], ''));
     else this.duelStep(run, [], '');
   }
@@ -2311,8 +2336,9 @@ export class Controller {
         return say(lines);
       }
       const need = run.targets.filter((w) => !run.used.has(w.id)).map((w) => `「${w.zh}」`); // 审查修订: targets in Chinese
+      const cue = run.cues?.[turns] ? `\n🎭 这一句：${run.cues[turns]}` : '';
       if (run.voice) this.speak(r.de);
-      say(lines, () => this.panels.ask(d.npc, `${r.de}${need.length ? `\n（还要用上：${need.join('、')}；第 ${turns + 1}/${run.turns} 轮）` : `\n（第 ${turns + 1}/${run.turns} 轮）`}`, (text: string, sp?: boolean) => (text.trim() ? this.duelStep(run, h2, text.trim(), !!sp) : say([{ who: SYS, text: '你转身走了。' }])), false, !!run.voice));
+      say(lines, () => this.panels.ask(d.npc, `${r.de}${need.length ? `\n（还要用上：${need.join('、')}；第 ${turns + 1}/${run.turns} 轮）` : `\n（第 ${turns + 1}/${run.turns} 轮）`}${cue}`, (text: string, sp?: boolean) => (text.trim() ? this.duelStep(run, h2, text.trim(), !!sp) : say([{ who: SYS, text: '你转身走了。' }])), false, !!run.voice));
     });
   }
 

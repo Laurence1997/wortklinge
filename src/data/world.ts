@@ -58,8 +58,6 @@ export const AREAS: AreaDef[] = [
   ...REGION_DEFS.map((d) => ({ region: d.region, zh: d.zh, de: d.de, levels: `Lv ${regionLevels(d.region).join('–')}`, hub: `r${d.region}-hub` })),
 ];
 
-/** Areas not built yet, shown greyed out on the big map (游戏设计 四, regions 13–20). */
-export const AREAS_LATER = ['议会堡 · B2', '铸币场 · B2', '观星台 · B2', '面具剧场 · B2', '档案深处 · C1', '天平庭 · C1', '荒原 · C1', '沉默之心 · C1'];
 
 // ---- Field scenes of every region, generated from the 6000-word scene groups (src/data/lexicon.ts) -------------
 // 6000 词导入: regions 1–3 have five fields, regions 4–12 three; each field scene owns one word group. Scenes stand on a

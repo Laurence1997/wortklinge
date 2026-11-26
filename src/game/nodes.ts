@@ -21,7 +21,7 @@ import { eligible, fieldCleared } from '../core/spawn';
 import { erodeOpen, purified } from '../core/erosion';
 import type { ZoneId } from '../core/types';
 import { WORD_BY_ID, fullForm } from '../data/words';
-import { AREAS, AREAS_LATER, HOME_SCENE, SCENE_BY_ID, SCENES, neighbours, nearestScene, routeTo, scenesOf, type SceneDef } from '../data/world';
+import { AREAS, HOME_SCENE, SCENE_BY_ID, SCENES, neighbours, nearestScene, routeTo, scenesOf, type SceneDef } from '../data/world';
 import { h } from '../ui/dom';
 import { sfx } from './audio';
 import { ZONES, TILE, type NpcId } from './map';
@@ -435,7 +435,6 @@ export class NodeNav {
             `${a.zh} · ${a.de} · ${a.levels}${a.region === this.w.map.region ? '（你在这里，点一下回主城）' : open(a.region) ? '' : '（还没去过）'}`,
           ),
         ),
-        ...AREAS_LATER.map((t) => h('button.btn', { disabled: true }, `${t}（以后开放）`)),
         this.waystation(),
       ),
     );
