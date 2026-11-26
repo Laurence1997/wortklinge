@@ -85,7 +85,7 @@ ABRIDGE = """你是德语母语的编辑，把德语维基新闻原文删减成�
 
 CHECK = """你是严格的德语母语审校。下面是一篇从维基新闻删减来的 B2 学习文章，附中文、3 道题和一串「表外词」候选。
 1. 删减后德语是否正确连贯（只修删减造成的语法或衔接问题，不改写原文）；中文是否准确；每道题是否只有一个答案且能从文中找到依据。能改就改，改不好 verdict 写 drop。
-2. 给表外词候选写注释：跳过人名、地名、机构名和缩写；每个真正的词给一个简单的德语释义（只用最常用的 2000 个德语词，10 个词以内）和中文意思。w 写文中出现的形式。
+2. 给表外词候选写注释：跳过人名、地名、机构名和缩写；每个真正的词给一个简单的德语释义（只用最常用的 2000 个德语词，10 个词以内）和中文意思，de 和 zh 都不超过 40 个字符。w 写文中出现的形式。
 只输出 JSON：{"verdict":"ok 或 fix 或 drop","why":"…","paras":[…],"zh":[…],"questions":[…],"gloss":[{"w":"…","de":"…","zh":"…"}]}（verdict 为 ok 时 paras/zh/questions 可省略）"""
 
 usage = [0, 0]
@@ -144,7 +144,7 @@ def work(item):
     kept = [w for w in tgt if w in L]
     if len(kept) < 3: return ('few', src['标题'], None)
     gloss = [{'w': str(g.get('w', '')).strip(), 'de': str(g.get('de', '')).strip(), 'zh': str(g.get('zh', '')).strip()}
-             for g in c.get('gloss') or [] if g.get('w') and g.get('zh')]
+             for g in c.get('gloss') or [] if g.get('w') and g.get('zh') and len(str(g.get('de', ''))) <= 40 and len(str(g['zh'])) <= 40]
     row = {'段': s, '标题': str(a.get('title') or src['标题']).strip(), '例句': '｜'.join(paras), '例句中文': '｜'.join(str(z).strip() for z in zh),
            '新词': ', '.join(cased.get(w, w) for w in kept), '注释': json.dumps(gloss, ensure_ascii=False),
            '题目': json.dumps(qs, ensure_ascii=False), '词数': str(len(WORD.findall(text))),

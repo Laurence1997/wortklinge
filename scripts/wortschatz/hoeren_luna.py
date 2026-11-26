@@ -87,8 +87,8 @@ def call(system, user):
 
 def clean(x):
     lines = [str(l).strip().replace('｜', ' ') for l in x.get('lines') or [] if str(l).strip()]
-    wrong = [str(w).strip() for w in x.get('wrong') or [] if str(w).strip()]
-    ans = str(x.get('answer', '')).strip()
+    wrong = [str(w).strip().replace('｜', ' ') for w in x.get('wrong') or [] if str(w).strip()]
+    ans = str(x.get('answer', '')).strip().replace('｜', ' ')
     if not 2 <= len(lines) <= 4 or len(wrong) != 2 or not ans or ans in wrong or not x.get('q') or not x.get('zh'): return None
     if len(' '.join(lines).split()) > 60: return None
     return {'lines': lines, 'zh': str(x['zh']).strip(), 'q': str(x['q']).strip(), 'qZh': str(x.get('qZh', '')).strip(),
