@@ -512,3 +512,10 @@ body.bright .b-intent .line { color: var(--ink); text-shadow: none; } body.brigh
 body.bright .board { border-color: #6a4fd8; background: #f1edff; color: #2a2340; }
 body.bright .board-title { color: #4a2fb8; }
 body.bright .board-ex { color: #1f6b5c; }
+
+/* 告示 / 文章 in battle: long texts scroll in the box, with a scrollbar that is always visible (macOS hides overlay bars). */
+.passage { white-space: pre-wrap; font-size: 15px; line-height: 1.55; border: 1px solid var(--line, #553); padding: 8px 12px; margin: 6px 0 2px; max-height: min(30vh, 320px); overflow-y: scroll; scrollbar-gutter: stable; }
+.passage::-webkit-scrollbar { width: 10px; }
+.passage::-webkit-scrollbar-track { background: rgba(0, 0, 0, .06); border-radius: 5px; }
+.passage::-webkit-scrollbar-thumb { background: rgba(120, 90, 40, .55); border-radius: 5px; }
+.passage-hint { margin: 0 0 6px; }

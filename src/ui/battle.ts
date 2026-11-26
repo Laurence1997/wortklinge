@@ -63,6 +63,8 @@ export class BattleUI {
   private lastValue = '';
   /** 齐鸣 (rev 234): one box per same-stance mate, sent after the target's answer joined with |. */
   private mateBoxes: HTMLInputElement[] = [];
+  /** Where the player had scrolled the current notice / article to. */
+  private passageAt: { text: string; top: number } | null = null;
   private voicedFull = '';
   /** 跟读: the German sentence just read aloud after a right answer, and the last attempt's feedback. */
   private shadowText = '';
@@ -1141,7 +1143,22 @@ export class BattleUI {
     }
     // 审查 C3: 听整句选德语 (a word met before) — replay the sentence freely.
     if (qq.type === 'pickDe' && qq.listen && !qq.echo && !qq.gram && this.phase === 'answer') wrap.append(h('div.hud-row', h('button.btn.small', { onclick: () => this.ctrl.speak(qq.listen!) }, '🔁 再听这句')));
-    if (qq.gram?.passage) wrap.append(h('div.passage', { style: 'white-space:pre-wrap;font-size:15px;line-height:1.5;border:1px solid var(--line, #553);padding:8px 10px;margin:6px 0;max-height:220px;overflow:auto' }, qq.gram.passage));
+    if (qq.gram?.passage) {
+      // Long texts (B2 articles are 300–450 words) scroll inside the box; the scrollbar is always drawn and the
+      // place you read to is kept across questions on the same text.
+      const text = qq.gram.passage;
+      const box = h('div.passage', {}, text);
+      const hint = h('div.passage-hint.small.muted', '↓ 文章较长，在框里滚动鼠标滚轮看全文');
+      box.addEventListener('scroll', () => {
+        this.passageAt = { text, top: box.scrollTop };
+        hint.hidden = box.scrollTop + box.clientHeight >= box.scrollHeight - 4;
+      });
+      wrap.append(box, hint);
+      window.setTimeout(() => {
+        if (this.passageAt?.text === text) box.scrollTop = this.passageAt.top;
+        hint.hidden = box.scrollHeight <= box.clientHeight + 4 || box.scrollTop + box.clientHeight >= box.scrollHeight - 4;
+      }, 0);
+    }
     // 齐鸣 (rev 234): write each same-stance mate's own word (with the article); each right one is hit.
     this.mateBoxes = [];
     if (qq.mates?.length) {
