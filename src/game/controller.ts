@@ -29,7 +29,7 @@ import { CHEST_ZH, CHESTS, lockWord, openChest, type ChestKind } from '../core/c
 import { playChest } from '../ui/chestFx';
 import { gradeTyped } from '../core/grading';
 import { buy as buyItem, openShop, refresh as refreshShop, sell as sellItem } from '../core/shop';
-import { hourGold, rank, resetOldTree, resMax, respec, respecCost, spent } from '../core/classes';
+import { hourGold, resetOldTree, resMax, respec, respecCost, spent } from '../core/classes';
 import { noteVisit } from '../core/redname';
 import { BLESSINGS, blessCount, blessScale, bossFloor, canDescend, descend, endRift, offerBlessings, RIFT, riftAct, riftItemLevel, riftOpen, riftWord, silenceLeft, startRift, takeBlessing } from '../core/rift';
 import { makeItem, slotsAt, QUALITY_ZH, rollQuality, SLOT_ZH } from '../core/loot';
@@ -2298,7 +2298,7 @@ export class Controller {
           if (s.flags.aiPayDay !== today) (s.flags.aiPayDay = today), (s.flags.aiPayN = 0);
           s.flags.aiPayN = ((s.flags.aiPayN as number) ?? 0) + 1;
           const paid = (s.flags.aiPayN as number) <= CONFIG.aiPaidPerDay;
-          const gold = paid ? Math.round(DUEL.goldPerLevel * s.level * (1 + 0.1 * rank(s, 'jiantan') * run.clean)) : 0;
+          const gold = paid ? Math.round(DUEL.goldPerLevel * s.level) : 0;
           s.gold += gold;
           logLine(paid ? `决斗场「${d.title}」：金币 +${gold}` : `决斗场「${d.title}」：今天前 ${CONFIG.aiPaidPerDay} 场的奖励已领完，这场只算复习`, paid ? 'good' : 'info');
           if (paid && s.flags.duelDay !== today) {

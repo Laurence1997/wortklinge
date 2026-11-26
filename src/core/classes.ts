@@ -254,5 +254,5 @@ export function critRunNeeded(s: GameState): number {
 }
 
 export function hpBonus(s: GameState): number {
-  return 0.05 * rank(s, 'houpi') + 0.05 * rank(s, 'houjia') + starHpBonus(s);
+  return 0.05 * rank(s, 'houpi') + starHpBonus(s);
 }

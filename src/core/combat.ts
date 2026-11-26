@@ -188,8 +188,6 @@ export interface PlayerFx {
   shield: boolean;
   /** 「Das ist zu teuer!」: this turn's hits on you are halved. */
   cheap?: boolean;
-  /** 「Wie viel kostet das?」: turns left in which next turn's intent is shown. */
-  peek?: number;
   /** 「Stimmt so.」: monsters killed this fight drop double gold. */
   stimmt?: boolean;
   /** 「Der Zug fährt ab!」: the next right answer hits twice as hard. */
@@ -244,7 +242,7 @@ export interface TalentFx {
   earNext?: boolean;
 }
 
-export type Tutorial = 'loss' | 'block' | 'break' | 'negation' | 'heal' | 'packCharge' | null;
+export type Tutorial = 'loss' | 'packCharge' | null;
 
 export interface Battle {
   word: Word;
@@ -1232,8 +1230,6 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
     const id = ((skillId as PoolId) && POOL[skillId as PoolId] ? skillId : combatSkills(s).find((x) => poolReady(s, b, x)) ?? 'storm') as PoolId;
     const sk = POOL[id];
     if (id === 'steady') {
-      // 天赋「稳固」: this monster's typed question instead of a choice; right → 3 covered misses.
-      if (rank(s, 'wengu')) return { ...bareTyped(), type: 'steady', pool: id, prompt: `稳住（稳固）：默写${isNoun ? '（带冠词）' : ''}。答对，接下来 3 次答错不扣血、不断连击（答错只保 1 次）` };
       if (isNoun && rng() < 0.5) return { type: 'steady', pool: id, prompt: '稳住：选对它的冠词。答对，接下来 2 次答错不扣血、不断连击（答错只保 1 次）', focus: zhWithPos(w), options: ['der', 'die', 'das'], answer: w.art! };
       const opts = shuffle(rng, [w.zh, ...distractors(rng, w, 'zh', 2)]);
       return { type: 'steady', pool: id, prompt: '稳住：选出它的意思。答对，接下来 2 次答错不扣血、不断连击（答错只保 1 次）', focus: fullForm(w), options: opts, answer: w.zh };
@@ -1442,7 +1438,7 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
   }
   if (am === 'attack' && inPack && isNoun && !b.named && b.stage === 0 && !needsPhase(b)) return callout();
   // 防御 (Lv7+): a written answer breaks the guard. A word not yet at the typing step gets its usual choice question (×0.3).
-  if (am === 'attack' && b.intent.kind === 'defend' && canType && (b.tutorial === 'break' || !(b.kind === 'new' && b.stage === 0 && b.step < 2))) {
+  if (am === 'attack' && b.intent.kind === 'defend' && canType && !(b.kind === 'new' && b.stage === 0 && b.step < 2)) {
     if (!isNoun && conjOpen(s, w)) return conj();
     return typed();
   }
@@ -1737,7 +1733,7 @@ export function gradeQuestion(s: GameState, b: Battle, q: Question, input: strin
       return gradeTyped(input, q.review ? WORD_BY_ID[q.review] : b.word, !!q.withArticle);
     case 'storm': {
       if (!q.forms) return gradeTyped(input, q.word!, !!q.withArticle);
-      const g = gradeStorm(q.word!, q.forms, input, rank(s, 'xuxie') > 0);
+      const g = gradeStorm(q.word!, q.forms, input, false);
       b.stormHits = g.n;
       const all = g.all;
       return { ok: g.n > 0, notes: all ? [] : [...g.notes, `全部：${q.answer}`], correct: q.answer!, word: all ? q.word : undefined };
@@ -2217,10 +2213,9 @@ export function resolveTurn(
       log.push({ text: '言灵反噬：规则没守住，资源 −1。', tone: 'bad' });
     }
     if (move === 'inscribe') cfx.inscribeCd = CONFIG.tech.inscribeCd;
-    if (move === 'chorus') b.chorusCd = Math.max(1, CONFIG.tech.chorusCd - rank(s, 'qisheng'));
+    if (move === 'chorus') b.chorusCd = Math.max(1, CONFIG.tech.chorusCd);
     // 题型奖励表: a correct answer earns its row's resource (guardians: +1 for every answer instead, their passive).
     if (ok && move !== 'skill' && !q.whispered) cfx.res += QTYPES[qKey(q)].res;
-    if (ok && !q.whispered) cfx.res += talentRes(s, b, q);
     if (critRunNeeded(s) && typedLike && q.type !== 'storm') {
       if (ok) {
         cfx.run += 1;
@@ -2259,7 +2254,7 @@ export function resolveTurn(
 
       if (move === 'skill' && q.type === 'steady') {
         // 稳住 (rev 425): no damage; the next 2 wrong answers cost no HP and keep the combo.
-        cfx.guard = rank(s, 'wengu') && !q.options ? 3 : 2;
+        cfx.guard = 2;
         log.push({ text: `「稳住」——你沉下身子。接下来${cfx.guard === 3 ? '三' : '两'}次答错，都不扣血、不断连击。`, tone: 'good' });
       } else {
         const atk = attack(s);
@@ -2271,7 +2266,7 @@ export function resolveTurn(
         if (q.type === 'storm') {
           // rev 234: attack × (1 + 0.5 × forms right); talent 连写 +10% per form per point.
           const n = q.forms ? b.stormHits ?? 0 : 1;
-          mult *= (1 + 0.5 * n) * (1 + 0.1 * rank(s, 'changci') * n) * (1 + pen);
+          mult *= (1 + 0.5 * n) * (1 + pen);
           log.push({ text: `墨水风暴：连写对 ${n}${q.forms ? ` / ${q.forms.length}` : ''} 种形式。`, tone: 'good' });
         } else if (typedLike) mult *= 1 + pen; // 天赋「笔锋」; no question-type gear affix
         if (q.pool && MULT[q.pool]) {
@@ -2349,9 +2344,9 @@ export function resolveTurn(
         if (q.type !== 'saying') b.firstCorrectDone = true;
         tf.sharp = 0;
         if (perfect) {
-          mult *= rank(s, 'xiushi') ? 2.8 : PERFECT.mult;
+          mult *= PERFECT.mult;
           log.push({ text: '完美言灵：整句没错，还用了从句或修饰语。', tone: 'crit' });
-        } else if (crit) mult *= critMultFor(s, q, typedLike);
+        } else if (crit) mult *= critMultFor();
         // 护甲和破甲: a hard question (or writing through a guard) breaks the armor for this hit and the next two.
         const stanceMove = move === 'attack' || move === 'inscribe' || move === 'whisper' || move === 'chorus' || move === 'sentence';
         if (stanceMove && needsPhase(b)) {
@@ -2446,10 +2441,6 @@ export function resolveTurn(
           log.push({ text: '格位连锁：趁它还没回神，换一个格再叫它一次！', tone: 'good' });
         }
         if (isFinisher(q) && rank(s, 'yuyun')) tf.glow = 3; // this turn + the next 2
-        if (q.pool === 'colloc' && rank(s, 'dapei')) {
-          b.armorDownT = 3;
-          log.push({ text: '搭配记忆：它的护甲降一档，2 回合。', tone: 'good' });
-        }
         if (rank(s, 'yishou') && (cfx.guard ?? 0) > 0 && move !== 'skill') {
           const d = Math.max(1, Math.round(attack(s) * (1 - effArmor(s, b, 0)) * between(rng, CONFIG.damage.roll[0], CONFIG.damage.roll[1])));
           m.hp -= d;
@@ -2519,7 +2510,6 @@ export function resolveTurn(
         if (q.type === 'typed' && !q.withArticle && hasArticleQuestion(b.word)) b.lastKillTyped = false;
         // A noun's 归名 blow must write the article: only a form cloze that includes one (den Tee) counts.
         if (q.type === 'cloze' && hasArticleQuestion(b.word) && !((q.clozeMode === 'form' || q.dict) && ARTICLE_RE.test(q.answer ?? ''))) b.lastKillTyped = false;
-        if (b.lastKillTyped && b.stage === 2 && rank(s, 'mingbihu')) heal(s, 0.1, '名之庇护', log);
         log.push({ text: `${tagOf(b)}散了。`, tone: 'sys' });
         kills.push(b);
       }
@@ -2538,9 +2528,9 @@ export function resolveTurn(
       } else if (b.fx.charm?.keepCombo) {
         b.fx.charm.keepCombo = false;
         log.push({ text: '「Keine Ahnung.」——这次答错，连击还在。', tone: 'info' });
-      } else if (rank(s, 'buhuang') || starOf(s, q)) {
+      } else if (starOf(s, q)) {
         s.combo = Math.floor(s.combo / 2);
-        if (s.combo) log.push({ text: `${rank(s, 'buhuang') ? '不慌' : '星位'}：连击只减半（${s.combo}）。`, tone: 'info' });
+        if (s.combo) log.push({ text: `星位：连击只减半（${s.combo}）。`, tone: 'info' });
       } else s.combo = 0;
       b.wrongStreak += 1;
       if (b.stage === 2 && !b.slipped && b.kind === 'due' && !q.review) {
@@ -2782,10 +2772,9 @@ export function resolveTurn(
       x.turn += 1;
       x.intent = x.queued ?? nextIntent(s, x, rng);
       perfektGuard(s, x);
-      x.queued = (b.fx.peek ?? 0) > 0 ? nextIntent(s, x, rng) : undefined;
+      x.queued = undefined;
     }
     if (multi) alignPairs(s, pack);
-    if ((b.fx.peek ?? 0) > 0) b.fx.peek! -= 1;
   }
   syncShared(b, pack);
   const outcome: Battle['outcome'] = pack.every((x) => x.outcome === 'win') ? 'win' : s.hp <= 0 ? 'lose' : b.outcome;
@@ -2945,18 +2934,15 @@ export function speedCrit(s: GameState, q: Question): boolean {
   return q.ms <= (quickLineMs(q) + (q.earMs ?? 0)) * share;
 }
 
-/** Crit multiplier with 笔力 (typed) and 快刃 (quick), capped at ×3. */
-function critMultFor(s: GameState, q: Question, typedLike: boolean): number {
-  const m = CONFIG.player.critMult + (typedLike ? 0.1 * rank(s, 'bili') : 0) + (isQuick(s, q) && rank(s, 'kuairen') ? 0.2 : 0);
-  return Math.min(CONFIG.player.critMultCap, m);
+/** Crit multiplier, capped. */
+function critMultFor(): number {
+  return Math.min(CONFIG.player.critMultCap, CONFIG.player.critMult);
 }
 
-/** Pool skill cooldown after talents (墨渍, 稳步, 拆解, 封印熟练, 连发; 墨水充盈 halves a full storm). */
-export function poolCdFor(s: GameState, id: PoolId, stormAll = false): number {
-  const cut: Partial<Record<PoolId, number>> = { storm: rank(s, 'mozi'), steady: rank(s, 'wenbu'), split: rank(s, 'chaijie'), seal: rank(s, 'fengyin'), dictate: rank(s, 'lianfa') };
-  let cd = Math.max(1, POOL[id].cd - (cut[id] ?? 0));
-  if (id === 'storm' && stormAll && rank(s, 'mochong')) cd = Math.max(1, Math.ceil(cd / 2));
-  return cd;
+/** Pool skill cooldown after talents (墨渍, 稳步, 拆解, 封印熟练). */
+export function poolCdFor(s: GameState, id: PoolId, _stormAll = false): number {
+  const cut: Partial<Record<PoolId, number>> = { storm: rank(s, 'mozi'), steady: rank(s, 'wenbu'), split: rank(s, 'chaijie'), seal: rank(s, 'fengyin') };
+  return Math.max(1, POOL[id].cd - (cut[id] ?? 0));
 }
 
 /** 语法星位 this question belongs to (lit ones only), for +10% and the halved combo loss. */
@@ -2993,15 +2979,6 @@ function heal(s: GameState, pct: number, why: string, log: LogLine[]): void {
   log.push({ text: `${why}：回 ${d} 点生命。`, tone: 'good' });
 }
 
-/** Extra 言灵 on a right answer: 接话 (接句怪), 定神 (while 稳住 covers you), 条理 (hard question). */
-function talentRes(s: GameState, b: Battle, q: Question): number {
-  let n = 0;
-  if (q.type === 'saying' && rank(s, 'jiehua')) n += 1;
-  if ((b.cfx.guard ?? 0) > 0 && rank(s, 'dingshen') && q.type !== 'steady') n += 1;
-  if (qTier(q) === 2 && rank(s, 'tiaoli')) n += 1;
-  return n;
-}
-
 /** Right answer, before the hit: heals (改过, 温故), combo (乘胜), 声盾, and the 心流 count. */
 function talentOnRight(s: GameState, b: Battle, q: Question, log: LogLine[], afterWrong: boolean): void {
   const tf = (b.cfx.tf ??= {});
@@ -3011,8 +2988,6 @@ function talentOnRight(s: GameState, b: Battle, q: Question, log: LogLine[], aft
     s.combo += 3;
     log.push({ text: '乘胜：连击 +3。', tone: 'good' });
   }
-  if (q.spoken && rank(s, 'shengdun')) tf.voiceShield = true;
-  if ((listenQ(q) || q.spoken) && rank(s, 'jingting')) tf.earNext = true;
   if (rank(s, 'xinliu')) {
     tf.quickRun = isQuick(s, q) ? (tf.quickRun ?? 0) + 1 : 0;
     if (tf.quickRun >= 5 && !(tf.flow ?? 0)) {
@@ -3031,11 +3006,8 @@ function talentDamage(s: GameState, b: Battle, q: Question, c: { typedLike: bool
   const writing = c.typedLike || q.type === 'sentence';
   // 笔锋 (落笔 is applied with the storm above)
   if (formQ(q)) add += 0.08 * r('xingbi');
-  if (writing && b.word.art && (q.withArticle || (c.clozeTyped && q.clozeMode === 'form' && ARTICLE_RE.test(q.answer ?? '')))) add += 0.05 * r('guanbi');
   if (q.dict || isFinisher(q)) add += 0.04 * r('changju');
   if (writing && b.stage === 2) add += 0.15 * r('dingming');
-  if (c.typedLike && !tf.whispered && r('wutishi')) add += 0.1;
-  if (writing && (b.wrongs ?? 0) > 0) add += 0.15 * r('biji');
   if (c.typedLike && c.broken && r('tengxie')) add += 0.25; // 誊写: typed hits into a broken shell
   // 守势
   if (s.hp < maxHp(s) * 0.3) add += 0.2 * r('gangyi');
@@ -3044,28 +3016,21 @@ function talentDamage(s: GameState, b: Battle, q: Question, c: { typedLike: bool
   if (q.write === 'link') add += 0.08 * r('lianci');
   if (q.spoken) add += 0.15 * r('kaikou');
   if (c.typedLike && (tf.glow ?? 0) > 0) add += 0.05 * r('yuyun');
-  if (c.tier === 2 && engraved(s, 'denn')) add += 0.05 * r('yuqi');
-  if (q.chorus && engraved(s, 'auch')) add += 0.05 * r('yuqi');
   if (q.ult) add += 0.1 * r('juxing');
   if (q.pool === 'colloc') add += 0.1 * r('cikuai') / (MULT.colloc ?? 1.6); // ×1.6 → ×1.7/×1.8
   // 秩序
   const cq = caseQ(b, q) || conjQ(b, q);
   if (cq) add += 0.05 * r('gelv');
   if (c.phaseRight) add += 0.1 * r('shiruo');
-  if (c.broken) add += 0.05 * r('pozhan');
   if (orderQ(q)) add += 0.06 * r('cixu');
   if (irregularQ(b, q) && writing) add += 0.04 * r('guizheng');
-  if (cq && b.elite) add += 0.08 * r('kegou'); // 结构魔 (B1 红名) not in the game yet
-  if (q.gram?.lock) add += 0.08 * r('shuangsuo'); // 锁链怪 (介词秘境)
   // 迅捷
   const quick = isQuick(s, q);
   if (quick) add += 0.05 * r('kuaibi');
   if (listenQ(q)) add += 0.06 * r('tingyin');
-  if (quick && s.combo >= 10) add += 0.1 * r('lianzhu');
   if (c.typedLike && q.ms !== undefined && q.ms <= 5000) add += 0.04 * r('suji');
   if (q.pool === 'dictate' || q.gram?.sys === 'blind') add += 0.06 * r('erchong');
   if (tf.preempt) {
-    add += 0.08 * r('qiangxian');
     tf.preempt = false;
   }
   // 语法星位
@@ -3073,22 +3038,9 @@ function talentDamage(s: GameState, b: Battle, q: Question, c: { typedLike: bool
   return 1 + add;
 }
 
-/** End of turn: interrupts (坚守, 乘隙, 抢先), and the per-turn counters. */
-function talentEndTurn(s: GameState, b: Battle, _q: Question, ok: boolean, interrupted: boolean, log: LogLine[]): void {
+/** End of turn: the per-turn counters. */
+function talentEndTurn(_s: GameState, b: Battle, _q: Question, _ok: boolean, _interrupted: boolean, _log: LogLine[]): void {
   const tf = (b.cfx.tf ??= {});
-  if (interrupted && ok) {
-    if (b.intent.kind === 'charge') {
-      if (rank(s, 'jianshou')) {
-        tf.ward = (tf.ward ?? 0) + Math.round(maxHp(s) * 0.05 * rank(s, 'jianshou'));
-        log.push({ text: `坚守：得到 ${tf.ward} 点护盾。`, tone: 'good' });
-      }
-      if (rank(s, 'chengxi')) {
-        b.armorDownT = 2;
-        log.push({ text: '乘隙：它的护甲降一档，2 回合。', tone: 'good' });
-      }
-    }
-    if (rank(s, 'qiangxian')) tf.preempt = true;
-  }
   if ((tf.glow ?? 0) > 0) tf.glow! -= 1;
   if ((tf.flow ?? 0) > 0) tf.flow! -= 1;
 }
