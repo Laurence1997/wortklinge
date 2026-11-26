@@ -20,7 +20,7 @@ W = os.path.join(ROOT, 'data', 'wortschatz')
 csv.field_size_limit(10**8)
 CJK = re.compile(r'[一-鿿]')
 LINE = re.compile(r'\[(error|unnatural|translation)\] tsv:wortschatz/([^:]+):[^:]*:(\d+) \| (.*?) \| (.*?) \| (.*)$')
-MULTI = {'hoeren-6000', 'briefe-1.0', 'artikel-b2'}
+MULTI = {'hoeren-6000', 'briefe-1.0', 'artikel-b2', 'artikel-b2-original'}
 NATIVE = {'artikel-b2'}
 files, log, done = {}, [], set()
 def rows_of(name):
