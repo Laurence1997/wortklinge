@@ -21,13 +21,19 @@ def tsv(p): return list(csv.DictReader(open(p, encoding='utf-8'), delimiter='\t'
 UA = {'User-Agent': 'wortklinge-content/1.0 (language-learning game; GitHub Actions)'}
 API = 'https://de.wikipedia.org/w/api.php?'
 
+errors = [0, 0]  # failed, done
 def get(params):
-    for attempt in range(4):
+    for attempt in range(3):
         try:
-            req = urllib.request.Request(API + urllib.parse.urlencode({**params, 'format': 'json', 'formatversion': 2}), headers=UA)
-            with urllib.request.urlopen(req, timeout=60) as r: return json.load(r)
+            req = urllib.request.Request(API + urllib.parse.urlencode({**params, 'format': 'json', 'formatversion': 2, 'maxlag': 5}), headers=UA)
+            with urllib.request.urlopen(req, timeout=20) as r:
+                errors[1] += 1
+                return json.load(r)
         except Exception as e:
-            time.sleep(2 * (attempt + 1))
+            if errors[0] < 5: print(f'request error: {e}', flush=True)
+            errors[0] += 1
+            if errors[0] > 200 and errors[0] > errors[1]: raise SystemExit('Wikipedia keeps refusing: stopping')
+            time.sleep(3 * (attempt + 1))
     return {}
 
 seg = defaultdict(set); cased = {}
@@ -42,11 +48,13 @@ print(f'{len(open_words)} segment words without an article')
 
 def search(sw):
     s, w = sw
-    j = get({'action': 'query', 'list': 'search', 'srsearch': cased[w], 'srlimit': 3, 'srnamespace': 0})
+    j = get({'action': 'query', 'list': 'search', 'srsearch': cased[w], 'srlimit': 2, 'srnamespace': 0})
     return [h['title'] for h in j.get('query', {}).get('search', [])]
 titles = set()
-with ThreadPoolExecutor(4) as ex:
-    for ts in ex.map(search, open_words): titles |= set(ts)
+with ThreadPoolExecutor(3) as ex:
+    for k, ts in enumerate(ex.map(search, open_words), 1):
+        titles |= set(ts)
+        if k % 300 == 0: print(f'searched {k}/{len(open_words)}, {len(titles)} pages, errors {errors[0]}', flush=True)
 titles = sorted(t for t in titles if not re.search(r'\(Begriffsklärung\)|^Liste |Begriffsklärung', t))
 print(f'{len(titles)} candidate pages')
 
@@ -75,8 +83,9 @@ def lem(tok):
     return cache[k]
 DARK = re.compile(r'\b(Terror\w*|Anschl[aä]g\w*|Krieg\w*|getötet|Tote[nr]?|Todesopfer\w*|Mord\w*|ermordet|Massaker|Folter\w*|Gewalt\w*|Waffe\w*|Selbstmord\w*|Suizid\w*|Hinrichtung\w*)\b')
 best = defaultdict(list)
-with ThreadPoolExecutor(4) as ex:
-    for res in ex.map(fetch, titles):
+with ThreadPoolExecutor(3) as ex:
+    for k, res in enumerate(ex.map(fetch, titles), 1):
+        if k % 300 == 0: print(f'fetched {k}/{len(titles)}, errors {errors[0]}', flush=True)
         if not res: continue
         title, rev, paras = res
         body = ' '.join(paras)
