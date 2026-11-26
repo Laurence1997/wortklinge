@@ -68,7 +68,11 @@ CHECK = """你是很挑剔的德国报刊编辑，审一篇给 B2 学习者读�
 只输出 JSON：{"verdict":"ok 或 fix 或 drop","why":"简短中文","paras":[…],"zh":[…],"questions":[…],"gloss":[{"w":"…","de":"…","zh":"…"}]}（verdict 为 ok 时 paras/zh/questions 可省略）"""
 
 usage = [0, 0]
+import threading
+QUOTA = threading.Event()  # balance used up: stop calling, keep what is done, exit 3 at the end
+
 def call(system, user, effort='low'):
+    if QUOTA.is_set(): return None
     body = json.dumps({'model': MODEL, 'reasoning_effort': effort, 'response_format': {'type': 'json_object'},
                        'messages': [{'role': 'system', 'content': system}, {'role': 'user', 'content': user}]}).encode()
     for attempt in range(5):
@@ -83,7 +87,7 @@ def call(system, user, effort='low'):
         except urllib.error.HTTPError as e:
             t = e.read().decode()[:300]
             if 'insufficient_quota' in t:
-                print('OpenAI balance used up: top up under Billing.'); sys.exit(3)
+                QUOTA.set(); return None
             print(f'HTTP {e.code}: {t}')
         except Exception as e:
             print(f'error: {e}')
@@ -186,3 +190,5 @@ for r in b2: segw[r['段']].add(r['原形'].lower())
 cov = {s: len({x.lower() for r in rows if r['段'] == s for x in r['新词'].split(', ') if x}) for s in sorted(segw)}
 print(f'{len(rows)} articles; this run: {stats}; words covered: ' + ', '.join(f'段{s} {cov[s]}/{len(segw[s])}' for s in sorted(segw)))
 print(f'tokens: input {usage[0]}, output {usage[1]}')
+if QUOTA.is_set():
+    print('OpenAI balance used up: top up under Billing. Finished articles were kept.'); sys.exit(3)

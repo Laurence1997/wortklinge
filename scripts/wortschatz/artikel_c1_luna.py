@@ -45,7 +45,11 @@ used_src = {r['网址'] for f in ('artikel-b2.tsv', 'artikel-b2-original.tsv') f
 print(f'{len(pages)} cached Wikipedia pages with 450+ words; {len(have)} C1 articles done')
 
 usage = [0, 0]
+import threading
+QUOTA = threading.Event()  # balance used up: stop calling, keep what is done, exit 3 at the end
+
 def call(system, user, effort='low'):
+    if QUOTA.is_set(): return None
     body = json.dumps({'model': MODEL, 'reasoning_effort': effort, 'response_format': {'type': 'json_object'},
                        'messages': [{'role': 'system', 'content': system}, {'role': 'user', 'content': user}]}).encode()
     for attempt in range(5):
@@ -60,7 +64,7 @@ def call(system, user, effort='low'):
         except urllib.error.HTTPError as e:
             t = e.read().decode()[:300]
             if 'insufficient_quota' in t:
-                print('OpenAI balance used up: top up under Billing.'); sys.exit(3)
+                QUOTA.set(); return None
             print(f'HTTP {e.code}: {t}')
         except Exception as e:
             print(f'error: {e}')
@@ -169,3 +173,5 @@ with open(OUT, 'w', encoding='utf-8', newline='') as f:
     w = csv.DictWriter(f, fieldnames=COLS, delimiter='\t', lineterminator='\n'); w.writeheader(); w.writerows(rows)
 print(f"{len(rows)} C1 articles: " + ', '.join(f"{z}区 {sum(1 for r in rows if r['段'] == str(z))}" for z in (17, 18, 19, 20)) + f"; this run {dict(stats)}")
 print(f'tokens: input {usage[0]}, output {usage[1]}')
+if QUOTA.is_set():
+    print('OpenAI balance used up: top up under Billing. Finished articles were kept.'); sys.exit(3)
