@@ -15,7 +15,7 @@ Speed (×1.0 from 34, ×1.15 from 91) and 盲听 (built from beispiele-6000) are
 Resumable: words already in the output are skipped. Env: OPENAI_API_KEY, MODEL (gpt-6-luna),
 LIMIT (0 = all; a positive LIMIT takes a sample spread evenly over the ranks, for a trial).
 """
-import csv, json, os, sys, time, urllib.request, urllib.error
+import csv, json, re, os, sys, time, urllib.request, urllib.error
 from concurrent.futures import ThreadPoolExecutor
 
 ROOT = os.path.join(os.path.dirname(__file__), '..', '..')
@@ -135,7 +135,7 @@ batches = [todo[i:i + SIZE] for i in range(0, len(todo), SIZE)]
 kept = 0
 with ThreadPoolExecutor(6) as pool:
     for k, rows in enumerate(pool.map(work, batches), 1):
-        wr.writerows(rows); f.flush(); kept += len(rows)
+        wr.writerows([[re.sub(r'\s*[\r\n]+\s*', '｜', str(v)) for v in row] for row in rows]); f.flush(); kept += len(rows)
         if k % 20 == 0 or k == len(batches): print(f'{k}/{len(batches)} batches, kept {kept}', flush=True)
 f.close()
 

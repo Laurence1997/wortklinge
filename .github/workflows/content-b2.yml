@@ -30,7 +30,7 @@ jobs:
     env:
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       HOEREN: ${{ github.event.inputs.hoeren || '0' }}
-      ARTIKEL: ${{ github.event.inputs.artikel || '0' }}
+      ARTIKEL: ${{ github.event.inputs.artikel || '-1' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -44,7 +44,7 @@ jobs:
         if: env.ARTIKEL != '-1'
         run: |
           python3 scripts/wortschatz/artikel_pool.py
-          python3 scripts/wortschatz/artikel_wiki_pool.py
+          python3 scripts/wortschatz/artikel_wiki_pool.py || echo "Wikipedia pool skipped (rate limit)"
       - name: Articles
         if: env.ARTIKEL != '-1'
         run: LIMIT=$ARTIKEL python3 scripts/wortschatz/artikel_luna.py

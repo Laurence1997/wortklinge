@@ -16,7 +16,7 @@ Output: data/wortschatz/briefe-1.0.tsv. Columns: id, 区, 序号, 写信人, 主
 by ｜; the proofread workflow checks it), 例句中文, 本区词, 语法, 线索, 例句出处. build/briefe-outline.json keeps the outline.
 Resumable per zone. Env: OPENAI_API_KEY, MODEL (gpt-6-luna).
 """
-import csv, json, os, sys, time, urllib.request, urllib.error
+import csv, json, re, os, sys, time, urllib.request, urllib.error
 from concurrent.futures import ThreadPoolExecutor
 
 ROOT = os.path.join(os.path.dirname(__file__), '..', '..')
@@ -156,7 +156,7 @@ rows = list(have)
 with ThreadPoolExecutor(6) as ex:
     for z, rs in zip(todo, ex.map(zone, todo)):
         print(f'zone {z}: {len(rs)} letters', flush=True)
-        rows += rs
+        rows += [{k: re.sub(r'\s*[\r\n]+\s*', '｜', str(v)) for k, v in r.items()} for r in rs]
 rows.sort(key=lambda r: r['id'])
 with open(OUT, 'w', encoding='utf-8', newline='') as f:
     w = csv.DictWriter(f, fieldnames=COLS, delimiter='\t', lineterminator='\n'); w.writeheader(); w.writerows(rows)

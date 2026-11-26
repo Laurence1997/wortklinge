@@ -180,7 +180,7 @@ stats = {}
 with ThreadPoolExecutor(6) as ex:
     for k, (st, title, row) in enumerate(ex.map(work, plan), 1):
         stats[st] = stats.get(st, 0) + 1
-        if st == 'ok': rows.append(row)
+        if st == 'ok': rows.append({k: re.sub(r'\s*[\r\n]+\s*', '｜', str(v)) for k, v in row.items()})
         elif st == 'drop': print(f'dropped: {title}: {row}')
         if k % 20 == 0: print(f'{k}/{len(plan)}', flush=True)
 n = {}
