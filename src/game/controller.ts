@@ -14,7 +14,7 @@ import { ADV, adventurerById, adventurerPrompt, adventurerScene, GREET, notePkPa
 import { TICK_TURN } from '../core/combat';
 import { loadPron, pronCached } from '../ui/phoneme';
 import { icon, setRestored, SLOT_TILE } from '../ui/icons';
-import { answerPlacement, applyPlacement, canPlaceAgain, placeAgainIn, regionFor, startPlacement, stopPlacement, type PlaceRun } from '../core/placement';
+import { answerPlacement, applyPlacement, canPlaceAgain, estimatePicks, pickBoard, placeAgainIn, regionFor, startFromPicks, startPlacement, stopPlacement, type PickBoard, type PlaceRun } from '../core/placement';
 import { answerScreen, claimScene, SCREEN, startScreen, type ScreenRun, type ScreenScope } from '../core/screen';
 import type { Look } from '../core/look';
 // The game controller: owns the save, runs battles and tutorials, and glues the
@@ -1915,6 +1915,15 @@ export class Controller {
 
   canPlaceNow(): boolean {
     return canPlaceAgain(this.state);
+  }
+
+  placeBoard(): PickBoard {
+    return pickBoard(this.state, this.rng);
+  }
+
+  placeFromPicks(board: PickBoard, picked: Set<string>): void {
+    const run = startFromPicks(this.state, this.rng, estimatePicks(board, picked));
+    this.panels.setPlaceRun(run);
   }
 
   placeStart(band: number): void {

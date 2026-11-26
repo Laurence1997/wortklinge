@@ -36,6 +36,9 @@ export const PLACE = {
   stop: 2,
   /** Sample words shown per band on the self-pick screen. */
   samples: 5,
+  /** 点词 board (Lucas 11-26): real words per band, and bands an invented word pulls the estimate down by. */
+  pickPer: 2,
+  fakePenalty: 2,
   /** 推定会 spot checks: this many wrong in one band and over this share → the band's rest turns into review monsters. */
   revertFails: 3,
   revertShare: 0.4,
@@ -154,6 +157,8 @@ export interface PlaceRun {
   verifying?: boolean;
   /** Set by applyPlacement. */
   outcome?: PlaceOutcome;
+  /** From the 点词 board: the estimate it gave, invented words clicked, real words left unclicked. */
+  claim?: PickResult;
 }
 
 function bandQueue(s: GameState, band: number, rng: Rng, exclude: Set<string>): Word[] {
@@ -226,6 +231,84 @@ function bandDone(s: GameState, run: PlaceRun, ok: boolean, perfect: boolean, rn
     return openBand(s, run, sk, rng);
   }
   return finish(run);
+}
+
+// ---- 点词 board (Lucas 2026-11-26) -----------------------------------------------------------
+// Instead of picking a band from truncated sample lines, the player sees ~2 whole words per band and clicks the ones
+// they know. A few invented German-looking words are mixed in: clicking one pulls the estimate down. The estimate is
+// only where the typing check starts; the typing check (unchanged) decides the level.
+
+/** Invented words: look German, do not exist (checked against the word list). */
+export const FAKE_WORDS = ['der Flinsel', 'die Brötung', 'das Gemörk', 'verpladern', 'die Nastheit', 'glurbig', 'der Kramsel', 'umtrölen', 'das Pleschtum', 'die Strabe', 'brimsig', 'die Serbung'];
+/** Invented words on one board. */
+export const FAKES_SHOWN = 8;
+
+export interface PickItem {
+  key: string;
+  label: string;
+  band: number;
+  word?: Word;
+  fake?: boolean;
+}
+
+export interface PickBoard {
+  items: PickItem[];
+  /** Bands with nothing left to show (all known already): count as known. */
+  known: number[];
+}
+
+export interface PickResult {
+  /** Highest band the clicks point at, after the invented-word penalty (-1 = none). */
+  top: number;
+  /** Before the penalty. */
+  raw: number;
+  fakes: string[];
+  /** Real words shown but not clicked. */
+  unpicked: Word[];
+}
+
+/** Build the board: per band a few useful words you do not know yet, plus invented ones spread over the stages. */
+export function pickBoard(s: GameState, rng: Rng): PickBoard {
+  const n = bandCount();
+  const pools: Word[][] = Array.from({ length: n }, () => []);
+  for (const w of placeWords()) if ((w.pos === 'n' || w.pos === 'v' || w.pos === 'adj') && !known(s, w)) pools[bandOf(w)].push(w);
+  const items: PickItem[] = [];
+  const knownBands: number[] = [];
+  pools.forEach((pool, b) => {
+    if (!pool.length) return knownBands.push(b);
+    for (const w of shuffle(rng, pool.slice(0, 15)).slice(0, PLACE.pickPer)) items.push({ key: w.id, label: w.art ? `${w.art} ${w.de}` : w.de, band: b, word: w });
+  });
+  const fakes = shuffle(rng, FAKE_WORDS).slice(0, FAKES_SHOWN);
+  fakes.forEach((f, i) => items.push({ key: `fake:${f}`, label: f, band: Math.floor(((i + 0.5) / fakes.length) * n), fake: true }));
+  return { items: shuffle(rng, items), known: knownBands };
+}
+
+/** Estimate from the clicks: the cut-off band that disagrees with the fewest clicks (known below, unknown above),
+ *  ties to the higher band (the typing check steps down if it is too high); minus 2 bands per invented word. */
+export function estimatePicks(board: PickBoard, picked: Set<string>): PickResult {
+  const n = bandCount();
+  const real = board.items.filter((i) => !i.fake);
+  let best = -1;
+  let bestErr = Infinity;
+  for (let t = -1; t < n; t++) {
+    let err = 0;
+    for (const i of real) if ((i.band <= t) !== picked.has(i.key)) err++;
+    for (const b of board.known) if (b > t) err += PLACE.pickPer;
+    if (err <= bestErr) {
+      bestErr = err;
+      best = t;
+    }
+  }
+  const fakes = board.items.filter((i) => i.fake && picked.has(i.key)).map((i) => i.label);
+  const top = Math.max(-1, best - PLACE.fakePenalty * fakes.length);
+  return { top, raw: best, fakes, unpicked: real.filter((i) => !picked.has(i.key)).map((i) => i.word!) };
+}
+
+/** Start the typing check from the board: at the estimated band (nothing clicked → from the beginning). */
+export function startFromPicks(s: GameState, rng: Rng, claim: PickResult): PlaceRun {
+  const run = startPlacement(s, rng, Math.max(0, claim.top));
+  run.claim = claim;
+  return run;
 }
 
 /** Start the test at a band (0 = from the beginning). */
@@ -347,6 +430,15 @@ export function applyPlacement(s: GameState, run: PlaceRun, t = now(s), _opts: {
       s.words[r.word.id] = { stage: 1, lapsed: true, due: t, firstSeen: p?.firstSeen ?? t, lastSeen: t, relapse: 0, correct: 0, wrong: 1, read: 0, write: 0 };
       gaps++;
     }
+  }
+  // 点词: words you said you did not know, in bands the typing check passed, follow you like typed gaps.
+  for (const w of run.claim?.unpicked ?? []) {
+    if (!passed(bandOf(w)) || seen.has(w.id)) continue;
+    seen.add(w.id);
+    const p = s.words[w.id];
+    if (p && !isPlaced(p)) continue;
+    s.words[w.id] = { stage: 1, lapsed: true, due: t, firstSeen: p?.firstSeen ?? t, lastSeen: t, relapse: 0, correct: 0, wrong: 0, read: 0, write: 0 };
+    gaps++;
   }
   for (const w of placeWords()) {
     if (!passed(bandOf(w)) || seen.has(w.id) || s.words[w.id]) continue;

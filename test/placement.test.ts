@@ -219,3 +219,49 @@ describe('入学测试', () => {
     expect(levelCapFor(s.flags)).toBe(120);
   });
 });
+
+describe('点词 board (Lucas 11-26)', () => {
+  it('shows whole words per band plus invented ones, none of which exist', async () => {
+    const { pickBoard, FAKE_WORDS } = await import('../src/core/placement');
+    const { WORDS } = await import('../src/data/words');
+    const lower = new Set(WORDS.map((w) => (w.art ? `${w.art} ${w.de}` : w.de).toLowerCase()));
+    for (const f of FAKE_WORDS) expect(lower.has(f.toLowerCase())).toBe(false);
+    const b = pickBoard(newGame('T', 'student'), makeRng(1));
+    expect(b.items.filter((i) => !i.fake).length).toBe(bandCount() * PLACE.pickPer);
+    expect(b.items.filter((i) => i.fake).length).toBe(8);
+  });
+
+  it('estimates the cut-off from the clicks and pulls it down for invented words', async () => {
+    const { pickBoard, estimatePicks, startFromPicks } = await import('../src/core/placement');
+    const s = newGame('T', 'student');
+    const b = pickBoard(s, makeRng(2));
+    const upTo = (t: number, fakes = 0) => {
+      const set = new Set(b.items.filter((i) => !i.fake && i.band <= t).map((i) => i.key));
+      b.items.filter((i) => i.fake).slice(0, fakes).forEach((i) => set.add(i.key));
+      return set;
+    };
+    expect(estimatePicks(b, new Set()).top).toBe(-1);
+    expect(estimatePicks(b, upTo(15)).top).toBe(15);
+    const one = estimatePicks(b, upTo(15, 1));
+    expect(one.top).toBe(15 - PLACE.fakePenalty);
+    expect(one.fakes.length).toBe(1);
+    const run = startFromPicks(s, makeRng(3), estimatePicks(b, upTo(15)));
+    expect(run.band).toBe(15);
+    expect(run.claim?.unpicked.every((w) => bandOf(w) > 15)).toBe(true);
+  });
+
+  it('unclicked words in a band the typing check passed follow you as review monsters', async () => {
+    const { pickBoard, estimatePicks, startFromPicks } = await import('../src/core/placement');
+    const s = newGame('T', 'student');
+    const b = pickBoard(s, makeRng(4));
+    const picked = new Set(b.items.filter((i) => !i.fake && i.band <= 5).map((i) => i.key));
+    const miss = b.items.find((i) => !i.fake && i.band === 2)!;
+    picked.delete(miss.key);
+    const run = startFromPicks(s, makeRng(5), estimatePicks(b, picked));
+    while (!run.over) answerPlacement(s, run, run.band <= 5 ? fullForm(run.current!) : '', makeRng(6), run.band > 5);
+    applyPlacement(s, run);
+    expect(topPassed(run)).toBeGreaterThanOrEqual(5);
+    const p = s.words[miss.word!.id];
+    if (!run.results.some((r) => r.word.id === miss.word!.id)) expect(p.lapsed && !p.placed).toBe(true);
+  });
+});
