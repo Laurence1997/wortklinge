@@ -2,6 +2,7 @@
 // above every question, and its attack questions ask what the text says (choice). Damage as usual.
 
 import { shuffle, type Rng } from '../rng';
+import { articleNotice } from './articleB2';
 import { ARTICLES, NOTICES, type Notice } from '../../data/grammar/notices';
 import type { GramTask } from './task';
 
@@ -13,7 +14,7 @@ export function noticeFor(zone: string, rng: Rng): Notice | null {
 }
 
 export function noticeById(id: string): Notice | undefined {
-  return NOTICES.find((n) => n.id === id) ?? ARTICLES.find((n) => n.id === id);
+  return NOTICES.find((n) => n.id === id) ?? ARTICLES.find((n) => n.id === id) ?? articleNotice(id);
 }
 
 /** 文章群怪 (81): an article for a pack (each member asks from its own starting question). */
@@ -33,7 +34,7 @@ export function noticeTask(n: Notice, i: number, rng: Rng): GramTask {
     answer: q.answer,
     options: shuffle(rng, q.options),
     tier: 0,
-    rule: '答案就在文字里，再读一遍找找看。',
+    rule: q.qZh ? `题目意思：${q.qZh}。答案就在文章里，再读一遍找找看。` : '答案就在文字里，再读一遍找找看。',
     passage: n.text,
   };
 }

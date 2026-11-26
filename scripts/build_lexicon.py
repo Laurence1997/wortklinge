@@ -421,6 +421,12 @@ def main():
         segs[seg] = merge_tiny(cut_articles(segs[seg]))
 
     # B2 (13–16): words grouped by situation in list order, cut into article scenes (map regions) or 蚀变 groups.
+    # 文章群怪 (121+): the new words of each B2 article (artikel-b2*.tsv, proofreading thread), by segment.
+    article_words = defaultdict(list)
+    for name in ('artikel-b2.tsv', 'artikel-b2-original.tsv'):
+        if (DATA / name).exists():
+            for r in sorted(read_tsv(name), key=lambda r: r['id']):
+                article_words[int(r['段'])].append([w.strip() for w in r['新词'].split(',') if w.strip()])
     b2 = defaultdict(list)
     for r in read_tsv('b2-v1.tsv'):
         r['先后'] = '后'
@@ -444,8 +450,17 @@ def main():
                 for k in range(n):
                     put(f'{sit}·{k + 1}', xs[k * len(xs) // n:(k + 1) * len(xs) // n])
         else:
-            # New region: B2_SCENES even scenes over the words sorted by situation (a scene may span two).
-            xs = [x for v in by_sit.values() for x in v]
+            # New region: B2_SCENES even scenes. 文章群怪 (121+): the new words of one article stay next to each other
+            # (one scene, or two neighbours of one field), so the article's pack can gather them; the words of no
+            # article follow, sorted by situation.
+            by_lemma = {x['原形'].strip(): x for v in by_sit.values() for x in v}
+            xs, taken = [], set()
+            for lemmas in article_words.get(seg, []):
+                for l in lemmas:
+                    if l in by_lemma and l not in taken:
+                        taken.add(l)
+                        xs.append(by_lemma[l])
+            xs += [x for v in by_sit.values() for x in v if x['原形'].strip() not in taken]
             n = B2_SCENES
             count = defaultdict(int)
             for k in range(n):

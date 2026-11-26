@@ -5,6 +5,8 @@
 export interface NoticeQ {
   /** The question, in Chinese. */
   q: string;
+  /** B2 articles: the German question's Chinese (shown after answering). */
+  qZh?: string;
   options: string[];
   answer: string;
 }

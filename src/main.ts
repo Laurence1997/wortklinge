@@ -14,6 +14,7 @@ import { showTitle } from './ui/title';
 import { toast } from './ui/feedback';
 import { setReportVersion } from './net/report';
 import { loadPassages } from './data/passages';
+import { loadArticlesB2 } from './data/articlesB2';
 
 const VERSION = '0.8.5';
 setReportVersion(VERSION);
@@ -22,6 +23,7 @@ const dev = new URLSearchParams(location.search).has('dev') && (import.meta.env.
 
 function boot(state: ReturnType<typeof newGame>) {
   const ctrl = new Controller(state, dev);
+  if (state.level >= 115) void loadArticlesB2(); // 文章群怪 from 121: its own chunk
   if (state.level >= 30) void loadPassages(); // 听段 from 34: its own chunk, fetched once the player is close
   (window as unknown as { wk: Controller }).wk = ctrl; // handy for debugging in the console
   const logBox = mountLogBox();

@@ -1,3 +1,5 @@
+import { articleB2ById, ARTICLE_B2_CFG, isArticleWord } from '../core/gram/articleB2';
+import { loadArticlesB2 } from '../data/articlesB2';
 import { LETTER_BY_ID, LETTER_CFG, readLetter } from '../core/letters';
 import { push as pushCloud } from '../net/cloud';
 import { loadPassages } from '../data/passages';
@@ -455,6 +457,7 @@ export class Controller {
   /** `quiet` (入学测试 jumps): set the level's flags and gifts but say nothing; the caller shows one summary. */
   private onLevelUp(level: number, quiet = false) {
     if (level >= 30) void loadPassages();
+    if (level >= ARTICLE_B2_CFG.from - 6) void loadArticlesB2();
     void track();
     const s = this.state;
     this.milestone(`lv${level}`);
@@ -737,6 +740,24 @@ export class Controller {
    *  A pair's lines use the same case (alignPairs), so a stance right on one is right on the other. */
   private gatherPack(m: MonsterEntity) {
     const s = this.state;
+    // 文章群怪 (121+): the article's other new words standing in this scene join, wherever they are in it.
+    const art = this.pack[0].notice ? articleB2ById(this.pack[0].notice.id) : undefined;
+    if (art && this.pack[0].kind === 'new') {
+      const mates = this.scene.monsters.filter((o) => o !== m && !o.isEcho && !o.scripted && !o.rare && !o.phrase && !o.elite && o.zone === m.zone && o.word.id !== m.word.id && isArticleWord(art, o.word) && kindOf(s, o.word) === 'new');
+      for (const o of mates.slice(0, ARTICLE_B2_CFG.packMax - 1)) {
+        const ob = startBattle(s, o.word, this.rng, {});
+        ob.notice = { id: art.id, i: this.pack.length };
+        ob.directOffer = false;
+        this.pack.push(ob);
+        this.packEntities.push(o);
+      }
+      if (this.pack.length > 1) {
+        this.pack[0].directOffer = false;
+        linkPack(this.pack);
+        this.retarget();
+      }
+      return;
+    }
     if (!has(s.level, 'packs') || (s.region ?? 1) < 2 || m.isEcho || m.scripted || m.rare || m.phrase || m.elite || !m.word.art || m.word.family === 'truhe') return;
     const firstPack = !s.flags.firstPackDone;
     const max = firstPack || s.level < CONFIG.pack.max3From ? 2 : s.level >= CONFIG.pack.max4From ? CONFIG.pack.max4 : CONFIG.pack.max;

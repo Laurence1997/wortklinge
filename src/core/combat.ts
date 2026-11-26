@@ -41,6 +41,7 @@ import { notePrep, prepBlankTask, PREP_CFG } from './gram/prepBlank';
 import { dungeonTask } from './gram/dungeons';
 import { hasMirror, mirrorTask, MIRROR } from './gram/mirror';
 import { partnerOf } from './gram/partner';
+import { articleOfWord, ARTICLE_B2_CFG, contextLine } from './gram/articleB2';
 import { articleFor, KIND_ZH, noticeById, noticeFor, noticeTask, NOTICE_CFG } from './gram/notice';
 
 /** A grammar task as a battle question (choice when it has options, typed otherwise). */
@@ -377,6 +378,8 @@ export interface Battle {
   partnerDone?: boolean;
   /** 告示怪 / 信件怪 (15): the notice it carries, and how many of its questions were asked. */
   notice?: { id: string; i: number };
+  /** 文章群怪 (121+): the article sentence this new word stands in; its own blow picks the meaning from it. */
+  artCtx?: string;
   /** 镜像怪 (35): every attack question is the reflexive pronoun on this verb. */
   mirror?: boolean;
   /** 审查修订: an extra-damage question left it at 1 HP; the next attack asks its own word. */
@@ -536,6 +539,17 @@ export function startBattle(
     if (n) {
       b.notice = { id: n.id, i: 0 };
       b.log.push({ text: `${KIND_ZH[n.kind]}：它身上${n.kind === 'article' ? '带着一篇文章' : '贴着一张'}「${n.title}」。读懂它，答对上面的问题才打得中。`, tone: 'info' });
+    }
+  }
+  // 文章群怪 (121+): a new word of a B2 article always comes with its article (the pack joins in the controller).
+  if (!b.notice && !opts.struct && !tutorial && !opts.trial && !opts.elite && !opts.isEcho && !challenge && kind === 'new' && s.level >= ARTICLE_B2_CFG.from) {
+    const a = articleOfWord(word);
+    if (a) {
+      b.notice = { id: a.id, i: 0 };
+      b.perfekt = false;
+      const line = contextLine(a, word);
+      if (line) b.artCtx = line;
+      b.log.push({ text: `文章群怪：它从文章「${a.title}」里爬出来。先读懂文章答内容题，最后按上下文认出它的意思。`, tone: 'info' });
     }
   }
   // 镜像怪 (35): a verb with a reflexive use sometimes comes as its mirror (not before you have met it).
@@ -1452,6 +1466,10 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
   if (am === 'attack' && b.notice && !b.finishOwn) {
     const n = noticeById(b.notice.id);
     if (n) return gramQuestion(noticeTask(n, b.notice.i, rng));
+  }
+  // 文章群怪: the word's own blow is its meaning, read from the article sentence (choice only).
+  if (am === 'attack' && b.artCtx && b.kind === 'new') {
+    return { type: 'pickZh', prompt: `文章群怪：按上下文推出 ${fullForm(w)} 的意思：「${b.artCtx}」`, focus: fullForm(w), options: shuffle(rng, [w.zh, ...distractors(rng, w, 'zh', 2)]), answer: w.zh };
   }
   if (am === 'attack' && b.mirror && !b.finishOwn) {
     const t = mirrorTask(w, rng, s.level);
