@@ -539,17 +539,17 @@ export function startBattle(
   // 镜像怪 (35): a verb with a reflexive use sometimes comes as its mirror (not before you have met it).
   if (!b.perfekt && !b.notice && !opts.struct && !tutorial && !opts.trial && !opts.elite && s.level >= MIRROR.from && kind !== 'new' && hasMirror(word) && rng() < MIRROR.chance) {
     b.mirror = true;
-    b.log.push({ text: `镜像怪：${word.de} 照出了你的样子——这一战考反身代词（mich / dich / sich…）。`, tone: 'info' });
+    b.log.push({ text: `镜像怪：它照出了你的样子——这一战考反身代词（mich / dich / sich…）。`, tone: 'info' });
   }
   // 结构魔 (B1 红名): a verb you have met sometimes comes as a weil-worm — it drags the verb to the end of the clause.
   if (!b.perfekt && !b.notice && !b.mirror && !tutorial && !opts.trial && !opts.elite && s.level >= STRUCT.from && kind !== 'new' && word.pos === 'v' && structTasks(word).length && (opts.struct || rng() < STRUCT.chance)) {
     b.structMon = true;
-    b.log.push({ text: `结构魔：weil 蠕虫缠在 ${word.de} 上，把动词拖到了句尾。用从句语序回答（…, weil ich … 动词），别的招式只刮掉一半。`, tone: 'info' });
+    b.log.push({ text: `结构魔：weil 蠕虫缠在它身上，把动词拖到了句尾。用从句语序回答（…, weil ich … 动词），别的招式只刮掉一半。`, tone: 'info' });
   }
   // 发音怪 (83): a word on a hard sound pair sometimes comes as one.
   if (!b.perfekt && !b.notice && !b.mirror && !b.structMon && !tutorial && !opts.trial && !opts.elite && !opts.isEcho && s.level >= PRON_MON.from && kind !== 'new' && pronMonOk(word) && rng() < PRON_MON.chance) {
     b.pronMon = true;
-    b.log.push({ text: `发音怪：${word.de} 只认清楚的发音——每一击都要分清它和它的近音词。别的招式只擦过它。`, tone: 'info' });
+    b.log.push({ text: `发音怪：它只认清楚的发音——每一击都要分清它和它的近音词。别的招式只擦过它。`, tone: 'info' });
   }
   // B2 怪种 (121+): a word monster sometimes comes as one of the kinds open at your level.
   if (!b.perfekt && !b.notice && !b.mirror && !b.structMon && !b.pronMon && !tutorial && !opts.trial && !opts.elite && !opts.isEcho && !challenge && kind !== 'new' && word.pos !== 'phr') {

@@ -255,7 +255,7 @@ Deno.serve(async (req) => {
     const user = `任务：${clip(body.task, 200) || '用指定的词写一句德语'}\n必须用到的词：${forms.join(' / ') || '（无）'}\n玩家等级：${Number(body.level) || 10}\n${knownLine(body.known)}\n玩家的句子：${sentence}\nLanguageTool 提示：${lt.length ? lt.map((m) => `「${m.bad}」${m.msg}${m.fix ? ` → ${m.fix}` : ''}`).join('；') : '无'}`;
     const out = await chat(GRADE_SYS, user);
     if (!out) return Response.json({ error: 'model' }, { status: 502, headers: h });
-    return Response.json({ ok: !!out.json.ok, step: 'ai', errors: (out.json.errors ?? []).slice(0, 3), better: clip(out.json.better, 300), lt: lt.length, model: out.model }, { headers: h });
+    return Response.json({ ok: !!out.json.ok, step: 'ai', errors: (Array.isArray(out.json.errors) ? out.json.errors : []).slice(0, 3), better: clip(out.json.better, 300), lt: lt.length, model: out.model }, { headers: h });
   }
 
   if (body.mode === 'essay') {
@@ -273,7 +273,7 @@ Deno.serve(async (req) => {
     const user = `任务：${clip(body.task, 200) || '用给的词写 3–5 句'}\n给的词：${words.map((fs) => fs[0]).join(' / ')}\n玩家等级：${Number(body.level) || 20}\n${knownLine(body.known)}\n玩家的作文：${text}\nLanguageTool 提示：${lt.length ? lt.map((m) => `「${m.bad}」${m.msg}${m.fix ? ` → ${m.fix}` : ''}`).join('；') : '无'}`;
     const out = await chat(ESSAY_SYS, user);
     if (!out) return Response.json({ error: 'model' }, { status: 502, headers: h });
-    return Response.json({ ok: !!out.json.ok, step: 'ai', errors: (out.json.errors ?? []).slice(0, 5), better: clip(out.json.better, 1500), missing, model: out.model }, { headers: h });
+    return Response.json({ ok: !!out.json.ok, step: 'ai', errors: (Array.isArray(out.json.errors) ? out.json.errors : []).slice(0, 5), better: clip(out.json.better, 1500), missing, model: out.model }, { headers: h });
   }
 
   if (body.mode === 'duel') {
@@ -335,7 +335,7 @@ Deno.serve(async (req) => {
     const user = `怪物的说法：${claim}\n玩家等级：${Number(body.level) || 121}\n${knownLine(body.known)}\n玩家的回应：${reply}`;
     const out = await chat(OPINION_SYS, user);
     if (!out) return Response.json({ error: 'model' }, { status: 502, headers: h });
-    return Response.json({ ok: !!out.json.ok, note: clip(out.json.note, 300), errors: (out.json.errors ?? []).slice(0, 2), better: clip(out.json.better, 400), model: out.model }, { headers: h });
+    return Response.json({ ok: !!out.json.ok, note: clip(out.json.note, 300), errors: (Array.isArray(out.json.errors) ? out.json.errors : []).slice(0, 2), better: clip(out.json.better, 400), model: out.model }, { headers: h });
   }
 
   return Response.json({ error: 'mode' }, { status: 400, headers: h });

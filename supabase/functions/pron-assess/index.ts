@@ -3,7 +3,9 @@
 // secrets and returns Azure's JSON. The key never reaches the browser.
 // Secrets: AZURE_SPEECH_KEY, AZURE_SPEECH_REGION (default germanywestcentral).
 
-const ALLOWED = ['https://wortklinge.myreverielab.com', 'http://localhost:5173', 'http://localhost:4173', 'null'];
+// 审查 D2 (2026-11-26): deployed with verify_jwt on (a logged-in player's token is required) and no 'null' origin.
+// The game does not call this function yet (pronunciation uses Chrome's recogniser), so nothing breaks.
+const ALLOWED = ['https://wortklinge.myreverielab.com', 'http://localhost:5173', 'http://localhost:4173'];
 const MAX_BYTES = 640_000; // ~20 s of 16 kHz mono PCM
 
 function cors(origin: string | null): Record<string, string> {
@@ -24,6 +26,7 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: h });
   if (req.method !== 'POST') return new Response('POST only', { status: 405, headers: h });
   if (!origin || !ALLOWED.includes(origin)) return new Response('origin not allowed', { status: 403, headers: h });
+  if (!(req.headers.get('authorization') ?? '').startsWith('Bearer ')) return Response.json({ error: 'login' }, { status: 401, headers: h });
 
   const key = Deno.env.get('AZURE_SPEECH_KEY');
   const region = Deno.env.get('AZURE_SPEECH_REGION') || 'germanywestcentral';

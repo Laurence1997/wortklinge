@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import './ui/style.css';
-import { load, newGame, save, saveRaw, setSaveHook } from './core/state';
+import { checkImport, importPrompt, load, markSaved, newGame, save, saveRaw, setSaveHook } from './core/state';
 import { cloud, initCloud, mustChangePassword, needsNickname, push, schedulePush, syncOnBoot } from './net/cloud';
 import { loginView } from './ui/account';
 import { $ } from './ui/dom';
@@ -11,13 +11,13 @@ import { h } from './ui/dom';
 import { Controller } from './game/controller';
 import { WorldScene } from './game/WorldScene';
 import { showTitle } from './ui/title';
-import { importJson } from './core/state';
 import { toast } from './ui/feedback';
 import { setReportVersion } from './net/report';
 
-const VERSION = '0.8.1';
+const VERSION = '0.8.2';
 setReportVersion(VERSION);
-const dev = new URLSearchParams(location.search).has('dev');
+// 审查 B3: the dev menu (+1 级 …) only on localhost or a dev build, never on the live site.
+const dev = new URLSearchParams(location.search).has('dev') && (import.meta.env.DEV || ['localhost', '127.0.0.1'].includes(location.hostname));
 
 function boot(state: ReturnType<typeof newGame>) {
   const ctrl = new Controller(state, dev);
@@ -49,7 +49,9 @@ async function start() {
   const local = load();
   const existing = await syncOnBoot(local);
   if (existing && existing !== local) saveRaw(existing); // adopt the newer cloud save as-is
+  if (existing) markSaved(existing); // unchanged since loading: no restamp (审查 A1)
   setSaveHook(schedulePush);
+  window.addEventListener('wk-cloud-conflict', () => toast('这个角色在别的页面或电脑上有更新的进度，这里先不再上传。请刷新页面载入最新进度。', 'bad'));
   document.addEventListener('visibilitychange', () => {
     const wk = (window as unknown as { wk?: Controller }).wk;
     if (document.visibilityState === 'hidden' && wk) void push(wk.state);
@@ -86,13 +88,15 @@ showTitle({
     const s = newGame(name, origin);
     s.look = look;
     s.owner = cloud.session?.user.id;
-    save(s);
+    save(s, true);
     boot(s);
   },
   onImport: (text) => {
-    const s = importJson(text);
-    if (!s) return toast('这个文件不是失语纪元的存档');
-    save(s);
+    const r = checkImport(text);
+    if (!r.ok) return toast(r.why);
+    if (!window.confirm(importPrompt(r.s, existing))) return;
+    save(r.s, true);
+    void push(r.s);
     location.reload();
   },
 });
