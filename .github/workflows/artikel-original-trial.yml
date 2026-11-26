@@ -1,0 +1,33 @@
+name: 原创文章试样 (original article trial)
+
+# A few original B2 articles (artikel_original_luna.py) into data/wortschatz/build/original-trial.tsv, to check the
+# quality while the main content run is busy. Does not touch artikel-b2.tsv.
+on:
+  workflow_dispatch:
+    inputs:
+      n:
+        description: 'How many articles'
+        default: '8'
+
+permissions:
+  contents: write
+
+jobs:
+  trial:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install simplemma
+      - run: rm -f data/wortschatz/build/original-trial.tsv && OUT=data/wortschatz/build/original-trial.tsv LIMIT=${{ github.event.inputs.n }} python3 scripts/wortschatz/artikel_original_luna.py
+      - run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898233+github-actions[bot]@users.noreply.github.com'
+          git add data/wortschatz/build/original-trial.tsv
+          git commit -m 'Original article trial (Luna)'
+          for i in 1 2 3 4 5; do git pull --rebase -q && git push && break; sleep 5; done

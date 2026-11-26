@@ -27,7 +27,7 @@ if not KEY:
     print('OPENAI_API_KEY is not set: skipping.'); sys.exit(0)
 MODEL = os.environ.get('MODEL', 'gpt-6-luna')
 LIMIT = int(os.environ.get('LIMIT') or 0)
-OUT = os.path.join(D, 'artikel-b2.tsv')
+OUT = os.environ.get('OUT') or os.path.join(D, 'artikel-b2.tsv')
 COLS = ['id', '段', '标题', '例句', '例句中文', '新词', '注释', '题目', '词数', '来源', '网址', '修订号', '许可证', '改编说明']
 csv.field_size_limit(10**8)
 def tsv(p): return list(csv.DictReader(open(p, encoding='utf-8'), delimiter='\t')) if os.path.exists(p) else []
