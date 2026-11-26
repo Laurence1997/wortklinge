@@ -46,6 +46,8 @@ def plain(wikitext):
         paras.append(p)
     return paras
 
+# Lucas: no dark or violent content; crime and violence words only from level 91 on, and not as the topic of a text.
+DARK = re.compile(r'\b(Terror\w*|Anschl[aä]g\w*|Attentat\w*|Bombe\w*|Explosion\w*|Krieg\w*|Kämpfe\w*|Gefecht\w*|Soldat\w*|getötet|tötete\w*|Tote[nr]?|Todesopfer\w*|ums Leben|starb\w*|gestorben|Leiche\w*|Mord\w*|ermordet|Massaker|Folter\w*|Geisel\w*|Entführ\w*|Gefangen\w*|Haft|Haftstrafe\w*|Festnahme\w*|festgenommen|verhaftet|Gewalt\w*|Schüsse\w*|erschossen|Waffe\w*|Vergewaltig\w*|Missbrauch\w*|Selbstmord\w*|Suizid\w*|Hinrichtung\w*|Todesstrafe|Absturz|Erdbeben\w*|Tsunami\w*|Verletzte\w*)\b')
 cache = {}
 def lem(tok):
     k = tok.lower()
@@ -67,7 +69,9 @@ for ev, el in ET.iterparse(bz2.open(DUMP), events=('end',)):
     rid = rev.findtext(f'{ns}id') or ''
     el.clear()
     if re.search(r'\{\{\s*(Entwurf|Löschen|Schnelllöschen|Baustelle)', text, re.I): continue
+    if DARK.search(title): continue
     paras = plain(text)
+    if len(DARK.findall(' '.join(paras))) >= 2: continue  # violence, crime, war, disasters with deaths: not for the game
     toks = WORD.findall(' '.join(paras))
     if not 200 <= len(toks) <= 1500: continue
     n += 1
