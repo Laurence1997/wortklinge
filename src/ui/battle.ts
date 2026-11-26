@@ -4,7 +4,7 @@ import type { Battle, Question, TurnReport } from '../core/combat';
 import { count as itemCount, itemsOpen, tabletHeal } from '../core/items';
 import { CHARM, equippedCharms } from '../core/charms';
 import { listenRate } from '../core/listening';
-import { bestHeard, lineLeaks, plateZh, castMs, gcdMs, parryWindowMs, realtimeOn, voiceOpen } from '../core/combat';
+import { bestHeard, lineLeaks, plateZh, castMs, gcdMs, realtimeOn, voiceOpen } from '../core/combat';
 import { availableMoves, chorusMates, canHint, comboTier, effArmor, moveReady, poolReady, needsPhase, phaseOf, resName, stancesFor, teachPhase, readTarget, readRecall, readShown, phaseWrongWhy } from '../core/combat';
 import { articleSlip, clarity, shadowOk } from '../core/shadow';
 import { has } from '../core/unlocks';
@@ -398,7 +398,6 @@ export class BattleUI {
     this.question.ms ??= Math.round(performance.now() - this.askedAt);
     this.lastValue = value;
     const intentBefore = this.b.intent;
-    if (this.rtOn) this.question.parryWindow = this.b.intent.kind === 'attack' && this.castLeft() <= parryWindowMs(this.ctrl.state);
     const voiced = this.b.intent;
     const target = this.b;
     const logFrom = target.log.length;
@@ -823,14 +822,14 @@ export class BattleUI {
           return [h('div.line', mum ? '… mmh …' : it.line), h('div.zh', !mum && this.zhShown && this.b.curse !== 'forget' ? plainZh(it.zh) : '')];
         })(),
         b.queued?.kind === 'charge' ? h('div.zh', { style: 'color:var(--gold, #ffcf4a)' }, '看穿 · 它下回合要蓄力') : '',
-        // 即时战: its cast bar; answer right in the last second of an attack to parry, during a charge to break it.
+        // 即时战: its cast bar; answer right while an attack casts and it misses, during a charge and it breaks.
         this.rtOn
           ? h(
               'div.small',
               { style: 'margin:4px 0' },
               h('div', { style: 'height:6px;background:#2a1414;border-radius:3px;overflow:hidden' }, h('div#rt-cast', { style: `height:100%;width:${Math.round((100 * this.castLeft()) / (this.castLen || 1))}%;background:${it.kind === 'charge' ? 'var(--gold, #ffcf4a)' : '#d8333a'}` })),
               h('span#rt-cast-label.muted', `${(this.castLeft() / 1000).toFixed(1)} 秒`),
-              h('span.muted', it.kind === 'attack' ? ` · 最后 ${parryWindowMs(s) / 1000} 秒答对 = 弹反` : it.kind === 'charge' ? ' · 读条结束前答对就打断' : ''),
+              h('span.muted', it.kind === 'attack' ? ' · 读条结束前答对就躲开这一下' : it.kind === 'charge' ? ' · 读条结束前答对就打断' : ''),
             )
           : '',
         h(
@@ -1240,7 +1239,7 @@ export class BattleUI {
     }
     if (this.phase === 'result' && r) {
       const fb = h(`div.feedback.${r.correct ? 'ok' : 'no'}`);
-      const head = qq.item ? '吃了药片' : r.correct ? (r.crit ? (r.newSpell ? '新言灵！暴击！' : '暴击！') : r.parried ? '弹反！' : '答对了') : '答错了';
+      const head = qq.item ? '吃了药片' : r.correct ? (r.crit ? (r.newSpell ? '新言灵！暴击！' : '暴击！') : r.parried ? '躲开了' : '答对了') : '答错了';
       fb.append(h('b', head));
       if (qq.item && r.monsterDamage) fb.append(h('span', `  它趁机出手：${r.monsterDamage} 伤害`));
       if (r.correct && this.b.word && (qq.type === 'article' || qq.type === 'typed')) fb.append(h('span', `  ${fullForm(this.b.word)} · ${this.b.word.zh}`));

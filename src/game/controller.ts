@@ -85,7 +85,7 @@ import { allGems, craftGem, recarve, recarveChoices, GEM, GEM_KIND_ZH, gemGramma
 import type { GramSys } from '../core/gram/task';
 import { PERSUADE, PERSUADE_SCENES, type PersuadeScene } from '../core/persuade';
 import { ltCheck } from '../net/languageTool';
-import { berlinHour, CHARM, CHARM_BY_ID, equippedCharms, grantSlang, shoutCharm, SLANG, slangOwed, type ShoutResult } from '../core/charms';
+import { berlinHour, CHARM, CHARM_BY_ID, equippedCharms, grantSlang, rotateCard, shoutCharm, SLANG, slangOwed, type ShoutResult } from '../core/charms';
 import { cleared, floorRun, floorsOf, GRAM_DUNGEON, markCleared, type DungeonKind, type Floor } from '../core/gram/dungeons';
 import { fullForm, hasArticleQuestion, WORD_BY_ID, WORDS, zhWithPos } from '../data/words';
 import { initAudio, setBattleMusic, setVolumes, sfx, speak, speechAvailable, hasGermanVoice } from './audio';
@@ -603,6 +603,7 @@ export class Controller {
     if (this.battle) return;
     const s = this.state;
     rollDay(s);
+    rotateCard(s, this.rng);
     this.milestone(m.phrase ? 'm_phrase' : m.rare ? 'm_rare' : m.isEcho ? 'm_echo' : `m_${m.word.pos ?? 'n'}`);
     let tutorial: Tutorial = null;
     if (s.flags.pendingLoss && !m.isEcho) tutorial = 'loss';

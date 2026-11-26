@@ -81,8 +81,6 @@ export interface Question {
   chain?: boolean;
   /** 即时战: a cast bar ran out (no answer; the monsters act in full). */
   tick?: boolean;
-  /** 即时战: answered in the last second of an attack's cast (弹反 window). */
-  parryWindow?: boolean;
   /** conj questions: other accepted forms. */
   alts?: string[];
   /** storm questions: the long word to write. */
@@ -288,7 +286,7 @@ export interface Battle {
   /** 格位连锁: a follow-up question is due now; chainAt = the turn it was last offered (once per 3 turns). */
   chainOffer?: boolean;
   chainAt?: number;
-  /** 即时战 弹反: the next cast that runs out is caught (set by a right answer in its last second). */
+  /** 即时战: the attack casting now will miss (set by a right answer during its cast). */
   parryReady?: boolean;
   /** 现在完成时 (0.6, region 3 Lv21+): a verb monster speaking in the Perfekt; its stance is haben / sein. */
   perfekt?: boolean;
@@ -2244,9 +2242,10 @@ export function resolveTurn(
       s.combo += 1;
       if (readRight && move !== 'skill') s.combo += 1; // 读对意图并出对克制招式，连击额外 +1
       talentOnRight(s, b, q, log, afterWrong);
-      if (rt === 'act' && q.parryWindow && intent.kind === 'attack') {
+      // 即时战 (系统审查 2026-11-26, replaces 弹反): a right answer while its attack is casting means you take no hit.
+      if (rt === 'act' && intent.kind === 'attack' && !b.parryReady) {
         b.parryReady = true;
-        log.push({ text: '弹反架势：它这一下会被你接住。', tone: 'good' });
+        log.push({ text: '读条里答对了：它这一下打不中你。', tone: 'good' });
       }
       s.bestCombo = Math.max(s.bestCombo, s.combo);
 
@@ -2560,7 +2559,7 @@ export function resolveTurn(
   let parried = false;
   const target = b;
   if (rt === 'tick' && b.parryReady) {
-    // 弹反: answered right in the last second of its cast — the hit is caught and countered (a crit).
+    // Answered right during its cast: this attack misses.
     blocking = true;
     b.parryReady = false;
   }
@@ -2608,6 +2607,11 @@ export function resolveTurn(
   } else {
     switch (intent.kind) {
       case 'attack': {
+        if (blocking && b === target) {
+          parried = true;
+          say({ text: '你在它读条时答对了：这一下躲开了。', tone: 'good' });
+          break;
+        }
         let per = m.dmg * dmgMult * chillMult * (monsterCrit ? 1.5 : 1);
         // 多段: a correct answer on this monster stops it after the first hit.
         const hitsN = ok && !q.tick && b === target && intent.hits > 1 ? 1 : intent.hits;
@@ -2615,13 +2619,6 @@ export function resolveTurn(
         for (let i = 0; i < hitsN; i++) {
           if (i === 0 && halfBlock) {
             hitPlayer(per / 2);
-            continue;
-          }
-          if (i === 0 && blocking) {
-            parried = true;
-            const counter = Math.max(1, Math.round(attack(s) * CONFIG.player.critMult));
-            m.hp = Math.max(0, m.hp - counter);
-            say({ text: `弹反！挡住第一下并反击 ${counter} 点（算一次暴击）。`, tone: 'crit' });
             continue;
           }
           hitPlayer(per);
@@ -2634,7 +2631,6 @@ export function resolveTurn(
           if (intent.element === 'fire') b.fx.burn = CONFIG.status.burnTurns;
           if (intent.element === 'poison') b.fx.poison = Math.min(CONFIG.status.poisonMaxStacks, b.fx.poison + 1);
         }
-        if (blocking && hitsN > 1) say({ text: '稳住只挡得住第一下。', tone: 'info' });
         per = 0;
         break;
       }
@@ -3136,8 +3132,8 @@ function chainTurn(s: GameState, b: Battle, q: Question, input: string, rng: Rng
 // ---- 即时战 (B1, 81 级; 游戏设计「六、战斗」) ---------------------------------------------------------
 // Time no longer stops: each monster acts when its cast bar runs out (about 6 s, a charge twice as long, longer lines
 // take longer), you answer whenever you like with a 1 s global cooldown, a wrong choice answer staggers you 2 s.
-// A right answer in the cast's last second is a parry (no hit, a counter that counts as a crit); a right answer during
-// a charge / heal / flee breaks it. Slow mode: casts ×1.5. Turn-based stays available as a setting.
+// A right answer during an attack's cast means its hit misses (系统审查 2026-11-26, replaces the last-second parry);
+// a right answer during a charge / heal / flee breaks it. Slow mode: casts ×1.5. Turn-based stays available as a setting.
 
 export const REALTIME = {
   from: 81,
@@ -3150,7 +3146,6 @@ export const REALTIME = {
   slowMult: 1.5,
   gcd: 1,
   stagger: 2,
-  parryWindow: 1,
   spokenMult: 1.2,
 };
 
@@ -3172,11 +3167,6 @@ export function castMs(s: GameState, b: Battle): number {
 export function gcdMs(s: GameState, q: Question, ok: boolean): number {
   if (!ok && q.options?.length) return REALTIME.stagger * 1000;
   return Math.round((REALTIME.gcd - 0.3 * rank(s, 'jixing')) * 1000);
-}
-
-/** The parry window at the end of an attack's cast (弹反 talent: 1.5 s). */
-export function parryWindowMs(s: GameState): number {
-  return (rank(s, 'tanfan') ? 1.5 : REALTIME.parryWindow) * 1000;
 }
 
 // ---- 开口作答 (游戏设计「开口说的路线」) ---------------------------------------------------------------
