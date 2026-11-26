@@ -13,7 +13,7 @@ Hypothek	Der Vermieter schrieb, die Hypothek sei inzwischen abbezahlt.	房东写
 Limit	Die Bank erklärte, man könne das Limit der Kreditkarte online ändern.	银行解释说，信用卡额度可以在网上更改。	自写	k1
 Mitbewohnerin	Meine Mitbewohnerin erzählte, sie habe den Dachboden endlich aufgeräumt.	我的室友说，她终于把阁楼收拾好了。	自写	k1
 Stromausfall	Der Hausmeister sagte, der Stromausfall werde nicht lange dauern.	管理员说，停电不会持续太久。	自写	k1
-Alarmanlage	Die Polizei berichtete, man habe die Alarmanlage rechtzeitig gehört.	警方报告说，警报器响的时候人们及时听到了。	自写	k1
+Alarmanlage	Die Polizei berichtete, man habe die Alarmanlage rechtzeitig gehört.	警方报告说，人们及时听到了警报声。	自写	k1
 Kondition	Der Trainer meinte, die Mannschaft müsse ihre Kondition verbessern.	教练认为，球队必须提高体能。	自写	k1
 Schmerzmittel	Die Apothekerin sagte, das Schmerzmittel dürfe man nicht auf leeren Magen nehmen.	药剂师说，止痛药不能空腹吃。	自写	k1
 Dessert	Der Kellner erklärte, das Dessert sei leider schon aus.	服务员解释说，甜点很遗憾已经卖完了。	自写	k1
@@ -32,7 +32,7 @@ Kleinkind	Die Hebamme meinte, das Kleinkind müsse vor allem viel schlafen.	助�
 abschreiben	Die Hausverwaltung schrieb, die Mülltonne werde ab Montag früher geleert.	物业写道，从周一起垃圾桶会提前清空。	自写	k1
 Stecker	Der Elektriker sagte, der Stecker sei nicht richtig eingesteckt gewesen.	电工说，插头之前没有插好。	自写	k1
 Babysitter	Die Nachbarin erzählte, der Babysitter habe kurzfristig abgesagt.	女邻居说，她的保姆临时取消了。	自写	k1
-Feuchtigkeit	Der Gutachter erklärte, die Feuchtigkeit habe ihre Ursache im Keller.	鉴定人解释说，潮气的根源在地下室。	自写	k1
+Feuchtigkeit	Der Gutachter erklärte, die Feuchtigkeit sei durch einen Schaden im Keller entstanden.	鉴定人解释说，潮气是地下室的一处损坏造成的。	自写	k1
 Vorort	Die Gemeinde berichtete, man wolle einen neuen Spielplatz im Vorort bauen.	市镇通报说，打算在郊区建一个新的游乐场。	自写	k1
 Wanderer	Der Wanderer erzählte, er habe in der Schlucht einen Geier gesehen.	那位徒步者说，他在峡谷里看到了一只秃鹫。	自写	k1
 ungefährlich	Der Förster sagte, das Wildschwein sei für Menschen meist ungefährlich.	护林员说，野猪对人一般没有危险。	自写	k1
@@ -75,11 +75,11 @@ Bürgermeisterin	In ihrer Ansprache hat die Bürgermeisterin ihre Dankbarkeit zu
 Wertschätzung	Mit dem Geschenk wollte er seine Wertschätzung zum Ausdruck bringen.	他想用这份礼物表达他的敬重。	自写	fvg
 Traurigkeit	Das Gedicht kann die Traurigkeit beim Weggehen gut zum Ausdruck bringen.	这首诗很好地表达了离别的悲伤。	自写	fvg
 Arbeitslosigkeit	In der Sitzung hat niemand die Arbeitslosigkeit zur Sprache gebracht.	会上没有人提到失业问题。	自写	fvg
-Nachtschicht	Sie wollte das Problem mit der Nachtschicht beim Chef zur Sprache bringen.	她想跟老板提一下夜班的问题。	自写	fvg
+Nachtschicht	Sie wollte die Nachtschicht beim Chef zur Sprache bringen.	她想跟老板提一下夜班的事。	自写	fvg
 Klassenzimmer	Beim Elternabend hat ein Vater den Lärm im Klassenzimmer zur Sprache gebracht.	家长会上，一位父亲提到了教室里的噪音。	自写	fvg
 Abi	Für die Stelle würden wir auch eine Bewerberin ohne Abi in Betracht ziehen.	这个职位我们也会考虑没有高中毕业文凭的女申请人。	自写	fvg
 Hochhaus	Eine Wohnung im Hochhaus haben wir nie in Betracht gezogen.	我们从没考虑过高楼里的公寓。	自写	fvg
-Kur	Die Ärztin hat eine Kur als Möglichkeit in Betracht gezogen.	女医生把疗养也考虑为一种选择。	自写	fvg
+Kur	Die Ärztin hat eine Kur in Betracht gezogen.	女医生考虑过让病人去疗养。	自写	fvg
 Stromausfall	Wir müssen auch einen Stromausfall in Betracht ziehen.	我们也必须考虑到停电的可能。	自写	fvg
 Feuchtigkeit	Der Vermieter hat die Beschwerde über die Feuchtigkeit nur zur Kenntnis genommen.	房东对潮湿的投诉只是表示知悉。	自写	fvg
 Mülltonne	Alle Mieter sollen die neue Regelung zur Mülltonne zur Kenntnis nehmen.	所有租户都应知悉关于垃圾桶的新规定。	自写	fvg
@@ -101,9 +101,9 @@ Nachtisch	Die Kantine hat sich mit dem Nachtisch heute besonders viel Mühe gege
 Inflation	Wegen der Inflation müssen viele Familien eine schwierige Entscheidung treffen.	由于通货膨胀，许多家庭不得不做出艰难的决定。	自写	fvg
 Aufsichtsrat	Der Aufsichtsrat hat in der Krise eine mutige Entscheidung getroffen.	监事会在危机中做出了一个大胆的决定。	自写	fvg
 Nachfolge	Über die Nachfolge im Vorsitz wird das Gremium erst im Mai eine Entscheidung treffen.	关于主席职位的继任，委员会要到五月才会做出决定。	自写	fvg
-Bushaltestelle	Autofahrer müssen an der Bushaltestelle besonders Rücksicht nehmen.	开车的人在公交站附近要特别小心谨慎。	自写	fvg
+Bushaltestelle	Autofahrer müssen an der Bushaltestelle besonders Rücksicht nehmen.	开车的人在公交站附近要特别顾及他人。	自写	fvg
 Gasthaus	Die Gäste können den Wäscheservice des Gasthauses gegen Gebühr in Anspruch nehmen.	客人可以付费使用旅馆的洗衣服务。	自写	fvg
-Schnäppchen	Für das Schnäppchen haben wir eine lange Schlange in Kauf genommen.	为了这个便宜货，我们排了很长的队。	自写	fvg
+Schnäppchen	Für das Schnäppchen haben wir eine lange Schlange in Kauf genommen.	为了这个便宜货，我们不惜排了很长的队。	自写	fvg
 Kantine	Die Firma möchte den Mitarbeitern eine Kantine mit vegetarischem Essen zur Verfügung stellen.	公司想为员工提供一个有素食的食堂。	自写	fvg
 Laie	In der Sprechstunde dürfen auch Laien eine Frage stellen.	答疑时间里外行人也可以提问。	自写	fvg
 Mitarbeit	Bei der Abschiedsfeier hat der Chef seine Anerkennung für die Mitarbeit zum Ausdruck gebracht.	在告别会上，老板对大家的合作表示了认可。	自写	fvg
@@ -120,18 +120,18 @@ Bauarbeiten	Infolge der Bauarbeiten fällt die Bushaltestelle vorübergehend weg
 Alarmanlage	Infolge des Stromausfalls funktionierte auch die Alarmanlage nicht.	由于停电，警报器也不工作了。	自写	nomPrep
 Epidemie	Infolge der Epidemie mussten viele Schulen schließen.	由于流行病，很多学校不得不关闭。	自写	nomPrep
 Zuständigkeit	Infolge der Reform verändert sich die Zuständigkeit der Ämter.	由于这项改革，各部门的职责有了变化。	自写	nomPrep
-Buchhaltung	Infolge eines Fehlers in der Buchhaltung kam die Rechnung doppelt.	由于会计出了差错，账单寄来了两次。	自写	nomPrep
+Buchhaltung	Infolge eines Fehlers in der Buchhaltung kam die Rechnung zweimal.	由于会计出了差错，账单寄来了两次。	自写	nomPrep
 Vorort	Angesichts der hohen Mieten ziehen viele Familien in einen Vorort.	鉴于房租很高，许多家庭搬到了郊区。	自写	nomPrep
 Mindestlohn	Angesichts der Inflation fordern die Gewerkschaften einen höheren Mindestlohn.	鉴于通货膨胀，工会要求提高最低工资。	自写	nomPrep
 Wartezeit	Angesichts der langen Wartezeit beim Facharzt ging sie zuerst zur Hausärztin.	鉴于专科医生要等很久，她先去看了家庭医生。	自写	nomPrep
 Wanderung	Angesichts des Unwetters wurde die Wanderung abgesagt.	鉴于暴风雨，徒步活动取消了。	自写	nomPrep
 Bearbeitung	Angesichts der vielen Bewerbungen braucht die Firma mehr Zeit für die Bearbeitung.	鉴于申请很多，公司处理需要更多时间。	自写	nomPrep
-Ersparnis	Angesichts der knappen Ersparnis verzichten sie dieses Jahr auf den Urlaub.	鉴于积蓄不多，他们今年不去度假了。	自写	nomPrep
+Ersparnis	Angesichts der knappen Ersparnisse verzichten sie dieses Jahr auf den Urlaub.	鉴于积蓄不多，他们今年不去度假了。	自写	nomPrep
 Arbeitslosigkeit	Angesichts der Arbeitslosigkeit in der Region ist jede neue Anstellung wichtig.	鉴于这个地区的失业情况，每一个新的工作岗位都很重要。	自写	nomPrep
 Taschenlampe	Mithilfe einer Taschenlampe fanden wir den Weg zum Dachboden.	借助手电筒，我们找到了去阁楼的路。	自写	nomPrep
 Wörterbuch	Mithilfe eines Wörterbuchs hat sie den Brief vom Amt verstanden.	借助词典，她看懂了政府部门的来信。	自写	nomPrep
 Hochhaus	Mithilfe der Nachbarn war der Umzug ins Hochhaus in einem Tag erledigt.	在邻居的帮助下，搬家一天就搞定了。	自写	nomPrep
-Elektronik	Der Mechaniker fand den Fehler mithilfe einer speziellen Elektronik.	修车师傅借助一套专门的电子设备找到了故障。	自写	nomPrep
+Mechaniker	Der Mechaniker fand den Fehler mithilfe eines elektronischen Testgeräts.	修车师傅借助一台电子检测仪找到了故障。	自写	nomPrep
 Algorithmus	Mithilfe eines Algorithmus schlägt die App passende Rezepte vor.	借助一种算法，这个应用会推荐合适的菜谱。	自写	nomPrep
 Inschrift	Mithilfe einer Lupe konnte er die kleine Inschrift lesen.	借助放大镜，他看清了那行小字铭文。	自写	nomPrep
 Kompass	Mithilfe eines Kompasses fanden die Wanderer zurück ins Tal.	借助指南针，徒步者找到了回山谷的路。	自写	nomPrep
@@ -161,7 +161,7 @@ Antenne	Die Temperatur wird mittels einer Antenne an die Zentrale gesendet.	温�
 Waage	Das Gewicht der Pakete wird mittels einer Waage am Eingang bestimmt.	包裹的重量在入口处用秤来称。	自写	nomPrep
 Arbeitszimmer	Der Zugang zum Arbeitszimmer erfolgt mittels einer Chipkarte.	进入办公室要用芯片卡。	自写	nomPrep
 Brauerei	Die Kunden zahlen mittels einer App direkt an der Kasse der Brauerei.	顾客在啤酒厂的收银台直接用应用付款。	自写	nomPrep
-Injektion	Mittels einer Injektion bekam der Patient das Schmerzmittel schneller.	通过注射，病人更快地得到了止痛药。	自写	nomPrep
+Injektion	Mittels einer Injektion wirkte das Schmerzmittel schneller.	通过注射，止痛药起效更快。	自写	nomPrep
 Magnet	Mittels eines Magneten hält der Zettel an der Kühlschranktür.	便条用磁铁贴在冰箱门上。	自写	nomPrep
 Quarantäne	Aufgrund der Quarantäne durfte die Familie zwei Wochen nicht verreisen.	由于隔离，这家人两个星期不能出门旅行。	自写	nomPrep
 Trinkwasser	Infolge der Hitze ist das Trinkwasser in einigen Dörfern knapp geworden.	由于炎热，一些村子的饮用水变得紧张了。	自写	nomPrep
@@ -174,15 +174,15 @@ hinausgehen	Bei Stromausfall gehen alle sofort durch die Hintertür hinaus.	一�
 Veranda	Die Kinder rannten die Veranda hinunter in den Garten.	孩子们从门廊跑下去，跑进了花园。	自写	hinHer
 Babysitter	Komm bitte herunter, der Babysitter ist da.	请下来吧，保姆来了。	自写	hinHer
 Schlucht	Der Wanderer stieg vorsichtig in die Schlucht hinab.	那位徒步者小心地下到峡谷里。	自写	hinHer
-Schwelle	Sie zog den Kinderwagen über die Schwelle herein.	她把婴儿车拉过门槛推了进来。	自写	hinHer
+zuziehen	Sie zog den Kinderwagen über die Schwelle zu uns herein.	她把婴儿车拉过门槛，拉进我们这儿来。	自写	hinHer
 Lieferwagen	Kannst du morgen mit dem Lieferwagen herkommen?	你明天能开着货车过来吗？	自写	hinHer
 Bürgermeisterin	Ich möchte heute Abend noch zur Bürgermeisterin hingehen.	我今晚还想去女市长那儿一趟。	自写	hinHer
 Fahrgast	Der Fahrgast stieg an der Bushaltestelle aus und ging zur Apotheke hinüber.	那位乘客在公交站下了车，走到对面的药店去了。	自写	hinHer
 Dessert	Der Kellner kam mit dem Dessert vom Buffet herüber.	服务员端着甜点从自助餐台走了过来。	自写	hinHer
 Ostküste	Wir sind am Wochenende zur Ostküste hingefahren.	我们周末开车去了东海岸。	自写	hinHer
-Mitbewohnerin	Meine Mitbewohnerin zog den schweren Koffer ins Zimmer herein.	我的室友把沉重的箱子拖进了房间。	自写	hinHer
+zuziehen	Meine Mitbewohnerin zog den schweren Koffer zu mir ins Zimmer herein.	我的室友把沉重的箱子拖进我房间来。	自写	hinHer
 Dachboden	Die Katze kletterte auf den Dachboden hinauf und kam nicht mehr herunter.	猫爬上了阁楼，再也不下来了。	自写	hinHer
-Vollmacht	Kommen Sie morgen mit der Vollmacht zu mir herüber.	您明天带着委托书到我这边来吧。	自写	hinHer
+Vollmacht	Kommen Sie morgen mit der Vollmacht zu uns herein, die Tür ist offen.	您明天带着委托书进来找我们吧，门开着。	自写	hinHer
 Tablett	Der Pfleger ging mit dem Tablett ins Zimmer hinein.	护工端着托盘走进了房间。	自写	hinHer
 Ostsee	Im Sommer wollen wir mit dem Wohnmobil an die Ostsee hinfahren.	夏天我们想开着房车去波罗的海。	自写	hinHer
 Wartezeit	Kommen Sie ruhig herein, die Wartezeit ist heute kurz.	请进吧，今天等候时间很短。	自写	hinHer
@@ -197,7 +197,7 @@ Wanderer	Mit einem Kompass wären die Wanderer nicht vom Weg abgekommen.	要是�
 Ausfahrt	Fast wäre ich im Parkhaus in die falsche Ausfahrt gefahren.	我差点在停车楼里开错了出口。	自写	k2Past
 Hochhaus	Ohne die Hilfe der Nachbarn hätten wir den Umzug ins Hochhaus nie geschafft.	没有邻居帮忙，我们根本搬不完家。	自写	k2Past
 Vorführung	Ich wäre gern zur Vorführung gegangen, aber ich hatte Nachtschicht.	我本来很想去看演出，可是我上夜班。	自写	k2Past
-Mechaniker	Der Mechaniker hätte das Ersatzteil am besten sofort eingebaut.	修车师傅最好当时就把零件装上。	自写	k2Past
+Ersatzteil	Der Mechaniker hätte das Ersatzteil gleich eingebaut, wenn es da gewesen wäre.	要是零件到了，修车师傅当时就装上了。	自写	k2Past
 Schmerzmittel	Hätte sie das Schmerzmittel genommen, wäre die Migräne schneller vergangen.	要是她吃了止痛药，偏头痛会好得快一些。	自写	k2Past
 Alarmanlage	Wenn die Alarmanlage funktioniert hätte, hätte die Polizei den Einbrecher sofort gefasst.	要是警报器好用，警察马上就会抓到小偷了。	自写	k2Past
 Anstellung	Mit mehr Erfahrung hätte man der Bewerberin die Anstellung gegeben.	要是经验再多一点，人家就会给这位女申请人这份工作了。	自写	k2Past
@@ -224,7 +224,7 @@ tagelang	Nach der Nachtschicht sah sie aus, als ob sie tagelang nicht geschlafen
 Feuchtigkeit	Der Vermieter tat so, als ob die Feuchtigkeit kein Problem wäre.	房东装作潮湿根本不是问题。	自写	k2Past
 Fahrgast	Der Fahrgast benahm sich, als ob ihm der Bus gehören würde.	那位乘客的举止好像公交车是他的一样。	自写	k2Past
 fertigen	Es sieht aus, als ob die Renovierung nie fertig werden würde.	看起来翻修好像永远也完不了。	自写	k2Past
-Fachmann	Mein Nachbar redet, als ob er ein Fachmann für Elektronik wäre.	我的邻居说起话来，好像他是电子方面的专家一样。	自写	k2Past
+Elektronik	Mein Nachbar redet, als ob er ein Fachmann für Elektronik wäre.	我的邻居说起话来，好像他是电子方面的专家一样。	自写	k2Past
 Schnitzel	Die Kantine riecht heute, als ob jemand das Schnitzel verbrannt hätte.	食堂今天闻起来好像有人把炸肉排烧焦了。	自写	k2Past
 Landsmann	Mein Landsmann ging an mir vorbei, als ob er mich nicht kennen würde.	我那位同乡从我身边走过，好像不认识我一样。	自写	k2Past
 Kundin	Die Kundin tat so, als ob sie das Schnäppchen zufällig entdeckt hätte.	那位女顾客装作是偶然发现这个便宜货的。	自写	k2Past
@@ -284,8 +284,8 @@ Schmerzmittel	Soweit mir die Apothekerin erklärt hat, soll man das Schmerzmitte
 Bearbeitung	Soweit ich das beurteilen kann, ist die Bearbeitung schnell erledigt.	就我能判断的来说，处理很快就能完成。	自写	b2Conj
 Lehrbuch	Soweit ich das Lehrbuch kenne, ist es für Anfänger gut geeignet.	就我对这本教材的了解，它很适合初学者。	自写	b2Conj
 Hypothek	Soweit ich weiß, hat der Vermieter die Hypothek schon abbezahlt.	据我所知，房东已经还清了房贷。	自写	b2Conj
-Vorort	Mein Bruder wohnt gern im Vorort, wohingegen ich die Innenstadt bevorzuge.	我哥哥喜欢住在郊区，而我更喜欢市中心。	自写	b2Conj
-Elektrizität	Die alte Heizung verbrauchte viel Elektrizität, wohingegen die neue sehr effizient ist.	旧暖气耗电很多，而新的非常节能。	自写	b2Conj
+Vorort	Mein Bruder wohnt gern in einem Vorort, wohingegen ich die Innenstadt bevorzuge.	我哥哥喜欢住在郊区，而我更喜欢市中心。	自写	b2Conj
+Effizienz	Die alte Heizung verbrauchte viel Strom, wohingegen die neue eine hohe Effizienz hat.	旧暖气耗电很多，而新的效率很高。	自写	b2Conj
 Dialekt	Im Norden spricht man eher Platt, wohingegen im Süden der bayerische Dialekt verbreitet ist.	北方人更多说低地德语，而南方流行巴伐利亚方言。	自写	b2Conj
 Praktikant	Der Praktikant arbeitet sehr schnell, wohingegen der Lehrling gründlicher ist.	那个实习生干活很快，而那个学徒更细致。	自写	b2Conj
 Motel	Ein Motel ist meist günstig, wohingegen ein Wohnmobil hohe Kosten verursacht.	汽车旅馆一般很便宜，而房车开销很大。	自写	b2Conj
@@ -313,7 +313,7 @@ Lift	Das Hochhaus hat zwar einen Lift, aber er ist oft kaputt.	这栋高楼虽�
 Kantine	Die Kantine ist zwar günstig, aber das Essen schmeckt nicht besonders.	食堂虽然便宜，但是饭菜不怎么好吃。	自写	concess
 Dialekt	Er spricht zwar gut Deutsch, aber sein Dialekt ist schwer zu verstehen.	他德语虽然说得好，但是他的方言很难懂。	自写	concess
 Kompass	Wir hatten zwar einen Kompass, aber wir haben uns trotzdem verlaufen.	我们虽然带了指南针，但是还是迷路了。	自写	concess
-Wohnmobil	Das Wohnmobil ist zwar praktisch, aber im Verbrauch sehr teuer.	房车虽然方便，但是油耗很贵。	自写	concess
+Sprit	Das Wohnmobil ist zwar praktisch, aber es verbraucht sehr viel Sprit.	房车虽然方便，但是很费油。	自写	concess
 Mechaniker	Der Mechaniker hat zwar den Fehler gefunden, aber das Ersatzteil fehlt noch.	修车师傅虽然找到了故障，但是零件还没到。	自写	concess
 Abi	Die Bewerberin hat zwar kein Abi, aber sie hat viel Berufserfahrung.	这位女申请人虽然没有高中毕业文凭，但是工作经验丰富。	自写	concess
 Lehrbuch	Das Lehrbuch ist zwar dick, aber gut erklärt.	这本教材虽然很厚，但是讲解得很好。	自写	concess
