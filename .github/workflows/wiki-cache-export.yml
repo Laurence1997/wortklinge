@@ -1,0 +1,22 @@
+name: 导出维基缓存 (export Wikipedia cache)
+# Uploads the cached Wikipedia pages (and the C1 zone sorting) as an artifact, so articles can be written by hand.
+on:
+  push:
+    paths: ['.github/workflows/wiki-cache-export.yml']
+  workflow_dispatch:
+concurrency: wiki-cache-export-${{ github.ref }}
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache/restore@v4
+        with:
+          path: data/wortschatz/build/wiki-cache
+          key: wiki-${{ github.run_id }}
+          restore-keys: wiki-
+      - run: ls -la data/wortschatz/build/wiki-cache
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wiki-cache
+          path: data/wortschatz/build/wiki-cache
