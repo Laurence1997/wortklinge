@@ -1140,6 +1140,8 @@ export class BattleUI {
       const left = this.b.replays ?? 0;
       wrap.append(h('div.hud-row', h('button.btn.small', { disabled: left <= 0, onclick: () => { this.b.replays = left - 1; this.ctrl.speak(qq.listen!, listenRate(this.ctrl.state.level)); this.render(); } }, `🔁 重听（还剩 ${left} 次）`)));
     }
+    // 审查 C3: 听整句选德语 (a word met before) — replay the sentence freely.
+    if (qq.type === 'pickDe' && qq.listen && !qq.echo && !qq.gram && this.phase === 'answer') wrap.append(h('div.hud-row', h('button.btn.small', { onclick: () => this.ctrl.speak(qq.listen!) }, '🔁 再听这句')));
     if (qq.gram?.passage) wrap.append(h('div.passage', { style: 'white-space:pre-wrap;font-size:15px;line-height:1.5;border:1px solid var(--line, #553);padding:8px 10px;margin:6px 0;max-height:220px;overflow:auto' }, qq.gram.passage));
     // 齐鸣 (rev 234): write each same-stance mate's own word (with the article); each right one is hit.
     this.mateBoxes = [];

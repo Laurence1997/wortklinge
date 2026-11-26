@@ -149,7 +149,7 @@ export function showTitle(opts: {
   );
   box.append(
     opts.account ?? '',
-    h('div.ver', `v${opts.version} · 第 1–20 区 · 请用电脑上的 Chrome 打开，开声音`),
+    h('div.ver', `v${opts.version} · 第 1–12 区（1–120 级） · 请用电脑上的 Chrome 打开，开声音`),
   );
   clear(el).append(box);
   drawCard();
