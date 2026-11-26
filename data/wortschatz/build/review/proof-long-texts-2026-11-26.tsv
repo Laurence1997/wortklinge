@@ -1,0 +1,158 @@
+状态	id	原句或问题	Luna 建议
+LOW 0.35	tsv:wortschatz/artikel-b2-original:b2o-13-008:7	“Verbraucherzentrale”是消费者咨询/服务中心，不是消费者协会。	将两处“图林根消费者协会”改为“图林根消费者中心”。
+SHORT	tsv:wortschatz/artikel-b2-original:b2o-13-020:19	Es soll bis nächste Woche den Ablauf ausarbeiten: Begrüßung, zehn Minuten Musik, eine offene Gesprächsrunde und anschließend gibt es Suppe im Nebenraum.	Begrüßung, zehn Minuten Musik, eine offene Gesprächsrunde und anschließend Suppe im Nebenraum.
+DROPS suspendiert	tsv:wortschatz/artikel-b2-original:b2o-13-035:30	Bis die wichtigsten Gespräche geführt sind, ist Marx für den direkten Publikumsverkehr suspendiert.	Bis die wichtigsten Gespräche geführt sind, ist Marx vom direkten Publikumsverkehr freigestellt.
+SKIPID	tsv:wortschatz/artikel-b2-original:b2o-13-039:34	前文只安排了两位乌尔姆人发言，后面却说新乌尔姆来宾要排在“三项乌尔姆发言”之后，前后人数不一致。	Eine Person aus Neu-Ulm darf sprechen, aber erst nach den beiden Ulmer Beiträgen.
+DROPS Konversation	tsv:wortschatz/artikel-b2-original:b2o-13-044:38	Auch als die Frage nach Zensur aufkam, verlief die Konversation überwiegend ruhig.	Auch als die Frage nach Zensur aufkam, verlief das Gespräch überwiegend ruhig.
+SHORT	tsv:wortschatz/artikel-b2-original:b2o-13-045:39	„Danke für die Gratulation. Jetzt müssen wir aber erst einmal die Arbeit sortieren“, sagte Bauer lachend, nachdem Ebert ihr gratuliert hatte.	„Danke für die Glückwünsche. Jetzt müssen wir aber erst einmal die Arbeit sortieren“
+LOW 0.50	tsv:wortschatz/artikel-b2-original:b2o-13-072:58	„Ablage“指放置物品的托盘或收纳处，不一定是“收集盒”。	然后把纸条放进公告栏旁新设的收纳托盘里。
+DROPS Ausübung	tsv:wortschatz/artikel-b2-original:b2o-13-081:67	Zum Schluss ging es um die Ausübung des Kanzleramts: Wie viel darf ein Bundeskanzler in seiner ersten Erklärung sagen, wenn noch vieles unklar ist?	Zum Schluss ging es um die erste öffentliche Erklärung des Kanzlers: Wie viel darf er sagen, wenn noch vieles unklar ist?
+LOW 0.31	tsv:wortschatz/artikel-b2-original:b2o-14-006:73	德语是用保温杯给手取暖，中文却说用手给保温杯取暖，意思颠倒了。	用保温杯暖着双手
+LOW 0.45	tsv:wortschatz/artikel-b2-original:b2o-14-017:84	“im selben Raum”指同一间房间，中文“同一间展厅”把阅览室误说成了展厅。	同一间房里的一块小牌子写道
+SHORT	tsv:wortschatz/artikel-b2-original:b2o-14-018:85	桌上摆放的侦探小说当晚所剩无几，图书馆已订购更多 экземпляри，下周到货。	桌上摆放的侦探小说当晚全部售罄，图书馆已订购更多册，下周到货。
+LOW 0.38	tsv:wortschatz/artikel-b2-original:b2o-14-049:116	„eine Lok fährt“指驾驶火车，中文“开机车”容易被理解为驾驶摩托车。	他开火车已有二十多年
+LOW 0.23	tsv:wortschatz/artikel-b2-original:b2o-14-052:119	中文标题没有翻译德语标题“Mehr Platz für Rad und Lieferwagen am kleinen Laden”。	小店门口为自行车和货车腾出更多空间
+SHORT	tsv:wortschatz/artikel-b2-original:b2o-14-060:127	Als eine ältere Besucherin vor einer Kiste mit Geschirr stehen blieb, winkte Demir sie heran: „Sie können ruhig rangehen, ich rücke die Kiste ein Stück näher zu Ihnen.“	Sie können ruhig rangehen, ich rücke die Kiste ein Stück näher an Sie heran.
+SHORT	tsv:wortschatz/artikel-b2-original:b2o-14-062:129	Meine Haare standen in alle Richtungen; im Spiegel sah ich miserabel aus.	Meine Haare standen in alle Richtungen ab.
+LOW 0.52	tsv:wortschatz/artikel-b2-original:b2o-14-066:133	“2.000 Euro Anzahlung leisten”作为正式叙述略显生硬，通常说“eine Anzahlung von 2.000 Euro leisten”。	Beim Händler soll sie eine Anzahlung von 2.000 Euro leisten.
+SHORT	tsv:wortschatz/artikel-b2-original:b2o-15-003:136	Als wir im Frühjahr beschlossen, nach Oldenburg hinzuziehen, hatten wir vor allem eine Sorge: Unsere Wohnung war schon jetzt zu klein für drei Personen und all die Sachen, die sich über die Jahre angesammelt hatten.	Als wir im Frühjahr beschlossen, nach Oldenburg zu ziehen, hatten wir vor allem eine Sorge:
+SHORT	tsv:wortschatz/artikel-b2-original:b2o-15-026:159	两地的差异很明显：在基尔我还戴着帽子，到了马赛就立刻摘了下来。	在基尔我还戴着兜帽，到了马赛就立刻摘了下来。
+SKIPID	tsv:wortschatz/artikel-b2-original:b2o-15-044:177	标题和地点之间缺少句号，导致“Augsburg”连在标题后面。	Ein Plan für die nächsten Wochen. Augsburg.
+LOW 0.38	tsv:wortschatz/artikel-b2-original:b2o-15-048:181	德语说房间仿佛在晃动，中文却说眼前晃了一下，主语和表达的感受不完全一致。	房间仿佛晃了一下。
+LOW 0.46	tsv:wortschatz/artikel-b2-original:b2o-15-049:182	“eine Kapsel für den Magen”不是自然的德语药物表达。	eine Kapsel gegen die Magenbeschwerden
+DROPS haarig	tsv:wortschatz/artikel-b2-original:b2o-15-058:191	Wie haarig Beine und Arme werden, ist von Mensch zu Mensch verschieden. Bei manchen Jugendlichen wird auch ein sichtbarer Flaum im Gesicht.	Wie stark Beine und Arme behaart sind, ist von Mensch zu Mensch verschieden. Bei manchen Jugendlichen bildet sich auch ein sichtbarer Flaum im Gesicht.
+DROPS Signatur	tsv:wortschatz/artikel-b2-original:b2o-15-061:194	Zum Schluss setzten wir unsere Signaturen unter den Kreditvertrag und den Versicherungsantrag.	Zum Schluss setzten wir unsere Unterschriften unter den Kreditvertrag und den Versicherungsantrag.
+LOW 0.25	tsv:wortschatz/artikel-b2-original:b2o-16-001:199	可数复数名词 Figuren 前应使用 wenige，而不是 wenig。	wenige Figuren
+SKIPID	tsv:wortschatz/artikel-b2-original:b2o-16-003:201	比较结构“weiter als geplant”中没有完整从句，通常不加逗号。	Die Tinte lief weiter als geplant.
+SHORT	tsv:wortschatz/artikel-b2-original:b2o-16-013:211	有个孩子问围裙该怎么系，朗格就在第一排长椅旁灵巧地示范给他看。	有个孩子问围裙该怎么系，朗格就灵巧地示范给他看。
+LOW 0.51	tsv:wortschatz/artikel-b2-original:b2o-16-019:217	“Kressepflanzen”指水芹（或独行菜）一类的水芹苗，不是芥菜苗。	为什么窗边的水芹苗比灯下的长得更歪？
+LOW 0.50	tsv:wortschatz/artikel-b2-original:b2o-16-022:220	蒂尔说可以摸仿制品，随后递给费利克斯的却是一块亚麻布；后文又把亚麻布样品和文物模型当作两件不同的东西，前后不一致。	„Nein, aber ein Stück Leinen kannst du fühlen“
+LOW 0.31	tsv:wortschatz/artikel-b2-original:b2o-16-036:234	“Genau da muss man hinschauen”是说要仔细看那个位置或瞬间，不是“看这种地方”。	“正是这个地方要仔细看。”
+LOW 0.47	tsv:wortschatz/artikel-b2-original:b2o-16-041:239	标题译文不自然，也没有准确表达“再花一小时学习动词”的意思。	再花一小时学动词
+DROPS Ambition	tsv:wortschatz/artikel-b2-original:b2o-16-049:247	Seine Ambition sei, besser zu werden, ohne gleich jeden Text für ein Meisterwerk zu halten.	Sein Ziel sei, besser zu werden, ohne gleich jeden Text für ein Meisterwerk zu halten.
+LOW 0.07	tsv:wortschatz/artikel-b2-original:b2o-16-054:252	“wird … eröffnet”表示展览将开幕，不是将开办。	将举办开幕式
+LOW 0.52	tsv:wortschatz/artikel-b2:b2-16-002:9	德语说播客协会能帮助大家更好地合作，中文译成了更好地建立联系，意思不完全相同。	万霍夫认为，播客协会主要提供了一个更好合作的机会。
+LOW 0.29	tsv:wortschatz/artikel-b2:b2-16-008:15	这个星座的标准德语名称是 „Füchschen“，不是 „Fuchs“。	im Sternbild „Füchschen“
+SKIPID	tsv:wortschatz/briefe-1.0:brief-13-5:50	“Muss weg”只表示某物得移走或去掉，译成“必须拆掉”增加了拆除的意思。	得移走。必须留下。终于得有人问一问。
+SKIPID	tsv:wortschatz/briefe-1.0:brief-14-3:53	“keins”与前面的“Brot oder Äpfel”搭配不当，不能同时指代中性单数的面包和复数的苹果。	Eine Münze extra. Für Brot oder Äpfel für jemanden, der sich gerade nichts davon kaufen kann.
+SHORT	tsv:wortschatz/briefe-1.0:brief-19-5:80	Am Sonntag bringe ich die Schale mit den gesprungenen blauen Blumen mit.	Schale mit den blauen Blumen
+WHOLE	tsv:wortschatz/hoeren-6000:Europa:107	“Guten Morgen am Bahnhof”听起来不自然，像是在说“在火车站早上好”。	Guten Morgen! Wegen starken Regens in Teilen Europas fahren einige Züge heute langsamer. Bitte prüfen Sie vor der Fahrt die Anzeige am Gleis.
+WHOLE	tsv:wortschatz/hoeren-6000:Prozess:226	这里指庭审持续约一小时，用“Termin”表示时长不自然，也与中文的“庭审”不符。	Der Prozess beginnt am Montag um 9 Uhr im Saal 2. Bitte bringen Sie alle wichtigen Papiere mit. Die Verhandlung dauert etwa eine Stunde.
+WHOLE	tsv:wortschatz/hoeren-6000:einstellen:229	“Wir möchten Sie gern einstellen … und laden Sie deshalb zu einem Gespräch ein”把因果关系说反了：邀请面谈是为了决定是否聘用，而不是因为想聘用才面谈。	Guten Tag, hier ist die Firma Sommer. Wir möchten Sie gern zu einem Gespräch einladen. Wenn das Gespräch gut verläuft, würden wir Sie gern einstellen. Bitte rufen Sie uns heute zurück.
+WHOLE	tsv:wortschatz/hoeren-6000:Waffe:250	“alte Waffen aus verschiedenen Zeiten”指不同时期的旧式武器，不一定是“古代武器”。	市立博物馆从周六起有一个新展览。您可以在那里看到不同时期的旧式武器。请不要触摸展品。
+WHOLE	tsv:wortschatz/hoeren-6000:Schutz:255	在检查前带防晒霜来保护皮肤，作为诊所预约通知不合常理，语义不自然。	Guten Tag, hier ist die Arztpraxis. Bitte schützen Sie Ihre Haut vor der Untersuchung mit Sonnencreme. Ihr Termin ist morgen um 10 Uhr.
+DROPS Beweis	tsv:wortschatz/hoeren-6000:Beweis:331	Für Ihren Antrag brauchen wir noch einen Beweis für Ihre Adresse.	Für Ihren Antrag brauchen wir noch einen Nachweis Ihrer Adresse.
+WHOLE	tsv:wortschatz/hoeren-6000:Heim:374	“ausgepackt”是“拆开行李并取出里面的东西”，不只是“打开纸箱”。	A：欢迎来到你的新家！你已经把所有纸箱里的东西都收拾出来了吗？｜B：还没有，不过床已经放在卧室里了。
+WHOLE	tsv:wortschatz/hoeren-6000:berühren:444	前一句只提到一只袋子，后面用复数代词“die”指袋子，指代不够连贯。	Bitte berühren Sie die frischen Brötchen nicht mit den Händen. Nehmen Sie einfach eine Tüte; die Tüten liegen rechts neben dem Brot.
+WHOLE	tsv:wortschatz/hoeren-6000:ablehnen:491	这里说的是别人邀请一起吃饭，用“Angebot”不如“Einladung”自然。	A: Kommst du heute mit uns essen? B: Danke, aber ich muss die Einladung ablehnen. Ich habe meiner Mutter versprochen, sie anzurufen.
+WHOLE	tsv:wortschatz/hoeren-6000:Material:506	“für den Einkauf nehmen”在这里不自然，表示购物用途通常说“zum Einkaufen”。	A: Aus welchem Material ist die Tasche? B: Aus Stoff. Sie ist leicht und lässt sich gut waschen. A: Dann nehme ich sie zum Einkaufen.
+WHOLE	tsv:wortschatz/hoeren-6000:Zahn:688	德语说的是检查一颗牙（Ihren Zahn），中文却说检查您的牙齿。	您好，这里是牙科诊所。您明天上午 10 点有预约。请稍微早一点来，因为我们还需要检查您的那颗牙。
+WHOLE	tsv:wortschatz/hoeren-6000:Ausdruck:896	“Der Ausdruck für Ihre Unterlagen”指供您留存的打印件，不是您文件的打印件。	给您留存的打印件已经放在前台了。请在办公室关门前今天就去取。
+WHOLE	tsv:wortschatz/hoeren-6000:Dreck:962	“Dreck vom Garten”在这里说鞋子沾满泥土不太自然。	Bitte stellen Sie Ihre Schuhe vor der Tür ab. Sie sind voller Erde. Im Flur wurde gerade geputzt.
+WHOLE	tsv:wortschatz/hoeren-6000:Kündigung:995	“Ihre Kündigung ist telefonisch bei uns eingegangen”不自然且逻辑上与后文“还需要书面通知”矛盾；这里应表达对方已通过电话告知解约。	Guten Tag, hier ist Frau Maier von der Hausverwaltung. Sie haben uns telefonisch gekündigt, die Kündigung muss aber noch schriftlich bei uns eingehen. Bitte schicken Sie den Brief bis Freitag.
+MISMATCH	tsv:wortschatz/hoeren-6000:scheinbar:1005	“scheinbar”更接近“显然、看来确实”，中文的“看起来好像”应对应“anscheinend”。	anscheinend
+WHOLE	tsv:wortschatz/hoeren-6000:Rückkehr:1011	“Ich dachte, deine Rückkehr aus dem Urlaub ist heute”表达生硬；更自然的说法是询问对方是否今天回来。	Hallo, hier ist Lena. Ich dachte, du kommst heute aus dem Urlaub zurück? Ich bin ab 18 Uhr zu Hause und bringe dir den Schlüssel dann vorbei.
+WHOLE	tsv:wortschatz/hoeren-6000:hauptsächlich:1078	“Briefe üben”不自然，通常说练习写信。	A: Was machen Sie in diesem Kurs? B: Wir sprechen hauptsächlich über Alltag und Arbeit. Manchmal üben wir auch, Briefe zu schreiben.
+WHOLE	tsv:wortschatz/hoeren-6000:weitermachen:1103	“mit dem Garten aufhören”不是自然的说法，这里应指停止园艺工作。	A: Sollen wir heute mit der Gartenarbeit aufhören? B: Ja, es wird dunkel. Morgen früh machen wir weiter und pflanzen die Blumen ein.
+WHOLE	tsv:wortschatz/hoeren-6000:Argument:1147	„im Büro mit dem Rad fahren“听起来像是在办公室里骑车，不像是骑车通勤。	A: Warum sollen wir öfter mit dem Rad ins Büro fahren? B: Ein gutes Argument ist, dass Radfahren gut für die Gesundheit ist.
+SHORT	tsv:wortschatz/hoeren-6000:anpassen:1176	A：现在约定的时间改为9点开始了。	A：约定现在是9点开始了。
+WHOLE	tsv:wortschatz/hoeren-6000:lenken:1209	这里问能否开送货车，用“fahren”比“lenken”自然；“lenken”更强调操控方向。	A: Kannst du heute den Lieferwagen fahren? B: Ja, aber bitte sag mir den Weg. Die Straße am Bahnhof ist gesperrt.
+WHOLE	tsv:wortschatz/hoeren-6000:Gewalt:1239	“bei einer Auseinandersetzung zu Gewalt kommen”表达生硬，暴力本身就是冲突的一部分，宜改为“eskalieren”或调整语序。	Im Stadtteil eskalierte gestern Abend eine Auseinandersetzung. Die Polizei bittet alle Zeugen, sich bei ihr zu melden. Verletzt wurde niemand.
+DROPS vermitteln	tsv:wortschatz/hoeren-6000:vermitteln:1243	B: Gern, ich vermittle nach der Arbeit den Kontakt zwischen euch.	B: Gern, ich stelle nach der Arbeit den Kontakt zwischen euch her.
+WHOLE	tsv:wortschatz/hoeren-6000:malen:1250	德语只说“我的姐妹/姐姐或妹妹”，中文“姐妹中的一位”额外暗示有多位姐妹。	A：你今晚做什么？B：我给我姐姐/妹妹画一幅画。A：真好！那我晚点给你送些新颜料来。
+WHOLE	tsv:wortschatz/hoeren-6000:Zeitschrift:1266	“auf Ihren Termin warten”是等候预约的时间或就诊安排，不是等候一个预约本身。	候诊室的桌子上放着新杂志。您可以在等候就诊时阅读。读完后请放回原处。
+LOW 0.29	tsv:wortschatz/hoeren-6000:einschlafen:1319	“Der Tag war lang”是说这一天很漫长或忙碌，中文“这一天太累了”把“累”归给了这一天，意思不够准确。	今天过得很漫长。
+DROPS verweigern	tsv:wortschatz/hoeren-6000:verweigern:1374	Deshalb habe ich ihr die Antwort verweigert.	Deshalb habe ich ihr noch nicht geantwortet.
+SHORT	tsv:wortschatz/hoeren-6000:Unglück:1381	Das war ein Unglück.	Das war Pech.
+LOW 0.40	tsv:wortschatz/hoeren-6000:christlich:1392	在基督教节庆的语境中，Gemeindehaus 指教会或教区的活动场所，不是一般的社区活动中心。	教会活动中心
+WHOLE	tsv:wortschatz/hoeren-6000:Treue:1404	这里问的是是否还参加这个俱乐部，gehen zu diesem Verein 听起来像只是去那个地方，不够自然。	A: Warum bist du immer noch in diesem Verein? B: Ich bin seit vielen Jahren dabei. Die Treue zu meinem Verein ist mir wichtig.
+SHORT	tsv:wortschatz/hoeren-6000:Masse:1533	B: Da war eine große Masse von Leuten.	B: Da waren sehr viele Leute.
+WHOLE	tsv:wortschatz/hoeren-6000:erschaffen:1550	„Leuchten erschaffen“ klingt hier unnatürlich; für das Basteln aus alten Gläsern sagt man eher „machen“ oder „herstellen“.	A: Was machst du mit den alten Gläsern? B: Ich mache daraus kleine Leuchten für mein Zimmer.
+WHOLE	tsv:wortschatz/hoeren-6000:Leib:1562	„über den ganzen Leib“ klingt im heutigen Alltagsdeutsch ungewöhnlich; üblich ist „über den ganzen Körper“.	A: Ist der Ausschlag nur am Arm? B: Nein, er hat sich über den ganzen Körper ausgebreitet. Seit gestern juckt es überall.
+WHOLE	tsv:wortschatz/hoeren-6000:anfassen:1569	A spricht B mit „du“ an, aber B wechselt ohne Grund zur förmlichen Anrede „Sie“.	A: Darf ich die Jacke kurz anfassen? B: Ja, natürlich. Sie ist aus weicher Wolle, aber bitte häng sie danach wieder zurück.
+WHOLE	tsv:wortschatz/hoeren-6000:Schmuck:1582	Auf die Ohrringe mit „ihn“ zu verweisen, klingt unpassend; gemeint sind die Ohrringe, auf die man mit „sie“ verweist.	A: Ich möchte diese Ohrringe kaufen. Kann ich mit Karte zahlen? B: Ja, natürlich. Der Schmuck kostet 25 Euro. A: Gut, dann nehme ich sie.
+SKIPID	tsv:wortschatz/hoeren-6000:Apotheker:1624	对话中用“du”称呼对方，后面却突然改用正式称呼“Sie”。	Ja, das hat mir der Apotheker gesagt. Nimm jeden Morgen eine.
+WHOLE	tsv:wortschatz/hoeren-6000:bügeln:1644	德语只说“明天早上的约定/预约”，中文译成“开会”过于具体。	您好，我是办公室的迈尔女士。请把明天早上要用的衬衫熨好。衬衫放在小房间里。
+WHOLE	tsv:wortschatz/hoeren-6000:Verbrechen:1722	“车站附近一起犯罪事件的目击者”搭配不自然。	警方正在寻找车站附近一起犯罪案件的目击者。昨天晚上那里有一辆自行车被偷。看到什么的人请与警方联系。
+SHORT	tsv:wortschatz/hoeren-6000:verwechseln:1738	A：这是我的正确的卡。	A：这是我的卡。
+WHOLE	tsv:wortschatz/hoeren-6000:schriftlich:1742	德语只说书面提供缺少的信息，并未说明要邮寄；中文“寄给我们”添加了邮寄的意思。	申请需要您的签名。请在周五前以书面形式向我们提供缺少的信息。
+WHOLE	tsv:wortschatz/hoeren-6000:Ausrüstung:1785	“Hallo”通常搭配非正式的“du/ihr”，这里却使用正式称呼“Sie”，称呼方式不一致。	Guten Tag, für unsere Wanderung am Samstag brauchen wir gute Ausrüstung. Bitte packen Sie feste Schuhe, eine Jacke und genug Wasser ein.
+WHOLE	tsv:wortschatz/hoeren-6000:Versammlung:1890	“Versammlung”在这里是会议，不是中文的“集会”。	邻居会议今天19点在一楼的大房间开始。请带上您对新房屋规划的问题。
+WHOLE	tsv:wortschatz/hoeren-6000:Level:1910	“in dem Spiel weiterkommen”通常表示游戏进度有进展；用“weiter”询问不自然，应说“weiterkommen”。	A: Kommst du im Spiel weiter? B: Ja, ich bin jetzt im nächsten Level. Dort muss ich eine Tür öffnen.
+WHOLE	tsv:wortschatz/hoeren-6000:Beamte:1914	“Beamter”指公务员或官员，不一定是“公务员”；这里是窗口工作人员，中文宜译为“工作人员”。	A：我应该在哪里交申请？B：交给左边窗口的工作人员。A：我还需要一张照片吗？B：不用，您的护照就够了。
+WHOLE	tsv:wortschatz/hoeren-6000:chemisch:1917	“chemisch reagieren”用在皮肤对护肤霜成分的反应上不自然，通常说皮肤对成分“reagiert”。	Guten Tag, hier ist Ihre Arztpraxis. Der Test zeigt, dass Ihre Haut auf einen Inhaltsstoff Ihrer Hautcreme reagiert. Bitte benutzen Sie die Creme nicht weiter. Rufen Sie uns morgen an, damit wir einen neuen Termin vereinbaren können.
+WHOLE	tsv:wortschatz/hoeren-6000:Farm:1924	“Der Weg … bleibt geschlossen”不自然；表示道路暂时不能通行，通常说“ist gesperrt”。	Auf der Farm können Gäste heute frisches Brot kaufen. Der kleine Hofladen ist bis 17 Uhr geöffnet. Bei starkem Regen ist der Weg zu den Tieren gesperrt.
+WHOLE	tsv:wortschatz/hoeren-6000:geduldig:1935	德语只说她向对方解释了所有事情，没有明确说“解释清楚”；中文宜避免增加“清楚”的含义。	A：柜台的那位女士对我很有耐心。我有很多关于车票的问题。B：她能耐心地向你解释所有事情，真好。
+WHOLE	tsv:wortschatz/hoeren-6000:besagen:1946	“Der Brief besagt”偏正式，且通常用于陈述内容；日常语境中说信件告知包裹到达时间，更自然的是“Im Brief steht”。	Im Brief steht, dass Ihr Paket morgen ankommt. Wenn Sie nicht zu Hause sind, geben wir es beim Nachbarn ab.
+WHOLE	tsv:wortschatz/hoeren-6000:Notiz:1968	„eine Notiz mit den Sachen für den Einkauf machen“不自然，通常说“写一张购物清单”。	A: Hast du eine Einkaufsliste gemacht? B: Ja, sie liegt neben meiner Tasche. Wir brauchen Brot, Milch und Äpfel.
+WHOLE	tsv:wortschatz/hoeren-6000:seufzen:1975	“Ja, seufzte Anna”缺少引语标点，且与“B:”的对话格式不协调。	A: Der Bus kommt schon wieder zu spät. B: Ja. Anna seufzte. Ich werde wohl den nächsten Zug nehmen.
+WHOLE	tsv:wortschatz/hoeren-6000:Priorität:2046	“Termin”是约定、预约或会面，不一定是“约会”；“Unterlagen für den Termin”也不是“约会要用的材料”。	A：今天最重要的事情是什么？B：我们得先准备好会面所需的材料；电子邮件可以等一等。
+WHOLE	tsv:wortschatz/hoeren-6000:unterbringen:2047	“bei uns untergebracht werden”用于这里显得像安排住宿或安置，直接对来访者说不自然。	Guten Tag, Frau Li. Ihre Schwester kann heute Nacht bei uns übernachten. Bitte bringen Sie eine Decke mit; ein Bett ist schon frei.
+WHOLE	tsv:wortschatz/hoeren-6000:Bundestag:2054	“Die Sitzung beginnt”是“会议开始”，不是“会议于……开始”这种已经发生的语气；德语说的是今天将讨论，会议将在10点开始。	今天联邦议院将讨论一项新法律。会议将于10点开始，并通过广播转播。
+WHOLE	tsv:wortschatz/hoeren-6000:Provinz:2060	“ich bin viel gewandert”表示徒步了很多次或走了很长时间，不是“徒步了很多”这种缺少对象的说法。	A：你在哪里度的假？B：在南部的一个省。那里很安静，我还徒步走了很多路。A：听起来很放松。
+WHOLE	tsv:wortschatz/hoeren-6000:Akzent:2062	“sympathisch”在这里是“讨人喜欢、给人亲切感”，不是口音本身“亲切”。	A：你好，我叫林，来自中国。B：欢迎来上我们的德语课！你的口音听起来很讨人喜欢。你现在住在哪里？A：在科隆，就在火车站旁边。
+WHOLE	tsv:wortschatz/hoeren-6000:Drittel:2065	原文问的是已经少了多少块，回答明确说少了两块；中文“少了几块”是疑问句，与回答不符。	A：这个蛋糕够6个人吃。已经少了几块？B：六块中的两块。已经吃掉三分之一了。A：那我现在拿一块。
+WHOLE	tsv:wortschatz/hoeren-6000:demnächst:2121	“Ein Termin ist nicht möglich”在这里不自然，通常说预约无法进行或必须取消。	Hallo, hier ist die Praxis am Markt. Ihr Termin kann heute leider nicht stattfinden. Wir rufen Sie demnächst an und nennen Ihnen einen neuen Termin.
+WHOLE	tsv:wortschatz/hoeren-6000:verwunden:2139	“verwundet”通常用于战斗或暴力情境，描述事故受伤时用“verletzt”更自然。	Guten Tag, hier ist die Arztpraxis. Der Patient wurde bei dem Unfall am Arm verletzt. Der Arzt hat die Wunde versorgt. Bitte kommen Sie morgen zur Kontrolle.
+DROPS zurückhalten	tsv:wortschatz/hoeren-6000:zurückhalten:2239	Ich muss mich erst zurückhalten und kurz nachdenken.	Ich muss mich erst beruhigen und kurz nachdenken.
+WHOLE	tsv:wortschatz/hoeren-6000:Busch:2291	标准德语中通常说“Auf dem Weg zum See”；“Am Weg”不自然，带有地域用法色彩。	Auf dem Weg zum See stehen mehrere Büsche mit kleinen weißen Blumen. Bitte bleiben Sie auf dem Weg und pflücken Sie keine Blumen. Eine Bank steht hinter dem großen Busch am Wasser.
+WHOLE	tsv:wortschatz/hoeren-6000:zuschlagen:2339	„zuschlagen“表示用力砰地关上，中文只译成“关上”没有体现这个意思。	A：窗户还开着。你能把它砰地关上吗？B：好，我马上把它砰地关上。
+DROPS zurücklassen	tsv:wortschatz/hoeren-6000:zurücklassen:2342	B: Nein, ich habe sie auf der Bank zurückgelassen. Ich hole sie schnell.	B: Nein, ich habe sie auf der Bank liegen lassen. Ich hole sie schnell.
+WHOLE	tsv:wortschatz/hoeren-6000:derartig:2346	„wegen des derartig starken Regens“表达生硬，通常说 „wegen des sehr starken Regens“。	Achtung, wegen des sehr starken Regens fährt der Bus heute langsamer. Bitte bleiben Sie an der Haltestelle hinter der gelben Linie.
+SHORT	tsv:wortschatz/hoeren-6000:Anwendung:2365	Die neue Anwendung für den Bus ist jetzt verfügbar.	Die neue Bus-App ist jetzt verfügbar.
+DROPS erstatten	tsv:wortschatz/hoeren-6000:erstatten:2406	B: Gehen Sie bitte zur Polizei und erstatten Sie Anzeige.	B: Gehen Sie bitte zum Fundbüro und melden Sie den Verlust.
+DROPS Senior	tsv:wortschatz/hoeren-6000:Senior:2455	Ich bin Senior und wohne seit Kurzem hier.	Ich bin Rentner und wohne seit Kurzem hier.
+DROPS Furcht	tsv:wortschatz/hoeren-6000:Furcht:2464	B: Ich habe große Furcht vor tiefem Wasser.	B: Ich habe große Angst vor tiefem Wasser.
+WHOLE	tsv:wortschatz/hoeren-6000:Flieger:2621	飞机不会“在登机口起飞”；登机口是乘客登机的地方。	Der Flug nach Hamburg geht heute nicht von Tor 5, sondern von Tor 8. Bitte gehen Sie jetzt zum neuen Tor. Das Einsteigen beginnt in 10 Minuten.
+WHOLE	tsv:wortschatz/hoeren-6000:Kalender:2622	“Termin für den Arzt”不如“Termin beim Arzt”自然，通常说去看医生的预约是“Termin beim Arzt”。	A: Kannst du den Termin beim Arzt in deinen Kalender schreiben? B: Ja, am Freitag um 10 Uhr. A: Danke, dann erinnere ich dich am Morgen daran.
+WHOLE	tsv:wortschatz/hoeren-6000:begrenzt:2683	这里表示“为会议多留些时间”时，nehmen 通常需要反身代词 sich。	A: Können wir uns noch mehr Zeit für die Besprechung nehmen? B: Leider nicht. Unsere Zeit ist begrenzt, und der nächste Termin beginnt gleich.
+SHORT	tsv:wortschatz/hoeren-6000:Mathe:2731	A: Ich bin lieber in der Kunststunde.	A: Ich mag lieber Kunst.
+WHOLE	tsv:wortschatz/hoeren-6000:Rhythmus:2765	“finde schwer einen festen Rhythmus”在这里说法不自然，通常说“es fällt mir schwer, einen festen Rhythmus zu finden”。	A: Seit ich im Schichtdienst arbeite, fällt es mir schwer, einen festen Rhythmus zu finden. B: Versuch, auch an freien Tagen ungefähr zur gleichen Zeit aufzustehen. A: Das probiere ich nächste Woche aus.
+WHOLE	tsv:wortschatz/hoeren-6000:Bewährung:2783	中文只翻译了A的第一句话，漏掉了其余对话内容。	A：我弟弟还在缓刑期内。他必须定期去见他的缓刑辅导员。B：那他现在可以重新工作了吗？A：可以，他上周找到了一份工作。
+WHOLE	tsv:wortschatz/hoeren-6000:Verfolgung:2879	前文说警方正在寻找该男子，后文却说他已经被逮捕，前后矛盾。	Die Polizei hat einen Mann festgenommen, der am Bahnhof ein Geschäft überfallen hat. Nach kurzer Verfolgung wurde er in einer Straße in der Nähe des Bahnhofs festgenommen. Verletzt wurde niemand.
+WHOLE	tsv:wortschatz/hoeren-6000:Grundschule:2915	德语是沿着面包店旁边走过，中文却说在面包店旁左转，方向指示不符。	沿着这里直走，然后从面包店旁边经过。学校就在大操场旁边。
+WHOLE	tsv:wortschatz/hoeren-6000:trommeln:2955	„Hörst du … zu trommeln?“表示“听你打鼓”，不能表达“打鼓”；这里的动词搭配不自然。	A: Trommelst du heute Abend wieder auf deinem Schlagzeug? B: Ja, aber nur bis 8 Uhr. Danach muss ich früh ins Bett gehen. A: Gut, dann komme ich vorher vorbei.
+WHOLE	tsv:wortschatz/hoeren-6000:flüssig:2964	„die Seife aus dem kleinen Stück“说法不自然，德语通常会说“一小块肥皂”。	Im Bad gibt es jetzt flüssige Seife am Waschbecken. Bitte benutzen Sie nicht das kleine Stück Seife auf dem Regal.
+LOW 0.36	tsv:wortschatz/hoeren-6000:verhungern:2990	“verhungere ich noch”是夸张地说“到那时我会饿坏了”，中文“先饿一会儿”没有表达出这个意思。	好啊。到那时我可要饿坏了！
+WHOLE	tsv:wortschatz/hoeren-6000:Erscheinung:2999	用“ungewöhnliche Erscheinung”来指路面被雨淋湿这种情况不自然。	A: Warum ist der Weg heute so nass? B: Das kommt vom starken Regen in der Nacht. A: Ah, das erklärt, warum der Weg so nass ist.
+WHOLE	tsv:wortschatz/hoeren-6000:Wächter:3025	“Wächter”在这里是守卫或警卫，“看守”容易让人联想到监狱看守。	博物馆入口处站着一名守卫。他检查门票；如果游客有问题，也会提供帮助。
+SKIPID	tsv:wortschatz/hoeren-6000:Chirurg:3053	对话中先用非正式的“du”，后一句却改用正式的“Sie”，称呼不一致。	Ja, bitte melde dich vorne an.
+WHOLE	tsv:wortschatz/hoeren-6000:Dosis:3106	中文“早晚各服一次”明确表示每次服一次，但德语没有说明服用次数或剂量。	您好，这里是诊所。请早晚服用药片。没有事先与我们商量，请不要自行改变剂量。
+WHOLE	tsv:wortschatz/hoeren-6000:Göttin:3196	„Götter“ bedeutet hier „诸神/神祇“; „男神“ hat im Chinesischen oft eine andere Bedeutung.	博物馆今天有一场关于古代诸神和女神的导览。讲解员还会展示一幅女神雅典娜的画。导览下午三点在大厅开始。
+WHOLE	tsv:wortschatz/hoeren-6000:dreifach:3201	„dreifach ausfüllen“表示一式三份，后文却说交“全部 3 页”，把份数和页数混为一谈。	Bitte füllen Sie das Formular dreifach aus. Geben Sie alle drei Exemplare bis Freitag im Büro ab.
+WHOLE	tsv:wortschatz/hoeren-6000:Anstalt:3211	„Beratungsanstalt“不适合这里的家庭咨询机构，通常说 „Beratungsstelle“.	Unsere Beratungsstelle bietet Familien kostenlose Beratung an. Sie können montags und donnerstags einen Termin vereinbaren. Bitte rufen Sie vorher an.
+SKIPID	tsv:wortschatz/hoeren-6000:Jobcenter:3280	对话中 A 用“du”，B 却突然改用正式称呼“Sie”，称呼不一致。	Dann vereinbarst du bitte einen Termin beim Jobcenter. … Ja, die Mitarbeiter helfen dir bei der Suche nach Arbeit.
+MISMATCH	tsv:wortschatz/hoeren-6000:Wahrnehmung:3318	“Ihre Wahrnehmung”在这里是正式称呼“您的感知”，与中文的“他们的感知”不符。	Die Wahrnehmungen der beiden Menschen sind unterschiedlich.
+WHOLE	tsv:wortschatz/hoeren-6000:beschlagnahmen:3333	“Pakete mit falschen Marken”不自然，不能清楚表达包裹里装的是假冒品牌商品。	Im Zug hat der Zoll mehrere Pakete mit gefälschten Markenartikeln beschlagnahmt.
+DROPS interpretieren	tsv:wortschatz/hoeren-6000:interpretieren:3381	Ich interpretiere den ruhigen Morgen als guten Start in den Tag.	Ich sehe den ruhigen Morgen als guten Start in den Tag.
+SHORT	tsv:wortschatz/hoeren-6000:Materie:3433	在湖边参观时，那位女士解释说：水是物质，可以改变聚集状态。	水是物质，可以改变其聚集态。
+WHOLE	tsv:wortschatz/hoeren-6000:Kandidat:3440	应说“Vorstellungsgespräch für eine Stelle”，而不是“um die Stelle”。	A: Wer kommt heute zum Vorstellungsgespräch für die Stelle? B: Ein Kandidat aus Köln. Er hat schon in einem Geschäft gearbeitet. A: Dann lernen wir ihn um 14 Uhr kennen.
+WHOLE	tsv:wortschatz/hoeren-6000:rammen:3454	“Der Verkehr ist noch langsam”不自然；描述交通仍然缓慢时，通常说交通流动缓慢或车辆行进缓慢。	Auf der B 7 hat ein Lastwagen heute Morgen ein parkendes Auto gerammt. Die Straße ist wieder frei, aber der Verkehr kommt noch langsam voran.
+DROPS Stab	tsv:wortschatz/hoeren-6000:Stab:3471	Der Stab des Festivals kümmert sich heute um die Betreuung der Gäste.	Das Team des Festivals kümmert sich heute um die Betreuung der Gäste.
+WHOLE	tsv:wortschatz/hoeren-6000:bekennen:3472	“jemandem bekanntgeben”不能表示向某人承认某事；应使用“zugeben”或“gestehen”。	A: Warum hast du dich bei Lea entschuldigt? B: Ich habe ihr zugegeben, dass ich unser Treffen vergessen hatte.
+WHOLE	tsv:wortschatz/hoeren-6000:Bereitschaft:3496	“die nötige Bereitschaft mitbringen, bei der Inventur zu helfen”表达生硬，且“愿意帮忙”用“bereit sein”更自然。	A: Kannst du am Samstag bei der Inventur helfen? B: Ja, ich bin gerne bereit, bei der Inventur zu helfen. Sag mir bitte noch, wann ich anfangen soll.
+DROPS Öffnung	tsv:wortschatz/hoeren-6000:Öffnung:3578	B: Die Öffnung des Abflusses ist mit Haaren verstopft. Ich mache sie gleich sauber.	B: Der Abfluss ist mit Haaren verstopft. Ich mache ihn gleich sauber.
+WHOLE	tsv:wortschatz/hoeren-6000:Verzögerung:3610	列车晚点通常说“Verspätung”，而不是“Verzögerung”。	Achtung am Hauptbahnhof: Der Zug nach Köln hat heute eine Verspätung von 20 Minuten. Der Zug fährt von Gleis 4 ab. Wir bitten um Entschuldigung.
+WHOLE	tsv:wortschatz/hoeren-6000:vollbringen:3679	„Eine Aufgabe vollbringen“搭配不自然，通常说完成或处理一项任务。	Bei der Arbeit stand heute eine große Aufgabe an. Trotz einiger Schwierigkeiten haben wir sie noch vor Feierabend erledigt. Jetzt können alle nach Hause gehen.
+WHOLE	tsv:wortschatz/hoeren-6000:Strang:3685	„Seilstrang“通常指绳索的一股或一股绳股，这里指后备箱里的一根粗绳，说 „ein dickes Seil“ 更自然。	A: Im Kofferraum liegt ein dickes Seil. B: Gut, das brauchen wir, um die Kisten festzumachen.
+WHOLE	tsv:wortschatz/hoeren-6000:abliefern:3759	包裹通常是交到门店，而不是“送到”门店；这里用“abliefern”不自然。	Sie möchten ein Paket zurückschicken? Bitte geben Sie es bis Freitag in unserer Filiale ab. Die Rückgabe ist dort kostenlos.
+WHOLE	tsv:wortschatz/hoeren-6000:Rücktritt:3771	表示“从下个月起”时，标准用法是“ab nächstem Monat”。	Im Büro sagt Frau Klein: „Herr Weber hat heute seinen Rücktritt eingereicht.“ Er möchte ab nächstem Monat nicht mehr die Abteilung leiten. Die Stelle soll bald neu besetzt werden.
+WHOLE	tsv:wortschatz/hoeren-6000:Unterbrechung:3780	“Unterbrechung”和“unterbrochen”重复，且“因为一次中断，所以会议现在暂停”表达别扭。	Die Besprechung wird jetzt für 10 Minuten unterbrochen. Bitte seien Sie danach wieder im Raum.
+DROPS untereinander	tsv:wortschatz/hoeren-6000:untereinander:3860	B: Wir sprechen untereinander und jeder übernimmt eine Aufgabe.	B: Wir sprechen uns ab, und jeder übernimmt eine Aufgabe.
+WHOLE	tsv:wortschatz/hoeren-6000:Übereinstimmung:3903	“eine Übereinstimmung über den Termin haben”不太自然，德语里通常说就时间达成一致。	A: Gibt es schon eine Einigung über den Termin für das Treffen? B: Ja, alle können am Donnerstag um 17 Uhr.
+WHOLE	tsv:wortschatz/hoeren-6000:Diesel:3920	中文漏译了列车所在的站台信息。	请注意，2号站台：开往乌尔姆的列车今天使用柴油动力。请现在上车，车门马上就要关闭。
+SKIPID	tsv:wortschatz/hoeren-6000:faxen:3981	“fa xe”中间多了空格，拼写错误。	Ja, ich bin gerade im Büro und fa xe ihn gleich. → Ja, ich bin gerade im Büro und faxe ihn gleich.
+WHOLE	tsv:wortschatz/hoeren-6000:wegkommen:3987	„Wegen eines Problems am Zug“ klingt unnatürlich；这里更自然地说列车出了问题。	Wegen eines Problems mit dem Zug können die Fahrgäste im Moment nicht wegkommen. Bitte warten Sie am Bahnsteig auf weitere Informationen.
+WHOLE	tsv:wortschatz/hoeren-6000:Auktion:4052	„Im ersten Stock“指二楼，不是一楼。	周六家具店有一场拍卖。拍卖的物品是二手桌椅。拍卖上午10点在二楼开始。
+WHOLE	tsv:wortschatz/hoeren-6000:Abitur:4057	„Abitur gemacht“表示通过高中毕业考试、取得高中毕业资格，不只是参加考试。	A：您已经通过高中毕业考试了吗？B：是的，2年前。不过，要做办公室这份工作，我还需要上一个电脑课程。
+WHOLE	tsv:wortschatz/hoeren-6000:Abgang:4093	“Abgang”通常不用于列车发车，这里的说法不自然。	A: Die Abfahrt des letzten Zuges nach Bonn erfolgt heute um 22 Uhr 10. B: Bitte steigen Sie rechtzeitig ein. Der Zug wartet nicht.
+SHORT	tsv:wortschatz/hoeren-6000:austreten:4108	您退出俱乐部的手续将在本月底生效。	您的退会将于本月底生效。
+DROPS Stadium	tsv:wortschatz/hoeren-6000:Stadium:4199	B: Das Projekt befindet sich im letzten Stadium.	B: Das Projekt befindet sich in der letzten Phase.
+DROPS Betreuung	tsv:wortschatz/hoeren-6000:Betreuung:4207	Die Betreuung nach Ihrer Untersuchung findet morgen um 10 Uhr statt.	Der Nachsorgetermin nach Ihrer Untersuchung findet morgen um 10 Uhr statt.
+WHOLE	tsv:wortschatz/hoeren-6000:Journal:4282	德语中的 „Journal“ 通常指学术期刊或日志，用来指介绍新手机的普通杂志不自然。	A: Haben Sie eine Zeitschrift über neue Handys? B: Ja, die liegt dort neben den Zeitungen. Die aktuelle Ausgabe ist gerade erschienen.
+WHOLE	tsv:wortschatz/hoeren-6000:Währung:4354	„Geld aus Japan wechseln“不自然，表达兑换日元通常说 „japanisches Geld“ 或直接说 „Yen“.	A: Kann ich hier Yen in Euro wechseln? B: Ja, aber nur in Euro. Bitte zeigen Sie mir Ihren Ausweis.
+WHOLE	tsv:wortschatz/hoeren-6000:ungläubig:4366	在这段对话里，„Ich sehe dich ungläubig an“像是在描述一个动作，不像自然的口语回应。	A: Das Konzert heute Abend ist kostenlos. B: Wirklich? Das kann ich kaum glauben, weil die Karten sonst viel kosten.
+WHOLE	tsv:wortschatz/hoeren-6000:sichten:4370	前两句叙述过去发生的事，最后一句突然改用现在时 „meldet“，时态不协调。	Die Wanderer haben am Morgen einen seltenen Vogel im Wald gesichtet. Er saß kurz auf einem Ast und flog dann weiter. Die Gruppe meldete die Sichtung der Naturparkverwaltung.
+WHOLE	tsv:wortschatz/hoeren-6000:Kommune:4420	这里是讨论游乐场、收集意见的会议，不是通常意义上的“聚会”。	市镇政府邀请所有邻居到市政厅参加一次会议。我们将在那里讨论新建的游乐场并征集意见。会议于星期二18点开始。
+DROPS häuslich	tsv:wortschatz/hoeren-6000:häuslich:4427	Sie hat ihre Wohnung sehr häuslich eingerichtet.	Sie hat ihre Wohnung sehr wohnlich eingerichtet.
+WHOLE	tsv:wortschatz/hoeren-6000:Inhaber:4439	询问工作机会时，„nach einer Arbeit“不自然，通常说 „nach einer Stelle“ 或 „nach einem Job“。	A: Ist der Inhaber des Cafés heute da? Ich möchte mich nach einer Stelle erkundigen. B: Ja, er kommt um 10 Uhr. Du kannst dann mit ihm sprechen.
