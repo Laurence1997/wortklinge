@@ -216,9 +216,12 @@ const repo = join(__dirname, '../..');
 for (const f of tsvFiles(join(repo, 'data'))) {
   const [head, ...rows] = readFileSync(f, 'utf8').split(/\r?\n/).filter((l) => l.trim());
   const cols = head.split('\t');
-  const ex = cols.indexOf('例句');
-  if (ex < 0) continue;
-  const zhCol = cols.indexOf('例句中文');
+  // 例句 in most files; 正文 in the B2 notices/letters (b2-aushaenge), de in the liar lines (luegner).
+  const exName = ['例句', '正文', 'de'].find((n) => cols.includes(n));
+  if (!exName) continue;
+  const ex = cols.indexOf(exName);
+  const zhCol = cols.indexOf({ 例句: '例句中文', 正文: '正文中文', de: 'zh' }[exName]!);
+  const qCol = exName === '例句' ? -1 : cols.indexOf('题目');
   const pat = cols.indexOf('搭配');
   const rel = relative(repo, f);
   const name = rel.replace(/^data\//, '').replace(/\.tsv$/, '');
@@ -229,6 +232,20 @@ for (const f of tsvFiles(join(repo, 'data'))) {
     // Multi-paragraph texts (听段, letters, articles) join paragraphs with a full-width ｜, which the CJK test below
     // would take for Chinese and silently drop the whole text.
     add('tsv', `${name}:${key}:${i + 1}`, (c[ex] ?? '').replace(/｜/g, ' '), rel, zh || undefined);
+    // Content questions ([{q, qZh, answer, wrong}]) of the newer files: question, answer and wrong options.
+    if (qCol >= 0 && c[qCol]) {
+      try {
+        // csv.DictWriter quotes the JSON field ("[{""q"": …}]").
+        const raw = /^".*"$/s.test(c[qCol]) ? c[qCol].slice(1, -1).replace(/""/g, '"') : c[qCol];
+        (JSON.parse(raw) as { q: string; qZh?: string; answer: string; wrong: string[] }[]).forEach((x, j) => {
+          add('tsv', `${name}:${key}:${i + 1}:q${j + 1}`, x.q, rel, x.qZh);
+          add('tsv', `${name}:${key}:${i + 1}:q${j + 1}a`, x.answer, rel, `答案；题目：${x.q}`);
+          x.wrong.forEach((w, k) => add('tsv', `${name}:${key}:${i + 1}:q${j + 1}w${k + 1}`, w, rel, `错误选项；题目：${x.q}`));
+        });
+      } catch {
+        console.warn(`bad 题目 JSON in ${rel}:${i + 2}`);
+      }
+    }
   });
 }
 

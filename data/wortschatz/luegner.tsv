@@ -1,0 +1,181 @@
+de	zh	claim	tell
+Ich würde jetzt am liebsten nur dem Applaus lauschen.	我现在最想做的只是听掌声。	wait	k2
+In dieser Szene wäre ich nur ein stummer Zuschauer.	这一场里我只是个不出声的观众。	wait	k2
+Ich hätte meinen Auftritt erst im nächsten Akt.	我要到下一幕才出场。	wait	k2
+Ohne Souffleur würde ich keinen Schritt machen.	没有提词员我一步也不会走。	wait	k2
+Ich würde den Vorhang gern noch etwas geschlossen lassen.	我想让幕布再关一会儿。	wait	k2
+Meine Maske wäre viel zu schwer für einen Angriff.	我的面具太重了，没法攻击。	wait	k2
+Ich hätte jetzt eigentlich Pause hinter der Bühne.	我现在其实该在后台休息。	wait	k2
+Ich würde zuerst meinen Text noch einmal durchlesen.	我会先把台词再读一遍。	wait	k2
+Das Licht wäre für einen Kampf viel zu schwach.	这灯光对打斗来说太暗了。	wait	k2
+Ich hätte nichts dagegen, diese Runde einfach zuzuschauen.	这一回合光看着我也没意见。	wait	k2
+Als Nebenfigur würde ich nur am Rand stehen.	作为配角，我只会站在边上。	wait	k2
+Ich wäre froh, wenn diese Szene ganz ruhig bliebe.	这场戏要是一直平平静静，我就高兴了。	wait	k2
+Die Regisseurin hätte mir das Kämpfen ausdrücklich verboten.	导演明确禁止过我打斗。	wait	k2
+Ich würde mich jetzt still vor dem Publikum verbeugen.	我现在只会静静地向观众鞠躬。	wait	k2
+Für einen Angriff hätte ich gar nicht das richtige Kostüm.	要攻击的话，我连合适的戏服都没有。	wait	k2
+Ich würde mich hinter der Kulisse verstecken.	我会躲到布景后面。	defend	k2
+Ich hätte meine Maske jetzt fest vor dem Gesicht.	我会把面具紧紧挡在脸前。	defend	k2
+Diese Runde wäre ich ganz auf Abwehr eingestellt.	这一回合我会完全转入防守。	defend	k2
+Ich würde den schweren Vorhang wie einen Schild halten.	我会像举盾一样举着厚重的幕布。	defend	k2
+Ich würde mich nur gegen deine Worte wehren.	我只会抵挡你的话。	defend	k2
+Mein Kostüm wäre heute eine dicke Rüstung.	我今天的戏服是一身厚盔甲。	defend	k2
+In dieser Szene würde ich nur deine Schläge abfangen.	这场戏里我只会接住你的攻击。	defend	k2
+Ich hätte schon zwei Masken übereinander aufgesetzt.	我已经叠戴了两层面具。	defend	k2
+Hinter dieser Kulisse wäre ich völlig sicher vor dir.	在这块布景后面，你完全碰不到我。	defend	k2
+Ich würde die Arme schützend vor die Maske halten.	我会用双臂护住面具。	defend	k2
+Wie ein guter Schauspieler würde ich jetzt nur parieren.	像个好演员一样，我现在只会招架。	defend	k2
+Ich hätte mich längst hinter dem Souffleurkasten verschanzt.	我早就躲进提词箱后面筑好防线了。	defend	k2
+In diesem Akt wäre ich nur der vorsichtige Wächter.	这一幕里我只是个谨慎的守卫。	defend	k2
+Ich würde mich jetzt ganz klein machen und decken.	我现在会缩成一团护住自己。	defend	k2
+Ich würde jeden Angriff mit meinem Fächer abwehren.	我会用扇子挡下每一次攻击。	defend	k2
+Ich lausche jetzt nur dem Applaus.	我现在只听掌声。	wait	
+In dieser Szene bin ich nur ein stummer Zuschauer.	这一场里我只是个不出声的观众。	wait	
+Mein Auftritt kommt erst im nächsten Akt.	我要到下一幕才出场。	wait	
+Ohne Souffleur mache ich keinen Schritt.	没有提词员我一步也不走。	wait	
+Der Vorhang bleibt für mich noch geschlossen.	对我来说，幕布还关着。	wait	
+Meine Maske ist zu schwer für einen Angriff.	我的面具太重，没法攻击。	wait	
+Ich mache jetzt Pause hinter der Bühne.	我现在在后台休息。	wait	
+Ich lese zuerst meinen Text noch einmal durch.	我先把台词再读一遍。	wait	
+Das Licht ist für einen Kampf viel zu schwach.	这灯光对打斗来说太暗了。	wait	
+Diese Runde schaue ich einfach zu.	这一回合我就看着。	wait	
+Als Nebenfigur stehe ich nur am Rand.	作为配角，我只站在边上。	wait	
+Diese Szene bleibt ganz ruhig, versprochen.	这场戏会一直很平静，我保证。	wait	
+Die Regisseurin hat mir das Kämpfen ausdrücklich verboten.	导演明确禁止我打斗。	wait	
+Ich verbeuge mich jetzt still vor dem Publikum.	我现在静静地向观众鞠躬。	wait	
+Für einen Angriff fehlt mir das richtige Kostüm.	要攻击的话，我缺一套合适的戏服。	wait	
+Ich verstecke mich hinter der Kulisse.	我躲到布景后面。	defend	
+Ich halte meine Maske fest vor das Gesicht.	我把面具紧紧挡在脸前。	defend	
+Diese Runde bin ich ganz auf Abwehr eingestellt.	这一回合我完全转入防守。	defend	
+Ich halte den schweren Vorhang wie einen Schild.	我像举盾一样举着厚重的幕布。	defend	
+Ich wehre mich nur gegen deine Worte.	我只抵挡你的话。	defend	
+Mein Kostüm ist heute eine dicke Rüstung.	我今天的戏服是一身厚盔甲。	defend	
+In dieser Szene fange ich nur deine Schläge ab.	这场戏里我只接住你的攻击。	defend	
+Ich setze zwei Masken übereinander auf.	我叠戴上两层面具。	defend	
+Hinter dieser Kulisse bin ich sicher vor dir.	在这块布景后面，你碰不到我。	defend	
+Ich halte die Arme schützend vor die Maske.	我用双臂护住面具。	defend	
+Wie ein guter Schauspieler pariere ich jetzt nur.	像个好演员一样，我现在只招架。	defend	
+Ich verschanze mich hinter dem Souffleurkasten.	我躲进提词箱后面筑好防线。	defend	
+In diesem Akt bin ich nur der vorsichtige Wächter.	这一幕里我只是个谨慎的守卫。	defend	
+Ich mache mich ganz klein und decke mich.	我缩成一团护住自己。	defend	
+Ich wehre jeden Angriff mit meinem Fächer ab.	我用扇子挡下每一次攻击。	defend	
+Angeblich spiele ich in dieser Szene nur den Schlafenden.	据说这场戏里我只演睡着的人。	wait	angeblich
+Ich bin sozusagen nur das Publikum dieser Runde.	可以说，我只是这一回合的观众。	wait	angeblich
+Meine Rolle ist angeblich die des stillen Dieners.	据说我的角色是个沉默的仆人。	wait	angeblich
+Ich mache vermeintlich nur eine kurze Umbaupause.	我好像只是换景时歇一会儿。	wait	angeblich
+Angeblich trete ich erst im nächsten Akt auf.	据说我要到下一幕才上场。	wait	angeblich
+Ich warte sozusagen auf mein Stichwort.	可以说，我在等我的提示词。	wait	angeblich
+Diese Maske gehört angeblich einem friedlichen Narren.	据说这张面具属于一个温和的小丑。	wait	angeblich
+Scheinbar habe ich meinen Text vergessen und stehe still.	看样子我忘了台词，站着不动。	wait	angeblich
+Ich bin angeblich nur ein harmloser Statist.	据说我只是个无害的群众演员。	wait	angeblich
+Der Vorhang bleibt angeblich für mich geschlossen.	据说对我来说幕布还关着。	wait	angeblich
+Ich ruhe mich sozusagen in der Garderobe aus.	可以说，我在化妆间里歇着。	wait	angeblich
+Offenbar hat mir die Regie diese Runde freigegeben.	看来导演让我这一回合休息。	wait	angeblich
+Ich sehe angeblich nur zu, wie die anderen spielen.	据说我只是看别人演戏。	wait	angeblich
+Meine Hände sind vermeintlich mit Requisiten beschäftigt.	我的手好像正忙着拿道具。	wait	angeblich
+Ich bin angeblich viel zu nervös für einen Auftritt.	据说我紧张得根本上不了台。	wait	angeblich
+Angeblich verstecke ich mich hinter dem Vorhang.	据说我躲在幕布后面。	defend	angeblich
+Meine Maske ist sozusagen ein Schild aus Holz.	可以说，我的面具是一面木盾。	defend	angeblich
+Ich spiele angeblich nur die Rolle des Verteidigers.	据说我只演防守的角色。	defend	angeblich
+Ich halte vermeintlich nur den Fächer vor mein Gesicht.	我好像只是用扇子挡着脸。	defend	angeblich
+Diese Szene verlangt angeblich, dass ich mich schütze.	据说这场戏要求我保护好自己。	defend	angeblich
+Ich bin sozusagen hinter der Kulisse eingemauert.	可以说，我被砌在了布景后面。	defend	angeblich
+Anscheinend gehe ich in dieser Runde in Deckung.	看样子我这一回合要找掩护。	defend	angeblich
+Mein Kostüm ist angeblich so fest wie eine Rüstung.	据说我的戏服像盔甲一样结实。	defend	angeblich
+Ich wehre angeblich nur deine Worte ab.	据说我只是挡开你的话。	defend	angeblich
+Ich bin sozusagen die Mauer dieser Bühne.	可以说，我就是这个舞台的墙。	defend	angeblich
+Angeblich ducke ich mich hinter den Souffleurkasten.	据说我缩到提词箱后面去了。	defend	angeblich
+Ich verteidige vermeintlich nur meinen Platz im Rampenlicht.	我好像只是在守住自己在聚光灯下的位置。	defend	angeblich
+Offenbar habe ich mich hinter drei Masken verschanzt.	看来我躲在三层面具后面。	defend	angeblich
+Angeblich fange ich jeden Schlag mit dem Umhang ab.	据说我用斗篷接住每一次攻击。	defend	angeblich
+Ich hebe sozusagen meinen Umhang wie eine Wand.	可以说，我把斗篷举得像一堵墙。	defend	angeblich
+In dieser Szene spiele ich den Schlafenden.	这场戏里我演睡着的人。	wait	
+Ich bin diese Runde nur Publikum.	这一回合我只当观众。	wait	
+Meine Rolle ist die des stillen Dieners.	我的角色是个沉默的仆人。	wait	
+Ich mache eine kurze Umbaupause.	我趁换景歇一会儿。	wait	
+Ich trete erst im nächsten Akt auf.	我到下一幕才上场。	wait	
+Ich warte auf mein Stichwort.	我在等我的提示词。	wait	
+Diese Maske gehört einem friedlichen Narren.	这张面具属于一个温和的小丑。	wait	
+Ich habe meinen Text vergessen und stehe still.	我忘了台词，站着不动。	wait	
+Ich bin nur ein harmloser Statist.	我只是个无害的群众演员。	wait	
+Für mich ist der Vorhang noch zu.	对我来说幕布还没拉开。	wait	
+Ich ruhe mich kurz in der Garderobe aus.	我在化妆间里歇一会儿。	wait	
+Die Regie hat mir diese Runde freigegeben.	导演让我这一回合休息。	wait	
+Ich sehe nur zu, wie die anderen spielen.	我只看别人演戏。	wait	
+Meine Hände sind mit Requisiten beschäftigt.	我的手正忙着拿道具。	wait	
+Ich bin zu nervös für einen Auftritt.	我太紧张，上不了台。	wait	
+Ich ziehe mich hinter den Vorhang zurück.	我退到幕布后面。	defend	
+Meine Maske dient mir als Schild aus Holz.	我的面具就是我的木盾。	defend	
+Ich spiele die Rolle des Verteidigers.	我演防守的角色。	defend	
+Ich halte den Fächer vor mein Gesicht.	我用扇子挡着脸。	defend	
+Diese Szene verlangt, dass ich mich schütze.	这场戏要求我保护好自己。	defend	
+Ich mauere mich hinter der Kulisse ein.	我在布景后面把自己围起来。	defend	
+In dieser Runde gehe ich in Deckung.	这一回合我找掩护。	defend	
+Mein Kostüm ist so fest wie eine Rüstung.	我的戏服像盔甲一样结实。	defend	
+Ich wehre nur deine Worte ab.	我只挡开你的话。	defend	
+Ich bin die Mauer dieser Bühne.	我就是这个舞台的墙。	defend	
+Ich ducke mich hinter den Souffleurkasten.	我缩到提词箱后面。	defend	
+Ich verteidige nur meinen Platz im Rampenlicht.	我只守住自己在聚光灯下的位置。	defend	
+Ich verstecke mich hinter drei Masken.	我躲在三层面具后面。	defend	
+Ich fange jeden Schlag mit dem Umhang ab.	我用斗篷接住每一次攻击。	defend	
+Ich hebe meinen Umhang wie eine Wand.	我把斗篷举得像一堵墙。	defend	
+Ich habe keine Stimme mehr. Ich singe laut und warte.	我已经发不出声了。我大声唱着歌等着。	wait	contra
+Ich stehe allein auf der Bühne. Mein ganzer Chor ruht sich mit mir aus.	我独自站在台上。我的整个合唱团和我一起休息。	wait	contra
+Ich trage keine Maske. Unter meiner Maske lächle ich und ruhe mich aus.	我没戴面具。我在面具下面笑着休息。	wait	contra
+Der Vorhang ist offen. Hinter dem geschlossenen Vorhang mache ich Pause.	幕布是开着的。我在关着的幕布后面休息。	wait	contra
+Ich bin hellwach. Ich schnarche auf der Bühne und tue nichts.	我完全清醒。我在台上打着呼噜，什么也不做。	wait	contra
+Ich kenne meinen Text genau. Ich habe kein Wort gelernt, also warte ich.	我对台词了如指掌。我一个字都没背，所以我等着。	wait	contra
+Es ist stockdunkel hier. Im hellen Scheinwerferlicht sehe ich dir nur zu.	这里一片漆黑。我在明亮的聚光灯下只是看着你。	wait	contra
+Ich habe keine Hände. Ich lege die Hände still in den Schoß.	我没有手。我把双手安静地放在腿上。	wait	contra
+Das Stück ist zu Ende. Im ersten Akt warte ich noch auf meinen Einsatz.	戏已经演完了。我还在第一幕里等着上场。	wait	contra
+Ich bin der Hauptdarsteller. Als Statist stehe ich nur im Hintergrund.	我是主角。作为群众演员，我只站在后面。	wait	contra
+Ich sitze in der ersten Reihe. Von der letzten Reihe aus schaue ich zu.	我坐在第一排。我从最后一排看着。	wait	contra
+Ich bin sehr ungeduldig. Ich warte gern stundenlang auf meinen Einsatz.	我非常没耐心。我很乐意一连几小时等着上场。	wait	contra
+Mein Kostüm ist schwarz. Ich zupfe an meinem weißen Kostüm und ruhe mich aus.	我的戏服是黑的。我扯扯我的白戏服，歇一会儿。	wait	contra
+Ich habe nie geschlafen. Ich wache gerade erst auf und strecke mich.	我从来没睡过。我刚醒，伸个懒腰。	wait	contra
+Hier ist kein Publikum. Ich winke dem vollen Saal zu und warte.	这里没有观众。我向坐满的大厅挥挥手，等着。	wait	contra
+Ich habe keinen Schild. Ich halte meinen Schild hoch vor die Maske.	我没有盾。我把盾高高举在面具前。	defend	contra
+Ich fürchte nichts. Zitternd verstecke ich mich hinter der Kulisse.	我什么都不怕。我发着抖躲到布景后面。	defend	contra
+Ich bin unsichtbar. Du siehst mich deutlich hinter dem Vorhang kauern.	我是隐形的。你清楚地看到我蹲在幕布后面。	defend	contra
+Meine Maske ist zerbrochen. Hinter meiner heilen Maske gehe ich in Deckung.	我的面具碎了。我躲在完好的面具后面。	defend	contra
+Ich stehe mitten im Licht. Im Schatten der Kulisse ducke ich mich.	我站在灯光正中。我在布景的阴影里缩着身子。	defend	contra
+Ich bin aus Glas. Mein Körper aus Stein hält jeden Schlag aus.	我是玻璃做的。我石头做的身体扛得住每一击。	defend	contra
+Die Bühne ist leer. Ich verstecke mich hinter den vielen Requisiten.	舞台上空空的。我躲在一大堆道具后面。	defend	contra
+Ich trage kein Kostüm. Meine schwere Kostümrüstung schützt mich.	我没穿戏服。我那身厚重的盔甲戏服保护着我。	defend	contra
+Ich bin ganz nah bei dir. Weit weg am anderen Bühnenende gehe ich in Deckung.	我离你很近。我在舞台另一头远远地找掩护。	defend	contra
+Ich habe meinen Fächer verloren. Mit meinem Fächer wehre ich dich ab.	我的扇子丢了。我用扇子挡住你。	defend	contra
+Ich bin mutig wie ein Löwe. Ängstlich krieche ich unter die Bühne.	我像狮子一样勇敢。我害怕地爬到舞台底下。	defend	contra
+Ich habe keine Arme. Ich verschränke die Arme vor dem Gesicht.	我没有胳膊。我把双臂交叉挡在脸前。	defend	contra
+Ich bin ganz allein. Meine drei Kollegen bilden eine Mauer vor mir.	我只有一个人。我的三个同伴在我面前站成一堵墙。	defend	contra
+Mein Umhang liegt in der Garderobe. Ich wickle mich fest in meinen Umhang.	我的斗篷放在化妆间。我用斗篷把自己裹紧。	defend	contra
+Ich bin winzig. Ich verstecke meinen riesigen Körper hinter dem Vorhang.	我很小。我把我巨大的身体藏到幕布后面。	defend	contra
+Meine Stimme ist heiser. Ich schweige und warte.	我嗓子哑了。我不说话，等着。	wait	
+Ich stehe allein auf der Bühne. Ich ruhe mich kurz aus.	我独自站在台上。我歇一会儿。	wait	
+Ich trage eine Maske. Darunter lächle ich und ruhe mich aus.	我戴着面具。我在面具下面笑着休息。	wait	
+Der Vorhang ist geschlossen. Dahinter mache ich Pause.	幕布关着。我在后面休息。	wait	
+Ich bin müde. Ich setze mich auf die Bühne und tue nichts.	我累了。我坐在台上，什么也不做。	wait	
+Ich habe meinen Text vergessen. Deshalb warte ich auf den Souffleur.	我忘了台词。所以我等提词员。	wait	
+Es ist dunkel hier. Ich bleibe still und sehe dir zu.	这里很暗。我不出声，看着你。	wait	
+Meine Hände zittern. Ich lege sie still in den Schoß.	我的手在发抖。我把它们安静地放在腿上。	wait	
+Das Stück hat gerade begonnen. Ich warte noch auf meinen Einsatz.	戏刚开始。我还在等着上场。	wait	
+Ich bin nur ein Statist. Ich stehe im Hintergrund.	我只是个群众演员。我站在后面。	wait	
+Ich sitze in der letzten Reihe. Von dort aus schaue ich zu.	我坐在最后一排。我从那里看着。	wait	
+Ich bin sehr geduldig. Ich warte gern auf meinen Einsatz.	我很有耐心。我乐意等着上场。	wait	
+Mein Kostüm ist zerknittert. Ich zupfe daran und ruhe mich aus.	我的戏服皱了。我扯扯它，歇一会儿。	wait	
+Ich bin gerade aufgewacht. Ich strecke mich erst einmal.	我刚醒。我先伸个懒腰。	wait	
+Der Saal ist voll. Ich winke dem Publikum zu und warte.	大厅坐满了。我向观众挥挥手，等着。	wait	
+Ich habe einen Schild. Ich halte ihn hoch vor die Maske.	我有一面盾。我把它高高举在面具前。	defend	
+Ich habe Angst. Zitternd verstecke ich mich hinter der Kulisse.	我害怕。我发着抖躲到布景后面。	defend	
+Ich kauere hinter dem Vorhang. Dort bin ich sicher.	我蹲在幕布后面。在那里我很安全。	defend	
+Meine Maske ist heil. Hinter ihr gehe ich in Deckung.	我的面具完好无损。我躲在它后面。	defend	
+Ich stehe im Schatten. Dort ducke ich mich.	我站在阴影里。我在那里缩着身子。	defend	
+Mein Körper ist aus Stein. Er hält jeden Schlag aus.	我的身体是石头做的。它扛得住每一击。	defend	
+Die Bühne ist voller Requisiten. Dahinter verstecke ich mich.	舞台上堆满了道具。我躲在后面。	defend	
+Ich trage eine schwere Rüstung. Sie schützt mich.	我穿着厚重的盔甲。它保护着我。	defend	
+Ich bin am anderen Bühnenende. Dort gehe ich in Deckung.	我在舞台另一头。我在那里找掩护。	defend	
+Ich habe meinen Fächer dabei. Damit wehre ich dich ab.	我带着扇子。我用它挡住你。	defend	
+Ich bin ängstlich. Ich krieche unter die Bühne.	我很胆小。我爬到舞台底下。	defend	
+Ich verschränke die Arme. So schütze ich mein Gesicht.	我交叉双臂。这样护住我的脸。	defend	
+Meine drei Kollegen sind hier. Sie bilden eine Mauer vor mir.	我的三个同伴都在。他们在我面前站成一堵墙。	defend	
+Mein Umhang ist dick. Ich wickle mich fest darin ein.	我的斗篷很厚。我用它把自己裹紧。	defend	
+Ich bin winzig. Hinter dem Vorhang sieht mich niemand.	我很小。在幕布后面谁也看不见我。	defend	
