@@ -3572,3 +3572,465 @@ ggghkgggghkgg
 ......b......
 ......b......
 
+# ---------------------------------------------------------------- food
+= Frühstück | eyes 4,6 4
+.WW.....NNN...
+WkkW...NNNNN..
+WkkWW..NnnnN..
+.WW.W..NNNNN..
+cccccccccccccc
+.cWWWWWWWWWWc.
+..cccccccccc..
+
+= Mittagessen | eyes 4,6 4
+....rr..NN....
+...rrrrNNNN...
+..rrGGGNNNNy..
+..yyyyyyyyyy..
+.cccccccccccc.
+.cWWWWWWWWWWc.
+..cccccccccc..
+
+= Abendessen | eyes 4,6 4
+.....b...y....
+....bbb..y....
+...bbbbb.W....
+...bBbbb.W....
+.cccccccccccc.
+.cWWWWWWWWWWc.
+..cccccccccc..
+
+= Mahlzeit | eyes 4,6 4
+..c..NNNNN..c.
+..c.NNNNNNN.c.
+..c.NNrrrNN.c.
+.ccc.NNNNN.ccc
+..ccccccccccc.
+..cWWWWWWWWWc.
+...ccccccccc..
+
+= Mahl | eyes 4,6 4
+..nnnnnnnnn...
+.nnNnnnNnnnn..
+.nnnnnnnnnnn..
+..nnnnnnnnn...
+.cccccccccccc.
+.cWWWWWWWWWWc.
+..cccccccccc..
+
+= Gericht | eyes 4,6 4
+....GG..rr....
+..yyGGyyrryy..
+.yyyyyyyyyyyy.
+.yyyyyyyyyyyy.
+cccccccccccccc
+.cWWWWWWWWWWc.
+..cccccccccc..
+
+= Spezialität | eyes 4,6 4
+......y.......
+.....yyy......
+....nnnnnn....
+..nnnnnnnnnn..
+.nnnNnnnnNnnn.
+cccccccccccccc
+.cWWWWWWWWWWc.
+
+= Portion | eyes 3,4 4
+....yyyyy....
+..yyyyyyyyy..
+.yyyyyyyyyyy.
+.yyyyyyyyyyy.
+cccccccccccccc
+.cWWWWWWWWWWc.
+
+= Buffet | eyes 3,6 6
+.rr..yy..GG..
+rrrryyyyGGGG.
+cccccccccccccc
+WWWWWWWWWWWWWW
+WWWWWWWWWWWWWW
+.c..........c.
+.c..........c.
+
+= Lebensmittel | eyes 3,7 6
+..y.G.r..N...
+..yGGGrr.NN..
+.nnnnnnnnnnn.
+.nNnnnnnnnNn.
+.nnnnnnnnnnn.
+.nnnnnnnnnnn.
+.nnnnnnnnnnn.
+..nnnnnnnnn..
+
+= Nahrung | eyes 3,7 6
+....r...yy...
+...rrr.yyyy..
+.nnnnnnnnnnn.
+.nnnnnnnnnnn.
+.nnnnnnnnnnn.
+.nnnnnnnnnnn.
+.nnnnnnnnnnn.
+
+= Nahrungsmittel | eyes 3,7 6
+..G....r.....
+.GGG..rrr....
+.nnnnnnnnnnn.
+.nNNNNNNNNNn.
+.nnnnnnnnnnn.
+.nnnnnnnnnnn.
+
+= Verpflegung | eyes 3,5 6
+......g.......
+.....gg.......
+..ggggggggg...
+.ggggggggggg..
+.ggGGGGGGGgg..
+.ggggggggggg..
+.ggggggggggg..
+
+= Futter | eyes 3,4 6
+...yyyyyyyy...
+..yYyYyYyYyy..
+.uuuuuuuuuuuu.
+.uuuuuuuuuuuu.
+.uuuuuuuuuuuu.
+..uuuuuuuuuu..
+
+= Frucht
+....b.G.....
+....bGG.....
+..rrbrrr....
+.rrrrrrrr...
+rrphrrrhrr..
+rphkrrrhkr..
+rrrrrrrrrr..
+.rrrrrrrR...
+..rrrRRR....
+
+= Beere | eyes 3,5 4
+.....g.g....
+......g.....
+..VVVVVVVV..
+.VVVVVVVVVV.
+VVhVVVVVVVVV
+VVVVVVVVVVVV
+.VVVVVVVVVV.
+..VVVVVVVV..
+
+= Olive | eyes 3,4 4
+......g.....
+.....gG.....
+...ggggggg..
+..gggggggggg
+.ggggggggggg
+.ggggggggggg
+..ggggggggg.
+...ggggggg..
+
+= Paprika
+....gg.....
+...gg......
+.rrrrrrrr..
+rrrrrrrrrr.
+rrhhrrhhrr.
+rrhkrrhkrr.
+rrrrrrrrrr.
+.rrrrrrrr..
+..rRRRRr...
+
+= Chili
+...........g
+..........g.
+.........gg.
+........rrr.
+......rrrr..
+....rrhkr...
+..rrrrrr....
+.rrrrrr.....
+rrrrr.......
+
+= Bohne | eyes 4,3 4
+...ggggg....
+.gggggggg...
+gggggggggg..
+gggggggg....
+gggggggggg..
+.gggggggggg.
+...ggggggg..
+
+= Erbse | eyes 4,5 4
+..g.........
+.gggggggggg.
+ggGGgGGgGGgg
+gGGGGGGGGGGg
+gGGGGGGGGGGg
+ggGGgGGgGGgg
+.gggggggggg.
+
+= Erdnuss | eyes 3,2 4
+...NNNNNN...
+..NNNNNNNN..
+..NNNNNNNN..
+...NNNNNN...
+...NNNNNN...
+..NNNNNNNN..
+..NNNNNNNN..
+...NNNNNN...
+
+= Mandel | eyes 3,4 4
+.....nn.....
+....nnnn....
+...nnnnnn...
+..nnnnnnnn..
+..nnnnnnnn..
+..nnnnnnnn..
+...nnnnnn...
+....nnnn....
+
+= Korn | eyes 3,6 4
+......y.....
+.....yYy....
+....yYyYy...
+.....yYy....
+....yYyYy...
+.....yYy....
+....yYyYy...
+......g.....
+......g.....
+
+= Getreide
+..y..y..y..
+.yYyyYyyYy.
+..y..y..y..
+.yYyyYyyYy.
+..y..y..y..
+..g..g..g..
+..g..g..g..
+nnnnnnnnnnn
+
+= Kraut | eyes 4,5 4
+....GGGG....
+..GGGGGGGG..
+.GGgGGGGgGG.
+GGGGgGGgGGGG
+GGGGGggGGGGG
+.GGGGGGGGGG.
+..GGGGGGGG..
+
+= Quark | eyes 3,5 4
+..ccccccccc.
+..WWWWWWWWW.
+.WWWWWWWWWWW
+.WWWWWWWWWWW
+.uuuuuuuuuuu
+.uWWWuuuuuuu
+.uuuuuuuuuuu
+
+= Pudding | eyes 3,5 4
+....bbbbb....
+...yyyyyyy...
+..yyyyyyyyy..
+..yyyyyyyyy..
+.yyyyyyyyyyy.
+.yyyyyyyyyyy.
+ccccccccccccc
+
+= Brei | eyes 3,5 4
+...wwwwwwww..
+..wwwwrwwwww.
+.uuuuuuuuuuuu
+.uuuuuuuuuuuu
+..uuuuuuuuuu.
+...uuuuuuuu..
+
+= Dessert | eyes 3,6 4
+......r......
+.....WWW.....
+....WWWWW....
+...ppppppp...
+..ppppppppp..
+...nnnnnnn...
+....nnnnn....
+...ccccccc...
+
+= Nachtisch | eyes 3,5 4
+....r.r.r....
+...WWWWWWW...
+..ppppppppp..
+..pWpWpWpWp..
+..ppppppppp..
+..nnnnnnnnn..
+.ccccccccccc.
+
+= Waffel | eyes 3,3 4
+.yyyyyyyyyy.
+.yYyYyYyYyy.
+.yyyyyyyyyy.
+.yYyYyYyYyy.
+.yyyyyyyyyy.
+.yYyYyYyYyy.
+.yyyyyyyyyy.
+
+= Pfannkuchen | eyes 3,2 4
+......r.....
+...yyyyyyy..
+..yyyyyyyyy.
+..YYYYYYYYY.
+..yyyyyyyyy.
+..YYYYYYYYY.
+.ccccccccccc
+
+= Toast | eyes 3,4 4
+..NNNNNNNN..
+.NNnnnnnnNN.
+.NnnnnnnnnN.
+.NnnnnnnnnN.
+.NnnnnnnnnN.
+.NnnnnnnnnN.
+.NNNNNNNNNN.
+
+= Plätzchen | eyes 3,3 4
+...NNNNNN...
+..NNbNNNNN..
+.NNNNNNbNNN.
+.NNNNNNNNNN.
+.NbNNNNNNbN.
+..NNNNbNNN..
+...NNNNNN...
+
+= Bonbon | eyes 4,2 3
+..........
+r.yyyyyy.r
+rryyyyyyrr
+rryyyyyyrr
+r.yyyyyy.r
+
+= Kaugummi | eyes 3,3 4
+....ppppp...
+..ppppppppp.
+.ppppppppppp
+.ppppppppppp
+..ppppppppp.
+....ppppp...
+
+= Snack | eyes 3,5 4
+...yyyyyyy...
+..rrrrrrrrr..
+..ryyyyyyyr..
+..ryyyyyyyr..
+..ryyyyyyyr..
+..rrrrrrrrr..
+...rrrrrrr...
+
+= Schnitzel | eyes 3,3 5
+...YYYYYYYY...
+.YYyyyyyyyyY..
+YyyyyyYyyyyyY.
+YyyyYyyyyyYyY.
+.YyyyyyyYyyY.y
+..YYYYYYYYY.yy
+
+= Wiener | eyes 4,2 4
+.rrrrrrrrrrr.
+rrrrrrrrrrrrr
+rrrrrrrrrrrrr
+.rrrrrrrrrrr.
+
+= Würstchen | eyes 4,3 3
+...pppppppp...
+..pppppppppp..
+.pppppppppppp.
+..pppppppppp..
+...pppppppp...
+
+= Frankfurter | eyes 4,3 4
+..yyyyyyyyyy..
+.NNNNNNNNNNNN.
+NrrrrrrrrrrrrN
+NNNNNNNNNNNNNN
+.NNNNNNNNNNNN.
+
+= Speck | eyes 3,2 5
+rrrrrrrrrrrrrr
+pppppppppppppp
+rrrrrrrrrrrrrr
+WWWWWWWWWWWWWW
+rrrrrrrrrrrrrr
+
+= Rindfleisch | eyes 3,3 4
+...RRRRRRR...
+..RRRRRRRRR..
+.RRRpRRRRRRR.
+RRRRRRRRRpRRR
+RRRRRRRRRRRRR
+.RRRRRRRRRRR.
+..WWWWWWWWW..
+
+= Schweinefleisch | eyes 3,3 4
+...ppppppp...
+..ppppppppp..
+.pppWppppppp.
+pppppppppWppp
+ppppppppppppp
+.ppppppppppp.
+..WWWWWWWWW..
+
+= Hühnchen | eyes 3,3 4
+...NNNNNN....
+..NNNNNNNN...
+.NNNNNNNNNN..
+.NNNNNNNNNNN.
+..NNNNNNNNNNW
+...NNNNNNN.WW
+.........W...
+
+= Spaghetti | eyes 4,6 4
+....rrrr.....
+..yryrrryy...
+.yyyyyyyyyy..
+.yyyyyyyyyyy.
+yyyyyyyyyyyy.
+cccccccccccc.
+.WWWWWWWWWW..
+
+= Pasta | eyes 4,6 4
+.y.y.y.y.y..
+yYyYyYyYyYy.
+.y.y.y.y.y..
+yYyYyYyYyYy.
+cccccccccccc
+.WWWWWWWWWW.
+
+= Sushi | eyes 3,3 4
+..rrrrrrrrr..
+.rrWrrrWrrrr.
+.WWWWWWWWWWW.
+.WWWWWWWWWWW.
+.kkkkkkkkkkk.
+.WWWWWWWWWWW.
+
+= Vitamin | eyes 3,2 4
+...yyyyyy..
+..yyyyyyyY.
+..YYYYYYYY.
+..yyyyyyyy.
+..YYyyyyYY.
+...yyyyyy..
+
+= Protein | eyes 3,4 4
+....kkkkk....
+...ccccccc...
+..WWWWWWWWW..
+..WuuuuuuuW..
+..WuWWWWWuW..
+..WuuuuuuuW..
+..WWWWWWWWW..
+
+= Tabak | eyes 3,3 4
+..nnnnnnnn..
+.nnBnBnBnnn.
+nnBnnBnnBnnn
+nnnBnnBnnBnn
+.nnnBnnBnnn.
+
