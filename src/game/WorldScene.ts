@@ -1,5 +1,6 @@
 import { neighbours, SCENES, scenesOf } from '../data/world';
 import { applyTheme } from '../ui/theme';
+import { setMusicMood } from './audio';
 import { RED, redAsleep, redEligible } from '../core/redname';
 import { OPINION, opinionEligible } from '../core/opinion';
 import { elitePick, type ElitePick } from '../core/elite';
@@ -142,6 +143,7 @@ export class WorldScene extends Phaser.Scene {
     const H = MAP_H * TILE;
     this.cameras.main.setBounds(0, 0, W, H);
     applyTheme(this.bright, region);
+    setMusicMood(this.bright, region);
     this.cameras.main.setBackgroundColor(this.bright ? BRIGHT[region].fog : PAL.void);
 
     // Light sources.

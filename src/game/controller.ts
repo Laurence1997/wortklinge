@@ -2832,7 +2832,7 @@ export class Controller {
       LINA.intro.map((t) => ({ who: LINA.name, text: t })),
       () => {
         this.boss = startBoss(this.state, this.rng, 4);
-        setBattleMusic(true);
+        setBattleMusic(true, true);
         setPrompt(null);
         this.bossUI.open(this.boss);
       },
@@ -2881,7 +2881,7 @@ export class Controller {
         BOSS3.intro.map((t) => ({ who: BOSS3.name, text: t })),
         () => {
           this.boss = startBoss(this.state, this.rng, 3);
-          setBattleMusic(true);
+          setBattleMusic(true, true);
           setPrompt(null);
           this.bossUI.open(this.boss);
         },
@@ -2958,7 +2958,7 @@ export class Controller {
         BOSS2.intro.map((t) => ({ who: BOSS2.name, text: t })),
         () => {
           this.boss = startBoss(this.state, this.rng, 2);
-          setBattleMusic(true);
+          setBattleMusic(true, true);
           setPrompt(null);
           this.bossUI.open(this.boss);
         },
@@ -3057,7 +3057,7 @@ export class Controller {
         b.intro.map((t) => ({ who: b.name, text: t })),
         () => {
           this.boss = startBoss(this.state, this.rng, 7, undefined, r);
-          setBattleMusic(true);
+          setBattleMusic(true, true);
           setPrompt(null);
           this.bossUI.open(this.boss);
         },
@@ -3187,7 +3187,7 @@ export class Controller {
       BOSS.intro.map((t) => ({ who: BOSS.name, text: t })),
       () => {
         this.boss = startBoss(this.state, this.rng);
-        setBattleMusic(true);
+        setBattleMusic(true, true);
         setPrompt(null);
         this.bossUI.open(this.boss);
       },
