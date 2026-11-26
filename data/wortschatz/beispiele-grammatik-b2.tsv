@@ -158,7 +158,7 @@ Wohnmobil	Hinsichtlich der Kosten ist ein Wohnmobil nicht immer günstiger als e
 Transparenz	Hinsichtlich der Transparenz muss die Behörde noch viel lernen.	在透明度方面，这个部门还有很多要学。	自写	nomPrep
 Simulation	Die Daten werden mittels einer Simulation überprüft.	数据通过模拟来检验。	自写	nomPrep
 Antenne	Die Temperatur wird mittels einer Antenne an die Zentrale gesendet.	温度通过天线发送到总部。	自写	nomPrep
-Volumen	Mittels einer Waage wird das genaue Volumen nicht bestimmt, sondern das Gewicht.	用秤测出来的不是确切的体积，而是重量。	自写	nomPrep
+Waage	Das Gewicht der Pakete wird mittels einer Waage am Eingang bestimmt.	包裹的重量在入口处用秤来称。	自写	nomPrep
 Arbeitszimmer	Der Zugang zum Arbeitszimmer erfolgt mittels einer Chipkarte.	进入办公室要用芯片卡。	自写	nomPrep
 Brauerei	Die Kunden zahlen mittels einer App direkt an der Kasse der Brauerei.	顾客在啤酒厂的收银台直接用应用付款。	自写	nomPrep
 Injektion	Mittels einer Injektion bekam der Patient das Schmerzmittel schneller.	通过注射，病人更快地得到了止痛药。	自写	nomPrep
@@ -277,7 +277,7 @@ Renovierung	Die Kosten für die Renovierung sind, soweit ich das beurteilen kann
 Nachtschicht	Soweit ich informiert bin, beginnt die Nachtschicht um zehn Uhr.	据我所知，夜班十点开始。	自写	b2Conj
 Kapazität	Soweit ich weiß, hat das Tierheim keine Kapazität für weitere Hunde.	据我所知，动物收容所没有地方再收留狗了。	自写	b2Conj
 Verpackung	Soweit ich sehen kann, ist die Verpackung unbeschädigt.	就我看到的，包装没有损坏。	自写	b2Conj
-Genesung	Soweit der Arzt sagt, ist die Genesung auf einem guten Weg.	按医生的说法，康复进展顺利。	自写	b2Conj
+Genesung	Soweit der Arzt das beurteilen kann, ist die Genesung auf einem guten Weg.	就医生能判断的来说，康复进展顺利。	自写	b2Conj
 Köchin	Soweit ich gehört habe, sucht die Kantine eine neue Köchin.	据我听说，食堂在找一位新的女厨师。	自写	b2Conj
 Anzahlung	Soweit ich verstanden habe, ist die Anzahlung bis Freitag fällig.	据我理解，定金周五前要付。	自写	b2Conj
 Schmerzmittel	Soweit mir die Apothekerin erklärt hat, soll man das Schmerzmittel nach dem Essen nehmen.	按药剂师给我解释的，止痛药应该饭后吃。	自写	b2Conj
@@ -291,10 +291,10 @@ Praktikant	Der Praktikant arbeitet sehr schnell, wohingegen der Lehrling gründl
 Motel	Ein Motel ist meist günstig, wohingegen ein Wohnmobil hohe Kosten verursacht.	汽车旅馆一般很便宜，而房车开销很大。	自写	b2Conj
 Schnitzel	Meine Mitbewohnerin ist Vegetarierin, wohingegen ich gern Schnitzel esse.	我的室友是素食者，而我喜欢吃炸肉排。	自写	b2Conj
 Kantine	Die Kantine ist mittags voll, wohingegen sie abends fast leer ist.	食堂中午人很多，而晚上几乎没人。	自写	b2Conj
-Pfennig	Früher bezahlte man mit Pfennig, wohingegen heute alles in Euro läuft.	以前用芬尼付钱，而现在一切都用欧元。	自写	b2Conj
+Pfennig	Früher zahlte man in Mark und Pfennig, wohingegen man heute mit Euro und Cent bezahlt.	以前用马克和芬尼付钱，而现在用欧元和欧分。	自写	b2Conj
 Espresso	Tee beruhigt, wohingegen Espresso wach macht.	茶让人平静，而浓缩咖啡让人清醒。	自写	b2Conj
 Wasserfall	Im Sommer ist der Wasserfall klein, wohingegen er im Frühling sehr laut rauscht.	夏天瀑布很小，而春天它轰鸣作响。	自写	b2Conj
-Chauffeur	Der Bus ist billig, wohingegen ein Chauffeur sehr teuer ist.	公交车便宜，而司机很贵。	自写	b2Conj
+Chauffeur	Der Bus ist billig, wohingegen ein Taxi mit Chauffeur sehr teuer ist.	公交车便宜，而带司机的出租车很贵。	自写	b2Conj
 Wörterbuch	Das Lehrbuch ist sehr ausführlich, wohingegen das Wörterbuch nur kurze Erklärungen gibt.	教材非常详细，而词典只给简短的解释。	自写	b2Conj
 Gebirge	Die Ostküste ist im Winter mild, wohingegen es im Gebirge viel Schnee gibt.	东海岸冬天很温和，而山区雪很多。	自写	b2Conj
 Bestseller	Mein Vater liest gern Krimis, wohingegen meine Mutter Bestseller über Geschichte mag.	我爸爸喜欢看侦探小说，而我妈妈喜欢历史类畅销书。	自写	b2Conj
@@ -338,7 +338,7 @@ Nachtschicht	Einerseits ist die Nachtschicht gut bezahlt, andererseits leidet di
 Bürokratie	Einerseits hilft die Bürokratie gegen Willkür, andererseits macht sie vieles langsam.	一方面官僚手续能防止随意专断，另一方面它让很多事变慢。	自写	concess
 Effizienz	Einerseits braucht die Firma mehr Effizienz, andererseits will sie niemanden entlassen.	一方面公司需要提高效率，另一方面它不想解雇任何人。	自写	concess
 Tourismus	Einerseits ist der Tourismus wichtig für die Region, andererseits stört er die Anwohner.	一方面旅游业对这个地区很重要，另一方面它打扰了居民。	自写	concess
-Kantine	Einerseits macht die Kantine es bequem, andererseits koche ich lieber selbst.	一方面食堂很方便，另一方面我更喜欢自己做饭。	自写	concess
+Kantine	Einerseits ist die Kantine bequem, andererseits koche ich lieber selbst.	一方面食堂很方便，另一方面我更喜欢自己做饭。	自写	concess
 Tablet	Einerseits ist ein Tablet praktisch, andererseits lenkt es die Kinder ab.	一方面平板电脑很实用，另一方面它会让孩子分心。	自写	concess
 Mindestlohn	Einerseits will die Stadt den Mindestlohn erhöhen, andererseits fehlt das Geld.	一方面市里想提高最低工资，另一方面缺钱。	自写	concess
 Vorort	Einerseits ist der Vorort günstig, andererseits brauche ich dort ein Auto.	一方面郊区便宜，另一方面我在那里需要一辆车。	自写	concess
