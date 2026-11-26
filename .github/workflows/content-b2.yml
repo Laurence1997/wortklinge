@@ -29,7 +29,7 @@ jobs:
     timeout-minutes: 180
     env:
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-      HOEREN: ${{ github.event.inputs.hoeren || '30' }}
+      HOEREN: ${{ github.event.inputs.hoeren || '0' }}
       ARTIKEL: ${{ github.event.inputs.artikel || '5' }}
     steps:
       - uses: actions/checkout@v4
@@ -55,4 +55,4 @@ jobs:
           git add -A data/wortschatz
           git diff --cached --quiet && exit 0
           git commit -m 'Content: listening passages and B2 articles (Luna)'
-          git pull --rebase -q && git push
+          for i in 1 2 3; do git pull --rebase -q && git push && break; sleep 5; done

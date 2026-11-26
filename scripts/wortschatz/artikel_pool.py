@@ -17,7 +17,11 @@ B = os.path.join(D, 'build', 'artikel')
 os.makedirs(B, exist_ok=True)
 DUMP = os.path.join(B, 'dewikinews.xml.bz2')
 if not os.path.exists(DUMP):
-    urllib.request.urlretrieve('https://dumps.wikimedia.org/dewikinews/latest/dewikinews-latest-pages-articles.xml.bz2', DUMP)
+    # Wikimedia refuses requests without a descriptive User-Agent.
+    req = urllib.request.Request('https://dumps.wikimedia.org/dewikinews/latest/dewikinews-latest-pages-articles.xml.bz2',
+                                 headers={'User-Agent': 'wortklinge-content/1.0 (language-learning game; GitHub Actions)'})
+    with urllib.request.urlopen(req, timeout=600) as r, open(DUMP, 'wb') as f:
+        while chunk := r.read(1 << 20): f.write(chunk)
 csv.field_size_limit(10**8)
 def tsv(p): return list(csv.DictReader(open(p, encoding='utf-8'), delimiter='\t'))
 

@@ -29,10 +29,11 @@ OUT = os.path.join(D, 'hoeren-6000.tsv')
 COLS = ['原形', '排名', '情境', '类型', '例句', '例句中文', '问题', '问题中文', '答案', '错项1', '错项2', '例句出处']
 
 def tsv(p): return list(csv.DictReader(open(p, encoding='utf-8'), delimiter='\t')) if os.path.exists(p) else []
+SMALL = {'介词', '代词', '冠词', '连词', '小品词', '感叹词'}  # function words are not monsters
 early = {r['原形'] for r in tsv(os.path.join(D, 'build', 'zonen-1-3.tsv'))}
 words, seen = [], set()
 for r in tsv(os.path.join(D, 'wortschatz.tsv')):
-    if int(r['排名']) <= 6000 and r['原形'] not in seen and r['原形'] not in early:
+    if int(r['排名']) <= 6000 and r['原形'] not in seen and r['原形'] not in early and r['词性'] not in SMALL:
         seen.add(r['原形']); words.append(r)
 ex = {}
 for r in tsv(os.path.join(D, 'beispiele-6000.tsv')):
