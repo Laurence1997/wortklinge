@@ -56,13 +56,13 @@ def lemmas(text):
     for t in WORD.findall(text): out |= lem(t)
     return out
 
-ABRIDGE = """你是德语母语的编辑，把德语维基新闻原文删减成游戏里给 B2 学习者读的文章（在德国生活的中国人）。
+ABRIDGE = """你是德语母语的编辑，把德语维基新闻或维基百科原文删减成游戏里给 B2 学习者读的文章（在德国生活的中国人）。
 规则：只删句子、把太长的句子拆开、把极少数生僻说法换成常用说法；不改写观点和事实，不加原文没有的内容；保留指定的目标词（可以变形），尽量全部保留，至少保留 5 个；长度 {lo}–{hi} 个词；分成 2–5 段；标题可以缩短。
 内容不适合就 "skip": true：涉及死亡、暴力、犯罪、恐怖袭击、战争、灾难伤亡、镇压或抓捕的（哪怕只是一部分）；政治上敏感的；过时到看不懂、太专业、本质是列表或体育比分的。游戏要的是日常生活、城市、经济、环境、科技、文化、教育、交通这类话题，读完不压抑。
 再写：全文自然的简体中文翻译（分段对应）；3 道德语内容题，每题三个德语选项只有一个对，考理解不考原句记忆，错项明显错但合理，选项长短相近；一句中文改编说明（例如「删去第 3–5 段，拆分 2 个长句」）。
 只输出 JSON：{{"skip":false,"title":"…","paras":["…"],"zh":["…"],"kept":["目标词原形"],"questions":[{{"q":"…","qZh":"…","answer":"…","wrong":["…","…"]}}],"note":"…"}}"""
 
-CHECK = """你是严格的德语母语审校。下面是一篇从维基新闻删减来的 B2 学习文章，附中文、3 道题和一串「表外词」候选。
+CHECK = """你是严格的德语母语审校。下面是一篇从维基新闻或维基百科删减来的 B2 学习文章，附中文、3 道题和一串「表外词」候选。
 1. 删减后德语是否正确连贯（只修删减造成的语法或衔接问题，不改写原文）；中文是否准确；每道题是否只有一个答案且能从文中找到依据。能改就改，改不好 verdict 写 drop。
 2. 给表外词候选写注释：跳过人名、地名、机构名和缩写；每个真正的词给一个简单的德语释义（只用最常用的 2000 个德语词，10 个词以内）和中文意思，de 和 zh 都不超过 40 个字符。w 写文中出现的形式。
 只输出 JSON：{"verdict":"ok 或 fix 或 drop","why":"…","paras":[…],"zh":[…],"questions":[…],"gloss":[{"w":"…","de":"…","zh":"…"}]}（verdict 为 ok 时 paras/zh/questions 可省略）"""
@@ -92,7 +92,7 @@ def call(system, user):
 
 
 # Screen the pool first: Luna reads title + opening of every candidate and keeps only topics that fit the game.
-SCREEN = """下面是德语维基新闻文章的标题和开头。游戏（给在德国的中国人学德语）只要读完不压抑的日常话题：城市生活、交通、住房、经济和消费、工作、环境和自然、天气、科技、文化艺术、教育、科学、健康常识、体育以外的社会生活。
+SCREEN = """下面是德语维基新闻或维基百科文章的标题和开头。游戏（给在德国的中国人学德语）只要读完不压抑的日常话题：城市生活、交通、住房、经济和消费、工作、环境和自然、天气、科技、文化艺术、教育、科学、健康常识、体育以外的社会生活。
 不要：死亡、暴力、犯罪、恐怖、战争、灾难伤亡、镇压抓捕、选举争议和政党斗争、宗教冲突、体育比分、讣告。只输出 JSON：{"ok":[编号, …]}"""
 SCREENED = os.path.join(D, 'build', 'artikel', 'screened.json')
 okset = set(json.load(open(SCREENED))) if os.path.exists(SCREENED) else None
@@ -170,7 +170,8 @@ def work(item):
     row = {'段': s, '标题': str(a.get('title') or src['标题']).strip(), '例句': '｜'.join(paras), '例句中文': '｜'.join(str(z).strip() for z in zh),
            '新词': ', '.join(cased.get(w, w) for w in kept), '注释': json.dumps(gloss, ensure_ascii=False),
            '题目': json.dumps(qs, ensure_ascii=False), '词数': str(len(WORD.findall(text))),
-           '来源': f"改编自 德语维基新闻《{src['标题']}》", '网址': src['网址'], '修订号': src['修订号'], '许可证': 'CC BY 2.5',
+           '来源': f"改编自 德语{'维基百科' if 'wikipedia.org' in src['网址'] else '维基新闻'}《{src['标题']}》", '网址': src['网址'], '修订号': src['修订号'],
+           '许可证': 'CC BY-SA 4.0' if 'wikipedia.org' in src['网址'] else 'CC BY 2.5',
            '改编说明': str(a.get('note', '')).strip() + ('；审校修改' if c.get('verdict') == 'fix' else '')}
     return ('ok', src['标题'], row)
 

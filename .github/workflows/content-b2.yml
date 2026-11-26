@@ -26,11 +26,11 @@ concurrency:
 jobs:
   content:
     runs-on: ubuntu-latest
-    timeout-minutes: 180
+    timeout-minutes: 300
     env:
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       HOEREN: ${{ github.event.inputs.hoeren || '0' }}
-      ARTIKEL: ${{ github.event.inputs.artikel || '5' }}
+      ARTIKEL: ${{ github.event.inputs.artikel || '0' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -42,7 +42,9 @@ jobs:
         run: LIMIT=$HOEREN python3 scripts/wortschatz/hoeren_luna.py
       - name: Wikinews pool
         if: env.ARTIKEL != '-1'
-        run: python3 scripts/wortschatz/artikel_pool.py
+        run: |
+          python3 scripts/wortschatz/artikel_pool.py
+          python3 scripts/wortschatz/artikel_wiki_pool.py
       - name: Articles
         if: env.ARTIKEL != '-1'
         run: LIMIT=$ARTIKEL python3 scripts/wortschatz/artikel_luna.py
