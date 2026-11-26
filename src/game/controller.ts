@@ -1,5 +1,6 @@
 import { articleB2ById, ARTICLE_B2_CFG, isArticleWord } from '../core/gram/articleB2';
 import { loadArticlesB2, loadArticlesC1 } from '../data/articlesB2';
+import { revealLines, SYSTEM_TYPOS } from '../data/reveal17';
 import { LETTER_BY_ID, LETTER_CFG, readLetter } from '../core/letters';
 import { push as pushCloud } from '../net/cloud';
 import { loadPassages } from '../data/passages';
@@ -3067,9 +3068,21 @@ export class Controller {
     ]);
   }
 
+  /** 17 区揭示: once, at Ilse's workbench or before the region's boss (then the door opens after it). */
+  reveal17(then?: () => void): boolean {
+    const s = this.state;
+    if (s.flags.reveal17) return false;
+    s.flags.reveal17 = true;
+    const seen = SYSTEM_TYPOS.filter((t) => s.flags[`enteredArea${t.region}`]).map((t) => t.region);
+    this.persist();
+    window.setTimeout(() => say(revealLines(seen), then), 0);
+    return true;
+  }
+
   /** The boss door of a region 4–12 or a 蚀变 segment (游戏设计 四: shows once 40% of its words are at least 半名). */
   private knockLater(r: number) {
     const s = this.state;
+    if (r === 17 && !s.flags.reveal17 && s.level >= (LATER_BOSS[17]?.level ?? 0) && this.reveal17(() => this.knockLater(17))) return;
     const b = LATER_BOSS[r];
     const d = REGION_DEF[r] ?? ERODE_DEF[r];
     if (!b || !d) return;

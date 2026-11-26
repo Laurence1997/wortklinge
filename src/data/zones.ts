@@ -60,6 +60,8 @@ export interface RegionDef {
   enter: string[];
 }
 
+// 系统错字伏笔 (游戏设计 四「世界观一致性」): seven system lines below carry a deliberate typo (住那里, 时侯, 天汽, 不丢入,
+// 不在停下来, 才回疼, 张了多少); the 17 区 reveal reads them back (src/data/reveal17.ts). Don't correct them.
 export const REGION_DEFS: RegionDef[] = [
   {
     region: 4, zh: '租屋城', de: 'Mietshausen', theme: '住房、家具、办手续', stage: 'A2', look: 3,
@@ -72,7 +74,7 @@ export const REGION_DEFS: RegionDef[] = [
     ],
     doorZh: '登记大厅', doorAct: '走进登记大厅',
     hiddenZh: '无人认领的空房', onwardZh: '城南的温泉路',
-    enter: ['城门上挂着一排没有名字的门铃。每扇窗后面都有人，但没有一扇门开着。', '系统：在这里，住下来要先说清楚你是谁、住哪里、住多久。'],
+    enter: ['城门上挂着一排没有名字的门铃。每扇窗后面都有人，但没有一扇门开着。', '系统：在这里，住下来要先说清楚你是谁、住那里、住多久。'],
   },
   {
     region: 5, zh: '泉疗镇', de: 'Heilbrunn', theme: '身体、健康、看医生', stage: 'A2', look: 2,
@@ -85,7 +87,7 @@ export const REGION_DEFS: RegionDef[] = [
     ],
     doorZh: '空诊室', doorAct: '推开诊室的门',
     hiddenZh: '关闭的旧浴池', onwardZh: '下山去港口的路',
-    enter: ['泉水还在冒热气，可镇上的人都说不出哪里疼。他们只会指着自己。', '系统：在这里，要会说身体哪里不舒服、从什么时候开始。'],
+    enter: ['泉水还在冒热气，可镇上的人都说不出哪里疼。他们只会指着自己。', '系统：在这里，要会说身体哪里不舒服、从什么时侯开始。'],
   },
   {
     region: 6, zh: '雾港', de: 'Nebelhafen', theme: '旅行、天气、度假', stage: 'A2', look: 3,
@@ -98,7 +100,7 @@ export const REGION_DEFS: RegionDef[] = [
     ],
     doorZh: '雾中泊位', doorAct: '走向雾中的船',
     hiddenZh: '退潮后的沉船', onwardZh: '船票上写着的下一站',
-    enter: ['雾太浓了，连海浪的声音都像是隔着一层布。码头上的船没有名字，也没有方向。', '系统：在这里，要会说去哪里、怎么去、天气怎样、你想做什么。'],
+    enter: ['雾太浓了，连海浪的声音都像是隔着一层布。码头上的船没有名字，也没有方向。', '系统：在这里，要会说去哪里、怎么去、天汽怎样、你想做什么。'],
   },
   {
     region: 7, zh: '印章城', de: 'Stempelstadt', theme: '银行、保险、合同', stage: 'A2', look: 1,
@@ -111,7 +113,7 @@ export const REGION_DEFS: RegionDef[] = [
     ],
     doorZh: '条款密室', doorAct: '翻开最后一页',
     hiddenZh: '作废合同的档案柜', onwardZh: '通往工坊城的货运路',
-    enter: ['城里每一面墙上都盖满了印章。每一张纸都写着条款，字越往下越小。', '系统：在这里，读懂了才签字。看不懂就问，问了不丢人。'],
+    enter: ['城里每一面墙上都盖满了印章。每一张纸都写着条款，字越往下越小。', '系统：在这里，读懂了才签字。看不懂就问，问了不丢入。'],
   },
   {
     region: 9, zh: '工坊城', de: 'Werkhalle', theme: '求职、职场', stage: 'B1', look: 3,
@@ -124,7 +126,7 @@ export const REGION_DEFS: RegionDef[] = [
     ],
     doorZh: '面试室', doorAct: '敲门进面试室',
     hiddenZh: '没人用的旧车间', onwardZh: '通往电波塔的电缆',
-    enter: ['机器还在转，可没有一个工人记得自己是做什么的。门口的招聘栏上全是空白。', '系统：从这里开始，时间不再停下来等你（B1）。'],
+    enter: ['机器还在转，可没有一个工人记得自己是做什么的。门口的招聘栏上全是空白。', '系统：从这里开始，时间不在停下来等你（B1）。'],
   },
   {
     region: 10, zh: '电波塔', de: 'Funkturm', theme: '媒体、新闻、科技', stage: 'B1', look: 1,
@@ -150,7 +152,7 @@ export const REGION_DEFS: RegionDef[] = [
     ],
     doorZh: '冷漠之心', doorAct: '走进最后那扇门',
     hiddenZh: '寄不出去的信', onwardZh: '去议会堡的路',
-    enter: ['巷子里的人擦肩而过，谁也不看谁。他们不是忘了词，是不在乎了。', '系统：这里的怪不是物，是感受。说出来，它才会疼。'],
+    enter: ['巷子里的人擦肩而过，谁也不看谁。他们不是忘了词，是不在乎了。', '系统：这里的怪不是物，是感受。说出来，它才回疼。'],
   },
   // ---- 121–200 级 (游戏设计 四「121–200 级」, rev 488; Lucas 2026-11-25 agreed the regions, story and bosses) ----
   // B2 regions: new words only in 文章群怪 (article scenes); C1 regions add no words, their fields spawn review and
@@ -179,7 +181,7 @@ export const REGION_DEFS: RegionDef[] = [
     ],
     doorZh: '金库', doorAct: '推开金库的门',
     hiddenZh: '停工的旧铸币车间', onwardZh: '穿过林底才到的剧场路',
-    enter: ['铸币场的机器还在压硬币，硬币上没有数字。人们排着队，把手里的东西一样一样换掉。', '系统：在这里，要读懂数字和图表：涨了多少、跌到多少、值不值得。'],
+    enter: ['铸币场的机器还在压硬币，硬币上没有数字。人们排着队，把手里的东西一样一样换掉。', '系统：在这里，要读懂数字和图表：张了多少、跌到多少、值不值得。'],
   },
   {
     region: 16, zh: '面具剧场', de: 'Maskentheater', theme: '文化、艺术、科学、教育', stage: 'B2', look: 1,

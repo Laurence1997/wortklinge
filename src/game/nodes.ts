@@ -217,6 +217,7 @@ export class NodeNav {
     if (this.here.id === 'r1-x') this.w.ctrl.sawNeighbour();
     if (this.here.zone === 'fahrplanhalle' && this.here.type === 'field') this.w.ctrl.maybeLina();
     if (this.here.id === 'r3-hide') this.s.flags.zeroSeen = true;
+    if (this.here.id === 'r17-hide') this.w.ctrl.reveal17();
     // 怪物诅咒 教学: the first cursed monster waits just past the hall gate (Lv25+).
     if (this.here.id === 'r3-fx' && this.s.level >= CONFIG.curse.from && !this.s.flags.curseTaught) this.s.flags.curseNext = true;
   }
