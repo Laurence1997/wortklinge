@@ -357,3 +357,4 @@ canvas.slot-icon.q-red { border-color: var(--q-red, #ff3a3a); }
 #pk .pk-note { margin-top: 10px; min-height: 1.4em; }
 #pk .row { flex-wrap: wrap; gap: 6px; }
 .ai-tag { display: inline-block; font-size: 10px; line-height: 1; padding: 2px 4px; border-radius: 3px; background: #2b6cb0; color: #fff; font-family: var(--mono); vertical-align: 1px; }
+.adv-fig { width: 24px; height: 24px; image-rendering: pixelated; vertical-align: middle; margin-right: 4px; }

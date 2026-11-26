@@ -1,0 +1,63 @@
+# NPC figures (2026-11-26): '<name or speaker key>: person …' (same recipe words as recipes.txt). → src/data/npcArt.ts
+# Adventurers (src/data/cast.ts)
+Ole: person hat=u:beanie beard=W hair=W top=u:apron apron=W prop=cup mouth=smile
+Selin: person sex=f hair=k:pony top=r:vest vest=W prop=bag skin=2 mouth=open
+Bastian: person hair=y:spiky hat=phones top=G prop=skate
+Yara: person sex=f hat=V:scarf top=v prop=money skin=2 earring=y
+Emil: person hat=y:cowboy top=g:overall over=u prop=leaf hair=n
+Frieda: person sex=f hair=W:bun glasses=1 top=V prop=bag mouth=frown
+Henrik: person hair=b:side glasses=1 top=u:vest vest=n prop=book
+Amira: person sex=f hair=k:long top=s prop=laptop skin=2
+Mats: person hat=k:police hair=W stache=W top=s prop=lamp
+Kemal: person hair=k:bald beard=k top=r skin=3 prop=case mouth=smile
+Wiebke: person sex=f hair=r:pony glasses=1 top=y prop=clip
+Joscha: person hair=b:fringe top=G:apron apron=W prop=list
+Ida: person sex=f hair=y:bun top=l prop=leaf cheeks=1 closed=1
+Paul: person hair=y:side top=r:jersey prop=cane
+Rieke: person sex=f hair=B:pigtails top=W:coat inner=g prop=pill
+Arne: person hat=y:sailor hair=r beard=r top=y prop=anchor
+Zoe: person sex=f hat=r:cap hair=y:pony top=G prop=map mouth=open
+Dario: person hair=k:side stache=k top=W:apron apron=p prop=cup mouth=smile
+Konstantin: person hair=b:side top=s:suit tie=y prop=case mouth=smile
+Merle: person sex=f hair=V:side top=u:suit tie=W prop=drum
+Viktor: person hair=y glasses=1 top=k prop=scroll
+Svenja: person sex=f hair=y:bun top=r:suit tie=W prop=clip
+Malik: person hat=chef top=W skin=4 prop=list mouth=open
+Hanna: person sex=f hair=n:pony top=n:overall over=b prop=hammer
+Levin: person hat=phones hair=b:spiky top=v prop=mic mouth=open
+Thea: person sex=f hair=k:fringe glasses=1 top=y prop=pen
+Quentin: person glasses=1 hair=r:afro top=s prop=wrench
+Lotte: person sex=f hat=V:beret hair=b:long top=p prop=camera
+Nils: person hair=k:side top=k scarf=r prop=scroll mouth=frown
+Elif: person sex=f hair=B:wavy top=y:apron apron=n prop=cup skin=2 mouth=smile
+Ruben: person hair=b:spiky top=g prop=flagG mouth=open
+Imke: person sex=f hair=S:bun top=k:suit prop=mic
+Ylva: person sex=f hair=y:pigtails top=G prop=bike
+Moritz: person hair=b:side top=s:suit tie=r prop=chart glasses=1 mouth=frown
+Flora: person sex=f hair=V:afro top=v prop=needle earring=y
+Samuel: person hair=W:bald glasses=1 beard=W top=n prop=book
+Johanna: person sex=f hair=n:bun glasses=1 top=s prop=magnifier
+Bruno: person hair=S:bald stache=S top=g:vest vest=n prop=scroll mouth=smile
+Carla: person sex=f hair=k:pony top=k:robe prop=book
+Anton: person hair=S:afro beard=S top=n prop=pipe
+Juna: person sex=f hair=W:long top=u:gown prop=mic
+Erik: person hair=W:side glasses=1 top=u prop=book mouth=smile
+Lasse: person hair=b top=n:apron apron=b prop=hourglass face=pale
+Kaja: person sex=f hair=v:long top=s prop=ticket closed=1
+Timo: person hair=b top=c:stripe stripe=S prop=list mouth=frown
+Sanne: person sex=f hat=s:scarf top=U prop=broom
+Matteo: person hat=g:feather beard=k top=n prop=bag mouth=smile
+Pia: person sex=f hat=g:cowboy top=g prop=lantern
+Jannik: person hat=y:hard top=u prop=plug
+Tilda: person sex=f hair=W:bun glasses=1 top=v prop=chalk
+# Scene NPCs that had only a name (决斗场 duels.ts, 说服段 persuade.ts) and the 守夜人
+Bäckerin: person sex=f hair=y:bun top=W:apron apron=r prop=bread mouth=smile
+Praxis: person sex=f hair=b:bun glasses=1 top=W:coat inner=U prop=phone
+Vermieter: person hat=g:feather stache=S top=n:vest vest=b prop=key
+Herr Brandl: person hat=g:feather stache=S top=n:vest vest=b prop=key
+Beamtin: person sex=f hair=S:bun glasses=1 top=u:suit tie=W prop=clip
+Nachbar: person hair=b beard=1 top=G prop=cup mouth=smile
+Jonas（室友）: person hair=y:spiky hat=phones top=r:stripe stripe=W prop=cup
+Mia: person sex=f hair=r:pony top=y:apron apron=k prop=tray
+Herr Kaya: person hair=k beard=k top=k prop=guitar skin=2
+守夜人: person hat=k:hood beard=W top=k:robe prop=lantern

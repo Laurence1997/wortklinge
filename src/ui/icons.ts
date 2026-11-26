@@ -6,6 +6,8 @@ import type { Battle } from '../core/combat';
 import type { Slot } from '../core/types';
 import { dungeonTile, heroTile, heroTinyCanvas, CHAR_RAMP } from '../game/sprites';
 import type { Look } from '../core/look';
+import { NPC_ART } from '../data/npcArt';
+import { DRAWN_PAL } from '../data/drawnArt';
 import { artKey, monsterCanvas, SHEET_URL, wordArt as kindArt, type MonArt, type SheetId } from '../game/monsterArt';
 
 const T = 16;
@@ -165,7 +167,34 @@ export function setRestored(fn: (who: 'lina' | 'jonas') => boolean): void {
 
 export const isRestored = (who: 'lina' | 'jonas'): boolean => restored(who);
 
+/** The NPC_ART key for a speaker ('Ole（AI）', 'Jonas（室友）', 'Herr Brandl（房东）', '守夜人'), if it has a drawn figure. */
+export function npcArtKey(who: string): string | undefined {
+  if (NPC_ART[who]) return who;
+  const base = who.split(/[（( ·]/)[0];
+  if (NPC_ART[base]) return base;
+  return Object.keys(NPC_ART).find((k) => who.startsWith(`${k}（`) || who.startsWith(`${k} `));
+}
+
+/** A drawn NPC figure at scale×16 px, in its own colours (NPCs of 2026-11-26: the adventurers and scene NPCs). */
+export function npcFigure(key: string, scale = 2, cls = 'icon'): HTMLCanvasElement {
+  const cv = document.createElement('canvas');
+  cv.width = cv.height = T * scale;
+  cv.className = cls;
+  const ctx = cv.getContext('2d')!;
+  (NPC_ART[key] ?? '').split('/').forEach((row, y) =>
+    [...row].forEach((ch, x) => {
+      if (ch === '.' || !DRAWN_PAL[ch]) return;
+      ctx.fillStyle = DRAWN_PAL[ch];
+      ctx.fillRect(x * scale, y * scale, scale, scale);
+    }),
+  );
+  return cv;
+}
+
 export function portrait(who: string, scale = 3): HTMLCanvasElement | null {
+  // Drawn figures first, so the 室友 Jonas does not borrow the shadow of Jonas Keller.
+  const own = npcArtKey(who);
+  if (own) return npcFigure(own, scale, 'portrait');
   const hit = PEOPLE.find(([re]) => re.test(who));
   if (!hit) return null;
   const [, tile, id] = hit;

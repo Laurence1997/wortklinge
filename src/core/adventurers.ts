@@ -15,6 +15,7 @@ import type { Word } from './types';
 import { WORDS, fullForm } from '../data/words';
 import { ERODE_DEF, REGION_DEF, regionLevels } from '../data/zones';
 import { SCENES, scenesOf, type SceneDef } from '../data/world';
+import { CAST } from '../data/cast';
 
 export const ADV = {
   from: 10,
@@ -56,10 +57,7 @@ export interface Adventurer {
   erode?: boolean;
 }
 
-const NAMES = ['Jonas', 'Mila', 'Tarik', 'Greta', 'Ole', 'Selin', 'Paul', 'Yara', 'Emil', 'Nele', 'Bastian', 'Ida', 'Luca', 'Amira', 'Finn', 'Johanna', 'Malik', 'Frieda', 'Henrik', 'Leonie', 'Arne', 'Zoe', 'Konstantin', 'Ronja', 'Mats', 'Hanna', 'Levin', 'Pia', 'Dario', 'Svenja', 'Timo', 'Elif', 'Quentin', 'Merle', 'Ruben', 'Lotte', 'Nils', 'Ylva', 'Kemal', 'Wiebke', 'Bruno', 'Thea', 'Lasse', 'Carla', 'Joscha', 'Imke', 'Viktor', 'Sanne', 'Anton', 'Juna', 'Matteo', 'Flora', 'Erik', 'Lina', 'Moritz', 'Kaja', 'Jannik', 'Rieke', 'Samuel', 'Tilda'];
-const ORIGINS = ['从汉堡来的护士，下班就出来走走', '刚到德国的留学生，学建筑', '在面包房干了二十年的老师傅', '退休的中学地理老师', '送快递的，整天骑车穿城', '从慕尼黑来的程序员，嘴上抱怨工作', '开小咖啡馆的', '从土耳其来的厨师，第二代移民', '在市政厅上班的公务员', '学音乐的大学生，背着吉他', '做园艺的，手上总有泥', '火车司机，说话带点方言', '刚当上爸爸的会计', '图书管理员，安安静静', '健身教练，什么都想比一比'];
-const MANNERS = ['爱开玩笑', '认真、有点较真', '有点害羞，说话慢', '热情、话多', '冷静、爱提问', '乐观、爱夸人', '爱抱怨天气', '好奇心重'];
-/** Figure tiles that are not the named NPCs (icons.NPC_TILE). */
+/** Figure tiles that are not the named NPCs (icons.NPC_TILE); kept for old callers, the figure is NPC_ART[name]. */
 const TILES = [87, 97, 98, 108, 109, 110, 112, 89];
 
 function hash(s: string): number {
@@ -75,18 +73,16 @@ function nameOk(name: string, region: number): boolean {
 }
 
 const CACHE = new Map<number, Adventurer[]>();
-/** The region's 2–3 adventurers (fixed per region). */
+/** The region's 2–3 adventurers: the fixed cast of src/data/cast.ts (Lucas 2026-11-26). A 蚀变 segment's survivors are
+ *  the cast members whose home is the segment number. */
 export function adventurersOf(region: number, erode = false): Adventurer[] {
   const key = erode ? -region : region;
   const hit = CACHE.get(key);
   if (hit) return hit;
-  const n = 2 + (hash(`n${key}`) % 2);
   const out: Adventurer[] = [];
-  let k = hash(`r${key}`);
-  for (let i = 0; out.length < n && i < 50; i++, k = hash(`${k}`)) {
-    const name = NAMES[k % NAMES.length];
-    if (out.some((a) => a.name === name) || !nameOk(name, region)) continue;
-    out.push({ id: `${erode ? 'ero' : 'adv'}${region}-${out.length}`, name, region, origin: ORIGINS[(k >>> 4) % ORIGINS.length], manner: MANNERS[(k >>> 9) % MANNERS.length], tile: TILES[(k >>> 13) % TILES.length], ...(erode ? { erode: true } : {}) });
+  for (const c of CAST) {
+    if (c.home !== region || !nameOk(c.name, region)) continue;
+    out.push({ id: `${erode ? 'ero' : 'adv'}${region}-${out.length}`, name: c.name, region, origin: c.origin, manner: c.manner, tile: TILES[hash(c.name) % TILES.length], ...(erode ? { erode: true } : {}) });
   }
   CACHE.set(key, out);
   return out;
