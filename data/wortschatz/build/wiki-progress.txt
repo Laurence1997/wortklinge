@@ -8,3 +8,4 @@
 08:27 UTC  30 min  searches 424  pages 1913 (usable 605)  requests ok 316 errors 31
 08:32 UTC  35 min  searches 476  pages 1913 (usable 605)  requests ok 368 errors 36
 08:37 UTC  40 min  searches 527  pages 1913 (usable 605)  requests ok 419 errors 41
+08:42 UTC  45 min  searches 578  pages 1913 (usable 605)  requests ok 470 errors 46
