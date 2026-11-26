@@ -15,6 +15,9 @@ on:
       artikel:
         description: 'Articles: how many new ones (0 = all, -1 = skip)'
         default: '5'
+      original:
+        description: 'Original articles (Luna) for words no Wikipedia/Wikinews article covers (0 = all, -1 = skip)'
+        default: '-1'
       wiki_minutes:
         description: 'Wikipedia downloads: minutes before scoring what it has (the next run continues)'
         default: '200'
@@ -34,6 +37,7 @@ jobs:
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       HOEREN: ${{ github.event.inputs.hoeren || '0' }}
       ARTIKEL: ${{ github.event.inputs.artikel || '-1' }}
+      ORIGINAL: ${{ github.event.inputs.original || '-1' }}
       WIKI_MINUTES: ${{ github.event.inputs.wiki_minutes || '200' }}
     steps:
       - uses: actions/checkout@v4
@@ -70,6 +74,9 @@ jobs:
       - name: Articles
         if: env.ARTIKEL != '-1'
         run: LIMIT=$ARTIKEL python3 scripts/wortschatz/artikel_luna.py
+      - name: Original articles
+        if: env.ORIGINAL != '-1'
+        run: LIMIT=$ORIGINAL python3 scripts/wortschatz/artikel_original_luna.py
       - name: Commit
         if: always()
         run: |
