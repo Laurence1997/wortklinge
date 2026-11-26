@@ -524,3 +524,6 @@ body.bright .board-ex { color: #1f6b5c; }
 #boss > .ask { color: #eadfd2; }
 #boss > .askzh, #boss > .row .askzh { color: #b8a8a0; }
 #boss > .row .btn.ghost { color: #eadfd2; border-color: #7a2a32; background: transparent; }
+/* Boss figures (方案 B): pixel figure with a red glow; it breathes like the old glyph did. */
+#boss canvas.boss-figure { image-rendering: pixelated; display: block; margin: 0 auto; filter: drop-shadow(0 0 10px rgba(255, 24, 48, .55)); animation: boss-breathe 2.4s ease-in-out infinite; }
+@keyframes boss-breathe { 50% { transform: scale(1.03); filter: drop-shadow(0 0 18px rgba(255, 24, 48, .8)); } }

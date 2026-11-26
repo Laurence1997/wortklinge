@@ -10,6 +10,7 @@ import { BOSS3, boardText } from '../data/boss3';
 import { LINA } from '../data/lina';
 import { WEBER } from '../data/weber';
 import { LATER_BOSS } from '../data/bossesLater';
+import { bossFigure, bossFigureKey } from './bossFigure';
 
 const MIRA_ID = { name: '商人 Mira · 鉴定', de: 'Mira', healLine: '', healZh: '' };
 const GRETA_ENG = { name: '导师 Greta · 刻字', de: 'Greta', healLine: '', healZh: '' };
@@ -105,6 +106,7 @@ export class BossUI {
     const letters = Math.round(((f.maxHp - f.hp) / f.maxHp) * s.name.length);
     const plate = s.name.slice(0, letters) + '▒'.repeat(Math.max(0, s.name.length - letters));
 
+    const figKey = bossFigureKey(f.which, f.region);
     const panel = h('div.panel');
     panel.append(
       h('div.row', { style: 'justify-content:space-between' }, h('span.small.muted', f.which === 6 ? (f.current.id.startsWith('engrave-') ? 'Greta 在孔边写了半句话：把小词填上' : 'Mira 指着一行字：把空填上（写这个词在句子里的形式）') : f.which === 5 ? `登记表 第 ${f.maxHp - f.hp + 1} / ${f.maxHp} 项 · 用完整的句子回答 · 不限时` : `第 ${f.turn} 问 · 用完整的德语句子回答`), h('span.small', `生命 ${s.hp} / ${maxHp(s)}`)),
@@ -152,7 +154,7 @@ export class BossUI {
 
     clear(el).append(
       h('div.who', portrait(BOSS.name) ?? '', `${BOSS.de} · ${BOSS.name}`),
-      f.which === 5 || f.which === 6 ? '' : h('div', { style: 'text-align:center' }, h('div.figure', '▓▒█▒▓'), h('div.tagplate', plate || '▒▒▒▒')),
+      f.which === 5 || f.which === 6 ? '' : h('div', { style: 'text-align:center' }, figKey ? bossFigure(figKey, f.outcome === 'win' ? 1 : (f.maxHp - f.hp) / f.maxHp) : h('div.figure', '▓▒█▒▓'), h('div', h('div.tagplate', plate || '▒▒▒▒'))),
       pips,
       f.healing && !this.waiting ? h('div', { style: 'color:var(--bad);font-family:var(--mono);font-size:18px' }, `「${BOSS.healLine}」`) : '',
       f.healing && !this.waiting ? h('div.askzh', BOSS.healZh) : '',
