@@ -7,7 +7,7 @@ this searches de.wikipedia.org (3 hits per word), fetches the plain text of each
 are appended to build/artikel/pool.tsv; artikel_luna.py then screens, abridges and glosses them the same way and marks
 them 「改编自 德语维基百科《…》· CC BY-SA 4.0」. Needs `pip install simplemma`.
 """
-import csv, json, os, re, time, urllib.parse, urllib.request
+import csv, json, os, re, time, urllib.error, urllib.parse, urllib.request
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 import simplemma
@@ -22,19 +22,27 @@ UA = {'User-Agent': 'wortklinge-content/1.0 (language-learning game; GitHub Acti
 API = 'https://de.wikipedia.org/w/api.php?'
 
 errors = [0, 0]  # failed, done
+last_ok = [time.time()]
 def get(params):
-    for attempt in range(3):
+    """One request at a time, 1.5 s apart; on 429 wait as long as Wikipedia asks (GitHub runners share IPs)."""
+    while True:
+        time.sleep(1.5)
         try:
             req = urllib.request.Request(API + urllib.parse.urlencode({**params, 'format': 'json', 'formatversion': 2, 'maxlag': 5}), headers=UA)
-            with urllib.request.urlopen(req, timeout=20) as r:
-                errors[1] += 1
+            with urllib.request.urlopen(req, timeout=30) as r:
+                errors[1] += 1; last_ok[0] = time.time()
                 return json.load(r)
-        except Exception as e:
-            if errors[0] < 5: print(f'request error: {e}', flush=True)
+        except urllib.error.HTTPError as e:
             errors[0] += 1
-            if errors[0] > 200 and errors[0] > errors[1]: raise SystemExit('Wikipedia keeps refusing: stopping')
-            time.sleep(3 * (attempt + 1))
-    return {}
+            if e.code != 429 and e.code < 500: return {}
+            wait = max(30, int(e.headers.get('Retry-After') or 0))
+            if errors[0] <= 5 or errors[0] % 20 == 0: print(f'HTTP {e.code}, waiting {wait} s (errors {errors[0]}, ok {errors[1]})', flush=True)
+            if time.time() - last_ok[0] > 1800: raise SystemExit('Wikipedia refused for 30 minutes: stopping')
+            time.sleep(wait)
+        except Exception as e:
+            errors[0] += 1
+            if time.time() - last_ok[0] > 1800: raise SystemExit('Wikipedia unreachable for 30 minutes: stopping')
+            time.sleep(10)
 
 seg = defaultdict(set); cased = {}
 for r in tsv(os.path.join(D, 'build', 'b2-v1.tsv')):
@@ -51,7 +59,7 @@ def search(sw):
     j = get({'action': 'query', 'list': 'search', 'srsearch': cased[w], 'srlimit': 2, 'srnamespace': 0})
     return [h['title'] for h in j.get('query', {}).get('search', [])]
 titles = set()
-with ThreadPoolExecutor(3) as ex:
+with ThreadPoolExecutor(1) as ex:
     for k, ts in enumerate(ex.map(search, open_words), 1):
         titles |= set(ts)
         if k % 300 == 0: print(f'searched {k}/{len(open_words)}, {len(titles)} pages, errors {errors[0]}', flush=True)
@@ -83,7 +91,7 @@ def lem(tok):
     return cache[k]
 DARK = re.compile(r'\b(Terror\w*|Anschl[aä]g\w*|Krieg\w*|getötet|Tote[nr]?|Todesopfer\w*|Mord\w*|ermordet|Massaker|Folter\w*|Gewalt\w*|Waffe\w*|Selbstmord\w*|Suizid\w*|Hinrichtung\w*)\b')
 best = defaultdict(list)
-with ThreadPoolExecutor(3) as ex:
+with ThreadPoolExecutor(1) as ex:
     for k, res in enumerate(ex.map(fetch, titles), 1):
         if k % 300 == 0: print(f'fetched {k}/{len(titles)}, errors {errors[0]}', flush=True)
         if not res: continue
