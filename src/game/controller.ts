@@ -1,3 +1,4 @@
+import { push as pushCloud } from '../net/cloud';
 import { carriesShout } from '../core/skillPool';
 import { track } from '../net/social';
 import { noteGram, stampBoard } from '../core/board';
@@ -39,7 +40,8 @@ import {
   clearSave,
   dayKey,
   exportJson,
-  importJson,
+  checkImport,
+  importPrompt,
   maxHp,
   newGame,
   now,
@@ -3314,12 +3316,12 @@ export class Controller {
   }
 
   importSave(text: string): void {
-    const s = importJson(text);
-    if (!s) {
-      toast('这个文件不是失语纪元的存档');
-      return;
-    }
-    save(s);
+    const r = checkImport(text);
+    if (!r.ok) return toast(r.why);
+    // A plain confirm guards an irreversible overwrite (审查 A4).
+    if (!window.confirm(importPrompt(r.s, this.state))) return;
+    save(r.s, true);
+    void pushCloud(r.s);
     location.reload();
   }
 

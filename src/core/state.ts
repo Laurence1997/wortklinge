@@ -350,7 +350,16 @@ export function setSaveHook(fn: (s: GameState) => void): void {
   afterSave = fn;
 }
 
-export function save(s: GameState): void {
+let lastBody = '';
+/** Saves only when something changed (审查 A1): an idle tab no longer restamps savedAt and so can't win the cloud
+ *  sync with old progress. `force` writes anyway (import, new game). */
+export function save(s: GameState, force = false): void {
+  const at = s.savedAt;
+  s.savedAt = 0;
+  const body = JSON.stringify(s);
+  s.savedAt = at;
+  if (!force && body === lastBody) return;
+  lastBody = body;
   s.savedAt = Date.now();
   try {
     localStorage.setItem(KEY, JSON.stringify(s));
@@ -358,6 +367,14 @@ export function save(s: GameState): void {
     /* private mode or full storage: the game still runs, export still works */
   }
   afterSave?.(s);
+}
+
+/** The state as loaded counts as saved (no restamp until it changes). */
+export function markSaved(s: GameState): void {
+  const at = s.savedAt;
+  s.savedAt = 0;
+  lastBody = JSON.stringify(s);
+  s.savedAt = at;
 }
 
 export function load(): GameState | null {
@@ -488,5 +505,26 @@ export function importJson(text: string): GameState | null {
   } catch {
     return null;
   }
+}
+
+/** 审查 A4: what an import would do, before it replaces anything. 'old' = a save from before the 6000-word list
+ *  (migrate would wipe it to level 1), so it is refused. */
+export function checkImport(text: string): { ok: true; s: GameState } | { ok: false; why: string } {
+  let raw: { lexicon?: number; level?: unknown } | null = null;
+  try {
+    const parsed = JSON.parse(text);
+    raw = parsed?.save ?? parsed;
+  } catch {
+    return { ok: false, why: '这个文件不是失语纪元的存档' };
+  }
+  if (raw && typeof raw.level === 'number' && (raw.lexicon ?? 0) < LEXICON) return { ok: false, why: '这是换 6000 词表之前的存档，新版用不了（导入会变成 1 级）。' };
+  const s = importJson(text);
+  return s ? { ok: true, s } : { ok: false, why: '这个文件不是失语纪元的存档' };
+}
+
+/** The confirm line for replacing `cur` with `next`. */
+export function importPrompt(next: GameState, cur: GameState | null): string {
+  const day = (t?: number) => (t ? new Date(t).toLocaleDateString('zh-CN') : '?');
+  return `将用 ${next.name}（Lv ${next.level}，${day(next.savedAt)}）替换${cur ? `当前的 ${cur.name}（Lv ${cur.level}）` : '当前存档'}。确定吗？`;
 }
 
