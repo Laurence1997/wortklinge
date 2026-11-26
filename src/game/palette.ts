@@ -22,7 +22,10 @@ const scale = (a: string, f: number) => toHex(hex(a).map((v) => v * f));
 /** The ramp of a map right now, or null for the classic red one (regions 1–3 before any 蚀变). */
 export function mapRamp(region: number, flags: Record<string, unknown>): Ramp5 | null {
   const own = (REGION_DEF[region]?.palette as Ramp5 | undefined) ?? null;
-  const open = (seg: ErodeSeg) => !!ERODE_DEF[seg] && !!flags[`boss${ERODE_DEF[seg]!.after}Kills`];
+  // 颜色 = 找回的语言 (游戏设计 四「世界观一致性」, Lucas 2026-11-26): a 蚀变 segment whose boss is beaten gives its old
+  // regions their colours back; after the last boss (沉默, region 20) every map has them. A filter only.
+  if (flags.boss20Kills) return own;
+  const open = (seg: ErodeSeg) => !!ERODE_DEF[seg] && !!flags[`boss${ERODE_DEF[seg]!.after}Kills`] && !flags[`boss${seg}Kills`];
   // 121–200 级 (rev 488): 蚀变④ 回潮 drains regions 9–12 of colour; 蚀变③ 林底 turns regions 4–7 moss green, darkened,
   // with pale cyan on top. The newest open segment of a map wins.
   if (region >= 9 && region <= 12 && own && open(19)) return own.map((c) => grey(c, 0.8)) as unknown as Ramp5;
