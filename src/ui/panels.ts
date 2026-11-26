@@ -1117,8 +1117,8 @@ export class Panels {
         wrap.append(
           h(
             `div.slot${have ? '' : '.dim'}`,
-            h('div.k', `${sk.zh}${on ? ' · 出战' : ''}`),
-            h('div.small', `${sk.asks}。${sk.effect}。冷却 ${sk.cd}`),
+            h('div.k', sk.zh, on ? h('span.tag-on', '出战') : ''),
+            h('div.small', { style: 'flex:1' }, `${sk.asks}。${sk.effect}。冷却 ${sk.cd}`),
             have
               ? h('button.btn.small', { disabled: !on && lo.length >= slotCount(s.level), onclick: () => { toggleLoadout(s, id); this.ctrl.persist(); this.render(); } }, on ? '拿出' : '带上')
               : h('span.small.muted', `${sk.lv} 级`),
@@ -1376,7 +1376,6 @@ export class Panels {
     const learningN = wrote.length + readOnly.length + notYet.length;
     const pendN = Object.values(s.words).filter((p) => p.pend).length;
     const claims = pendingScenes(s);
-    wrap.append(this.importBox());
     wrap.append(h('p', `已斩杀 ${cut.length} · 待验证 ${pendN}${claims.length ? ` · 待领经验：${claims.map((x) => x.zh).join('、')}` : ''}`));
     wrap.append(h('p.small.muted', `见过 ${shaky.length + learningN + known.length + cut.length} 个词：熟练 ${known.length} · 学习中 ${learningN} · 常错 ${shaky.length}。「认得」是选择题答对过，「会写」是默写、变位或整句写对过。存档同步到云端，换电脑也在。`));
     const table = (title: string, note: string, rows: Row[]) => {
@@ -1433,6 +1432,8 @@ export class Panels {
       }
     }
     if (!Object.keys(s.words).length) wrap.append(h('p', '还没有见过的词。出去打几只怪吧。'));
+    // Importing a word list is a one-off setup step: it sits at the end, after the player's own words (0.8 UI pass).
+    wrap.append(this.importBox());
     return wrap;
   }
 
