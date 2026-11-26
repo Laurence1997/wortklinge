@@ -445,7 +445,10 @@ def main():
             groups[name] = chunk
         if seg == 15:
             # 蚀变③: groups of about ten per situation, hung on old scenes of the same situation.
+            # 文章群怪: inside a situation, an article's words stay next to each other (one group, or two neighbours).
+            art_rank = {l: (i, j) for i, ls in enumerate(article_words.get(seg, [])) for j, l in enumerate(ls)}
             for sit, xs in by_sit.items():
+                xs = sorted(xs, key=lambda x: art_rank.get(x['原形'].strip(), (10 ** 6, 0)))
                 n = max(1, round(len(xs) / B2_ERODE_GROUP))
                 for k in range(n):
                     put(f'{sit}·{k + 1}', xs[k * len(xs) // n:(k + 1) * len(xs) // n])
