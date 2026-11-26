@@ -284,8 +284,9 @@ export function critChance(s: GameState): number {
   return CONFIG.player.baseCrit + (gear(s).amulet?.main ?? 0) + 0.08 * blessed(s, 'crit');
 }
 
-export function hintsPerFight(s: GameState): number {
-  return gear(s).dict?.main ?? 0;
+/** 词典 no longer raises the note cap (系统审查 2026-11-26: its main stat is now typed damage). */
+export function hintsPerFight(_s: GameState): number {
+  return 0;
 }
 
 /** 刻字 (0.6, 25 级): how many worn items carry this particle. */

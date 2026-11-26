@@ -10,9 +10,9 @@ import { typoOk } from './cut';
 import { isPlaced, placedCheck, placedPick, regionFor } from './placement';
 import { blindLine, blindTask, LISTEN, passageFor, passageTask, rollListen } from './listening';
 import { fillGems, gemSum } from './gems';
-import { PHONES_PER_TIER } from './loot';
+import { dictMain, PHONES_PER_TIER } from './loot';
 import { itemTier } from './state';
-import { addGearKill, gear, affinityOf, affixTotal, attack, engraved, critChance, gearPen, hintsPerFight, maxHp, now, type GameState } from './state';
+import { addGearKill, gear, affinityOf, affixTotal, attack, engraved, critChance, gearPen, maxHp, now, type GameState } from './state';
 import type { Element, Intent, Move, Word } from './types';
 import { gradeCompose } from './aiPractice';
 import { clozeModeAt, noteCloze } from './adaptive';
@@ -24,7 +24,7 @@ import { echoOptions, echoTask, notePron, PRON_MON, pronMonOk, type EchoTask } f
 import { count } from './items';
 import { fullForm, genderOf, hasArticleQuestion, WORD_BY_ID, WORDS, zhWithPos } from '../data/words';
 import { LEX_REL } from '../data/lexicon';
-import { canTarget, collocOf, gradeSplit, combatSkills, MULT, POOL, SEAL_TURNS, splitOf, type PoolId, type SplitTask } from './skillPool';
+import { canTarget, collocOf, gradeSplit, combatSkills, MULT, POOL, splitOf, type PoolId, type SplitTask } from './skillPool';
 import { SAYING_CFG, SAYINGS } from '../data/sayings';
 import { expectedSentence, gradeSentence, nextPattern, PATTERNS, sentenceTags, type Pattern } from './sentence';
 import { PERFEKT, perfektFull, perfektParts } from '../data/perfekt';
@@ -290,8 +290,6 @@ export interface Battle {
   chainAt?: number;
   /** 即时战 弹反: the next cast that runs out is caught (set by a right answer in its last second). */
   parryReady?: boolean;
-  /** 21 级「时间」进难题预告: turns left until an announced big attack («gleich», «in zwei Runden»). */
-  chargeIn?: number;
   /** 现在完成时 (0.6, region 3 Lv21+): a verb monster speaking in the Perfekt; its stance is haben / sein. */
   perfekt?: boolean;
   /** 复数怪 (0.5, Lv11+): a whole crowd of this word, die Äpfel. Only the die stance is right. */
@@ -336,8 +334,6 @@ export interface Battle {
   skillCooldown: number;
   /** 技能池 cooldowns in turns, per skill. */
   poolCd: Partial<Record<PoolId, number>>;
-  /** 格之封印: turns this monster can't charge. */
-  sealed?: number;
   /** 齐鸣 cooldown in turns (shared by a pack). 铭刻's lives on cfx and carries across fights. */
   chorusCd: number;
   /** Orange 冠词审判: the next hit after a correct article answer deals double. */
@@ -499,7 +495,7 @@ export function startBattle(
     step: 0,
     named: false,
     pluralDue: false,
-    hintsLeft: hintsPerFight(s),
+    hintsLeft: 0,
     firstCorrectDone: false,
     lastKillTyped: false,
     skillCooldown: 0,
@@ -587,24 +583,6 @@ export function startBattle(
   return b;
 }
 
-/** 21 级「时间」进难题预告: a big attack says when it comes — jetzt (this turn, as before), gleich (next turn) or
- *  in zwei Runden — and comes exactly then. Announcing turns are a breath (no attack). */
-function timeCharge(b: Battle, intent: Intent, rng: Rng): Intent {
-  const r = rng();
-  if (r < 1 / 3) return { ...intent, line: 'Jetzt kommt mein großer Schlag!', zh: '现在就放大招！', layers: [...intent.layers, 'time'] };
-  const n = r < 2 / 3 ? 1 : 2;
-  b.chargeIn = n;
-  return {
-    kind: 'wait',
-    shown: 'charge',
-    hits: 0,
-    element: 'phys',
-    line: n === 1 ? 'Gleich kommt mein großer Schlag!' : 'In zwei Runden kommt mein großer Schlag!',
-    zh: n === 1 ? '马上（下回合）就放大招！' : '再过两回合放大招！',
-    layers: ['time'],
-  };
-}
-
 /** 现在完成时 (0.6 第 5 块): from Lv21 every region-3 verb monster in region 3 speaks in the Perfekt, and a region-1/2
  *  verb coming back as a review does so one time in three (as plurals do in region 2). */
 export function perfektBattle(s: GameState, w: Word, kind: Kind, rng: Rng, scripted = false): boolean {
@@ -681,19 +659,9 @@ function nextIntent(s: GameState, b: Battle, rng: Rng): Intent {
   } else if (b.monster.chilled && b.intent?.kind === 'charge') {
     // Ice pushed the charge back: it is still charging.
     intent = { ...b.intent, line: 'Moment … noch nicht …', zh: '等等……还没好……（冰把蓄力往后推了）' };
-  } else if (!tut && b.chargeIn !== undefined) {
-    // An announced big attack: normal turns until the time runs out, then it lands as said.
-    b.chargeIn -= 1;
-    if (b.chargeIn <= 0) {
-      b.chargeIn = undefined;
-      intent = generateIntent(rng, { ...ctx, force: { kind: 'charge', line: 'Jetzt!', zh: '现在！（说好的大招来了）', layers: ['time'] } });
-    } else intent = generateIntent(rng, { ...ctx, turnsSinceCharge: 0 });
   } else {
     intent = generateIntent(rng, ctx);
-    if (intent.kind === 'charge' && !tut && s.level >= CONFIG.timeWords.from) intent = timeCharge(b, intent, rng);
   }
-  // 格之封印: a sealed monster can't charge; it attacks instead (and an announced charge waits).
-  if ((b.sealed ?? 0) > 0 && intent.kind === 'charge') intent = generateIntent(rng, { ...ctx, force: { kind: 'attack', hits: 1, line: '… mmh …', zh: '它想蓄力，封印压着它（只能普通攻击）', layers: [] } });
   if (intent.kind === 'charge') b.turnsSinceCharge = 0;
   else b.turnsSinceCharge += 1;
   // 怪的台词 (2026-11-21): outside tutorials it mumbles one of its own example sentences with its name swallowed
@@ -1283,8 +1251,8 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
       // 格之封印: the word put into a short sentence that needs a case or person form.
       const form = hasExamples(w) ? clozeQ(s, w, rng, 'form') : null;
       const q = form && form.clozeMode === 'form' ? form : w.pos === 'v' && conjOpen(s, w) ? conj() : form;
-      if (q) return { ...q, pool: id, prompt: `格之封印：${q.prompt}（写对，它 ${SEAL_TURNS} 回合内蓄不了力）` };
-      return { ...bareTyped(), pool: id, prompt: `格之封印：默写${isNoun ? '（带冠词）' : ''}（写对，它 ${SEAL_TURNS} 回合内蓄不了力）` };
+      if (q) return { ...q, pool: id, prompt: `格之封印：${q.prompt}（写对：伤害 ×1.4，破甲 3 下）` };
+      return { ...bareTyped(), pool: id, prompt: `格之封印：默写${isNoun ? '（带冠词）' : ''}（写对：伤害 ×1.4，破甲 3 下）` };
     }
     if (id === 'dictate') {
       const d = dictQ(w, rng);
@@ -2303,16 +2271,6 @@ export function resolveTurn(
           mult *= MULT[q.pool]!;
           log.push({ text: `${POOL[q.pool].zh}：×${MULT[q.pool]}。`, tone: 'good' });
         }
-        if (q.pool === 'seal') {
-          // 格之封印: no charging for 2 turns; a charge already building is gone.
-          b.sealed = SEAL_TURNS + (rank(s, 'changfeng') ? 1 : 0);
-          if (intent.kind === 'charge' || b.chargeIn) {
-            b.chargeIn = undefined;
-            if (b.queued?.kind === 'charge') b.queued = undefined;
-            interrupted = true;
-          }
-          log.push({ text: `格之封印：它 ${b.sealed} 回合内蓄不了力。`, tone: 'good' });
-        }
         if (q.type === 'sentence') {
           if (has(s.level, 'layerElement')) element = ELEMENT_BY_GENDER[genderOf(b.word) ?? 'n'];
         }
@@ -2358,6 +2316,7 @@ export function resolveTurn(
         if (gDmg) mult *= 1 + gDmg; // 言石
         const phones = gear(s).phones;
         if (phones && listenQ(q)) mult *= 1 + phones.main + PHONES_PER_TIER * itemTier(phones, s.region ?? 1); // 耳机
+        if (typedLike) mult *= 1 + dictMain(gear(s).dict); // 词典 (系统审查 2026-11-26)
 
         // Crits: forced ones first (接句怪, 初识暴击), then the random roll.
         if (q.type === 'saying') {
@@ -2400,7 +2359,7 @@ export function resolveTurn(
           m.broken = 0;
         }
         const wasBroken = m.broken > 0;
-        if ((tier === 2 || breaking) && !wasBroken && phaseFx !== 'wrong') {
+        if ((tier === 2 || breaking || q.pool === 'seal') && !wasBroken && phaseFx !== 'wrong') {
           // 誊写 (书写者大天赋, 游戏设计 十): any hard-question break lasts 4 hits instead of 3.
           m.broken = CONFIG.armor.breakHits + (rank(s, 'tengxie') ? 1 : 0);
           log.push({ text: breaking ? `写对了。壳裂开了：这一下和之后 ${m.broken - 1} 下无视护甲。` : `难题破甲：这一下和之后 ${m.broken - 1} 下无视护甲。`, tone: 'good' });
@@ -2477,12 +2436,6 @@ export function resolveTurn(
         if (q.pool === 'colloc' && rank(s, 'dapei')) {
           b.armorDownT = 3;
           log.push({ text: '搭配记忆：它的护甲降一档，2 回合。', tone: 'good' });
-        }
-        // 听懂了时间词: 铭刻 or the finisher on the turn before an announced big attack breaks it early.
-        if (b.chargeIn === 1 && (q.inscribed || q.type === 'sentence')) {
-          b.chargeIn = undefined;
-          if (b.queued?.kind === 'charge') b.queued = undefined;
-          log.push({ text: '你听懂了它说的时间：抢在大招之前打断了它。', tone: 'good' });
         }
         if (rank(s, 'yishou') && (cfx.guard ?? 0) > 0 && move !== 'skill') {
           const d = Math.max(1, Math.round(attack(s) * (1 - effArmor(s, b, 0)) * between(rng, CONFIG.damage.roll[0], CONFIG.damage.roll[1])));
@@ -2621,7 +2574,8 @@ export function resolveTurn(
     const intent = b.intent;
     const say = (l: LogLine) => log.push(multi ? { ...l, text: `${tagOf(b)}：${l.text}` } : l);
   const monsterCrit = target.wrongStreak >= 2;
-  const wrongReduce = ok ? 0 : affixTotal(s, 'wrongDmgReduce');
+  // 眼镜 (系统审查 2026-11-26): its main stat adds to the 答错受伤 affix.
+  const wrongReduce = ok ? 0 : Math.min(0.8, affixTotal(s, 'wrongDmgReduce') + (gear(s).glasses?.main ?? 0));
   // 铁壁: the turn the right stance landed, hits on you are lighter.
   const takenMult = (phaseFx === 'right' ? 1 - 0.05 * rank(s, 'tiebi') : 1) * (ok && !itemTurn ? 1 - Math.min(0.5, gemSum(s, q.gram?.sys, 'guard')) : 1);
   const chillMult = (m.chilled ? CONFIG.status.iceDamageMult : 1) * (1 + CONFIG.armor.monsterDmgPerLevelBelow * Math.max(0, m.lvl - s.level));
@@ -2693,8 +2647,7 @@ export function resolveTurn(
           say({ text: '冻住了。大的推迟了。', tone: 'good' });
           break;
         }
-        // 眼镜 (0.6, 23 级): the charged hit lands this much softer.
-        let heavy = m.dmg * dmgMult * chillMult * CONFIG.monster.chargeMult * (monsterCrit ? 1.5 : 1) * (1 - (gear(s).glasses?.main ?? 0));
+        let heavy = m.dmg * dmgMult * chillMult * CONFIG.monster.chargeMult * (monsterCrit ? 1.5 : 1);
         if (b.fx.charm?.chargeHalf) {
           heavy /= 2;
           b.fx.charm.chargeHalf = false;
@@ -2781,7 +2734,6 @@ export function resolveTurn(
   }
   if (b.skillCooldown > 0) b.skillCooldown -= 1;
   for (const k of Object.keys(b.poolCd) as PoolId[]) if (b.poolCd[k]! > 0) b.poolCd[k]! -= 1;
-  if ((b.sealed ?? 0) > 0) b.sealed! -= 1;
   for (const x of pack) if ((x.armorDownT ?? 0) > 0) x.armorDownT! -= 1;
   if ((b.cfx.inscribeCd ?? 0) > 0) b.cfx.inscribeCd! -= 1;
   if (b.chorusCd > 0) b.chorusCd -= 1;
@@ -2813,7 +2765,6 @@ export function resolveTurn(
     // 即时战: your answer alone; an interrupted cast (蓄力 / 回血 / 逃跑) gives way to its next move at once.
     if (interrupted && !b.outcome) {
       b.intent = nextIntent(s, b, rng);
-      b.chargeIn = undefined;
     }
   } else {
     for (const x of pack) {
@@ -3095,7 +3046,6 @@ function talentDamage(s: GameState, b: Battle, q: Question, c: { typedLike: bool
   if (irregularQ(b, q) && writing) add += 0.04 * r('guizheng');
   if (cq && b.elite) add += 0.08 * r('kegou'); // 结构魔 (B1 红名) not in the game yet
   if (q.gram?.lock) add += 0.08 * r('shuangsuo'); // 锁链怪 (介词秘境)
-  if ((b.sealed ?? 0) > 0) add += 0.1 * r('zhenya');
   // 迅捷
   const quick = isQuick(s, q);
   if (quick) add += 0.05 * r('kuaibi');

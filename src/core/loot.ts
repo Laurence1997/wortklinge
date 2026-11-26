@@ -49,10 +49,17 @@ const NAMES: Record<Slot, Record<Quality, string[]>> = {
   },
 };
 
-/** 眼镜 main stat by quality: a charged hit on you does this much less. */
+/** 眼镜 main stat by quality (系统审查 2026-11-26): a turn you answer wrong hurts this much less. */
 export const GLASSES_MAIN: Record<Quality, number> = { white: 0.05, green: 0.08, purple: 0.12, orange: 0.16, red: 0.2 };
 /** Glasses drop only from Lv23 (region 3). */
 export const GLASSES_FROM = 23;
+/** 词典 main stat by quality (系统审查 2026-11-26, replaces 低语纸条上限): typed questions hit this much harder. */
+export const DICT_MAIN: Record<Quality, number> = { white: 0.05, green: 0.08, purple: 0.12, orange: 0.16, red: 0.2 };
+/** A dictionary's damage bonus; old saves stored a note count (1–4) there, read by quality instead. */
+export function dictMain(it: Pick<Item, 'main' | 'quality'> | undefined): number {
+  if (!it) return 0;
+  return it.main >= 1 ? DICT_MAIN[it.quality] : it.main;
+}
 /** 耳机 (34 级, 第 6 个部位): main stat = listening questions hit this much harder (暂定, by quality); +4% per tier. */
 export const PHONES_FROM = 34;
 export const PHONES_MAIN: Record<Quality, number> = { white: 0.05, green: 0.08, purple: 0.12, orange: 0.16, red: 0.2 };
@@ -150,7 +157,7 @@ export function makeItem(rng: Rng, ilvl: number, quality: Quality, slot?: Slot):
             ? GLASSES_MAIN[quality]
             : s === 'phones'
               ? PHONES_MAIN[quality]
-            : Math.min(4, quality === 'white' ? 1 : quality === 'green' ? 1 : quality === 'purple' ? 2 : quality === 'orange' ? 3 : 4);
+            : DICT_MAIN[quality];
   const keys = Object.keys(AFFIX_RANGE) as AffixKey[];
   const affixes: Affix[] = [];
   const pool = keys.slice();
@@ -181,9 +188,9 @@ export function mainStatText(it: Item): string {
     case 'amulet':
       return `暴击率 +${(it.main * 100).toFixed(1)}%`;
     case 'dict':
-      return `低语纸条上限 +${it.main}`;
+      return `打字题伤害 +${Math.round(dictMain(it) * 100)}%`;
     case 'glasses':
-      return `蓄力大招对你的伤害 −${Math.round(it.main * 100)}%`;
+      return `答错时受到的伤害 −${Math.round(it.main * 100)}%`;
     case 'phones':
       return `听力题伤害 +${Math.round(it.main * 100)}%（每档再 +${Math.round(PHONES_PER_TIER * 100)}%）`;
   }
@@ -191,7 +198,7 @@ export function mainStatText(it: Item): string {
 
 /** Rough power score to compare items in the bag. */
 export function itemScore(it: Item): number {
-  const base = it.slot === 'pen' ? it.main * 3 : it.slot === 'coat' ? it.main : it.slot === 'amulet' ? it.main * 300 : it.slot === 'glasses' || it.slot === 'phones' ? it.main * 200 : it.main * 6;
+  const base = it.slot === 'pen' ? it.main * 3 : it.slot === 'coat' ? it.main : it.slot === 'amulet' ? it.main * 300 : it.slot === 'glasses' || it.slot === 'phones' ? it.main * 200 : dictMain(it) * 200;
   // 碎片换档: a pen / coat / amulet tier is worth far more than its main stat.
   const tier = ['pen', 'coat', 'amulet'].includes(it.slot) ? (it.tier ?? 0) * 40 : 0;
   return base + tier + it.affixes.reduce((s, a) => s + a.value * 60, 0);

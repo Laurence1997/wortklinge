@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { newGame } from '../src/core/state';
 import { makeRng } from '../src/core/rng';
 import { WORDS } from '../src/data/words';
-import { availableMoves, makeQuestion, poolReady, resolveTurn, startBattle } from '../src/core/combat';
+import { availableMoves, makeQuestion, phaseOf, poolReady, resolveTurn, startBattle } from '../src/core/combat';
 
 // 技能池 in battle (游戏设计 十).
 describe('pool skills in battle', () => {
@@ -19,20 +19,20 @@ describe('pool skills in battle', () => {
     expect(poolReady(s, b, 'steady')).toBe(true);
   });
 
-  it('格之封印: a sealed monster can not charge for 2 turns', () => {
+  it('格之封印: ×1.4 and breaks the armor for 3 hits', () => {
     const s = newGame('T', 'student');
     s.level = 61;
     s.hp = 99999;
     s.loadout = ['seal'];
     const b = startBattle(s, noun, makeRng(1));
     b.monster.hp = b.monster.maxHp = 99999;
-    b.intent = { ...b.intent, kind: 'charge' };
+    b.phase = phaseOf(b) ?? undefined;
     const q = makeQuestion(s, b, 'skill', makeRng(2), 'seal');
     expect(q.pool).toBe('seal');
     const r = resolveTurn(s, b, 'skill', q, q.answer!, makeRng(3));
     expect(r.correct).toBe(true);
-    expect(b.sealed).toBeGreaterThan(0);
-    expect(b.intent.kind).not.toBe('charge');
+    expect(b.monster.broken).toBeGreaterThan(0);
+    expect(r.log.some((l) => l.text.includes('×1.4'))).toBe(true);
   });
 
   it('听写 asks the example without Chinese and reads it aloud', () => {

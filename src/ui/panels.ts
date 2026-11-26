@@ -4,7 +4,7 @@ import { CONFIG, xpToNext } from '../core/config';
 import { levelCapFor } from '../core/stages';
 import { AFFIX_ZH, itemScore, mainStatText, QUALITY_ZH, requiredLevel, SLOT_ZH } from '../core/loot';
 import { cutStatus, kindOf, progressSummary, reviewMon, stageOf, STAGE_ZH } from '../core/srs';
-import { affinityOf, attack, critChance, dayKey, hintsPerFight, maxHp, now } from '../core/state';
+import { affinityOf, attack, critChance, dayKey, maxHp, now } from '../core/state';
 import type { AffixKey, Item, Slot, Word } from '../core/types';
 import { has, UNLOCK } from '../core/unlocks';
 import { BLIND_FROM, blindBoxes, boxLabel, boxPrice, buyBox } from '../core/blindbox';
@@ -298,7 +298,7 @@ export class Panels {
       ['生命', `${s.hp} / ${maxHp(s)}`],
       ['攻击', String(Math.round(attack(s)))],
       ['暴击率', `${(critChance(s) * 100).toFixed(1)}%`],
-      ['低语纸条上限', String(5 + hintsPerFight(s))],
+      ['低语纸条上限', '5'],
       ['金币', String(s.gold)],
       ['最高连击', String(s.bestCombo)],
       ['击杀 / 死亡', `${s.stats.kills} / ${s.stats.deaths}`],
