@@ -2,3 +2,4 @@
 07:56 UTC  0 min  searches 109  pages 1913 (usable 605)  requests ok 1 errors 0
 08:02 UTC  5 min  searches 170  pages 1913 (usable 605)  requests ok 62 errors 6
 08:07 UTC  10 min  searches 221  pages 1913 (usable 605)  requests ok 113 errors 11
+08:12 UTC  15 min  searches 271  pages 1913 (usable 605)  requests ok 163 errors 16
