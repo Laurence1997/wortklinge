@@ -1,21 +1,23 @@
 import { describe, expect, it } from 'vitest';
 import { ARTICLE_ROWS } from '../src/data/articlesB2-gen';
 import { ARTICLES_B2 } from '../src/data/articlesB2';
-import { articleNotice, articleOfWord, contextLine, isArticleWord } from '../src/core/gram/articleB2';
+import { ARTICLE_ROWS as C1_ROWS } from '../src/data/articlesC1-gen';
+import { articleNotice, articleOfWord, c1ArticleFor, contextLine, isArticleWord } from '../src/core/gram/articleB2';
 import { noticeById } from '../src/core/gram/notice';
 import { WORDS } from '../src/data/words';
 import { newGame } from '../src/core/state';
 import { startBattle } from '../src/core/combat';
 import { makeRng } from '../src/core/rng';
 
-ARTICLES_B2.push(...ARTICLE_ROWS);
+ARTICLES_B2.push(...ARTICLE_ROWS, ...C1_ROWS);
 
 describe('文章群怪 (B2 articles)', () => {
   it('every article has text, 3 questions and words of its segment', () => {
     for (const a of ARTICLES_B2) {
       expect(a.de.length, a.id).toBeGreaterThan(0);
       expect(a.qs.length, a.id).toBeGreaterThanOrEqual(1);
-      expect(a.lemmas.length, a.id).toBeGreaterThan(0);
+      // C1 (17–20) adds no words.
+      if (a.seg < 17) expect(a.lemmas.length, a.id).toBeGreaterThan(0);
     }
   });
 
@@ -42,6 +44,11 @@ describe('文章群怪 (B2 articles)', () => {
         if (contextLine(a, w)) ok++;
       }
     expect(ok / n).toBeGreaterThan(0.8);
+  });
+
+  it('C1 regions draw their own articles for the notice roll', () => {
+    for (const r of [17, 18, 19, 20]) expect(c1ArticleFor(r, makeRng(r))?.id.startsWith(`c1-${r}-`)).toBe(true);
+    expect(c1ArticleFor(13, makeRng(1))).toBeNull();
   });
 
   it('a new article word at 121 comes with its article; the notice is found by id', () => {

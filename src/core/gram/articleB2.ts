@@ -85,3 +85,11 @@ export function contextLine(a: ArticleB2, w: Word): string | null {
   }
   return null;
 }
+
+/** C1 (17–20, no new words): a field monster's notice roll in these regions draws an article of the region. */
+export function c1ArticleFor(region: number, rng: () => number): Notice | null {
+  index();
+  const xs = ARTICLES_B2.filter((a) => a.seg === region && a.seg >= 17);
+  if (!xs.length) return null;
+  return articleNotice(xs[Math.floor(rng() * xs.length)].id) ?? null;
+}

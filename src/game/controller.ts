@@ -1,5 +1,5 @@
 import { articleB2ById, ARTICLE_B2_CFG, isArticleWord } from '../core/gram/articleB2';
-import { loadArticlesB2 } from '../data/articlesB2';
+import { loadArticlesB2, loadArticlesC1 } from '../data/articlesB2';
 import { LETTER_BY_ID, LETTER_CFG, readLetter } from '../core/letters';
 import { push as pushCloud } from '../net/cloud';
 import { loadPassages } from '../data/passages';
@@ -458,6 +458,7 @@ export class Controller {
   private onLevelUp(level: number, quiet = false) {
     if (level >= 30) void loadPassages();
     if (level >= ARTICLE_B2_CFG.from - 6) void loadArticlesB2();
+    if (level >= 155) void loadArticlesC1();
     void track();
     const s = this.state;
     this.milestone(`lv${level}`);
