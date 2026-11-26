@@ -1,6 +1,6 @@
 import { CONFIG } from './config';
 import { between, pick, weighted, type Rng } from './rng';
-import type { Affix, AffixKey, Item, Quality, Slot } from './types';
+import type { Affix, AffixKey, Item, Legendary, Quality, Slot } from './types';
 
 const NAMES: Record<Slot, Record<Quality, string[]>> = {
   pen: {
@@ -53,6 +53,16 @@ const NAMES: Record<Slot, Record<Quality, string[]>> = {
 export const GLASSES_MAIN: Record<Quality, number> = { white: 0.05, green: 0.08, purple: 0.12, orange: 0.16, red: 0.2 };
 /** Glasses drop only from Lv23 (region 3). */
 export const GLASSES_FROM = 23;
+/** 传说效果 (系统审查 2026-11-26, 暂定 values): an orange or red item rolls one of these; different kinds stack, two of
+ *  the same kind count once. Old items keep 冠词审判. */
+export const LEGENDARY: Record<Legendary, { zh: string; fx: string }> = {
+  articleJudgement: { zh: '冠词审判', fx: '答对冠词题或选对相后，下一击伤害翻倍' },
+  inkCrit: { zh: '墨痕', fx: '打字题暴击率 +10%' },
+  comboHeal: { zh: '余烬', fx: '连击每到 5 的倍数，回复 5% 生命' },
+  listenEcho: { zh: '回声', fx: '听力题答对后，下一击伤害 ×1.5' },
+};
+export const LEGENDARY_KEYS = Object.keys(LEGENDARY) as Legendary[];
+
 /** 词典 main stat by quality (系统审查 2026-11-26, replaces 低语纸条上限): typed questions hit this much harder. */
 export const DICT_MAIN: Record<Quality, number> = { white: 0.05, green: 0.08, purple: 0.12, orange: 0.16, red: 0.2 };
 /** A dictionary's damage bonus; old saves stored a note count (1–4) there, read by quality instead. */
@@ -175,7 +185,7 @@ export function makeItem(rng: Rng, ilvl: number, quality: Quality, slot?: Slot):
     name: pick(rng, NAMES[s][quality]),
     main,
     affixes,
-    legendary: quality === 'orange' || quality === 'red' ? 'articleJudgement' : undefined,
+    legendary: quality === 'orange' || quality === 'red' ? pick(rng, LEGENDARY_KEYS) : undefined,
   };
 }
 

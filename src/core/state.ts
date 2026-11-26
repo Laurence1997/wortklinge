@@ -531,3 +531,7 @@ export function importPrompt(next: GameState, cur: GameState | null): string {
   return `将用 ${next.name}（Lv ${next.level}，${day(next.savedAt)}）替换${cur ? `当前的 ${cur.name}（Lv ${cur.level}）` : '当前存档'}。确定吗？`;
 }
 
+/** Is a legendary effect of this kind worn (any slot)? */
+export function wearsLegend(s: GameState, k: import('./types').Legendary): boolean {
+  return Object.values(gear(s)).some((it) => it?.legendary === k);
+}

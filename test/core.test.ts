@@ -1758,7 +1758,7 @@ describe('副词缀白名单 and 誊写 (2026-11-24)', () => {
     expect(m.bag[0].affixes.map((a) => a.key)).toEqual(['dmg', 'xp']);
     expect(attack(m)).toBeGreaterThan(attack({ ...m, equipped: {} } as never));
   });
-  it('per-gender damage counts only on a right stance; 誊写 makes a hard break last 4 hits', () => {
+  it('per-gender damage counts only on a right stance; 誊写 makes a hard break last 5 hits', () => {
     const s = newGame('T', 'student');
     s.level = 12;
     s.equipped.pen = { id: 'a', slot: 'pen', quality: 'orange', ilvl: 12, name: 'x', main: 4, affixes: [{ key: 'vsMasc', value: 0.5 }] } as never;
@@ -1780,6 +1780,6 @@ describe('副词缀白名单 and 誊写 (2026-11-24)', () => {
     b.intent = { ...b.intent, kind: 'attack', caseArt: undefined };
     const hard = { type: 'cloze', clozeMode: 'form', prompt: '', focus: '', answer: 'den Tee', full: 'x' } as never;
     resolveTurn(s, b, 'attack', hard, 'den Tee', makeRng(4));
-    expect(b.monster.broken).toBe(CONFIG.armor.breakHits); // 4 − the hit itself
+    expect(b.monster.broken).toBe(CONFIG.armor.breakHits + 1); // 5 − the hit itself
   });
 });

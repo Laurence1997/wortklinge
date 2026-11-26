@@ -12,7 +12,7 @@ import { blindLine, blindTask, LISTEN, passageFor, passageTask, rollListen } fro
 import { fillGems, gemSum } from './gems';
 import { dictMain, PHONES_PER_TIER } from './loot';
 import { itemTier } from './state';
-import { addGearKill, gear, affinityOf, affixTotal, attack, engraved, critChance, gearPen, maxHp, now, type GameState } from './state';
+import { addGearKill, gear, affinityOf, affixTotal, attack, engraved, critChance, gearPen, maxHp, now, wearsLegend, type GameState } from './state';
 import type { Element, Intent, Move, Word } from './types';
 import { gradeCompose } from './aiPractice';
 import { clozeModeAt, noteCloze } from './adaptive';
@@ -336,6 +336,8 @@ export interface Battle {
   chorusCd: number;
   /** Orange 冠词审判: the next hit after a correct article answer deals double. */
   judgement: boolean;
+  /** 传说「回声」: the next hit is ×1.5. */
+  echoNext?: boolean;
   /** 接句怪: the half sentence it shouts; its first attack question asks for the rest. */
   saying?: SayLine;
   sayingDone?: boolean;
@@ -2248,6 +2250,12 @@ export function resolveTurn(
         log.push({ text: '读条里答对了：它这一下打不中你。', tone: 'good' });
       }
       s.bestCombo = Math.max(s.bestCombo, s.combo);
+      // 传说「余烬」: every 5th combo heals 5% of max HP.
+      if (s.combo % 5 === 0 && wearsLegend(s, 'comboHeal')) {
+        const heal = Math.max(1, Math.round(maxHp(s) * 0.05));
+        s.hp = Math.min(maxHp(s), s.hp + heal);
+        log.push({ text: `余烬：连击 ${s.combo}，回复 ${heal} 生命。`, tone: 'good' });
+      }
 
       if (move === 'skill' && q.type === 'steady') {
         // 稳住 (rev 425): no damage; the next 2 wrong answers cost no HP and keep the combo.
@@ -2335,7 +2343,7 @@ export function resolveTurn(
         } else if (speedCrit(s, q)) {
           crit = true;
         } else {
-          const chance = Math.min(CONFIG.player.critCap, critChance(s) + (tf.sharp ?? 0) + (b.fx.charm?.crit ?? 0));
+          const chance = Math.min(CONFIG.player.critCap, critChance(s) + (tf.sharp ?? 0) + (b.fx.charm?.crit ?? 0) + (typedLike && wearsLegend(s, 'inkCrit') ? 0.1 : 0));
           crit = rng() < chance;
         }
         if (q.type !== 'saying') b.firstCorrectDone = true;
@@ -2359,8 +2367,8 @@ export function resolveTurn(
         }
         const wasBroken = m.broken > 0;
         if ((tier === 2 || breaking || q.pool === 'seal') && !wasBroken && phaseFx !== 'wrong') {
-          // 誊写 (书写者大天赋, 游戏设计 十): any hard-question break lasts 4 hits instead of 3.
-          m.broken = CONFIG.armor.breakHits + (rank(s, 'tengxie') ? 1 : 0);
+          // 誊写 (笔锋大天赋; 系统审查 2026-11-26 加强): a break lasts 5 hits instead of 3.
+          m.broken = CONFIG.armor.breakHits + (rank(s, 'tengxie') ? 2 : 0);
           log.push({ text: breaking ? `写对了。壳裂开了：这一下和之后 ${m.broken - 1} 下无视护甲。` : `难题破甲：这一下和之后 ${m.broken - 1} 下无视护甲。`, tone: 'good' });
         }
         // Right stance = the hit meets armor one tier lower (a choice answer as if typed, a typed one ignores it).
@@ -2379,7 +2387,7 @@ export function resolveTurn(
           const gain = aff ? CONFIG.gear.affinityRes : CONFIG.phase.rightRes;
           if (resMax(s) && move !== 'sentence') cfx.res = Math.min(resMax(s), cfx.res + gain);
           if (has(s.level, 'layerElement')) element = ELEMENT_BY_GENDER[b.pluralMon ? 'pl' : genderOf(b.word) ?? 'n'] ?? element;
-          if (Object.values(gear(s)).some((it) => it?.legendary === 'articleJudgement')) b.judgement = true;
+          if (wearsLegend(s, 'articleJudgement')) b.judgement = true;
           log.push({ text: `${b.phase} 相打中弱点：护甲降一档${resMax(s) && move !== 'sentence' ? `，${resName(s)} +${gain}${aff ? `（护符亲和 ${affinityOf(s)} 共鸣）` : ''}` : ''}。`, tone: 'good' });
         } else if (phaseFx === 'wrong') log.push({ text: `${b.phase ?? '无'} 相被抵抗：${phaseWrongWhy(b)}。护甲翻倍。`, tone: 'bad' });
         else if (phaseFx === 'soft') log.push({ text: `${b.phase ? `${b.phase} 相不对` : '没选相'}：这里要 ${ph}${b.pluralMon ? '（复数一律 die）' : phaseCase(b) === 'acc' ? '（第四格）' : phaseCase(b) === 'dat' ? '（第三格）' : ''}。这一级还不罚，选对了护甲降一档。`, tone: 'sys' });
@@ -2392,7 +2400,13 @@ export function resolveTurn(
           mult *= 2;
           b.judgement = false;
         }
-        if (q.type === 'article' && Object.values(gear(s)).some((it) => it?.legendary === 'articleJudgement')) b.judgement = true;
+        if (q.type === 'article' && wearsLegend(s, 'articleJudgement')) b.judgement = true;
+        // 传说「回声」: a listening question answered right makes the next hit ×1.5.
+        if (b.echoNext) {
+          mult *= 1.5;
+          b.echoNext = false;
+        }
+        if (listenQ(q) && wearsLegend(s, 'listenEcho')) b.echoNext = true;
 
         const charging = intent.kind === 'charge';
         if (intent.kind === 'defend' && !breaking && !wasBroken) mult *= CONFIG.damage.vsDefend;
@@ -3022,6 +3036,7 @@ function talentDamage(s: GameState, b: Battle, q: Question, c: { typedLike: bool
   if (writing && b.stage === 2) add += 0.15 * r('dingming');
   if (c.typedLike && !tf.whispered && r('wutishi')) add += 0.1;
   if (writing && (b.wrongs ?? 0) > 0) add += 0.15 * r('biji');
+  if (c.typedLike && c.broken && r('tengxie')) add += 0.25; // 誊写: typed hits into a broken shell
   // 守势
   if (s.hp < maxHp(s) * 0.3) add += 0.2 * r('gangyi');
   // 言辞
