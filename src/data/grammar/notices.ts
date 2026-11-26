@@ -22,6 +22,8 @@ export interface Notice {
   qs: NoticeQ[];
 }
 
+import { NOTICES_B2 } from './noticesB2-gen';
+
 export const NOTICES: Notice[] = [
   {
     id: 'aschehof-feuer',
@@ -117,6 +119,7 @@ export const NOTICES: Notice[] = [
       { q: '去科隆的车怎么了？', options: ['取消了', '提前了', '换站台了'], answer: '取消了' },
     ],
   },
+  ...NOTICES_B2,
 ];
 
 /** 文章群怪 (81 级, framework + one sample): a pack shares one short article; each monster asks one question on it. */

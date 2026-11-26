@@ -9,6 +9,7 @@
 
 import type { Intent } from './types';
 import { pick, type Rng } from './rng';
+import { LIAR_LINES_GEN } from '../data/liarLines-gen';
 
 export const LIAR = {
   /** 暂定: liars come in batches in 16 面具剧场 (151+); the doc names no earlier level. */
@@ -93,7 +94,7 @@ export function announces(turn: number): boolean {
 /** Pick this turn's announcement: about half lies. Returns the intent it stands for (a lie becomes a plain attack). */
 export function liarIntent(base: Intent, rng: Rng): { intent: Intent; line: LiarLine } {
   const lie = rng() < 0.5;
-  const line = pick(rng, LIAR_LINES.filter((l) => (lie ? l.tell !== null : l.tell === null)));
+  const line = pick(rng, [...LIAR_LINES, ...LIAR_LINES_GEN].filter((l) => (lie ? l.tell !== null : l.tell === null)));
   const kind = line.tell ? 'attack' : line.claim;
   return {
     line,
