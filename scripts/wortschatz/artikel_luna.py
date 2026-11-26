@@ -56,27 +56,6 @@ def lemmas(text):
     for t in WORD.findall(text): out |= lem(t)
     return out
 
-# Plan which articles to send: per segment, greedily the article with the most unclaimed words (≥5), round robin.
-plan, plan_claim = [], {s: set(claimed.get(s, set())) for s in segw}
-queues = {s: [r for r in pool.get(s, []) if r['标题'] not in used_titles and r['网址'] not in used_titles] for s in segw}
-def next_for(s):
-    best, bh = None, []
-    for r in queues[s]:
-        h = [w for w in r['命中词'].split(', ') if w and w not in plan_claim[s]]
-        if len(h) > len(bh): best, bh = r, h
-    if not best or len(bh) < 5: return None
-    queues[s].remove(best)
-    tgt = bh[:8]; plan_claim[s] |= set(tgt)
-    return (s, best, tgt)
-active = sorted(segw)
-while active and (not LIMIT or len(plan) < LIMIT):
-    for s in list(active):
-        if LIMIT and len(plan) >= LIMIT: break
-        x = next_for(s)
-        if x: plan.append(x)
-        else: active.remove(s)
-print(f'{len(have)} articles done; sending {len(plan)}: ' + ', '.join(f'段{s} {sum(1 for p in plan if p[0] == s)}' for s in sorted(segw)))
-
 ABRIDGE = """你是德语母语的编辑，把德语维基新闻原文删减成游戏里给 B2 学习者读的文章（在德国生活的中国人）。
 规则：只删句子、把太长的句子拆开、把极少数生僻说法换成常用说法；不改写观点和事实，不加原文没有的内容；保留指定的目标词（可以变形），尽量全部保留，至少保留 5 个；长度 {lo}–{hi} 个词；分成 2–5 段；标题可以缩短。
 内容不适合就 "skip": true：涉及死亡、暴力、犯罪、恐怖袭击、战争、灾难伤亡、镇压或抓捕的（哪怕只是一部分）；政治上敏感的；过时到看不懂、太专业、本质是列表或体育比分的。游戏要的是日常生活、城市、经济、环境、科技、文化、教育、交通这类话题，读完不压抑。
@@ -110,6 +89,49 @@ def call(system, user):
             print(f'error: {e}')
         time.sleep(5 * (attempt + 1))
     return None
+
+
+# Screen the pool first: Luna reads title + opening of every candidate and keeps only topics that fit the game.
+SCREEN = """下面是德语维基新闻文章的标题和开头。游戏（给在德国的中国人学德语）只要读完不压抑的日常话题：城市生活、交通、住房、经济和消费、工作、环境和自然、天气、科技、文化艺术、教育、科学、健康常识、体育以外的社会生活。
+不要：死亡、暴力、犯罪、恐怖、战争、灾难伤亡、镇压抓捕、选举争议和政党斗争、宗教冲突、体育比分、讣告。只输出 JSON：{"ok":[编号, …]}"""
+SCREENED = os.path.join(D, 'build', 'artikel', 'screened.json')
+okset = set(json.load(open(SCREENED))) if os.path.exists(SCREENED) else None
+if okset is None:
+    cands = {}
+    for s_, rs in pool.items():
+        for r in rs: cands.setdefault(r['网址'], r)
+    items = list(cands.values()); okset = set()
+    chunks = [items[i:i + 40] for i in range(0, len(items), 40)]
+    def scr(ch):
+        res = call(SCREEN, '\n'.join(f"{i}. {r['标题']}：{r['正文'][:220]}" for i, r in enumerate(ch, 1))) or {}
+        return [ch[int(i) - 1]['网址'] for i in res.get('ok', []) if str(i).isdigit() and 1 <= int(i) <= len(ch)]
+    with ThreadPoolExecutor(6) as ex:
+        for got in ex.map(scr, chunks): okset |= set(got)
+    json.dump(sorted(okset), open(SCREENED, 'w'))
+    print(f'screened {len(items)} candidates, {len(okset)} fit the game')
+for s_ in pool: pool[s_] = [r for r in pool[s_] if r['网址'] in okset]
+
+# Plan which articles to send: per segment, greedily the article with the most unclaimed words (≥5), round robin.
+plan, plan_claim = [], {s: set(claimed.get(s, set())) for s in segw}
+queues = {s: [r for r in pool.get(s, []) if r['标题'] not in used_titles and r['网址'] not in used_titles] for s in segw}
+def next_for(s):
+    best, bh = None, []
+    for r in queues[s]:
+        h = [w for w in r['命中词'].split(', ') if w and w not in plan_claim[s]]
+        if len(h) > len(bh): best, bh = r, h
+    if not best or len(bh) < 5: return None
+    queues[s].remove(best)
+    tgt = bh[:8]; plan_claim[s] |= set(tgt)
+    return (s, best, tgt)
+active = sorted(segw)
+while active and (not LIMIT or len(plan) < LIMIT):
+    for s in list(active):
+        if LIMIT and len(plan) >= LIMIT: break
+        x = next_for(s)
+        if x: plan.append(x)
+        else: active.remove(s)
+print(f'{len(have)} articles done; sending {len(plan)}: ' + ', '.join(f'段{s} {sum(1 for p in plan if p[0] == s)}' for s in sorted(segw)))
+
 
 def qs_ok(qs):
     out = []

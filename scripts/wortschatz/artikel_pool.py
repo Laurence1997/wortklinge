@@ -83,13 +83,13 @@ for ev, el in ET.iterparse(bz2.open(DUMP), events=('end',)):
         if len(hit) < 4: continue
         lst = best[s]
         lst.append((len(hit), len(toks), hit, title, rid, '｜'.join(paras)))
-        if len(lst) > 400:
-            lst.sort(key=lambda x: -x[0]); del lst[300:]
+        if len(lst) > 900:
+            lst.sort(key=lambda x: -x[0]); del lst[600:]
 
 with open(os.path.join(B, 'pool.tsv'), 'w', encoding='utf-8', newline='') as f:
     w = csv.writer(f, delimiter='\t', lineterminator='\n')
     w.writerow(['段', '词数', '命中数', '命中词', '标题', '修订号', '网址', '正文'])
     for s in sorted(best):
-        for h, nt, hit, title, rid, body in sorted(best[s], key=lambda x: -x[0])[:150]:
+        for h, nt, hit, title, rid, body in sorted(best[s], key=lambda x: -x[0])[:400]:
             w.writerow([s, nt, h, ', '.join(hit), title, rid, f'https://de.wikinews.org/w/index.php?oldid={rid}', body])
-print(f'articles 200–1500 words: {n}; candidates per segment: ' + ', '.join(f'{s} {min(150, len(best[s]))}' for s in sorted(best)))
+print(f'articles 200–1500 words: {n}; candidates per segment: ' + ', '.join(f'{s} {min(400, len(best[s]))}' for s in sorted(best)))
