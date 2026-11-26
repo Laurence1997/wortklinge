@@ -155,22 +155,25 @@ def work(item):
             '网址': f'https://de.wikipedia.org/w/index.php?oldid={rev}', '修订号': rev, '许可证': 'CC BY-SA 4.0',
             '改编说明': str(a.get('note', '')).strip() + ('；审校修改' if c.get('verdict') == 'fix' else '')})
 
+def write_out(rows):
+    n = {}
+    for r in rows:
+        if r.get('id'): n[r['段']] = max(n.get(r['段'], 0), int(r['id'].rsplit('-', 1)[1]))
+    for r in rows:
+        if not r.get('id'):
+            n[r['段']] = n.get(r['段'], 0) + 1; r['id'] = f"c1-{r['段']}-{n[r['段']]:03d}"
+    rows.sort(key=lambda r: r['id'])
+    with open(OUT, 'w', encoding='utf-8', newline='') as f:
+        w = csv.DictWriter(f, fieldnames=COLS, delimiter='\t', lineterminator='\n'); w.writeheader(); w.writerows(rows)
+
 rows = list(have); stats = Counter()
 with ThreadPoolExecutor(6) as ex:
     for k, (st, title, row) in enumerate(ex.map(work, plan), 1):
         stats[st] += 1
         if st == 'ok': rows.append({kk: re.sub(r'\s*[\r\n]+\s*', '｜', str(v)) for kk, v in row.items()})
         elif st in ('drop', 'len'): print(f'{st}: {title}: {row}')
-        if k % 20 == 0: print(f'{k}/{len(plan)}', flush=True)
-n = {}
-for r in rows:
-    if r.get('id'): n[r['段']] = max(n.get(r['段'], 0), int(r['id'].rsplit('-', 1)[1]))
-for r in rows:
-    if not r.get('id'):
-        n[r['段']] = n.get(r['段'], 0) + 1; r['id'] = f"c1-{r['段']}-{n[r['段']]:03d}"
-rows.sort(key=lambda r: r['id'])
-with open(OUT, 'w', encoding='utf-8', newline='') as f:
-    w = csv.DictWriter(f, fieldnames=COLS, delimiter='\t', lineterminator='\n'); w.writeheader(); w.writerows(rows)
+        if k % 20 == 0: print(f'{k}/{len(plan)}', flush=True); write_out(rows)  # save as we go
+write_out(rows)
 print(f"{len(rows)} C1 articles: " + ', '.join(f"{z}区 {sum(1 for r in rows if r['段'] == str(z))}" for z in (17, 18, 19, 20)) + f"; this run {dict(stats)}")
 print(f'tokens: input {usage[0]}, output {usage[1]}')
 if QUOTA.is_set():
