@@ -172,7 +172,7 @@ export class WorldScene extends Phaser.Scene {
       this.add.sprite(n.x * TILE + 8, n.y * TILE + 6, nk).setDepth(n.y * TILE + 8);
       if (this.map.region >= 2 || n.id !== 'hilde')
         this.add
-          .text(n.x * TILE + 8, n.y * TILE - 6, NPC_LABEL[n.id], { fontFamily: FONT, fontSize: '6px', color: '#d8c8b8', resolution: 4 })
+          .text(n.x * TILE + 8, n.y * TILE - 6, NPC_LABEL[n.id], { fontFamily: FONT, fontSize: '6px', color: this.bright ? '#2d2118' : '#d8c8b8', fontStyle: this.bright ? 'bold' : '', stroke: this.bright ? '#fffdf8' : undefined, strokeThickness: this.bright ? 2 : 0, resolution: 4 })
           .setOrigin(0.5, 1)
           .setDepth(n.y * TILE + 9);
     }
@@ -195,13 +195,17 @@ export class WorldScene extends Phaser.Scene {
     for (const z of this.zones) {
       if (z.id === 'camp' || z.id === 'markt') continue;
       this.add
-        .text((z.rect.x + z.rect.w / 2) * TILE, (z.rect.y + 1.2) * TILE, `${z.de} · ${z.zh} · ${z.levels}`, {
+        // 美术小修 A (2026-11-26): on bright maps two short lines instead of one long one, so neighbouring zone names
+        // no longer run into each other.
+        .text((z.rect.x + z.rect.w / 2) * TILE, (z.rect.y + 1.2) * TILE, this.bright ? `${z.zh} · ${z.levels}\n${z.de}` : `${z.de} · ${z.zh} · ${z.levels}`, {
           fontFamily: FONT,
           fontSize: '8px',
-          color: '#5a2a2e',
+          color: this.bright ? '#4a3420' : '#5a2a2e',
+          align: 'center',
           resolution: 4,
         })
         .setOrigin(0.5)
+        .setAlpha(this.bright ? 0.7 : 1)
         .setDepth(1);
     }
 
@@ -500,6 +504,11 @@ export class WorldScene extends Phaser.Scene {
     if (m.elite) m.label.setShadow(0, 0, '#ff9a3c', 8, true, true);
     if (m.red) (m.label.setColor('#ff4a4a'), m.label.setShadow(0, 0, '#ff1830', 10, true, true), m.marker.setColor('#ff4a4a'));
     if (m.challenge && !m.elite && !m.rare && !m.isEcho) m.marker.setColor('#7fd4ff');
+    // 美术小修 A (2026-11-26): on bright maps light plates and markers get a dark edge so they read on grass and sand.
+    if (this.bright) {
+      m.label.setStroke('#2d2118', 2);
+      m.marker.setStroke('#2d2118', 2);
+    }
     this.updateGlyph(m);
     m.container.setScale(m.kind === 'shadow' ? 0.85 : 1);
   }

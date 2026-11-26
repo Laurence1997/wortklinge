@@ -15,6 +15,13 @@ export const REGION_ACCENT: Record<number, string> = {
   10: '#6559c4', // 电波塔: violet
   11: '#2f8c78', // 11 区: teal
   12: '#c04a7c', // 心巷: rose
+  // B2 (美术小修 A, 2026-11-26); 15 and 19 are 蚀变 maps and stay dark.
+  13: '#3a6fa8', // 议会堡: limestone blue
+  14: '#b8860b', // 铸币场: coin gold
+  16: '#a8409e', // 面具剧场: magenta evening
+  17: '#8a5a2b', // 档案深处: parchment brown
+  18: '#4f7d96', // 天平庭: cold marble blue-grey
+  20: '#6b7178', // 沉默之心: pale, almost colourless
 };
 
 export function accentOf(region: number): string {

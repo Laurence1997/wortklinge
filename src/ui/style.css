@@ -527,3 +527,13 @@ body.bright .board-ex { color: #1f6b5c; }
 /* Boss figures (方案 B): pixel figure with a red glow; it breathes like the old glyph did. */
 #boss canvas.boss-figure { image-rendering: pixelated; display: block; margin: 0 auto; filter: drop-shadow(0 0 10px rgba(255, 24, 48, .55)); animation: boss-breathe 2.4s ease-in-out infinite; }
 @keyframes boss-breathe { 50% { transform: scale(1.03); filter: drop-shadow(0 0 18px rgba(255, 24, 48, .8)); } }
+/* 美术小修 A (2026-11-26): the boss stage is always the dark look, even when opened from a bright map, so the panel,
+   buttons and bars match the dark red stage instead of the bright map's cream. */
+body.bright #boss { --panel: #120a0d; --panel-2: #1b0f13; --line: #4a1a20; --line-hi: #7a2a32; --ink: #eadfd2; --muted: #9a8a84; --accent: #c8323c; color: var(--ink); }
+body.bright #boss .panel { box-shadow: 0 0 0 1px rgba(255, 40, 60, .12), 0 10px 28px rgba(0, 0, 0, .5); }
+body.bright #boss .btn { background: var(--panel-2); border-color: var(--line-hi); color: var(--ink); }
+body.bright #boss .btn:hover:not(:disabled) { background: #2a1218; border-color: var(--red); }
+body.bright #boss .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+body.bright #boss kbd { background: transparent; }
+body.bright #boss .bar, body.bright #boss .timer { background: #000; border-color: var(--line); }
+body.bright #boss .bar > span { color: var(--ink); text-shadow: 0 0 2px #000; }

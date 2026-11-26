@@ -30,10 +30,19 @@ function loadSheet(): HTMLImageElement {
 const rgb = (hex: string) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
 
 /** One 16×16 tile, recoloured (or as a shadow), cached. */
-function tileCanvas(tile: number, shadow: boolean): HTMLCanvasElement {
-  const key = `${tile}${shadow ? 's' : ''}`;
+function tileCanvas(tile: number, shadow: boolean, bright = false): HTMLCanvasElement {
+  const key = `${tile}${shadow ? 's' : ''}${bright ? 'b' : ''}`;
   const hit = cache.get(key);
   if (hit) return hit;
+  // 美术小修 A (2026-11-26): on bright daily maps gear icons and portraits keep Kenney's own colours (like the map
+  // figures), and shadows / empty slots are a light silhouette instead of near-black.
+  if (bright && !shadow) {
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = T;
+    cv.getContext('2d')!.drawImage(sheet!, (tile % COLS) * T, Math.floor(tile / COLS) * T, T, T, 0, 0, T, T);
+    cache.set(key, cv);
+    return cv;
+  }
   if (!shadow) {
     const cv = dungeonTile(sheet!, tile, CHAR_RAMP);
     cache.set(key, cv);
@@ -45,7 +54,7 @@ function tileCanvas(tile: number, shadow: boolean): HTMLCanvasElement {
   ctx.drawImage(sheet!, (tile % COLS) * T, Math.floor(tile / COLS) * T, T, T, 0, 0, T, T);
   const img = ctx.getImageData(0, 0, T, T);
   const d = img.data;
-  const ramp = RAMP.map(rgb);
+  const ramp = (bright ? ['#a8957c', '#d6c8b2', '#d6c8b2', '#d6c8b2', '#d6c8b2'] : RAMP).map(rgb);
   for (let i = 0; i < d.length; i += 4) {
     if (d[i + 3] < 8) continue;
     const lum = (0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]) / 255;
@@ -70,7 +79,7 @@ export function icon(tile: number, scale = 2, shadow = false, cls = 'icon'): HTM
     const ctx = cv.getContext('2d')!;
     ctx.imageSmoothingEnabled = false;
     ctx.clearRect(0, 0, cv.width, cv.height);
-    ctx.drawImage(tileCanvas(tile, shadow), 0, 0, cv.width, cv.height);
+    ctx.drawImage(tileCanvas(tile, shadow, document.body.classList.contains('bright')), 0, 0, cv.width, cv.height);
   };
   const img = loadSheet();
   if (img.complete && img.naturalWidth) draw();
@@ -78,15 +87,16 @@ export function icon(tile: number, scale = 2, shadow = false, cls = 'icon'): HTM
   return cv;
 }
 
-/** Your own figure (same as on the map, without the outline), hair in its own colour. */
-export function heroIcon(look: Look, scale = 4): HTMLCanvasElement {
+/** Your own figure (same as on the map, without the outline), hair in its own colour. On a bright daily map it keeps
+ *  its own colours like the map figure (美术小修 A, 2026-11-26); on dark maps it stays in the red ramp. */
+export function heroIcon(look: Look, scale = 4, raw = document.body.classList.contains('bright')): HTMLCanvasElement {
   const cv = document.createElement('canvas');
   cv.width = cv.height = T * scale;
   cv.className = 'mon-icon';
   const draw = () => {
     const ctx = cv.getContext('2d')!;
     ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(heroTinyCanvas(heroTile(look), look.color, sheet!), 0, 0, cv.width, cv.height);
+    ctx.drawImage(heroTinyCanvas(heroTile(look), look.color, sheet!, raw), 0, 0, cv.width, cv.height);
   };
   const img = loadSheet();
   if (img.complete && img.naturalWidth) draw();
