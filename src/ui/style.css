@@ -405,3 +405,6 @@ body:has(#dialog:not([hidden])) #chat input { display: none; }
 /* Tabbed panels keep one size, so the tabs don't jump when switching between short and long pages. */
 #modal .panel:has(> .tabs) { width: min(1000px, 100%); height: min(860px, calc(100vh - 32px)); }
 :root { accent-color: var(--red); }
+body:has(#dialog:not([hidden])) #chat .chat-tabs .fold, body:has(#dialog:not([hidden])) #chat .chat-online { display: none; }
+#dialog .choices .btn { font-size: 14px; padding: 8px 14px; }
+#dialog .choices .btn:hover:not(:disabled) { background: #3a0d14; }
