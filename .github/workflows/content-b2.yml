@@ -76,7 +76,7 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898233+github-actions[bot]@users.noreply.github.com'
           rm -f data/wortschatz/build/artikel/dewikinews.xml.bz2
-          git add -A data/wortschatz ':!data/wortschatz/build/wiki-cache'
+          git add -A data/wortschatz
           git diff --cached --quiet && exit 0
           git commit -m 'Content: listening passages and B2 articles (Luna)'
           for i in 1 2 3; do git pull --rebase -q && git push && break; sleep 5; done
