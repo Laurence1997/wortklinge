@@ -27,7 +27,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: proofread-${{ github.ref }}
+  group: proofread-${{ github.ref }}-${{ github.event_name }}
   cancel-in-progress: true
 
 jobs:
