@@ -1,0 +1,37 @@
+name: 遗书 (last letters, 1.0)
+
+# briefe_luna.py: 5 letters per zone for zones 4–20 → data/wortschatz/briefe-1.0.tsv (resumable per zone).
+# Runs on a push that changes the script or this file, or by hand. Commits the result back. Costs cents.
+on:
+  push:
+    paths: ['scripts/wortschatz/briefe_luna.py', '.github/workflows/briefe.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: briefe-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  briefe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python3 scripts/wortschatz/briefe_luna.py
+      - name: Commit
+        if: always()
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898233+github-actions[bot]@users.noreply.github.com'
+          git add -A data/wortschatz
+          git diff --cached --quiet && exit 0
+          git commit -m 'Content: last letters for zones 4–20 (Luna)'
+          for i in 1 2 3; do git pull --rebase -q && git push && break; sleep 5; done
