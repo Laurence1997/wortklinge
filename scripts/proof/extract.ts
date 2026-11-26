@@ -226,7 +226,9 @@ for (const f of tsvFiles(join(repo, 'data'))) {
     const c = r.split('\t');
     const key = (pat >= 0 ? c[pat] : c[0])?.trim() || String(i + 1);
     const zh = [pat >= 0 && c[pat] ? `搭配：${c[pat]}` : '', zhCol >= 0 ? c[zhCol] ?? '' : ''].filter(Boolean).join('；');
-    add('tsv', `${name}:${key}:${i + 1}`, c[ex] ?? '', rel, zh || undefined);
+    // Multi-paragraph texts (听段, letters, articles) join paragraphs with a full-width ｜, which the CJK test below
+    // would take for Chinese and silently drop the whole text.
+    add('tsv', `${name}:${key}:${i + 1}`, (c[ex] ?? '').replace(/｜/g, ' '), rel, zh || undefined);
   });
 }
 

@@ -137,7 +137,15 @@ const SIZE = 40;
 // Several batches at once (env PROOF_PARALLEL, default 6): 30 000 sentences one batch at a time took over an hour.
 const PAR = Number(process.env.PROOF_PARALLEL ?? 6);
 const batches: Item[][] = [];
-for (let i = 0; i < run.length; i += SIZE) batches.push(run.slice(i, i + SIZE));
+// At most SIZE items and about 8000 characters per batch: listening passages, letters and articles are long, and a
+// reply that rewrites several of them must still fit.
+let cur: Item[] = [];
+let chars = 0;
+for (const x of run) {
+  if (cur.length && (cur.length >= SIZE || chars + x.text.length > 8000)) { batches.push(cur); cur = []; chars = 0; }
+  cur.push(x); chars += x.text.length + (x.zh?.length ?? 0);
+}
+if (cur.length) batches.push(cur);
 let next = 0;
 let sent = 0;
 async function worker() {
