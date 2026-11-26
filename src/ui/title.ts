@@ -1,5 +1,5 @@
 import { heroIcon } from './icons';
-import { DEFAULT_LOOK, LOOK_OPTIONS, type Look } from '../core/look';
+import { DEFAULT_LOOK, HAIR_COLORS, LOOK_OPTIONS, type Look } from '../core/look';
 import type { GameState } from '../core/state';
 import { $, clear, h } from './dom';
 
@@ -10,6 +10,39 @@ export const ORIGINS: Array<[string, string]> = [
   ['nurse', '护士'],
   ['programmer', '程序员'],
 ];
+
+/** 出身 (游戏设计 十二, Lucas 2026-11-25): no stats, only the topics you meet more often. Shown on the creation cards. */
+export const ORIGIN_INFO: Record<string, { topics: string; de: [string, string] }> = {
+  student: { topics: '选课、宿舍、考试、打工', de: ['Ich studiere hier.', 'Ich studiere hier.'] },
+  cook: { topics: '厨房、食材、排班、客人', de: ['Ich bin Koch.', 'Ich bin Köchin.'] },
+  engineer: { topics: '项目、工地、开会、出差', de: ['Ich bin Ingenieur.', 'Ich bin Ingenieurin.'] },
+  nurse: { topics: '值班、病人、休假、医院', de: ['Ich bin Pfleger.', 'Ich bin Pflegerin.'] },
+  programmer: { topics: '求职、面试、远程、同事', de: ['Ich bin Programmierer.', 'Ich bin Programmiererin.'] },
+};
+
+/** 出身 cards: one pick, with the topics it brings and a line the hero could say. */
+export function originPicker(start: string, gender: () => number, onChange?: (v: string) => void): { el: HTMLElement; value: () => string; refresh: () => void } {
+  let cur = ORIGINS.some(([v]) => v === start) ? start : 'student';
+  const cards = ORIGINS.map(([v, zh]) => {
+    const info = ORIGIN_INFO[v];
+    const de = h('span.de');
+    const b = h('button.origin-card', { type: 'button', onclick: () => pick(v) }, h('b', zh), h('span.topics', info?.topics ?? ''), de) as HTMLButtonElement;
+    return { v, b, de };
+  });
+  const refresh = () => {
+    for (const c of cards) {
+      c.b.classList.toggle('on', c.v === cur);
+      c.de.textContent = `„${ORIGIN_INFO[c.v]?.de[gender() === 1 ? 1 : 0] ?? ''}“`;
+    }
+  };
+  const pick = (v: string) => {
+    cur = v;
+    refresh();
+    onChange?.(v);
+  };
+  refresh();
+  return { el: h('div.origin-cards', ...cards.map((c) => c.b)), value: () => cur, refresh };
+}
 
 export function showTitle(opts: {
   account?: HTMLElement;
@@ -25,9 +58,20 @@ export function showTitle(opts: {
   const el = $('title');
   el.hidden = false;
   const name = h('input', { type: 'text', maxlength: 16, placeholder: '比如 Lucas', autocomplete: 'off' }) as HTMLInputElement;
-  const look = lookPicker();
-  const origin = h('select') as HTMLSelectElement;
-  for (const [v, zh] of ORIGINS) origin.append(h('option', { value: v }, zh));
+  const preview = h('div.hero-preview');
+  const card = h('div.hero-card', preview, h('div.hero-name', '……'), h('div.hero-origin'));
+  const drawCard = () => {
+    preview.replaceChildren(heroIcon(look.value(), 8));
+    (card.querySelector('.hero-name') as HTMLElement).textContent = name.value.trim() || 'Lucas';
+    const o = ORIGINS.find(([v]) => v === origin.value())?.[1] ?? '';
+    (card.querySelector('.hero-origin') as HTMLElement).textContent = `${o} · ${ORIGIN_INFO[origin.value()]?.de[look.value().gender === 1 ? 1 : 0] ?? ''}`;
+  };
+  const look = lookSwatches(DEFAULT_LOOK, () => {
+    origin.refresh();
+    drawCard();
+  });
+  const origin = originPicker('student', () => look.value().gender, () => drawCard());
+  name.addEventListener('input', () => drawCard());
   const file = h('input', { type: 'file', accept: '.json,application/json', hidden: true }) as HTMLInputElement;
   file.onchange = async () => {
     const f = file.files?.[0];
@@ -37,7 +81,7 @@ export function showTitle(opts: {
     const n = name.value.trim() || 'Lucas';
     if (opts.existing && !confirmOverwrite()) return;
     el.hidden = true;
-    opts.onNew(n, origin.value, look.value());
+    opts.onNew(n, origin.value(), look.value());
   };
   name.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') start();
@@ -58,6 +102,7 @@ export function showTitle(opts: {
   const form = h('div');
   const folded = !!opts.existing || !!opts.cloudFailed;
   form.hidden = folded;
+  box.classList.toggle('wide', !folded);
   if (opts.existing) {
     // 6000 词导入 (the one save reset): say so here, before anything else, so a level-1 character is no surprise.
     if (opts.existing.flags?.reset6000) box.append(h('p.small', { style: 'color:var(--gold, #ffcf4a)' }, '这一版换成了 6000 词的新词表，旧存档按之前的通知清空了：角色名和账号保留，从 1 级重新开始（旧存档的备份留在这个浏览器里）。'));
@@ -78,6 +123,7 @@ export function showTitle(opts: {
     unfold.onclick = () => {
       unfold.remove();
       form.hidden = false;
+      box.classList.add('wide');
       name.focus();
     };
     box.append(h('div', unfold));
@@ -85,10 +131,14 @@ export function showTitle(opts: {
   box.append(form);
   form.append(
     h(
-      'div.form.panel',
-      h('label', h('span', '名字（首领会问你「Wie heißt du?」）'), name),
-      h('label', h('span', '出身（只是背景设定，不加数值）'), origin),
-      h('label', h('span', '外观（联机时别人看到的样子）'), look.el),
+      'div.create.panel',
+      card,
+      h(
+        'div.create-steps',
+        h('label', h('span.step', h('i', '1'), '名字', h('small', '首领会问你「Wie heißt du?」')), name),
+        h('div', h('span.step', h('i', '2'), '外观', h('small', '性别和发色')), look.el),
+        h('div', h('span.step', h('i', '3'), '出身', h('small', '不加数值，只决定你常遇到的话题；在篝火旁可以免费改')), origin.el),
+      ),
     ),
     h(
       'div.actions',
@@ -102,7 +152,26 @@ export function showTitle(opts: {
     h('div.ver', `v${opts.version} · 第 1–20 区 · 请用电脑上的 Chrome 打开，开声音`),
   );
   clear(el).append(box);
+  drawCard();
   window.setTimeout(() => (folded ? null : name.focus()), 50);
+}
+
+/** 性别 as two toggles and 发色 as swatches (the creation screen); the bonfire keeps the compact lookPicker. */
+function lookSwatches(start: Look, onChange: (l: Look) => void): { el: HTMLElement; value: () => Look } {
+  const cur: Look = { ...start };
+  const genders = LOOK_OPTIONS.gender.options.map((o, i) => h('button.btn.small.seg', { type: 'button', onclick: () => set('gender', i) }, o) as HTMLButtonElement);
+  const colors = HAIR_COLORS.map((c, i) => h('button.swatch', { type: 'button', title: `发色：${LOOK_OPTIONS.color.options[i]}`, style: `background:${c}`, onclick: () => set('color', i) }) as HTMLButtonElement);
+  const mark = () => {
+    genders.forEach((b, i) => b.classList.toggle('on', cur.gender === i));
+    colors.forEach((b, i) => b.classList.toggle('on', cur.color === i));
+  };
+  const set = (k: 'gender' | 'color', i: number) => {
+    (cur as unknown as Record<string, number>)[k] = i;
+    mark();
+    onChange({ ...cur });
+  };
+  mark();
+  return { el: h('div.look-row', h('div.segs', ...genders), h('div.swatches', ...colors)), value: () => ({ ...cur }) };
 }
 
 function confirmOverwrite(): boolean {

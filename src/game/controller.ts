@@ -346,6 +346,12 @@ export class Controller {
     this.persist();
   }
 
+  /** 出身: free to change at a bonfire (游戏设计 十二). */
+  setOrigin(origin: string): void {
+    this.state.origin = origin;
+    this.persist();
+  }
+
   setLook(look: Look): void {
     this.state.look = look;
     this.scene?.applyLook();

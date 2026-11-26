@@ -39,7 +39,7 @@ import { clarity, shadowOk } from '../core/shadow';
 import { DIARY, DIARY_WRITER, type DiaryBlank } from '../data/diary';
 import { SCENE_BY_ID } from '../data/world';
 import { blanksOf, checkBlank, DIARY_MISSES, DIARY_XP, lineText, pageLines, pageNo, pageRegion, pageState } from '../core/diary';
-import { lookPicker } from './title';
+import { lookPicker, originPicker } from './title';
 import { CONSUMABLE, cap as itemCap, count as itemCount, itemPrice, type Consumable } from '../core/items';
 import { matchRows, mergeImport, readTable } from '../core/wordImport';
 import { checkJournal, type JournalHint } from '../core/journal';
@@ -268,7 +268,10 @@ export class Panels {
   private hero(): HTMLElement {
     const s = this.ctrl.state;
     const left = h('div');
-    if (this.ctrl.nearBonfire()) left.append(h('h3', '外观（篝火旁免费改）'), lookPicker(s.look, (l) => this.ctrl.setLook(l)).el);
+    if (this.ctrl.nearBonfire()) {
+      left.append(h('h3', '外观（篝火旁免费改）'), lookPicker(s.look, (l) => this.ctrl.setLook(l)).el);
+      left.append(h('h3', '出身（篝火旁免费改，不加数值，只决定常遇到的话题）'), h('div.origin-wrap', originPicker(s.origin, () => s.look?.gender ?? 0, (v) => this.ctrl.setOrigin(v)).el));
+    }
     if (s.level >= UNLOCK.affinity) {
       const aff = affinityOf(s);
       left.append(h('h3', '护符亲和'), h('p.muted', `现在：${aff ?? '无'}。破甲照旧每档 4%。${aff ? `${aff} 的怪（复数算 die）第一次选对相时资源 +2（平时 +1），换句重选后再算一次。` : ''}`));
