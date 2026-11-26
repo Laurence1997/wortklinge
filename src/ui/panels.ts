@@ -22,7 +22,7 @@ import type { Controller } from '../game/controller';
 import { $, clear, h, umlautButtons } from './dom';
 import { BREAK, examParts, examPassed, PART_ZH, type Exam } from '../core/breakthrough';
 import { pendingScenes, regionLeft, type ScreenRun } from '../core/screen';
-import { bandCount, bandRange, bandSamples, levelFor, PLACE, regionFor, topPassed, type PlaceRun } from '../core/placement';
+import { bandRange, levelFor, PLACE, regionFor, topPassed, type PickBoard, type PlaceRun } from '../core/placement';
 import { CHEST_ZH, type ChestKind } from '../core/chest';
 import { playChest } from './chestFx';
 import { favour, FAVOUR, QUESTS, type QuestId } from '../core/quests';
@@ -759,10 +759,10 @@ export class Panels {
 
   private screen: ScreenRun | null = null;
   /** 入学测试 / 分级考核: run is null while picking the starting band. */
-  private place: { run: PlaceRun | null; daily: boolean; hold: boolean } | null = null;
+  private place: { run: PlaceRun | null; daily: boolean; hold: boolean; board?: PickBoard; picked: Set<string> } | null = null;
 
   showPlacement(daily: boolean): void {
-    this.place = { run: null, daily, hold: false };
+    this.place = { run: null, daily, hold: false, picked: new Set() };
     this.show('place');
   }
 
@@ -771,31 +771,45 @@ export class Panels {
     const wrap = h('div');
     const run = pl.run;
     if (!run) {
-      // 0.8.3 反馈: the test looks like a scene with the 考官, bands grouped by stage as tiles, up to 120.
+      // Lucas 11-26: whole words to click instead of truncated band lines; invented words mixed in; the typing check
+      // then starts where the clicks point.
+      if (!pl.board) pl.board = this.ctrl.placeBoard();
+      const board = pl.board;
+      const picked = pl.picked;
+      const count = h('span.small.muted', `已点 ${picked.size} 个`);
       wrap.append(
-        h('div.place-head', portrait('考官', 3) ?? '', h('div', h('div.place-say', '「Was kannst du schon?」'), h('div.small.muted', '测一下你已经会多少词：会的直接斩杀，从你还不会的地方开始打。约 5 到 15 分钟，随时可以结束。只给中文，打德语，名词带冠词（der Tee）。不会就点「不会」，不扣任何东西，测出的等级只会往上调。'))),
-        h('p.place-ask', '扫一眼每段的词，点你大概认识到的那一段：'),
+        h('div.place-head', portrait('考官', 3) ?? '', h('div', h('div.place-say', '「Was kannst du schon?」'), h('div.small.muted', '先点出你认识的词（知道大概意思就算），我从你认识到的地方开始考几道打字题确认。会的直接斩杀，测出的等级只会往上调，随时可以结束。里面混了几个不存在的词，别乱点。'))),
+        h('p.place-ask', '点出你认识的词：'),
       );
-      const samples = bandSamples();
-      const n = bandCount();
-      const groups: Array<[string, number, number]> = [['A1 · 1–30 级', 1, 30], ['A2 · 31–80 级', 31, 80], ['B1 · 81–120 级', 81, 120]];
+      const groups: Array<[string, number, number]> = [['A1', 1, 30], ['A2', 31, 80], ['B1', 81, 120], ['B2', 121, 160]];
       for (const [label, glo, ghi] of groups) {
-        const grid = h('div.place-grid');
-        for (let i = 0; i < n; i++) {
-          const [lo, hi] = bandRange(i);
-          if (lo < glo || lo > ghi) continue;
-          grid.append(
-            h(
-              'button.place-band',
-              { onclick: () => this.ctrl.placeStart(i), title: samples[i].map((w) => fullForm(w)).join(' · ') },
-              h('b', `${lo}–${hi}`),
-              h('span', samples[i].slice(0, 3).map((w) => fullForm(w)).join(' · ')),
-            ),
-          );
+        const tiles = board.items.filter((it) => {
+          const lo = bandRange(it.band)[0];
+          return lo >= glo && lo <= ghi;
+        });
+        if (!tiles.length) continue;
+        const grid = h('div.place-words');
+        for (const it of tiles) {
+          const btn = h(`button.place-word-tile${picked.has(it.key) ? '.on' : ''}`, {}, it.label) as HTMLButtonElement;
+          btn.onclick = () => {
+            if (picked.has(it.key)) picked.delete(it.key);
+            else picked.add(it.key);
+            btn.classList.toggle('on', picked.has(it.key));
+            count.textContent = `已点 ${picked.size} 个`;
+          };
+          grid.append(btn);
         }
-        if (grid.childElementCount) wrap.append(h('div.place-stage', label), grid);
+        wrap.append(h('div.place-stage', label), grid);
       }
-      wrap.append(h('div.row', { style: 'margin-top:12px' }, h('button.btn.primary', { onclick: () => this.ctrl.placeStart(0) }, '不确定，从头开始测')));
+      wrap.append(
+        h(
+          'div.row',
+          { style: 'margin-top:12px;align-items:center;gap:10px' },
+          h('button.btn.primary', { onclick: () => this.ctrl.placeFromPicks(board, picked) }, '点好了，开始确认 →'),
+          h('button.btn', { onclick: () => this.ctrl.placeStart(0) }, '不点了，从头开始测'),
+          count,
+        ),
+      );
       return wrap;
     }
     const top = topPassed(run);
@@ -806,7 +820,7 @@ export class Panels {
       wrap.append(
         h('h3', o.gained.length ? `测完了：从 ${o.level} 级起步，进第 ${o.region} 区「${rz}」。` : top < 0 ? '测完了：从头开始最合适。' : `测完了：你现在的等级已经够了（测出 ${levelFor(top)} 级）。`),
         h('p', `写对 ${o.retired} 个，直接斩杀。` + (o.half ? `冠词或拼写差一点的 ${o.half} 个记成半名，野外再写对一次就归名。` : '')),
-        o.gaps ? h('p', `会的那几段里有 ${o.gaps} 个词没写出来，它们会作为复习怪跟着你，按你的等级出、经验照拿。`) : '',
+        o.gaps ? h('p', `会的那几段里有 ${o.gaps} 个词没写出来或没点，它们会作为复习怪跟着你，按你的等级出、经验照拿。`) : '',
         o.placed ? h('p', `没抽到的 ${o.placed} 个词先算你会了（推定会）。之后每场战斗可能抽查一道：写对就斩杀，写错就变成复习怪。想快点清掉，可以找考官做全量筛选。`) : '',
         h('div.row', h('button.btn.primary.duel-next', { onclick: () => this.close() }, '出发 ↵')),
       );
@@ -817,6 +831,15 @@ export class Panels {
     const mine = run.results.filter((r) => r.band === run.band).slice(-run.asked);
     const pips = h('div.place-pips', ...Array.from({ length: need }, (_, k) => h(`i${mine[k] ? (mine[k].res === 'ok' || mine[k].res === 'half' ? '.ok' : '.no') : ''}`)));
     wrap.append(h('div.place-progress', h('b', `${lo}–${hi} 级`), pips, h('span.small.muted', `目前测出：${top < 0 ? '从头开始' : `${lv} 级起步（第 ${regionFor(lv)} 区）`}`)));
+    const c = run.claim;
+    if (c && !run.results.length)
+      wrap.append(
+        h(
+          'p.small.muted',
+          (c.top < 0 ? '你点的词不多，从头开始考。' : `按你点的词，先从 ${bandRange(c.top)[0]}–${bandRange(c.top)[1]} 级考起：答得好往上走，答不上往下退。`) +
+            (c.fakes.length ? `你点了 ${c.fakes.length} 个不存在的词（${c.fakes.join('、')}），起点往下调了。` : ''),
+        ),
+      );
     const l = run.last;
     if (l) {
       const fb = h(`div.feedback.${l.res === 'ok' ? 'ok' : 'no'}`);
