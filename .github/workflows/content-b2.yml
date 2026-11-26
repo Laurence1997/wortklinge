@@ -18,6 +18,9 @@ on:
       original:
         description: 'Original articles (Luna) for words no Wikipedia/Wikinews article covers (0 = all, -1 = skip)'
         default: '-1'
+      c1:
+        description: 'C1 articles for zones 17–20 from the cached Wikipedia pages: articles per zone in total (-1 = skip)'
+        default: '-1'
       wiki_minutes:
         description: 'Wikipedia downloads: minutes before scoring what it has (the next run continues)'
         default: '200'
@@ -38,6 +41,7 @@ jobs:
       HOEREN: ${{ github.event.inputs.hoeren || '0' }}
       ARTIKEL: ${{ github.event.inputs.artikel || '-1' }}
       ORIGINAL: ${{ github.event.inputs.original || '-1' }}
+      C1: ${{ github.event.inputs.c1 || '-1' }}
       WIKI_MINUTES: ${{ github.event.inputs.wiki_minutes || '200' }}
     steps:
       - uses: actions/checkout@v4
@@ -53,7 +57,7 @@ jobs:
         run: python3 scripts/wortschatz/artikel_pool.py
       # Searches and fetched pages survive between runs, so a slow or stopped run is never lost.
       - name: Restore Wikipedia cache
-        if: env.ARTIKEL != '-1'
+        if: env.ARTIKEL != '-1' || env.C1 != '-1'
         uses: actions/cache/restore@v4
         with:
           path: data/wortschatz/build/wiki-cache
@@ -66,7 +70,7 @@ jobs:
           git config user.email '41898233+github-actions[bot]@users.noreply.github.com'
           python3 -u scripts/wortschatz/artikel_wiki_pool.py || echo "Wikipedia pool failed"
       - name: Save Wikipedia cache
-        if: always() && env.ARTIKEL != '-1'
+        if: always() && (env.ARTIKEL != '-1' || env.C1 != '-1')
         uses: actions/cache/save@v4
         with:
           path: data/wortschatz/build/wiki-cache
@@ -77,6 +81,9 @@ jobs:
       - name: Original articles
         if: env.ORIGINAL != '-1'
         run: LIMIT=$ORIGINAL python3 scripts/wortschatz/artikel_original_luna.py
+      - name: C1 articles
+        if: env.C1 != '-1'
+        run: PER_ZONE=$C1 python3 scripts/wortschatz/artikel_c1_luna.py
       - name: Commit
         if: always()
         run: |
