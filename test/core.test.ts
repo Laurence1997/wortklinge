@@ -177,8 +177,8 @@ describe('levels', () => {
     s.flags.a2Passed = true;
     s.flags.b1Passed = true;
     addXp(s, 100_000_000);
-    // 审查 E3: 0.8 stops at the release cap (120) until 1.0 opens B2.
-    expect(s.level).toBe(CONFIG.releaseCap);
+    // 1.0: B1 passed → the B2 trial cap (160) until B2 is passed.
+    expect(s.level).toBe(160);
     s.flags.b2Passed = true;
     addXp(s, 1_000_000_000);
     expect(s.level).toBe(Math.min(CONFIG.levelCap, CONFIG.releaseCap));

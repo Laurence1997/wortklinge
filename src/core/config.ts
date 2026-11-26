@@ -59,7 +59,7 @@ export const CONFIG = {
    *  first 突破试炼 stage not passed yet (src/core/stages.ts: 30 / 80 / 120 / 160). */
   levelCap: 200,
   /** 审查 E3 (Lucas 11-26「按推荐」): 0.8 stops at 120 (regions 1–12); 1.0 opens B2 by raising this to levelCap. */
-  releaseCap: 120,
+  releaseCap: 200,
   /** 终极技能 (30 级, 句型填空版): both blanks right / one right. */
   ultimate: { both: 3, one: 1.5 },
   /** 现在完成时 (0.6 第 5 块): haben/sein stance from 21 (wrong picks free until 22), 填分词 by kind 21/24/27,

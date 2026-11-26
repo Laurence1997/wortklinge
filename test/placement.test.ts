@@ -29,11 +29,12 @@ function play(s: GameState, run: PlaceRun, knows: number, rng = makeRng(9)) {
 }
 
 describe('入学测试', () => {
-  it('bands cover levels 1–30 in steps of 3, then 31–120 in steps of 5, with sample words', () => {
-    expect(bandCount()).toBe(28);
+  it('bands cover levels 1–30 in steps of 3, then 31–160 in steps of 5 (1.0: B2 words), with sample words', () => {
+    expect(bandCount()).toBe(36);
+    expect(bandRange(35)).toEqual([156, 160]);
     expect(bandRange(10)).toEqual([31, 35]);
     expect(bandRange(27)).toEqual([116, 120]);
-    expect(levelFor(27)).toBe(120);
+    expect(levelFor(27)).toBe(121);
     expect(regionFor(65)).toBe(7);
     expect(levelFor(-1)).toBe(1);
     expect(levelFor(0)).toBe(4);
