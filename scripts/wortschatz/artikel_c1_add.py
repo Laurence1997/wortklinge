@@ -31,6 +31,10 @@ for a in json.load(open(sys.argv[2])):
         paras.append(' '.join(parts).replace('｜', ' ').strip())
     n = len(WORD.findall(' '.join(paras)))
     assert 440 <= n <= 680, (a['t'], n)
+    bad = re.findall(r'.{0,30}(?:\(\s*[,;:)]|\[\s*\]|\(\s*\w+ ?\)\s*\(|:$)', ' '.join(paras))
+    assert not re.search(r'\(\s*[,;:)]|\[\s*\]', ' '.join(paras)), (a['t'], bad)
+    g_missing = [g[0] for g in a['g'] if g[0].lower() not in ' '.join(paras).lower()]
+    assert not g_missing, (a['t'], 'gloss not in text', g_missing)
     assert len(a['zh']) == len(paras), (a['t'], len(a['zh']), len(paras))
     assert len(a['q']) == 3 and all(len(q) == 5 for q in a['q']), a['t']
     url = f'https://de.wikipedia.org/w/index.php?oldid={rev}'
