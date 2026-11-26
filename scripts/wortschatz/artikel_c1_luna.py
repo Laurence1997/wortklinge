@@ -98,7 +98,7 @@ for z in (17, 18, 19, 20):
 print(f'sending {len(plan)}: ' + ', '.join(f'{z}区 {sum(1 for p in plan if p[0] == z)}' for z in (17, 18, 19, 20)))
 
 ABRIDGE = """你是德语母语的编辑，把一篇德语维基百科条目删减成游戏里给 C1 学习者读的文章（读者是在德国生活的中国人）。
-规则：只删句子和段落、把特别长的句子拆开；保留原文的措辞、句式和事实，不改写观点，不加原文没有的内容；保留 C1 水平的复杂句（名词化、分词结构、虚拟式等）；450–600 个词；分成 3–6 段；挑最能讲出一个话题的部分，开头要让人读得进去。标题可以缩短。
+规则：只删句子和段落、把特别长的句子拆开；保留原文的措辞、句式和事实，不改写观点，不加原文没有的内容；保留 C1 水平的复杂句（名词化、分词结构、虚拟式等）；470–600 个词（少于 450 个词会被退回，原文够长就别删太多）；分成 3–6 段；避开术语堆砌、数据罗列的段落，挑有故事、有观点的部分；挑最能讲出一个话题的部分，开头要让人读得进去。标题可以缩短。
 内容不适合（死亡、暴力、犯罪、战争、灾难伤亡、有争议的政治、读完压抑）就 "skip": true。
 再写：全文自然的简体中文翻译（分段对应）；3 道德语内容题，每题三个德语选项只有一个对，考理解和推断，错项合理但明显错，选项长短相近；一句中文改编说明（例如「删去第 3–5 段，拆分 2 个长句」）。
 只输出 JSON：{"skip":false,"title":"…","paras":["…"],"zh":["…"],"questions":[{"q":"…","qZh":"…","answer":"…","wrong":["…","…"]}],"note":"…"}"""
@@ -142,7 +142,7 @@ def work(item):
         zh = c.get('zh') or zh
         qs = qs_ok(c.get('questions')) or qs
     n = len(WORD.findall(text))
-    if not 400 <= n <= 680: return ('len', title, n)
+    if not 440 <= n <= 680: return ('len', title, n)
     gloss = [{'w': str(g.get('w', '')).strip(), 'de': str(g.get('de', '')).strip(), 'zh': str(g.get('zh', '')).strip()}
              for g in c.get('gloss') or [] if g.get('w') and g.get('zh') and len(str(g.get('de', ''))) <= 40 and len(str(g['zh'])) <= 40]
     return ('ok', title, {'段': str(z), '标题': str(a.get('title') or title).strip(), '例句': '｜'.join(paras),
