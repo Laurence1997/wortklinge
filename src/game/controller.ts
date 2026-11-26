@@ -2817,9 +2817,13 @@ export class Controller {
     if (!has(s.level, 'order')) return say([{ who: W, text: '「Bitte warten Sie.」（21 级再来）' }]);
     const forms = (s.flags.weberForms as number) ?? 0;
     const next = WEBER.tiers.find((t) => t > forms);
-    const lines: Line[] = forms
+    // 18 区之后 (Frau Weber 的选择): she has left the 秩序会 and now helps people with their forms; the forms stay.
+    const left: Line[] = s.flags.weber18 ? [{ who: W, text: '「Ich bin nicht mehr beim Orden. Aber beim Ausfüllen helfe ich gern.」\n（我已经不在秩序会了。不过帮大家填表，我很乐意。）' }] : [];
+    const lines: Line[] = left.length && forms
+      ? left
+      : forms
       ? [{ who: W, text: `「Guten Tag. Noch ein Formular?」（已交 ${forms} 份${next ? `，再交 ${next - forms} 份升下一档声望` : '，秩序会声望已满'}）` }]
-      : WEBER.intro.map((t, i) => ({ who: i === 2 ? SYS : W, text: t }));
+      : [...left, ...WEBER.intro.map((t, i) => ({ who: i === 2 ? SYS : W, text: t }))];
     say(lines, undefined, [
       {
         label: '填一份登记表',
