@@ -537,3 +537,22 @@ body.bright #boss .btn.primary { background: var(--accent); border-color: var(--
 body.bright #boss kbd { background: transparent; }
 body.bright #boss .bar, body.bright #boss .timer { background: #000; border-color: var(--line); }
 body.bright #boss .bar > span { color: var(--ink); text-shadow: 0 0 2px #000; }
+/* 状态框 (Lucas 2026-11-26: 血条里的数字看不清). Bars 16 px tall, label left and numbers right in white with a dark
+   edge, readable on red, violet and the empty part alike. Also used by the battle cards. */
+#hud .bar, .b-me .bar, .b-mon .bar { height: 16px; border-radius: 3px; overflow: hidden; }
+#hud .bar > span, .b-me .bar > span, .b-mon .bar > span,
+body.bright #hud .bar > span, body.bright .b-me .bar > span, body.bright .b-mon .bar > span {
+  inset: 0 6px; display: flex; align-items: center; font: 700 11px/1 var(--sans); color: #fff; letter-spacing: .3px;
+  text-shadow: -1px 0 #2a1208, 1px 0 #2a1208, 0 -1px #2a1208, 0 1px #2a1208, 0 0 3px rgba(0,0,0,.6);
+}
+#hud .bar > span.r, .b-me .bar > span.r, .b-mon .bar > span.r { justify-content: flex-end; font-family: var(--mono); font-size: 12px; }
+#hud .bar.xp, #hud .bar.hp { margin-top: 8px; }
+body.bright #hud .bar, body.bright .b-me .bar, body.bright .b-mon .bar { background: #d9ccb6; }
+#hud { width: 280px; }
+#hud .name { font-size: 15px; }
+.hud-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px 4px; margin-top: 10px; text-align: center; }
+.hud-stats > div { display: flex; flex-direction: column; align-items: center; padding: 3px 0; border-radius: 4px; background: rgba(0,0,0,.18); }
+body.bright .hud-stats > div { background: rgba(120, 80, 30, .07); }
+.hud-stats b { font: 700 15px/1.2 var(--mono); color: var(--ink); }
+.hud-stats span { font-size: 11px; color: var(--muted); }
+.hud-zone { display: flex; justify-content: space-between; gap: 8px; margin-top: 8px; padding-top: 6px; border-top: 1px dashed var(--line); font-size: 12px; color: var(--muted); }
