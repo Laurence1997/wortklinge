@@ -16,6 +16,16 @@ SYSTEM = """你在审校德语学习游戏的中文翻译，读者是在德国�
 输出 JSON：{"items":[{"id":"原样抄行首的 id","problem":"一句中文说明哪个词错在哪","fix":"改好的完整中文翻译"}]}，没有问题输出 {"items":[]}。"""
 S = json.load(open(os.path.join(ROOT, 'proof/out/sentences.json'), encoding='utf-8'))
 items = [s for s in S if s.get('zh') and len(s['text']) <= 600 and s.get('kind') not in ('word', 'plural')]
+# Resume by sentence id, not by batch: translations filled in between shift the batch boundaries.
+DONE = set(json.load(open(os.path.join(ROOT, 'proof/out/zh-sentences-done-ids.json')))) if os.path.exists(os.path.join(ROOT, 'proof/out/zh-sentences-done-ids.json')) else set()
+JL = os.path.join(ROOT, 'proof/out/zh-sentences.jsonl')
+if os.path.exists(JL):
+    for l in open(JL, encoding='utf-8'):
+        try:
+            DONE |= set(json.loads(l).get('ids') or [])
+        except Exception:
+            pass
+items = [s for s in items if s['id'] not in DONE]
 LIMIT = int(os.environ.get('ZH_LIMIT', '0') or 0)
 if LIMIT: items = items[:LIMIT]
 B = 40
@@ -24,7 +34,7 @@ batches = []
 for i in range(0, len(items), B):
     b = items[i:i + B]
     user = '\n'.join(json.dumps({'id': s['id'], 'de': s['text'], 'zh': s['zh']}, ensure_ascii=False) for s in b)
-    batches.append((b[0]['id'], user, None))
+    batches.append((b[0]['id'], user, [s['id'] for s in b]))
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import dsrun
 dsrun.run('zh-sentences', SYSTEM, batches, MODEL, float(os.environ.get('ZH_BUDGET', '26')))

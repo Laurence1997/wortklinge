@@ -63,7 +63,7 @@ def run(name, system, batches, model, budget, threads=10, push_every=100, time_l
                     state['cost'] += c
                     state['n'] += 1
                     with open(out, 'a', encoding='utf-8') as f:
-                        f.write(json.dumps({'batch': bid, 'items': items}, ensure_ascii=False) + '\n')
+                        f.write(json.dumps({'batch': bid, 'ids': b[2], 'items': items}, ensure_ascii=False) + '\n')
                     if state['cost'] >= budget:
                         state['stop'] = f'budget {budget} CNY reached'
                     elif time.time() - t0 > time_limit:
