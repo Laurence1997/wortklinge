@@ -19,7 +19,7 @@ import { BRANCHES, canLearn, canLight, learn, learned, lightStar, litStars, ROW_
 import { finishStarTrial, starTrial, STAR_TRIAL } from '../core/stars';
 import { fullForm, fullFormLong, genderOf, reflNote, hasArticleQuestion, WORD_BY_ID, WORDS, zhWithPos } from '../data/words';
 import type { Controller } from '../game/controller';
-import { $, clear, h, umlautButtons } from './dom';
+import { $, autoGrow, clear, h, umlautButtons } from './dom';
 import { BREAK, examParts, examPassed, PART_ZH, type Exam } from '../core/breakthrough';
 import { pendingScenes, regionLeft, type ScreenRun } from '../core/screen';
 import { bandRange, levelFor, PLACE, regionFor, topPassed, type PickBoard, type PlaceRun } from '../core/placement';
@@ -167,9 +167,16 @@ export class Panels {
     }
     if (this.open === 'ask' && this.asking) {
       const a = this.asking;
-      const input = (a.multi
-        ? h('textarea.ask', { rows: 6, autocomplete: 'off', spellcheck: 'false', placeholder: 'Ich …（Ctrl + Enter 交）', style: 'width:100%;font-size:18px' })
-        : h('input.ask', { type: 'text', autocomplete: 'off', spellcheck: 'false', placeholder: 'Ich …' })) as HTMLInputElement;
+      // 1.0.10 (Lucas): every reply box is a full-width multi-line box that grows with the text. Enter sends,
+      // Shift+Enter starts a new line; 小作文 (multi) keeps Ctrl+Enter to send so Enter can start a new line.
+      const input = h('textarea.ask', {
+        rows: a.multi ? 6 : 3,
+        autocomplete: 'off',
+        spellcheck: 'false',
+        placeholder: a.multi ? 'Ich …（Enter 换行，Ctrl + Enter 交）' : 'Ich …（Enter 发送，Shift + Enter 换行）',
+        style: 'width:100%;box-sizing:border-box;font-size:18px;line-height:1.5;resize:vertical',
+      }) as HTMLTextAreaElement;
+      autoGrow(input);
       // 冒险者语音对话: hold to speak German (Chrome's recognition); the text goes the same way as typed.
       let heard = '';
       const go = () => {
@@ -201,13 +208,13 @@ export class Panels {
           }, '🎤 按住说')
         : null;
       input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && (!a.multi || e.ctrlKey || e.metaKey)) {
+        if (e.key === 'Enter' && !e.isComposing && (a.multi ? e.ctrlKey || e.metaKey : !e.shiftKey)) {
           e.preventDefault();
           e.stopPropagation();
           go();
-        } else if (a.multi) e.stopPropagation();
+        } else e.stopPropagation(); // typing in the box never reaches the game's keys
       });
-      panel.append(h('h2', h('span', a.title), h('button.btn.ghost', { onclick: () => this.close() }, '不回答 Esc')), h('p', { style: 'white-space:pre-line' }, a.prompt), h('div.typing', input, umlautButtons(input), mic, h('button.btn.primary', { onclick: go }, a.multi ? '交 Ctrl+↵' : '回复 ↵')));
+      panel.append(h('h2', h('span', a.title), h('button.btn.ghost', { onclick: () => this.close() }, '不回答 Esc')), h('p', { style: 'white-space:pre-line' }, a.prompt), input, h('div.typing', umlautButtons(input), mic, h('button.btn.primary', { onclick: go }, a.multi ? '交 Ctrl+↵' : '回复 ↵')));
       clear(el).append(panel);
       el.onclick = null;
       window.setTimeout(() => input.focus(), 0);
@@ -543,7 +550,8 @@ export class Panels {
       wrap.append(h('div.feedback.ok', j.saved ? `记进日记了。经验 +${j.saved}` : '记进日记了。'), h('pre.small', j.text));
       return wrap;
     }
-    const ta = h('textarea.journal', { rows: 5, spellcheck: 'false', autocomplete: 'off', placeholder: 'Heute …', style: 'width:100%;font-size:18px' }) as HTMLTextAreaElement;
+    const ta = h('textarea.journal', { rows: 5, spellcheck: 'false', autocomplete: 'off', placeholder: 'Heute …', style: 'width:100%;box-sizing:border-box;font-size:18px;line-height:1.5;resize:vertical' }) as HTMLTextAreaElement;
+    autoGrow(ta, 16);
     ta.value = j.text;
     ta.oninput = () => (j.text = ta.value);
     const check = () => {

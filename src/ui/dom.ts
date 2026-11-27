@@ -50,7 +50,7 @@ export function isTyping(): boolean {
 }
 
 /** ä ö ü ß buttons that type into the given input at the caret. */
-export function umlautButtons(input: HTMLInputElement): HTMLElement {
+export function umlautButtons(input: HTMLInputElement | HTMLTextAreaElement): HTMLElement {
   const wrap = h('div.umlauts');
   for (const ch of ['ä', 'ö', 'ü', 'ß', 'Ä', 'Ö', 'Ü']) {
     wrap.append(
@@ -66,6 +66,7 @@ export function umlautButtons(input: HTMLInputElement): HTMLElement {
             const e = input.selectionEnd ?? s;
             input.value = input.value.slice(0, s) + ch + input.value.slice(e);
             input.setSelectionRange(s + 1, s + 1);
+            input.dispatchEvent(new Event('input')); // lets a growing text box resize
             input.focus();
           },
         },
@@ -74,4 +75,15 @@ export function umlautButtons(input: HTMLInputElement): HTMLElement {
     );
   }
   return wrap;
+}
+
+/** A text box that grows with its text (1.0.10, Lucas: long replies must stay visible), from `min` rows up to `max`. */
+export function autoGrow(box: HTMLTextAreaElement, max = 12): void {
+  const fit = () => {
+    box.style.height = 'auto';
+    const line = parseFloat(getComputedStyle(box).lineHeight) || 26;
+    box.style.height = `${Math.min(box.scrollHeight + 2, line * max + 20)}px`;
+  };
+  box.addEventListener('input', fit);
+  window.setTimeout(fit, 0);
 }
