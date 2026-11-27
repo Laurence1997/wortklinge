@@ -268,7 +268,7 @@ export class WorldScene extends Phaser.Scene {
     this.monsters = [];
     for (const z of this.zones) if (z.monsters) this.fillZone(z.id);
     this.placeEcho();
-    this.ctrl.afterSpawnAll();
+    this.ctrl.afterSpawnAll(this);
   }
 
   fillZone(zone: ZoneId) {

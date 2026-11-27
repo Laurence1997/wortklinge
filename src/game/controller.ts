@@ -339,7 +339,10 @@ export class Controller {
   }
 
   /** Called by the scene after every full respawn. */
-  afterSpawnAll(): void {
+  afterSpawnAll(scene: WorldScene): void {
+    // The first spawn runs inside the scene's create(), before onSceneReady: without this a save that has had the
+    // intro but not yet named the bread crashed on load (no HUD, no menu, empty scene panel; Lucas 2026-11-27).
+    this.scene = scene;
     if (this.state.flags.intro && !this.state.flags.brotDone) this.spawnBread();
   }
 
