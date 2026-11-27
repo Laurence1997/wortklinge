@@ -11,7 +11,7 @@ on:
       model:
         type: choice
         options: [deepseek-v4-pro, deepseek-flash]
-        default: deepseek-v4-pro
+        default: deepseek-flash
       limit:
         description: 'Only the first N words (0 = all)'
         default: '0'
@@ -29,7 +29,7 @@ jobs:
       - name: Check
         env:
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
-          ZH_MODEL: ${{ inputs.model || 'deepseek-v4-pro' }}
+          ZH_MODEL: ${{ inputs.model || 'deepseek-flash' }}
           ZH_LIMIT: ${{ inputs.limit || '0' }}
         run: python3 scripts/proof/zh_gloss_check.py
       - uses: actions/upload-artifact@v4
@@ -40,7 +40,7 @@ jobs:
   sentences:
     # Lucas 2026-11-27 选 2: check every sentence translation and fill the missing B2 example translations.
     # Saved per batch and pushed back to this branch every 100 batches; stops at once on 402 (no balance) or at the budget;
-    # a rerun resumes from proof/out/*.jsonl. Budget: fill 3 CNY + sentences 26 CNY.
+    # a rerun resumes from proof/out/*.jsonl. Budget: fill 3 CNY + sentences 8 CNY. Lucas 11-27: use deepseek-flash.
     if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[sentences]')
     runs-on: ubuntu-latest
     timeout-minutes: 180
@@ -58,14 +58,14 @@ jobs:
       - name: Fill missing translations
         env:
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
-          ZH_MODEL: ${{ inputs.model || 'deepseek-v4-pro' }}
+          ZH_MODEL: ${{ inputs.model || 'deepseek-flash' }}
         run: python3 scripts/proof/zh_fill.py
       - name: Check sentences
         env:
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
-          ZH_MODEL: ${{ inputs.model || 'deepseek-v4-pro' }}
+          ZH_MODEL: ${{ inputs.model || 'deepseek-flash' }}
           ZH_LIMIT: ${{ inputs.limit || '0' }}
-        run: python3 scripts/proof/zh_sentence_check.py
+        run: ZH_BUDGET=8 python3 scripts/proof/zh_sentence_check.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:
