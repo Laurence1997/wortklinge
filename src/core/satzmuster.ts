@@ -34,9 +34,14 @@ export function parsePat(line: string): PatLine | null {
   return { shown, full: de.replace(/[{}]/g, ''), zh, blanks, answer: blanks.join(' ') };
 }
 
-export function patLine(w: Word): PatLine | null {
-  const l = LEX_PAT[w.id];
-  return l ? parsePat(l) : null;
+/** How many examples a pattern has (1–3; 1.0.9 added two per pattern). */
+export const patCount = (w: Word): number => LEX_PAT[w.id]?.length ?? 0;
+
+/** Example k of a pattern (wraps round); the key words are the same in all of them, only the sentence changes. */
+export function patLine(w: Word, k = 0): PatLine | null {
+  const ls = LEX_PAT[w.id];
+  if (!ls?.length) return null;
+  return parsePat(ls[((k % ls.length) + ls.length) % ls.length]);
 }
 
 /** Stage of a region (A1 1–3, A2 4–8, B1 9–12, B2 13+): wrong options come from patterns of the same stage. */

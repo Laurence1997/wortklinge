@@ -41,7 +41,7 @@ import { dungeonTask } from './gram/dungeons';
 import { hasMirror, mirrorTask, MIRROR } from './gram/mirror';
 import { partnerOf } from './gram/partner';
 import { articleOfWord, ARTICLE_B2_CFG, contextLine, regionArticleFor } from './gram/articleB2';
-import { gradePat, isPattern, patLine, patOptions, optionText } from './satzmuster';
+import { gradePat, isPattern, patCount, patLine, patOptions, optionText } from './satzmuster';
 import { articleFor, KIND_ZH, noticeById, noticeFor, noticeTask, NOTICE_CFG } from './gram/notice';
 
 /** A grammar task as a battle question (choice when it has options, typed otherwise). */
@@ -296,6 +296,8 @@ export interface Battle {
   perfekt?: boolean;
   /** 复数怪 (0.5, Lv11+): a whole crowd of this word, die Äpfel. Only the die stance is right. */
   pluralMon?: boolean;
+  /** 句型怪 (1.0.9): which of its examples this fight uses, picked once so its line and its questions match. */
+  patK?: number;
   /** 残句 (0.5): a sentence monster with no word nameplate. Finish the half → pick its meaning → write it whole. */
   phrase?: SayLine;
   /** 残句: how many of its three steps are done. */
@@ -688,7 +690,7 @@ function nextIntent(s: GameState, b: Battle, rng: Rng): Intent {
     intent = { ...intent, line: '… mmh … mmh …', zh: '一群同一个词的怪挤在一起嘟囔 · 复数一律 die', full: undefined, fullZh: undefined, caseArt: undefined };
   } else if (!tut && intent.kind !== 'charge' && intent.kind !== 'flee' && !intent.layers.includes('time') && isPattern(b.word)) {
     // 句型怪: it says its example with the key words swallowed; the Chinese is the question's anyway.
-    const p = patLine(b.word);
+    const p = patLine(b.word, (b.patK ??= Math.floor(rng() * patCount(b.word))));
     if (p) intent = { ...intent, line: p.shown.replace(/___/g, '… mmh …').replace(/\s+/g, ' ').trim(), zh: p.zh, full: p.full, fullZh: p.zh, caseArt: undefined };
   } else if (!tut && intent.kind !== 'charge' && intent.kind !== 'flee' && !intent.layers.includes('time')) {
     // 格位姿态 (Lv7+): only sentences whose slot is in a case this level reads, and the stance must match the slot.
@@ -1087,7 +1089,7 @@ export function contextQuestion(s: GameState, b: Battle, rng: Rng): Question | n
   // 审查修订: 复习伙伴 is the skin of 语境复习 — your partner word brings the due word's question.
   const pw = due ? partnerOf(s) : null;
   const tag = due ? (pw ? `复习伙伴 ${fullForm(pw)} · 语境复习` : '语境复习') : '抽查（入学测试推定你会）';
-  const pl = isPattern(rw) ? patLine(rw) : null;
+  const pl = isPattern(rw) ? patLine(rw, Math.floor(rng() * patCount(rw))) : null;
   if (pl) return { type: 'cloze', review: id, pat: true, prompt: `${tag} · 句型：按顺序打出空里的关键词（空格隔开）· ${pl.zh}`, focus: pl.shown, answer: pl.answer, clozeMode: 'base', full: pl.full, clozeZh: pl.zh };
   const c = makeCloze(rw, 'form', rng);
   if (c) return { type: 'cloze', review: id, prompt: `${tag}：打出这里要的形式（名词带冠词，动词变位）· ${c.zh}`, focus: c.shown, answer: c.answer, clozeMode: 'form', full: c.full, clozeZh: c.zh };
@@ -1575,7 +1577,7 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
 /** 句型怪: the question of a classic-pattern monster (src/core/satzmuster.ts), or null when its line is missing. */
 function patternQ(s: GameState, b: Battle, move: Move, rng: Rng, skillId?: string): Question | null {
   const w = b.word;
-  const p = patLine(w);
+  const p = patLine(w, (b.patK ??= Math.floor(rng() * patCount(w))));
   if (!p) return null;
   // 终结技: write the whole example from the Chinese.
   if (move === 'sentence') return { type: 'sentence', prompt: '终结技 · 句型：看中文，写出整句', focus: p.zh, answer: p.full, full: p.full };
