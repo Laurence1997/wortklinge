@@ -5,7 +5,7 @@ on:
   # A push of the script on this content branch runs it (workflow_dispatch only works once the file is on main).
   push:
     branches: ['claude/project-thread-kxwdby']
-    paths: ['scripts/proof/zh_sentence_check.py', '.github/workflows/zh-check.yml']
+    paths: ['scripts/proof/*.py', '.github/workflows/zh-check.yml']
   workflow_dispatch:
     inputs:
       model:
@@ -59,3 +59,18 @@ jobs:
         with:
           name: zh-sentences
           path: proof/out/zh-sentences.json
+
+  nouns:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[nouns]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check
+        env:
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+        run: python3 scripts/proof/noun_check.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nouns
+          path: proof/out/nouns.json
