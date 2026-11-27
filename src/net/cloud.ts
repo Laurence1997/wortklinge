@@ -3,7 +3,7 @@
 // Only the publishable (anon) key lives here; row-level security limits each player to their own save.
 
 import { createClient, type Session } from '@supabase/supabase-js';
-import { LEXICON, migrate, type GameState } from '../core/state';
+import { LEXICON, migrate, savesBlocked, type GameState } from '../core/state';
 
 // The one place the project's address and public key live.
 export const SUPABASE_URL = 'https://xmttluclhrjhgokemnso.supabase.co';
@@ -228,7 +228,7 @@ let lastRemoteAt: string | null = null;
 
 export async function push(s: GameState): Promise<boolean> {
   const id = uid();
-  if (!id || cloudLocked) return false;
+  if (!id || cloudLocked || savesBlocked()) return false;
   try {
     // 审查 A1 ②: someone else (another tab or computer) wrote a newer save since we last synced: stop and say so.
     const head = await withTimeout(sb.from('saves').select('updated_at').eq('user_id', id).maybeSingle());
@@ -267,6 +267,7 @@ export function schedulePush(s: GameState): void {
   if (!uid() || timer) return;
   timer = window.setTimeout(() => {
     timer = 0;
+    if (savesBlocked()) return; // a newer tab of this browser took over
     void push(s);
   }, 30_000);
 }

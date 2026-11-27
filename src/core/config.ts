@@ -104,7 +104,6 @@ export const CONFIG = {
 
   damage: {
     roll: [0.85, 1.15] as [number, number],
-    vsDefend: 0.3,
     maxMultiplierOfBase: 6,
   },
 

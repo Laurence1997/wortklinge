@@ -3,7 +3,7 @@ import { newGame } from '../src/core/state';
 import { WORDS, WORD_BY_ID } from '../src/data/words';
 import { contextQuestion, gradeQuestion, makeQuestion, resolveTurn, startBattle } from '../src/core/combat';
 import { makeRng } from '../src/core/rng';
-import { isPattern, parsePat, patLine } from '../src/core/satzmuster';
+import { isPattern, parsePat, patCount, patLine } from '../src/core/satzmuster';
 import { LEX_SCENES } from '../src/data/lexicon';
 
 // 经典句型 · 句型怪 (Lucas 2026-11-27 选 1): 140 patterns live in field scenes by level; first a teaching choice,
@@ -26,6 +26,19 @@ describe('句型怪', () => {
     }
     expect(a1).toBe(21);
     expect(PATS.filter((w) => w.region! >= 13).length).toBe(40);
+  });
+
+  it('has three examples per pattern with the same key words (1.0.9)', () => {
+    for (const w of PATS) {
+      expect(patCount(w), w.id).toBe(3);
+      const a = patLine(w, 0)!;
+      for (const k of [1, 2]) {
+        const p = patLine(w, k)!;
+        expect(p.answer.toLowerCase(), w.id).toBe(a.answer.toLowerCase());
+        expect(p.full).not.toBe(a.full);
+      }
+      expect(patLine(w, 3)!.full).toBe(a.full);
+    }
   });
 
   it('parses several blanks', () => {

@@ -15,10 +15,11 @@ import { showTitle } from './ui/title';
 import { hideLoading, setTip, showLoading } from './ui/loading';
 import { toast } from './ui/feedback';
 import { setReportVersion } from './net/report';
+import { claimTab } from './net/tabLock';
 import { loadPassages } from './data/passages';
 import { loadArticlesB1, loadArticlesB2, loadArticlesC1 } from './data/articlesB2';
 
-const VERSION = '1.0.7';
+const VERSION = '1.0.9';
 setReportVersion(VERSION);
 // 审查 B3: the dev menu (+1 级 …) only on localhost or a dev build, never on the live site.
 const dev = new URLSearchParams(location.search).has('dev') && (import.meta.env.DEV || ['localhost', '127.0.0.1'].includes(location.hostname));
@@ -52,6 +53,7 @@ function boot(state: ReturnType<typeof newGame>) {
 }
 
 async function start() {
+  claimTab(); // 一个浏览器只开一个标签页: older tabs stop saving before this one reads the save
   await initCloud();
   // Login required: without a (cached) session the title screen only offers the login box.
   if (!cloud.session || mustChangePassword() || needsNickname()) return loginOnly();

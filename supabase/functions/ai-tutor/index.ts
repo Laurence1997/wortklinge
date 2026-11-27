@@ -2,8 +2,9 @@
 // function checks it in order and stops at the first step that decides:
 //   1. rule check: the sentence must use the monster's word (one of `forms`), else no model call at all;
 //   2. LanguageTool (public API): grammar / spelling matches, passed to the model as hints;
-//   3. the model (gpt-6-luna, OpenAI only — Lucas 2026-11-25, no fallback) returns a short JSON verdict.
-//      Out of credit or down → 502 'model', and the game says AI is unavailable for now; nothing else depends on it.
+//   3. the model returns a short JSON verdict: DeepSeek (deepseek-flash, thinking off) when DEEPSEEK_API_KEY is set
+//      (Lucas 2026-11-27, the OpenAI credit ran out), else OpenAI gpt-6-luna; if the first one fails the other is tried.
+//      Both out of credit or down → 502 'model', and the game says AI is unavailable for now; nothing else depends on it.
 // 决斗场 ('duel'): the model plays the scene's NPC in simple German and notes the player's mistakes. The client sends
 // 3–5 target words the player must use; this function reports by rule which of them the reply used. Used by the
 // 冒险者 (adventurers) now: `grammar` adds the region's grammar points (gramOk = the ones the player used right), and
@@ -12,11 +13,21 @@
 // 小作文 ('essay'): 3–5 sentences with the given words, graded like 'grade'.
 // `known`: the player's learned words; the model is told to stay inside them (and simple patterns) when it writes.
 // Every model call takes one use of the player's daily quota (public.ai_take; caps are settings, migration 0004).
-// Secrets (Supabase dashboard → Edge Functions → Secrets): OPENAI_API_KEY; optional AI_MODEL.
+// Secrets (Supabase dashboard → Edge Functions → Secrets): DEEPSEEK_API_KEY and/or OPENAI_API_KEY; optional DEEPSEEK_MODEL, AI_MODEL (OpenAI).
 // SUPABASE_URL and SUPABASE_ANON_KEY are provided by Supabase. No key ever reaches the browser.
 
 const ALLOWED = ['https://wortklinge.myreverielab.com', 'http://localhost:5173', 'http://localhost:4173'];
 const MODEL = Deno.env.get('AI_MODEL') || 'gpt-6-luna';
+const DS_MODEL = Deno.env.get('DEEPSEEK_MODEL') || 'deepseek-flash';
+
+interface Provider { name: string; url: string; key?: string; model: string; extra: Record<string, unknown>; ping: Record<string, unknown> }
+/** DeepSeek first (2026-11-27), OpenAI as the fallback; providers without a key are left out. */
+function providers(): Provider[] {
+  return [
+    { name: 'deepseek', url: 'https://api.deepseek.com/chat/completions', key: Deno.env.get('DEEPSEEK_API_KEY'), model: DS_MODEL, extra: { thinking: { type: 'disabled' }, temperature: 0.3 }, ping: { thinking: { type: 'disabled' }, max_tokens: 8 } },
+    { name: 'openai', url: 'https://api.openai.com/v1/chat/completions', key: Deno.env.get('OPENAI_API_KEY'), model: MODEL, extra: { reasoning_effort: 'low' }, ping: { max_completion_tokens: 64, reasoning_effort: 'low' } },
+  ].filter((p) => !!p.key);
+}
 
 function cors(origin: string | null): Record<string, string> {
   const o = origin && ALLOWED.includes(origin) ? origin : ALLOWED[0];
@@ -142,13 +153,9 @@ async function languageTool(text: string): Promise<Array<{ msg: string; bad: str
   }
 }
 
-/** One chat call to OpenAI (gpt-6-luna). Null when the key is missing, the account is out of credit or the call fails. */
+/** One chat call: DeepSeek, then OpenAI. Null when no key is set, both are out of credit or both calls fail. */
 async function chat(system: string, user: string): Promise<{ json: any; model: string } | null> {
-  const tries: Array<{ url: string; key?: string; model: string; extra: Record<string, unknown> }> = [
-    { url: 'https://api.openai.com/v1/chat/completions', key: Deno.env.get('OPENAI_API_KEY'), model: MODEL, extra: { reasoning_effort: 'low' } },
-  ];
-  for (const t of tries) {
-    if (!t.key) continue;
+  for (const t of providers()) {
     try {
       const r = await fetch(t.url, {
         method: 'POST',
@@ -156,13 +163,14 @@ async function chat(system: string, user: string): Promise<{ json: any; model: s
         body: JSON.stringify({ model: t.model, messages: [{ role: 'system', content: system }, { role: 'user', content: user }], response_format: { type: 'json_object' }, ...t.extra }),
       });
       if (!r.ok) {
-        console.error('openai', r.status, (await r.text()).slice(0, 300));
+        console.error(t.name, r.status, (await r.text()).slice(0, 300));
         continue;
       }
       const j = await r.json();
       const raw = j.choices?.[0]?.message?.content ?? '';
       return { json: JSON.parse(raw.slice(raw.indexOf('{'), raw.lastIndexOf('}') + 1)), model: t.model };
-    } catch {
+    } catch (e) {
+      console.error(t.name, String(e).slice(0, 200));
       continue;
     }
   }
@@ -218,18 +226,18 @@ Deno.serve(async (req) => {
   // Health check (no login): is the key there, and does a tiny call go through (credit left)? At most once a minute
   // per instance, a few tokens, so it can't be used to run up the bill.
   if (new URL(req.url).searchParams.get('ping') === '1') {
-    const key = Deno.env.get('OPENAI_API_KEY');
-    if (!key) return Response.json({ ok: false, why: 'no_key' }, { headers: h });
-    if (Date.now() - lastPing < 60_000) return Response.json({ ok: lastPingOk, cached: true, model: MODEL }, { headers: h });
+    const p = providers()[0];
+    if (!p) return Response.json({ ok: false, why: 'no_key' }, { headers: h });
+    if (Date.now() - lastPing < 60_000) return Response.json({ ok: lastPingOk, cached: true, provider: p.name, model: p.model }, { headers: h });
     lastPing = Date.now();
-    const r = await fetch('https://api.openai.com/v1/chat/completions', {
+    const r = await fetch(p.url, {
       method: 'POST',
-      headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: MODEL, messages: [{ role: 'user', content: 'Antworte nur mit: ok' }], max_completion_tokens: 64, reasoning_effort: 'low' }),
+      headers: { Authorization: `Bearer ${p.key}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: p.model, messages: [{ role: 'user', content: 'Antworte nur mit: ok' }], ...p.ping }),
     });
     const why = r.ok ? '' : (await r.text()).slice(0, 200);
     lastPingOk = r.ok;
-    return Response.json({ ok: r.ok, status: r.status, model: MODEL, why }, { headers: h });
+    return Response.json({ ok: r.ok, status: r.status, provider: p.name, model: p.model, why }, { headers: h });
   }
   if (!auth.startsWith('Bearer ')) return Response.json({ error: 'login' }, { status: 401, headers: h });
   let body: GradeReq | DuelReq | EssayReq | OpinionReq | PersuadeReq | WorldReq;

@@ -261,8 +261,6 @@ describe('墨水风暴 overflow', () => {
     expect(spillStorm(s, pack, dead, 999, true, log as never)).toBe(29);
     expect(c.monster.hp).toBe(1);
     expect(c.outcome).toBeFalsy();
-    a.intent = { ...a.intent, kind: 'defend' };
-    expect(spillStorm(s, pack, dead, 10, true, log as never)).toBe(Math.round(10 * CONFIG.damage.vsDefend));
   });
 });
 

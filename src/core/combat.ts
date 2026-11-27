@@ -41,7 +41,7 @@ import { dungeonTask } from './gram/dungeons';
 import { hasMirror, mirrorTask, MIRROR } from './gram/mirror';
 import { partnerOf } from './gram/partner';
 import { articleOfWord, ARTICLE_B2_CFG, contextLine, regionArticleFor } from './gram/articleB2';
-import { gradePat, isPattern, patLine, patOptions, optionText } from './satzmuster';
+import { gradePat, isPattern, patCount, patLine, patOptions, optionText } from './satzmuster';
 import { articleFor, KIND_ZH, noticeById, noticeFor, noticeTask, NOTICE_CFG } from './gram/notice';
 
 /** A grammar task as a battle question (choice when it has options, typed otherwise). */
@@ -268,8 +268,6 @@ export interface Battle {
   /** Old class trial flag (classes were cancelled): always null. */
   trial: string | null;
   intent: Intent;
-  /** 「Wie viel kostet das?」: next turn's intent, already decided. */
-  queued?: Intent;
   /** 0.6.x: this turn asks no haben/sein stance (its question would give the verb away). */
   perfektRest?: boolean;
   /** 词性三相 (0.5): the stance the player attacks in. Sticky for this monster until changed.
@@ -298,6 +296,8 @@ export interface Battle {
   perfekt?: boolean;
   /** 复数怪 (0.5, Lv11+): a whole crowd of this word, die Äpfel. Only the die stance is right. */
   pluralMon?: boolean;
+  /** 句型怪 (1.0.9): which of its examples this fight uses, picked once so its line and its questions match. */
+  patK?: number;
   /** 残句 (0.5): a sentence monster with no word nameplate. Finish the half → pick its meaning → write it whole. */
   phrase?: SayLine;
   /** 残句: how many of its three steps are done. */
@@ -690,7 +690,7 @@ function nextIntent(s: GameState, b: Battle, rng: Rng): Intent {
     intent = { ...intent, line: '… mmh … mmh …', zh: '一群同一个词的怪挤在一起嘟囔 · 复数一律 die', full: undefined, fullZh: undefined, caseArt: undefined };
   } else if (!tut && intent.kind !== 'charge' && intent.kind !== 'flee' && !intent.layers.includes('time') && isPattern(b.word)) {
     // 句型怪: it says its example with the key words swallowed; the Chinese is the question's anyway.
-    const p = patLine(b.word);
+    const p = patLine(b.word, (b.patK ??= Math.floor(rng() * patCount(b.word))));
     if (p) intent = { ...intent, line: p.shown.replace(/___/g, '… mmh …').replace(/\s+/g, ' ').trim(), zh: p.zh, full: p.full, fullZh: p.zh, caseArt: undefined };
   } else if (!tut && intent.kind !== 'charge' && intent.kind !== 'flee' && !intent.layers.includes('time')) {
     // 格位姿态 (Lv7+): only sentences whose slot is in a case this level reads, and the stance must match the slot.
@@ -1089,7 +1089,7 @@ export function contextQuestion(s: GameState, b: Battle, rng: Rng): Question | n
   // 审查修订: 复习伙伴 is the skin of 语境复习 — your partner word brings the due word's question.
   const pw = due ? partnerOf(s) : null;
   const tag = due ? (pw ? `复习伙伴 ${fullForm(pw)} · 语境复习` : '语境复习') : '抽查（入学测试推定你会）';
-  const pl = isPattern(rw) ? patLine(rw) : null;
+  const pl = isPattern(rw) ? patLine(rw, Math.floor(rng() * patCount(rw))) : null;
   if (pl) return { type: 'cloze', review: id, pat: true, prompt: `${tag} · 句型：按顺序打出空里的关键词（空格隔开）· ${pl.zh}`, focus: pl.shown, answer: pl.answer, clozeMode: 'base', full: pl.full, clozeZh: pl.zh };
   const c = makeCloze(rw, 'form', rng);
   if (c) return { type: 'cloze', review: id, prompt: `${tag}：打出这里要的形式（名词带冠词，动词变位）· ${c.zh}`, focus: c.shown, answer: c.answer, clozeMode: 'form', full: c.full, clozeZh: c.zh };
@@ -1479,11 +1479,6 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
     return canConj ? conj() : typed();
   }
   if (am === 'attack' && inPack && isNoun && !b.named && b.stage === 0 && !needsPhase(b)) return callout();
-  // 防御 (Lv7+): a written answer breaks the guard. A word not yet at the typing step gets its usual choice question (×0.3).
-  if (am === 'attack' && b.intent.kind === 'defend' && canType && !fresh) {
-    if (!isNoun && conjOpen(s, w)) return conj();
-    return typed();
-  }
 
   // Normal attack.
   if (b.tutorial === 'loss') return isNoun ? article() : meaning();
@@ -1582,7 +1577,7 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
 /** 句型怪: the question of a classic-pattern monster (src/core/satzmuster.ts), or null when its line is missing. */
 function patternQ(s: GameState, b: Battle, move: Move, rng: Rng, skillId?: string): Question | null {
   const w = b.word;
-  const p = patLine(w);
+  const p = patLine(w, (b.patK ??= Math.floor(rng() * patCount(w))));
   if (!p) return null;
   // 终结技: write the whole example from the Chinese.
   if (move === 'sentence') return { type: 'sentence', prompt: '终结技 · 句型：看中文，写出整句', focus: p.zh, answer: p.full, full: p.full };
@@ -1935,16 +1930,15 @@ const ELEMENT_BY_GENDER: Record<'m' | 'f' | 'n' | 'pl', Element> = { m: 'ice', f
 
 /**
  * 墨水风暴 overkill in a pack spills once onto the next monster (charging first, then lowest HP),
- * under that monster's own intent (defend still cuts it, 誊写 still ignores it). It never kills:
+ * under that monster's own intent. It never kills:
  * the monster stays at 1 HP at least, so the last hit is still its own word (归名, review, kill count).
  */
 export function spillStorm(s: GameState, pack: Battle[], from: Battle, overkill: number, typedLike: boolean, log: LogLine[]): number {
   const rest = pack.filter((x) => x !== from && !x.outcome && x.monster.hp > 1);
   if (!rest.length) return 0;
   const next = rest.find((x) => x.intent.kind === 'charge') ?? rest.reduce((a, x) => (x.monster.hp < a.monster.hp ? x : a));
-  void typedLike, s; // 誊写 no longer touches defend (removed); kept for the call sites
+  void typedLike, s; // kept for the call sites
   let d = overkill;
-  if (next.intent.kind === 'defend') d *= CONFIG.damage.vsDefend;
   d = Math.min(Math.round(d), next.monster.hp - 1);
   if (d <= 0) return 0;
   next.monster.hp -= d;
@@ -2159,7 +2153,7 @@ export function resolveTurn(
   let phaseFx: TurnReport['phase'] = null;
   // 读对意图: a correct hit that interrupts (蓄力/回血/逃跑) or a written answer that breaks a guard.
   const writtenQ = q.type === 'typed' || q.type === 'conj' || q.type === 'plural' || q.type === 'storm' || clozeTyped || (q.type === 'callout' && !!q.withArticle);
-  const readRight = !itemTurn && ok && move !== 'cls' && (['charge', 'heal', 'flee'].includes(intent.kind) || (intent.kind === 'defend' && writtenQ));
+  const readRight = !itemTurn && ok && move !== 'cls' && ['charge', 'flee'].includes(intent.kind);
   let blocking = false;
   /** 稳住 answered wrong (rev 234): still blocks half of the first hit. */
   let halfBlock = false;
@@ -2379,7 +2373,6 @@ export function resolveTurn(
           }
         }
 
-        const breaking = intent.kind === 'defend' && writtenQ;
         const g = genderOf(b.word);
         mult *= comboMult(s.combo);
         mult *= charmDamage(s, b, typedLike);
@@ -2432,10 +2425,10 @@ export function resolveTurn(
           m.broken = 0;
         }
         const wasBroken = m.broken > 0;
-        if ((tier === 2 || breaking || q.pool === 'seal') && !wasBroken && phaseFx !== 'wrong') {
+        if ((tier === 2 || q.pool === 'seal') && !wasBroken && phaseFx !== 'wrong') {
           // 誊写 (笔锋大天赋; 系统审查 2026-11-26 加强): a break lasts 5 hits instead of 3.
           m.broken = CONFIG.armor.breakHits + (rank(s, 'tengxie') ? 2 : 0);
-          log.push({ text: breaking ? `写对了。壳裂开了：这一下和之后 ${m.broken - 1} 下无视护甲。` : `难题破甲：这一下和之后 ${m.broken - 1} 下无视护甲。`, tone: 'good' });
+          log.push({ text: `难题破甲：这一下和之后 ${m.broken - 1} 下无视护甲。`, tone: 'good' });
         }
         // Right stance = the hit meets armor one tier lower (a choice answer as if typed, a typed one ignores it).
         const armor = phaseFx === 'right' ? effArmor(s, b, tier === 0 ? 1 : 2) : phaseFx === 'wrong' ? effArmor(s, b, tier === 2 ? 1 : tier, CONFIG.phase.wrongArmor) : effArmor(s, b, tier);
@@ -2475,7 +2468,6 @@ export function resolveTurn(
         if (listenQ(q) && wearsLegend(s, 'listenEcho')) b.echoNext = true;
 
         const charging = intent.kind === 'charge';
-        if (intent.kind === 'defend' && !breaking && !wasBroken) mult *= CONFIG.damage.vsDefend;
         mult = Math.min(mult, CONFIG.damage.maxMultiplierOfBase);
         playerDamage = Math.max(1, Math.round(atk * mult));
         if (b.tutorial === 'loss') playerDamage = Math.min(playerDamage, 3);
@@ -2504,7 +2496,7 @@ export function resolveTurn(
         if (gHeal) s.hp = Math.min(maxHp(s), s.hp + Math.max(1, Math.round(maxHp(s) * gHeal))); // 言石 回血
         s.stats.maxHit = Math.max(s.stats.maxHit, playerDamage);
         if (crit) s.stats.crits += 1;
-        if (charging || intent.kind === 'heal' || intent.kind === 'flee') interrupted = true;
+        if (charging || intent.kind === 'flee') interrupted = true;
         if (tier === 2 && rank(s, 'fengli')) tf.sharp = 0.1 * rank(s, 'fengli');
         if (rank(s, 'gesuo') && phaseFx === 'right' && caseQ(b, q) && b.turn - (b.chainAt ?? -99) >= 3 && chainForms(b.word)) {
           b.chainOffer = true;
@@ -2562,7 +2554,6 @@ export function resolveTurn(
         const tag = (judged ? '冠词审判！' : '') + (crit ? (newSpell ? '新言灵！暴击 ' : '暴击 ') : '');
         const el = element ? `（${ELEMENT_ZH[element]}）` : '';
         log.push({ text: `${tag}你造成 ${playerDamage} 点伤害${el}。`, tone: crit ? 'crit' : 'good' });
-        if (intent.kind === 'defend' && !breaking && !wasBroken) log.push({ text: '它缩着。选择题只刮三成，默写才撬得开。', tone: 'info' });
       }
 
       // 审查修订 (额外伤害): a context-review question, a notice question, the mirror's pronoun and the 结构魔's weil
@@ -2673,7 +2664,7 @@ export function resolveTurn(
   };
 
   const cf = b.fx.charm;
-  if (b === target && (cf?.delay ?? 0) > 0 && !b.outcome && intent.kind !== 'wait' && intent.kind !== 'defend' && !interrupted) {
+  if (b === target && (cf?.delay ?? 0) > 0 && !b.outcome && intent.kind !== 'wait' && !interrupted) {
     cf!.delay! -= 1;
     say({ text: '它被你那句话拖住了，这回合没出手。', tone: 'good' });
   } else if ((interrupted && b === target) || chorusStopped.has(b)) {
@@ -2709,10 +2700,6 @@ export function resolveTurn(
         per = 0;
         break;
       }
-      case 'defend':
-        if (blocking) say({ text: '它在缩着。你白挡了一回合。', tone: 'info' });
-        else say({ text: '它缩起来防守。', tone: 'info' });
-        break;
       case 'charge': {
         if (m.chilled) {
           say({ text: '冻住了。大的推迟了。', tone: 'good' });
@@ -2733,12 +2720,6 @@ export function resolveTurn(
         }
         break;
       }
-      case 'heal': {
-        const heal = Math.round(m.maxHp * 0.35);
-        m.hp = Math.min(m.maxHp, m.hp + heal);
-        say({ text: `它回复了 ${heal} 点生命。${m.broken > 0 ? '甲还没长回来。' : ''}`, tone: 'bad' });
-        break;
-      }
       case 'flee':
         b.outcome = 'fled';
         say({ text: '「Ich muss los!」——它抱着箱子钻进人堆，没了。', tone: 'bad' });
@@ -2754,8 +2735,8 @@ export function resolveTurn(
 
   if (multi) b = target;
   // Misreads for the post-fight recap.
-  if (!ok && (intent.kind === 'charge' || intent.kind === 'heal'))
-    b.recap.push(`第 ${b.turn} 回合：「${intent.line}」是${intent.kind === 'charge' ? '蓄力' : '回血'}，这题答对就能打断。`);
+  if (!ok && intent.kind === 'charge')
+    b.recap.push(`第 ${b.turn} 回合：「${intent.line}」是蓄力，这题答对就能打断。`);
 
 
   // --- 3. Damage over time and status ticks (every monster still standing; your own statuses once).
@@ -2841,9 +2822,8 @@ export function resolveTurn(
     for (const x of pack) {
       if (x.outcome) continue;
       x.turn += 1;
-      x.intent = x.queued ?? nextIntent(s, x, rng);
+      x.intent = nextIntent(s, x, rng);
       perfektGuard(s, x);
-      x.queued = undefined;
     }
     if (multi) alignPairs(s, pack);
   }

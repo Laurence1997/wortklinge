@@ -822,7 +822,6 @@ export class BattleUI {
           const mum = b.direct || (this.phase === 'answer' && (this.move === 'sentence' || !!this.question?.ult || lineLeaks(it.line, this.question)));
           return [h('div.line', mum ? '… mmh …' : it.line), h('div.zh', !mum && this.zhShown && this.b.curse !== 'forget' ? plainZh(it.zh) : '')];
         })(),
-        b.queued?.kind === 'charge' ? h('div.zh', { style: 'color:var(--gold, #ffcf4a)' }, '看穿 · 它下回合要蓄力') : '',
         // 即时战: its cast bar; answer right while an attack casts and it misses, during a charge and it breaks.
         this.rtOn
           ? h(
