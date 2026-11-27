@@ -466,6 +466,13 @@ export function migrate(raw: unknown): GameState | null {
   // screening's 待领 and cursors start empty.
   s.screen = { pending: { ...(s.screen?.pending ?? {}) }, cursor: { ...(s.screen?.cursor ?? {}) } };
   migrateSrs2(s);
+  // 写对的词 2 / 7 / 30 天 (Lucas 2026-11-27): a clean 归名 still waiting for its old one-time check (ctx at the last
+  // context index) joins the new ladder at its first step; its due date stays.
+  for (const p of Object.values(s.words ?? {}))
+    if (p && p.stage === 3 && !p.retired && !p.ctxDone && p.fix === undefined && p.ctx === CONFIG.srs.context.length - 1) {
+      p.fix = 0;
+      p.ctx = 0;
+    }
   // 会的词不再回响抽查 (Lucas 2026-11-27): a word retired the moment it was first met (入学测试, 主城筛选, 直接叫名) has
   // firstSeen within an hour of retired; a normal 斩杀 takes two days. Those become 永久 now; nothing else changes.
   for (const p of Object.values(s.words ?? {})) if (p?.retired && !p.sure && p.retired - (p.firstSeen ?? 0) < 60 * 60 * 1000) p.sure = true;
