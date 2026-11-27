@@ -9,7 +9,7 @@ import type { GameState } from './state';
 import type { AffixKey, Item, Quality, Slot } from './types';
 
 export const SHOP_SLOTS = 8;
-export const PRICE: Record<Quality, number> = { white: 0.04, green: 0.1, purple: 0.5, orange: 0 };
+export const PRICE: Record<Quality, number> = { white: 0.04, green: 0.1, purple: 0.5, orange: 0, red: 0 };
 const STOCK_WEIGHTS: Array<[Quality, number]> = [['white', 60], ['green', 32], ['purple', 8]];
 export const REFRESH_BASE = 0.05;
 export const BARGAIN_OFF = 0.1;
@@ -22,6 +22,7 @@ export const SLOT_NOUN: Record<Slot, { nom: string; acc: string; zh: string }> =
   amulet: { nom: 'das Amulett', acc: 'das Amulett', zh: '护符' },
   dict: { nom: 'das Wörterbuch', acc: 'das Wörterbuch', zh: '词典' },
   glasses: { nom: 'die Brille', acc: 'die Brille', zh: '眼镜' },
+  phones: { nom: 'der Kopfhörer', acc: 'den Kopfhörer', zh: '耳机' },
 };
 
 export const BARGAIN_LINES = ['Geht das billiger?', 'Das ist zu teuer.', 'Gibt es einen Rabatt?'];

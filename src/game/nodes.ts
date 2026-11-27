@@ -1,29 +1,40 @@
+import { isRead, lettersIn } from '../core/letters';
+import { accentOf } from '../ui/theme';
+import { npcFigure } from '../ui/icons';
+import { RIFT } from '../core/rift';
+import { adventurersIn } from '../core/adventurers';
 // 0.5 小世界: point-and-click scenes on top of the 0.4 map. The world scene keeps drawing the map, monsters and
 // other players; this class owns where you stand (a scene), moving along the route, where monsters spawn
 // (3 per field scene, never refilling the scene you stand in) and the scene panel on the right.
 import { DUNGEON } from '../data/dungeon';
+import { GRAM_DUNGEON } from '../core/gram/dungeons';
+import { PARTNER } from '../core/gram/partner';
+import { DUEL } from '../data/grammar/duels';
+import { AI_TUTOR } from '../net/aiTutor';
 import { sceneArtCanvas } from '../ui/sceneArt';
+import { worldMap } from '../ui/worldMap';
 import Phaser from 'phaser';
 import { CONFIG } from '../core/config';
 import { has } from '../core/unlocks';
 import { toast } from '../ui/feedback';
 import { needsVerify, stageOf } from '../core/srs';
 import { eligible, fieldCleared } from '../core/spawn';
+import { erodeOpen, purified } from '../core/erosion';
 import type { ZoneId } from '../core/types';
 import { WORD_BY_ID, fullForm } from '../data/words';
-import { AREAS, AREAS_LATER, SCENE_BY_ID, SCENES, neighbours, nearestScene, routeTo, scenesOf, type SceneDef } from '../data/world';
-import { online } from '../net/online';
+import { AREAS, HOME_SCENE, SCENE_BY_ID, SCENES, neighbours, nearestScene, routeTo, scenesOf, type SceneDef } from '../data/world';
 import { h } from '../ui/dom';
 import { sfx } from './audio';
 import { ZONES, TILE, type NpcId } from './map';
+import { ERODE_DEFS, REGION_DEF, REGION_DEFS, regionLevels } from '../data/zones';
 import type { MonsterEntity, WorldScene } from './WorldScene';
 
 const NPC_ZH: Record<NpcId, string> = { hilde: '守火人 Hilde', greta: '导师 Greta', mira: '商人 Mira', konrad: '面包师傅 Konrad', examiner: '考官', brandt: '站长 Herr Brandt', lina: 'Lina', weber: '秩序会 Frau Weber' };
-const GATE_ZH: Record<number, string> = { 1: '穿过门回余烬营地', 2: '过桥回面包集市', 3: '过铁路桥去铁轨镇' };
+const GATE_ZH: Record<number, string> = { 1: '穿过门回余烬营地', 2: '过桥回面包集市', 3: '过铁路桥去铁轨镇', ...Object.fromEntries(REGION_DEFS.map((d) => [d.region, `去${d.zh}`])) };
 const OFFSETS = [[-28, -6], [28, -6], [0, -24], [-28, 16], [28, 16], [0, -38]];
 
 /** 0.6: each word's home scene (from the scene word groups). */
-const HOME: Record<string, SceneDef> = Object.fromEntries(SCENES.flatMap((sc) => (sc.words ?? []).map((w) => [w, sc] as const)));
+const HOME = HOME_SCENE; // own groups + 蚀变 groups (src/data/world.ts)
 
 export const anchorPx = (sc: SceneDef) => ({ x: sc.at.x * TILE + 8, y: sc.at.y * TILE + 8 });
 
@@ -69,7 +80,7 @@ export class NodeNav {
     if (this.here.type === 'road') this.s.flags[`road_${this.here.id}`] = true;
     // The 0.4 street map stays underneath (scenes stand on its tiles) but is veiled, so routes and monsters read first.
     this.veil?.destroy();
-    this.veil = this.w.add.rectangle(0, 0, 8000, 8000, 0x07040a, CONFIG.map.veil).setOrigin(0).setDepth(-1);
+    this.veil = this.w.add.rectangle(0, 0, 8000, 8000, this.w.bright ? 0xfffaf0 : 0x07040a, this.w.bright ? CONFIG.map.veil * 0.4 : CONFIG.map.veil).setOrigin(0).setDepth(-1);
     this.place();
     this.draw();
   }
@@ -81,6 +92,7 @@ export class NodeNav {
   }
 
   private place(): void {
+    this.w.refreshPlates();
     const p = anchorPx(this.here);
     this.w.player.setPosition(p.x, p.y + 14).setDepth(3002);
     this.s.pos = { x: p.x, y: p.y };
@@ -206,6 +218,7 @@ export class NodeNav {
     if (this.here.id === 'r1-x') this.w.ctrl.sawNeighbour();
     if (this.here.zone === 'fahrplanhalle' && this.here.type === 'field') this.w.ctrl.maybeLina();
     if (this.here.id === 'r3-hide') this.s.flags.zeroSeen = true;
+    if (this.here.id === 'r17-hide') this.w.ctrl.reveal17();
     // 怪物诅咒 教学: the first cursed monster waits just past the hall gate (Lv25+).
     if (this.here.id === 'r3-fx' && this.s.level >= CONFIG.curse.from && !this.s.flags.curseTaught) this.s.flags.curseNext = true;
   }
@@ -213,6 +226,7 @@ export class NodeNav {
   /** 全量筛选: the words you named in town live here → pay their stored XP (one line in the scene panel). */
   private claimMsg: { scene: string; text: string } | null = null;
   private claim(): void {
+    this.w.refreshPlates();
     const r = this.w.ctrl.claimScene(this.here.id);
     if (r) {
       this.claimMsg = { scene: this.here.id, text: `你在城里认出的 ${r.words} 个词就住在这里 · +${r.xp} 经验` };
@@ -228,25 +242,30 @@ export class NodeNav {
     this.labels = [];
     const g = (this.gfx = this.w.add.graphics().setDepth(3000));
     const list = scenesOf(this.w.map.region).filter(this.revealed);
+    // 明亮画风: route and circles in the region's accent on a bright map; dark red on 蚀变 maps.
+    const bright = this.w.bright;
+    const accent = parseInt(accentOf(this.w.map.region).slice(1), 16);
     for (const a of list)
       for (const id of neighbours(a.id)) {
         const b = SCENE_BY_ID[id];
         if (!this.revealed(b) || a.id > b.id) continue;
         const pa = anchorPx(a);
         const pb = anchorPx(b);
-        g.lineStyle(2, b.type === 'hidden' || a.type === 'hidden' ? 0xb8963a : 0x7a2630, 0.7);
+        g.lineStyle(bright ? 3 : 2, b.type === 'hidden' || a.type === 'hidden' ? 0xb8963a : bright ? accent : 0x7a2630, bright ? 0.85 : 0.7);
         g.lineBetween(pa.x, pa.y, pb.x, pb.y);
       }
     for (const sc of list) {
       const p = anchorPx(sc);
-      const color = sc.type === 'camp' ? 0xffb347 : sc.type === 'door' ? 0xff2040 : sc.type === 'hidden' ? 0xffcf4a : sc.type === 'road' ? 0x9a8a80 : 0xc23040;
-      g.fillStyle(0x07040a, 0.85).fillCircle(p.x, p.y, 9);
-      g.lineStyle(sc === this.here ? 2 : 1, sc === this.here ? 0xffffff : color, 1).strokeCircle(p.x, p.y, 9);
+      const color = bright
+        ? sc.type === 'door' ? 0xc0392b : sc.type === 'hidden' ? 0xb8963a : sc.type === 'road' ? 0x8a7a68 : accent
+        : sc.type === 'camp' ? 0xffb347 : sc.type === 'door' ? 0xff2040 : sc.type === 'hidden' ? 0xffcf4a : sc.type === 'road' ? 0x9a8a80 : 0xc23040;
+      g.fillStyle(bright ? 0xfffaf0 : 0x07040a, bright ? 0.95 : 0.85).fillCircle(p.x, p.y, 9);
+      g.lineStyle(sc === this.here ? 2.5 : bright ? 1.5 : 1, sc === this.here ? (bright ? 0x2d2118 : 0xffffff) : color, 1).strokeCircle(p.x, p.y, 9);
       // 全量筛选: XP waiting here (待领) → a small gold dot beside the circle until it is claimed.
       if (this.s.screen?.pending?.[sc.id]?.length) g.fillStyle(0xffcf4a, 1).fillCircle(p.x + 9, p.y - 8, 2.5);
       this.labels.push(
         this.w.add
-          .text(p.x, p.y, String(sc.no), { fontFamily: '"Courier New", monospace', fontSize: '8px', color: '#e8dccf', resolution: 4 })
+          .text(p.x, p.y, String(sc.no), { fontFamily: '"Courier New", monospace', fontSize: '8px', color: bright ? '#2d2118' : '#e8dccf', fontStyle: bright ? 'bold' : '', resolution: 4 })
           .setOrigin(0.5)
           .setDepth(3001),
       );
@@ -289,6 +308,15 @@ export class NodeNav {
     this.w.ctrl.encounter(m);
   }
 
+  /** 蚀变 (rev 341): an open 蚀变 scene says so; once all its advanced words are gone it reads 已净化. */
+  private erodeTag(sc: SceneDef): HTMLElement | string {
+    if (!sc.erodeSeg || !erodeOpen(this.s, sc.erodeSeg)) return '';
+    const lv = regionLevels(sc.erodeSeg).join('–');
+    return purified(this.s, sc.eroded, sc.erodeSeg)
+      ? h('span.small', { style: 'color:var(--gold, #ffcf4a)' }, ' · 已净化')
+      : h('span.small', { style: 'color:#c06cff' }, ` · 蚀变 Lv ${lv}`);
+  }
+
   private render(): void {
     const sc = this.here;
     const busy = this.hopping || this.w.ctrl.uiBlocking();
@@ -301,19 +329,28 @@ export class NodeNav {
     const things: HTMLElement[] = [];
     if (sc.bonfire) things.push(h('button.btn', { onclick: ia('bonfire') }, '🔥 篝火休息'));
     if (sc.id === 'r3-hide' && this.s.level >= DUNGEON.from) things.push(h('button.btn.primary', { disabled: busy, onclick: () => this.w.ctrl.enterDungeon() }, '🚪 进入零号站台（规则表地下城）'));
+    // 语法秘境 (0.7–0.8): entered from a region's camp.
+    if (sc.type === 'camp' && sc.bonfire && this.s.level >= RIFT.from) things.push(h('button.btn', { disabled: busy, onclick: () => this.w.ctrl.enterRift() }, '🌀 裂隙（白板 roguelite）'));
+    // 审查修订: one 「AI 对话」 entry; the modes (决斗场, AI 批改造句, 小作文) are inside.
+    if (sc.type === 'camp' && sc.bonfire && this.s.level >= Math.min(DUEL.from, AI_TUTOR.grade)) things.push(h('button.btn', { disabled: busy, onclick: () => this.w.ctrl.openAiHub() }, '💬 AI 对话'));
+    if (sc.type === 'camp' && sc.bonfire && this.s.level >= PARTNER.from) things.push(h('button.btn', { disabled: busy, onclick: () => this.w.ctrl.choosePartner() }, '🤝 复习伙伴'));
+    if (sc.type === 'camp' && sc.bonfire && this.s.level >= GRAM_DUNGEON.from.ablaut) things.push(h('button.btn', { disabled: busy, onclick: () => this.w.ctrl.enterGramDungeon() }, '📜 语法秘境'));
     if (sc.bonfire && has(this.s.level, 'dailies')) things.push(h('button.btn', { disabled: busy, onclick: () => this.w.ctrl.showDailies() }, '📋 每日委托'));
     const npcs: NpcId[] = [...(sc.npcs ?? []), ...(sc.id === 'r3-platz' && this.s.flags.linaFreed ? (['lina'] as NpcId[]) : [])];
-    for (const n of npcs) things.push(h('button.btn', { onclick: ia('npc', n) }, NPC_ZH[n]));
-    if (sc.door) things.push(h('button.btn', { onclick: ia('door') }, this.w.map.region === 3 ? '走上末班站台' : this.w.map.region === 2 ? '推开秤房的门' : '敲门'));
+    for (const n of npcs) things.push(h('button.btn', { onclick: ia('npc', n) }, n === 'weber' && this.s.flags.weber18 ? 'Frau Weber' : NPC_ZH[n]));
+    // 游荡的冒险者: the AI players standing in this scene now (name plate always says AI).
+    for (const a of adventurersIn(sc, !!sc.erodeSeg && erodeOpen(this.s, sc.erodeSeg))) things.push(h('button.btn.adv', { onclick: ia('adv', a.id), title: a.origin }, npcFigure(a.name, 1.5, 'adv-fig'), h('span.ai-tag', 'AI'), ` ${a.name}${a.erode ? '（被困的幸存者）' : ''}`));
+    const eb = ERODE_DEFS.find((e) => e.scene === sc.id);
+    if (sc.door) things.push(h('button.btn', { onclick: ia('door', sc.id) }, eb ? eb.doorAct : REGION_DEF[this.w.map.region] ? REGION_DEF[this.w.map.region]!.doorAct : this.w.map.region === 3 ? '走上末班站台' : this.w.map.region === 2 ? '推开秤房的门' : '敲门'));
     if (sc.gate) things.push(h('button.btn', { onclick: ia('gate', String(sc.gate)) }, GATE_ZH[sc.gate]));
+    for (const l of lettersIn(this.s, sc.id)) things.push(h('button.btn', { onclick: ia('letter', l.id) }, `✉ 遗书「${l.title}」${isRead(this.s, l.id) ? '（已读）' : ''}`));
     for (const sg of sc.signs ?? []) things.push(h('button.btn', { onclick: ia('sign', sg) }, stageOf(this.s, WORD_BY_ID[sg]) >= 3 ? `路牌：${fullForm(WORD_BY_ID[sg])}` : '路牌：▒▒▒'));
     const exits = neighbours(sc.id)
       .map((id) => SCENE_BY_ID[id])
       .filter(this.revealed)
       .map((x) => h('button.btn', { disabled: busy, onclick: () => this.travel(x.id) }, `→ ${x.no} ${x.zh}`));
-    const peers = [...online.peers.values()].filter((p) => nearestScene(this.w.map.region, p.x, p.y).id === sc.id).map((p) => p.nick);
     this.panel.replaceChildren(
-      h('div.sp-head', h('b', `${sc.no} · ${sc.zh}`), h('span.muted', zone ? ` ${zone.zh} · ${zone.levels}` : sc.type === 'camp' ? ' 安全区' : '')),
+      h('div.sp-head', h('b', `${sc.no} · ${sc.zh}`), h('span.muted', zone ? ` ${zone.zh} · ${zone.levels}` : sc.type === 'camp' ? ' 安全区' : ''), this.erodeTag(sc)),
       this.claimMsg?.scene === sc.id ? h('div.small', { style: 'color:var(--gold, #ffcf4a)' }, this.claimMsg.text) : '',
       sceneArtCanvas(sc.id, this.s) ?? '',
       sc.zone
@@ -338,7 +375,6 @@ export class NodeNav {
           : '',
       things.length ? h('div.sp-sec', h('div.muted', '这里有'), ...things) : '',
       h('div.sp-sec', h('div.muted', this.hopping ? '赶路中……' : '出口（也可以点地图上的圆点，远处去过的会自动走过去）'), ...exits),
-      peers.length ? h('div.sp-sec.muted', `同场景：${peers.join('、')}`) : '',
       h('div.sp-sec', h('button.btn.ghost', { onclick: () => this.bigMap() }, '🗺 大地图（M）')),
     );
   }
@@ -382,25 +418,27 @@ export class NodeNav {
   bigMap(): void {
     if (this.w.ctrl.uiBlocking() || this.hopping) return;
     const s = this.s;
-    const open = (r: number) => r <= this.w.map.region || !!s.flags[`seenArea${r}`] || (r === 2 && !!s.flags.bossKills && s.level >= CONFIG.region2Level) || (r === 3 && !!s.flags.boss2Kills);
+    const open = (r: number) => r <= this.w.map.region || !!s.flags[`seenArea${r}`] || (r === 2 && !!s.flags.bossKills && s.level >= CONFIG.region2Level) || (r === 3 && !!s.flags.boss2Kills) || (r >= 4 && !!s.flags[`boss${r - 1}Kills`]);
+    const go = (r: number) => {
+      this.w.ctrl.panels.close();
+      if (r === this.w.map.region) this.goHub();
+      else {
+        const hub = SCENE_BY_ID[AREAS.find((a) => a.region === r)!.hub];
+        this.w.ctrl.travel(hub.region, anchorPx(hub));
+      }
+    };
     this.w.ctrl.panels.showBigMap(
       h(
         'div.bigmap',
-        ...AREAS.map((a) =>
-          h(
-            'button.btn' + (a.region === this.w.map.region ? '.primary' : ''),
-            {
-              disabled: !open(a.region),
-              onclick: () => {
-                this.w.ctrl.panels.close();
-                if (a.region === this.w.map.region) this.goHub();
-                else this.w.ctrl.travel(a.region, anchorPx(SCENE_BY_ID[a.hub]));
-              },
-            },
-            `${a.zh} · ${a.de} · ${a.levels}${a.region === this.w.map.region ? '（你在这里，点一下回主城）' : open(a.region) ? '' : '（还没去过）'}`,
-          ),
-        ),
-        ...AREAS_LATER.map((t) => h('button.btn', { disabled: true }, `${t}（以后开放）`)),
+        worldMap({
+          current: this.w.map.region,
+          level: s.level,
+          open,
+          visited: (r) => r === this.w.map.region || !!s.flags[`seenArea${r}`] || r === 1,
+          killed: (f) => !!s.flags[f],
+          zeroSeen: !!s.flags.zeroSeen,
+          go,
+        }),
         this.waystation(),
       ),
     );

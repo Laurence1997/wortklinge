@@ -23,7 +23,6 @@ import { BOSS3, boss3Questions, makeBoard } from '../../src/data/boss3';
 import { LINA, LINA_NAME_Q, linaQuestions } from '../../src/data/lina';
 import { WEBER, WEBER_POOL } from '../../src/data/weber';
 import { PHRASES } from '../../src/data/families';
-import { SKILLS } from '../../src/data/skills';
 import { RULES } from '../../src/data/dungeon';
 import { CONJ, PERSONS } from '../../src/data/verbs';
 import { expectedSentence, sentenceTags } from '../../src/core/sentence';
@@ -148,9 +147,8 @@ story('b3', BOSS3, 'src/data/boss3.ts');
 story('lina', LINA, 'src/data/lina.ts');
 story('weber', WEBER, 'src/data/weber.ts');
 
-// 8. Monster lines, skills, dungeon rules.
+// 8. Monster lines and dungeon rules (sentence skills were removed with the skills rework).
 for (const [k, list] of Object.entries(PHRASES)) list.forEach(([de, zh], i) => add('phrase', `${k}:${i}`, de, 'src/data/families.ts', zh));
-for (const sk of Object.values(SKILLS)) sk.lines.forEach((l, i) => add('skill', `${sk.id}:${i}`, l.de, 'src/data/skills.ts', l.zh));
 for (const r of RULES) add('rule', r.id, r.de, 'src/data/dungeon.ts', r.zh);
 
 // 9. Anything else in src/data: walk every exported value and take German-looking strings, so a new data file

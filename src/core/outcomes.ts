@@ -1,4 +1,7 @@
-import type { Battle } from './combat';
+import { rollSetDrop } from './forge';
+import { CHALLENGE_CFG, noteFirstTry } from './challenge';
+import { pityOrange } from './forge';
+import { quickFightXp, type Battle } from './combat';
 import { CONFIG, levelGapMult } from './config';
 import { makeItem, rollQuality } from './loot';
 import { markUnidentified } from './identify';
@@ -10,6 +13,7 @@ import { has } from './unlocks';
 import { rollItemDrops, type Consumable } from './items';
 import { CONJ } from '../data/verbs';
 import { CHEST_RATE, type ChestKind } from './chest';
+import { noticeById } from './gram/notice';
 
 export interface WinResult {
   xp: number;
@@ -30,14 +34,25 @@ export interface WinResult {
   card?: { id: string; first: boolean };
 }
 
-export function applyWin(s: GameState, b: Battle, rng: Rng, opts: { heal?: boolean } = {}): WinResult {
+export function applyWin(s: GameState, b: Battle, rng: Rng, opts: { heal?: boolean; pack?: boolean } = {}): WinResult {
   rollDay(s);
   const t = now(s);
   const log = todayLog(s);
   const w = b.word;
   const wasNew = b.kind === 'new';
   // 残句: a sentence is not a word — nothing goes into the wordbook; its card drops instead.
-  const kill: KillOutcome = b.phrase ? { kind: 'new', from: 0, to: 0, guiming: false, needsTypedFinal: false } : recordKill(s, w, b.lastKillTyped, b.slipped, t, { used: b.usedOk, flaw: b.flawed || b.hinted, typed: (b.writeOk ?? 0) > 0 });
+  const kill: KillOutcome = b.phrase ? { kind: 'new', from: 0, to: 0, guiming: false, needsTypedFinal: false } : recordKill(s, w, b.lastKillTyped, b.slipped, t, { used: b.usedOk, flaw: b.flawed || b.hinted, typed: (b.writeOk ?? 0) > 0, wrongs: b.wrongs });
+  // 审查修订 B4: an article-pack word ends at 半名; its 归名 comes from a context question written right later.
+  if (b.notice && noticeById(b.notice.id)?.kind === 'article' && !b.phrase && s.words[w.id] && !s.words[w.id].retired && (kill.guiming || s.words[w.id].stage < 2)) {
+    const p = s.words[w.id];
+    p.stage = 2;
+    p.artHalf = true;
+    p.due = t + CONFIG.srs.respawn;
+    kill.to = 2;
+    kill.guiming = false;
+  }
+  // 审查修订 D3: a plural crowd written out cleanly twice retires too (it stops coming back).
+  if (b.pluralMon && b.lastKillTyped && !b.flawed && !b.hinted && s.words[w.id]) s.words[w.id].plOk = (s.words[w.id].plOk ?? 0) + 1;
   let card: WinResult['card'];
   if (b.phrase?.cardId) {
     s.sayings ??= {};
@@ -46,13 +61,17 @@ export function applyWin(s: GameState, b: Battle, rng: Rng, opts: { heal?: boole
   } else {
     flushSkill(s, w, b);
     if (b.hinted && s.words[w.id]) s.words[w.id].hinted = true;
+    // 挑战怪: written right unseen → 待验证 from tomorrow, now that the kill made its entry.
+    if (b.pendOnWin && s.words[w.id] && !s.words[w.id].pend && !s.words[w.id].retired) s.words[w.id].pend = t;
   }
+  if (!b.tutorial && !b.trial && !b.phrase && !b.isEcho) noteFirstTry(s, b.firstTry);
 
   let xp = b.kind === 'new' ? CONFIG.xp.newMonster : b.kind === 'due' ? CONFIG.xp.dueMonster : CONFIG.xp.shadowMonster;
   // 2026-11-24: only 复习怪 pay the review bonus; a learning respawn (认 → 用 → 写, minutes later) pays as due.
+  // 审查修订: 复习怪 pay like normal monsters (the bonus moved to context reviews answered on time); 越久越肥 only
+  // adds HP, not reward.
   const rv = b.kind === 'due' && !!b.reviewMon;
-  if (rv) xp *= CONFIG.xp.dueBonus;
-  const overdueMult = 1 + CONFIG.monster.overdueRewardStep * b.overdue;
+  const overdueMult = 1;
   xp *= overdueMult;
   if (b.lastKillTyped) xp *= CONFIG.xp.typedKillMult;
   // Strong verbs (nehmen → nimmt) are harder to conjugate: ×1.3 once conjugation is unlocked.
@@ -61,15 +80,21 @@ export function applyWin(s: GameState, b: Battle, rng: Rng, opts: { heal?: boole
   xp = gap === 0 ? 1 : xp * gap;
   xp *= 1 + Math.min(0.3, affixTotal(s, 'xp'));
   if (b.cursed) xp *= CONFIG.curse.xpMult;
-  if (b.rusty) xp *= CONFIG.rusty.rewardMult;
   // 场景精英: each part pays what its word pays as a normal monster, ×1.2.
   if (b.elite) xp *= CONFIG.elite.rewardMult;
+  if (b.challenge) xp *= CHALLENGE_CFG.xpMult;
+  // 审查修订 C7: a pack member pays ×0.7 of a lone monster (less HP each, and 齐鸣 hits two).
+  if (opts.pack && !b.elite) xp *= CONFIG.pack.xpMult;
+  xp *= quickFightXp(s, b); // 天赋「一气呵成」
+  xp *= 1 + (b.fx.charm?.xp ?? 0); // 秘术 Übung macht den Meister.
   if (b.tutorial === 'loss') xp = 0;
+  if (b.presumed && b.cutReady) xp = 0; // 快速通道: a 推定会 word named at once pays shards only
   xp = Math.round(xp);
 
   let gold = CONFIG.gold.perKill(b.monster.lvl);
-  gold = Math.round(gold * overdueMult * (b.rusty ? CONFIG.rusty.rewardMult : 1) * (b.elite ? CONFIG.elite.rewardMult : 1));
+  gold = Math.round(gold * overdueMult * (b.elite ? CONFIG.elite.rewardMult : 1));
   if (b.fx.stimmt) gold *= 2;
+  gold = Math.round(gold * (1 + (b.fx.charm?.gold ?? 0))); // 秘术 Zeit ist Geld.
   if (b.fx.nextHalt) s.flags.nextHalt = true;
   let echoRecovered: WinResult['echoRecovered'] = null;
   if (s.echo && s.echo.wordId === w.id) {
@@ -90,7 +115,7 @@ export function applyWin(s: GameState, b: Battle, rng: Rng, opts: { heal?: boole
   log.kills += 1;
   s.stats.kills += 1;
   // 碎片 count from Lv1, but a tier-up is only announced once gear opens (Lv3, 节奏表).
-  const gearUpRaw = b.tutorial === 'loss' ? null : addGearKill(s, b.phrase ? s.region ?? 1 : w.region ?? 1, rng(), (rv ? 1 + CONFIG.xp.dueShards : 1) + (b.cursed ? CONFIG.curse.shards : 0) + (b.rusty ? CONFIG.rusty.shards : 0));
+  const gearUpRaw = b.tutorial === 'loss' ? null : addGearKill(s, b.phrase ? s.region ?? 1 : w.region ?? 1, rng(), 1 + (b.cursed ? CONFIG.curse.shards : 0) + (b.fx.charm?.shard ?? 0));
   const gearUp = has(s.level, 'gear') ? gearUpRaw : null;
 
   // Drops: 20% from small monsters once gear is unlocked; the first one is a guaranteed green (Lv5 lesson).
@@ -99,12 +124,21 @@ export function applyWin(s: GameState, b: Battle, rng: Rng, opts: { heal?: boole
   if (has(s.level, 'gear') && b.tutorial !== 'loss') {
     const firstGreen = !s.flags.firstGreen;
     let rate = CONFIG.loot.smallDropRate * (1 + Math.min(1, affixTotal(s, 'dropRate')));
-    if (rv) rate *= 1.5;
+    rate *= 1 + (b.fx.charm?.drop ?? 0); // 秘术 Viel Glück!
+    if (s.flags.schweinNext) {
+      rate *= 2; // 俚语 Schwein gehabt!: this monster's drop doubled
+      delete s.flags.schweinNext;
+    }
+    if (((s.flags.ctxDropBoost as number) ?? 0) > 0) {
+      rate *= 1.5;
+      s.flags.ctxDropBoost = (s.flags.ctxDropBoost as number) - 1;
+    }
     if (firstGreen || rng() < rate) {
       const maxQ = has(s.level, 'purple') ? 'orange' : 'green';
       // 学习加成: typed kills and due words raise purple/orange odds.
       let q = rollQuality(rng, maxQ, firstGreen ? 'green' : undefined);
-      if (q === 'white' && (b.lastKillTyped || rv) && rng() < 0.15) q = 'green';
+      if (q === 'white' && b.lastKillTyped && rng() < 0.15) q = 'green';
+      q = pityOrange(s, q, maxQ);
       drop = makeItem(rng, b.monster.lvl, q, firstGreen ? 'pen' : undefined);
       markUnidentified(s, drop);
       if (firstGreen) s.flags.firstGreen = true;
@@ -113,13 +147,18 @@ export function applyWin(s: GameState, b: Battle, rng: Rng, opts: { heal?: boole
         drop = null;
       } else s.bag.push(drop);
     }
+    // 主题套装 (101): only from this region's monsters and bosses.
+    if (!drop && !bagFull) {
+      const piece = rollSetDrop(s, w.region ?? s.region ?? 1, rng);
+      if (piece && s.bag.length < CONFIG.loot.bagSize) s.bag.push((drop = piece));
+    }
   }
 
   // Chests (Lv11+): rare monsters always carry an iron chest; due kills 5% forgotten chest; others 3% wood.
   // 场景精英 (9 级): its last part brings an iron chest (always the first time, else 30%), even before Lv11.
   let chest: ChestKind | null = null;
   if (b.elite && b.elite.seg === b.elite.words.length - 1 && b.tutorial !== 'loss') {
-    if (!b.elite.review || rng() < CONFIG.elite.repeatChest) chest = 'iron';
+    if (!b.elite.review || rng() < CONFIG.elite.repeatChest * (b.fx.charm?.ironChest ?? 1)) chest = 'iron';
   } else if (has(s.level, 'chests') && b.tutorial !== 'loss' && !b.trial) {
     if (b.elite) chest = null; // 场景精英: no wood chest per part; the elite's iron chest comes with the last part
     else if (b.flees) chest = 'iron';
@@ -129,6 +168,7 @@ export function applyWin(s: GameState, b: Battle, rng: Rng, opts: { heal?: boole
 
   // 战后喘口气 (packs heal once, after the whole fight)
   if (opts.heal !== false) postFightHeal(s);
+  if (b.fx.charm?.afterHeal) s.hp = Math.min(maxHp(s), s.hp + Math.round(maxHp(s) * b.fx.charm.afterHeal)); // 秘术 Gute Besserung!
   // 物品栏 (2026-11-22): rolled last, so the earlier rolls keep their order.
   const items = b.tutorial === 'loss' ? [] : rollItemDrops(s, rng);
   return { xp, gold, kill, levelUp, drop, items, bagFull, echoRecovered, review: rv, chest, gearUp, card };

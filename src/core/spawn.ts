@@ -8,14 +8,20 @@ import { isRetired, kindOf, pendingToday, reviewMon, verifyOf } from './srs';
 import { now, type GameState } from './state';
 import type { Word, ZoneId } from './types';
 import { has } from './unlocks';
+import { CONFIG } from './config';
 import { WORDS } from '../data/words';
 import { prioritise } from './wordImport';
+import { challengeSlots, pickChallenge } from './challenge';
+import { laterReady } from './erosion';
+import { isPlaced } from './placement';
 
 export interface SpawnPick {
   word: Word;
   kind: 'new' | 'due' | 'shadow';
   /** 场景刷空: this slot is for a 残句 (the word only says where it stands). */
   phrase?: boolean;
+  /** 挑战怪 (rev 342): a harder word from the scene's challenge pool (your level + 2, ×1.75 XP). */
+  challenge?: boolean;
 }
 
 export function zoneWords(zone: ZoneId): Word[] {
@@ -32,7 +38,7 @@ export function zoneMinLevel(zone: ZoneId): number {
 export function eligible(s: GameState, w: Word): boolean {
   if (w.family === 'truhe') return false; // 宝箱怪 only appears as a rare spawn
   if (!has(s.level, 'typing') && !w.art) return false;
-  return true;
+  return laterReady(s, w); // 0.7/0.8: 蚀变 words and second batches (src/core/erosion.ts)
 }
 
 export function pickSpawns(s: GameState, zone: ZoneId, count: number, alive: Set<string>, rng: Rng, opts: { phraseOk?: boolean } = {}): SpawnPick[] {
@@ -50,7 +56,7 @@ export function pickSpawns(s: GameState, zone: ZoneId, count: number, alive: Set
     const k = kindOf(s, w, t);
     if (verifyOf(s.words[w.id], t)) verify.push(w);
     else if (k === 'due') due.push(w);
-    else if (k === 'new') fresh.push(w);
+    else if (k === 'new' || isPlaced(s.words[w.id])) fresh.push(w); // 快速通道: 推定会 words come as monsters
     else if (k === 'shadow') shadows.push(w);
   }
   // Reviews (2026-11-21) come to wherever you are: due words of every field of your region and the ones before it.
@@ -76,7 +82,11 @@ export function pickSpawns(s: GameState, zone: ZoneId, count: number, alive: Set
   const prio = new Set(s.wordImport?.ids ?? []);
   if (prio.size) fresh.splice(0, fresh.length, ...prioritise(fresh, prio));
   const newSlots = Math.min(count - out.length, Math.max(1, Math.ceil(count * 0.6)));
-  for (const w of fresh.slice(0, newSlots)) out.push({ word: w, kind: 'new' });
+  // 挑战怪 (rev 342): a share of the new slots (10 / 25 / 40%, by your first-try record) goes to the challenge pool.
+  const nCh = has(s.level, 'typing') ? challengeSlots(s, newSlots, rng) : 0;
+  const ch = nCh ? pickChallenge(s, zone, nCh, alive, rng).filter((w) => eligible(s, w)) : [];
+  for (const w of fresh.slice(0, newSlots - ch.length)) out.push({ word: w, kind: 'new' });
+  for (const w of ch) out.push({ word: w, kind: 'new', challenge: true });
 
   // 越区引导 (2026-11-21): between reviews, practise what you can't write yet: not recognised first, then
   // recognised but not written. Words you can already write stay away until they are due, so a region you
@@ -88,7 +98,7 @@ export function pickSpawns(s: GameState, zone: ZoneId, count: number, alive: Set
     out.push({ word: w, kind: 'shadow' });
   }
   // A brand-new player has few learned words: top up with new ones.
-  for (const w of fresh.slice(newSlots)) {
+  for (const w of fresh.slice(newSlots - ch.length)) {
     if (out.length >= count) break;
     out.push({ word: w, kind: 'new' });
   }
@@ -109,7 +119,7 @@ export function pickSpawns(s: GameState, zone: ZoneId, count: number, alive: Set
   if (has(s.level, 'plural')) {
     let pl = Math.ceil(room / 3);
     const crowd = (x: Word) => (isRetired(s.words[x.id]) && !verifyOf(s.words[x.id], t)) || (!isRetired(s.words[x.id]) && kindOf(s, x, t) === 'guiming');
-    for (const w of shuffle(rng, local.filter((x) => crowd(x) && !alive.has(x.id) && !taken.has(x.id) && !!x.art && !!x.pl && x.pl !== '-' && !x.plOnly))) {
+    for (const w of shuffle(rng, local.filter((x) => crowd(x) && !alive.has(x.id) && !taken.has(x.id) && !!x.art && !!x.pl && x.pl !== '-' && !x.plOnly && (s.words[x.id]?.plOk ?? 0) < CONFIG.phase.pluralRetire))) {
       if (pl-- <= 0) break;
       add(w, 'shadow');
     }
@@ -117,12 +127,23 @@ export function pickSpawns(s: GameState, zone: ZoneId, count: number, alive: Set
   // One 残句 per field at most (WorldScene turns the slot into one); its word only says which scene.
   const anchor = local.find((w) => !gone(w) && kindOf(s, w, t) === 'guiming') ?? local[0];
   if (opts.phraseOk && anchor && room > 0) add(anchor, 'shadow', true);
-  const region = zoneWords(zone)[0]?.region ?? 1;
+  const region = zoneWords(zone)[0]?.region ?? 0;
   for (const w of WORDS) {
-    if (room <= 0) break;
+    if (room <= 0 || !region) break;
     if ((w.region ?? 1) !== region + 1 || alive.has(w.id) || !eligible(s, w) || gone(w)) continue;
     const k = kindOf(s, w, t);
     if (k === 'new' || k === 'due') add(w, k);
+  }
+  // C1 (游戏设计 rev 488): regions 17–20 add no words. Their fields fill with review and challenge monsters from
+  // everything learned, the ones closest to being forgotten (soonest due) first.
+  if (!region) {
+    const known = WORDS.filter((w) => !!s.words[w.id] && !alive.has(w.id) && !taken.has(w.id) && eligible(s, w) && !gone(w));
+    known.sort((a, b) => (s.words[a.id].due ?? 0) - (s.words[b.id].due ?? 0));
+    for (const w of known) {
+      if (out.length >= count) break;
+      out.push({ word: w, kind: kindOf(s, w, t) === 'due' ? 'due' : 'shadow' });
+      taken.add(w.id);
+    }
   }
   return out;
 }

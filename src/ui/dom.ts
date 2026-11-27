@@ -39,9 +39,9 @@ export function esc(s: string): string {
   return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 }
 
-export function bar(cls: string, value: number, max: number, label?: string): HTMLElement {
+export function bar(cls: string, value: number, max: number, label?: string, right?: string): HTMLElement {
   const pct = Math.max(0, Math.min(100, (value / Math.max(1, max)) * 100));
-  return h(`div.bar.${cls}`, h('i', { style: `width:${pct}%` }), label ? h('span', label) : null);
+  return h(`div.bar.${cls}`, h('i', { style: `width:${pct}%` }), label ? h('span', label) : null, right ? h('span.r', right) : null);
 }
 
 export function isTyping(): boolean {

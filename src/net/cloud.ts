@@ -3,7 +3,7 @@
 // Only the publishable (anon) key lives here; row-level security limits each player to their own save.
 
 import { createClient, type Session } from '@supabase/supabase-js';
-import { migrate, type GameState } from '../core/state';
+import { LEXICON, migrate, type GameState } from '../core/state';
 
 // The one place the project's address and public key live.
 export const SUPABASE_URL = 'https://xmttluclhrjhgokemnso.supabase.co';
@@ -176,9 +176,27 @@ export async function syncOnBoot(local: GameState | null): Promise<GameState | n
   if (!id) return local;
   cloud.status = 'syncing';
   try {
-    const { data, error } = await withTimeout(sb.from('saves').select('data').eq('user_id', id).maybeSingle());
+    const { data, error } = await withTimeout(sb.from('saves').select('data, updated_at').eq('user_id', id).maybeSingle());
     if (error) throw error;
-    const remote = data ? migrate((data as { data: unknown }).data) : null;
+    lastRemoteAt = (data as { updated_at?: string } | null)?.updated_at ?? null;
+    const raw = (data as { data?: { lexicon?: number; level?: unknown } } | null)?.data;
+    // 审查 A2: an old-format cloud save (a stale 0.6 page uploaded it) never replaces a new-format local save.
+    const oldFormat = !!raw && typeof raw.level === 'number' && (raw.lexicon ?? 0) < LEXICON;
+    const mineEarly = local && (!local.owner || local.owner === id) ? local : null;
+    if (oldFormat && mineEarly) {
+      cloud.status = 'ok';
+      cloud.lastSync = Date.now();
+      mineEarly.owner = id;
+      void push(mineEarly);
+      return mineEarly;
+    }
+    // 审查 A5: a cloud save migrate() throws on counts as unreadable (locked), not as offline.
+    let remote: GameState | null = null;
+    try {
+      remote = data ? migrate(raw) : null;
+    } catch {
+      remote = null;
+    }
     // A cloud save we can't read must never be overwritten by a fresh game: stop uploading until fixed.
     if (data && !remote) {
       cloudLocked = true;
@@ -205,14 +223,28 @@ export async function syncOnBoot(local: GameState | null): Promise<GameState | n
 
 /** Uploads the save and refreshes the leaderboard row. Failures are silent; the next push retries. */
 let cloudLocked = false;
+/** updated_at of the cloud row as this page last read or wrote it (审查 A1 ②). */
+let lastRemoteAt: string | null = null;
 
 export async function push(s: GameState): Promise<boolean> {
   const id = uid();
   if (!id || cloudLocked) return false;
   try {
+    // 审查 A1 ②: someone else (another tab or computer) wrote a newer save since we last synced: stop and say so.
+    const head = await withTimeout(sb.from('saves').select('updated_at').eq('user_id', id).maybeSingle());
+    const remoteAt = (head.data as { updated_at?: string } | null)?.updated_at ?? null;
+    const moved = remoteAt && (lastRemoteAt ? Date.parse(remoteAt) !== Date.parse(lastRemoteAt) : Date.parse(remoteAt) > (s.savedAt ?? 0));
+    if (!head.error && moved) {
+      cloudLocked = true;
+      cloud.status = 'offline';
+      changed();
+      window.dispatchEvent(new CustomEvent('wk-cloud-conflict'));
+      return false;
+    }
     const at = new Date(s.savedAt ?? Date.now()).toISOString();
     const { error } = await withTimeout(sb.from('saves').upsert({ user_id: id, data: s, version: s.version, updated_at: at }), 10000);
     if (error) throw error;
+    lastRemoteAt = at;
     if (cloud.profile) {
       const stats = { level: s.level, cls: s.cls, named: namedCount(s), updated_at: at };
       await sb.from('profiles').update(stats).eq('id', id);
@@ -239,8 +271,18 @@ export function schedulePush(s: GameState): void {
   }, 30_000);
 }
 
-export async function leaderboard(): Promise<Profile[]> {
-  const { data, error } = await sb.from('profiles').select('nickname, level, cls, named').order('level', { ascending: false }).order('named', { ascending: false }).limit(50);
+export interface BoardRow {
+  pos: number;
+  nickname: string;
+  level: number;
+  score: number;
+  extra: number;
+  me: boolean;
+}
+
+/** 排行榜 (每日榜 / 总榜 / 语法榜): ranked on the server from the saved counters; hidden players are left out. */
+export async function leaderboard(kind: 'daily' | 'total' | 'gram'): Promise<BoardRow[]> {
+  const { data, error } = await withTimeout(sb.rpc('leaderboard', { kind, lim: 30 }));
   if (error) throw error;
-  return (data ?? []) as Profile[];
+  return (data ?? []) as BoardRow[];
 }

@@ -1,4 +1,8 @@
-import { SCENES, scenesOf } from '../data/world';
+import { neighbours, SCENES, scenesOf } from '../data/world';
+import { applyTheme } from '../ui/theme';
+import { setMusicMood } from './audio';
+import { RED, redAsleep, redEligible } from '../core/redname';
+import { OPINION, opinionEligible } from '../core/opinion';
 import { elitePick, type ElitePick } from '../core/elite';
 import Phaser from 'phaser';
 import { needsVerify, stageOf, type Stage } from '../core/srs';
@@ -6,18 +10,21 @@ import { now } from '../core/state';
 import type { Word, ZoneId } from '../core/types';
 import { fullForm, WORD_BY_ID } from '../data/words';
 import { has } from '../core/unlocks';
-import { phraseCards, phraseWord } from '../core/combat';
+import { phraseCards, phraseWord, plateZh } from '../core/combat';
 import { SAYING_CFG, SAYINGS } from '../data/sayings';
 import { FAMILIES } from '../data/families';
 import type { Controller } from './controller';
-import { DEFAULT_LOOK, lookKey, type Look } from '../core/look';
-import { myBubble, online } from '../net/online';
+import { DEFAULT_LOOK } from '../core/look';
 import { generateMap, isBlocked, MAP_H, MAP_W, TILE, walkableTilesIn, zonesOf, zoneAt, type MapData, type NpcId, type RegionId, type ZoneDef } from './map';
-import { GLITCH, heroFramesKenney, dungeonTile, SHADE_RAMP, CHAR_RAMP, makeTextures, renderMapCanvas, PAL } from './sprites';
-import { NPC_TILE, isRestored, wordTile } from '../ui/icons';
+import { GLITCH, CHARM_W, heroFramesKenney, dungeonTile, SHADE_RAMP, CHAR_RAMP, makeTextures, renderMapCanvas, PAL, BRIGHT, renderBrightMap, rawFigure } from './sprites';
+import { setProgress } from '../ui/loading';
+import { NPC_TILE, isRestored, wordArt } from '../ui/icons';
+import { artKey, monsterCanvas, type SheetId } from './monsterArt';
 import { sfx } from './audio';
 import { CONFIG } from '../core/config';
 import { NodeNav } from './nodes';
+import { charRamp, mapRamp, mapShades, shadeRamp, type Ramp5 } from './palette';
+import { REGION_DEF } from '../data/zones';
 
 export interface MonsterEntity {
   uid: number;
@@ -28,6 +35,8 @@ export interface MonsterEntity {
   scripted?: 'loss' | 'trial';
   /** Rare (gold-rimmed) or 宝箱怪: flees at half HP / turn 3, drops an iron chest. */
   rare?: boolean;
+  /** 挑战怪 (rev 342): from the scene's challenge pool. */
+  challenge?: boolean;
   /** 残句 (0.5): a sentence monster carrying this short saying (no word nameplate). */
   phrase?: string;
   x: number;
@@ -45,13 +54,24 @@ export interface MonsterEntity {
   node?: string;
   /** 野外精英 · 场景精英 (2026-11-23): the scene quiz it carries (its word is the first part's). */
   elite?: ElitePick;
+  /** 红名怪 (81): rushes you on sight; `chasing` while it runs at you (contact starts the fight with its 结构魔). */
+  red?: boolean;
+  /** 开口表达观点 (121): throws out a claim before the fight. */
+  opinion?: boolean;
+  chasing?: boolean;
 }
 
 const SPEED = 72;
 const FONT = '"Courier New", ui-monospace, monospace';
 
+/** The map's fog border (map.ts: 2 tiles, plus a ragged third) in world pixels, kept outside the camera. */
+const FOG_EDGE = 3 * TILE;
+
 export class WorldScene extends Phaser.Scene {
   ctrl!: Controller;
+  /** 各区色调: this map's 5-step ramp, or null for the classic red (src/game/palette.ts). */
+  ramp: Ramp5 | null = null;
+  bright = false;
   map!: MapData;
   player!: Phaser.GameObjects.Sprite;
   monsters: MonsterEntity[] = [];
@@ -80,13 +100,17 @@ export class WorldScene extends Phaser.Scene {
   }
 
   preload() {
+    this.load.on('progress', (p: number) => setProgress(p));
     if (!this.textures.exists('town')) this.load.image('town', './art/kenney-tiny-town.png');
+    if (!this.textures.exists('farm')) this.load.image('farm', './art/kenney-tiny-farm.png');
+    if (!this.textures.exists('battle')) this.load.image('battle', './art/kenney-tiny-battle.png');
     if (!this.textures.exists('dungeon')) this.load.image('dungeon', './art/kenney-tiny-dungeon.png');
   }
 
   create() {
     const region: RegionId = this.ctrl.state.region ?? 1;
     this.map = generateMap(region);
+    this.ramp = mapRamp(region, this.ctrl.state.flags);
     this.zones = zonesOf(region);
     this.monsters = [];
     this.signTexts = [];
@@ -103,11 +127,14 @@ export class WorldScene extends Phaser.Scene {
     const oldmap = !CONFIG.map.nodes || new URLSearchParams(location.search).has('oldmap');
     const town = !oldmap && this.textures.exists('town') ? (this.textures.get('town').getSourceImage() as HTMLImageElement) : null;
     const hidden = SCENES.filter((x) => x.region === region && x.type === 'hidden').map((x) => x.at);
-    addCanvas('map', renderMapCanvas(this.map, town, hidden));
+    // 明亮地图 (Lucas 2026-11-25): everyday maps in their own colours; 蚀变 maps keep their dark ramp (?dark = old look).
+    const eroded = this.ramp !== ((REGION_DEF[region]?.palette as Ramp5 | undefined) ?? null);
+    this.bright = !!town && !new URLSearchParams(location.search).has('dark') && !eroded && !!BRIGHT[region];
+    addCanvas('map', this.bright ? renderBrightMap(this.map, town!, this.textures.exists('farm') ? (this.textures.get('farm').getSourceImage() as HTMLImageElement) : null, hidden, BRIGHT[region]) : renderMapCanvas(this.map, town, hidden, this.ramp ? mapShades(this.ramp) : undefined));
     void tex;
     for (const k of ['hero0', 'hero1']) {
       if (this.textures.exists(k)) this.textures.remove(k);
-      this.textures.createCanvas(k, 16, 16);
+      this.textures.createCanvas(k, 16 + 2 * CHARM_W, 16);
     }
     this.applyLook();
     addCanvas('fire0', tex.fire[0]);
@@ -119,8 +146,11 @@ export class WorldScene extends Phaser.Scene {
     this.add.image(0, 0, 'map').setOrigin(0, 0).setDepth(-2);
     const W = MAP_W * TILE;
     const H = MAP_H * TILE;
-    this.cameras.main.setBounds(0, 0, W, H);
-    this.cameras.main.setBackgroundColor(PAL.void);
+    // 雾边不进镜头 (Lucas 2026-11-27: 顶部灰白空带难看): the map's 2–3 tile fog border stays just off screen.
+    this.cameras.main.setBounds(FOG_EDGE, FOG_EDGE, W - 2 * FOG_EDGE, H - 2 * FOG_EDGE);
+    applyTheme(this.bright, region);
+    setMusicMood(this.bright, region);
+    this.cameras.main.setBackgroundColor(this.bright ? BRIGHT[region].fog : PAL.void);
 
     // Light sources.
     const b = this.map.bonfire;
@@ -142,12 +172,13 @@ export class WorldScene extends Phaser.Scene {
     for (const n of this.map.npcs) {
       // Lina stays a shadow (two darkest steps) until she is freed, like her dialog portrait.
       const shadow = n.id === 'lina' && !isRestored('lina');
-      const nk = `npc-${n.id}${shadow ? '-s' : ''}`;
-      if (!this.textures.exists(nk)) this.textures.addCanvas(nk, dungeonTile(this.dsheet(), NPC_TILE[n.id] ?? 111, shadow ? CHAR_RAMP.slice(0, 2) : CHAR_RAMP));
+      const figure = this.ramp ? charRamp(this.ramp) : CHAR_RAMP;
+      const nk = `npc-${n.id}${shadow ? '-s' : ''}${this.bright && !shadow ? '-raw' : this.ramp ? `-${this.ramp[3]}` : ''}`;
+      if (!this.textures.exists(nk)) this.textures.addCanvas(nk, this.bright && !shadow ? rawFigure(this.dsheet(), NPC_TILE[n.id] ?? 111) : dungeonTile(this.dsheet(), NPC_TILE[n.id] ?? 111, shadow ? figure.slice(0, 2) : figure));
       this.add.sprite(n.x * TILE + 8, n.y * TILE + 6, nk).setDepth(n.y * TILE + 8);
       if (this.map.region >= 2 || n.id !== 'hilde')
         this.add
-          .text(n.x * TILE + 8, n.y * TILE - 6, NPC_LABEL[n.id], { fontFamily: FONT, fontSize: '6px', color: '#d8c8b8', resolution: 4 })
+          .text(n.x * TILE + 8, n.y * TILE - 6, NPC_LABEL[n.id], { fontFamily: FONT, fontSize: '6px', color: this.bright ? '#2d2118' : '#d8c8b8', fontStyle: this.bright ? 'bold' : '', stroke: this.bright ? '#fffdf8' : undefined, strokeThickness: this.bright ? 2 : 0, resolution: 4 })
           .setOrigin(0.5, 1)
           .setDepth(n.y * TILE + 9);
     }
@@ -170,13 +201,18 @@ export class WorldScene extends Phaser.Scene {
     for (const z of this.zones) {
       if (z.id === 'camp' || z.id === 'markt') continue;
       this.add
-        .text((z.rect.x + z.rect.w / 2) * TILE, (z.rect.y + 1.2) * TILE, `${z.de} · ${z.zh} · ${z.levels}`, {
+        // 美术小修 A (2026-11-26): on bright maps two short lines instead of one long one, so neighbouring zone names
+        // no longer run into each other.
+        .text((z.rect.x + z.rect.w / 2) * TILE, Math.max((z.rect.y + 1.2) * TILE, FOG_EDGE + 9), // 雾边不进镜头: top-row names stay on screen
+           this.bright ? `${z.zh} · ${z.levels}\n${z.de}` : `${z.de} · ${z.zh} · ${z.levels}`, {
           fontFamily: FONT,
           fontSize: '8px',
-          color: '#5a2a2e',
+          color: this.bright ? '#4a3420' : '#5a2a2e',
+          align: 'center',
           resolution: 4,
         })
         .setOrigin(0.5)
+        .setAlpha(this.bright ? 0.7 : 1)
         .setDepth(1);
     }
 
@@ -195,6 +231,9 @@ export class WorldScene extends Phaser.Scene {
     this.cursors = kb.createCursorKeys();
     this.keys = kb.addKeys('W,A,S,D,E') as Record<string, Phaser.Input.Keyboard.Key>;
     kb.disableGlobalCapture();
+    // Everything below may call back into the controller (scene claim → level-up, spawns → bread), which uses
+    // ctrl.scene: hand it over now instead of waiting for onSceneReady (载入崩溃, Lucas 2026-11-27).
+    this.ctrl.scene = this;
     this.nodes?.stop();
     this.nodes = CONFIG.map.nodes && !new URLSearchParams(location.search).has('oldmap') ? new NodeNav(this) : null;
     this.nodes?.start();
@@ -216,8 +255,10 @@ export class WorldScene extends Phaser.Scene {
   fitZoom() {
     const w = this.scale.width;
     // Scene map: zoomed out so most of the route (and the next scenes) fits on screen; walking keeps the close view.
-    if (this.nodes) this.cameras.main.setZoom(w < 1100 ? 1.5 : 2);
-    else this.cameras.main.setZoom(w < 900 ? 2 : w > 1700 ? 4 : 3);
+    const want = this.nodes ? (w < 1100 ? 1.5 : 2) : w < 900 ? 2 : w > 1700 ? 4 : 3;
+    // A very wide or tall window would otherwise see past the bounds (the fog) on both sides: zoom in just enough.
+    const fill = Math.max(w / (MAP_W * TILE - 2 * FOG_EDGE), this.scale.height / (MAP_H * TILE - 2 * FOG_EDGE));
+    this.cameras.main.setZoom(Math.max(want, fill));
   }
 
   // ---- Monsters ------------------------------------------------------------
@@ -232,7 +273,7 @@ export class WorldScene extends Phaser.Scene {
     this.monsters = [];
     for (const z of this.zones) if (z.monsters) this.fillZone(z.id);
     this.placeEcho();
-    this.ctrl.afterSpawnAll();
+    this.ctrl.afterSpawnAll(this);
   }
 
   fillZone(zone: ZoneId) {
@@ -256,6 +297,10 @@ export class WorldScene extends Phaser.Scene {
         }
       }
       const m = this.addMonster(p.word, p.kind, zone, spot.x * TILE + 8, spot.y * TILE + 8);
+      if (p.challenge) {
+        m.challenge = true;
+        this.styleMonster(m);
+      }
       if (p.phrase) this.phraseSlot(m, zone);
     }
     this.maybeRare(zone, picks.length, tiles);
@@ -279,6 +324,10 @@ export class WorldScene extends Phaser.Scene {
       if (!sp) continue;
       const m = this.addMonster(p.word, p.kind, zone, sp.x, sp.y);
       m.node = sp.sc.id;
+      if (p.challenge) {
+        m.challenge = true;
+        this.styleMonster(m);
+      }
       added++;
       if (p.phrase) {
         this.phraseSlot(m, zone);
@@ -306,7 +355,7 @@ export class WorldScene extends Phaser.Scene {
     const taken = this.aliveIds();
     for (const sc of scenesOf(this.map.region)) {
       if (sc.zone !== zone || sc.type !== 'field' || sc === nav.here || !nav.revealed(sc)) continue;
-      const pick = elitePick(s, sc, taken);
+      const pick = elitePick(s, sc, taken, undefined, Math.random);
       if (!pick) continue;
       const sp = nav.spot(zone, true, pick.words[0]);
       if (!sp || sp.sc.id !== sc.id) continue;
@@ -392,8 +441,12 @@ export class WorldScene extends Phaser.Scene {
     const teeth = this.add.text(0, 1, '', { fontFamily: FONT, fontSize: '5px', color: '#ff3040', resolution: 4 }).setOrigin(0.5, 0);
     const marker = this.add.text(0, -12, '', { fontFamily: FONT, fontSize: '8px', fontStyle: 'bold', color: '#ffcf4a', resolution: 4 }).setOrigin(0.5, 1);
     const shadow = this.add.ellipse(0, 4, 18, 4, 0x000000, 0.6);
-    const bk = `mon-${wordTile(word)}`;
-    if (!this.textures.exists(bk)) this.textures.addCanvas(bk, dungeonTile(this.dsheet(), wordTile(word), SHADE_RAMP));
+    // 怪物美术: the word's look, own colours on bright maps, the map's dark ramp on 蚀变 maps.
+    const art = wordArt(word);
+    const bk = `mon-${artKey(art)}${this.bright ? '-raw' : this.ramp ? `-${this.ramp[3]}` : ''}`;
+    const sheetKey: Record<SheetId, string> = { d: 'dungeon', t: 'town', f: 'farm', b: 'battle', c: '' };
+    const src = art.sheet === 'c' ? null : this.textures.exists(sheetKey[art.sheet]) ? (this.textures.get(sheetKey[art.sheet]).getSourceImage() as HTMLImageElement) : undefined;
+    if (!this.textures.exists(bk) && src !== undefined) this.textures.addCanvas(bk, monsterCanvas(src, art, this.bright ? null : this.ramp ? shadeRamp(this.ramp) : SHADE_RAMP));
     const body = this.add.image(0, 5, bk).setOrigin(0.5, 1);
     label.setY(-14);
     teeth.setY(5);
@@ -419,6 +472,10 @@ export class WorldScene extends Phaser.Scene {
       reveal,
       stage: stageOf(this.ctrl.state, word),
     };
+    // 红名怪 (81): some met verbs in the field come as born red-name 结构魔.
+    if (!opts.isEcho && !opts.scripted && kind !== 'shadow' && redEligible(this.ctrl.state, word) && Math.random() < RED.chance) m.red = true;
+    // 开口表达观点 (121): some monsters you have met open with a claim.
+    else if (!opts.isEcho && !opts.scripted && kind !== 'shadow' && !m.elite && opinionEligible(this.ctrl.state, word) && Math.random() < OPINION.chance) m.opinion = true;
     this.styleMonster(m);
     this.monsters.push(m);
     this.nodes?.touch();
@@ -453,15 +510,33 @@ export class WorldScene extends Phaser.Scene {
     m.label.setColor(color);
     m.label.setShadow(0, 0, m.stage === 0 ? '#ff1830' : color, 6, true, true);
     m.teeth.setText('▼'.repeat(m.stage === 0 ? 4 : m.stage === 1 ? 2 : 1));
-    m.marker.setText(m.isEcho ? '回响' : m.elite ? '◈ 精英' : m.rare ? '◆' : m.kind === 'due' ? '!' : '');
+    m.marker.setText(m.isEcho ? '回响' : m.elite ? '◈ 精英' : m.rare ? '◆' : m.red ? (redAsleep(s) ? '红名 · 沉睡' : '红名') : m.opinion ? '❝ 观点' : m.challenge ? '▲ 挑战' : m.kind === 'due' ? '!' : '');
     m.marker.setColor(m.isEcho || m.rare ? '#ffcf4a' : m.elite ? '#ff9a3c' : '#ff5a5a');
     if (m.rare) m.label.setShadow(0, 0, '#ffcf4a', 8, true, true);
     if (m.elite) m.label.setShadow(0, 0, '#ff9a3c', 8, true, true);
+    if (m.red) (m.label.setColor('#ff4a4a'), m.label.setShadow(0, 0, '#ff1830', 10, true, true), m.marker.setColor('#ff4a4a'));
+    if (m.challenge && !m.elite && !m.rare && !m.isEcho) m.marker.setColor('#7fd4ff');
+    // 美术小修 A (2026-11-26): on bright maps light plates and markers get a dark edge so they read on grass and sand.
+    if (this.bright) {
+      m.label.setStroke('#2d2118', 2);
+      m.marker.setStroke('#2d2118', 2);
+    }
     this.updateGlyph(m);
     m.container.setScale(m.kind === 'shadow' ? 0.85 : 1);
   }
 
-  /** The name restores with 归名: garbage → half-revealed → "der Ap▒▒". */
+  private plateNear(m: MonsterEntity): boolean {
+    const here = this.nodes?.here?.id;
+    if (!here || !m.node) return true;
+    return m.node === here || neighbours(here).includes(m.node);
+  }
+
+  refreshPlates(): void {
+    for (const m of this.monsters) this.updateGlyph(m);
+  }
+
+  /** 名牌 (Lucas 2026-11-25): the meaning in Chinese once you have met the word; glitch for a word never met and for
+   *  蚀变 words. No German letters, no article. */
   updateGlyph(m: MonsterEntity) {
     const w = m.word;
     if (m.phrase) {
@@ -469,18 +544,17 @@ export class WorldScene extends Phaser.Scene {
       m.label.setText(x ? `${x.a} …` : '……');
       return;
     }
-    const rnd = () => GLITCH[Math.floor(Math.random() * GLITCH.length)];
-    let txt: string;
-    if (m.stage === 0) {
-      const n = Math.max(3, Math.min(9, w.de.length));
-      txt = Array.from({ length: n }, rnd).join('');
-    } else if (m.stage === 1) {
-      txt = [...w.de].map((ch, i) => (ch === ' ' ? ' ' : m.reveal[i] ? ch : rnd())).join('');
-    } else {
-      const half = Math.ceil(w.de.length / 2);
-      txt = w.de.slice(0, half) + '▒'.repeat(Math.max(1, w.de.length - half));
+    // 0.8.4 (Lucas 11-26「按推荐」): only monsters in your scene and the scenes next to it wear a name plate; far
+    // ones show just their figure, so a new character's map is not a sea of glitches.
+    if (!this.plateNear(m)) {
+      m.label.setText('');
+      return;
     }
-    m.label.setText(txt);
+    const rnd = () => GLITCH[Math.floor(Math.random() * GLITCH.length)];
+    const p = this.ctrl.state.words[w.id];
+    const met = !!p;
+    const presumed = !!p?.placed && !p.retired; // 快速通道: 名牌标「推定会」
+    m.label.setText(!met || w.erode ? Array.from({ length: Math.max(3, Math.min(9, w.de.length)) }, rnd).join('') : presumed ? `推定会·${plateZh(w)}` : plateZh(w));
   }
 
   removeMonster(m: MonsterEntity, how: 'scatter' | 'guiming' | 'flee') {
@@ -588,7 +662,6 @@ export class WorldScene extends Phaser.Scene {
 
   update(_t: number, dtMs: number) {
     const dt = Math.min(0.05, dtMs / 1000);
-    this.updatePeers(dt);
     this.jitterTimer += dtMs;
     if (this.jitterTimer > 110) {
       this.jitterTimer = 0;
@@ -678,64 +751,13 @@ export class WorldScene extends Phaser.Scene {
   }
 
   applyLook(): void {
-    const frames = heroFramesKenney(this.ctrl.state.look ?? DEFAULT_LOOK, this.dsheet(), true);
+    const frames = heroFramesKenney(this.ctrl.state.look ?? DEFAULT_LOOK, this.dsheet(), true, this.bright);
     ['hero0', 'hero1'].forEach((k, i) => {
       const t = this.textures.get(k) as Phaser.Textures.CanvasTexture;
-      t.context.clearRect(0, 0, 16, 16);
+      t.context.clearRect(0, 0, 16 + 2 * CHARM_W, 16);
       t.context.drawImage(frames[i], 0, 0);
       t.refresh();
     });
-  }
-
-  // ---- 联机第一档: other players in this region --------------------------------------------------
-  private peerViews = new Map<string, { c: Phaser.GameObjects.Container; spr: Phaser.GameObjects.Sprite; bubble: Phaser.GameObjects.Text; fight: Phaser.GameObjects.Text; key: string }>();
-  private myBubble: Phaser.GameObjects.Text | null = null;
-
-  private peerTexture(look: Look): string {
-    const key = `peer-${lookKey(look)}`;
-    if (!this.textures.exists(`${key}-0`)) heroFramesKenney(look, this.dsheet()).forEach((cv, i) => this.textures.addCanvas(`${key}-${i}`, cv));
-    if (!this.anims.exists(`${key}-walk`)) this.anims.create({ key: `${key}-walk`, frames: [{ key: `${key}-0` }, { key: `${key}-1` }], frameRate: 6, repeat: -1 });
-    return key;
-  }
-
-  private updatePeers(dt: number) {
-    const txt = (y: number, color: string, size = '6px') =>
-      this.add.text(0, y, '', { fontFamily: FONT, fontSize: size, color, resolution: 4, align: 'center', wordWrap: { width: 90, useAdvancedWrap: true } }).setOrigin(0.5, 1);
-    const now = Date.now();
-    for (const [id, v] of this.peerViews) if (!online.peers.has(id)) (v.c.destroy(), this.peerViews.delete(id));
-    for (const p of online.peers.values()) {
-      let v = this.peerViews.get(p.id);
-      const key = this.peerTexture(p.look);
-      if (!v) {
-        const spr = this.add.sprite(0, 0, `${key}-0`).setOrigin(0.5, 0.85).setAlpha(0.85);
-        const name = txt(-15, '#bfb0a4').setText(p.nick);
-        const fight = txt(-21, '#ff6a5a').setText('⚔ 战斗中');
-        const bubble = txt(-22, '#f2e6da', '7px');
-        const c = this.add.container(p.x, p.y, [spr, name, fight, bubble]);
-        v = { c, spr, bubble, fight, key };
-        this.peerViews.set(p.id, v);
-      }
-      if (v.key !== key) (v.spr.setTexture(`${key}-0`), (v.key = key));
-      const dx = p.x - v.c.x;
-      const dy = p.y - v.c.y;
-      const far = Math.hypot(dx, dy);
-      if (far > 200) v.c.setPosition(p.x, p.y);
-      else if (far > 1) {
-        const step = Math.min(far, Math.max(70, far / 2.5) * dt); // positions come every 3 s: glide there
-        v.c.x += (dx / far) * step;
-        v.c.y += (dy / far) * step;
-        if (Math.abs(dx) > 1) v.spr.setFlipX(dx < 0);
-        if (!v.spr.anims.isPlaying) v.spr.play(`${key}-walk`);
-      } else if (v.spr.anims.isPlaying) (v.spr.anims.stop(), v.spr.setTexture(`${key}-0`));
-      v.c.setDepth(v.c.y);
-      v.fight.setVisible(p.fighting);
-      const showBubble = !!p.bubble && (p.bubbleUntil ?? 0) > now;
-      v.bubble.setVisible(showBubble).setText(showBubble ? p.bubble! : '').setY(p.fighting ? -28 : -22);
-    }
-    // Your own chat bubble.
-    if (!this.myBubble) this.myBubble = this.add.text(0, 0, '', { fontFamily: FONT, fontSize: '7px', color: '#f2e6da', resolution: 4, align: 'center', wordWrap: { width: 90, useAdvancedWrap: true } }).setOrigin(0.5, 1);
-    const mb = myBubble && myBubble.until > now ? myBubble.text : '';
-    this.myBubble.setText(mb).setVisible(!!mb).setPosition(this.player.x, this.player.y - 16).setDepth(this.player.y + 1000);
   }
 
   canStand(x: number, y: number): boolean {
@@ -753,6 +775,25 @@ export class WorldScene extends Phaser.Scene {
     for (const m of this.monsters) {
       m.container.setDepth(m.y);
       if (m.isEcho || m.scripted) continue;
+      // 红名怪: sees you within RED.sight and runs at you (asleep after a long absence).
+      if (m.red && !redAsleep(this.ctrl.state) && !this.ctrl.uiBlocking()) {
+        const px = this.player.x - m.x;
+        const py = this.player.y - m.y;
+        const pd = Math.hypot(px, py);
+        if (pd < RED.sight && pd > 1) {
+          m.chasing = true;
+          const st = Math.min(pd, RED.speed * dt);
+          const nx = m.x + (px / pd) * st;
+          const ny = m.y + (py / pd) * st;
+          if (!isBlocked(this.map, Math.floor(nx / TILE), Math.floor(ny / TILE))) {
+            m.x = m.tx = nx;
+            m.y = m.ty = ny;
+            m.container.setPosition(m.x, m.y);
+          }
+          continue;
+        }
+        m.chasing = false;
+      }
       m.wait -= dt;
       if (m.wait > 0) continue;
       const dx = m.tx - m.x;
@@ -792,6 +833,8 @@ export class WorldScene extends Phaser.Scene {
     if (this.time.now > this.graceUntil) {
       for (const m of this.monsters) {
         if (Math.abs(m.x - px) < 11 && Math.abs(m.y - py) < 11) {
+          if (m.red && m.chasing) return this.ctrl.redCatch(m);
+          if (m.opinion) return this.ctrl.opinion(m);
           this.ctrl.encounter(m);
           return;
         }

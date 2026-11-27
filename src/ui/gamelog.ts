@@ -1,5 +1,5 @@
 // 记录 (2026-11-21, Lucas): every answer, hit, kill, drop and passing toast lands here, so nothing that
-// flashed by is lost. Last 200 lines, this session only (not saved). Shown in the bottom-left box (chat.ts).
+// flashed by is lost. Last 200 lines, this session only (not saved). Shown in the bottom-left box (logbox.ts).
 
 export type LogTone = 'good' | 'bad' | 'info' | 'gold';
 export interface GameLogLine {

@@ -4,6 +4,9 @@ Not wired into the game yet. The top 6000 rows of `wortschatz.tsv` are the plann
 
 - `wortschatz.tsv`: lemma, card display form (noun article + plural, irregular genitive only; verb 3sg · Präteritum · Perfekt; irregular comparatives), POS, Chinese gloss, tags, examples (to be filled).
 - `verben-praeposition.tsv`: verb + preposition pairs grouped by preposition, with case, Chinese meaning, example (self-written, unproofread), reflexive flag.
+- `reflexiv.tsv`: reflexive verbs (Lucas 2026-11-27): form (`sich` / `(sich)` / `sich ~ lassen`), the reflexive's case when dative, the usual preposition. Read by `scripts/build_lexicon.py`.
+- `goethe-stufe.tsv`: lowest Goethe-Zertifikat word list (A1/A2/B1) each lemma appears on, blank = none; made by `scripts/goethe_levels.py` from the Goethe-Institut PDFs (not kept here). Used by the 入学测试.
+- `verschoben.tsv`: A1-segment words on no Goethe list up to B1, moved to a B1 scene by `build_lexicon.py` (Lucas 2026-11-27).
 - Re-import an edited spreadsheet: `python3 scripts/wortschatz_import.py <file.xlsx>` (needs `openpyxl`).
 - `build/`: the scripts and manual review files used to build the list (inputs were downloaded separately; see sources).
 

@@ -1,9 +1,12 @@
 import type { Look } from './look';
 import { CONFIG, monsterHpAt, playerBaseHp, XP_CURVE, xpToNext } from './config';
 import { hpBonus, type ClassId } from './classes';
-import type { Item, Slot, WordProgress } from './types';
+import type { Item, RegionNo, Slot, WordProgress } from './types';
+import type { RiftRun } from './rift';
 import { convertLegacyAffixes } from './loot';
 import { UNLOCK } from './unlocks';
+import { levelCapFor } from './stages';
+import { masteryAffix } from './mastery';
 
 export interface DayLog {
   minutes: number;
@@ -32,10 +35,19 @@ export interface Settings {
   chestAnim: boolean;
   /** 发音训练 (2026-11-23): read 回音怪 pairs aloud with the in-browser phoneme model (opt-in, ~635 MB). */
   pron?: boolean;
+  /** 即时战 (81): false = keep turn-based (no quick-answer bonus); slow = casts ×1.5. */
+  realtime?: boolean;
+  realtimeSlow?: boolean;
+  /** 排行榜隐身: off the boards and out of the online count. */
+  hideBoard?: boolean;
+  /** 安静模式: no speaking asked; spoken-only tasks wait as 口语委托. */
+  quiet?: boolean;
 }
 
 export interface GameState {
   version: 3;
+  /** 6000 词导入 (0.7+0.8): 1 = the save was started on the 6000-word list. Older saves are reset once (see migrate). */
+  lexicon?: number;
   createdAt: number;
   /** Real time of the last local save (ms); the newer of local and cloud wins. */
   savedAt?: number;
@@ -63,25 +75,55 @@ export interface GameState {
   skillUses: Record<string, number>;
   /** 接句怪: short-saying cards collected (id → times). */
   sayings?: Record<string, number>;
+  /** 秘术栏 (3 级; 2 slots from 81): equipped short-card / slang ids. */
+  charms?: string[];
+  /** 俚语秘术 (50 级): owned slang lines. */
+  slang?: Record<string, number>;
+  /** 言石 (62 级): gems not set in an item. */
+  gems?: import('./gems').Gem[];
+  /** 言石 刻满: grammars a gem was filled on (no longer offered for the free re-carve). */
+  gemFull?: import('./gram/task').GramSys[];
   /** 主城全量筛选 (0.6.x): XP waiting in scenes (待领) and the cursor per scope. */
   screen?: import('./screen').ScreenSave;
   /** 词表导入 (2026-11-22): word ids marked 优先 and lemmas the game doesn't have yet (待收录). Optional: absent = none. */
   wordImport?: { ids: string[]; pending: string[] };
   /** 入学测试 / 分级考核 (2026-11-25): last result and 推定会 spot-check counts. Optional: absent = never taken. */
   placement?: import('./placement').PlaceSave;
+  /** 挑战怪 (rev 342): first-try record of the last field monsters. Optional: absent = none yet. */
+  challenge?: import('./challenge').ChallengeSave;
+  /** 语法线 (0.7–0.8): boards seen, dungeon floors cleared, review partner. Optional: absent = nothing yet. */
+  gram?: import('./gram/boards').GramSave;
+  /** 失语者的遗书 (1.0): letter id → time first read. */
+  letters?: Record<string, number>;
+  /** 文章怪 (81–120 级 B1 文章, 17–20 区 C1 文章): article id → time last carried by a monster (先出没读过的, Lucas 2026-11-27). */
+  articlesRead?: Record<string, number>;
+  /** 排行榜 counters (optional; refreshed before each save). */
+  board?: import('./board').BoardSave;
+  /** Recent timed answers (冒险者 PK: the rival's accuracy and pace follow these). */
+  recentAns?: import('./adventurers').AnsRec[];
+  /** 红装 / 橙装保底 counters and 套装 materials (optional, old saves have none). */
+  forge?: import('./forge').ForgeSave;
   /** 篝火日记 (2026-11-22): entries written at bonfires (newest last). Optional: absent = none yet. */
   journal?: import('./journal').JournalEntry[];
   /** 回音怪 (2026-11-23): right / wrong per minimal-pair category, for the weak-spot record. */
   pron?: Partial<Record<import('../data/pairs').PronCat, { ok: number; miss: number }>>;
   /** 0.4 装备档位: kills per region ("1", "2"); the tier follows from them. */
   gearKills?: Record<string, number>;
+  /** 碎片 余额 per region (九, 2026-11-25 暂定): what trades spend; gearKills is the 累计 that unlocks tiers. */
+  shardBal?: Record<string, number>;
   recentNouns: string[];
   /** Which map you stand on (1 = 余烬营地, 2 = 面包集市). */
-  region: 1 | 2 | 3;
-  /** Class picked at Greta (Lv10+, region 2), the classes whose trial you passed, talents per class. */
+  region: RegionNo;
+  /** Old class fields (classes were cancelled, 游戏设计 十): always null / empty now; kept so old saves load. */
   cls: ClassId | null;
   classes: ClassId[];
-  talents: Partial<Record<ClassId, Record<string, number>>>;
+  /** 天赋树（共用一棵）: ranks under `shared` (old per-class keys are ignored). */
+  talents: Record<string, Record<string, number>>;
+  /** 裂隙 run in progress (0.8, 91 级): gear counts for nothing while it is set. */
+  rift?: RiftRun;
+  /** 技能池: skills given beyond the level schedule (optional) and the skills taken into battle (optional). */
+  pool?: import('./skillPool').PoolId[];
+  loadout?: import('./skillPool').PoolId[];
   /** 墨水 / 沉着 and the writer's typed streak, kept between fights until the bonfire. */
   cfx?: import('./combat').ClassFx;
   /** Mira's shelf (region 2). */
@@ -110,7 +152,9 @@ export function dayKey(t: number): string {
 export function newGame(name: string, origin: string, t = Date.now()): GameState {
   return {
     version: 3,
+    lexicon: LEXICON,
     gearKills: {},
+    shardBal: {},
     createdAt: t,
     name,
     origin,
@@ -158,16 +202,32 @@ export function todayLog(s: GameState): DayLog {
 
 // ---- Derived player stats -------------------------------------------------
 
+/** 裂隙 白板进入: no gear inside the rift. */
+export const gear = (s: Pick<GameState, 'equipped' | 'rift'>) => (s.rift ? {} : s.equipped) as GameState['equipped'];
+/** Rift blessings picked; past max level they grow with depth (局内祈福按层数变强: ×(1 + 2% a floor), 暂定). */
+const blessed = (s: Pick<GameState, 'rift' | 'level'>, id: string) =>
+  (s.rift?.bless.filter((x) => x === id).length ?? 0) * (s.rift && s.level >= CONFIG.levelCap ? 1 + 0.02 * s.rift.floor : 1);
+
+/** 碎片换档 (九, 2026-11-25): strength comes from the worn piece's own tier, no longer from shards directly.
+ *  A piece counts in full in its region, half (rounded down) in the next one, nothing further on. 暂定: which slot
+ *  carries which part of the old tier bonus — pen → damage, coat → HP, amulet → armor penetration. */
+export function itemTier(it: Item | undefined, region: number): number {
+  if (!it?.tier) return 0;
+  const r = it.region ?? region;
+  return r === region ? it.tier : r === region - 1 ? Math.floor(it.tier / 2) : 0;
+}
+const slotTier = (s: Pick<GameState, 'equipped' | 'rift' | 'region'>, slot: 'pen' | 'coat' | 'amulet') => itemTier(gear(s)[slot], s.region ?? 1);
+
 export function maxHp(s: GameState): number {
-  const coat = s.equipped.coat?.main ?? 0;
-  // 0.4: the coat's HP counts as a percentage (+0.5% per point); the gear tier does the heavy lifting.
-  return Math.round(playerBaseHp(s.level) * (1 + coat * 0.005) * (1 + hpBonus(s)) * (1 + CONFIG.gear.hp * gearTier(s)) * (1 + affixTotal(s, 'hp')));
+  const coat = gear(s).coat?.main ?? 0;
+  // 0.4: the coat's HP counts as a percentage (+0.5% per point); the coat's tier does the heavy lifting.
+  return Math.round(playerBaseHp(s.level) * (1 + coat * 0.005) * (1 + hpBonus(s)) * (1 + CONFIG.gear.hp * slotTier(s, 'coat')) * (1 + affixTotal(s, 'hp')) * (1 + 0.2 * blessed(s, 'hp')));
 }
 
-/** 0.4 伤害: half a same-level monster's HP, × (1 + 0.18 × gear tier); the pen adds +1% per attack point. */
+/** 0.4 伤害: half a same-level monster's HP, × (1 + 0.18 × the pen's tier); the pen adds +1% per attack point. */
 export function attack(s: GameState): number {
-  const pen = s.equipped.pen?.main ?? 0;
-  return CONFIG.playerDmgShare * monsterHpAt(s.level) * (1 + CONFIG.gear.dmg * gearTier(s)) * (1 + pen * 0.01) * (1 + affixTotal(s, 'dmg'));
+  const pen = gear(s).pen?.main ?? 0;
+  return CONFIG.playerDmgShare * monsterHpAt(s.level) * (1 + CONFIG.gear.dmg * slotTier(s, 'pen')) * (1 + pen * 0.01) * (1 + affixTotal(s, 'dmg')) * (1 + 0.15 * blessed(s, 'atk'));
 }
 
 /** Tier reached in one region: tier n after 40 × n² shards there (1 per kill), at most 8. */
@@ -176,10 +236,18 @@ export function regionTier(s: Pick<GameState, 'gearKills'>, region: number): num
   return Math.min(CONFIG.gear.tiers, Math.floor(Math.sqrt(k / CONFIG.gear.shardsPerTierSq) + 1e-9));
 }
 
-/** The tier that counts now: this region's, or half the previous region's while you still wear that gear. */
-export function gearTier(s: Pick<GameState, 'gearKills' | 'region'>): number {
+/** The tier unlocked in the region you are in (what a trade or a drop there carries). */
+export function gearTier(s: Pick<GameState, 'gearKills' | 'region'> & { rift?: RiftRun }): number {
+  if (s.rift) return 0;
+  return regionTier(s, s.region ?? 1);
+}
+
+/** New pieces (drops, chests, bosses, shop) take the tier unlocked in the region you are in when they reach you. */
+export function stampTiers(s: GameState): void {
+  if (s.rift) return;
   const r = s.region ?? 1;
-  return Math.max(regionTier(s, r), r > 1 ? Math.floor(regionTier(s, r - 1) / 2) : 0);
+  const t = regionTier(s, r);
+  for (const it of [...Object.values(s.equipped ?? {}), ...(s.bag ?? [])]) if (it && it.tier === undefined) (it.tier = t), (it.region = r);
 }
 
 /** Kills needed in this region for the next tier (null at the top). */
@@ -196,52 +264,65 @@ export function affinityOf(s: Pick<GameState, 'flags' | 'level'>): Affinity | nu
   return s.level >= UNLOCK.affinity && (a === 'der' || a === 'die' || a === 'das') ? a : null;
 }
 
-/** Armor penetration from gear: 4% per tier (an attuned amulet keeps it; 相亲和 only adds its resource). */
-export function gearPen(s: Pick<GameState, 'gearKills' | 'region'>): number {
-  return CONFIG.gear.pen * gearTier(s);
+/** Armor penetration from gear: 4% per tier of the amulet (an attuned amulet keeps it; 相亲和 only adds its resource). */
+export function gearPen(s: Pick<GameState, 'equipped' | 'rift' | 'region'>): number {
+  return CONFIG.gear.pen * slotTier(s, 'amulet');
 }
 
 /** A kill drops gear shards (1, or 2 for a due review) for the monster's region, and rarely the next tier whole. Returns the new tier when it went up. */
 export function addGearKill(s: GameState, region: number, roll = 1, shards = 1): number | null {
   s.gearKills ??= {};
+  s.shardBal ??= {};
   const before = regionTier(s, region);
   const key = String(region);
   s.gearKills[key] = (s.gearKills[key] ?? 0) + shards;
+  s.shardBal[key] = (s.shardBal[key] ?? 0) + shards;
   if (roll < CONFIG.gear.wholeChance && before < CONFIG.gear.tiers) s.gearKills[key] = Math.max(s.gearKills[key], CONFIG.gear.shardsPerTierSq * (before + 1) ** 2);
   const after = regionTier(s, region);
   return after > before ? after : null;
 }
 
 export function critChance(s: GameState): number {
-  return CONFIG.player.baseCrit + (s.equipped.amulet?.main ?? 0);
+  return CONFIG.player.baseCrit + (gear(s).amulet?.main ?? 0) + 0.08 * blessed(s, 'crit');
 }
 
-export function hintsPerFight(s: GameState): number {
-  return s.equipped.dict?.main ?? 0;
+/** 词典 no longer raises the note cap (系统审查 2026-11-26: its main stat is now typed damage). */
+export function hintsPerFight(_s: GameState): number {
+  return 0;
 }
 
 /** 刻字 (0.6, 25 级): how many worn items carry this particle. */
-export function engraved(s: GameState, word: 'auch' | 'denn'): number {
-  return Object.values(s.equipped).filter((it) => it && !it.unidentified && it.socket === word).length;
+export function engraved(s: GameState, word: 'auch' | 'denn' | 'mal' | 'doch'): number {
+  return Object.values(gear(s)).filter((it) => it && !it.unidentified && it.socket === word).length;
 }
 
 export function affixTotal(s: GameState, key: string): number {
   let t = 0;
-  for (const it of Object.values(s.equipped)) if (!it?.unidentified) for (const a of it?.affixes ?? []) if (a.key === key) t += a.value;
-  return t;
+  for (const it of Object.values(gear(s))) if (!it?.unidentified) for (const a of it?.affixes ?? []) if (a.key === key) t += a.value;
+  return t + masteryAffix(s.flags, key);
 }
 
 export interface LevelUpResult {
   levels: number[];
   capped: boolean;
+  /** 言灵精通 points gained (at max level, each level's worth of experience). */
+  mastery?: number;
 }
 
 export function addXp(s: GameState, amount: number): LevelUpResult {
   const levels: number[] = [];
   s.xp += Math.max(0, Math.round(amount));
   let capped = false;
+  let mastery = 0;
   while (s.xp >= xpToNext(s.level)) {
+    // 言灵精通: at max level a level's worth of experience becomes one point.
     if (s.level >= CONFIG.levelCap) {
+      s.xp -= xpToNext(s.level);
+      s.flags.masteryPts = ((s.flags.masteryPts as number) ?? 0) + 1;
+      mastery += 1;
+      continue;
+    }
+    if (s.level >= levelCapFor(s.flags)) {
       // At the cap keep at most one level's worth, like a breakthrough trial.
       s.xp = Math.min(s.xp, xpToNext(s.level));
       capped = true;
@@ -252,7 +333,7 @@ export function addXp(s: GameState, amount: number): LevelUpResult {
     levels.push(s.level);
   }
   if (levels.length) s.hp = maxHp(s);
-  return { levels, capped };
+  return { levels, capped, ...(mastery ? { mastery } : {}) };
 }
 
 // ---- Save / load ----------------------------------------------------------
@@ -274,7 +355,16 @@ export function setSaveHook(fn: (s: GameState) => void): void {
   afterSave = fn;
 }
 
-export function save(s: GameState): void {
+let lastBody = '';
+/** Saves only when something changed (审查 A1): an idle tab no longer restamps savedAt and so can't win the cloud
+ *  sync with old progress. `force` writes anyway (import, new game). */
+export function save(s: GameState, force = false): void {
+  const at = s.savedAt;
+  s.savedAt = 0;
+  const body = JSON.stringify(s);
+  s.savedAt = at;
+  if (!force && body === lastBody) return;
+  lastBody = body;
   s.savedAt = Date.now();
   try {
     localStorage.setItem(KEY, JSON.stringify(s));
@@ -284,11 +374,22 @@ export function save(s: GameState): void {
   afterSave?.(s);
 }
 
+/** The state as loaded counts as saved (no restamp until it changes). */
+export function markSaved(s: GameState): void {
+  const at = s.savedAt;
+  s.savedAt = 0;
+  lastBody = JSON.stringify(s);
+  s.savedAt = at;
+}
+
 export function load(): GameState | null {
   try {
     const raw = localStorage.getItem(KEY);
     if (!raw) return null;
-    return migrate(JSON.parse(raw));
+    const parsed = JSON.parse(raw);
+    // 6000 词导入: keep a copy of the pre-reset save in this browser (never read by the game, only for support).
+    if (parsed && (parsed.lexicon ?? 0) < LEXICON && !localStorage.getItem(`${KEY}.before6000`)) localStorage.setItem(`${KEY}.before6000`, raw);
+    return migrate(parsed);
   } catch {
     return null;
   }
@@ -302,8 +403,23 @@ export function clearSave(): void {
   }
 }
 
+/** Word-list generation of new saves (6000 词导入 = 1). */
+export const LEXICON = 1;
+
+/** The one and only save reset (Lucas 2026-11-25, 6000 词导入, announced in the game before release): a save from
+ *  before the 6000-word list starts over as a new game with the same name, origin and account. `flags.reset6000`
+ *  shows the note once. Everything else about the old save is dropped (its word ids no longer exist). */
+function resetForLexicon(old: GameState): GameState {
+  const s = newGame(old.name ?? '', old.origin ?? 'student');
+  if (old.owner) s.owner = old.owner;
+  s.savedAt = old.savedAt;
+  s.flags.reset6000 = true;
+  return s;
+}
+
 export function migrate(raw: unknown): GameState | null {
   if (!raw || typeof raw !== 'object') return null;
+  if (typeof (raw as GameState).level === 'number' && ((raw as GameState).lexicon ?? 0) < LEXICON) return resetForLexicon(raw as GameState);
   const s = raw as GameState;
   // Saves are never thrown away for a version mismatch: older versions are converted step by step here
   // (add `if (s.version === N) { ...convert...; s.version = N + 1 }` blocks when the format changes).
@@ -324,12 +440,20 @@ export function migrate(raw: unknown): GameState | null {
     s.gearKills = s.level <= 10 ? { '1': k } : { '1': Math.round(k / 2), '2': k - Math.round(k / 2) };
   }
   (s as { version: number }).version = 3;
+  // 碎片换档 (2026-11-25): a 余额 next to the 累计 (nothing was spent before), and worn / bagged pieces take the tier
+  // the old global bonus gave, so nobody gets weaker on the update.
+  if (!s.shardBal) {
+    s.shardBal = { ...(s.gearKills ?? {}) };
+    const r = s.region ?? 1;
+    const old = Math.max(regionTier(s, r), r > 1 ? Math.floor(regionTier(s, r - 1) / 2) : 0);
+    for (const it of [...Object.values(s.equipped ?? {}), ...(s.bag ?? [])]) if (it && it.tier === undefined && old) (it.tier = old), (it.region = r);
+  }
   // 提速 (curve 2): recompute the level from total XP; only ever up, never down.
   if ((s.xpCurve ?? 1) < XP_CURVE) {
     let total = s.xp;
     for (let l = 1; l < s.level; l++) total += xpToNext(l, s.xpCurve ?? 1);
     let lvl = 1;
-    while (lvl < CONFIG.levelCap && total >= xpToNext(lvl)) total -= xpToNext(lvl++);
+    while (lvl < levelCapFor(s.flags) && total >= xpToNext(lvl)) total -= xpToNext(lvl++);
     if (lvl > s.level) {
       const gained: number[] = [];
       for (let l = s.level + 1; l <= lvl; l++) gained.push(l);
@@ -344,6 +468,16 @@ export function migrate(raw: unknown): GameState | null {
   // screening's 待领 and cursors start empty.
   s.screen = { pending: { ...(s.screen?.pending ?? {}) }, cursor: { ...(s.screen?.cursor ?? {}) } };
   migrateSrs2(s);
+  // 写对的词 2 / 7 / 30 天 (Lucas 2026-11-27): a clean 归名 still waiting for its old one-time check (ctx at the last
+  // context index) joins the new ladder at its first step; its due date stays.
+  for (const p of Object.values(s.words ?? {}))
+    if (p && p.stage === 3 && !p.retired && !p.ctxDone && p.fix === undefined && p.ctx === CONFIG.srs.context.length - 1) {
+      p.fix = 0;
+      p.ctx = 0;
+    }
+  // 会的词不再回响抽查 (Lucas 2026-11-27): a word retired the moment it was first met (入学测试, 主城筛选, 直接叫名) has
+  // firstSeen within an hour of retired; a normal 斩杀 takes two days. Those become 永久 now; nothing else changes.
+  for (const p of Object.values(s.words ?? {})) if (p?.retired && !p.sure && p.retired - (p.firstSeen ?? 0) < 60 * 60 * 1000) p.sure = true;
   // 副词缀白名单 (2026-11-24): old 默写伤害 / 选择题暴击率 / 句式攻击伤害 become 伤害 +%; no item is removed.
   for (const it of [...Object.values(s.equipped ?? {}), ...(s.bag ?? [])]) convertLegacyAffixes(it);
   const shop = (s as { shop?: { items?: Item[]; wish?: { affix?: string } } }).shop;
@@ -388,3 +522,28 @@ export function importJson(text: string): GameState | null {
   }
 }
 
+/** 审查 A4: what an import would do, before it replaces anything. 'old' = a save from before the 6000-word list
+ *  (migrate would wipe it to level 1), so it is refused. */
+export function checkImport(text: string): { ok: true; s: GameState } | { ok: false; why: string } {
+  let raw: { lexicon?: number; level?: unknown } | null = null;
+  try {
+    const parsed = JSON.parse(text);
+    raw = parsed?.save ?? parsed;
+  } catch {
+    return { ok: false, why: '这个文件不是失语纪元的存档' };
+  }
+  if (raw && typeof raw.level === 'number' && (raw.lexicon ?? 0) < LEXICON) return { ok: false, why: '这是换 6000 词表之前的存档，新版用不了（导入会变成 1 级）。' };
+  const s = importJson(text);
+  return s ? { ok: true, s } : { ok: false, why: '这个文件不是失语纪元的存档' };
+}
+
+/** The confirm line for replacing `cur` with `next`. */
+export function importPrompt(next: GameState, cur: GameState | null): string {
+  const day = (t?: number) => (t ? new Date(t).toLocaleDateString('zh-CN') : '?');
+  return `将用 ${next.name}（Lv ${next.level}，${day(next.savedAt)}）替换${cur ? `当前的 ${cur.name}（Lv ${cur.level}）` : '当前存档'}。确定吗？`;
+}
+
+/** Is a legendary effect of this kind worn (any slot)? */
+export function wearsLegend(s: GameState, k: import('./types').Legendary): boolean {
+  return Object.values(gear(s)).some((it) => it?.legendary === k);
+}

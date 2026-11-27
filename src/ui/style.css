@@ -21,6 +21,7 @@
   --q-green: #5fdc7f;
   --q-purple: #b07cff;
   --q-orange: #ff9a3a;
+  --q-red: #ff3a3a;
   --mono: 'Courier New', ui-monospace, 'SFMono-Regular', Menlo, monospace;
   --sans: system-ui, -apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
   color-scheme: dark;
@@ -41,6 +42,7 @@ kbd { font-family: var(--mono); font-size: 11px; padding: 0 4px; border: 1px sol
   background: radial-gradient(ellipse at 50% 48%, rgba(0,0,0,0) 30%, rgba(5,0,3,.55) 62%, rgba(5,0,3,.92) 100%);
   mix-blend-mode: multiply;
 }
+body.bright #vignette { background: radial-gradient(ellipse at 50% 48%, rgba(0,0,0,0) 45%, rgba(60,35,10,.18) 80%, rgba(40,20,5,.4) 100%); }
 #ui { position: absolute; inset: 0; pointer-events: none; }
 #ui > * { pointer-events: auto; }
 #ui > #toasts, #ui > #banner { pointer-events: none; }
@@ -102,17 +104,19 @@ kbd { font-family: var(--mono); font-size: 11px; padding: 0 4px; border: 1px sol
 #modal h2 .btn { font-family: var(--sans); font-size: 13px; font-weight: 400; }
 #modal h2 { margin: 0 0 12px; font-family: var(--mono); color: var(--red); font-size: 18px; display: flex; justify-content: space-between; align-items: center; }
 #modal h3 { margin: 18px 0 8px; font-size: 14px; color: var(--muted); font-weight: 600; }
-.tabs { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
-.tabs .btn.on { border-color: var(--red); background: #3a0d14; }
+.tabs { display: flex; gap: 0; margin-bottom: 14px; flex-wrap: wrap; border-bottom: 1px solid var(--line); }
+.tabs .btn { border: none; border-bottom: 2px solid transparent; background: transparent; color: var(--muted); padding: 7px 14px; margin-bottom: -1px; border-radius: 0; }
+.tabs .btn:hover { color: var(--ink); background: rgba(255, 40, 60, 0.06); }
+.tabs .btn.on { color: var(--ink); border-bottom-color: var(--red); background: transparent; }
 .grid2 { display: grid; grid-template-columns: 300px 1fr; gap: 18px; }
 @media (max-width: 860px) { .grid2 { grid-template-columns: 1fr; } }
 .stat { display: flex; justify-content: space-between; padding: 3px 0; border-bottom: 1px dashed #2a151a; font-size: 13px; }
 .stat b { font-family: var(--mono); }
 .slot { display: flex; gap: 8px; align-items: flex-start; padding: 8px; border: 1px solid var(--line); margin-bottom: 6px; min-height: 52px; background: #0d0709; }
-.slot .k { width: 44px; color: var(--muted); font-size: 12px; flex: none; }
-.item-name.white { color: var(--q-white); } .item-name.green { color: var(--q-green); } .item-name.purple { color: var(--q-purple); } .item-name.orange { color: var(--q-orange); }
+.slot .k { width: 76px; color: var(--muted); font-size: 12px; flex: none; display: flex; align-items: center; gap: 4px; line-height: 1.35; }
+.item-name.white { color: var(--q-white); } .item-name.green { color: var(--q-green); } .item-name.purple { color: var(--q-purple); } .item-name.orange { color: var(--q-orange); } .item-name.red { color: var(--q-red); }
 .item { border: 1px solid var(--line); padding: 8px; background: #0d0709; display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
-.item.white { border-left: 3px solid var(--q-white); } .item.green { border-left: 3px solid var(--q-green); } .item.purple { border-left: 3px solid var(--q-purple); } .item.orange { border-left: 3px solid var(--q-orange); box-shadow: 0 0 10px rgba(255,154,58,.25); }
+.item.white { border-left: 3px solid var(--q-white); } .item.green { border-left: 3px solid var(--q-green); } .item.purple { border-left: 3px solid var(--q-purple); } .item.orange { border-left: 3px solid var(--q-orange); box-shadow: 0 0 10px rgba(255,154,58,.25); } .item.red { border-left: 3px solid var(--q-red); box-shadow: 0 0 12px rgba(255,58,58,.35); }
 .item .aff { font-size: 12px; color: var(--muted); }
 .item .acts { display: flex; gap: 4px; flex: none; }
 .item .acts .btn { font-size: 12px; padding: 3px 8px; }
@@ -133,6 +137,8 @@ kbd { font-family: var(--mono); font-size: 11px; padding: 0 4px; border: 1px sol
 table.log { width: 100%; border-collapse: collapse; font-size: 13px; }
 table.log th, table.log td { border-bottom: 1px solid #2a151a; padding: 5px 6px; text-align: right; font-family: var(--mono); }
 table.log th:first-child, table.log td:first-child { text-align: left; }
+table.log.text th, table.log.text td { text-align: left; font-family: inherit; }
+details > summary { cursor: pointer; color: var(--muted, #a99); margin: 6px 0; }
 .muted { color: var(--muted); }
 .small { font-size: 12px; }
 .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
@@ -226,7 +232,7 @@ label.toggle { display: flex; gap: 8px; align-items: center; padding: 6px 0; }
 .slot.dim { opacity: 0.75; }
 
 /* 联机聊天 */
-#chat { position: absolute; left: 12px; bottom: 12px; width: 300px; pointer-events: auto; font-size: 13px; }
+#chat { position: absolute; left: 12px; bottom: 12px; width: 440px; pointer-events: auto; font-size: 15px; }
 #chat .chat-log { max-height: 160px; overflow-y: auto; background: rgba(8, 4, 8, 0.55); padding: 4px 8px; color: #d8c8b8; }
 #chat .chat-log:empty { display: none; }
 #chat .chat-log .me b { color: #ff8a7a; }
@@ -247,11 +253,11 @@ label.toggle { display: flex; gap: 8px; align-items: center; padding: 6px 0; }
 
 /* 记录 / 聊天 box (2026-11-21) */
 #chat .chat-tabs { display: flex; gap: 2px; }
-#chat .chat-tabs .tab { background: rgba(8, 4, 8, 0.7); color: #8a7a70; border: 1px solid #3a1c20; border-bottom: none; padding: 2px 10px; font-size: 12px; cursor: pointer; }
+#chat .chat-tabs .tab { background: rgba(8, 4, 8, 0.7); color: #8a7a70; border: 1px solid #3a1c20; border-bottom: none; padding: 2px 10px; font-size: 14px; cursor: pointer; }
 #chat .chat-tabs .tab.on { color: #f0d8c8; border-color: #5a2a2e; }
 #chat .chat-tabs .tab.fold { margin-left: auto; padding: 2px 8px; }
-#chat .game-log { height: 170px; overflow-y: auto; background: rgba(8, 4, 8, 0.62); padding: 4px 8px; color: #d8c8b8; line-height: 1.45; user-select: text; }
-#chat .game-log i { font-style: normal; color: #6a5a52; font-family: var(--mono); font-size: 11px; }
+#chat .game-log { height: 190px; overflow-y: auto; background: rgba(8, 4, 8, 0.62); padding: 4px 8px; color: #d8c8b8; line-height: 1.45; user-select: text; }
+#chat .game-log i { font-style: normal; color: #6a5a52; font-family: var(--mono); font-size: 13px; }
 #chat .game-log .good { color: #9fd89a; }
 #chat .game-log .bad { color: #ff8a7a; }
 #chat .game-log .gold { color: #ffcf4a; }
@@ -284,6 +290,11 @@ label.toggle { display: flex; gap: 8px; align-items: center; padding: 6px 0; }
 .diary-line.reading { border-left-color: var(--gold, #ffcf4a); background: rgba(255, 207, 74, .06); }
 .diary-blank { display: inline-flex; flex-direction: column; align-items: center; vertical-align: middle; line-height: 1.2; margin: 0 3px; }
 .diary-blank small { font-size: 11px; opacity: .7; }
+.letter-page { max-width: 680px; }
+.letter-para { margin: 10px 0; padding: 4px 10px; border-left: 2px solid rgba(255, 207, 74, .35); }
+.letter-de { font-size: 17px; line-height: 1.7; margin: 0; font-family: Georgia, "Times New Roman", serif; }
+.letter-zh { margin: 4px 0 0; }
+.letter-acts { display: flex; gap: 6px; margin-top: 4px; }
 .diary-blank .base { opacity: .55; font-style: italic; }
 .diary-blank b.filled { color: #9fe28a; }
 .diary-blank b.revealed { color: #ffb05a; }
@@ -310,6 +321,7 @@ canvas.slot-icon.q-white { border-color: var(--q-white); }
 canvas.slot-icon.q-green { border-color: var(--q-green, #5fd16b); }
 canvas.slot-icon.q-purple { border-color: var(--q-purple, #b07cff); }
 canvas.slot-icon.q-orange { border-color: var(--q-orange, #ff9a3c); }
+canvas.slot-icon.q-red { border-color: var(--q-red, #ff3a3a); }
 .toast canvas.slot-icon { margin-right: 6px; }
 
 /* 开箱动画 (0.6.x): ui/chestFx.ts */
@@ -343,3 +355,300 @@ canvas.slot-icon.q-orange { border-color: var(--q-orange, #ff9a3c); }
 .feedback .report .btn.ghost { background: transparent; border-color: transparent; color: var(--muted); text-decoration: underline; padding: 0 4px; }
 .feedback .report-form { display: inline-flex; flex-wrap: wrap; gap: 6px; align-items: center; color: var(--ink); }
 .feedback .report-form input { width: 200px; }
+
+/* 冒险者 PK (2026-11-25) */
+#pk { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.55); pointer-events: auto; z-index: 40; }
+#pk[hidden] { display: none; }
+#pk .pk { width: min(640px, 92vw); }
+#pk .pk-score { font-family: var(--mono); margin: 4px 0 8px; color: var(--gold, #ffcf4a); }
+#pk .pk-say { color: #c8a890; margin-bottom: 8px; min-height: 1.4em; }
+#pk .pk-focus { font-size: 26px; margin: 6px 0 12px; }
+#pk .pk-note { margin-top: 10px; min-height: 1.4em; }
+#pk .row { flex-wrap: wrap; gap: 6px; }
+.ai-tag { display: inline-block; font-size: 10px; line-height: 1; padding: 2px 4px; border-radius: 3px; background: #2b6cb0; color: #fff; font-family: var(--mono); vertical-align: 1px; }
+
+/* 创建角色 (0.8 UI pass): preview card on the left, three steps on the right. */
+#title .box.wide { width: min(820px, 100%); }
+#title .create { display: grid; grid-template-columns: 220px 1fr; gap: 20px; text-align: left; padding: 18px 20px; }
+#title .hero-card { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 18px 10px; border: 1px solid var(--line-hi); background: radial-gradient(circle at 50% 70%, rgba(255,120,40,.22), rgba(20,6,8,.9) 65%); }
+#title .hero-preview canvas { width: 216px; height: 128px; image-rendering: pixelated; filter: drop-shadow(0 0 10px rgba(255,140,60,.35)); }
+#title .hero-name { font-family: var(--mono); font-size: 18px; color: var(--ink); }
+#title .hero-origin { font-size: 12px; color: var(--muted); text-align: center; line-height: 1.5; }
+#title .create-steps { display: grid; gap: 14px; }
+#title .create-steps input { width: 100%; background: #000; color: var(--ink); border: 1px solid var(--line-hi); padding: 9px 10px; font-size: 15px; }
+#title .step { display: flex; align-items: baseline; gap: 8px; font-size: 13px; color: var(--ink); margin-bottom: 6px; }
+#title .step i { font-style: normal; display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; background: var(--red); color: #fff; font-size: 11px; }
+#title .step small { color: var(--muted); font-size: 11px; }
+#title .look-row { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+#title .segs { display: flex; }
+#title .seg { border-radius: 0; min-width: 52px; }
+#title .seg.on { background: var(--red); color: #fff; border-color: var(--red); }
+#title .swatches { display: flex; gap: 8px; }
+#title .swatch { width: 26px; height: 26px; border-radius: 50%; border: 2px solid #3a2a2c; cursor: pointer; padding: 0; }
+#title .swatch.on { border-color: #fff; box-shadow: 0 0 0 2px var(--red); }
+#title .origin-cards, .origin-wrap .origin-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+#title .origin-card, .origin-wrap .origin-card { text-align: left; background: #0d0607; border: 1px solid var(--line); color: var(--ink); padding: 8px 10px; cursor: pointer; display: grid; gap: 3px; font: inherit; }
+#title .origin-card:hover, .origin-wrap .origin-card:hover { border-color: var(--line-hi); }
+#title .origin-card.on, .origin-wrap .origin-card.on { border-color: var(--red); background: #2a0b10; box-shadow: inset 0 0 0 1px var(--red); }
+#title .origin-card b, .origin-wrap .origin-card b { font-size: 14px; }
+#title .origin-card .topics, .origin-wrap .origin-card .topics { font-size: 11px; color: var(--muted); }
+#title .origin-card .de, .origin-wrap .origin-card .de { font-size: 11px; color: #e9b98a; font-style: italic; }
+
+/* 0.8 UI pass: the log/chat box gets out of the way of the dialog (it shrinks to its tabs while a dialog is open). */
+body:has(#dialog:not([hidden])) #chat .game-log,
+body:has(#dialog:not([hidden])) #chat .chat-lines,
+body:has(#dialog:not([hidden])) #chat .chat-status,
+body:has(#dialog:not([hidden])) #chat input { display: none; }
+#chat { width: 400px; }
+#chat .game-log, #chat .chat-lines { background: rgba(10, 5, 8, 0.82); border: 1px solid #3a1c20; }
+/* 0.8 UI pass: the map dims behind a fight, so the eye stays on the panel. */
+#battle:not([hidden]) { box-shadow: 0 0 0 100vmax rgba(4, 2, 4, 0.5), 0 10px 40px rgba(0, 0, 0, 0.6); }
+#modal:not([hidden]) { backdrop-filter: blur(2px); }
+.slot .k { width: 96px; color: var(--ink); }
+.slot .k .tag-on { font-size: 10px; color: #fff; background: var(--red); padding: 0 4px; margin-left: 2px; }
+.slot > .btn, .slot > span.small.muted { margin-left: auto; flex: none; align-self: center; }
+.slot.dim .k { color: var(--muted); }
+#chat .game-log { height: auto; min-height: 48px; max-height: 190px; }
+/* Tabbed panels keep one size, so the tabs don't jump when switching between short and long pages. */
+#modal .panel:has(> .tabs) { width: min(1000px, 100%); height: min(860px, calc(100vh - 32px)); }
+:root { accent-color: var(--red); }
+body:has(#dialog:not([hidden])) #chat .chat-tabs .fold, body:has(#dialog:not([hidden])) #chat .chat-online { display: none; }
+#dialog .choices .btn { font-size: 14px; padding: 8px 14px; }
+#dialog .choices .btn:hover:not(:disabled) { background: #3a0d14; }
+.adv-fig { width: 24px; height: 24px; image-rendering: pixelated; vertical-align: middle; margin-right: 4px; }
+/* 入学测试 (0.8.3 反馈): a scene with the 考官, bands as tiles grouped by stage. */
+.place-head { display: flex; gap: 14px; align-items: center; margin: 4px 0 10px; }
+.place-head .portrait { flex: none; }
+.place-say { font-size: 18px; color: var(--gold, #ffcf4a); margin-bottom: 4px; font-family: var(--mono); }
+.place-ask { font-weight: 600; margin: 8px 0 4px; }
+.place-stage { font-size: 12px; letter-spacing: .08em; color: var(--muted); margin: 10px 0 4px; border-bottom: 1px solid var(--line); padding-bottom: 2px; }
+.place-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 6px; }
+.place-band { display: grid; gap: 2px; text-align: left; padding: 7px 10px; background: rgba(0,0,0,.25); border: 1px solid var(--line); color: var(--ink); cursor: pointer; font: inherit; }
+.place-band b { font-family: var(--mono); font-size: 15px; }
+.place-band span { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.place-band:hover { border-color: var(--red); background: rgba(200,40,60,.12); }
+.place-words { display: flex; flex-wrap: wrap; gap: 6px; }
+.place-word-tile { padding: 6px 12px; background: rgba(0,0,0,.25); border: 1px solid var(--line); color: var(--ink); cursor: pointer; font: inherit; font-size: 15px; border-radius: 4px; }
+.place-word-tile:hover { border-color: var(--red); }
+.place-word-tile.on { background: #3fae5a; border-color: #3fae5a; color: #fff; }
+.place-progress { display: flex; gap: 12px; align-items: center; margin: 4px 0 6px; }
+.place-pips { display: flex; gap: 4px; }
+.place-pips i { width: 14px; height: 14px; border-radius: 50%; border: 1px solid var(--line-hi); }
+.place-pips i.ok { background: #3fae5a; border-color: #3fae5a; }
+.place-pips i.no { background: #c0392b; border-color: #c0392b; }
+.place-word { font-size: 34px; text-align: center; margin: 18px 0 14px; }
+.place-typing { display: flex; gap: 6px; justify-content: center; align-items: center; flex-wrap: wrap; margin: 6px 0; }
+.place-typing input { width: min(360px, 100%); font-size: 18px; padding: 8px 10px; }
+
+/* ===== 明亮画风 (Lucas 11-26 选 1) =====================================================================
+   On a bright daily map (body.bright, set by src/ui/theme.ts) the HUD and every panel turn light, in the region's
+   accent (--accent). Without .bright (蚀变 maps, bosses, 零号站台) everything above stays dark red. */
+body.bright {
+  --void: #efe8da;
+  --panel: #fbf5e8;
+  --panel-2: #fffdf7;
+  --line: #e0cfae;
+  --line-hi: #c3a676;
+  --ink: #2d2118;
+  --muted: #7d6b58;
+  --red: var(--accent, #d2691e);
+  --red-dim: #e9c9a0;
+  --gold: #a86a00;
+  --good: #1f8a45;
+  --bad: #c0392b;
+  --crit: #b86e00;
+  --der: #b8432f; --die: #b8432f; --das: #b8432f; --pl: #b8432f;
+  --q-white: #6e6258; --q-green: #23944a; --q-purple: #7b4bd6; --q-orange: #c86a10; --q-red: #c62828;
+  color-scheme: light;
+}
+body.bright .panel { background: linear-gradient(180deg, var(--panel-2), var(--panel)); border-color: var(--line-hi); box-shadow: 0 0 0 1px rgba(90,60,20,.12), 0 10px 28px rgba(70,45,10,.22); border-radius: 6px; }
+body.bright .btn { background: #fffdf8; border-color: var(--line-hi); color: var(--ink); }
+body.bright .btn:hover:not(:disabled) { background: #f7ecd6; border-color: var(--accent); }
+body.bright .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+body.bright .btn.primary:hover:not(:disabled) { background: var(--accent); filter: brightness(1.08); }
+body.bright .btn.ghost { background: transparent; }
+body.bright .btn.on, body.bright .tabs .btn.on { color: var(--accent); }
+body.bright kbd { border-color: var(--line-hi); color: var(--muted); background: #fff; }
+body.bright #hud .name { color: var(--accent); }
+body.bright .bar, body.bright .timer { background: #eadfca; border-color: var(--line-hi); }
+body.bright .bar > span { color: #2d2118; text-shadow: 0 0 2px #fff, 0 0 2px #fff; }
+body.bright .bar.hp > i { background: linear-gradient(90deg, #e2574c, #ff7b6b); }
+body.bright .bar.xp > i { background: linear-gradient(90deg, #8f7cf0, #b9a8ff); }
+body.bright #modal { background: rgba(60, 40, 15, .28); }
+body.bright #modal:not([hidden]) { backdrop-filter: blur(3px); }
+body.bright #modal h2, body.bright #dialog .speaker, body.bright #scene-panel .sp-head { color: var(--accent); }
+body.bright #dialog .de { color: #8a5a00; }
+body.bright #battle:not([hidden]) { box-shadow: 0 0 0 100vmax rgba(60, 40, 15, .22), 0 10px 30px rgba(70, 45, 10, .3); }
+body.bright input, body.bright select, body.bright textarea,
+body.bright .q input[type=text], body.bright .panel select { background: #fff; color: var(--ink); border: 1px solid var(--line-hi); }
+body.bright input::placeholder { color: #b3a28c; }
+body.bright table.log th, body.bright table.log td { border-bottom-color: var(--line); }
+body.bright #chat .game-log, body.bright #chat .chat-lines { background: rgba(255, 252, 244, .92); border-color: var(--line-hi); color: var(--ink); }
+body.bright .tabs { border-bottom-color: var(--line); }
+body.bright .place-band { background: #fff; }
+body.bright .place-word-tile { background: #fff; }
+body.bright .place-word-tile:hover { background: #fbf0dc; border-color: var(--accent); }
+body.bright .place-word-tile.on { background: #3fae5a; border-color: #3fae5a; color: #fff; }
+body.bright .place-band:hover { background: #fbf0dc; border-color: var(--accent); }
+body.bright .place-say { color: #8a5a00; }
+body.bright .origin-wrap .origin-card { background: #fff; }
+body.bright .origin-wrap .origin-card.on { background: #fbf0dc; border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+body.bright #vignette { opacity: .35; }
+body.bright .slot, body.bright .item, body.bright .card, body.bright .b-mon, body.bright .b-intent, body.bright .b-me,
+body.bright .q, body.bright .b-pack .pk, body.bright canvas.slot-icon, body.bright #dialog .speaker-row canvas.portrait { background: #fffdf8; border-color: var(--line); }
+body.bright .card.unseen { opacity: .6; }
+body.bright .q input[type=text] { color: var(--ink); }
+body.bright .moves .btn.sel { background: #fbecd2; border-color: var(--accent); }
+body.bright .tabs .btn:hover { background: rgba(0, 0, 0, .04); }
+body.bright #chat .chat-log, body.bright #chat .game-log { background: rgba(255, 252, 244, .92); color: var(--ink); }
+body.bright #chat input { background: #fff; color: var(--ink); border-color: var(--line-hi); }
+body.bright #chat .chat-tabs .tab { background: rgba(255, 252, 244, .9); color: var(--muted); border-color: var(--line-hi); }
+body.bright #chest-fx { background: rgba(60, 40, 15, .35); }
+body.bright #chest-fx .cfx-panel { background: #fffdf8; border-color: var(--line-hi); }
+body.bright #pk { background: rgba(60, 40, 15, .3); }
+body.bright #dialog .choices .btn:hover:not(:disabled) { background: #f7ecd6; }
+body.bright .diary-line.reading { background: rgba(168, 106, 0, .08); }
+body.bright .feedback.ok { color: var(--good); }
+body.bright #chat .chat-tabs .tab.on { color: var(--accent); background: #fffdf8; border-color: var(--line-hi); }
+body.bright .b-intent .line { color: var(--ink); text-shadow: none; } body.bright .b-intent .zh { color: #8a5a00; }
+
+/* 规则怪谈看板 (0.8.5): readable on both themes. */
+.board { border: 1px solid #7a5cff; background: rgba(60, 30, 120, 0.25); padding: 8px 12px; margin: 4px 0 8px; line-height: 1.55; }
+.board-title { color: #c3a9ff; font-weight: bold; margin-bottom: 4px; }
+.board-ex { color: #9fd; }
+body.bright .board { border-color: #6a4fd8; background: #f1edff; color: #2a2340; }
+body.bright .board-title { color: #4a2fb8; }
+body.bright .board-ex { color: #1f6b5c; }
+
+/* 告示 / 文章 in battle: long texts scroll in the box, with a scrollbar that is always visible (macOS hides overlay bars). */
+.passage { white-space: pre-wrap; font-size: 15px; line-height: 1.55; border: 1px solid var(--line, #553); padding: 8px 12px; margin: 6px 0 2px; max-height: min(30vh, 320px); overflow-y: scroll; scrollbar-gutter: stable; }
+.passage::-webkit-scrollbar { width: 10px; }
+.passage::-webkit-scrollbar-track { background: rgba(0, 0, 0, .06); border-radius: 5px; }
+.passage::-webkit-scrollbar-thumb { background: rgba(120, 90, 40, .55); border-radius: 5px; }
+.passage-hint { margin: 0 0 6px; }
+
+/* Boss stage stays dark even when the boss is opened from a bright map: keep the line, its hint and 再听 light. */
+#boss > .ask { color: #eadfd2; }
+#boss > .askzh, #boss > .row .askzh { color: #b8a8a0; }
+#boss > .row .btn.ghost { color: #eadfd2; border-color: #7a2a32; background: transparent; }
+/* Boss figures (方案 B): pixel figure with a red glow; it breathes like the old glyph did. */
+#boss canvas.boss-figure { image-rendering: pixelated; display: block; margin: 0 auto; filter: drop-shadow(0 0 10px rgba(255, 24, 48, .55)); animation: boss-breathe 2.4s ease-in-out infinite; }
+@keyframes boss-breathe { 50% { transform: scale(1.03); filter: drop-shadow(0 0 18px rgba(255, 24, 48, .8)); } }
+/* 美术小修 A (2026-11-26): the boss stage is always the dark look, even when opened from a bright map, so the panel,
+   buttons and bars match the dark red stage instead of the bright map's cream. */
+body.bright #boss { --panel: #120a0d; --panel-2: #1b0f13; --line: #4a1a20; --line-hi: #7a2a32; --ink: #eadfd2; --muted: #9a8a84; --accent: #c8323c; color: var(--ink); }
+body.bright #boss .panel { box-shadow: 0 0 0 1px rgba(255, 40, 60, .12), 0 10px 28px rgba(0, 0, 0, .5); }
+body.bright #boss .btn { background: var(--panel-2); border-color: var(--line-hi); color: var(--ink); }
+body.bright #boss .btn:hover:not(:disabled) { background: #2a1218; border-color: var(--red); }
+body.bright #boss .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+body.bright #boss kbd { background: transparent; }
+body.bright #boss .bar, body.bright #boss .timer { background: #000; border-color: var(--line); }
+body.bright #boss .bar > span { color: var(--ink); text-shadow: 0 0 2px #000; }
+/* 状态框 (Lucas 2026-11-26: 血条里的数字看不清). Bars 16 px tall, label left and numbers right in white with a dark
+   edge, readable on red, violet and the empty part alike. Also used by the battle cards. */
+#hud .bar, .b-me .bar, .b-mon .bar { height: 16px; border-radius: 3px; overflow: hidden; }
+#hud .bar > span, .b-me .bar > span, .b-mon .bar > span,
+body.bright #hud .bar > span, body.bright .b-me .bar > span, body.bright .b-mon .bar > span {
+  inset: 0 6px; display: flex; align-items: center; font: 700 11px/1 var(--sans); color: #fff; letter-spacing: .3px;
+  text-shadow: -1px 0 #2a1208, 1px 0 #2a1208, 0 -1px #2a1208, 0 1px #2a1208, 0 0 3px rgba(0,0,0,.6);
+}
+#hud .bar > span.r, .b-me .bar > span.r, .b-mon .bar > span.r { justify-content: flex-end; font-family: var(--mono); font-size: 12px; }
+#hud .bar.xp, #hud .bar.hp { margin-top: 8px; }
+body.bright #hud .bar, body.bright .b-me .bar, body.bright .b-mon .bar { background: #d9ccb6; }
+#hud { width: 280px; }
+#hud .name { font-size: 15px; }
+.hud-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px 4px; margin-top: 10px; text-align: center; }
+.hud-stats > div { display: flex; flex-direction: column; align-items: center; padding: 3px 0; border-radius: 4px; background: rgba(0,0,0,.18); }
+body.bright .hud-stats > div { background: rgba(120, 80, 30, .07); }
+.hud-stats b { font: 700 15px/1.2 var(--mono); color: var(--ink); }
+.hud-stats span { font-size: 11px; color: var(--muted); }
+.hud-zone { display: flex; justify-content: space-between; gap: 8px; margin-top: 8px; padding-top: 6px; border-top: 1px dashed var(--line); font-size: 12px; color: var(--muted); }
+/* 标题页明亮版 (Lucas 2026-11-26: 登录界面也换风格). Same cream panels and ember accent as the camp; the title keeps a
+   faint red offset as the only trace of the horror. */
+body.bright #title { background: radial-gradient(ellipse at 50% 38%, #fffaf0 0%, #f6ead2 55%, #e4cfa8 100%); }
+body.bright #title h1 { color: var(--accent); text-shadow: -2px 0 rgba(200, 30, 50, .28), 2px 2px 0 rgba(90, 40, 10, .25); }
+body.bright #title h1 small { color: #2d2118; }
+body.bright #title .lore { color: #6b5a48; }
+body.bright #title .ver { color: #a08a70; }
+body.bright #title .form input, body.bright #title .form select, body.bright #title .login input, body.bright #title .create-steps input { background: #fff; color: var(--ink); border-color: var(--line-hi); }
+body.bright #title .login input:focus { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+body.bright #title .hero-card { background: radial-gradient(circle at 50% 70%, rgba(255, 150, 60, .25), #fffaf0 70%); border-color: var(--line-hi); }
+body.bright #title .hero-preview canvas { filter: drop-shadow(0 2px 0 rgba(90, 50, 10, .25)); }
+body.bright #title .step i, body.bright #title .seg.on { background: var(--accent); border-color: var(--accent); }
+body.bright #title .swatch { border-color: #fff; box-shadow: 0 0 0 1px #c9b28c; }
+body.bright #title .swatch.on { border-color: #fff; box-shadow: 0 0 0 2px var(--accent); }
+body.bright #title .origin-card { background: #fff; border-color: var(--line); }
+body.bright #title .origin-card.on { background: #fbf0dc; border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+body.bright #title .origin-card .de { color: #8a5a00; }
+#title .confirm-new { width: min(420px, 100%); margin: 18px auto 0; padding: 16px 18px; display: grid; gap: 10px; text-align: center; }
+#title .confirm-new p { margin: 0; line-height: 1.6; }
+#title .confirm-new input { width: 100%; padding: 9px 10px; font-size: 15px; background: #000; color: var(--ink); border: 1px solid var(--line-hi); }
+body.bright #title .confirm-new input { background: #fff; }
+
+/* 加载画面 (Lucas 2026-11-27: 让载入过程更流畅): from page open to the title, and from 继续 to the map. */
+#loading { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; background: #f4ead8; color: #5a4632; transition: opacity .35s ease; }
+#loading.ld-out { opacity: 0; pointer-events: none; }
+#loading .ld-box { width: min(360px, 80vw); text-align: center; }
+#loading .ld-name { margin: 0 0 18px; font: 700 24px/1.2 var(--mono); color: #c0561e; letter-spacing: 2px; }
+#loading .ld-name small { display: block; margin-top: 4px; font-size: 13px; color: #8a7458; letter-spacing: 3px; }
+#loading .ld-fire { position: relative; height: 34px; margin: 0 auto 16px; width: 30px; }
+#loading .ld-fire i { position: absolute; bottom: 0; left: 50%; width: 14px; height: 22px; margin-left: -7px; border-radius: 50% 50% 40% 40%; background: #e8742a; transform-origin: 50% 100%; animation: ld-flame 0.9s ease-in-out infinite alternate; }
+#loading .ld-fire i:nth-child(2) { width: 10px; height: 16px; margin-left: -12px; background: #f2a33a; animation-delay: -.3s; }
+#loading .ld-fire i:nth-child(3) { width: 8px; height: 13px; margin-left: 2px; background: #ffd25a; animation-delay: -.6s; }
+@keyframes ld-flame { from { transform: scaleY(.8) skewX(-4deg); } to { transform: scaleY(1.15) skewX(4deg); } }
+#loading .ld-bar { height: 6px; border-radius: 3px; overflow: hidden; background: #e2d4bc; }
+#loading .ld-bar span { display: block; height: 100%; width: 30%; border-radius: 3px; background: #d2691e; animation: ld-slide 1.2s ease-in-out infinite; }
+#loading .ld-bar.ld-pct span { animation: none; transition: width .2s ease; }
+@keyframes ld-slide { from { transform: translateX(-110%); } to { transform: translateX(340%); } }
+#loading .ld-tip { margin: 12px 0 0; font-size: 13px; color: #8a7458; min-height: 1.4em; }
+#loading.ld-err .ld-tip { color: #b03a2e; }
+/* 大地图 (Lucas 2026-11-27, src/ui/worldMap.ts + worldTerrain.ts): a pixel-art continent under crisp plates. */
+#modal .panel:has(.worldmap) { width: min(1160px, 100%); }
+.worldmap { display: flex; flex-direction: column; gap: 8px; }
+.wm-wrap { position: relative; border: 3px solid #3b2a1c; border-radius: 6px; overflow: hidden; box-shadow: 0 0 0 2px #e8d3a6 inset; aspect-ratio: 1200 / 660; background: #2f86b8; }
+.wm-canvas { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; }
+.wm-svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; font-family: var(--sans); user-select: none; }
+.wm-stage { font: 700 13px var(--sans); fill: #f6e6c0; letter-spacing: .5px; }
+.wm-city { cursor: pointer; outline: none; }
+.wm-city.locked { cursor: default; }
+.wm-name { font: 700 14px var(--sans); fill: #fff6dc; }
+.wm-lv { font: 11px var(--mono); fill: #e8d3a6; }
+.wm-lv.danger { fill: #ff8a7a; font-weight: 700; }
+.wm-city.locked .wm-name, .wm-city.locked .wm-lv { fill: #f4f1ec; }
+.wm-city.open:hover .wm-plate, .wm-city.sel .wm-plate { stroke: #fff; stroke-width: 3.5; }
+.wm-city.sel .wm-hit { stroke: rgba(255, 246, 192, .9); stroke-width: 3; stroke-dasharray: 4 5; }
+.wm-here text { font: 700 12px var(--sans); fill: #fff; }
+.wm-here { animation: wm-bob 1.2s ease-in-out infinite; }
+@keyframes wm-bob { 50% { transform: translateY(-4px); } }
+.wm-boss { font: 13px var(--sans); fill: #fff; }
+.wm-q { font: 700 18px var(--sans); fill: #8f877a; }
+.wm-zero { font: 700 11px var(--sans); fill: #ffd0d4; paint-order: stroke; stroke: #2a0a10; stroke-width: 3px; }
+.wm-pulse { animation: wm-pulse 1.6s ease-in-out infinite; }
+@keyframes wm-pulse { 0%, 100% { opacity: .35; } 50% { opacity: .9; } }
+.wm-card { background: #fffaf0; color: #2b211a; border: 1px solid #a89a80; border-radius: 6px; padding: 8px 12px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; min-height: 52px; }
+.wm-card > .btn { margin-left: auto; }
+.wm-card .muted, .wm-card .small { color: #6a5c48; }
+.wm-card-head { border-left: 4px solid; padding-left: 8px; }
+.wm-card-head b { font-size: 16px; }
+.wm-card-head .de { font-family: var(--mono); color: #6a5c48; }
+.wm-card .wm-danger { color: #b0182c; font-weight: 700; }
+.wm-card .wm-erode-line { color: #8a1424; }
+.wm-card .btn { background: #fffaf0; color: #2b211a; border-color: #a89a80; }
+.wm-card .btn.primary { background: #2b211a; color: #fff; border-color: #2b211a; }
+.wm-card .btn.primary:hover:not(:disabled) { background: #4a3a2c; }
+.wm-legend { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; }
+.wm-legend span { display: inline-flex; align-items: center; gap: 5px; }
+.wm-key { display: inline-block; width: 18px; height: 6px; }
+.wm-key.river { background: #3c8ec4; } .wm-key.ridge { height: 0; width: 0; border: 7px solid transparent; border-bottom: 10px solid #7a6044; border-top: 0; }
+.wm-key.wall { background: repeating-linear-gradient(90deg, #6e665e 0 4px, #b0a89e 4px 6px); height: 8px; }
+.wm-key.rift { background: #2a1420; } .wm-key.erode { background: #7a1020; height: 3px; }
+.wm-segs { display: flex; flex-wrap: wrap; gap: 10px; }
+.wm-segs span { color: #e0485a; } .wm-segs span.done { opacity: .55; }
+body.bright .wm-segs span { color: #8a1424; }
+
+/* 主角专属特征 (Lucas 2026-11-27): the hero icon is 27×16 (figure + floating book). */
+.b-me { padding-right: 156px !important; }
+.b-me > canvas.mon-icon { margin-top: -40px; }
+#hud .name { align-items: center; gap: 8px; }
+#hud .name canvas.hero-icon { width: 54px; height: 32px; image-rendering: pixelated; flex: none; }
+#hud .name .nm { flex: 1; }

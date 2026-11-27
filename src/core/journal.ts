@@ -86,7 +86,7 @@ export function checkJournal(text: string, given: Word[]): JournalHint[] {
   const out: JournalHint[] = [];
   const sentences = text.split(/[.!?]+/).map((x) => x.trim()).filter((x) => tokens(x).length >= 2);
   if (sentences.length < 2) out.push({ kind: 'short', text: '写两三句（每句以句号结尾）' });
-  for (const w of given) if (!usesWord(text, w)) out.push({ kind: 'missing', text: `还没用到 ${w.art ? `${w.art} ${w.de}` : w.de}（${w.zh}）` });
+  for (const w of given) if (!usesWord(text, w)) out.push({ kind: 'missing', text: `还没用到「${w.zh}」` }); // 审查修订: no German here, the word must be recalled
   const raw = tokens(text);
   for (let i = 0; i + 1 < raw.length; i++) {
     const a = k(raw[i]);

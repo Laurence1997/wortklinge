@@ -1,11 +1,16 @@
 import { portrait } from './icons';
 import type { BossFight, BossVerdict } from '../core/boss';
 import { maxHp } from '../core/state';
+import { rank } from '../core/classes';
+import { VOICE } from '../core/combat';
+import { canListen, listenOnce, listening } from './listen';
 import { BOSS as BOSS1 } from '../data/boss';
 import { BOSS2 } from '../data/boss2';
 import { BOSS3, boardText } from '../data/boss3';
 import { LINA } from '../data/lina';
 import { WEBER } from '../data/weber';
+import { LATER_BOSS } from '../data/bossesLater';
+import { bossFigure, bossFigureKey } from './bossFigure';
 
 const MIRA_ID = { name: '商人 Mira · 鉴定', de: 'Mira', healLine: '', healZh: '' };
 const GRETA_ENG = { name: '导师 Greta · 刻字', de: 'Greta', healLine: '', healZh: '' };
@@ -40,7 +45,7 @@ export class BossUI {
     const f = this.fight!;
     this.waiting = false;
     this.deadline = f.seconds ? Date.now() + f.seconds * 1000 : Infinity;
-    const meta = f.which === 6 ? single(f) : f.which === 5 ? WEBER : f.which === 4 ? LINA : f.which === 3 ? BOSS3 : f.which === 2 ? BOSS2 : BOSS1;
+    const meta = f.which === 7 ? LATER_BOSS[f.region!]! : f.which === 6 ? single(f) : f.which === 5 ? WEBER : f.which === 4 ? LINA : f.which === 3 ? BOSS3 : f.which === 2 ? BOSS2 : BOSS1;
     this.ctrl.speak(f.delayNow ? `${BOSS3.delayLine} ${f.asked}` : f.healing ? `${meta.healLine} ${f.asked}` : f.asked);
     this.render();
     window.clearInterval(this.tick);
@@ -65,6 +70,8 @@ export class BossUI {
     this.waiting = true;
     this.lastAnswer = value;
     this.last = this.ctrl.answerBoss(value, timedOut);
+    // 天赋「争分」: each right answer in a timed boss dialogue adds a second.
+    if (this.last.ok && Number.isFinite(this.deadline) && rank(this.ctrl.state, 'zhengfen')) this.deadline += 1000;
     this.render();
   }
 
@@ -92,13 +99,14 @@ export class BossUI {
     const f = this.fight!;
     const s = this.ctrl.state;
     const el = $('boss');
-    const BOSS = f.which === 6 ? single(f) : f.which === 5 ? WEBER : f.which === 4 ? LINA : f.which === 3 ? BOSS3 : f.which === 2 ? BOSS2 : BOSS1;
-    const killed = f.which === 6 ? false : f.which === 5 ? s.flags.weberForms : f.which === 3 ? s.flags.boss3Kills : f.which === 2 ? s.flags.boss2Kills : s.flags.bossKills;
+    const BOSS = f.which === 7 ? LATER_BOSS[f.region!]! : f.which === 6 ? single(f) : f.which === 5 ? WEBER : f.which === 4 ? LINA : f.which === 3 ? BOSS3 : f.which === 2 ? BOSS2 : BOSS1;
+    const killed = f.which === 7 ? s.flags[`boss${f.region}Kills`] : f.which === 6 ? false : f.which === 5 ? s.flags.weberForms : f.which === 3 ? s.flags.boss3Kills : f.which === 2 ? s.flags.boss2Kills : s.flags.bossKills;
     const pips = h('div.pips');
     for (let i = 0; i < f.maxHp; i++) pips.append(h(`div.pip${i < f.hp ? '' : '.off'}`));
     const letters = Math.round(((f.maxHp - f.hp) / f.maxHp) * s.name.length);
     const plate = s.name.slice(0, letters) + '▒'.repeat(Math.max(0, s.name.length - letters));
 
+    const figKey = bossFigureKey(f.which, f.region);
     const panel = h('div.panel');
     panel.append(
       h('div.row', { style: 'justify-content:space-between' }, h('span.small.muted', f.which === 6 ? (f.current.id.startsWith('engrave-') ? 'Greta 在孔边写了半句话：把小词填上' : 'Mira 指着一行字：把空填上（写这个词在句子里的形式）') : f.which === 5 ? `登记表 第 ${f.maxHp - f.hp + 1} / ${f.maxHp} 项 · 用完整的句子回答 · 不限时` : `第 ${f.turn} 问 · 用完整的德语句子回答`), h('span.small', `生命 ${s.hp} / ${maxHp(s)}`)),
@@ -115,7 +123,22 @@ export class BossUI {
           this.submit(input.value);
         }
       });
-      panel.append(h('div.row', input, umlautButtons(input), h('button.btn.primary', { onclick: () => this.submit(input.value) }, '回答 ↵')));
+      // 开口作答: 34 级起可选；83 级起首领对话以开口为主（打字作为退路仍然可以交）.
+      const st = this.ctrl.state;
+      const canVoice = st.level >= VOICE.from && !st.settings.quiet && canListen();
+      const mic = canVoice ? h(st.level >= VOICE.required ? 'button.btn.primary' : 'button.btn', { title: '按住说，松开就交' }, '🎤 说出来') : '';
+      if (mic) {
+        mic.addEventListener('pointerdown', (e) => {
+          e.preventDefault();
+          if (listening()) return;
+          mic.textContent = '在听……松开就交';
+          void listenOnce({ hold: true }).then((heard) => {
+            mic.textContent = '🎤 说出来';
+            if (heard?.length) this.submit(heard[0]);
+          });
+        });
+      }
+      panel.append(h('div.row', input, umlautButtons(input), mic, h(st.level >= VOICE.required && canVoice ? 'button.btn' : 'button.btn.primary', { onclick: () => this.submit(input.value) }, canVoice && st.level >= VOICE.required ? '打字交 ↵' : '回答 ↵')));
       window.setTimeout(() => input.focus(), 0);
     } else if (this.last) {
       const v = this.last;
@@ -131,7 +154,7 @@ export class BossUI {
 
     clear(el).append(
       h('div.who', portrait(BOSS.name) ?? '', `${BOSS.de} · ${BOSS.name}`),
-      f.which >= 5 ? '' : h('div', { style: 'text-align:center' }, h('div.figure', '▓▒█▒▓'), h('div.tagplate', plate || '▒▒▒▒')),
+      f.which === 5 || f.which === 6 ? '' : h('div', { style: 'text-align:center' }, figKey ? bossFigure(figKey, f.outcome === 'win' ? 1 : (f.maxHp - f.hp) / f.maxHp) : h('div.figure', '▓▒█▒▓'), h('div', h('div.tagplate', plate || '▒▒▒▒'))),
       pips,
       f.healing && !this.waiting ? h('div', { style: 'color:var(--bad);font-family:var(--mono);font-size:18px' }, `「${BOSS.healLine}」`) : '',
       f.healing && !this.waiting ? h('div.askzh', BOSS.healZh) : '',
@@ -140,7 +163,7 @@ export class BossUI {
       f.delayNow && !this.waiting ? h('div.askzh', BOSS3.delayZh) : '',
       h('div.ask', f.asked),
       f.current.visual
-        ? h('div.tagplate', { style: `font-size:${f.which === 3 ? 18 : 22}px;margin:6px auto;display:inline-block;white-space:pre;text-align:left` }, f.current.visual)
+        ? h('div.tagplate', { style: `font-size:${f.which === 3 || f.which === 7 ? 18 : 22}px;margin:6px auto;display:inline-block;white-space:pre;text-align:left` }, f.current.visual)
         : f.board
           ? h('div.tagplate', { style: 'font-size:16px;margin:6px auto;display:inline-block;white-space:pre;text-align:left;opacity:.7' }, `Abfahrt\n${boardText(f.board)}`)
           : '',

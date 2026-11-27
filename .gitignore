@@ -7,3 +7,4 @@ proof/out/
 proof/tatoeba/
 data/wortschatz/build/artikel/
 data/wortschatz/build/wiki-cache/
+__pycache__/

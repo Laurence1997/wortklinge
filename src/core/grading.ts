@@ -60,12 +60,33 @@ const ARTICLES = ['der', 'die', 'das'];
  * Grade a typed word. For nouns pass `withArticle` to require "der Tee".
  * ae/oe/ue/ss are accepted as correct, but the proper spelling is shown.
  */
+/** A reflexive verb's display form: "sich gewöhnen", "(sich) fühlen", "sich scheiden lassen". */
+export function reflForm(w: Word): string {
+  return w.refl ? w.refl.split('|')[0].replace('~', w.de) : w.de;
+}
+
+/** Normalized input without the reflexive's sich (and the «lassen» of «sich scheiden lassen»): both count. */
+export function stripRefl(nIn: string, w: Word): string {
+  if (!w.refl) return nIn;
+  let t = nIn.replace(/^sich /, '');
+  if (/ lassen$/.test(w.refl.split('|')[0]) && !/ lassen$/.test(normalize(w.de))) t = t.replace(/ lassen$/, '');
+  return t;
+}
+
 export function gradeTyped(input: string, w: Word, withArticle: boolean): Verdict {
-  const expected = withArticle && w.art ? `${w.art} ${w.de}` : w.de;
-  const nIn = normalize(input);
-  const nExp = normalize(expected);
+  // 反身动词 (Lucas 2026-11-27): shown and corrected as «sich gewöhnen», but typing it with or without sich is right.
+  const expected = withArticle && w.art ? `${w.art} ${w.de}` : w.refl ? reflForm(w) : w.de;
+  const nIn = w.refl ? stripRefl(normalize(input), w) : normalize(input);
+  const nExp = normalize(withArticle && w.art ? expected : w.de);
   const notes: string[] = [];
   if (!nIn) return { ok: false, notes: ['没有作答'], correct: expected };
+  if (w.refl && sameText(nIn, nExp, false)) {
+    const typedSich = /^sich\b/i.test(input.trim());
+    const raw = stripPunct(input).replace(/^sich /i, '').replace(/ lassen$/i, '');
+    if (raw.toLowerCase() !== w.de.toLowerCase()) notes.push(`正确拼法：${expected}`);
+    else if (!typedSich && !w.refl.startsWith('(')) notes.push(`完整说法：${expected}`);
+    return { ok: true, notes, correct: expected };
+  }
 
   if (sameText(nIn, nExp, withArticle && !!w.art)) {
     const raw = stripPunct(input);

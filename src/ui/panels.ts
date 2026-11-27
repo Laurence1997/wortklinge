@@ -1,44 +1,52 @@
 import { loadPron, MODEL_MB, pronForget, pronStatus } from './phoneme';
 import { icon, SLOT_TILE, portrait } from './icons';
 import { CONFIG, xpToNext } from '../core/config';
-import { AFFIX_ZH, itemScore, mainStatText, QUALITY_ZH, requiredLevel, SLOT_ZH } from '../core/loot';
+import { levelCapFor } from '../core/stages';
+import { AFFIX_ZH, itemScore, LEGENDARY, mainStatText, QUALITY_ZH, requiredLevel, SLOT_ZH } from '../core/loot';
 import { cutStatus, kindOf, progressSummary, reviewMon, stageOf, STAGE_ZH } from '../core/srs';
-import { affinityOf, attack, critChance, dayKey, hintsPerFight, maxHp, now } from '../core/state';
+import { affinityOf, attack, critChance, dayKey, maxHp, now } from '../core/state';
 import type { AffixKey, Item, Slot, Word } from '../core/types';
 import { has, UNLOCK } from '../core/unlocks';
 import { BLIND_FROM, blindBoxes, boxLabel, boxPrice, buyBox } from '../core/blindbox';
 import { FAMILIES } from '../data/families';
-import { SKILLS, skillLinesOpen } from '../data/skills';
+import { loadout, owned, POOL, POOL_FROM, POOL_ORDER, slotCount, toggleLoadout } from '../core/skillPool';
 import { phraseCards } from '../core/combat';
+import { gemText } from '../core/gems';
+import { CHARM, CHARM_BY_ID, equipCharm, equippedCharms, SLANG } from '../core/charms';
 import { SAYINGS, SAYING_CFG } from '../data/sayings';
-import { canLearn, CLASSES, learn, rank, spent, talentPoints, TALENT_FROM_LEVEL, TALENTS, TIER_GATE } from '../core/classes';
-import { fullForm, genderOf, hasArticleQuestion, WORD_BY_ID, WORDS, zhWithPos } from '../data/words';
+import { MASTERY, masteryFree, masteryIn, masteryPts, spendMastery, type MasteryTrack } from '../core/mastery';
+import { BRANCHES, canLearn, canLight, learn, learned, lightStar, litStars, ROW_GATE, spent, spentIn, STARS, STARS_FROM, starsPassed, talentPoints, TALENT_FROM_LEVEL, TALENT_TREE, type Branch } from '../core/classes';
+import { finishStarTrial, starTrial, STAR_TRIAL } from '../core/stars';
+import { fullForm, fullFormLong, genderOf, reflNote, hasArticleQuestion, WORD_BY_ID, WORDS, zhWithPos } from '../data/words';
 import type { Controller } from '../game/controller';
 import { $, clear, h, umlautButtons } from './dom';
 import { BREAK, examParts, examPassed, PART_ZH, type Exam } from '../core/breakthrough';
 import { pendingScenes, regionLeft, type ScreenRun } from '../core/screen';
-import { bandCount, bandRange, bandSamples, levelFor, regionFor, topPassed, type PlaceRun } from '../core/placement';
+import { bandRange, levelFor, PLACE, regionFor, topPassed, type PickBoard, type PlaceRun } from '../core/placement';
 import { CHEST_ZH, type ChestKind } from '../core/chest';
 import { playChest } from './chestFx';
 import { favour, FAVOUR, QUESTS, type QuestId } from '../core/quests';
 import { gradeTyped } from '../core/grading';
 import { recordAnswer, reviewedByWriting } from '../core/srs';
+import { track } from '../net/social';
+import { BOARD, BOARD_ZH, type BoardKind } from '../core/board';
 import { cloud, leaderboard, mustChangePassword, push, setNickname, signOut } from '../net/cloud';
 import { loginView } from './account';
 import { toast } from './feedback';
 import { ACHIEVEMENTS, NOTES } from '../data/achievements';
-import { canListen, lastConfidence, listening, listenOnce } from './listen';
+import { canListen, lastConfidence, listening, listenOnce, stopHold } from './listen';
 import { clarity, shadowOk } from '../core/shadow';
 import { DIARY, DIARY_WRITER, type DiaryBlank } from '../data/diary';
-import { SCENE_BY_ID } from '../data/world';
+import { AREAS, SCENE_BY_ID } from '../data/world';
+import { archive, isRead, LETTER_BY_ID, LETTER_CFG } from '../core/letters';
 import { blanksOf, checkBlank, DIARY_MISSES, DIARY_XP, lineText, pageLines, pageNo, pageRegion, pageState } from '../core/diary';
-import { lookPicker } from './title';
+import { lookPicker, originPicker } from './title';
 import { CONSUMABLE, cap as itemCap, count as itemCount, itemPrice, type Consumable } from '../core/items';
 import { matchRows, mergeImport, readTable } from '../core/wordImport';
 import { checkJournal, type JournalHint } from '../core/journal';
 import { BARGAIN_LINES, ensureShop, price, refreshCost, sellPrice, SLOT_NOUN } from '../core/shop';
 
-export type PanelName = 'hero' | 'talents' | 'quests' | 'codex' | 'words' | 'data' | 'account' | 'settings' | 'help' | 'shop' | 'chest' | 'quiz' | 'screen' | 'bigmap' | 'diary' | 'ask' | 'exam' | 'journal' | 'place';
+export type PanelName = 'hero' | 'talents' | 'quests' | 'codex' | 'words' | 'data' | 'account' | 'settings' | 'help' | 'shop' | 'chest' | 'quiz' | 'screen' | 'bigmap' | 'diary' | 'ask' | 'exam' | 'journal' | 'place' | 'letter';
 
 export class Panels {
   open: PanelName | null = null;
@@ -92,6 +100,7 @@ export class Panels {
       window.setTimeout(() => a.onAnswer(''), 0);
     }
     if (this.open === 'journal') this.journalState = null;
+    if (this.open === 'letter') this.letter = null;
     if (this.open === 'quiz' && this.quiz) {
       const q = this.quiz;
       this.quiz = null;
@@ -150,7 +159,7 @@ export class Panels {
       return;
     }
     if (this.open === 'exam' && this.exam) {
-      panel.append(h('h2', h('span', 'A1 突破试炼 · 考官'), h('button.btn.ghost', { onclick: () => this.close() }, this.exam.over ? '离开 Esc' : '放弃 Esc')), this.examBody());
+      panel.append(h('h2', h('span', `${this.exam.stage ?? 'A1'} 突破试炼 · 考官`), h('button.btn.ghost', { onclick: () => this.close() }, this.exam.over ? '离开 Esc' : '放弃 Esc')), this.examBody());
       clear(el).append(panel);
       el.onclick = null;
       window.setTimeout(() => (el.querySelector('input.exam, button.exam-first') as HTMLElement | null)?.focus(), 0);
@@ -158,21 +167,47 @@ export class Panels {
     }
     if (this.open === 'ask' && this.asking) {
       const a = this.asking;
-      const input = h('input.ask', { type: 'text', autocomplete: 'off', spellcheck: 'false', placeholder: 'Ich …' }) as HTMLInputElement;
+      const input = (a.multi
+        ? h('textarea.ask', { rows: 6, autocomplete: 'off', spellcheck: 'false', placeholder: 'Ich …（Ctrl + Enter 交）', style: 'width:100%;font-size:18px' })
+        : h('input.ask', { type: 'text', autocomplete: 'off', spellcheck: 'false', placeholder: 'Ich …' })) as HTMLInputElement;
+      // 冒险者语音对话: hold to speak German (Chrome's recognition); the text goes the same way as typed.
+      let heard = '';
       const go = () => {
         if (!input.value.trim()) return;
         this.asking = null;
         this.close();
-        a.onAnswer(input.value);
+        a.onAnswer(input.value, !!heard && input.value.trim() === heard);
       };
+      const mic = a.voice && canListen()
+        ? h('button.btn', {
+            title: '按住说德语，松开结束',
+            onmousedown: async () => {
+              const s = this.ctrl.state;
+              if (!s.flags.voiceChatNote) {
+                s.flags.voiceChatNote = true;
+                toast('提示：Chrome 的语音识别会把录音发给 Google 处理。不想用就继续打字。');
+              }
+              mic!.textContent = '🎤 在听……';
+              const r = await listenOnce({ hold: true });
+              mic!.textContent = '🎤 按住说';
+              if (r?.[0]) {
+                heard = r[0].trim();
+                input.value = heard;
+                input.focus();
+              } else if (r === null) toast('用不了麦克风：在地址栏左边的网站设置里允许麦克风');
+            },
+            onmouseup: () => stopHold(),
+            onmouseleave: () => stopHold(),
+          }, '🎤 按住说')
+        : null;
       input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
+        if (e.key === 'Enter' && (!a.multi || e.ctrlKey || e.metaKey)) {
           e.preventDefault();
           e.stopPropagation();
           go();
-        }
+        } else if (a.multi) e.stopPropagation();
       });
-      panel.append(h('h2', h('span', a.title), h('button.btn.ghost', { onclick: () => this.close() }, '不回答 Esc')), h('p', a.prompt), h('div.typing', input, umlautButtons(input), h('button.btn.primary', { onclick: go }, '说 ↵')));
+      panel.append(h('h2', h('span', a.title), h('button.btn.ghost', { onclick: () => this.close() }, '不回答 Esc')), h('p', { style: 'white-space:pre-line' }, a.prompt), h('div.typing', input, umlautButtons(input), mic, h('button.btn.primary', { onclick: go }, a.multi ? '交 Ctrl+↵' : '说 ↵')));
       clear(el).append(panel);
       el.onclick = null;
       window.setTimeout(() => input.focus(), 0);
@@ -190,6 +225,15 @@ export class Panels {
       clear(el).append(panel);
       el.onclick = null;
       window.setTimeout(() => (el.querySelector('textarea.journal') as HTMLTextAreaElement | null)?.focus(), 0);
+      return;
+    }
+    if (this.open === 'letter' && this.letter) {
+      const l = LETTER_BY_ID[this.letter.id];
+      panel.append(h('h2', h('span', `✉ ${l.title}`), h('button.btn.ghost', { onclick: () => this.close() }, '合上 Esc')), this.letterBody());
+      clear(el).append(panel);
+      el.onclick = (e) => {
+        if (e.target === el) this.close();
+      };
       return;
     }
     if (this.open === 'diary' && this.diary) {
@@ -216,13 +260,13 @@ export class Panels {
       if (this.buying !== null) window.setTimeout(() => (el.querySelector('input.buy-line') as HTMLInputElement | null)?.focus(), 0);
       return;
     }
-    const titles: Record<Exclude<PanelName, 'shop' | 'chest' | 'quiz' | 'screen' | 'bigmap' | 'diary' | 'ask' | 'exam' | 'journal' | 'place'>, string> = { hero: '角色与装备', talents: '职业与天赋', quests: '任务', codex: '图鉴', words: '单词本', data: '数据与存档', account: '账号与排行', settings: '设置', help: '怎么玩' };
+    const titles: Record<Exclude<PanelName, 'shop' | 'chest' | 'quiz' | 'screen' | 'bigmap' | 'diary' | 'ask' | 'exam' | 'journal' | 'place' | 'letter'>, string> = { hero: '角色与装备', talents: '技能与天赋', quests: '任务', codex: '图鉴', words: '单词本', data: '数据与存档', account: '账号与排行', settings: '设置', help: '怎么玩' };
     const tabs = h('div.tabs');
-    (Object.keys(titles) as Array<Exclude<PanelName, 'shop' | 'chest' | 'quiz' | 'screen' | 'bigmap' | 'diary' | 'ask' | 'exam' | 'journal' | 'place'>>).forEach((k) =>
+    (Object.keys(titles) as Array<Exclude<PanelName, 'shop' | 'chest' | 'quiz' | 'screen' | 'bigmap' | 'diary' | 'ask' | 'exam' | 'journal' | 'place' | 'letter'>>).forEach((k) =>
       tabs.append(h(`button.btn${this.open === k ? '.on' : ''}`, { onclick: () => this.show(k) }, titles[k])),
     );
-    panel.append(h('h2', h('span', titles[this.open as Exclude<PanelName, 'shop' | 'chest' | 'quiz' | 'screen' | 'bigmap' | 'diary' | 'ask' | 'exam' | 'journal' | 'place'>]), h('button.btn.ghost', { onclick: () => this.close() }, '关闭 Esc')), tabs);
-    const body = { journal: () => h('div'), exam: () => h('div'), ask: () => h('div'), diary: () => h('div'), bigmap: () => h('div'), shop: () => h('div'), chest: () => h('div'), quiz: () => h('div'), place: () => h('div'), screen: () => h('div'), hero: () => this.hero(), talents: () => this.talents(), quests: () => this.questsBody(), codex: () => this.codex(), words: () => this.wordbook(), data: () => this.data(), account: () => this.account(), settings: () => this.settings(), help: () => this.help() }[this.open]();
+    panel.append(h('h2', h('span', titles[this.open as Exclude<PanelName, 'shop' | 'chest' | 'quiz' | 'screen' | 'bigmap' | 'diary' | 'ask' | 'exam' | 'journal' | 'place' | 'letter'>]), h('button.btn.ghost', { onclick: () => this.close() }, '关闭 Esc')), tabs);
+    const body = { letter: () => h('div'), journal: () => h('div'), exam: () => h('div'), ask: () => h('div'), diary: () => h('div'), bigmap: () => h('div'), shop: () => h('div'), chest: () => h('div'), quiz: () => h('div'), place: () => h('div'), screen: () => h('div'), hero: () => this.hero(), talents: () => this.talents(), quests: () => this.questsBody(), codex: () => this.codex(), words: () => this.wordbook(), data: () => this.data(), account: () => this.account(), settings: () => this.settings(), help: () => this.help() }[this.open]();
     panel.append(body);
     clear(el).append(panel);
     el.onclick = (e) => {
@@ -235,7 +279,10 @@ export class Panels {
   private hero(): HTMLElement {
     const s = this.ctrl.state;
     const left = h('div');
-    if (this.ctrl.nearBonfire()) left.append(h('h3', '外观（篝火旁免费改）'), lookPicker(s.look, (l) => this.ctrl.setLook(l)).el);
+    if (this.ctrl.nearBonfire()) {
+      left.append(h('h3', '外观（篝火旁免费改）'), lookPicker(s.look, (l) => this.ctrl.setLook(l)).el);
+      left.append(h('h3', '出身（篝火旁免费改，不加数值，只决定常遇到的话题）'), h('div.origin-wrap', originPicker(s.origin, () => s.look?.gender ?? 0, (v) => this.ctrl.setOrigin(v)).el));
+    }
     if (s.level >= UNLOCK.affinity) {
       const aff = affinityOf(s);
       left.append(h('h3', '护符亲和'), h('p.muted', `现在：${aff ?? '无'}。破甲照旧每档 4%。${aff ? `${aff} 的怪（复数算 die）第一次选对相时资源 +2（平时 +1），换句重选后再算一次。` : ''}`));
@@ -251,18 +298,16 @@ export class Panels {
       ['生命', `${s.hp} / ${maxHp(s)}`],
       ['攻击', String(Math.round(attack(s)))],
       ['暴击率', `${(critChance(s) * 100).toFixed(1)}%`],
-      ['低语纸条上限', String(5 + hintsPerFight(s))],
+      ['低语纸条上限', '5'],
       ['金币', String(s.gold)],
       ['最高连击', String(s.bestCombo)],
       ['击杀 / 死亡', `${s.stats.kills} / ${s.stats.deaths}`],
     ];
     for (const [k, v] of stats) left.append(h('div.stat', h('span', k), h('b', v)));
-    if (s.skills.length) {
-      left.append(h('h3', '句子技能'));
-      for (const id of s.skills) {
-        const sk = SKILLS[id];
-        left.append(h('div.slot', h('div.k', sk.zh), h('div', h('div', { style: 'font-family:var(--mono)' }, sk.lines.slice(0, skillLinesOpen(sk, s.skillUses[sk.id] ?? 0)).map((l) => l.de).join(' / ')), h('div.small.muted', `${sk.effect} · 已解锁 ${skillLinesOpen(sk, s.skillUses[sk.id] ?? 0)} / ${sk.lines.length} 种说法，每放 5 次多一种`))));
-      }
+    if (owned(s).length) {
+      const lo = loadout(s);
+      left.append(h('h3', `技能（出战 ${lo.length} / ${slotCount(s.level)} 格，按 T 换）`));
+      for (const id of lo) left.append(h('div.slot', h('div.k', POOL[id].zh), h('div.small.muted', `${POOL[id].asks} · ${POOL[id].effect}`)));
     }
 
     const right = h('div');
@@ -271,7 +316,7 @@ export class Panels {
       return h('div.grid2', left, right);
     }
     right.append(h('h3', { style: 'margin-top:0' }, '已装备'));
-    for (const slot of ['pen', 'coat', 'amulet', 'dict', 'glasses'] as Slot[]) {
+    for (const slot of ['pen', 'coat', 'amulet', 'dict', 'glasses', 'phones'] as Slot[]) {
       const it = s.equipped[slot];
       right.append(
         h(
@@ -364,8 +409,8 @@ export class Panels {
     if (e.over) {
       const ok = examPassed(e);
       wrap.append(
-        h('h3', ok ? (e.grammarOnly ? '语法补考通过。' : 'A1 突破试炼通过。') : '这次没过。'),
-        h('p', ok ? '考官在你的证件上盖了一个章。A2 的路 0.7 开放，经验先替你存着（最多存一级）。' : `每部分要对 ${BREAK.pass} 题。不罚，随时再考，题目会换。`),
+        h('h3', ok ? (e.grammarOnly ? '语法补考通过。' : `${e.stage ?? 'A1'} 突破试炼通过。`) : '这次没过。'),
+        h('p', ok ? '考官在你的证件上盖了一个章。等级上限往上走了，存着的经验接着算。' : `每部分要对 ${BREAK.pass} 题。不罚，随时再考，题目会换。`),
         h('div.row', h('button.btn.primary', { onclick: () => this.close() }, '离开')),
       );
       return wrap;
@@ -381,6 +426,13 @@ export class Panels {
     if (q.part === 'listen') {
       wrap.append(h('p', '听，选出意思。'), h('div.row', h('button.btn', { onclick: () => this.ctrl.speak(q.say!) }, '🔊 再听一遍')));
     } else if (q.part === 'read') wrap.append(h('p', '选出空里的词。'), h('div.focus', { style: 'font-size:22px;margin:10px 0' }, q.prompt));
+    if (q.part === 'grammar' && q.options) {
+      // A2 / B1 语法段: some items are a contrast to choose (stellen / stehen, wegen / trotz …).
+      const row = h('div.choices');
+      q.options.forEach((o, i) => row.append(h(`button.btn${i === 0 ? '.exam-first' : ''}`, { onclick: () => go(o) }, `${i + 1}. ${o}`)));
+      wrap.append(h('p', '选出空里的词。'), h('div.focus', { style: 'font-size:22px;margin:10px 0' }, q.prompt), q.zh ? h('div.small.muted', q.zh) : '', row);
+      return wrap;
+    }
     if (q.part === 'grammar') {
       // 语法: type into the sentence; the Perfekt has two blanks (auxiliary, participle), sent as "a|b".
       const boxes = (q.blanks ?? ['']).map(() => h('input.exam', { type: 'text', autocomplete: 'off', spellcheck: 'false', placeholder: '填空' }) as HTMLInputElement);
@@ -420,11 +472,11 @@ export class Panels {
     return wrap;
   }
 
-  private asking: { title: string; prompt: string; onAnswer: (text: string) => void } | null = null;
+  private asking: { title: string; prompt: string; onAnswer: (text: string, spoken?: boolean) => void; multi?: boolean; voice?: boolean } | null = null;
 
-  /** One free-text answer (the night guard's formal question in 零号站台). */
-  ask(title: string, prompt: string, onAnswer: (text: string) => void): void {
-    this.asking = { title, prompt, onAnswer };
+  /** One free-text answer (the night guard's formal question in 零号站台). `multi`: a few sentences (小作文). */
+  ask(title: string, prompt: string, onAnswer: (text: string, spoken?: boolean) => void, multi = false, voice = false): void {
+    this.asking = { title, prompt, onAnswer, multi, voice };
     this.show('ask');
   }
 
@@ -483,9 +535,9 @@ export class Panels {
     const j = this.journalState!;
     const wrap = h('div');
     wrap.append(
-      h('p', '用下面 3 个今天打过的词，写两三句你自己的话。写什么都行：今天去了哪儿、看见了什么、想要什么。'),
+      h('p', '用下面 3 个今天打过的词（给的是中文，德语要自己想起来）写两三句你自己的话。写什么都行：今天去了哪儿、看见了什么、想要什么。登录后 AI 会批改，每天一篇。'),
       h('p.small.muted', '这里不判对错。「检查」只会指出规则能确定的错：没用到给的词、冠词和名词对不上、ich / du / er 后面的动词形式不对。查不出的就不管。写完记进日记，每天第一篇给一点经验。'),
-      h('div.row', ...j.words.map((w) => h('span.tag', `${w.art ? `${w.art} ` : ''}${w.de} · ${w.zh}`))),
+      h('div.row', ...j.words.map((w) => h('span.tag', `「${w.zh}」${w.art ? '（名词，带冠词）' : ''}`))), // 审查修订: the words in Chinese, so writing them is recall
     );
     if (j.saved !== null) {
       wrap.append(h('div.feedback.ok', j.saved ? `记进日记了。经验 +${j.saved}` : '记进日记了。'), h('pre.small', j.text));
@@ -529,6 +581,54 @@ export class Panels {
       det.append(h('summary', `以前的日记（${(s.journal ?? []).length} 篇）`), ...past.map((e) => h('p.small', h('b', e.day), ' ', e.text)));
       wrap.append(det);
     }
+    return wrap;
+  }
+
+  // ---- 失语者的遗书 (1.0) ----------------------------------------------------------------
+
+  private letter: { id: string; zh: Set<number> } | null = null;
+
+  showLetter(id: string): void {
+    if (!LETTER_BY_ID[id]) return;
+    this.letter = { id, zh: new Set() };
+    this.show('letter');
+  }
+
+  private letterBody(): HTMLElement {
+    const lt = this.letter!;
+    const l = LETTER_BY_ID[lt.id];
+    const s = this.ctrl.state;
+    const wrap = h('div.letter-page');
+    wrap.append(h('p.small.muted', `${l.region} 区第 ${l.n} 封 · 写信的人：${l.from}${l.main === 'Ilse' && !l.from.includes('Ilse') ? '（Ilse 的信）' : ''}。德语一段一段读，读不懂的段落点「看中文」。`));
+    l.de.forEach((para, i) => {
+      const row = h('div.letter-para');
+      row.append(h('p.letter-de', para));
+      if (lt.zh.has(i)) row.append(h('p.small.muted.letter-zh', l.zh[i] ?? ''));
+      row.append(
+        h('div.letter-acts',
+          h('button.btn.ghost.tiny', { onclick: () => { if (lt.zh.has(i)) lt.zh.delete(i); else lt.zh.add(i); this.render(); } }, lt.zh.has(i) ? '收起中文' : '看中文'),
+          h('button.btn.ghost.tiny', { title: '听这一段', onclick: () => this.ctrl.speak(para) }, '听'),
+        ),
+      );
+      wrap.append(row);
+    });
+    if (l.words.length) wrap.append(h('p.small', `本区的词：${l.words.join('、')}`));
+    if (l.grammar) wrap.append(h('p.small', `语法：${l.grammar}`));
+    if (isRead(s, l.id)) {
+      if (l.clue) wrap.append(h('p.small', { style: 'color:var(--gold, #ffcf4a)' }, `线索：${l.clue}`));
+      wrap.append(h('p.small.muted', '已收进单词本的「档案」，可以随时重读。'));
+    } else wrap.append(h('button.btn.primary', { onclick: () => { this.ctrl.letterRead(l.id); this.render(); } }, `读完了，收进档案（经验 +${Math.round(LETTER_CFG.xpShare * 100)}% 到下一级）`));
+    return wrap;
+  }
+
+  /** 档案: read letters by region, Ilse's line first. */
+  private letterArchive(): HTMLElement | string {
+    const a = archive(this.ctrl.state);
+    if (!a.byRegion.length) return '';
+    const wrap = h('div.sp-sec');
+    wrap.append(h('h3', '档案 · 失语者的遗书'));
+    if (a.main.length) wrap.append(h('p.small', 'Ilse 的信：', ...a.main.map((l) => h('button.btn.ghost.tiny', { onclick: () => this.showLetter(l.id) }, `${l.region}-${l.n} ${l.title}`))));
+    for (const r of a.byRegion) wrap.append(h('p.small', `${r.region} 区（${r.letters.length}/${r.total}）：`, ...r.letters.map((l) => h('button.btn.ghost.tiny', { onclick: () => this.showLetter(l.id) }, l.title))));
     return wrap;
   }
 
@@ -659,10 +759,10 @@ export class Panels {
 
   private screen: ScreenRun | null = null;
   /** 入学测试 / 分级考核: run is null while picking the starting band. */
-  private place: { run: PlaceRun | null; daily: boolean; hold: boolean } | null = null;
+  private place: { run: PlaceRun | null; daily: boolean; hold: boolean; board?: PickBoard; picked: Set<string> } | null = null;
 
   showPlacement(daily: boolean): void {
-    this.place = { run: null, daily, hold: false };
+    this.place = { run: null, daily, hold: false, picked: new Set() };
     this.show('place');
   }
 
@@ -671,44 +771,75 @@ export class Panels {
     const wrap = h('div');
     const run = pl.run;
     if (!run) {
+      // Lucas 11-26: whole words to click instead of truncated band lines; invented words mixed in; the typing check
+      // then starts where the clicks point.
+      if (!pl.board) pl.board = this.ctrl.placeBoard();
+      const board = pl.board;
+      const picked = pl.picked;
+      const count = h('span.small.muted', `已点 ${picked.size} 个`);
       wrap.append(
-        h('p', '测一下你已经会多少词。会的直接跳过，从你还不会的地方开始打。约 5 到 10 分钟，随时可以结束。'),
-        h('p.small.muted', '只给中文，打德语，名词连冠词写（der Tee）。不会就点「不会」，不扣任何东西。测出来的等级只会往上调。'),
-        h('p', h('b', '先看看下面每一段的词，点你大概认识到的那一段：')),
+        h('div.place-head', portrait('考官', 3) ?? '', h('div', h('div.place-say', '「Was kannst du schon?」'), h('div.small.muted', '先点出你认识的词（知道大概意思就算），我从你认识到的地方开始考几道打字题确认。会的直接斩杀，测出的等级只会往上调，随时可以结束。里面混了几个不存在的词，别乱点。'))),
+        h('p.place-ask', '点出你认识的词：'),
       );
-      const samples = bandSamples();
-      const n = bandCount();
-      const list = h('div', { style: 'display:flex;flex-direction:column;gap:6px;margin:8px 0' });
-      for (let i = 0; i < n; i++) {
-        const [lo, hi] = bandRange(i);
-        list.append(
-          h(
-            'button.btn',
-            { style: 'text-align:left;display:flex;gap:12px;align-items:baseline', onclick: () => this.ctrl.placeStart(i) },
-            h('b', { style: 'min-width:86px' }, `${lo}–${hi} 级`),
-            h('span', samples[i].map((w) => fullForm(w)).join(' · ')),
-          ),
-        );
+      const groups: Array<[string, number, number]> = [['A1', 1, 30], ['A2', 31, 80], ['B1', 81, 120], ['B2', 121, 160]];
+      for (const [label, glo, ghi] of groups) {
+        const tiles = board.items.filter((it) => {
+          const lo = bandRange(it.band)[0];
+          return lo >= glo && lo <= ghi;
+        });
+        if (!tiles.length) continue;
+        const grid = h('div.place-words');
+        for (const it of tiles) {
+          const btn = h(`button.place-word-tile${picked.has(it.key) ? '.on' : ''}`, {}, it.label) as HTMLButtonElement;
+          btn.onclick = () => {
+            if (picked.has(it.key)) picked.delete(it.key);
+            else picked.add(it.key);
+            btn.classList.toggle('on', picked.has(it.key));
+            count.textContent = `已点 ${picked.size} 个`;
+          };
+          grid.append(btn);
+        }
+        wrap.append(h('div.place-stage', label), grid);
       }
-      wrap.append(list, h('div.row', h('button.btn.primary', { onclick: () => this.ctrl.placeStart(0) }, '不确定，从头开始测')));
+      wrap.append(
+        h(
+          'div.row',
+          { style: 'margin-top:12px;align-items:center;gap:10px' },
+          h('button.btn.primary', { onclick: () => this.ctrl.placeFromPicks(board, picked) }, '点好了，开始确认 →'),
+          h('button.btn', { onclick: () => this.ctrl.placeStart(0) }, '不点了，从头开始测'),
+          count,
+        ),
+      );
       return wrap;
     }
     const top = topPassed(run);
     const lv = levelFor(top);
     if (run.outcome) {
       const o = run.outcome;
-      const rz = ['', '余烬营地', '面包集市', '铁轨镇'][o.region];
+      const rz = o.region === 1 ? '余烬营地' : AREAS.find((a) => a.region === o.region)?.zh ?? '';
       wrap.append(
         h('h3', o.gained.length ? `测完了：从 ${o.level} 级起步，进第 ${o.region} 区「${rz}」。` : top < 0 ? '测完了：从头开始最合适。' : `测完了：你现在的等级已经够了（测出 ${levelFor(top)} 级）。`),
         h('p', `写对 ${o.retired} 个，直接斩杀。` + (o.half ? `冠词或拼写差一点的 ${o.half} 个记成半名，野外再写对一次就归名。` : '')),
-        o.gaps ? h('p', `会的那几段里有 ${o.gaps} 个词没写出来，它们会作为复习怪跟着你，按你的等级出、经验照拿。`) : '',
+        o.gaps ? h('p', `会的那几段里有 ${o.gaps} 个词没写出来或没点，它们会作为复习怪跟着你，按你的等级出、经验照拿。`) : '',
         o.placed ? h('p', `没抽到的 ${o.placed} 个词先算你会了（推定会）。之后每场战斗可能抽查一道：写对就斩杀，写错就变成复习怪。想快点清掉，可以找考官做全量筛选。`) : '',
         h('div.row', h('button.btn.primary.duel-next', { onclick: () => this.close() }, '出发 ↵')),
       );
       return wrap;
     }
     const [lo, hi] = bandRange(run.band);
-    wrap.append(h('p.small.muted', `正在测 ${lo}–${hi} 级的词 · 这一段 ${run.right} / ${run.asked} · 目前测出：${top < 0 ? '从头开始' : `${lv} 级起步（第 ${regionFor(lv)} 区）`}`));
+    const need = run.extended ? PLACE.per + PLACE.extra : PLACE.per;
+    const mine = run.results.filter((r) => r.band === run.band).slice(-run.asked);
+    const pips = h('div.place-pips', ...Array.from({ length: need }, (_, k) => h(`i${mine[k] ? (mine[k].res === 'ok' || mine[k].res === 'half' ? '.ok' : '.no') : ''}`)));
+    wrap.append(h('div.place-progress', h('b', `${lo}–${hi} 级`), pips, h('span.small.muted', `目前测出：${top < 0 ? '从头开始' : `${lv} 级起步（第 ${regionFor(lv)} 区）`}`)));
+    const c = run.claim;
+    if (c && !run.results.length)
+      wrap.append(
+        h(
+          'p.small.muted',
+          (c.top < 0 ? '你点的词不多，从头开始考。' : `按你点的词，先从 ${bandRange(c.top)[0]}–${bandRange(c.top)[1]} 级考起：答得好往上走，答不上往下退。`) +
+            (c.fakes.length ? `你点了 ${c.fakes.length} 个不存在的词（${c.fakes.join('、')}），起点往下调了。` : ''),
+        ),
+      );
     const l = run.last;
     if (l) {
       const fb = h(`div.feedback.${l.res === 'ok' ? 'ok' : 'no'}`);
@@ -755,9 +886,10 @@ export class Panels {
       }
     });
     wrap.append(
-      h('div.focus', { style: 'font-size:28px;margin:10px 0' }, zhWithPos(w)),
-      h('div.typing', input, umlautButtons(input), h('button.btn.primary', { onclick: go }, '写 ↵'), h('button.btn', { onclick: skip }, '不会')),
-      h('div.row', h('button.btn.ghost', { onclick: () => { this.ctrl.placeStop(run); this.render(); } }, '后面都不会了，结束')),
+      h('div.place-word', zhWithPos(w)),
+      h('div.place-typing', input, h('button.btn.primary', { onclick: go }, '写 ↵'), h('button.btn', { onclick: skip }, '不会')),
+      h('div.place-typing', umlautButtons(input)),
+      h('div.place-typing', h('button.btn.ghost.small', { onclick: () => { this.ctrl.placeStop(run); this.render(); } }, '后面都不会了，结束')),
     );
     return wrap;
   }
@@ -789,14 +921,15 @@ export class Panels {
       const fb = h(`div.feedback.${l.ok ? 'ok' : 'no'}`);
       if (l.ok) {
         const w = l.wrote ?? l.word;
-        fb.append(h('b', `✓ 斩杀 · ${fullForm(w)}`), h('span.note', l.scene ? `经验存在「${l.scene.zh}」，到那里领` : l.placed ? '入学测试推定你会，这下确认了（等级已经按它给过，不另存经验）' : '它已经斩杀过了'));
+        if (l.pend) fb.append(h('b', `✓ 写对了 · ${fullForm(w)}`), h('span.note', '之前在这里看过它的答案，所以先记「待验证」：明天在野外再写对一次就斩杀'));
+        else fb.append(h('b', `✓ 斩杀 · ${fullForm(w)}`), h('span.note', l.scene ? `经验存在「${l.scene.zh}」，到那里领` : l.placed ? '入学测试推定你会，这下确认了（等级已经按它给过，不另存经验）' : '它已经斩杀过了'));
         for (const n of l.verdict?.notes ?? []) fb.append(h('span.note', n));
       } else if (l.skipped) fb.append(h('b', '这个留到野外学。'));
       else
         fb.append(
           h('b', '这个留到野外学。'),
           h('span.note', `你写的：${l.input || '（空）'}`),
-          h('span.note', h('b', `正确写法：${fullForm(l.word)}`)),
+          h('span.note', h('b', `正确写法：${fullFormLong(l.word)}`)),
         );
       wrap.append(fb);
     }
@@ -849,7 +982,7 @@ export class Panels {
       }
     });
     wrap.append(
-      h('div.focus', { style: 'font-size:28px;margin:10px 0' }, zhWithPos(w)),
+      h('div.place-word', zhWithPos(w)),
       h('div.typing', input, umlautButtons(input), h('button.btn.primary', { onclick: go }, '写 ↵'), h('button.btn', { onclick: skip }, '不会，下一个')),
       run.cut.length || run.skipped || run.wrong ? h('details', h('summary.small.muted', '结算'), ...summary()) : '',
     );
@@ -919,7 +1052,7 @@ export class Panels {
     // Wishlist.
     const wishSlot = h('select', { onchange: (e: Event) => { shop.wish.slot = ((e.target as HTMLSelectElement).value || undefined) as Slot | undefined; this.ctrl.persist(); } }) as HTMLSelectElement;
     wishSlot.append(h('option', { value: '' }, '任意部位'));
-    for (const sl of ['pen', 'coat', 'amulet', 'dict', 'glasses'] as Slot[]) wishSlot.append(h('option', { value: sl, selected: shop.wish.slot === sl }, SLOT_ZH[sl]));
+    for (const sl of ['pen', 'coat', 'amulet', 'dict', 'glasses', 'phones'] as Slot[]) wishSlot.append(h('option', { value: sl, selected: shop.wish.slot === sl }, SLOT_ZH[sl]));
     const wishAffix = h('select', { onchange: (e: Event) => { shop.wish.affix = ((e.target as HTMLSelectElement).value || undefined) as AffixKey | undefined; this.ctrl.persist(); } }) as HTMLSelectElement;
     wishAffix.append(h('option', { value: '' }, '任意词条'));
     for (const k of Object.keys(AFFIX_ZH) as AffixKey[]) wishAffix.append(h('option', { value: k, selected: shop.wish.affix === k }, AFFIX_ZH[k](0).replace(/[+\-]?0(\.0)?%?/, '').trim() || k));
@@ -1002,13 +1135,23 @@ export class Panels {
         ),
       );
     }
-    wrap.append(h('h3', `卖掉背包里的东西（卖价是买价的五分之一）`));
+    wrap.append(h('h3', `卖掉或分解背包里的东西（卖价是买价的五分之一；分解得 3 片本区碎片，本区余额 ${s.shardBal?.[String(s.region ?? 1)] ?? 0} 片，在篝火换档）`));
     const bag = h('div.bag');
     for (const it of s.bag) {
-      bag.append(h(`div.item.${it.quality}`, h('div', this.itemBody(it)), h('div.acts', h('button.btn.ghost', { onclick: () => this.ctrl.shopSell(it.id) }, `卖 ${sellPrice(s, it)}`))));
+      bag.append(h(`div.item.${it.quality}`, h('div', this.itemBody(it)), h('div.acts', h('button.btn.ghost', { onclick: () => this.ctrl.shopSell(it.id) }, `卖 ${sellPrice(s, it)}`), h('button.btn.ghost', { title: '分解成本区碎片', onclick: () => this.ctrl.salvageItem(it.id) }, '分解'))));
     }
     if (!s.bag.length) bag.append(h('p.muted.small', '背包是空的。'));
     wrap.append(bag);
+    // 流浪商人的俚语卷轴 (50 级; 行商团 merged into the shop).
+    if (s.level >= CHARM.slangFrom) {
+      const price = this.ctrl.slangPrice();
+      const list = h('div.bag');
+      for (const x of SLANG.filter((y) => y.source.includes('商人'))) {
+        const have = !!s.slang?.[x.id];
+        list.append(h('div.item', h('div', h('b', have ? x.de : '俚语卷轴'), h('div.small', `${x.when} · ${x.fx}`)), h('div.acts', have ? h('span.small.muted', '已学会') : h('button.btn.ghost', { disabled: s.gold < price, onclick: () => { this.ctrl.buySlang(x.id); this.render(); } }, `买 ${price}`))));
+      }
+      wrap.append(h('h3', '俚语卷轴（流浪商人）'), h('p.small.muted', '买下就学会这句俚语，可以选给「俚语」技能。只对写明的场合管用。'), list);
+    }
     return wrap;
   }
 
@@ -1046,43 +1189,134 @@ export class Panels {
     );
   }
 
-  // ---- Class & talents ---------------------------------------------------------
+  // ---- 技能池 & 天赋树 (游戏设计 十) ----------------------------------------------------------------
 
   private talents(): HTMLElement {
     const s = this.ctrl.state;
     const wrap = h('div');
-    if (!s.cls) {
-      wrap.append(h('p.muted', s.level < 10 ? '10 级以后，去面包集市找导师 Greta 选职业。' : '去面包集市找导师 Greta：先打一场试炼，再选职业。'));
-      return wrap;
+    // Skill pool and loadout.
+    wrap.append(h('h3', { style: 'margin-top:0' }, `技能池（出战 ${loadout(s).length} / ${slotCount(s.level)} 格）`));
+    if (s.level < POOL_FROM) wrap.append(h('p.muted.small', `${POOL_FROM} 级打完第 1 区首领后，导师 Greta 送你墨水风暴和稳住。技能格：10 级 2 格、30 级 3 格、61 级 4 格。`));
+    else {
+      wrap.append(h('p.small.muted', '技能不花资源，按回合冷却。每个技能都问眼前这只怪的词的另一层。点一下放进或拿出出战栏；战斗里按 R / G / T / Y 放。'));
+      const lo = loadout(s);
+      const own = owned(s);
+      for (const id of POOL_ORDER) {
+        const sk = POOL[id];
+        const have = own.includes(id);
+        const on = lo.includes(id);
+        wrap.append(
+          h(
+            `div.slot${have ? '' : '.dim'}`,
+            h('div.k', sk.zh, on ? h('span.tag-on', '出战') : ''),
+            h('div.small', { style: 'flex:1' }, `${sk.asks}。${sk.effect}。冷却 ${sk.cd}`),
+            have
+              ? h('button.btn.small', { disabled: !on && lo.length >= slotCount(s.level), onclick: () => { toggleLoadout(s, id); this.ctrl.persist(); this.render(); } }, on ? '拿出' : '带上')
+              : h('span.small.muted', `${sk.lv} 级`),
+          ),
+        );
+      }
     }
-    const c = CLASSES[s.cls];
-    wrap.append(h('h3', { style: 'margin-top:0' }, `${c.zh} · 资源「${c.res}」`));
-    for (const line of c.blurb) wrap.append(h('p.small', line));
+    // Shared talent tree.
     const pts = talentPoints(s);
     const used = spent(s);
     wrap.append(h('h3', `天赋（已用 ${used} / ${pts} 点）`));
     if (s.level < TALENT_FROM_LEVEL) {
-      wrap.append(h('p.muted.small', `${TALENT_FROM_LEVEL} 级起每升一级得 1 点天赋。`));
+      wrap.append(h('p.muted.small', `${TALENT_FROM_LEVEL} 级起每 2 级得 1 点天赋（31–120 级每 3 级 1 点，121 级起每 2 级 1 点）。`));
       return wrap;
     }
-    for (const tier of [1, 2, 3] as const) {
+    for (const br of Object.keys(BRANCHES) as Branch[]) {
       const row = h('div.talent-row');
-      row.append(h('div.small.muted', tier === 1 ? '第 1 层' : `第 ${tier} 层（先花满 ${TIER_GATE[tier]} 点）`));
-      for (const t of TALENTS[s.cls].filter((x) => x.tier === tier)) {
-        const r = rank(s, t.id);
+      const inBr = spentIn(s, br);
+      row.append(h('div.small.muted', `${BRANCHES[br].zh}（${BRANCHES[br].about}）· 已点 ${inBr}`));
+      for (let r = 1; r <= 5; r++) {
+        const nodes = TALENT_TREE.filter((x) => x.branch === br && x.row === r);
+        const open = inBr >= ROW_GATE[r];
+        row.append(h('div.small.muted', r === 5 ? `大天赋（这一支点满 ${ROW_GATE[5]} 点）` : r === 1 ? '第 1 排' : `第 ${r} 排（这一支点满 ${ROW_GATE[r]} 点${open ? '' : '，还没开'}）`));
+        for (const t of nodes) {
+          const k = learned(s, t.id);
+          const grey = t.pending ? `（${t.pending}，点了暂不生效）` : t.from && s.level < t.from ? `（${t.from} 级起生效）` : '';
+          row.append(
+            h(
+              `div.slot${k && !grey ? '' : '.dim'}`,
+              h('div.k', `${t.big ? '★ ' : ''}${t.zh} ${k}/${t.max}`),
+              h('div.small', `${t.desc(Math.max(1, k))}${grey}`),
+              h('button.btn.small', { disabled: !canLearn(s, t), onclick: () => { learn(s, t.id); this.ctrl.persist(); this.render(); } }, '点'),
+            ),
+          );
+        }
+      }
+      wrap.append(row);
+    }
+    // 外圈：语法星位 (141+).
+    wrap.append(h('h3', `语法星位（${litStars(s).length} / ${STARS.length} 已点亮）`));
+    if (s.level < STARS_FROM) wrap.append(h('p.muted.small', `${STARS_FROM} 级起：每个星位是一条语法。先过这条语法的试炼（${STAR_TRIAL.n} 题对 ${STAR_TRIAL.pass}，不挨打、随时重考），再花 1 点点亮：这条语法的题伤害 +10%，答错连击只减半；每点亮 5 个生命 +3%。`));
+    else {
+      const row = h('div.talent-row');
+      for (const st of STARS) {
+        const lit = litStars(s).includes(st.id);
+        const passed = starsPassed(s).includes(st.id);
         row.append(
           h(
-            `div.slot${r ? '' : '.dim'}`,
-            h('div.k', `${t.zh} ${r}/${t.max}`),
-            h('div.small', t.desc(Math.max(1, r))),
-            h('button.btn.small', { disabled: !canLearn(s, t), onclick: () => { learn(s, t.id); this.ctrl.persist(); this.render(); } }, '点'),
+            `div.slot${lit ? '' : '.dim'}`,
+            h('div.k', `${lit ? '✦' : passed ? '✧' : '·'} ${st.zh}`),
+            h('div.small', lit ? '已点亮' : passed ? '试炼已过，可以点亮' : '还没过试炼'),
+            lit ? '' : passed
+              ? h('button.btn.small', { disabled: !canLight(s, st.id), onclick: () => { lightStar(s, st.id); this.ctrl.persist(); this.render(); } }, '点亮')
+              : h('button.btn.small', { onclick: () => this.runStarTrial(st.id, st.zh) }, '试炼'),
           ),
         );
       }
       wrap.append(row);
     }
-    wrap.append(h('p.small.muted', '洗点：在导师 Greta 那里花一小时的金币。每个职业的天赋分开存。'));
+    // 言灵精通 (满级后).
+    if (s.level >= CONFIG.levelCap || masteryPts(s.flags) > 0) {
+      wrap.append(h('h3', `言灵精通（可用 ${masteryFree(s.flags)} / 共 ${masteryPts(s.flags)} 点）`));
+      wrap.append(h('p.muted.small', '满级后每攒满一级的经验得 1 点；裂隙深层第一次到达每 10 层也给 1 点。'));
+      const row = h('div.talent-row');
+      for (const t of Object.keys(MASTERY) as MasteryTrack[]) {
+        const m = MASTERY[t];
+        const n = masteryIn(s.flags, t);
+        row.append(
+          h(
+            'div.slot',
+            h('div.k', `${m.zh} ${n} / ${m.max}`),
+            h('div.small', `+${Math.round(n * m.per * 1000) / 10}%（每点 +${m.per * 100}%）`),
+            h('button.btn.small', { disabled: masteryFree(s.flags) <= 0 || n >= m.max, onclick: () => { spendMastery(s.flags, t); this.ctrl.persist(); this.render(); } }, '加点'),
+          ),
+        );
+      }
+      wrap.append(row);
+    }
+    wrap.append(h('p.small.muted', '洗点：在导师 Greta 那里花一小时的金币。'));
     return wrap;
+  }
+
+  /** 语法星位试炼: 8 questions one after another in the answer box; 6 right passes. */
+  private runStarTrial(id: string, zh: string): void {
+    const s = this.ctrl.state;
+    const tasks = starTrial(s, id, Math.random);
+    if (!tasks) {
+      this.ask(`试炼 · ${zh}`, `你见过的这类句子还不够 ${STAR_TRIAL.n} 句。多打一些用到「${zh}」的怪再来。（随便写点什么关掉）`, () => this.show('talents'));
+      return;
+    }
+    const answers: string[] = [];
+    const next = (i: number) => {
+      if (i >= tasks.length) {
+        const r = finishStarTrial(s, id, tasks, answers);
+        this.ctrl.persist();
+        this.ask(`试炼 · ${zh}`, `${r.right} / ${tasks.length} 题对。${r.passed ? '过了：回天赋页花 1 点点亮它。' : `差一点，要对 ${STAR_TRIAL.pass} 题。随时可以重考。`}（随便写点什么关掉）`, () => this.show('talents'));
+        return;
+      }
+      const t = tasks[i];
+      const opts = t.options ? `\n可选：${t.options.join(' / ')}` : '';
+      this.ask(`试炼 · ${zh}（${i + 1} / ${tasks.length}）`, `${t.prompt}\n${t.focus}${opts}`, (text) => {
+        if (!text.trim()) return; // closed: the trial stops, nothing counted
+        answers.push(text.trim());
+        next(i + 1);
+      });
+    };
+    next(0);
   }
 
   private itemBody(it: Item): HTMLElement {
@@ -1091,9 +1325,11 @@ export class Panels {
       { style: 'flex:1' },
       h(`div.item-name.${it.quality}`, icon(SLOT_TILE[it.slot], 1, false, `slot-icon q-${it.quality}`), `${it.name}`, h('span.small.muted', `  ${QUALITY_ZH[it.quality]} · ${SLOT_ZH[it.slot]} · 物品等级 ${it.ilvl}`)),
       h('div.small', mainStatText(it)),
+      it.tier ? h('div.small', { style: 'color:var(--gold, #ffcf4a)' }, `第 ${it.tier} 档（${it.region ?? '?'} 区）${it.slot === 'pen' ? `：伤害 +${Math.round(it.tier * CONFIG.gear.dmg * 100)}%` : it.slot === 'coat' ? `：生命 +${Math.round(it.tier * CONFIG.gear.hp * 100)}%` : it.slot === 'amulet' ? `：穿透 +${Math.round(it.tier * CONFIG.gear.pen * 100)}%` : ''}（在下一区减半，再往后不算）`) : '',
       ...(it.unidentified ? [h('div.aff', { style: 'color:var(--muted)' }, `未鉴定：${it.affixes.length} 条词缀还没生效（找 Mira 鉴定）`)] : it.affixes.map((a) => h('div.aff', AFFIX_ZH[a.key](a.value)))),
-      it.socket === undefined ? '' : h('div.aff', { style: 'color:var(--gold, #ffcf4a)' }, it.socket === '' ? '刻字孔：空的（找导师 Greta 刻 auch 或 denn）' : it.socket === 'auch' ? '刻字 auch：齐鸣打到的其他怪伤害 +20%' : '刻字 denn：难题答对伤害 +20%'),
-      it.legendary ? h('div.aff', { style: 'color:var(--q-orange)' }, '传说：冠词审判——答对一道冠词题后，下一击伤害翻倍') : '',
+      it.socket === undefined ? '' : h('div.aff', { style: 'color:var(--gold, #ffcf4a)' }, it.socket === '' ? '语气词孔：空的（找导师 Greta 刻 auch、denn，45 级起 mal、doch）' : it.socket === 'auch' ? '语气词 auch：齐鸣打到的其他怪伤害 +20%' : it.socket === 'denn' ? '语气词 denn：难题答对伤害 +20%' : it.socket === 'mal' ? '语气词 mal：终结技整句在请求句里用上 mal，伤害 +20%' : '语气词 doch：终结技整句里用上 doch，伤害 +20%'),
+      it.gem ? h('div.aff', { style: 'color:#7fd6ff' }, `${QUALITY_ZH[it.gem.q]}${gemText(it.gem)}`) : '',
+      it.legendary ? h('div.aff', { style: 'color:var(--q-orange)' }, `传说：${LEGENDARY[it.legendary].zh}——${LEGENDARY[it.legendary].fx}`) : '',
     );
   }
 
@@ -1126,10 +1362,16 @@ export class Panels {
     wrap.append(filters);
     const grid = h('div.codex');
     const t = now(s);
+    let unseen = 0;
     for (const w of WORDS) {
       if (this.codexFilter !== 'all' && w.family !== this.codexFilter) continue;
       const st = stageOf(s, w, t);
       const seen = st > 0;
+      // 0.8.4: words not met yet are only counted (a new character used to open a wall of 「？？？」 cards).
+      if (!seen) {
+        unseen++;
+        continue;
+      }
       const gg = genderOf(w);
       const g = gg ? { m: 'der', f: 'die', n: 'das', pl: 'pl' }[gg] : null;
       const due = seen && kindOf(s, w, t) === 'due';
@@ -1140,10 +1382,13 @@ export class Panels {
           h('div.w', seen && g ? h(`span.art-mark.${g}`) : '', h(`span${seen && g ? '.art-' + g : ''}`, seen ? fullForm(w) : '？？？')),
           h('div.z', seen ? w.zh : FAMILIES[w.family].zh),
           seen && w.pl && w.pl !== '-' && st >= 2 ? h('div.small.muted', `复数 die ${w.pl}`) : '',
+          seen && reflNote(w) ? h('div.small.muted', reflNote(w)) : '',
         ),
       );
     }
-    wrap.append(grid);
+    if (grid.childElementCount) wrap.append(grid);
+    else wrap.append(h('p.muted', '还没遇见过这一类的怪。出去打几只吧。'));
+    if (unseen) wrap.append(h('p.small.muted', { style: 'margin-top:10px' }, `还有 ${unseen} 个词没遇见过，遇见后会出现在这里。`));
     return wrap;
   }
 
@@ -1231,7 +1476,6 @@ export class Panels {
     const learningN = wrote.length + readOnly.length + notYet.length;
     const pendN = Object.values(s.words).filter((p) => p.pend).length;
     const claims = pendingScenes(s);
-    wrap.append(this.importBox());
     wrap.append(h('p', `已斩杀 ${cut.length} · 待验证 ${pendN}${claims.length ? ` · 待领经验：${claims.map((x) => x.zh).join('、')}` : ''}`));
     wrap.append(h('p.small.muted', `见过 ${shaky.length + learningN + known.length + cut.length} 个词：熟练 ${known.length} · 学习中 ${learningN} · 常错 ${shaky.length}。「认得」是选择题答对过，「会写」是默写、变位或整句写对过。存档同步到云端，换电脑也在。`));
     const table = (title: string, note: string, rows: Row[]) => {
@@ -1245,8 +1489,8 @@ export class Panels {
         tb.append(
           h(
             'tr',
-            h('td', h(`span${gk ? '.art-' + gk : ''}`, fullForm(w))),
-            h('td', w.zh),
+            h('td', h(`span${gk ? '.art-' + gk : ''}`, fullFormLong(w))),
+            h('td', w.zh, p.mix?.length ? h('span.small.muted', { title: '词族秘境里答混过' }, ` · 易混：${p.mix.map((x) => WORD_BY_ID[x]?.de ?? x).join('、')}`) : ''),
             h('td', w.pl && w.pl !== '-' ? `die ${w.pl}` : '—'),
             h('td', p.read ? '✓' : '—'),
             h('td', p.write ? '✓' : '—'),
@@ -1263,19 +1507,42 @@ export class Panels {
     table('学习中 · 还不认得', '见过，但还没答对过。', notYet);
     table('熟练', '已经归名的词：认得，也会写。', known);
     cut.sort((a, b) => a.w.de.localeCompare(b.w.de, 'de'));
-    table('已斩杀', '会写的词：不再进复习，也不当委托目标。30 天后回响抽查一次，写对就永久斩杀。', cut);
+    table('已斩杀', '会写的词：不再进复习，也不当委托目标。练出来的斩杀 30 天后回响抽查一次，写对就永久斩杀；入学测试、主城筛选和直接叫名判会的词直接永久，不再抽查。', cut);
     if (s.level >= SAYING_CFG.fromLevel) {
       const got = SAYINGS.filter((x) => s.sayings?.[x.id]);
       const phraseIds = new Set(phraseCards().map((x) => x.id));
-      const tb = h('table.log');
-      tb.append(h('tr', h('th', '短句'), h('th', '中文'), h('th', '什么时候说')));
+      const head = () => h('tr', h('th', '短句'), h('th', '中文'), h('th', '什么时候说'), h('th', '效果'), h('th', ''));
+      const tb = h('table.log.text', head());
+      const locked = h('table.log.text', h('tr', h('th', '短句'), h('th', '怎么收'), h('th', '效果')));
+      const on = new Set(equippedCharms(s).map((c) => c.id));
+      const equipBtn = (id: string) => h('button.btn.small' + (on.has(id) ? '.primary' : ''), { onclick: () => { equipCharm(s, id); this.ctrl.persist(); this.render(); } }, on.has(id) ? '已选' : '选这张');
       for (const x of SAYINGS) {
-        const have = !!s.sayings?.[x.id];
-        tb.append(h('tr', h('td', have ? `${x.a} ${x.b}` : `${x.a} ……`), h('td', have ? x.zh : '？'), h('td', have ? x.when : (phraseIds.has(x.id) ? '野外金色的「残句」怪：接上、听懂、写出整句就能收下' : '在野外遇到喊这句的接句怪，接上下半句就能收下'))));
+        const c = CHARM_BY_ID[x.id];
+        if (s.sayings?.[x.id]) tb.append(h('tr', h('td', `${x.a} ${x.b}`), h('td', x.zh), h('td', x.when), h('td.small', c ? c.fx : ''), h('td', on.has(x.id) ? h('span.small', '这场') : '')));
+        else locked.append(h('tr', h('td', `${x.a} ……`), h('td.small.muted', phraseIds.has(x.id) ? '金色「残句」怪：接上、听懂、写出整句' : '接句怪：接上下半句'), h('td.small', c ? c.fx : '')));
       }
-      wrap.append(h('h3', `短句卡（${got.length} / ${SAYINGS.length}）`), h('p.small.muted', '大部分卡从野外金色的「残句」怪身上掉；怪的词正好在这句里时，接句怪也会喊它。卡只用来收集，没有战斗效果。'), tb);
+      // 还没收到的卡折起来：开局一张都没有时，整页不该被 20 行问号占满。
+      const rest = SAYINGS.length - got.length;
+      wrap.append(
+        h('h3', `短句卡（${got.length} / ${SAYINGS.length}）`),
+        h('p.small.muted', `大部分卡从野外金色的「残句」怪身上掉；怪的词正好在这句里时，接句怪也会喊它。「短句」技能每场从你收到的卡里轮换抽一张（10 级前自动带上，之后要在技能格里带上）：战斗里打出整句生效，每场一次；${s.level < CHARM.bonusFrom ? '33 级前喊一次占一回合' : '不占回合'}。`),
+        got.length ? tb : h('p.small.muted', '还没有收到短句卡。'),
+        rest ? h('details', h('summary.small', `还没收到的 ${rest} 张（看看能从哪儿收）`), locked) : '',
+      );
+      if (s.level >= CHARM.slangFrom) {
+        const st = h('table.log');
+        st.append(h('tr', h('th', '俚语'), h('th', '中文'), h('th', '场合'), h('th', '效果'), h('th', '')));
+        for (const x of SLANG) {
+          const have = !!s.slang?.[x.id];
+          st.append(h('tr', h('td', have ? x.de : '……'), h('td', have ? x.zh : '？'), h('td', x.when ?? ''), h('td.small', have ? x.fx : x.source), h('td', have ? equipBtn(x.id) : '')));
+        }
+        wrap.append(h('h3', `俚语（${SLANG.filter((x) => s.slang?.[x.id]).length} / ${SLANG.length}）`), h('p.small.muted', '在这里选一条给「俚语」技能（要在技能格里带上）。只对写明的场合管用；用错场合会反噬：不生效，本场下一次答错伤害 +50%。'), st);
+      }
     }
     if (!Object.keys(s.words).length) wrap.append(h('p', '还没有见过的词。出去打几只怪吧。'));
+    wrap.append(this.letterArchive());
+    // Importing a word list is a one-off setup step: it sits at the end, after the player's own words (0.8 UI pass).
+    wrap.append(this.importBox());
     return wrap;
   }
 
@@ -1293,7 +1560,7 @@ export class Panels {
     }
     if (!s.look) {
       const pick = lookPicker();
-      wrap.append(h('h3', '选一个外观'), h('p.small.muted', '联机时别人看到的样子。之后在篝火旁可以免费改。'), pick.el, h('button.btn.primary', { onclick: () => { this.ctrl.setLook(pick.value()); this.render(); } }, '就这样'));
+      wrap.append(h('h3', '选一个外观'), h('p.small.muted', '你在地图上的样子。之后在篝火旁可以免费改。'), pick.el, h('button.btn.primary', { onclick: () => { this.ctrl.setLook(pick.value()); this.render(); } }, '就这样'));
       return wrap;
     }
     const st = { off: '未同步', syncing: '同步中…', ok: `已同步${cloud.lastSync ? `（${new Date(cloud.lastSync).toLocaleTimeString().slice(0, 5)}）` : ''}`, offline: '连不上服务器，先存在本地，联网后自动同步' }[cloud.status];
@@ -1308,22 +1575,44 @@ export class Panels {
         const err = await setNickname(s, nick.value);
         msg.textContent = err ?? '';
       };
-      wrap.append(h('h3', '起个昵称'), h('p.small.muted', '排行榜只显示昵称、等级和职业，不显示邮箱。'), h('div.row', nick, h('button.btn.primary', { onclick: () => void saveNick() }, '保存')), msg);
+      wrap.append(h('h3', '起个昵称'), h('p.small.muted', '排行榜和聊天只显示昵称和等级，不显示邮箱。'), h('div.row', nick, h('button.btn.primary', { onclick: () => void saveNick() }, '保存')), msg);
       return wrap;
     }
     wrap.append(h('h3', `排行榜 · 你是 ${cloud.profile.nickname}`));
+    const kinds: BoardKind[] = ['daily', 'total', 'gram'];
+    const HEAD: Record<BoardKind, [string, string]> = { daily: ['今天答对', ''], total: ['已归名', '等级'], gram: ['语法试炼', '语法正确率'] };
+    const NOTE: Record<BoardKind, string> = {
+      daily: '今天（柏林时间）答对的题数，零点清零。只比学习量。',
+      total: '归名（或考核里写对直接毕业）的词数。',
+      gram: `通过的语法星位试炼和阶段突破数；答过 ${BOARD.gramMin} 道语法题才上榜，旁边是语法题正确率。`,
+    };
     const table = h('table.log');
-    table.append(h('tr', h('td', { colspan: 5 }, '加载中…')));
-    wrap.append(table, h('p.small.muted', '按等级排，同级比已归名的词数。数据在你同步存档时更新。'));
-    leaderboard()
-      .then((rows) => {
-        clear(table).append(h('tr', h('th', '#'), h('th', '昵称'), h('th', '等级'), h('th', '职业'), h('th', '已归名')));
-        rows.forEach((r, i) => {
-          const me = r.nickname === cloud.profile?.nickname;
-          table.append(h(`tr${me ? '.me' : ''}`, h('td', i + 1), h('td', me ? `${r.nickname}（你）` : r.nickname), h('td', r.level), h('td', r.cls ? CLASSES[r.cls as keyof typeof CLASSES]?.zh ?? '—' : '—'), h('td', r.named)));
-        });
-      })
-      .catch(() => clear(table).append(h('tr', h('td', { colspan: 5 }, '排行榜加载失败，可能是断网了。'))));
+    const note = h('p.small.muted');
+    const tabs = h('div.row');
+    const load = (k: BoardKind) => {
+      tabs.replaceChildren(...kinds.map((x) => h(`button.btn.small${x === k ? '.primary' : ''}`, { onclick: () => load(x) }, BOARD_ZH[x])));
+      note.textContent = NOTE[k] + ' 数据在你同步存档时更新（最多晚半分钟）。';
+      clear(table).append(h('tr', h('td', { colspan: 4 }, '加载中…')));
+      leaderboard(k)
+        .then((rows) => {
+          const [a1, a2] = HEAD[k];
+          clear(table).append(h('tr', h('th', '#'), h('th', '昵称'), h('th', a1), a2 ? h('th', a2) : null));
+          if (!rows.length) table.append(h('tr', h('td', { colspan: 4 }, '还没有人上榜。')));
+          for (const r of rows)
+            table.append(h(`tr${r.me ? '.me' : ''}`, h('td', r.pos), h('td', `${r.nickname} Lv${r.level}${r.me ? '（你）' : ''}`), h('td', r.score), a2 ? h('td', k === 'gram' ? `${r.extra}%` : r.extra) : null));
+        })
+        .catch(() => clear(table).append(h('tr', h('td', { colspan: 4 }, '排行榜加载失败，可能是断网了。'))));
+    };
+    const hide = h('input', { type: 'checkbox' }) as HTMLInputElement;
+    hide.checked = !!s.settings.hideBoard;
+    hide.onchange = () => {
+      s.settings.hideBoard = hide.checked;
+      this.ctrl.persist();
+      void track();
+      void push(s);
+    };
+    wrap.append(tabs, table, note, h('label.toggle', hide, h('span', '隐身'), h('span.small.muted', '不上排行榜，也不算进「当前在线」；聊天照样能看能说')));
+    load('daily');
     return wrap;
   }
 
@@ -1372,9 +1661,9 @@ export class Panels {
   private settings(): HTMLElement {
     const s = this.ctrl.state;
     const wrap = h('div');
-    const toggle = (label: string, key: 'tts' | 'autoZh' | 'chestAnim', note: string) => {
+    const toggle = (label: string, key: 'tts' | 'autoZh' | 'chestAnim' | 'realtime' | 'realtimeSlow' | 'quiet', note: string) => {
       const cb = h('input', { type: 'checkbox' }) as HTMLInputElement;
-      cb.checked = s.settings[key] !== false;
+      cb.checked = key === 'realtimeSlow' || key === 'quiet' ? !!s.settings[key] : s.settings[key] !== false;
       cb.onchange = () => {
         s.settings[key] = cb.checked;
         this.ctrl.persist();
@@ -1397,6 +1686,9 @@ export class Panels {
       slider('音乐', 'music'),
       slider('音效', 'sfx'),
     );
+    // 即时战 (81): on by default from 81; turn-based stays available (no quick-answer bonus there).
+    if (s.level >= 34) wrap.append(toggle('安静模式', 'quiet', '不方便出声时打开：不出现「说出来」，要开口的内容等你关掉再做'));
+    if (s.level >= 81) wrap.append(toggle('即时战', 'realtime', '关掉就回到回合制（拿不到快答加成）'), toggle('即时战慢速', 'realtimeSlow', '怪的读条 ×1.5'));
     // 跟读试音: check the microphone and Chrome's recognition at any level (跟读 itself opens at Lv5).
     const out = h('span.small.muted', canListen() ? '读一句德语，比如「Ich trinke Kaffee.」' : '没检测到麦克风，或者这个网站的麦克风权限被拒绝了');
     const btn = h('button.btn', '试麦克风') as HTMLButtonElement;
@@ -1437,19 +1729,21 @@ export class Panels {
     const s = this.ctrl.state;
     const rows: Array<[string, string]> = [
       ['移动', '点地图上的圆点或右边面板里的出口，一站一站走过去（远处去过的会自动走）；M 打开大地图；数字键 1–9 打这个场景里的第几只怪。地址后加 ?oldmap 可以用回 0.4 的自由走动地图'],
-      ['互动', 'E（篝火、守火人、路牌、门）'],
-      ['面板', 'C 角色和装备 · B 图鉴 · Esc 关闭'],
+      ['互动', '点地图上的篝火、守火人、路牌、门（旧版自由走动地图按 E）'],
+      ['面板', 'C 角色和装备 · B 图鉴 · N 单词本 · T 天赋 · J 任务 · H 这页帮助 · Esc 关闭'],
       ['词性三相', '名词怪出手前先选相：1 der · 2 die · 3 das（对这只怪一直有效，随时可以点按钮换）。选对：护甲降一档、回 1 点资源、附带元素；6 级起选错：护甲翻倍、破甲清零。复数怪一律 die'],
-      ['战斗', 'A 攻击 · Q 铭刻 · E 齐鸣（只打同相的怪）· F 终结技（言灵满了才出现）· R 技能 · G 职业技能 · H 吃药片（回血，占一回合）；答题时 W 低语（用一张纸条给提示，打字时按 ?）；1/2/3 选答案；打字题按 Enter 交卷；结果会自动进下一题（Enter 跳过等待）；Z 看中文；V 再听；S 读出来（5 级起可选：答对后跟着读那句德语，读得像每场多给一次经验，读不好不扣东西；没有麦克风就不显示）'],
+      ['战斗', 'A 攻击 · Q 铭刻 · E 齐鸣（只打同相的怪）· F 终结技（言灵满了才出现）· R / G / T / Y 技能（出战栏里的技能，冷却制）· H 吃药片（回血，占一回合）· 群怪时 Tab 换目标 · 答题时 Esc 换招式；答题时 W 低语（用一张纸条给提示，打字时按 ?）；1/2/3 选答案；打字题按 Enter 交卷；结果会自动进下一题（Enter 跳过等待）；Z 看中文；V 再听；S 读出来（5 级起可选：答对后跟着读那句德语，读得像每场多给一次经验，读不好不扣东西；没有麦克风就不显示）'],
       ['变音字母', '点 ä ö ü ß 按钮，或者写 ae oe ue ss（算对，但会提示正确拼法）'],
-      ['归名', '一个词就是一只怪。打败它 3 次（3 次不同的重生，隔天才会重生），最后一下要默写带冠词的全名，它才变回原样'],
+      ['新词', '第一次见：先出一道选择题教你（同时显示整个词、中文和发音），2 级起下一题就默写。打完还没写过它的，下一场第一题就默写。会的词可以点「我认识它」直接叫名，写对直接永久斩杀'],
+      ['归名', '一个词就是一只怪。一般打败它 3 次（认、用、写；打完它几分钟后在原场景重生，一天里就能归名），最后一下要默写带冠词的全名，它才变回原样。第一场就写对、没答错也没用提示，打 2 次就够'],
+      ['复习', '归名后按表现复习，每次是战斗里的一道语境题：一次就写对的词 2 天、7 天、30 天各一次，三次都对就不再复习；答错过的词间隔更密，复习答错就重来'],
       ['遗忘之物', '头上有「!」的怪是今天到期的词，经验和掉落更多。篝火休息会刷新所有怪'],
       ['影子', '半透明的怪是还没到期的词：给金币和经验，但不推进归名'],
-      ['死亡', '学习进度永远不丢。金币和这一级的经验留在杀死你的那个词上（回响），回去打败它就能捡回'],
+      ['死亡', '学习进度永远不丢。金币和这一级的经验留在杀死你的那个词上（回响），回去打败它就能捡回；再死一次，上一份回响就散了'],
     ];
     const wrap = h('div');
     for (const [k, v] of rows) wrap.append(h('div.stat', h('span', { style: 'width:90px;flex:none' }, k), h('span', { style: 'text-align:right' }, v)));
-    wrap.append(h('p.small.muted', `0.5：第 1 区余烬营地（1–10 级）和第 2 区面包集市（11–20 级）。当前 ${s.level} 级，等级上限 ${CONFIG.levelCap}。`));
+    wrap.append(h('p.small.muted', `1–${CONFIG.releaseCap} 级已开放。当前 ${s.level} 级，等级上限 ${levelCapFor(s.flags)}（过突破试炼再往上）。`));
     return wrap;
   }
 }

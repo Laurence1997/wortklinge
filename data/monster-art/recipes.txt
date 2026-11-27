@@ -1,0 +1,930 @@
+# 专属造型 batch 2 (2026-11-26). '<原形>: <family> key=value …' — see scripts/gen_sprites.py.
+# ---------------------------------------------------------------- 人物: family
+Mann: person hair=b:short top=u bot=s
+Frau: person sex=f hair=B:long top=r
+Kind: person age=kid hair=y:spiky top=g
+Junge: person age=kid hair=b:spiky top=u bot=s mouth=smile
+Mädchen: person age=kid sex=f hair=y:pigtails top=V
+Baby: person age=baby
+Kleinkind: person age=baby top=G dummy=u
+Vater: person hair=b:side stache=1 top=g:vest vest=s bot=s
+Papa: person hair=B:side beard=1 top=r bot=u
+Mutter: person sex=f hair=b:bun top=V:apron apron=W
+Mama: person sex=f hair=B:pony top=p mouth=smile
+Mami: person sex=f hair=y:pony top=r mouth=smile prop=heart
+Mutti: person sex=f hair=b:bun top=g:apron apron=W prop=cup
+Sohn: person age=kid hair=B:fringe top=r:stripe stripe=W
+Tochter: person age=kid sex=f hair=B:pony top=y
+Bruder: person hair=k:spiky top=G:jersey
+Schwester: person sex=f hair=k:long top=U
+Oma: person sex=f age=old hair=c:bun top=V glasses=1 prop=cane
+Großmutter: person sex=f hair=W:bun top=v glasses=1 prop=needle cheeks=1
+Opa: person hair=c:bald stache=c top=n prop=cane glasses=1
+Großvater: person hair=W:bald beard=W top=b prop=pipe
+Onkel: person hair=B:bald stache=b top=y:vest vest=n bot=b
+Tante: person sex=f hair=r:wavy top=G earring=y
+Cousin: person hair=b:fringe top=Y glasses=1
+Cousine: person sex=f hair=b:pony top=U
+Neffe: person age=kid hair=y:fringe top=r prop=ball
+Nichte: person age=kid sex=f hair=B:pigtails top=G
+Enkel: person age=kid hair=y top=u prop=ball
+Enkelin: person age=kid sex=f hair=y:pigtails top=p prop=flower
+Enkelkind: person age=kid hair=B:spiky top=G prop=star
+Eltern: group (hair=b top=u) (sex=f hair=y:long top=r)
+Großeltern: group (hair=W:bald stache=W top=n prop=cane) (sex=f hair=W:bun top=V)
+Geschwister: group (age=kid hair=b top=u) (age=kid sex=f hair=b:pigtails top=r)
+Zwilling: group (hair=y:spiky top=g) (hair=y:spiky top=g)
+Ehepaar: group (hair=b top=k:suit) (sex=f hair=y:long top=W:dress)
+Pärchen: group (hair=k top=u prop=rose) (sex=f hair=B:long top=p)
+Familie: group (hair=b top=u) (age=kid hair=y top=G) (sex=f hair=B:long top=r)
+Braut: person sex=f hair=y:long top=W:gown hat=W:veil prop=bouquet
+Bräutigam: person hair=k:side top=k:suit tie=k prop=rose
+Ehemann: person hair=b:side top=k:suit tie=u prop=ring
+Ehefrau: person sex=f hair=B:bun top=r:dress prop=ring
+Witwe: person sex=f hair=k:bun top=k:dress hat=k:scarf mouth=frown
+Schwiegermutter: person sex=f hair=S:bun top=v glasses=1 mouth=frown
+Schwiegervater: person hair=S:bald stache=S top=g:vest vest=b mouth=frown
+Schwiegersohn: person hair=B top=k:suit tie=y prop=bouquet
+Schwager: person hair=k beard=1 top=y
+Stiefvater: person hair=k:bald beard=1 top=s mouth=frown
+Waise: person age=kid hair=n top=n:stripe stripe=b mouth=frown
+Teenager: person hair=V:side top=k prop=phone hat=phones
+Senior: person hair=W:bald top=G glasses=1 prop=cane
+Rentner: person hair=W:bald top=n:vest vest=b prop=cane mouth=smile
+Erwachsene: person hair=b top=u:suit tie=r
+# ---------------------------------------------------------------- 人物: jobs
+Arzt: person hair=k:short top=W:coat inner=u prop=stethoscope glasses=1
+Ärztin: person sex=f hair=y:bun top=W:coat inner=u prop=stethoscope
+Doktor: person hair=W:bald top=W:coat inner=u glasses=1 prop=syringe stache=W
+Hausarzt: person hair=b:side top=W:coat inner=g prop=stethoscope+case
+Kinderarzt: person sex=f hair=r:pony top=W:coat inner=y prop=baby
+Frauenarzt: person hair=k top=W:coat inner=p prop=stethoscope
+Zahnarzt: person hair=b top=W:coat inner=U prop=tooth mask=U
+Tierarzt: person sex=f hair=B:pony top=W:coat inner=g prop=paw
+Facharzt: person hair=S:side top=W:coat inner=s glasses=1 prop=clip
+Notarzt: person hair=b top=r:vest vest=y prop=stethoscope
+Chirurg: person top=g hat=g:hood mask=G prop=knife
+Krankenschwester: person sex=f hat=nurse top=W redcross=1 hair=b:long
+Krankenpfleger: person hair=b top=U prop=syringe
+Pfleger: person hair=k top=U prop=pill
+Sanitäter: person hair=y top=r:vest vest=y redcross=1
+Hebamme: person sex=f hair=B:bun top=U:apron apron=W prop=baby
+Apotheker: person hair=b:side top=W:coat inner=g glasses=1 prop=pill
+Psychiater: person hair=S:bald beard=S glasses=1 top=n:suit prop=clip
+Psychologe: person sex=f hair=b:bun glasses=1 top=V prop=clip
+Therapeut: person hair=n top=G:vest vest=n prop=clip mouth=smile
+Mediziner: person sex=f hair=k:bun top=W:coat inner=V prop=tube
+Lehrer: person hair=b:side glasses=1 top=n:vest vest=g prop=chalk
+Lehrerin: person sex=f hair=B:bun glasses=1 top=r prop=book
+Professor: person hair=W:afro glasses=1 top=n:suit tie=r prop=chalk
+Dozent: person hair=b glasses=1 top=s:suit tie=u prop=book
+Rektor: person hair=S:bald top=k:suit tie=r prop=bell glasses=1
+Direktor: person hair=k:side top=k:suit tie=y prop=case
+Direktorin: person sex=f hair=k:bun top=k:suit tie=r prop=clip
+Dekan: person hair=W:bald glasses=1 top=v:robe prop=scroll
+Schüler: person age=kid hair=b top=u prop=book
+Schülerin: person age=kid sex=f hair=y:pony top=r prop=book
+Student: person hair=b:spiky top=G prop=book
+Studentin: person sex=f hair=k:pony top=U prop=laptop
+Werkstudent: person hair=y top=g:apron apron=n prop=laptop
+Absolvent: person hat=grad top=k:robe prop=scroll hair=b
+Praktikant: person hair=y:fringe top=W prop=cup mouth=smile
+Lehrling: person age=kid hair=b top=u:overall over=s prop=wrench
+Anfänger: person hair=y top=G mouth=open prop=book
+Polizist: person hat=police top=u badge=y bot=s
+Polizistin: person sex=f hat=police top=u badge=y hair=b:pony
+Polizeibeamte: person hat=police top=u badge=y stache=1 prop=clip
+Kommissar: person hat=B:cowboy top=n:coat inner=W stache=1 prop=magnifier
+Inspektor: person hat=s:beret top=s:coat inner=W prop=magnifier
+Detektiv: person hat=n:cowboy top=n:coat inner=n prop=magnifier+pipe
+Ermittler: person hair=k top=s:coat inner=W prop=magnifier
+Wache: person hat=helmet top=r prop=spear
+Wachmann: person hair=k:bald top=k vest=y badge=y prop=lamp
+Wächter: person hat=helmet top=s:armor prop=spear
+Wärter: person hair=k top=s badge=y prop=key
+Feuerwehrmann: person hat=r:hard top=r:vest vest=y prop=axe
+Feuerwehr: group (hat=r:hard top=r:vest vest=y) (hat=r:hard top=r:vest vest=y prop=axe)
+Richter: person hair=W:bald top=k:robe prop=gavel glasses=1
+Richterin: person sex=f hair=S:bun top=k:robe prop=gavel
+Anwalt: person hair=k:side top=k:suit tie=u prop=case
+Anwältin: person sex=f hair=B:bun top=k:suit tie=W prop=case
+Rechtsanwalt: person hair=S:side top=s:suit tie=r prop=case glasses=1
+Staatsanwalt: person hair=k:bald top=k:robe tie=W prop=scroll mouth=frown
+Notar: person hair=S glasses=1 top=k:suit prop=scroll
+Jurist: person hair=b glasses=1 top=s:suit prop=book
+Zeuge: person hair=b top=g mouth=open prop=list
+Zeugin: person sex=f hair=y:long top=V mouth=open
+Augenzeuge: person hair=k top=y glasses=1 mouth=open
+Kläger: person hair=n top=u mouth=open prop=scroll
+Koch: person hair=b top=W hat=chef prop=knife stache=1
+Köchin: person sex=f hair=B:bun top=W hat=chef prop=bread
+Bäcker: person hair=y top=W:apron apron=W hat=chef prop=baguette
+Metzger: person hair=k:bald top=W:apron apron=r prop=knife stache=1
+Kellner: person hair=k:side top=W:vest vest=k prop=tray
+Kellnerin: person sex=f hair=B:pony top=k:apron apron=W prop=tray
+Bedienung: person sex=f hair=y:pony top=r:apron apron=W prop=list
+Barkeeper: person hair=k stache=1 top=W:vest vest=k prop=cocktail
+Wirt: person hair=b:bald beard=1 top=W:apron apron=n prop=beer
+Kassierer: person hair=b top=u:vest vest=r prop=coin
+Verkäufer: person hair=b:side top=r:apron apron=G prop=tag
+Händler: person hair=k beard=1 top=v prop=money
+Kaufmann: person hair=b stache=1 top=b:vest vest=n prop=money
+Geschäftsmann: person hair=k:side top=s:suit tie=r prop=case
+Friseur: person hair=V:mohawk top=k prop=scissors
+Schneider: person hair=S:bald glasses=1 top=u:vest vest=r prop=needle
+Schuster: person hair=S beard=1 top=n:apron apron=b prop=hammer
+Handwerker: person hat=hard top=u:overall over=u prop=hammer
+Elektriker: person hat=y:hard top=u prop=plug
+Klempner: person hat=r:cap top=u:overall over=u prop=wrench stache=1
+Mechaniker: person hair=k top=s:overall over=s prop=wrench
+Techniker: person hair=b glasses=1 top=s prop=wrench
+Zimmermann: person hat=k:cowboy top=k:vest vest=k prop=hammer
+Gärtner: person hat=y:cowboy top=g:overall over=g prop=shovel
+Bauer: person hat=y:cowboy top=r:overall over=u prop=rake
+Fischer: person hat=y:sailor top=y prop=rod beard=1
+Jäger: person hat=g:feather top=g prop=rifle beard=1
+Schäfer: person hat=n:cowboy top=n prop=staff beard=1
+Hirte: person hat=W:scarf top=n:robe prop=staff
+Müller: person hair=W:bald top=W:apron apron=W prop=bag
+Briefträger: person hat=y:cap top=y prop=letter+bag
+Kurier: person hat=r:cap top=r prop=bag
+Bote: person hat=g:cap top=g prop=letter
+Busfahrer: person hat=u:cap top=u prop=bus
+Taxifahrer: person hat=y:cap top=k glasses=1 prop=key
+Fahrer: person hat=k:cap top=k prop=key
+Chauffeur: person hat=k:police top=k:suit prop=key
+Autofahrer: person hair=b top=r prop=key shades=1
+Pilot: person hat=captain top=u:suit tie=k prop=plane
+Kapitän: person hat=captain top=u beard=W prop=anchor
+Matrose: person hat=sailor top=W:stripe stripe=u
+Seemann: person hat=k:beanie top=u:stripe stripe=W beard=1 prop=anchor
+Astronaut: person hat=space top=W prop=flagkWr
+Wissenschaftler: person hair=W:afro glasses=1 top=W:coat inner=g prop=tube
+Forscher: person sex=f hair=b:pony glasses=1 top=W:coat inner=u prop=magnifier
+Chemiker: person hair=b glasses=1 top=W:coat inner=y prop=tube
+Physiker: person hair=S:bald glasses=1 top=W:coat inner=s prop=chalk
+Ingenieur: person hat=hard glasses=1 top=u prop=clip
+Architekt: person hair=k glasses=1 top=k:suit prop=scroll
+Designer: person hair=V:side top=k shades=1 prop=pen
+Erfinder: person hair=W:afro glasses=1 top=n:apron apron=n prop=lamp
+Programmierer: person hair=b top=k prop=laptop glasses=1
+Hacker: person top=k hat=k:hood prop=laptop
+Journalist: person hair=b top=n:vest vest=n prop=mic
+Journalistin: person sex=f hair=B:long top=r prop=mic
+Reporter: person hat=b:beret top=n prop=camera
+Reporterin: person sex=f hair=y:pony top=u prop=mic
+Redakteur: person hair=S glasses=1 top=W prop=pen
+Chefredakteur: person hair=S:bald glasses=1 top=k:suit prop=pen mouth=frown
+Fotograf: person hair=b hat=k:beret top=k prop=camera
+Kameramann: person hat=r:cap top=k prop=camera
+Moderator: person hair=b:side top=u:suit tie=r prop=mic mouth=smile
+Sprecher: person hair=k:side top=k:suit prop=mic
+Autor: person hair=b glasses=1 top=n prop=pen
+Autorin: person sex=f hair=r:bun glasses=1 top=G prop=book
+Schriftsteller: person hair=S beard=1 glasses=1 top=n:vest prop=pen
+Dichter: person hat=b:beret top=k scarf=r prop=scroll
+Poet: person hat=V:beret top=k scarf=y prop=rose
+Übersetzer: person sex=f hair=k:bun glasses=1 top=U prop=book
+Künstler: person hat=r:beret top=W:stripe stripe=k prop=brush stache=1
+Künstlerin: person sex=f hat=V:beret hair=B:long top=y prop=palette
+Maler: person hat=k:beret top=W:apron apron=y prop=brush
+Musiker: person hair=b top=k prop=guitar
+Sänger: person hair=k:spiky top=r prop=mic mouth=open
+Sängerin: person sex=f hair=r:long top=V:gown prop=mic mouth=open
+Komponist: person hair=W:afro top=k:suit prop=note
+Dirigent: person hair=W top=k:suit tie=W prop=baton
+Rapper: person hat=k:cap top=y shades=1 prop=mic
+Schauspieler: person hair=b:side top=r prop=mask
+Schauspielerin: person sex=f hair=y:wavy top=r:gown prop=mask earring=y
+Darsteller: person hair=y top=v:robe prop=mask
+Regisseur: person hat=k:beret top=k shades=1 prop=clapper
+Produzent: person hair=k:bald top=W:suit tie=y prop=money shades=1
+Tänzer: person hair=k top=k bot=k prop=star
+Tänzerin: person sex=f hair=k:bun top=p:dress mouth=smile
+Clown: person hair=r:afro face=pale top=y:stripe stripe=r mouth=smile prop=ball
+Komiker: person hair=b top=g mouth=open prop=mic
+Magier: person hat=wizard beard=W top=u:robe prop=staff
+Model: person sex=f hair=y:long top=k:gown shades=1
+Star: person hair=y:side top=y shades=1 prop=star
+Superstar: person sex=f hair=V:long top=y:gown shades=1 prop=mic
+Promi: person hair=k:side top=W:suit shades=1 prop=camera
+Sportler: person hair=b top=r:jersey prop=ball
+Athlet: person hair=k top=y:jersey prop=trophy
+Spieler: person hair=b top=u:jersey prop=ball
+Läufer: person hair=k top=G:jersey hat=W:bandana
+Boxer: person hair=k:bald top=k bot=r prop=boxglove
+Trainer: person hair=b top=r prop=clip hat=u:cap
+Schiedsrichter: person hair=k top=k:stripe stripe=W prop=whistle
+Champion: person hair=y top=r:jersey prop=trophy mouth=smile
+Weltmeister: person hair=b top=y:jersey prop=trophy hat=crown
+Sieger: person hair=b top=u prop=trophy mouth=smile
+Gewinner: person sex=f hair=y top=G prop=trophy mouth=smile
+Verlierer: person hair=b top=s mouth=frown
+Radfahrer: person hat=r:helmet top=y prop=bike
+Reiter: person hat=k:helmet top=r bot=W prop=whip
+Cowboy: person hat=cowboy top=r scarf=r prop=gun
+Pirat: person hair=k hat=r:bandana patch=1 beard=1 top=W:stripe stripe=r prop=sword
+Soldat: person hat=army top=g prop=rifle
+Offizier: person hat=g:police top=g:suit badge=y
+General: person hat=g:police top=g badge=y stache=W chest=y
+Admiral: person hat=captain top=u:suit badge=y beard=W
+Leutnant: person hat=g:police top=g badge=y
+Kommandant: person hat=army top=g badge=r prop=map
+Veteran: person hat=g:beret top=g beard=W chest=y prop=cane
+Scharfschütze: person hat=g:hood top=g prop=rifle shades=1
+Söldner: person hat=k:bandana top=s beard=1 prop=rifle
+Krieger: person hat=helmet top=s:armor prop=sword+shield
+Kämpfer: person hat=r:bandana top=W bot=k prop=boxglove
+Ritter: person hat=knight top=c:armor prop=sword+shield
+Diener: person hair=S:side top=k:suit tie=W prop=tray
+Butler: person hair=S:bald top=k:suit tie=k prop=tray stache=S
+Knecht: person hair=b top=n prop=rake
+Babysitter: person sex=f hair=y:pony top=p prop=baby
+Nanny: person sex=f hair=b:bun top=k:apron apron=W prop=baby
+Putzfrau: person sex=f hat=r:bandana top=U prop=bucket
+Hausmeister: person hair=S:bald stache=S top=s:overall over=s prop=key
+Hausfrau: person sex=f hair=B:bun top=p:apron apron=W prop=broom
+Sekretärin: person sex=f hair=k:bun glasses=1 top=W prop=phone
+Sekretär: person hair=b glasses=1 top=W:suit tie=u prop=phone
+Assistent: person hair=y top=W:suit tie=s prop=clip
+Assistentin: person sex=f hair=B:pony top=U prop=clip
+Buchhalter: person hair=S:side glasses=1 top=W:vest vest=s prop=list
+Banker: person hair=k:side top=s:suit tie=y prop=money
+Manager: person hair=b:side top=s:suit tie=r prop=phone
+Chef: person hair=k:side top=k:suit tie=r prop=case mouth=frown
+Chefin: person sex=f hair=k:bun top=k:suit tie=r prop=case
+Boss: person hair=k:bald top=k:suit tie=y shades=1
+Geschäftsführer: person hair=S:side top=k:suit tie=y prop=chart
+Unternehmer: person hair=b:side top=u:suit tie=y prop=chart
+Gründer: person hair=y top=k glasses=1 prop=lamp
+Investor: person hair=S:side top=s:suit tie=g prop=money
+Millionär: person hat=top top=k:suit stache=1 prop=money
+Milliardär: person hat=top top=y:suit stache=1 prop=money+cane shades=1
+Makler: person hair=k:side top=u:suit tie=y prop=key
+Berater: person hair=b glasses=1 top=s:suit prop=chart
+Spezialist: person hair=b glasses=1 top=W:coat inner=s prop=magnifier
+Experte: person hair=S:bald glasses=1 top=n:suit prop=book
+Expertin: person sex=f hair=S:bun glasses=1 top=u:suit prop=book
+Fachmann: person hat=hard glasses=1 top=u prop=wrench
+Profi: person hair=b top=k:jersey prop=trophy shades=1
+Amateur: person hair=y top=G prop=camera mouth=open
+Mentor: person hair=W:bald beard=W top=n:robe prop=book
+Ausbilder: person hat=army top=g prop=whistle mouth=open
+# ---------------------------------------------------------------- 人物: power and politics
+König: person hair=B beard=1 top=r:robe hat=crown cape=v
+Königin: person sex=f hair=y:long top=v:gown hat=crown
+Prinz: person hair=y top=u cape=r hat=tiara
+Prinzessin: person sex=f hair=y:long top=p:gown hat=tiara
+Kaiser: person hair=W beard=W top=y:robe hat=crown cape=r
+Kaiserin: person sex=f hair=k:bun top=r:gown hat=crown
+Zar: person beard=b hair=b top=r:robe hat=y:crown cape=W
+Sultan: person hat=turban beard=k top=v:robe
+Pharao: person hat=pharaoh top=W:robe beard=b
+Herzogin: person sex=f hair=S:bun top=G:gown hat=tiara
+Herrscher: person hair=k beard=1 top=v:robe hat=crown prop=staff
+Tyrann: person hair=k beard=1 top=k:robe hat=r:crown mouth=frown
+Diktator: person hat=k:police top=k:suit stache=k mouth=frown
+Präsident: person hair=S:side top=k:suit tie=r prop=flagrWu
+Präsidentin: person sex=f hair=y:bun top=u:suit prop=flagrWu
+Vizepräsident: person hair=b:side top=k:suit tie=u prop=clip
+Kanzler: person hair=S:side top=k:suit tie=y prop=flagkry
+Kanzlerin: person sex=f hair=y:fringe top=r:suit prop=flagkry
+Bundeskanzler: person hair=S:bald top=k:suit tie=r prop=flagkry
+Minister: person hair=k:side top=s:suit tie=u prop=case
+Finanzminister: person hair=S:side glasses=1 top=s:suit tie=y prop=money
+Innenminister: person hair=k:bald top=k:suit tie=u prop=shield
+Premierminister: person hair=y:side top=u:suit tie=r prop=flagWr
+Ministerpräsident: person hair=S top=k:suit tie=g prop=clip
+Bürgermeister: person hair=S:bald top=k:suit chest=y stache=1
+Bürgermeisterin: person sex=f hair=b:bun top=k:suit chest=y
+Politiker: person hair=k:side top=u:suit tie=r mouth=smile
+Senator: person hair=W:side top=W:robe
+Abgeordnete: person hair=b:side top=s:suit tie=g prop=list
+Botschafter: person hair=S:side top=k:suit tie=u prop=flagWu
+Diplomat: person hair=k:side top=k:suit tie=s prop=case
+Konsul: person hair=k:side top=s:suit prop=scroll
+Gouverneur: person hair=W:side top=k:suit tie=r prop=flagrW
+Generalsekretär: person hair=S:bald top=s:suit prop=clip
+Staatssekretär: person hair=b:side top=s:suit prop=clip glasses=1
+Häuptling: person hat=feathers top=n prop=spear skin=3
+Scheich: person hat=W:scarf top=W:robe beard=k skin=2
+Anführer: person hair=r beard=1 top=r cape=r prop=flagr
+Führer: person hair=b top=g prop=map
+Rebell: person hat=r:bandana top=g prop=flagk
+Revolutionär: person hat=r:beret top=g beard=1 prop=flagr
+Aktivist: person hair=G:side top=G prop=flagG mouth=open
+Demonstrant: person hair=b top=y prop=flagW mouth=open
+Patriot: person hair=b top=W prop=flagkry
+Kommunist: person hat=r:army top=r chest=y
+Demokrat: person hair=b:side top=u:suit tie=u prop=flagu
+Republikaner: person hair=S:side top=r:suit tie=r prop=flagr
+Wähler: person hair=b top=g prop=letter
+Bürger: person hair=b top=g:vest vest=n
+Staatsbürger: person hair=k top=u prop=flagkry
+# ---------------------------------------------------------------- 人物: faith, fantasy, crime
+Priester: person hair=S:side top=k:robe collar=W prop=cross
+Pfarrer: person hair=W:bald top=k:robe collar=W prop=redbook
+Pastor: person hair=b:side top=k:robe collar=W prop=redbook
+Pater: person hair=S:bald top=b:robe prop=cross
+Kaplan: person hair=b top=k:robe collar=W prop=cross
+Prediger: person hair=k top=k:suit prop=redbook mouth=open
+Bischof: person hat=mitre top=v:robe prop=staff
+Erzbischof: person hat=mitre top=r:robe prop=staff beard=W
+Kardinal: person hat=red top=r:robe prop=cross
+Papst: person hat=mitre top=W:robe prop=cross
+Mönch: person hair=b:bald top=n:robe prop=redbook
+Abt: person hair=W:bald top=b:robe beard=W prop=staff
+Nonne: person sex=f hat=nun top=k:robe cheeks=0 prop=cross
+Rabbi: person hat=k:top beard=k top=k:robe prop=book
+Prophet: person hair=W beard=W top=W:robe prop=staff
+Pilger: person hat=n:hood top=n:robe prop=staff
+Engel: person sex=f hair=y:long top=W:robe wings=W halo=1
+Teufel: person hair=k:spiky face=red horns=k top=R prop=spear
+Dämon: person hair=k:spiky face=red horns=c top=k wings=R mouth=fang
+Gott: person hair=W beard=W top=W:robe halo=1 prop=bolt
+Göttin: person sex=f hair=y:long top=W:gown hat=laurel halo=1
+Hexe: person sex=f hat=witch top=v:robe hair=k:long face=green prop=broom
+Fee: person sex=f hair=V:long top=G:dress wings=U prop=wand
+Elfe: person sex=f hair=y:long top=g ears=pointy prop=bow
+Zwerg: person age=kid hat=r:hood beard=W top=u prop=pick
+Riese: person hair=b:bald beard=1 top=n mouth=frown prop=club
+Vampir: person hair=k:side face=pale top=k cape=R mouth=fang
+Zombie: person hair=g face=green top=s:stripe stripe=n mouth=open
+Werwolf: person hair=b:afro face=red top=n:stripe stripe=b mouth=fang
+Alien: person hair=G:bald face=green top=s prop=star
+Monster: person hair=g:spiky face=green horns=y top=v mouth=fang
+Troll: person hair=g:afro face=green top=n prop=club
+Superheld: person hair=k:side top=u cape=r chest=y bot=r
+Heldin: person sex=f hair=r:long top=r cape=y chest=y
+Held: person hair=y:side top=u cape=r prop=sword
+Weihnachtsmann: person hat=santa beard=W top=r belt=k bot=r prop=bag
+Nikolaus: person hat=mitre beard=W top=r:robe prop=staff
+Phantom: person hair=k:side face=pale top=k:robe cape=k mask=W
+Narr: person hat=jester top=r:stripe stripe=y prop=ball
+Ninja: person hat=k:hood top=k prop=sword
+Dieb: person hair=k bandit=1 top=k:stripe stripe=W prop=bag
+Räuber: person hat=k:beanie bandit=1 top=s prop=money
+Einbrecher: person hat=k:beanie bandit=1 top=k prop=bag
+Bandit: person hat=B:cowboy bandit=1 top=n scarf=r prop=gun
+Gangster: person hat=k:top top=k:suit tie=W prop=gun shades=1
+Mörder: person hair=k top=k prop=knife mouth=frown
+Verbrecher: person hair=k:bald top=W:stripe stripe=k mouth=frown
+Häftling: person hair=k:bald top=y:stripe stripe=k prop=chain
+Insasse: person hair=b top=Y prop=chain
+Henker: person top=k hat=k:hood prop=axe
+Attentäter: person top=k hat=k:hood prop=knife
+Terrorist: person hat=k:hood top=s prop=bomb
+Spion: person hat=n:cowboy top=n:coat inner=n shades=1 prop=magnifier
+Agent: person hair=k:side top=k:suit tie=k shades=1 prop=gun
+Dealer: person hat=k:hood top=s prop=pill shades=1
+Junkie: person hair=n top=s mouth=frown prop=syringe
+Betrüger: person hair=k:side stache=k top=V:suit prop=cards
+Lügner: person hair=b top=y mouth=smile prop=cross
+Schurke: person hair=k:side stache=k top=k cape=v mouth=smile
+Bösewicht: person hair=k:bald top=k cape=R mouth=smile prop=bomb
+Bettler: person hair=n beard=n top=n:stripe stripe=b prop=cup
+Alkoholiker: person hair=b face=red top=s prop=bottle
+Psychopath: person hair=b:side top=W mouth=smile prop=knife
+Geisel: person hair=b top=W bandit=0 mouth=open prop=chain
+Opfer: person hair=b top=W mouth=open
+Flüchtling: person hair=k top=n prop=bag
+Asylbewerber: person hair=k top=s prop=list skin=3
+Einwanderer: person hair=k top=g prop=case skin=2
+Tourist: person hat=y:cowboy top=y:stripe stripe=r prop=camera shades=1
+Reisende: person hat=n:cap top=n prop=case
+Wanderer: person hat=g:beanie top=r prop=staff+bag
+Pfadfinder: person age=kid hat=g:beret top=G scarf=y prop=flagG
+Fußgänger: person hair=b top=r prop=bag
+Passagier: person hair=b top=u prop=case+ticket
+Fahrgast: person hair=y top=G prop=ticket
+Kunde: person hair=b top=g prop=bag
+Kundin: person sex=f hair=r:long top=V prop=bag
+Käufer: person hair=b top=Y prop=money
+Gast: person hair=b top=k:suit prop=bouquet
+Gastgeber: person hair=b top=r:apron apron=W prop=tray mouth=smile
+Besucher: person hair=b top=g prop=ticket
+Zuschauer: person hair=b top=r prop=cup
+Zuhörer: person hair=y top=u hat=phones
+Hörer: person hair=b top=u hat=phones
+Leser: person hair=b glasses=1 top=g prop=book
+Nachbar: person hair=b stache=1 top=y:vest vest=n prop=cup
+Nachbarin: person sex=f hair=S:bun top=p:apron apron=W prop=cup
+Mieter: person hair=b top=u prop=key
+Vermieter: person hair=S:bald stache=S top=n:vest vest=b prop=key+list
+Mitbewohner: person hair=b:spiky top=G prop=cup
+Mitbewohnerin: person sex=f hair=V:pony top=y prop=cup
+Hippie: person hair=y:long hat=flower top=G beard=y prop=flower
+Punk: person hair=V:mohawk top=k
+Nerd: person hair=b:side glasses=1 top=G prop=laptop
+Spinner: person hair=y:afro top=V mouth=smile glasses=1
+Patient: person hair=b top=U:stripe stripe=W mouth=frown
+Patientin: person sex=f hair=B:long top=U:stripe stripe=W
+Kranke: person hair=b face=pale top=U mouth=frown
+Verletzte: person hair=b top=W redcross=1 mouth=frown
+Behinderte: person hair=b top=u prop=wheel
+Vegetarier: person hair=y top=G prop=leaf
+Single: person hair=b top=r prop=heart mouth=frown
+Fan: person hat=r:cap top=r prop=flagrW mouth=open
+Liebhaber: person hair=k:side stache=k top=r prop=rose
+Verehrer: person hair=b:side top=V prop=bouquet
+Feigling: person hair=y top=y mouth=open
+Dummkopf: person hat=W:hood face=pale top=g mouth=open
+Trottel: person hair=y:spiky top=G mouth=open
+Genie: person hair=W:afro glasses=1 top=W:coat prop=lamp
+Philosoph: person hair=W beard=W top=W:robe prop=scroll
+Denker: person hair=S:bald beard=S top=n prop=book
+Historiker: person hair=S glasses=1 top=n:vest vest=b prop=scroll
+Sammler: person hair=S:bald glasses=1 top=g prop=magnifier
+Römer: person hat=laurel top=W:robe hair=b prop=spear
+Barbar: person hair=r:long beard=r top=n horns=c prop=axe
+Indianer: person hat=feathers top=n
+Kavallerie: person hat=helmet top=u prop=flagu
+Garde: person hat=k:top top=r prop=rifle
+Marine: person hat=sailor top=u prop=anchor
+Pionier: person hat=n:cowboy top=n prop=axe
+Siedler: person hat=n:cowboy top=n prop=axe+bag
+# national: person holding the flag
+Amerikaner: person hat=r:cowboy top=u prop=flagrWu
+Amerikanerin: person sex=f hair=y:long top=r prop=flagrWu
+Franzose: person hat=k:beret top=W:stripe stripe=u prop=baguette stache=k
+Engländer: person hat=k:top top=k:suit prop=cup
+Brite: person hair=r:side top=u:suit prop=cup
+Italiener: person hair=k:side stache=k top=G prop=flaggWr
+Spanier: person hair=k top=r prop=flagryr
+Russe: person hat=k:beanie beard=1 top=r prop=flagWur
+Chinese: person hair=k:side top=r prop=flagr
+Japaner: person hair=k:side top=W prop=flagW glasses=1
+Grieche: person hair=k beard=k top=W:robe prop=flagu
+Österreicher: person hat=g:feather top=W:vest vest=g prop=flagrWr
+Schotte: person hair=r beard=r top=g:kilt prop=flagu
+Däne: person hair=y top=r prop=flagr
+Ungar: person hair=k stache=k top=W prop=flagrWg
+Mexikaner: person hat=y:cowboy stache=k top=r prop=flaggWr
+Inder: person hat=turban top=y skin=3 beard=k
+Araber: person hat=W:scarf top=W:robe skin=2 beard=k
+Asiate: person hair=k top=W
+Europäer: person hair=b top=u prop=flagu
+Berliner: person hair=b top=k prop=flagWrW
+Pariser: person hat=k:beret top=k:stripe stripe=W
+Londoner: person hat=k:top top=k prop=cup
+Jude: person hat=k:kippa beard=k top=k
+Muslim: person hat=W:turban beard=k top=W:robe
+Christ: person hair=b top=W prop=cross
+Katholik: person hair=b top=W prop=cross
+# body parts are hand-drawn (sprites-2.txt)
+# ---------------------------------------------------------------- 地点: buildings
+Haus: building shape=house wall=w roof=r
+Häuschen: building shape=hut wall=w roof=r
+Wohnhaus: building shape=block wall=N
+Hochhaus: building shape=block wall=S
+Neubau: building shape=block wall=W sign=star sc=y sb=k
+Wohnung: building shape=tall wall=N sign=key sc=y sb=b
+Apartment: building shape=tall wall=p sign=key sc=y sb=b
+WG: building shape=tall wall=G sign=people sc=k sb=W big=1
+Villa: building shape=hall wall=W roof=r
+Hütte: building shape=hut wall=n roof=b
+Bude: building shape=hut wall=B roof=s
+Schuppen: building shape=hut wall=b roof=s sign=wrench sc=c
+Scheune: building shape=house wall=r roof=b
+Stall: building shape=hut wall=r roof=b sign=paw sc=b
+Bauernhof: building shape=house wall=W roof=r sign=leaf sc=g
+Farm: building shape=house wall=r roof=W sign=leaf sc=g
+Ranch: building shape=hut wall=n roof=B sign=paw sc=b
+Mühle: building shape=tower wall=W sign=wheel sc=b sb=n
+Schule: building shape=house wall=y roof=r sign=book sc=u
+Grundschule: building shape=house wall=G roof=r sign=num1 sc=u
+Gymnasium: building shape=hall wall=y roof=r sign=book sc=u
+Universität: building shape=hall wall=W roof=s sign=cap sc=k
+Uni: building shape=hall wall=c roof=u sign=cap sc=k
+Hochschule: building shape=tall wall=c sign=cap sc=k sb=W big=1
+Akademie: building shape=hall wall=N roof=v sign=cap sc=k
+Fakultät: building shape=tall wall=N sign=book sc=u big=1
+Institut: building shape=block wall=c sign=tube sc=u sb=W
+Internat: building shape=castle wall=N roof=r
+Kindergarten: building shape=house wall=p roof=y sign=star sc=y
+Kita: building shape=house wall=U roof=r sign=heart sc=r
+Bibliothek: building shape=hall wall=N roof=b sign=book sc=W
+Bücherei: building shape=shop wall=N sign=book sc=r awning=u
+Museum: building shape=hall wall=W roof=S sign=star sc=y
+Galerie: building shape=shop wall=W sign=paint sc=r awning=k
+Theater: building shape=hall wall=r roof=y sign=mask sc=W
+Oper: building shape=hall wall=N roof=g sign=note sc=k
+Kino: building shape=shop wall=k sign=film sc=y sb=r awning=r
+Rathaus: building shape=hall wall=W roof=s sign=clock sc=y
+Amt: building shape=block wall=c sign=para sc=k
+Behörde: building shape=block wall=S sign=para sc=k
+Bürgeramt: building shape=block wall=c sign=person sc=u
+Ausländerbehörde: building shape=block wall=S sign=globe sc=u
+Finanzamt: building shape=block wall=c sign=euro sc=k
+Arbeitsamt: building shape=block wall=N sign=hammer sc=k
+Jobcenter: building shape=tall wall=r sign=case sc=k
+Jugendamt: building shape=block wall=y sign=baby sc=k
+Ministerium: building shape=hall wall=c roof=s sign=shield sc=k
+Botschaft: building shape=hall wall=W roof=u sign=flag sc=r
+Konsulat: building shape=tall wall=W sign=globe sc=u
+Parlament: building shape=dome wall=W roof=S sc=k
+Bundestag: building shape=dome wall=c roof=U sc=y
+Landtag: building shape=hall wall=c roof=S sign=crown sc=y
+Gericht: building shape=hall wall=c roof=s sign=scale sc=k
+Gerichtshof: building shape=hall wall=W roof=k sign=scale sc=y
+Polizei: building shape=tall wall=u sign=shield sc=y sb=k
+Gefängnis: building shape=castle wall=S roof=k
+Knast: building shape=block wall=s
+Kaserne: building shape=block wall=g sign=star sc=y sb=k
+Festung: building shape=castle wall=s roof=k
+Burg: building shape=castle wall=S roof=r
+Schloss: building shape=castle wall=W roof=u
+Palast: building shape=dome wall=W roof=y sc=r
+Krankenhaus: building shape=tall wall=W sign=H sc=r sb=W big=1
+Klinik: building shape=tall wall=W sign=cross sc=r big=1
+Spital: building shape=hall wall=W roof=r sign=cross sc=r
+Praxis: building shape=shop wall=W sign=stethoscope sc=u awning=U
+Psychiatrie: building shape=block wall=W sign=face sc=u
+Pflegeheim: building shape=house wall=W roof=g sign=heart sc=r
+Heim: building shape=house wall=N roof=g sign=heart sc=r
+Waisenhaus: building shape=house wall=c roof=s sign=baby sc=k
+Tierheim: building shape=house wall=y roof=b sign=paw sc=b
+Apotheke: building shape=shop wall=W sign=cross sc=r awning=g
+Bank: building shape=hall wall=W roof=s sign=euro sc=y
+Sparkasse: building shape=shop wall=W sign=euro sc=W sb=r awning=r
+Börse: building shape=hall wall=c roof=k sign=chart sc=g
+Post: building shape=shop wall=y sign=letter sc=k sb=y awning=k
+Supermarkt: building shape=shop wall=W sign=cart sc=r awning=r
+Geschäft: building shape=shop wall=N sign=bag sc=r awning=g
+Shop: building shape=shop wall=W sign=tag sc=r awning=V
+Filiale: building shape=shop wall=W sign=num1 sc=u awning=u
+Kaufhaus: building shape=tall wall=y sign=bag sc=r big=1
+Einkaufszentrum: building shape=block wall=y sign=cart sc=r sb=W
+Markt: building shape=shop wall=w sign=flower sc=r awning=g
+Bäckerei: building shape=shop wall=w sign=bread sc=n awning=y
+Metzgerei: building shape=shop wall=W sign=meat sc=r awning=r
+Drogerie: building shape=shop wall=W sign=drop sc=u awning=U
+Kiosk: building shape=hut wall=y roof=r sign=cup sc=k
+Imbiss: building shape=shop wall=r sign=sausage sc=r sb=y awning=y
+Restaurant: building shape=shop wall=r sign=fork sc=k sb=W awning=r
+Lokal: building shape=shop wall=n sign=fork sc=y sb=b awning=g
+Café: building shape=shop wall=p sign=cup sc=b awning=b
+Kneipe: building shape=shop wall=b sign=beer sc=y sb=k awning=G
+Bar: building shape=shop wall=k sign=wine sc=V sb=k awning=V
+Brauerei: building shape=factory wall=n roof=b
+Gasthaus: building shape=house wall=W roof=b sign=beer sc=y
+Hotel: building shape=tall wall=r sign=bed sc=y sb=k
+Motel: building shape=block wall=y sign=bed sc=r sb=W
+Casino: building shape=shop wall=k sign=dice sc=W sb=r awning=y
+Disco: building shape=shop wall=v sign=music sc=V sb=k awning=V
+Club: building shape=shop wall=k sign=note sc=V sb=k awning=k
+Salon: building shape=shop wall=p sign=scissors sc=k awning=V
+Reinigung: building shape=shop wall=U sign=shirt sc=u awning=u
+Werkstatt: building shape=factory wall=s roof=y
+Fabrik: building shape=factory wall=B roof=s
+Kraftwerk: building shape=factory wall=c roof=s
+Fitnessstudio: building shape=shop wall=k sign=dumbbell sc=k sb=y awning=y
+Turnhalle: building shape=hall wall=y roof=r sign=ball sc=k
+Schwimmbad: building shape=shop wall=U sign=swim sc=u awning=u
+Stadion: building shape=dome wall=c roof=g sc=W
+Arena: building shape=castle wall=N roof=r
+Kirche: building shape=church wall=c roof=s
+Kapelle: building shape=church wall=W roof=r
+Dom: building shape=church wall=S roof=s sign=star sc=y
+Kathedrale: building shape=church wall=c roof=k sign=star sc=y
+Münster: building shape=church wall=N roof=s
+Kloster: building shape=castle wall=N roof=b
+Moschee: building shape=dome wall=W roof=G sc=y minaret=1
+Synagoge: building shape=dome wall=N roof=u sc=y
+Tempel: building shape=hall wall=r roof=y sign=star sc=y
+Bahnhof: building shape=station wall=B roof=s
+Hauptbahnhof: building shape=station wall=r roof=s
+Flughafen: building shape=station wall=W roof=u sign=plane sc=u sb=W
+Terminal: building shape=station wall=c roof=u sign=plane sc=k sb=y
+Flugplatz: building shape=hut wall=W roof=u sign=plane sc=u
+Parkhaus: building shape=block wall=c sign=P sc=W sb=u
+Garage: building shape=house wall=c roof=s sign=car sc=r
+Tankstelle: building shape=shop wall=W sign=drop sc=k sb=y awning=r
+Lager: building shape=factory wall=n roof=s
+Lagerhaus: building shape=factory wall=b roof=s
+Depot: building shape=factory wall=s roof=b
+Verlag: building shape=tall wall=N sign=book sc=r
+Redaktion: building shape=block wall=W sign=letter sc=k
+Agentur: building shape=tall wall=V sign=star sc=y sb=k
+Kanzlei: building shape=tall wall=N sign=para sc=k sb=W
+Büro: building shape=block wall=U sign=case sc=b sb=W
+Zentrale: building shape=block wall=u sign=star sc=y sb=k
+Hauptquartier: building shape=castle wall=g roof=r
+Studio: building shape=shop wall=k sign=microphone sc=r sb=W awning=k
+Atelier: building shape=hut wall=W roof=V sign=paint sc=r
+Labor: building shape=block wall=W sign=tube sc=g sb=W
+Sender: building shape=tower wall=r sign=wave sc=y sb=k
+Leuchtturm: building shape=tower wall=W sign=sun sc=y sb=r
+Turm: building shape=tower wall=c
+Pyramide: building shape=house wall=y roof=y
+Mensa: building shape=shop wall=y sign=fork sc=k awning=u
+Kantine: building shape=shop wall=c sign=fork sc=k awning=s
+Fundbüro: building shape=shop wall=y sign=key sc=k awning=k
+Archiv: building shape=block wall=n sign=book sc=W sb=b
+Zoo: building shape=hut wall=G roof=g sign=paw sc=b
+Aquarium: building shape=dome wall=U roof=u sc=W
+Zirkus: building shape=dome wall=r roof=y sc=r
+Pforte: building shape=castle wall=c roof=s
+Baracke: building shape=hut wall=g roof=s
+Ruine: building shape=castle wall=s roof=k dark=1
+Rezeption: room item=reception wall=W floor=n
+# ---------------------------------------------------------------- 地点: rooms
+Zimmer: room item=bed win=1 wall=w
+Raum: room item=chairs wall=c floor=s
+Schlafzimmer: room item=bed win=1 wall=U
+Wohnzimmer: room item=sofa wall=y floor=n pic=r
+Küche: room item=kitchen wall=W floor=c
+Bad: room item=tub wall=U floor=W
+Badezimmer: room item=tub wall=U floor=c
+Toilette: room item=toilet wall=U floor=W
+Klo: room item=toilet wall=G floor=W
+Kinderzimmer: room item=crib wall=p floor=n
+Gästezimmer: room item=bed wall=G floor=n
+Arbeitszimmer: room item=desk wall=N floor=n
+Klassenzimmer: room item=board wall=y floor=n
+Hotelzimmer: room item=bed wall=r floor=n pic=y
+Einzelzimmer: room item=bed wall=W floor=n
+Doppelzimmer: room item=bed wall=V floor=n pic=y
+Wartezimmer: room item=waiting wall=W floor=c
+Umkleidekabine: room item=curtain wall=W floor=n
+Kabine: room item=lockers wall=c floor=s
+Sauna: room item=sauna wall=n floor=b
+Keller: room item=boxes wall=s floor=k
+Dachboden: room item=boxes wall=n floor=b
+Speicher: room item=boxes wall=b floor=n
+Flur: room item=mirror wall=w floor=n
+Korridor: room item=mirror wall=c floor=s
+Treppenhaus: room item=stairs wall=c floor=s
+Kerker: room item=cell wall=k floor=s
+Gerichtssaal: room item=court wall=n floor=b
+Saal: room item=chairs wall=r floor=n
+Halle: room item=chairs wall=c floor=n
+Lobby: room item=reception wall=y floor=n
+Garderobe: room item=clothes wall=N floor=n
+Cockpit: room item=plane wall=s floor=k
+Lounge: room item=sofa wall=k floor=b pic=V
+# ---------------------------------------------------------------- 地点: countries (flags)
+Deutschland: flag kind=h3 c=kry
+Bundesrepublik: flag kind=h3 c=kry emblem=shield ec=k
+Bayern: flag kind=v3 c=WuWu
+Sachsen: flag kind=h3 c=Wg
+Hessen: flag kind=h3 c=rW
+Brandenburg: flag kind=h3 c=rW emblem=shield ec=r
+Frankreich: flag kind=v3 c=uWr
+Italien: flag kind=v3 c=gWr
+Spanien: flag kind=h3 c=ryyr
+Portugal: flag kind=v3 c=grr emblem=shield ec=y
+Österreich: flag kind=h3 c=rWr
+Schweiz: flag kind=swiss c=r
+Polen: flag kind=h3 c=Wr
+Russland: flag kind=h3 c=Wur
+Ukraine: flag kind=h3 c=uy
+Niederlande: flag kind=h3 c=rWu
+Holland: flag kind=h3 c=rWu
+Belgien: flag kind=v3 c=kyr
+Luxemburg: flag kind=h3 c=rWU
+Dänemark: flag kind=nordic c=rW
+Schweden: flag kind=nordic c=uy
+Norwegen: flag kind=nordic c=ru
+Finnland: flag kind=nordic c=Wu
+Island: flag kind=nordic c=ur
+Irland: flag kind=v3 c=gWY
+Großbritannien: flag kind=uk
+England: flag kind=cross c=Wr
+Schottland: flag kind=saltire c=uW
+Griechenland: flag kind=h3 c=uWuWu
+Türkei: flag kind=disc c=rW
+Ungarn: flag kind=h3 c=rWg
+Rumänien: flag kind=v3 c=uyr
+Bulgarien: flag kind=h3 c=Wgr
+Serbien: flag kind=h3 c=ruW
+Tschechien: flag kind=tri c=uWr
+USA: flag kind=canton c=rWu
+Amerika: flag kind=canton c=rWu
+Kanada: flag kind=v3 c=rWr emblem=leaf ec=r
+Mexiko: flag kind=v3 c=gWr emblem=shield ec=n
+Brasilien: flag kind=disc c=gu emblem=globe ec=u
+Argentinien: flag kind=h3 c=UWU emblem=sun ec=y
+Chile: flag kind=h3 c=Wr emblem=star ec=W
+Kolumbien: flag kind=h3 c=yyur
+Venezuela: flag kind=h3 c=yur
+Peru: flag kind=v3 c=rWr
+Kuba: flag kind=tri c=ruWuWu
+Panama: flag kind=disc c=Wu
+Jamaika: flag kind=saltire c=gy
+China: flag kind=star c=ry corner=1 small=1
+Japan: flag kind=disc c=Wr
+Korea: flag kind=disc c=Wr emblem=globe ec=u
+Nordkorea: flag kind=h3 c=urru emblem=star ec=r
+Vietnam: flag kind=star c=ry
+Taiwan: flag kind=star c=ru corner=1
+Thailand: flag kind=h3 c=rWuuWr
+Indien: flag kind=h3 c=YWg emblem=wheel ec=u
+Pakistan: flag kind=disc c=gW emblem=moon ec=W
+Afghanistan: flag kind=v3 c=krg
+Iran: flag kind=h3 c=gWr
+Irak: flag kind=h3 c=rWk emblem=star ec=g
+Syrien: flag kind=h3 c=rWk
+Israel: flag kind=h3 c=WuWWuW emblem=star ec=u
+Palästina: flag kind=tri c=rkWg
+Ägypten: flag kind=h3 c=rWk emblem=shield ec=y
+Marokko: flag kind=star c=rg
+Algerien: flag kind=v3 c=gW emblem=moon ec=r
+Südafrika: flag kind=tri c=gruW
+Australien: flag kind=star c=uW corner=1 small=1
+Neuseeland: flag kind=star c=ur corner=1 small=1
+Philippinen: flag kind=tri c=Wur
+Singapur: flag kind=h3 c=rW emblem=moon ec=W
+Sowjetunion: flag kind=star c=ry corner=1
+Vatikan: flag kind=v3 c=yW emblem=key ec=y
+Europa: flag kind=eu
+# ---------------------------------------------------------------- 物品: papers
+Rechnung: doc kind=sheet head=r sign=euro sc=r
+Quittung: doc kind=receipt sign=check sc=g
+Kassenbon: doc kind=receipt
+Vertrag: doc kind=sheet head=k sig=1
+Mietvertrag: doc kind=sheet head=g sig=1 sign=home sc=g
+Arbeitsvertrag: doc kind=sheet head=u sig=1 sign=case sc=b
+Handyvertrag: doc kind=sheet head=V sig=1 sign=phone sc=k
+Formular: doc kind=sheet head=u form=1
+Antrag: doc kind=sheet head=y form=1
+Steuererklärung: doc kind=sheet head=G form=1 sign=euro sc=g
+Tabelle: doc kind=sheet head=g form=1
+Liste: doc kind=sheet form=1 line=k
+Zeitplan: doc kind=sheet head=V sign=clock sc=k
+Fahrplan: doc kind=sheet head=y sign=train sc=u
+Lebenslauf: doc kind=sheet head=u sign=person sc=b
+Anschreiben: doc kind=letter sign=case sc=b
+Umschlag: doc kind=letter paper=w
+Postkarte: doc kind=poster pic=U sign=sun sc=y
+Krankmeldung: doc kind=sheet head=r sign=cross sc=r
+Rezept: doc kind=sheet head=G sign=pill sc=r
+Bescheinigung: doc kind=sheet head=u sign=check sc=g stamp=low
+Gehaltsabrechnung: doc kind=sheet head=g sign=euro sc=g
+Kontoauszug: doc kind=receipt sign=euro sc=k
+Gutachten: doc kind=sheet head=s sign=eye sc=k
+Protokoll: doc kind=sheet head=S line=k
+Notiz: doc kind=note paper=y
+Zettel: doc kind=note paper=W
+Anmerkung: doc kind=note paper=G
+Strafzettel: doc kind=note paper=r sign=car sc=k
+Haftbefehl: doc kind=scroll sign=lock sc=k
+Testament: doc kind=scroll sign=skull sc=k
+Urkunde: doc kind=cert head=r
+Zeugnis: doc kind=cert head=u
+Zertifikat: doc kind=cert head=Y
+Diplom: doc kind=cert head=k
+Auszeichnung: doc kind=cert head=y
+Vollmacht: doc kind=sheet head=k sig=1 sign=key sc=y
+Petition: doc kind=sheet head=r sig=1
+Dokument: doc kind=sheet head=S
+Unterlagen: doc kind=paper2
+Akte: doc kind=paper2 folder=y
+Ordner: doc kind=paper2 folder=u
+Manuskript: doc kind=paper2 sign=pen sc=k
+Drehbuch: doc kind=paper2 sign=film sc=k
+Skript: doc kind=paper2 sign=mask sc=k
+Aufsatz: doc kind=sheet sign=pen sc=u
+Dissertation: doc kind=book cover=k title=y sign=cap sc=y
+Skizze: doc kind=poster pic=W sign=pen sc=k
+Zeichnung: doc kind=poster pic=W sign=home sc=r
+Plakat: doc kind=poster pic=r sign=star sc=y
+Poster: doc kind=poster pic=V sign=music sc=y
+Flyer: doc kind=poster pic=y sign=arrow sc=r
+Broschüre: doc kind=poster pic=G sign=i sc=W
+Werbespot: doc kind=screen sign=tag sc=r
+Grafik: doc kind=screen sign=chart sc=r bg=W
+Vorlage: doc kind=sheet head=c form=1
+Überschrift: doc kind=sheet head=k
+Schlagzeile: doc kind=magazine cover=W pic=k
+Titelseite: doc kind=magazine cover=W pic=r
+Tageszeitung: doc kind=magazine cover=W pic=S
+Zeitschrift: doc kind=magazine cover=r pic=U
+Magazin: doc kind=magazine cover=V pic=y
+Journal: doc kind=magazine cover=u pic=W
+Comic: doc kind=magazine cover=y pic=r
+Pressemitteilung: doc kind=sheet head=r sign=microphone sc=k
+Katalog: doc kind=magazine cover=G pic=y
+Menü: doc kind=book cover=k sign=fork sc=y
+Album: doc kind=book cover=V sign=camera sc=k
+Tagebuch: doc kind=booklet cover=V sign=heart sc=r band=y
+Notizbuch: doc kind=booklet cover=k band=r
+Heft: doc kind=booklet cover=u sign=pen sc=W
+Handbuch: doc kind=book cover=s sign=wrench sc=y
+Anleitung: doc kind=sheet head=u sign=i sc=u
+Lehrbuch: doc kind=book cover=G sign=cap sc=k
+Wörterbuch: doc kind=book cover=y title=r sign=letter sc=k
+Lexikon: doc kind=book cover=b sign=globe sc=y
+Atlas: doc kind=book cover=u sign=globe sc=g
+Jahrbuch: doc kind=book cover=r title=y
+Ratgeber: doc kind=book cover=G sign=i sc=W
+Bestseller: doc kind=book cover=r sign=star sc=y
+Roman: doc kind=book cover=v title=y
+Krimi: doc kind=book cover=k sign=skull sc=r
+Lektüre: doc kind=book cover=N title=b
+Bibel: doc kind=book cover=k sign=cross sc=y
+Koran: doc kind=book cover=g sign=moon sc=y
+Register: doc kind=book cover=s title=W
+Verzeichnis: doc kind=sheet form=1 line=k head=s
+Index: doc kind=sheet form=1 head=k
+Landkarte: doc kind=poster pic=U sign=mountain sc=g
+Karte: doc kind=poster pic=G sign=pin sc=r
+Reisepass: doc kind=booklet cover=R sign=crown sc=y
+Visum: doc kind=sheet head=u sign=plane sc=u stamp=low
+Aufenthaltstitel: doc kind=sheet head=k sign=home sc=k stamp=low
+Aufenthaltserlaubnis: doc kind=sheet head=k sign=check sc=g stamp=low
+Lizenz: doc kind=cert head=G
+Führerschein: card kind=id c=p hair=b
+Personalausweis: card kind=id c=G
+Studentenausweis: card kind=id c=U hair=y
+Visitenkarte: card kind=id c=W hair=k
+Versichertenkarte: card kind=id c=g hair=r
+EC-Karte: card kind=bank c=u
+Prepaidkarte: card kind=bank c=r
+SIM-Karte: card kind=sim c=W
+Gutschein: card kind=ticket c=r sign=tag sc=y
+Eintrittskarte: card kind=ticket c=y sign=star sc=r
+Monatskarte: card kind=ticket c=G sign=tram sc=k
+Scheck: card kind=bank c=G
+Schein: card kind=ticket c=g sign=euro sc=W
+Aktie: doc kind=cert head=g
+Joker: card kind=ticket c=W sign=face sc=r
+E-Mail: doc kind=screen sign=letter sc=W
+Mail: doc kind=screen dev=phone sign=letter sc=W
+SMS: doc kind=screen dev=phone sign=letter sc=y bg=G
+App: doc kind=screen dev=phone sign=star sc=y
+Smartphone: doc kind=screen dev=phone bg=U
+Video: doc kind=screen sign=arrow sc=r bg=k
+Webseite: doc kind=screen sign=globe sc=u bg=W
+Homepage: doc kind=screen sign=home sc=r bg=W
+Datei: doc kind=screen sign=book sc=y bg=W
+Datenbank: doc kind=screen sign=chart sc=g bg=k
+Passwort: doc kind=screen sign=lock sc=y bg=k
+Pin: doc kind=screen dev=phone sign=lock sc=k bg=W
+Code: doc kind=screen sign=para sc=G bg=k
+Hotline: doc kind=screen dev=phone sign=phone sc=g bg=W
+Videospiel: doc kind=screen sign=star sc=y bg=v
+Trailer: doc kind=screen sign=film sc=W bg=k
+Bildschirm: doc kind=screen bg=U
+Monitor: doc kind=screen bg=G
+Android: doc kind=screen dev=phone sign=face sc=G bg=k
+Tablet: doc kind=screen bg=U
+Leinwand: doc kind=poster pic=W
+# ---------------------------------------------------------------- bottles, drinks (食物/物品)
+Whisky: bottle kind=flat glass=Y label=W
+Schnaps: bottle kind=glass shape=shot glass=y
+Wodka: bottle kind=wine glass=W label=r cork=r
+Gin: bottle kind=wine glass=U label=W cork=k
+Tequila: bottle kind=flat glass=y label=g cork=r
+Sekt: bottle kind=glass shape=flute glass=y
+Martini: bottle kind=glass shape=cocktail glass=l deco=g
+Cocktail: bottle kind=glass shape=cocktail glass=V
+Rotwein: bottle kind=wine glass=R label=w
+Alkohol: bottle kind=wine glass=b label=W sign=flame sc=r
+Getränk: bottle kind=can glass=r label=W
+Limo: bottle kind=can glass=y label=G
+Leitungswasser: bottle kind=glass shape=tumbler glass=U
+Trinkwasser: bottle kind=wine glass=U label=W cork=u
+Espresso: bottle kind=glass shape=cup glass=b
+Latte: bottle kind=glass shape=mug glass=N
+Kakao: bottle kind=glass shape=mug glass=b
+Senf: bottle kind=tube glass=y label=y
+Ketchup: bottle kind=tube glass=r label=W lid=r
+Soße: bottle kind=jar glass=B lid=b label=W
+Marmelade: bottle kind=jar glass=r lid=W label=W
+Mus: bottle kind=jar glass=Y lid=g label=W
+Creme: bottle kind=jar glass=W lid=U label=U
+Shampoo: bottle kind=tube glass=G label=W lid=g
+Parfüm: bottle kind=flat glass=V label=W cork=y
+Deo: bottle kind=spray glass=u label=W
+Benzin: bottle kind=can glass=r label=y sign=flame sc=r
+Diesel: bottle kind=can glass=k label=y
+Sprit: bottle kind=can glass=g label=y
+Treibstoff: bottle kind=can glass=Y label=k sign=flame sc=r
+Säure: bottle kind=wine glass=l label=y sign=skull sc=k cork=k
+Chemikalie: bottle kind=flat glass=G label=y cork=k
+Serum: bottle kind=flat glass=U label=W cork=r
+Impfstoff: bottle kind=flat glass=U label=r cork=c
+Medizin: bottle kind=jar glass=W lid=r label=r sign=cross sc=W
+Heilmittel: bottle kind=flat glass=G label=W cork=n sign=heart sc=r
+Antibiotikum: bottle kind=jar glass=W lid=u label=U
+Schmerzmittel: bottle kind=jar glass=W lid=r label=W
+Aspirin: bottle kind=jar glass=W lid=W label=r
+Lack: bottle kind=jar glass=r lid=s label=W
+Tinte: bottle kind=jar glass=k lid=n label=W
+# ---------------------------------------------------------------- signs
+Haltestelle: board shape=round c=y sign=H sc=g
+Bushaltestelle: board shape=round c=y sign=bus sc=g
+Ausgang: board shape=wide c=g sign=exit sc=W
+Ausfahrt: board shape=wide c=u sign=exit sc=W
+Eingang: board shape=wide c=g sign=arrow sc=W
+Grenze: board shape=wide c=u sign=xcross sc=y
+Treffpunkt: board shape=square c=y sign=people sc=k
+Parkplatz: board shape=square c=u sign=P sc=W
+Radweg: board shape=round c=u sign=bike sc=W
+Autobahn: board shape=wide c=u sign=car sc=W
+Kreuzung: board shape=square c=W sign=xcross sc=r
+Sackgasse: board shape=square c=u sign=law sc=W
+Umweg: board shape=wide c=y sign=arrow sc=k
+Route: board shape=wide c=g sign=arrow sc=W
+Hausnummer: board shape=square c=u sign=num1 sc=W

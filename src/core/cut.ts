@@ -2,7 +2,7 @@
 // Not a 笔误: words of 4 letters or fewer, a wrong article, a difference in an umlaut or in the ending
 // (Apfel/Äpfel, den/dem), or a typed form that is another word of the list.
 
-import { levenshtein, normalize } from './grading';
+import { levenshtein, normalize, stripRefl } from './grading';
 import type { Word } from './types';
 import { WORDS } from '../data/words';
 
@@ -23,7 +23,7 @@ const fold = (x: string) => x.replace(/ae/g, 'a').replace(/oe/g, 'o').replace(/u
 
 /** Typed answer `input` for `w` is a 笔误 (wrong by one letter, counted as 会写). Call only for a wrong answer. */
 export function typoOk(input: string, w: Word, withArticle: boolean): boolean {
-  const nIn = normalize(input);
+  const nIn = stripRefl(normalize(input), w);
   let rest = nIn;
   if (withArticle && w.art) {
     const [a0, ...ar] = nIn.split(' ');

@@ -1,0 +1,5762 @@
+# 专属造型 batch 2, hand-drawn without outline (scripts/gen_sprites.py adds it and centres the drawing).
+# Header: '= <原形>' with options '| eyes x,y [gap]' (2×2 eyes) and '| top' (keep position). End a block with an empty line.
+# ---------------------------------------------------------------- body
+= Hand | eyes 4,6 3
+...m.m.m....
+..mm.m.m.m..
+..mm.m.m.m..
+..mmmmmmmm..
+m.mmmmmmmm..
+mmmmmmmmmm..
+.mmmmmmmmm..
+..mmmmmmmN..
+..mmmmmmN...
+...mmmmmN...
+...NNNNNN...
+
+= Faust | eyes 3,7 4
+...........
+..mmmmmmm..
+.mNmNmNmNm.
+.mmmmmmmmm.
+.mmmmmmmmm.
+.NmmmmmmmmN
+..mmmmmmmm.
+..mmmmmmmN.
+...NNNNNN..
+
+= Finger | eyes 3,3 3
+....mm....
+...mmmm...
+...mWWm...
+...mmmm...
+...mmmm...
+...NNNN...
+...mmmm...
+...mmmm...
+...NNNN...
+...mmmm...
+...mmmm...
+
+= Daumen | eyes 2,4 3
+.mmmm....
+mmWWmm...
+mmmmmm...
+mmmmmm...
+mmmmmmmm.
+.mmmmmmmm
+.mmmmmmmm
+.mNmmmmmm
+..mmmmmmN
+..NNNNNN.
+
+= Fingernagel | eyes 4,6 3
+....mmmm....
+...mppppm...
+...mppppm...
+...mpWWpm...
+...mmmmmm...
+...mmmmmm...
+...mmmmmm...
+...mmmmmm...
+
+= Auge
+..kkkkkkkk..
+.k........k.
+kkhhhhhhhhkk
+khhhuuuuhhhk
+khhuukkuuhhk
+khhuukkuuhhk
+khhhuuuuhhhk
+.khhhhhhhhk.
+..kkkkkkkk..
+
+= Augenbraue | eyes 3,7
+.bbbbbbbbbb.
+bbbbbbbbbbbb
+bb........bb
+............
+............
+
+= Nase | eyes 2,4 7
+.....mm.....
+.....mm.....
+....mmmm....
+....mmmm....
+...mmmmmm...
+..mmmmmmmm..
+.mmmmmmmmmm.
+.mmNNmmNNmm.
+..mNNmmNNm..
+
+= Mund
+..rrrrrrrr..
+.rrrrrrrrrr.
+rrWWWWWWWWrr
+rRkkkkkkkkRr
+rRkkkrrkkkRr
+.rRkrrrrkRr.
+..rrrrrrrr..
+
+= Lippe | eyes 4,1 4
+..pppppppppp..
+.pppprrrppppp.
+ppppprrrpppppp
+rrrrrrrrrrrrrr
+pppppppppppppp
+.pppppppppppp.
+..pppppppppp..
+
+= Zunge | eyes 3,3 4
+..rrrrrrrrr.
+.rrrrrrrrrrr
+rrRRRRRRRRRr
+rppppppppppr
+.pppppppppp.
+.pppppppppp.
+.pppppRppppp
+..ppppRpppp.
+...pppppppp.
+....pppppp..
+
+= Zahn | eyes 4,3 4
+..WWWWWWWWWW..
+.WWWWWWWWWWWW.
+.WWWWWWWWWWWW.
+.WWWWWWWWWWWW.
+.WWWWWWWWWWWW.
+..WWWWWWWWWWc.
+..WWWWccWWWWc.
+..WWWc..cWWWc.
+..WWc....cWWc.
+...c......cc..
+
+= Ohr | eyes 4,3 3
+....mmmmm..
+..mmmmmmmm.
+.mmmNNNNmmm
+.mmNmmmmmNm
+.mmNmmmmmNm
+.mmmNNmmmNm
+..mmmmNmNm.
+...mmmNmm..
+.....mmmm..
+....mmmm...
+...mmmm....
+
+= Haar | eyes 4,7
+..bbbbbbbb..
+.bbBBBBBBbb.
+bbBBbbbbBBbb
+bBBbbbbbbBBb
+bBbbbbbbbbBb
+bBbbbbbbbbBb
+bbbbbbbbbbbb
+bBbbbbbbbbBb
+bBbb....bbBb
+bBb......bBb
+.b........b.
+
+= Bart | eyes 4,1
+..mmmmmmmm..
+.mmmmmmmmmm.
+.mmmmmmmmmm.
+bbbmmmmmmbbb
+bbbbbbbbbbbb
+bbbbbRRbbbbb
+bbbbbbbbbbbb
+.bbbbbbbbbb.
+..bbbbbbbb..
+...bbbbbb...
+....bbbb....
+
+= Schnurrbart | eyes 4,1
+..mmmmmmmmmm..
+..mmmmmmmmmm..
+..mmmmmmmmmm..
+.bbbbbmmbbbbb.
+bbbbbbbbbbbbbb
+bb..bbbbbb..bb
+b............b
+
+= Glatze | eyes 5,6 3
+....mmmmm....
+..mmmmhmmmm..
+.mmmmmmhmmmm.
+.mmmmmmmmmmm.
+bmmmmmmmmmmmb
+bbmmmmmmmmmbb
+bbmmmmmmmmmbb
+.bmmmmmmmmmb.
+..mmmmmmmmm..
+...mmmmmmm...
+
+= Kopf | eyes 3,5 5
+...bbbbbbb...
+..bbbbbbbbb..
+.bbbbbbbbbbb.
+.bmmmmmmmmmb.
+.mmmmmmmmmmm.
+.mmmmmmmmmmm.
+mmmmmmmmmmmmm
+.mmmmmmmmmmm.
+.mpmmmRRmmpm.
+..mmmmmmmmm..
+...mmmmmmm...
+.....mmm.....
+
+= Gesicht | eyes 3,4 5
+..mmmmmmmmm..
+.mmmmmmmmmmm.
+.mbbbmmmbbbm.
+mmmmmmmmmmmmm
+mmmmmmmmmmmmm
+mmmmmmmmmmmmm
+mmmmmmNmmmmmm
+.mpmmmmmmmpm.
+.mmmkkkkkmmm.
+..mmmkkkmmm..
+...mmmmmmm...
+
+= Stirn | eyes 3,7 5
+..mmmmmmmmm..
+.mmmNmmmNmmm.
+.mmmmNNNmmmm.
+mmmmmmmmmmmmm
+mmmNNNmNNNmmm
+mmmmmmmmmmmmm
+.bbbbmmmbbbb.
+
+= Kinn | eyes 3,1 5
+mmmmmmmmmmmmm
+mmmmmmmmmmmmm
+mmmmmmmmmmmmm
+mmmmmmmmmmmmm
+.mmmmRRRmmmm.
+.mmmmmmmmmmm.
+..mmmmmmmmm..
+...mmmNmmm...
+....mmmmm....
+
+= Wange | eyes 3,2 5
+..mmmmmmmm..
+.mmmmmmmmmm.
+mmmmmmmmmmmm
+mmmmmmmmmmmm
+mppmmmmmmppm
+mppmmmmmmppm
+mmmmmRRmmmmm
+.mmmmmmmmmm.
+..mmmmmmmm..
+
+= Körper | eyes 5,1 3
+....mmmmm....
+....mmmmm....
+.....mmm.....
+..mmmmmmmmm..
+.mmmmmmmmmmm.
+.mm.mmmmm.mm.
+.mm.mmmmm.mm.
+.mm.mmmmm.mm.
+.m..sssss..m.
+....sssss....
+....ss.ss....
+....ss.ss....
+....mm.mm....
+
+= Leib | eyes 4,2 4
+...mmmmmmm...
+..mmmmmmmmm..
+.mmmmmmmmmmm.
+.mmmmmmmmmmm.
+.mmmmNmmmmmm.
+.mmmmmmmmmmm.
+..mmmmmmmmm..
+..sssssssss..
+..sssssssss..
+
+= Rumpf | eyes 4,2 4
+..mmmmmmmm..
+.mmmmmmmmmm.
+mmmmmmmmmmmm
+mmmNmmmmNmmm
+mmmmmmmmmmmm
+.mmmmmmmmmm.
+.mmmmNNmmmm.
+..mmmmmmmm..
+
+= Bauch | eyes 3,3 6
+...mmmmmmmmm...
+..mmmmmmmmmmm..
+.mmmmmmmmmmmmm.
+mmmmmmmmmmmmmmm
+mmmmmmmmmmmmmmm
+mmmmmmmNmmmmmmm
+mmmmmmmmmmmmmmm
+.mmmmmmmmmmmmm.
+..sssssssssss..
+...sssssssss...
+
+= Brust | eyes 3,3 6
+mmmmmmmmmmmmmm
+mmmmmmmmmmmmmm
+mmNNNNmmNNNNmm
+mmmmmmmmmmmmmm
+mmmmmmmmmmmmmm
+mmmmmmmmmmmmmm
+.mmmmmmmmmmmm.
+
+= Rücken | eyes 3,2 6
+..mmmmmmmmmmm..
+.mmmmmmmmmmmmm.
+mmmmmmmNmmmmmmm
+mmmmmmmNmmmmmmm
+mmmmmmmNmmmmmmm
+.mmmmmmNmmmmmm.
+..mmmmmNmmmmm..
+..mmmmmmmmmmm..
+..sssssssssss..
+
+= Schulter | eyes 3,5 6
+....mmmmmm....
+...mmmmmmmm...
+.mmmmmmmmmmmm.
+mmmmmmmmmmmmmm
+mmmmmmmmmmmmmm
+mmmmmmmmmmmmmm
+mm.mmmmmmmm.mm
+mm.mmmmmmmm.mm
+
+= Hals | eyes 3,1 3
+..mmmmm..
+..mmmmm..
+..mmmmm..
+..mNNNm..
+..mmmmm..
+.mmmmmmm.
+mmmmmmmmm
+
+= Nacken | eyes 3,4 4
+..bbbbbbbb..
+.bbbbbbbbbb.
+.bbbbbbbbbb.
+.bbbbbbbbbb.
+..mmmmmmmm..
+...mmmmmm...
+...mmmmmm...
+.mmmmmmmmmm.
+mmmmmmmmmmmm
+
+= Hinterkopf | eyes 3,5 4
+...bbbbbbb...
+..bbbbbbbbb..
+.bbbbbbbbbbb.
+.bbbbBbbbbbb.
+.bbbbbbbbbbb.
+mbbbbbbbbbbbm
+.bbbbbbbbbbb.
+..bbbbbbbbb..
+....mmmmm....
+
+= Bein | eyes 3,1 3
+.sssssss.
+.sssssss.
+.sssssss.
+.sssssss.
+..mmmmm..
+..mmmmm..
+..mNNNm..
+..mmmmm..
+..mmmmm..
+..kkkkkk.
+..kkkkkkk
+
+= Oberschenkel | eyes 3,2 4
+.ssssssss..
+.ssssssss..
+.mmmmmmmm..
+mmmmmmmmmm.
+mmmmmmmmmm.
+mmmmmmmmmm.
+.mmmmmmmmm.
+..mmmmmmm..
+..mNNNNNm..
+
+= Schenkel | eyes 3,2 4
+..mmmmmmmm..
+.mmmmmmmmmm.
+.mmmmmmmmmm.
+.mmmmmmmmmm.
+..mmmmmmmm..
+..mmmmmmm...
+...mmmmmm...
+...NNNNNN...
+
+= Knie | eyes 3,4 4
+..mmmmmmm..
+..mmmmmmm..
+.mmmmmmmmm.
+mmmmmmmmmmm
+mmmmmmmmmmm
+mmmmNNNmmmm
+.mmmmmmmmm.
+..mmmmmmm..
+..mmmmmmm..
+
+= Wade | eyes 3,4 3
+..mmmmmm..
+..mmmmmmm.
+..mmmmmmmm
+..mmmmmmmm
+..mmmmmmm.
+..mmmmmm..
+..mmmmm...
+..mmmmm...
+..kkkkkkk.
+
+= Fuß | eyes 2,3 3
+.mmmmm.......
+.mmmmm.......
+.mmmmm.......
+.mmmmmmmm....
+.mmmmmmmmmmm.
+mmmmmmmmmmmmm
+mmmmmmmmmmmmm
+.mmmmmmmmmmm.
+
+= Ferse | eyes 6,3 3
+.......mmmmm.
+.......mmmmm.
+.......mmmmm.
+....mmmmmmmm.
+.mmmmmmmmmmm.
+mmmmmmmmmmmrr
+mmmmmmmmmmmrr
+.mmmmmmmmmmr.
+
+= Zehe | eyes 3,3 4
+..m.mm.mm.mm.
+.mmmmmmmmmmm.
+.mmmmmmmmmmmm
+mmmmmmmmmmmmm
+mmmmmmmmmmmmm
+.mmmmmmmmmmm.
+
+= Knöchel | eyes 3,2 3
+..mmmmm.....
+..mmmmm.....
+.mmmmmmm....
+.mmNNNmmm...
+.mmmmmmmmmm.
+mmmmmmmmmmmm
+.mmmmmmmmmm.
+
+= Handgelenk | eyes 3,7 3
+...uuuuuu...
+...uuuuuu...
+...mmmmmm...
+..kkkkkkkk..
+..kWWWWWWk..
+..kWWkWWWk..
+..kkkkkkkk..
+...mmmmmm...
+...mmmmmm...
+
+= Hüfte | eyes 3,1 6
+.mmmmmmmmmmmm.
+mmmmmmmmmmmmmm
+mmmmmmmmmmmmmm
+ssssssssssssss
+ssssssssssssss
+sssss....sssss
+ssss......ssss
+
+= Hintern | eyes 2,2 6
+.uuuuuuuuuuuu.
+uuuuuuuuuuuuuu
+uuuuuuuuuuuuuu
+uuuuuuuuuuuuuu
+uuuuuusuuuuuuu
+uuuuuusuuuuuuu
+.uuuuusuuuuuu.
+..uuu....uuu..
+
+= Herz | eyes 3,4 5
+..rrr...rrr..
+.rrrrr.rrrrr.
+rrprrrrrrrrrr
+rpprrrrrrrrrr
+rrrrrrrrrrrrr
+rrrrrrrrrrrrr
+.rrrrrrrrrrr.
+..rrrrrrrrr..
+...rrrrrrR...
+....rrrrR....
+.....rRR.....
+......R......
+
+= Gehirn | eyes 3,4 5
+...ppppppp...
+..ppVppppVp..
+.ppppVpppVppp
+pppVppVppppVp
+ppppppVppVppp
+pVpppppVppppp
+pppVpppVpppVp
+.pppppVppppp.
+..pppppppppp.
+.......rr....
+.......rr....
+
+= Hirn | eyes 3,4 5
+...VVVVVVV...
+..VVpVVVVpV..
+.VVVVpVVVpVVV
+VVVpVVpVVVVpV
+VVVVVVpVVpVVV
+VpVVVVVpVVVVV
+.VVVVVVVVVVV.
+..VVVVVVVVV..
+
+= Lunge | eyes 2,5 6
+......c......
+......c......
+..rrr.c.rrr..
+.rrrrrcrrrrr.
+rrrrrr.rrrrrr
+rrrrrr.rrrrrr
+rrrrrr.rrrrrr
+rrrrrr.rrrrrr
+rrrrr...rrrrr
+.rrr.....rrr.
+
+= Leber | eyes 3,3 5
+....RRRRRRRR.
+..RRRRRRRRRRR
+.RRRRRRRRRRRR
+RRRRRRRRRRRR.
+RRRRRRRRRRR..
+.RRRRRRRRR...
+..RRRRRR.....
+
+= Niere | eyes 3,2 3
+..rrrrr..
+.rrrrrrr.
+rrrrrrrrr
+rrrrrr...
+rrrrr....
+rrrrrr...
+rrrrrrrrr
+.rrrrrrr.
+..rrrrr..
+
+= Magen | eyes 4,3 3
+...pppp.....
+..pp..pp....
+..pp..ppppp.
+..ppppppppppp
+.ppppppppppp
+pppppppppppp
+ppppppppppp.
+.ppppppppp..
+...pppppp...
+.......pp...
+
+= Darm | eyes 3,2 6
+.pppppppppppp.
+pp..........pp
+pp.pppppppp.pp
+pp.p......p.pp
+pp.p.pppp.p.pp
+pp.p.p..p.p.pp
+pp.pppp.ppp.pp
+pp..........pp
+.pppppppppppp.
+
+= Muskel | eyes 6,3 3
+.....rrrr....
+...rrrrrrrr..
+..rrrrrrrrrr.
+mmrrrrrrrrrrr
+mmmrrrrrrrrrr
+mmmmmmmmmmmm.
+.mmmmmmmmmm..
+..mmmmmmmm...
+
+= Knochen | eyes 4,2 5
+WW.........WW
+WWW.......WWW
+.WWWWWWWWWWW.
+.WWWWWWWWWWW.
+.WWWWWWWWWWW.
+WWW.......WWW
+WW.........WW
+
+= Rippe | eyes 5,3 2
+......W......
+WWWWW.W.WWWWW
+W.....W.....W
+.WWWW.W.WWWW.
+W.....W.....W
+.WWWW.W.WWWW.
+......W......
+
+= Schädel
+..WWWWWWWWW..
+.WWWWWWWWWWW.
+WWWWWWWWWWWWW
+WWkkkWWWkkkWW
+WWkkkWWWkkkWW
+WWkkkWWWkkkWW
+WWWWWWkWWWWWW
+.WWWWkkkWWWW.
+..WWWWWWWWW..
+..WkWkWkWkW..
+...WWWWWWW...
+
+= Skelett
+....WWWWW....
+....WkWkW....
+....WWWWW....
+.....WkW.....
+..WWWWWWWWW..
+..W.W.W.W.W..
+..W.WWWWW.W..
+....W.W.W....
+....WWWWW....
+....W...W....
+....W...W....
+...WW...WW...
+
+= Wirbelsäule | eyes 4,1 3
+....WWWWW....
+.....WWW.....
+....WWWWW....
+.....WWW.....
+....WWWWW....
+.....WWW.....
+....WWWWW....
+.....WWW.....
+....WWWWW....
+.....WWW.....
+....WWWWW....
+
+= Rückgrat | eyes 4,1 3
+....WWWWW....
+...WcWWWcW...
+....WWWWW....
+...WcWWWcW...
+....WWWWW....
+...WcWWWcW...
+....WWWWW....
+...WcWWWcW...
+....WWWWW....
+
+= Blut | eyes 3,7 3
+.....r.....
+.....r.....
+....rrr....
+....rrr....
+...rrrrr...
+..rrrrrrr..
+.rrprrrrrr.
+.rpprrrrrr.
+.rrrrrrrrr.
+..rrrrrrR..
+...rrrrR...
+
+= Ader | eyes 3,1 6
+..rr......uu..
+...rr....uu...
+....rr..uu....
+.....rrrr.....
+.....rrrr.....
+.....rrrr.....
+....rr..uu....
+...rr....uu...
+
+= Vene | eyes 3,3 6
+.....uu.......
+....uu........
+...uuuuuuuuuu.
+..uu..uu......
+.uu....uu.....
+.u......uuuuu.
+
+= Puls
+...........................
+r.............r.
+.r...........r..
+.r....r......r..
+..r..r.r....r...
+rrrr.r..r..rrrrr
+.....r...rr.....
+.....r..........
+
+= Träne | eyes 3,7 3
+.....U.....
+.....U.....
+....UUU....
+....UUU....
+...UUUUU...
+..UUUUUUU..
+.UUhUUUUUU.
+.UhhUUUUUU.
+.UUUUUUUUU.
+..UUUUUUu..
+...UUUUu...
+
+= Schweiß | eyes 2,5 3
+...U....U...
+..UUU..UUU..
+..UUU..UUU..
+............
+.....U......
+....UUU.....
+...UUUUU....
+...UUUUU....
+....UUU.....
+
+= Wunde | eyes 2,2 7
+.mmmmmmmmmmmm.
+mmmmmmmmmmmmmm
+mmmmmmmmmmmmmm
+mmmmmRRRRmmmmm
+mmmmRrrrrRmmmm
+mmmmmRRRRmmmmm
+mmmmmmmmmmmmmm
+.mmmmmmmmmmmm.
+
+= Narbe | eyes 2,2 7
+.mmmmmmmmmmmm.
+mmmmmmmmmmmmmm
+mmmmmmmmmmmmmm
+mmmmrmrmrmmmmm
+mmmmrrrrrrrmmm
+mmmmmrmrmrmmmm
+mmmmmmmmmmmmmm
+.mmmmmmmmmmmm.
+
+= Beule | eyes 3,5 5
+.....rrr.....
+....rpppr....
+...rpppppr...
+..mmmmmmmmm..
+.mmmmmmmmmmm.
+.mmmmmmmmmmm.
+mmmmmmmmmmmmm
+mmmmmmmmmmmmm
+.mmmmRRRmmmm.
+
+= Flügel | eyes 5,3 3
+..........WW
+........WWWW
+......WWWWWW
+....WWWWWWWW
+..WWWWWWWWWW
+.WWWWWcWcWWW
+WWWWcWcWcWW.
+.WcWcWcWcW..
+..WcWcWcW...
+....WcW.....
+
+= Schwanz | eyes 9,2 3
+.........nnnn.
+........nnnnnn
+........nnnnnn
+.......nnnn...
+......nnnn....
+.....nnnn.....
+...nnnnn......
+.nnnnn........
+nnnn..........
+nn............
+
+= Horn | eyes 4,6 3
+..........cc
+.........ccc
+........ccc.
+.......cccc.
+......cccc..
+....cccccc..
+..ccccccc...
+.cccccccc...
+.ccccccc....
+..ccccc.....
+
+= Kralle | eyes 3,6 4
+c...c...c...
+cc..cc..cc..
+.cc..cc..cc.
+.ncc.ncc.ncc
+.nnnnnnnnnnn
+nnnnnnnnnnnn
+nnnnnnnnnnnn
+.nnnnnnnnnn.
+
+= Pfote | eyes 4,6 3
+..nn....nn..
+.nppn..nppn.
+.nnnn..nnnn.
+nn...nn...nn
+pn..nppn..np
+nn..nnnn..nn
+...nnnnnn...
+..nppppppn..
+..nppppppn..
+...nnnnnn...
+
+= Schnabel | eyes 3,2 3
+.yyy........
+yyyyyyy.....
+yyyyyyyyyy..
+yyyyyyyyyyyY
+YYYYYYYYYYY.
+.YYYYYYY....
+
+= Maul | eyes 3,1 6
+..nnnnnnnnnn..
+.nnnnnnnnnnnn.
+nnnnnnnnnnnnnn
+nnnnkkkkkknnnn
+nnhkkkkkkkkhnn
+nnhkkRRRRkkhnn
+.nnkkkkkkkknn.
+..nnnnnnnnnn..
+
+= Stimme | eyes 2,4 3
+............U.
+.mmmmmm...U..U
+mmmmmmmm.U.U.U
+mmmmmmmm.U.U.U
+mmmmmmmRR..U.U
+mmmmmmmm.U.U.U
+mmmmmmmm..U..U
+.mmmmmm.....U.
+
+= Organ | eyes 4,3 3
+....rrr.....
+...rrrrr.c..
+..rrrrrrrc..
+..rrrrrrrr..
+..rrrrrrrr..
+...rrrrrr...
+....rrrr....
+.....rr.....
+
+= Gewebe | eyes 3,3 6
+pVpVpVpVpVpV
+VpppVpppVppp
+pppVpppVpppV
+VpVpVpVpVpVp
+pppVpppVpppV
+VpppVpppVppp
+pVpVpVpVpVpV
+
+= Zelle | eyes 4,4 3
+...GGGGGG...
+..GllllllG..
+.GlllllllG..
+GlllvvvllllG
+GlllvVvllllG
+GllllvlllllG
+.GlllllllG..
+..GllllllG..
+...GGGGGG...
+
+= Tumor | eyes 4,4 3
+...vvvv.....
+..vVVVVv.vv.
+.vVVVVVVvVVv
+.vVVVVVVVVVv
+vVVVVVVVVVv.
+vVVVVVVVVv..
+.vVVVVVVVv..
+..vvvvvvv...
+
+= Immunsystem | eyes 4,6 3
+....W.....
+...WWW....
+..WWWWW...
+.WWWWWWW..
+.WWuuuWW..
+.WuuuuuW..
+.WuuuuuW..
+..WuuuW...
+...WWW....
+
+# ---------------------------------------------------------------- vehicles
+= Auto | eyes 2,5 7
+....rrrrrr....
+...rUUrrUUr...
+..rrUUrrUUrr..
+rrrrrrrrrrrrrr
+rrrrrrrrrrrrrr
+yrrrrrrrrrrrry
+RRRRRRRRRRRRRR
+.kkk......kkk.
+.kck......kck.
+
+= Automobil | eyes 2,5 7
+....kkkkkk....
+...kUUkkUUk...
+..kkUUkkUUkk..
+kkkkkkkkkkkkkk
+kkkkkkkkkkkkkk
+ykkkkkkkkkkkky
+cccccccccccccc
+.kkk......kkk.
+.kck......kck.
+
+= Taxi | eyes 2,5 7
+......kk......
+....yyyyyy....
+...yUUyyUUy...
+..yyUUyyUUyy..
+yyyyyyyyyyyyyy
+kykykykykykyky
+yyyyyyyyyyyyyy
+YYYYYYYYYYYYYY
+.kkk......kkk.
+
+= Limousine | eyes 2,4 10
+....kkkkkkkk....
+...kUUkUUkUUk...
+kkkkkkkkkkkkkkkk
+kkkkkkkkkkkkkkkk
+ckkkkkkkkkkkkkkc
+SSSSSSSSSSSSSSSS
+.kk..........kk.
+
+= Kombi | eyes 2,5 7
+...uuuuuuuuuu.
+..uUUuUUuUUUu.
+.uuUUuUUuUUUu.
+uuuuuuuuuuuuuu
+uuuuuuuuuuuuuu
+yuuuuuuuuuuuuy
+ssssssssssssss
+.kkk......kkk.
+
+= SUV | eyes 2,4 7
+...ssssssssss.
+..sUUUsUUUsUs.
+.ssUUUsUUUsUs.
+ssssssssssssss
+ssssssssssssss
+ysssssssssssss
+kkkkkkkkkkkkkk
+.kkkk....kkkk.
+.kkkk....kkkk.
+
+= Karre | eyes 2,5 7
+....nnnnnn....
+...nUUnnUUn...
+..nnUUnnUUnn..
+nnnnnbnnnnnnnn
+nnnnnnnnnbnnnn
+nnnnnnnnnnnnnn
+BBBBBBBBBBBBBB
+.kkk......kk..
+.kck......k...
+
+= Fahrzeug | eyes 2,5 7
+....GGGGGG....
+...GUUGGUUG...
+..GGUUGGUUGG..
+GGGGGGGGGGGGGG
+GGGGGGGGGGGGGG
+yGGGGGGGGGGGGy
+gggggggggggggg
+.kkk......kkk.
+
+= Bus | eyes 2,3 9
+yyyyyyyyyyyyyy
+yUUUyUUUyUUUyy
+yUUUyUUUyUUUyy
+yyyyyyyyyyyyyy
+yyyyyyyyyyyyky
+yyyyyyyyyyyyky
+YYYYYYYYYYYYYY
+.kk.......kk..
+
+= Laster | eyes 1,4 3
+.......rrrrrr.
+cccccc.rUUUrr.
+cccccc.rUUUrr.
+cccccc.rrrrrr.
+cccccccrrrrrr.
+cccccccrrrrry.
+SSSSSSSSSSSSS.
+.kk..kk...kk..
+
+= Lastwagen | eyes 1,4 3
+.......uuuuuu.
+ssssss.uUUUuu.
+ssssss.uUUUuu.
+ssssss.uuuuuu.
+sssssssuuuuuu.
+sssssssuuuuuy.
+kkkkkkkkkkkkk.
+.kk..kk...kk..
+
+= Lieferwagen | eyes 1,3 4
+....WWWWWWWW..
+.WWWWWWWWWUUW.
+WWWWWWWWWWUUWW
+WWWyyyWWWWWWWW
+WWWyyyWWWWWWWW
+WWWWWWWWWWWWWy
+SSSSSSSSSSSSSS
+.kkk......kkk.
+
+= Transporter | eyes 1,3 4
+....ccccccccc.
+.cccccccccUUc.
+ccccccccccUUcc
+cccccccccccccc
+cccuuuuuuccccc
+cccccccccccccy
+SSSSSSSSSSSSSS
+.kkk......kkk.
+
+= Krankenwagen | eyes 1,3 4
+....WWWWWWWW..
+.WWWWWWWWWUUW.
+WWWWrWWWWWUUWW
+WWWrrrWWWWWWWW
+WWWWrWWWWWWWWW
+rrrrrrrrrrrrrr
+SSSSSSSSSSSSSS
+.kkk......kkk.
+
+= Rettungswagen | eyes 1,3 4
+......uu......
+....WWWWWWWW..
+.WWWWWWWWWUUW.
+WWWWrWWWWWUUWW
+WWWrrrWWWWWWWW
+yyyyyyyyyyyyyy
+SSSSSSSSSSSSSS
+.kkk......kkk.
+
+= Wohnwagen | eyes 3,3 5
+..WWWWWWWWW..
+.WWWWWWWWWWW.
+WWUUWWWWWUUWW
+WWUUWWWWWUUWW
+GGGGGGGGGGGGG
+WWWWWWWWWWWWW
+WWWWWWWWWWWWWkk
+.....kkk......
+
+= Wohnmobil | eyes 2,2 5
+..WWWWWWWW.....
+.WWWWWWWWWWWW..
+WWUUWWUUWWUUUW.
+WWUUWWUUWWUUUWW
+NNNNNNNNNNNNNNN
+WWWWWWWWWWWWWWW
+SSSSSSSSSSSSSSS
+.kkk.......kkk.
+
+= Traktor | eyes 6,2 3
+.....gggggg...
+.k...gUUUUg...
+.k...gUUUUg...
+.kgggggggggg..
+gggggggggggg..
+gkkkgggggkkkk.
+kkckk...kkkkkk
+kckck...kkcckk
+.kkk....kkkkkk
+.........kkkk.
+
+= Motorrad | eyes 6,2 3
+.........k....
+....rrrrrk....
+...rrrrrrrr...
+.kkrrrrrrrrS..
+.kkkkSSSkkkk..
+kkck.....kckk.
+kcck.....kcck.
+.kk.......kk..
+
+= Roller | eyes 9,1 3
+..........k.
+.........kk.
+.........vv.
+.........vv.
+.........vv.
+.vvvvvvvvvv.
+vvvvvvvvvvvv
+.kk......kk.
+.kk......kk.
+
+= Zug | eyes 3,3 5
+..rrrrrrrrrr..
+.rrrrrrrrrrrr.
+rrWWWWWWWWWWrr
+rrUUUUUUUUUUrr
+rrUUUUUUUUUUrr
+rrrrrrrrrrrrrr
+rryrrrrrrrryrr
+rrrrrrrrrrrrrr
+.SSSSSSSSSSSS.
+.k.k......k.k.
+kkkkkkkkkkkkkk
+
+= U-Bahn | eyes 3,3 5
+..uuuuuuuuuu..
+.uuuuuuuuuuuu.
+uuUUUUUUUUUUuu
+uuUUUUUUUUUUuu
+uuuuuuuuuuuuuu
+uuyyyyyyyyyyuu
+uuWuuuuuuuuWuu
+uuuuuuuuuuuuuu
+.SSSSSSSSSSSS.
+kkkkkkkkkkkkkk
+
+= S-Bahn | eyes 3,3 5
+..rrrrrrrrrr..
+.rrrrrrrrrrrr.
+rrUUUUUUUUUUrr
+rrUUUUUUUUUUrr
+rrrrrrrrrrrrrr
+WWWWWWWWWWWWWW
+rrrrrrrrrrrrrr
+.SSSSSSSSSSSS.
+kkkkkkkkkkkkkk
+
+= Metro | eyes 3,3 5
+..ssssssssss..
+.ssssssssssss.
+ssUUUUUUUUUUss
+ssUUUUUUUUUUss
+ssssssssssssss
+ssyysssssyysss
+ssssssssssssss
+.kkkkkkkkkkkk.
+kkkkkkkkkkkkkk
+
+= Straßenbahn | eyes 2,5 4
+.......k......
+......k.k.....
+.....k...k....
+yyyyyyyyyyyyyy
+yWWWyWWWyWWWyy
+yWWWyWWWyWWWyy
+yyyyyyyyyyyyyy
+rrrrrrrrrrrrrr
+yyyyyyyyyyyyyy
+.kk.......kk..
+kkkkkkkkkkkkkk
+
+= Lok | eyes 7,2 3
+..ss.....bbbbb.
+..ss.....bUUUb.
+.ssss....bUUUb.
+kkkkkkkkkbbbbb.
+kkkkkkkkkkbbbb.
+kkkkkkkkkkbbbb.
+ykkkkkkkkkkkkk.
+rrrrrrrrrrrrrr.
+.kck.kck..kck..
+
+= Eisenbahn | eyes 7,2 3
+.cc......rrrrr.
+..ss.....rUUUr.
+..ss.....rUUUr.
+kkkkkkkkkrrrrr.
+kkkkkkkkkkrrrr.
+ykkkkkkkkkkkkk.
+.kck.kck..kck..
+SSSSSSSSSSSSSSS
+
+= Bahn | eyes 3,4 5
+...............
+.rrrrrrrrrrrr..
+rrUUUUUUUUUUrr.
+rrrrrrrrrrrrrr.
+rrrrrrrrrrrrrr.
+.SSSSSSSSSSSS..
+nSnnSnnSnnSnnSn
+SSSSSSSSSSSSSSS
+
+= Schiff | eyes 4,4 5
+.....rr.......
+.....kk...k...
+.....WWWWWWW..
+...WWWUWUWUW..
+...WWWWWWWWW..
+kkkkkkkkkkkkkk
+kkkkkkkkkkkkkk
+.rrrrrrrrrrrr.
+..rrrrrrrrrr..
+
+= Boot | eyes 4,6 5
+.......k......
+......kW......
+.....kWW......
+....kWWW......
+...kWWWW......
+.......k......
+nnnnnnnnnnnnnn
+.nnnnnnnnnnnn.
+..BBBBBBBBBB..
+
+= Kahn | eyes 3,1 6
+nnnnnnnnnnnnnn
+.nnnnnnnnnnnn.
+..BBBBBBBBBB..
+
+= Fähre | eyes 3,3 4
+....WWWWWW....
+...WUWUWUWW...
+WWWWWWWWWWWWWW
+WWWWWWWWWWWWWW
+uuuuuuuuuuuuuu
+uuuuuuuuuuuuuu
+.uuuuuuuuuuuu.
+
+= Yacht | eyes 5,4 4
+.....k........
+.....kWWW.....
+.....kWWWWW...
+...WWWWWUUW...
+WWWWWWWWWWWWWW
+.WWWWWWWWWWWW.
+..uuuuuuuuuu..
+
+= Flugzeug | eyes 3,4 3
+......W.......
+.....WW.......
+.....WWW......
+WWWWWWWWWWWWuu
+cWWWWWWWWWWWuu
+.....WWW......
+.....WW.......
+......W.......
+
+= Jet | eyes 4,3 3
+.....s........
+.....ss.......
+sssssssssssUU.
+SSSSSSSSSSSSSs
+.....ss.......
+.....s........
+
+= Hubschrauber | eyes 5,4 4
+kkkkkkkkkkkkkk
+.......k......
+.....rrrrrr...
+....rUUUrrrr..
+...rrUUUrrrrrrrrr
+...rrrrrrrr...k
+....rrrrrr....
+....k....k....
+...kkkkkkkk...
+
+= Helikopter | eyes 5,4 4
+kkkkkkkkkkkkkk
+.......k......
+.....ggggggg..
+....gUUUgggggggg
+...ggUUUggggg..k
+...ggggggggg...
+....ggggggg....
+....k.....k....
+...kkkkkkkkk...
+
+= Rakete | eyes 5,5 2
+......rr......
+.....rWWr.....
+.....WWWW.....
+.....WWWW.....
+.....WWWW.....
+.....WUUW.....
+.....WWWW.....
+....rWWWWr....
+...rrWWWWrr...
+...rr.yy.rr...
+......YY......
+
+= Raumschiff | eyes 5,3 4
+......cc......
+.....cUUc.....
+....cUUUUc....
+cccccccccccccc
+SSSSSSSSSSSSSS
+.ySySySySySyS.
+..cccccccccc..
+
+= Ufo | eyes 5,4 4
+.....GGGG.....
+....GUUUUG....
+...GUUUUUUG...
+.SSSSSSSSSSSS.
+SScScScScScScS
+.SSSSSSSSSSSS.
+....y.y.y.....
+...y..y..y....
+
+= Satellit | eyes 6,4 2
+uuu..........uuu
+uSu....cc....uSu
+uuu...cccc...uuu
+uSucccccccccuSuu
+uuu...cccc...uuu
+uSu....cc....uSu
+uuu..........uuu
+
+= Panzer | eyes 4,2 4
+.......kkkkkkk.
+...gggggg......
+..gggggggg.....
+gggggggggggggg.
+kkkkkkkkkkkkkk.
+kckckckckckckk.
+.kkkkkkkkkkkk..
+
+= Tank | eyes 3,3 4
+...ssssssss...
+..ssssssssssk.
+.sssssssssssk.
+.ssssssssssss.
+.ssssssssssss.
+.ssssssssssss.
+..ssssssssss..
+
+= Schlitten | eyes 3,1 4
+rrrrrrrrrrr...
+rrrrrrrrrrr...
+rrrrrrrrrrrr..
+..k......k..k.
+kkkkkkkkkkkkk.
+
+= Karren | eyes 3,2 4
+nnnnnnnnnnnn..
+nbnnbnnbnnbn..
+nnnnnnnnnnnnbbb
+..kk.....kk...
+.kcck...kcck..
+..kk.....kk...
+
+= Rollstuhl | eyes 2,1 3
+uuuu.......
+uuuu.......
+uuuuuuuu...
+uuuuuuuuu..
+..k...kkk..
+.kkk.k...k.
+kkckkk.c.k.
+.kkk.k...k.
+......kkk..
+
+= Kinderwagen | eyes 2,2 4
+.uuuuuu......
+uuuuuuuuuuuu.
+uuuuuuuuuuuuk
+UUUUUUUUUUUU.
+.UUUUUUUUUU..
+..k......k...
+.kck....kck..
+..k......k...
+
+# ---------------------------------------------------------------- weather and sky
+= Sonne
+.y...y...y.
+..y..y..y..
+...yyyyy...
+.yyyyyyyyy.
+.yyhhyhhyy.
+yyyhkyhkyyy
+.yyyyyyyyy.
+.yyyRRRyyy.
+...yyyyy...
+..y..y..y..
+.y...y...y.
+
+= Sonnenschein
+y.....y.....y
+.y....y....y.
+..y.yyyyy.y..
+...yyyyyyy...
+..yyhhyhhyy..
+yyyyhkyhkyyyy
+..yyyyyyyyy..
+...yyyyyyy...
+..y.yyyyy.y..
+.y....y....y.
+
+= Sonnenuntergang | eyes 5,3 3
+....YYYYYY....
+...YYYYYYYY...
+..YYYYYYYYYY..
+.rrrrrrrrrrrr.
+UUUUUUUUUUUUUU
+uUuuUuuUuuUuuU
+uuuuuuuuuuuuuu
+
+= Dämmerung | eyes 5,2 3
+....vvvvvv....
+...vvvvvvvv...
+.vvvvvvvvvvvv.
+pppppppppppppp
+ssssssssssssss
+kkkkkkkkkkkkkk
+
+= Regen | eyes 3,3 5
+...cccccc....
+..cccccccc...
+.cWcccccccc..
+cccccccccccc.
+cccccccccccc.
+.cccccccccc..
+..U..U..U....
+.U..U..U..U..
+U..U..U..U...
+
+= Schnee | eyes 4,3 3
+.....h.....
+..h..h..h..
+...h.h.h...
+....hhh....
+hhhhhhhhhhh
+....hhh....
+...h.h.h...
+..h..h..h..
+.....h.....
+
+= Wind | eyes 3,1 3
+..SSSSSSSS..
+.S.......S..
+.........S..
+SSSSSSSSSS..
+............
+SSSSSSSSSSSS
+...........S
+.......S...S
+........SSS.
+
+= Wetter | eyes 7,5 3
+.y.y........
+..yyy.......
+yyyyyy......
+..yyyccccc..
+.y.ycccccccc
+...ccccccccc
+...ccccccccc
+....ccccccc.
+
+= Wolke | eyes 4,4 4
+....WWWW.....
+...WWWWWW....
+.WWWWWWWWWW..
+WWWWWWWWWWWW.
+WWWWWWWWWWWWW
+WWWWWWWWWWWWW
+.cccccccccccc
+
+= Nebel | eyes 4,3 4
+.ccccccccc...
+.....cccccccc
+ccccccccc....
+...cccccccccc
+.ccccccc.....
+.....ccccccc.
+
+= Sturm | eyes 4,3 4
+...sssssss...
+..sssssssss..
+.sssssssssss.
+sssssssssssss
+.sssssssssss.
+..S..S..S..S.
+.S..S..S..S..
+S..S..S..S...
+
+= Gewitter | eyes 4,2 4
+...sssssss...
+.sssssssssss.
+sssssssssssss
+.sssssssssss.
+.....yy......
+....yy..U....
+...yyyy.U.U..
+.....yy...U..
+....yy.......
+
+= Unwetter | eyes 4,2 4
+...kkkkkkk...
+.kkkkkkkkkkk.
+kkkkkkkkkkkkk
+.kkkkkkkkkkk.
+.U...yy..U...
+U...yy..U..U.
+...yyyy.U.U..
+.U...yy...U..
+
+= Blitz | eyes 4,3 2
+.....yyyy
+....yyyy.
+...yyyy..
+..yyyyyyy
+.....yyy.
+....yyy..
+...yyy...
+..yy.....
+.y.......
+
+= Regenbogen
+...rrrrrrrr...
+..rYYYYYYYYr..
+.rYyyyyyyyyYr.
+rYygggggggyYr.
+rYyguuuuuugyYr
+rYygu....ugyYr
+rYygu....ugyYr
+WWWW......WWWW
+
+= Tornado | eyes 4,2 4
+ssssssssssssss
+.ssssssssssss.
+..ssssssssss..
+...ssssssss...
+....ssssss....
+.....ssss.....
+......sss.....
+......ss......
+.......s......
+
+= Flut | eyes 4,6 4
+..WW..WW..WW...
+.UUUWUUUWUUUW..
+UUUUUUUUUUUUUU.
+uuuuuuuuuuuuuu.
+uuuuuuuuuuuuuu.
+uuuuuuuuuuuuuu.
+uuuuuuuuuuuuuu.
+
+= Welle | eyes 3,4 3
+.....UUUU....
+...UUUUUUUU..
+..UUUUU..UUU.
+.UUUUU.....W.
+UUUUUU.......
+UUUUUUU......
+uuuuuuuuuuuuu
+uuuuuuuuuuuuu
+
+= Frost | eyes 4,5 4
+.h..h..h..h..
+..hhhhhhhhh..
+.hUUUUUUUUUh.
+.UUUUUUUUUUU.
+.UUUUUUUUUUU.
+.UUUUUUUUUUU.
+.UUUUUUUUUUU.
+..UUUUUUUUU..
+
+= Kälte | eyes 3,3 4
+....U....
+..U.U.U..
+...UUU...
+UUUUUUUUU
+...UUU...
+..U.U.U..
+....U....
+..ccc....
+.ccccc...
+
+= Hitze | eyes 3,5 4
+.r..r..r..
+r..r..r...
+.r..r..r..
+..........
+..YYYYYY..
+.YYYYYYYY.
+.YYYYYYYY.
+YYYYYYYYYY
+.YYYYYYYY.
+
+= Dürre | eyes 3,1 6
+NNNNNNNNNNNNNN
+NnNNNNnNNNNNnN
+NNnNNnNNNNNnNN
+NNNnnNNNNnnNNN
+NNnNNnNNnNNnNN
+NnNNNNnnNNNNnN
+
+= Erdbeben | eyes 3,2 6
+NNNNNNNNNNNNNN
+NNNNNkNNNNNNNN
+NNNNkkNNNNNNNN
+NNNNNkkkNNNNNN
+nnnnnnnkknnnnn
+nnnnnnnnkknnnn
+
+= Vulkan | eyes 5,6 3
+.....r.r......
+....r.r.r.....
+.....rrr......
+....bbrbb.....
+...bbbbbbb....
+...bbbbbbb....
+..bbbbbbbbb...
+.bbbbbbbbbbb..
+bbbbbbbbbbbbb.
+
+= Feuer
+......r......
+.....rr..r...
+....rrr.rr...
+...rrYrrrr...
+..rrYYYrrrr..
+..rYYyYYrrr..
+.rrYhhyhhYrr.
+.rYyhkyhkyYr.
+.rYyyyyyyyYr.
+..rYyyyyyYr..
+...nnnnnnn...
+
+= Flamme
+......r......
+.....rr......
+....rrrr.....
+....rYrr.....
+...rYYYrr....
+...rYyYYr....
+..rYhhyhhr...
+..rYhkyhkYr..
+..rYyyyyYr...
+...rrYYYr....
+....rrrr.....
+
+= Rauch | eyes 3,2 4
+....ccccc....
+..cccccccc...
+.cccccccccc..
+.cccccccccc..
+..cccccc.....
+....cccc.....
+.....cc......
+......cc.....
+.......cc....
+
+= Mond
+....yyyy.....
+..yyyy.......
+.yyyy........
+.yyyh........
+yyyhk........
+yyyy.........
+yyyy.........
+.yyyy........
+.yyyyy.....y.
+..yyyyyyyyy..
+....yyyyy....
+
+= Vollmond | eyes 4,4 4
+...wwwwww...
+.wwwwwwwwww.
+.wwNwwwwwww.
+wwwwwwwwwNww
+wwwwwwwwwwww
+wwwwwwwwwwww
+wwwNwwwwwwww
+.wwwwwwwNww.
+.wwwwwwwwww.
+...wwwwww...
+
+= Stern | eyes 4,5 3
+......y......
+.....yyy.....
+.....yyy.....
+yyyyyyyyyyyyy
+.yyyyyyyyyyy.
+..yyyyyyyyy..
+...yyyyyyy...
+..yyyy.yyyy..
+..yyy...yyy..
+.yy.......yy.
+
+= Komet | eyes 9,3 2
+.........yyy.
+.y.....yyyyyy
+..y..yyyyyyyy
+.....yyyyyyyy
+yyy...yyyyyy.
+....y...yyy..
+..y..........
+
+= Planet | eyes 4,4 4
+.........yy...
+...VVVVVVyy...
+..VVVVVVyyV...
+.VVVVVVyyVVV..
+.VVVVVyyVVVV..
+.VVVVyyVVVVV..
+..VVyyVVVVV...
+..yyVVVVVV....
+.yy...........
+
+= Mars | eyes 4,4 4
+...rrrrrr...
+..rrrRrrrr..
+.rrrrrrrRrr.
+.rRrrrrrrrr.
+.rrrrrrRrrr.
+.rrRrrrrrrr.
+..rrrrrrrr..
+...rrrrrr...
+
+= Erde
+...uuuuuu...
+..uugguuuu..
+.uggggguguu.
+.uhhguuhhgu.
+uuhkgguhkguu
+uggggguuggguu
+uuggguuugguu
+.uuguuuuggu.
+..uuuuuuuu..
+...uuuuuu...
+
+= Welt
+...uuuuuu...
+..uuuuuggg..
+.ugguuugggu.
+.uhhguuhhgu.
+uuhkgguhkuuu
+uuuuggguuggu
+ugguuggguuuu
+.uggguuuguu.
+..uuuuuuuu..
+...uuuuuu...
+
+= Galaxie | eyes 5,4 3
+.v....V....h.
+...VVVVVV....
+.VVVhhhhVVV..
+VVhhVVVVhhVV.
+VhVVVVVVVVhV.
+VVhhVVVVhhVV.
+..VVhhhhVVV..
+....VVVVVV...
+.h........v..
+
+= Universum | eyes 4,4 4
+h....k...h....
+..kkkkkkkk..h.
+.kkkkkkkkkkk..
+kkkkVkkkkhkkk.
+kkkkkkkkkkkkk.
+kkhkkkkVkkkkk.
+.kkkkkkkkkkk..
+..kkkkkkkk....
+h........h....
+
+= Weltraum | eyes 4,4 4
+..kkkkkkkkkk..
+.kkkkkkkkkhkk.
+kkhkkkkkkkkkkk
+kkkkkkkkkkkkkk
+kkkkkkkrrkkkkk
+kkkkhkkrrkkkkk
+kkkkkkkkkkkkhk
+.kkkkkkkkkkkk.
+..kkkkkkkkkk..
+
+= Weltall | eyes 4,4 4
+..kkkkkkkkkk..
+.kkkkkkhkkkkk.
+kkkkkkkkkkkkkk
+kyykkkkkkkkkkk
+kyykkkkkkkhkkk
+kkkkkkkkkkkkkk
+kkkkkhkkkkkUUk
+.kkkkkkkkkkUk.
+..kkkkkkkkkk..
+
+= Kosmos | eyes 4,4 4
+..vvvvvvvvvv..
+.vvvvvvvhvvvv.
+vvhvvvvvvvvvvv
+vvvvvvvvvvvvvv
+vvvvvvvvyvvvvv
+vvvhvvvvvvvvvv
+vvvvvvvvvvvhvv
+.vvvvvvvvvvvv.
+..vvvvvvvvvv..
+
+= Orbit | eyes 5,4 3
+...cccccccc...
+.cc........cc.
+c....uuuu....c
+c...uuguuu...c
+.c..uuuggu..c.
+..c..uuuu..cy.
+...cccccccc...
+
+= Himmel | eyes 4,6 4
+UUUUUUUUUUUUUU
+UUWWWUUUUUUUUU
+UWWWWWUUUUWWUU
+UUUUUUUUUWWWWU
+UUUUUUUUUUUUUU
+UUUUUUUUUUUUUU
+UUUUUUUUUUUUUU
+
+= Luft | eyes 4,5 4
+....cccc.....
+..cc....cc...
+.c..ccc...c..
+...c...c..c..
+...c.c.c..c..
+...c..c..c...
+....cc..c....
+.......c.....
+
+= Tageslicht | eyes 4,6 4
+y....y....y.
+.y...y...y..
+..y..y..y...
+............
+UUUUUUUUUUUU
+UUUUUUUUUUUU
+UUUUUUUUUUUU
+UUUUUUUUUUUU
+
+= Finsternis | eyes 4,3 4
+.kkkkkkkkkk.
+kkkkkkkkkkkk
+kkkkkkkkkkkk
+kkkkkkkkkkkk
+kkkkkkkkkkkk
+.kkkkkkkkkk.
+
+= Fahrrad | eyes 7,1 2
+......kk.k..
+.....rrrrk..
+....r.r.rr..
+..kkr..r.rkk.
+.k..rk..k.r.k
+k..k.rrrrk...
+k...k...k...k
+.k..k....k.k.
+..kk......k..
+
+= Rad | eyes 5,4 3
+...kkkkkk...
+..k..c...k..
+.k...c....k.
+k.c..c..c..k
+k...ccc....k
+kcccc.cccc.k
+k...ccc....k
+k.c..c..c..k
+.k...c....k.
+..k..c...k..
+...kkkkkk...
+
+# ---------------------------------------------------------------- land and water
+= Berg | eyes 4,5 4
+......W......
+.....WWW.....
+....WWWWW....
+...WWsWsWW...
+...ssssssss..
+..ssssssssss.
+.ssssssssssss
+.SssssssssssS
+SSSSSSSSSSSSS
+
+= Gebirge | eyes 6,6 3
+...W.......W...
+..WWW.....WWW..
+.WWsss.W.sssW..
+.ssssssWWsssss.
+sssssssssssssss
+ssSsssssssSssss
+SSSSSSSSSSSSSSS
+
+= Alpen | eyes 6,6 3
+....W.....W....
+...WWW...WWW...
+..WWsWW.WWsWW..
+.ssssssWsssssss
+sssssssssssssss
+GGGGGGGGGGGGGGG
+ggggggggggggggg
+
+= Gipfel | eyes 4,5 4
+......r......
+......k......
+.....WkW.....
+....WWWWW....
+...WWWWWWW...
+..WWWsWWsWW..
+.sssssssssss.
+sssssssssssss
+
+= Hügel | eyes 4,3 4
+....GGGGG....
+..GGGGGGGGG..
+.GGGGGGGGGGG.
+GGGGGGGGGGGGG
+ggggggggggggg
+
+= Felsen | eyes 3,3 5
+...SSSSS.....
+..SSSSSSSS...
+.SSScSSSSSS..
+SSSSSSSSSSSS.
+sSSSSSSSSSSSS
+ssSSSSSSSSSss
+.sssssssssss.
+
+= Fels | eyes 3,3 4
+....SSSS....
+..SSSSSSSS..
+.SSSSSSSSSS.
+SSSSSSSSSSSS
+sSSSSSSSSSSs
+.ssssssssss.
+
+= Klippe | eyes 2,3 3
+SSSSSSSUUUUUU
+SSSSSSSUUUUUU
+SSSSSSSSUUUUU
+SSSSSSSSUUUUU
+SSSSSSSSUUUUU
+sSSSSSSSUUUUU
+ssSSSSSSUUUUU
+sssSSSSuuuuuu
+
+= Wald
+....gg....g...
+...gggg..ggg..
+..gggggggggggg
+..ghhgggghhggg
+.gghkgggghkggg
+.ggggggggggggg
+gggggggggggggg
+..gg.b..gg.b..
+.....b.....b..
+....bbb...bbb.
+
+= Dschungel | eyes 4,4 4
+G..G...G..G..
+GGGGG.GGGGG..
+.GGGGGGGGGGGG
+.GGgGGGGgGGG.
+GGGGGgGGGGGGG
+.GgGGGGGGgGG.
+..g..b.g.b...
+.....b...b...
+
+= Wiese | eyes 4,4 4
+.V.....y...V..
+.g..y..g..r.g.
+.g..g.....g.g.
+GGGGGGGGGGGGGG
+GGGGGGGGGGGGGG
+gGGgGGGgGGgGGG
+
+= Rasen | eyes 4,2 4
+G.G.G.G.G.G.G.
+GGGGGGGGGGGGGG
+GGGGGGGGGGGGGG
+GGGGGGGGGGGGGG
+gggggggggggggg
+
+= Feld | eyes 4,3 4
+y.y.y.y.y.y.y.
+yYyYyYyYyYyYyY
+yyyyyyyyyyyyyy
+YyYyYyYyYyYyYy
+nnnnnnnnnnnnnn
+nNnnNnnNnnNnnN
+
+= Acker | eyes 4,1 4
+nnnnnnnnnnnnnn
+NNNNNNNNNNNNNN
+nnnnnnnnnnnnnn
+NNNNNNNNNNNNNN
+nnnnnnnnnnnnnn
+bbbbbbbbbbbbbb
+
+= Garten | eyes 5,7 3
+.r..y...V..r.
+.g..g...g..g.
+.g.rgr..g..g.
+.g..g..ygy.g.
+b.b.b.b.b.b.b
+bbbbbbbbbbbbb
+GGGGGGGGGGGGG
+ggggggggggggg
+
+= Park | eyes 2,5 3
+.....ggg.....
+..ggggggggg..
+.ggggggggggg.
+..gggbgggg...
+.....b.......
+.....b.......
+bbbbbbbbbbbb.
+b.b.b..b.b.b.
+GGGGGGGGGGGGG
+
+= Insel
+.......G.G.....
+......GGGGG....
+.....GG.b.GG...
+........b......
+.......bb......
+....yyybyyy....
+...yyyyyyyyy...
+..yyhhyyyhhyy..
+UUyyhkyyyhkyyUU
+UUUUUUUUUUUUUUU
+
+= Halbinsel | eyes 4,2 3
+gggggggggggggg
+gggggggggggggg
+.ggggggUUUUUUU
+..gggggUUUUUUU
+...ggggUUUUUUU
+....gggUUUUUUU
+UUUUUUUUUUUUUU
+
+= Strand | eyes 3,3 6
+UUUUUUUUUUUUUU
+UWUUUWUUUUWUUU
+UUUUUUUUUUUUUU
+wwwwwwwwwwwwww
+wwwwwwwwwwwwww
+wwwwwwrwwwwwww
+wwwwwrrrwwwwww
+
+= Küste | eyes 3,3 6
+SSSSSSSUUUUUUU
+SSSSSSSSUUUUUU
+gSSSSSSSSUUUUU
+ggSSSSSSSwUUUU
+gggSSSSSSwwUUU
+ggggSSSSSwwwUU
+
+= Sand | eyes 4,3 4
+.....w.....
+....www....
+...wwwww...
+..wwwwwww..
+.wwwwwwwww.
+wwwwwwwwwww
+
+= Wüste | eyes 4,6 4
+.y..........
+yyy.........
+.y...g......
+....ggg.....
+....g.g.....
+..wwwwww....
+.wwwwwwwwww.
+wwwwwwwwwwwww
+
+= See | eyes 4,3 4
+...GGGGGGGG...
+.GGUUUUUUUUGG.
+GUUUUUUUUUUUUG
+GUUUWUUUUWUUUG
+GUUUUUUUUUUUUG
+.GGUUUUUUUUGG.
+...GGGGGGGG...
+
+= Teich | eyes 4,2 3
+..GGGGGGGG..
+.GUUUUUUUUG.
+GUUUUUUUUUUG
+GUUUUUgUUUUG
+.GUUUUUUUUG.
+..GGGGGGGG..
+
+= Meer | eyes 3,2 6
+UUUUUUUUUUUUUU
+UUUUUUUUUUUUUU
+UUUUUUUUUUUUUU
+UWWUUUUWWUUUUW
+uuuuuuuuuuuuuu
+uuuuuuuuuuuuuu
+uuuuuuuuuuuuuu
+
+= Ozean | eyes 3,2 6
+uuuuuuuuuuuuuu
+uuuuuuuuuuuuuu
+uuuuuuuuuuuuuu
+UuUUuUUuUUuUUu
+uuuuuuuuuuuuuu
+ssssssssssssss
+ssssssssssssss
+
+= Fluss | eyes 4,3 3
+GGGGGUUUUGGGGG
+GGGGUUUUGGGGGG
+GGGUUUUUGGGGGG
+GGGUUUUUGGGGGG
+GGUUUUUGGGGGGG
+GGUUUUGGGGGGGG
+GUUUUGGGGGGGGG
+
+= Bach | eyes 4,2 3
+GGGGGUUGGGGGG
+GGGGUUGGGGGGG
+GGGUUUGGGGGGG
+GGUUUGGGGGGGG
+GUUUGGGGGGGGG
+
+= Wasserfall | eyes 4,4 4
+SSSUUUUUUSSS
+SSSUUWUUUSSS
+SSSUUUUWUSSS
+SSSUWUUUUSSS
+SSSUUUUUUSSS
+.WWUUUUUUWW.
+UUUUUUUUUUUU
+
+= Bucht | eyes 5,4 3
+gggggggggggggg
+gggg......gggg
+ggg........ggg
+gg..UUUUUU..gg
+g..UUUUUUUU..g
+..UUUUUUUUUU..
+UUUUUUUUUUUUUU
+
+= Ufer | eyes 3,1 6
+GGGGGGGGGGGGGG
+GGGGGGGGGGGGGG
+wwwwwwwwwwwwww
+UUUUUUUUUUUUUU
+UUUUUUUUUUUUUU
+
+= Delta | eyes 5,1 3
+.....UU.....
+....UUUU....
+...UU..UU...
+..UU.UU.UU..
+.UU.UU.U.UU.
+UUUUUUUUUUUU
+
+= Damm | eyes 5,3 3
+UUUU.........
+UUUUSSSSSS...
+UUUUSSSSSSS..
+UUUUSSSSSSSS.
+UUUUSSSSSSSSS
+UUUUSSSSSSSSU
+
+= Sumpf | eyes 3,3 6
+...g...g......
+...g..ggg.g...
+gggggggggggggg
+GgsGsgGsgGsgGs
+sgGsgGsgGsgGsg
+gsgsgsgsgsgsgs
+
+= Moor | eyes 3,2 6
+..g.....g.....
+nngnnnnngnnnn.
+nnnbnnnnnnnbnn
+bnnnnbnnnbnnnn
+nnbnnnnnnnnbnn
+
+= Höhle | eyes 3,2 6
+....SSSSSS....
+..SSSSSSSSSS..
+.SSSSSSSSSSSS.
+SSSSkkkkkkSSSS
+SSSkkkkkkkkSSS
+SSkkkkkkkkkkSS
+SSkkkkkkkkkkSS
+
+= Loch | eyes 3,2 5
+...nnnnnnnn..
+.nnkkkkkkkknn
+nkkkkkkkkkkkkn
+nkkkkkkkkkkkkn
+.nnkkkkkkkknn
+...nnnnnnnn..
+
+= Grube | eyes 3,2 5
+nnnnnnnnnnnnnn
+nnkkkkkkkkkknn
+nkkkkkkkkkkkkn
+nkkkkkkkkkkkkn
+nnkkkkkkkkkknn
+
+= Abgrund | eyes 3,4 6
+SSSS......SSSS
+SSSS......SSSS
+SSSS......SSSS
+SSSkkkkkkkkSSS
+SSSkkkkkkkkSSS
+SSkkkkkkkkkkSS
+
+= Schlucht | eyes 5,4 3
+SSSSS....SSSSS
+SSSSS....SSSSS
+SSSSs....sSSSS
+SSSSs....sSSSS
+SSSSsUUUUsSSSS
+SSSSsUUUUsSSSS
+
+= Tal | eyes 5,5 3
+GUUUUUUUUUUUUG
+GGUUUUUUUUUUGG
+GGGUUUUUUUUGGG
+GGGGUUUUUUGGGG
+GGGGGUUUUGGGGG
+GGGGGGUUGGGGGG
+
+= Hang | eyes 3,8 4
+UUUUUUUUUUUGG
+UUUUUUUUUGGGG
+UUUUUUUGGGGGG
+UUUUUGGGGGGGG
+UUUGGGGGGGGGG
+UGGGGGGGGGGGG
+ggggggggggggg
+
+= Brücke | eyes 4,3 5
+...............
+cccccccccccccc.
+cScScScScScScS.
+ccccccccccccccc
+cc..........cc.
+cc..........cc.
+ccUUUUUUUUUUcc.
+UUUUUUUUUUUUUU.
+
+= Tunnel | eyes 3,3 6
+....SSSSSS....
+..SSSSSSSSSS..
+.SSSkkkkkkSSS.
+SSSkkkkkkkkSSS
+SSkkkkkkkkkkSS
+SSkkkkkkkkkkSS
+SSkkkkkkkkkkSS
+nnnnnnnnnnnnnn
+
+= Brunnen | eyes 3,7 6
+......U.......
+....U.U.U.....
+...U..U..U....
+......c.......
+..cccccccccc..
+.cUUUUUUUUUUc.
+cccccccccccccc
+cScScScScScScS
+cccccccccccccc
+
+= Grab | eyes 4,3 3
+...ccccccc...
+..ccccccccc..
+..ccccccccc..
+..cccsssccc..
+..ccccsccc...
+..ccccsccc...
+..ccccccccc..
+.nnnnnnnnnnn.
+GGGGGGGGGGGGG
+
+= Friedhof | eyes 3,4 3
+..c......c....
+.ccc....ccc...
+.cSc....cSc...
+.ccc.cc.ccc...
+.ccc.cc.ccc...
+GGGGGGGGGGGGGG
+gggggggggggggg
+
+= Spielplatz | eyes 3,4 3
+..rrrrrr....
+..r....r....
+..r....ryy..
+..r....r.yy.
+..r.k..r..yy
+..r.k..r...y
+..r.uu.r....
+GGGGGGGGGGGG
+
+= Straße | eyes 3,1 6
+ssssssssssssss
+ssssssssssssss
+WWW.WWW.WWW.WW
+ssssssssssssss
+ssssssssssssss
+
+= Hauptstraße | eyes 3,1 6
+cccccccccccccc
+ssssssssssssss
+ssssssssssssss
+yyyyyyyyyyyyyy
+ssssssssssssss
+ssssssssssssss
+cccccccccccccc
+
+= Gasse | eyes 5,4 3
+NN..ss..NN
+NN..ss..NN
+NN..ss..NN
+NN..ss..NN
+NN.ssss.NN
+NNssssssNN
+
+= Pfad | eyes 4,2 3
+GGGGGnnGGGGG
+GGGGnnGGGGGG
+GGGnnnGGGGGG
+GGGGnnnGGGGG
+GGGGGnnnGGGG
+GGGGnnnGGGGG
+
+= Gleis | eyes 4,3 5
+nSnnnnnnnnnSn
+nSnnnnnnnnnSn
+SSSSSSSSSSSSS
+nSnnnnnnnnnSn
+nSnnnnnnnnnSn
+SSSSSSSSSSSSS
+nSnnnnnnnnnSn
+
+= Bahnsteig | eyes 4,2 5
+.....k........
+....yyy.......
+cccccccccccccc
+cccccccccccccc
+yyyyyyyyyyyyyy
+ssssssssssssss
+nSnnSnnSnnSnnS
+
+= Treppe | eyes 8,6 3
+..........NN
+........NNNN
+......NNNNNN
+....NNNNNNNN
+..NNNNNNNNNN
+NNNNNNNNNNNN
+
+= Stufe | eyes 4,3 3
+......NNNNNN
+......NNNNNN
+NNNNNNNNNNNN
+NNNNNNNNNNNN
+
+= Balkon | eyes 4,4 4
+..NNNNNNNNNN..
+..NUUNNNNUUN..
+..NUUNNNNUUN..
+..NNNNNNNNNN..
+cccccccccccccc
+c.c.c.c.c.c.cc
+c.c.c.c.c.c.cc
+cccccccccccccc
+
+= Terrasse | eyes 4,6 3
+..rrrrrrrrr...
+.rWrWrWrWrWr..
+.....k........
+.....k........
+...bbbbb..b.b.
+.....b....bbb.
+nnnnnnnnnnnnnn
+
+= Veranda | eyes 4,3 3
+.bbbbbbbbbbbb.
+bbbbbbbbbbbbbb
+.n.nnnnnnnn.n.
+.n.nnnnnnnn.n.
+.n.nnbbnnnn.n.
+.n.nnbbnnnn.n.
+nnnnnnnnnnnnnn
+
+= Fassade | eyes 3,3 6
+rrrrrrrrrrrrrr
+rUUrrUUrrUUrrr
+rUUrrUUrrUUrrr
+rrrrrrrrrrrrrr
+rUUrrUUrrUUrrr
+rUUrrbbrrUUrrr
+rrrrrbbrrrrrrr
+
+= Baustelle | eyes 3,7 3
+.yyyyyyyyyy...
+.k.......y....
+.k.......y....
+.k.......y....
+.k....kk.y....
+.kNNN.kkyyy...
+ykyyyyyyyyyy..
+kykykykykykyk.
+
+= Nest | eyes 3,1 4
+....wwww....
+...wwwwww...
+.nnnwwwwnnn.
+nnNnnNnnNnnn
+.nnNnnNnnnn.
+..nnnnnnnn..
+
+= Labyrinth | eyes 5,5 2
+gggggggggggg
+g....g.....g
+g.ggg.g.ggg.
+g.g...g...g.
+g.g.ggggg.g.
+g...g.....g.
+gggggggg.ggg
+
+= Mine | eyes 3,3 6
+....nnnnnn....
+..nnnnnnnnnn..
+.nnnkkkkkknnn.
+nnnkkkkkkkknnn
+nnkkkkkkkkkknn
+nnkkSkkkkSkknn
+nnkkkkkkkkkknn
+
+= Schacht | eyes 3,4 4
+.n........n.
+.nnnnnnnnnn.
+.n........n.
+.nkkkkkkkkn.
+.nkkkkkkkkn.
+.nkkkkkkkkn.
+.nkkkkkkkkn.
+
+= Camp | eyes 3,7 3
+.......r....
+......rr....
+......g.....
+.....ggg....
+....ggggg...
+...gggkggg..
+..ggggkgggg.
+.gggggkggggg
+
+= Hafen | eyes 3,6 4
+.k.....k......
+.k.....kk.....
+.k.....kWW....
+.kkk...kWWW...
+.k.k.nnnnnnnnn
+.k.k..nnnnnnn.
+UUUUUUUUUUUUUU
+uuuuuuuuuuuuuu
+
+= Front | eyes 3,1 6
+nnnnnnnnnnnnnn
+ncnncnncnncnnc
+nnnnnnnnnnnnnn
+.r.r.r.r.r.r..
+rrrrrrrrrrrrrr
+
+# cities by a landmark
+= Berlin | eyes 4,5 5
+....GGGGGG....
+....kkkkkk....
+wwwwwwwwwwwwww
+wwwwwwwwwwwwww
+.w.w.w..w.w.w.
+.w.w.w..w.w.w.
+.w.w.w..w.w.w.
+.w.w.w..w.w.w.
+wwwwwwwwwwwwww
+
+= Rom | eyes 3,2 7
+..NNNNNNNNNN..
+.NnNnNnNnNnNN.
+NNNNNNNNNNNNNN
+NnNnNnNnNnNnNN
+NNNNNNNNNNNNNN
+NnNnNnNnNnNnNN
+NNNNNNNNNNNNNN
+
+= Köln | eyes 3,8 6
+.s........s...
+.s........s...
+sss......sss..
+sss......sss..
+sSs......sSs..
+sssssssssssss.
+sSsssssssssSs.
+sssssskssssss.
+sssssskssssss.
+
+= Venedig | eyes 6,1 3
+.........k....
+kkkkkkkkkkk...
+.kkkkkkkkk....
+UUUUUUUUUUUUUU
+UUWUUUUUUWUUUU
+
+= Moskau | eyes 4,6 3
+.....r.....
+....rrr....
+...rgrgr...
+...rrrrr...
+....rgr....
+...WWWWW...
+...WWWWW...
+...WWkWW...
+
+= Kairo | eyes 5,5 3
+.......y......
+......yyy.....
+.....yyyyy....
+....yyyyyyy...
+...yyYyyyYyy..
+..yyyyyyyyyyy.
+.wwwwwwwwwwwww
+
+= Pyramide | eyes 5,5 3
+.......y......
+......yyy.....
+.....yyYyy....
+....yyyyyyy...
+...yyYyyyYyy..
+..yyyyyyyyyyy.
+.yyYyyyyyyYyyy
+
+= Peking | eyes 5,5 3
+....r....r....
+...rrrrrrrr...
+..r.rrrrrr.r..
+.....rrrr.....
+...rrrrrrrr...
+..rrrrrrrrrr..
+...ryryyryr...
+
+= Wien | eyes 3,5 7
+......r.......
+.....rrr......
+....grrrg.....
+...gWWWWWg....
+..WWWWWWWWW...
+..WkWkWkWkW...
+..WWWWWWWWW...
+
+= München | eyes 3,7 6
+.g......g....
+ggg....ggg...
+ggg....ggg...
+rrr....rrr...
+rrr....rrr...
+rrrrrrrrrrr..
+rrrrrrrrrrr..
+rrrrrkrrrrr..
+
+= Hamburg | eyes 4,4 3
+....r....r....
+...rrr..rrr...
+...rrrrrrrr...
+...rrrrrrrr...
+.k.........k..
+nnnnnnnnnnnnnn
+.nnnnnnnnnnnn.
+UUUUUUUUUUUUUU
+
+= Stadt | eyes 3,7 4
+.....ss.......
+.....ss..rr...
+..cc.ss..rr...
+..cc.ss.rrrr..
+.ccccssSSrrrr.
+.ccccssSSrrrr.
+.cUUcssSSUrrr.
+.ccccssSSrrrr.
+
+= Großstadt | eyes 3,7 4
+....s.....u...
+...ss....uu...
+.c.ss.r..uu...
+.cccssrr.uuu..
+.cccssrrSuuu..
+ccccssrrSuuuu.
+cUccssrrSuuuu.
+ccccssrrSuuuu.
+
+= Kleinstadt | eyes 3,7 3
+...r.....
+..rrr..r.
+.rrrr.rrr
+rrwrrrrrr
+wwwwwwwww
+wbwwbwwbw
+wwwwwwwww
+
+= Dorf | eyes 3,7 4
+...r......r...
+..rrr....rrr..
+.rrrrr..rrrrr.
+.wwwww..wwwww.
+.wbwww..wwbww.
+GGGGGGGGGGGGGG
+
+= Altstadt | eyes 3,6 4
+..r...r...r..
+.rrr.rrr.rrr.
+rrrrrrrrrrrrr
+wnwwwnwwwnwww
+wwwwwwwwwwwww
+wwbwwwbwwwbww
+SSSSSSSSSSSSS
+
+= Innenstadt | eyes 3,7 4
+.....r.......
+....rrr......
+..cc.c.ss....
+.cccccssss...
+.ccccccssss..
+cUcccUcsssss.
+cccccccsUsss.
+SSSSSSSSSSSSS
+
+= Viertel | eyes 3,5 5
+rrrrrr.rrrrrr
+rUUrrr.rrUUrr
+rrrrrr.rrrrrr
+.............
+uuuuuu.yyyyyy
+uUUuuu.yyUUyy
+
+= Hauptstadt | eyes 4,7 4
+......y.......
+.....yyy......
+.....yyy......
+....ssyss.....
+...sssssss....
+..sssssssss...
+.ssssssssss...
+.sssssssssss..
+
+= Heimat | eyes 3,6 3
+.......r.....
+......rrr....
+.....rrrrr...
+....rrrrrrr..
+.....wwwww...
+.....wwbww...
+GGGGGGGGGGGGG
+
+= Heimatstadt | eyes 3,7 4
+..........r..
+...r.....rrr.
+..rrr...rrrrr
+.rrrrr..wwwww
+.wwwww..wwbww
+.wbwww..wwwww
+GGGGGGGGGGGGG
+
+= Siedlung | eyes 3,6 4
+.r...r...r...
+rrr.rrr.rrr..
+www.www.www..
+wbw.wbw.wbw..
+GGGGGGGGGGGGG
+
+= Vorort | eyes 3,6 4
+..r.......r..
+.rrr.ggg.rrr.
+rrrrrggggrrrr
+wwwww.b.wwwww
+wwbww.b.wwbww
+GGGGGGGGGGGGG
+
+= Ghetto | eyes 3,4 6
+SSSSSSSSSSSSS
+SkSSkSSkSSSkS
+SSSSSSSSSSSSS
+SkSSSSkSSkSSS
+SSSSSSSSSSSSS
+sssssssssssss
+
+# ---------------------------------------------------------------- animals
+= Tier
+..nn......nn..
+.nNNn....nNNn.
+.nNNnnnnnnNNn.
+..nnnnnnnnnn..
+..nhhnnnnhhn..
+..nhknnnnhkn..
+..nnnnkknnnn..
+...nnmmmmnn...
+..nnnnnnnnnn..
+.nnnnnnnnnnnn.
+.nn.nn..nn.nn.
+
+= Haustier
+..yy......yy..
+.yyY......Yyy.
+.yyyyyyyyyyyy.
+.yhhyyyyyyhhy.
+.yhkyyyyyyhky.
+.yyyyyppyyyyy.
+..yyyyyyyyyy..
+...rrrrrrrr...
+...yyyyrryy...
+...yyyyyyyy...
+
+= Kätzchen
+..S......S..
+.SSS....SSS.
+.SSSSSSSSSS.
+.SUUSSSSUUS.
+.SUkSSSSUkS.
+.SSSSppSSSS.
+..SSSSSSSS..
+...cccccc...
+...SS..SS...
+
+= Kater
+.n........n..
+.nn......nn..
+.nnnnnnnnnn..
+.nyynnnnyyn..
+.nykNnnNykn..
+.nnnnppnnnn..
+.NnnnnnnnnN..
+..nnnnnnnn..n
+..nnnnnnnnnn.
+..nn.nn.nn...
+
+= Welpe
+.bb......bb.
+bbbN....Nbbb
+bbNNNNNNNNbb
+.bNhhNNhhNb.
+..NhkNNhkN..
+..NNNNNNNN..
+...NNkkNN...
+...NmmmmN...
+...NNppNN...
+..NNNNNNNN..
+..NN.NN.NN..
+
+= Rind | eyes 4,4 4
+.c..........c.
+.cc........cc.
+..WWWWWWWWWW..
+.WWWWWkkWWWW..
+WWWWWWkkWWWWW.
+..WWWWWWWWWW..
+..WkkWWWWWWW..
+...pppppppp...
+...pkppppkp...
+....pppppp....
+
+= Stier | eyes 4,4 4
+cc..........cc
+.cc........cc.
+..bbbbbbbbbb..
+.bbbbbbbbbbbb.
+bbbbbbbbbbbbbb
+..bbbbbbbbbb..
+..bbbbbbbbbb..
+...bbbbbbbb...
+...bkbbbbkb...
+....byyyyb....
+.....y..y.....
+
+= Ochse | eyes 4,4 4
+cc..........cc
+.cc........cc.
+..NNNNNNNNNN..
+.NNNNNNNNNNNN.
+NNNNNNNNNNNNNN
+..NNNNNNNNNN..
+...nnnnnnnn...
+...nknnnnkn...
+....nnnnnn....
+
+= Kalb | eyes 4,3 4
+.WW.......WW.
+..WWWWWWWWW..
+..WWWbbWWWW..
+..WWWbbWWWW..
+...WWWWWWW...
+...pppppp....
+...pkppkp....
+....pppp.....
+
+= Vieh | eyes 3,2 6
+..WWWWWWWWWW..
+.WWkkWWWWWWWW.
+WWWkkWWWkkWWWW
+WWWWWWWWkkWWWW
+.WWWWWWWWWWWW.
+..ppp.....ppp.
+..W.W.....W.W.
+
+= Sau
+..p.......p...
+.ppp.....ppp..
+.pppppppppppp.
+pphhpppppphhpp
+pphkpppppphkpp
+pppppppppppppp
+pppprrrrrrpppp
+.ppprkrrkrppp.
+..pprrrrrrpp..
+...pppppppp...
+
+= Wildschwein
+..b.......b...
+.bbb.....bbb..
+.bbbbbbbbbbbb.
+bbhhbbbbbbhhbb
+bbhkbbbbbbhkbb
+bbbbbbbbbbbbbb
+bWbbnnnnnnbbWb
+.Wbbnknnknbbb.
+..bbnnnnnnbb..
+...bbbbbbbb...
+
+= Pony
+....nn....
+...nnnn...
+..bnnnnn..
+..bnhhnn..
+..bnhknn..
+..bnnnnnn.
+...nnnmmmm
+...nnnmkmm
+...nnnnmmm
+..nnnnnn..
+.nn.nn.nn.
+
+= Ross
+...kk.....
+..kkkk....
+.kWWWWW...
+.kWhhWW...
+.kWhkWW...
+.kWWWWWW..
+..WWWccccc
+..WWWcckcc
+..WWWWcccc
+..WWWWWW..
+.WW.WW.WW.
+
+= Hengst
+...kk.....
+..kkbb....
+.kbbbbb...
+.kbhhbb...
+.kbhkbb...
+.kbbbbbb..
+..bbbBBBBB
+..bbbBBkBB
+..bbbbBBBB
+.bbbbbbb..
+bb.bb.bb..
+
+= Stute
+...yy.....
+..yyNN....
+.yNNNNN...
+.yNhhNN...
+.yNhkNN...
+.yNNNNNN..
+..NNNmmmmm
+..NNNmmkmm
+..NNNNmmmm
+.NNNNNNN..
+NN.NN.NN..
+
+= Zebra
+...kk.....
+..kkWW....
+.kWkWkW...
+.kWhhWk...
+.kkhkWW...
+.kWkWkWk..
+..kWkWsssss
+..WkWkskss.
+..kWkWssss.
+.WkWkWk...
+kk.kk.kk..
+
+= Kamel
+..nn...........
+.nnnn....nn.nn.
+.nhkn...nnnnnn.
+.nnnn..nnnnnnnn
+...nn.nnnnnnnnn
+...nnnnnnnnnnnn
+....nnnnnnnnnn.
+.....n.n..n.n..
+.....n.n..n.n..
+
+= Lama
+.W.W......
+.WWW......
+.hkWW.....
+.WWWW.....
+...WW.....
+...WW.....
+...WWWWWWW
+...WWWWWWW
+...WWWWWWW
+...W.W.W.W
+...W.W.W.W
+
+= Hirsch
+.n.n....n.n.
+.nnn....nnn.
+..n......n..
+..nnnnnnnn..
+.nnnnnnnnnn.
+.nhhnnnnhhn.
+.nhknnnnhkn.
+..nnnnnnnn..
+...nnkknn...
+....nnnn....
+
+= Lamm
+...WWWWWW...
+..WWWWWWWW..
+.WWmmmmmmWW.
+WWmhhmmhhmmW
+.WmhkmmhkmW.
+..mmmmmmmm..
+...mmppmm...
+..WWWWWWWW..
+..WW.WW.WW..
+
+= Kaninchen
+..W....W....
+..WW..WW....
+..pW..Wp....
+..WWWWWW....
+.WWhhWhhW...
+.WWhkWhkW...
+.WWWWppWW...
+..WWWWWW.WW.
+..WWWWWWWWW.
+...WW..WW...
+
+= Eichhörnchen
+.........NN...
+........NNNN..
+..n.n..NNNNNN.
+..nnn..NNNNNN.
+.nnnnn..NNNNN.
+.nhknn...NNNN.
+.nnnnnn..NNN..
+..nwwnnn.NN...
+..nwwnnnNN....
+..nnnnnnn.....
+..n..n.n......
+
+= Maulwurf
+...ssssssss...
+..ssssssssss..
+.sssssssssssss
+.sssssssssssss
+.ssskssssksss.
+.sssssppsssss.
+..sssppppsss..
+.mmmsssssssmmm
+mmm.........mmm
+
+= Gorilla
+...kkkkkkk...
+..kkkkkkkkk..
+..kSSSSSSSk..
+..kShkSShkk..
+..kSSSSSSSk..
+.kkSSkkkSSkk.
+kkkkSSSSSkkkk
+kkkkkkkkkkkkk
+kk.kkkkkkk.kk
+SS.kkk.kkk.SS
+...kk...kk...
+
+= Panther
+.k........k.
+.kk......kk.
+.kkkkkkkkkk.
+.kyykkkkyyk.
+.kykkkkkykk.
+.kkkkpkkkkk.
+..kkkkkkkk..
+..kkkkkkkk..
+..kk.kk.kk..
+
+= Leopard
+.y........y.
+.yy......yy.
+.yyyyyyyyyy.
+.yhhykyyhhy.
+.yhkyyyyhky.
+.yyyykkyyyy.
+..yykyyyky..
+..ykyyykyy..
+..yy.yy.yy..
+
+= Eisbär
+.WW......WW.
+.WcW....WcW.
+.WWWWWWWWWW.
+WWWhhWWhhWWW
+WWWhkWWhkWWW
+WWWWWkkWWWWW
+.WWWWWWWWWW.
+..WWkWWkWW..
+..WWWWWWWW..
+
+= Robbe
+....SSSSS.....
+...SSSSSSS....
+...ShkSShk....
+...SSSSSSS....
+....SSkSSS....
+....SSSSSSS...
+....SSSSSSSS..
+...SSSSSSSSSS.
+..SS..SSSSSSSS
+.SS.......SSSS
+
+= Delfin
+.......u......
+......uu......
+..uuuuuuuuuu..
+.uuuuuuuuuuuu.
+uUhkuuuuuuuuuu
+UUUUUuuuuuuuuu
+.UUUUUUUuuu.uu
+.........uuuu.
+..........uu..
+
+= Aal
+.......ssss...
+....ssssssss..
+ssssss.....ss.
+shks.......ss.
+ssss......ss..
+..........ssss
+...........sss
+
+= Schwan
+..WWWW........
+.WWWWWy.......
+.WhkWWYY......
+..WWWW........
+....WW........
+....WW.WWWWW..
+...WWWWWWWWWW.
+..WWWWWWWWWWW.
+..WWWWWWWWWW..
+...UUUUUUUUU..
+
+= Gans
+..WWWW........
+.WWhkWyy......
+.WWWWW........
+...WWW........
+...WWWWWWWW...
+..WWWWWWWWWW..
+..WWcWcWcWW...
+...WWWWWWW....
+....y...y.....
+
+= Küken
+....yyyy....
+...yyyyyy...
+..yyhyyhyy..
+..yykyykyy..
+..yyyYYyyy..
+.yyyyYyyyyy.
+yyyyyyyyyyyy
+.yyyyyyyyyy.
+..yyyyyyyy..
+....Y..Y....
+
+= Spatz
+....nnnn....
+...nnnnnn...
+..nhknnnn...
+.Ynnnnnnnn..
+..wwnnnnnnn.
+..wwwnnbnbnn
+...wwnnnnnn.
+....n...n...
+
+= Rabe
+....kkkk....
+...kkkkkk...
+..khkkkkkk..
+.Skkkkkkkkk.
+..kkkkkkkkkk
+...kkkkskskk
+....kkkkkkk.
+.....k...k..
+
+= Papagei
+....rrr....
+...rrrrr...
+..yrhkrrr..
+.yyrrrrrr..
+..yrrrrrr..
+...rrrrrrr.
+...uuuggrr.
+...uuuggrr.
+....uu.gg..
+.....u..g..
+
+= Falke
+..nnnn.......
+.nnhkn.......
+Ynnnnnn......
+..nwnnnnnnn..
+..nwnnnnnnnnn
+..wwnnnnnnn..
+...nnnnn.....
+...y...y.....
+
+= Geier
+...pppp......
+..phkpp......
+.Ypppp.......
+...WWWW......
+..bbbbbbbbb..
+.bbbbbbbbbbb.
+bbb.bbbbb.bbb
+....bbbb.....
+....y..y.....
+
+= Käfer
+.k.......k.
+..k.....k..
+...kkkkk...
+..kkkkkkk..
+.rrrrkrrrr.
+.rkrrkrrkr.
+rrrrrkrrrrr
+rrkrrkrrkrr
+.rrrrkrrrr.
+..rrrkrrr..
+
+= Ameise
+..k...k.......
+...k.k........
+...kkk........
+..khkk........
+...kk..kkk..k.
+.k..kkkkkkkk..
+k..k.kkkkkkkk.
+..k..k..kk..k.
+
+= Mücke
+..k......k..
+...k....k...
+..UU.kk.UU..
+.UUU.kk.UUU.
+..UUkkkkUU..
+.....kk.....
+....kkkk....
+....kkkk....
+...k....k...
+..k......k..
+
+= Insekt
+...k....k...
+....k..k....
+...GGGGGG...
+..GhkGGhkG..
+...GGGGGG...
+kk.gGGGGg.kk
+..kgggggg...
+kk.gGGGGg.kk
+...gggggg...
+....gggg....
+
+= Wanze
+...kk...kk...
+....kbbbk....
+...bbbbbbb...
+..bbbbbbbbb..
+k.bbbbbbbbb.k
+.kbbbbbbbbbk.
+k.bbbbbbbbb.k
+...bbbbbbb...
+
+= Muschel
+......ppp......
+....ppWppWp....
+...pWppWppWp...
+..pppWppWppWp..
+.pWppWppWppWpp.
+.ppWppWppWppWp.
+..ppppppppppp..
+....ppppppp....
+
+= Hummer
+r...........r
+rr.........rr
+.rr..rrr..rr.
+..rrrrrrrrr..
+....rrrrr....
+....rrrrr....
+...rrrrrrr...
+....rrrrr....
+....rrrrr....
+...rr.r.rr...
+
+= Kröte
+...gg...gg...
+..ghkg.ghkg..
+.ggggggggggg.
+ggGggggggGggg
+ggggggggggggg
+gGggkkkkkggGg
+.ggggggggggg.
+gg.........gg
+
+= Dinosaurier
+........ggggg.
+.......ghkgggg
+.......ggggggg
+.......ggg....
+......gggg.WW.
+gg...ggggg....
+.gggggggggg...
+..gggggggg....
+...gg...gg....
+...gg...gg....
+
+= Drache
+.r......r.....
+.rr....rr.....
+..rrrrrrrrrr..
+.rrhkrrrrhkr..
+.rrrrrrrrrrr..
+..rrrkrrkrr...
+.yyrrrrrrrryy.
+yyyrrrrrrrryyy
+...rrrrrrrr...
+...rr....rr...
+
+= Einhorn
+.......y......
+......yy......
+.....WWWW.....
+....WWWWWW.V..
+....WhkWWWVV..
+....WWWWWWVV..
+....ppWWWW.V..
+.....WWWWW....
+....WWWWWWW...
+....W.W.W.W...
+
+= Bestie
+.R.........R.
+.RR.......RR.
+.RRRRRRRRRRR.
+.RyyRRRRRyyR.
+.RykRRRRRykR.
+.RRRRRRRRRRR.
+.RhRhRRRhRhR.
+..RRRRRRRRR..
+.RR.RR.RR.RR.
+
+= Biest
+..b........b..
+.bbb......bbb.
+.bbbbbbbbbbbb.
+.bryybbbbyyrb.
+.bbykbbbbykbb.
+.bbbbbbbbbbbb.
+.bbhbhbbhbhbb.
+..bbbbbbbbbb..
+..bb.bb.bb.bb.
+
+= Kreatur | eyes 4,4 4
+...vvvvvvv...
+..vvvvvvvvv..
+.vvvvvvvvvvv.
+.vvvvvvvvvvv.
+.vvvvvvvvvvv.
+.vvvvkkkvvvv.
+.vvvvvvvvvvv.
+v.v.v.v.v.v.v
+
+= Geschöpf | eyes 4,4 4
+...GGGGGGG...
+..GGGGGGGGG..
+.GGGGGGGGGGG.
+.GGGGGGGGGGG.
+.GGGGGGGGGGG.
+.GGGGGkGGGGG.
+.GGGGGGGGGGG.
+G.G.G.G.G.G.G
+
+= Lebewesen | eyes 4,4 4
+...pppppppp..
+..pppppppppp.
+.pppppppppppp
+.pppppppppppp
+.pppppppppppp
+.ppppRRpppppp
+..pppppppppp.
+...p..p..p...
+
+= Wesen | eyes 4,4 4
+.....UUU.....
+...UUUUUUU...
+..UUUUUUUUU..
+..UUUUUUUUU..
+..UUUUUUUUU..
+..UUUUUUUUU..
+..UUUUUUUUU..
+..U.U.U.U.U..
+
+= Organismus | eyes 4,4 4
+...GGGGGGG...
+..GlllllllG..
+.GlllllllllG.
+Gllvllllllllg
+GllllllllvllG
+GllllllllllG.
+.GlllllllllG.
+..GGGGGGGGG..
+
+= Bakterie | eyes 3,2 4
+.G........G.
+..GGGGGGGG..
+.GllllllllG.
+GllllllllllG
+GllllllllllG
+.GllllllllG.
+..GGGGGGGG..
+.G........G.
+
+= Parasit | eyes 4,2 3
+..vvvvvvv...
+.vvvvvvvvv..
+vvvvvvvvvvv.
+vvvvvvvvvvvv
+.vvvvvvvvvvv
+v.v.v.v.v.v.
+
+= Keim | eyes 4,3 3
+...G...G...
+....G.G....
+...GGGGG...
+..GGGGGGG..
+.GGGGGGGGG.
+.GGGGGGGGG.
+..GGGGGGG..
+....G.G....
+...G...G...
+
+= Schimmel | eyes 4,4 4
+..G.l..l.G...
+.lGlGllGlGl..
+GGlGGGGlGGG..
+nnnnnnnnnnnnn
+nnnnnnnnnnnnn
+nnnnnnnnnnnnn
+.nnnnnnnnnnn.
+
+= Spezies | eyes 4,3 4
+..gggggggg...
+.gggggggggg..
+gggggggggggg.
+gggggggggggg.
+.gggggggggg..
+..g.g..g.g...
+
+= Lebensform | eyes 4,3 4
+..UUUUUUUU...
+.UUUUUUUUUU..
+UUUUUUUUUUUU.
+UUUUUUUUUUUU.
+.UUUUUUUUUU..
+..U..U..U..U.
+
+= Weibchen
+..n......n..
+.nnn....nnn.
+.nnnnnnnnnn.
+.nhhnnnnhhn.
+.nhknnnnhkn.
+.nnnnppnnnn.
+..nnnnnnnn..
+...V.V......
+....V.......
+
+= Männchen
+..n......n..
+.nnn....nnn.
+.nnnnnnnnnn.
+.nhhnnnnhhn.
+.nhknnnnhkn.
+.nnnnppnnnn.
+..nnnnnnnn..
+...u..u.....
+....uu......
+
+= Rudel
+.s...s..s...s.
+.ss.ss..ss.ss.
+.sssss..sssss.
+.shsks..shsks.
+.sssss..sssss.
+..sss....sss..
+.ss.ss..ss.ss.
+
+= Schwarm
+..k..k...k...
+.kkk.kkk.kkk.
+..k..k...k...
+.....k.k.....
+....kkkkk....
+.....k.k.....
+..k...k...k..
+.kkk.kkk.kkk.
+
+= Beute
+..W......W..
+..WW....WW..
+..WWWWWWWW..
+..WkWWWWkW..
+..WWWWWWWW..
+...WWppWW...
+....WWWW....
+.r..rr..r...
+
+# ---------------------------------------------------------------- plants
+= Gras | eyes 4,6 4
+..G...G...G...
+..G..GG..GG.G.
+.GG..G..GG..G.
+.G..GG..G..GG.
+GG.GG..GG.GG..
+GGGGGGGGGGGGG.
+GGGGGGGGGGGGG.
+ggggggggggggg.
+
+= Unkraut | eyes 4,6 4
+.y..G...G..y..
+.G..GG.GG..G..
+GG.GG..G..GG..
+.GGGG.GGGGG...
+GGGGGGGGGGGGG.
+GGGGGGGGGGGGG.
+nnnnnnnnnnnnn.
+
+= Moos | eyes 4,4 4
+..G.l.G.l.G...
+.GGlGGGlGGGG..
+GGGGGGGGGGGGG.
+GGgGGGgGGGgGG.
+SSSSSSSSSSSSS.
+SSSSSSSSSSSSS.
+
+= Laub | eyes 4,4 4
+..r......Y....
+.rrr..y.YYY...
+rrrrryyyYYYY..
+.rrrryyyyYYY..
+..YYYYrrrrr...
+.YYYYYrrrrrr..
+YYYYYYrrrrrrr.
+
+= Busch | eyes 4,4 4
+....gggggg....
+..gggggggggg..
+.gggggggggggg.
+.gggggggggggg.
+gggggggggggggg
+gggggggggggggg
+.gggggggggggg.
+....b....b....
+
+= Ast | eyes 5,5 3
+..........gg..
+.........ggg..
+........bb....
+.......bb.....
+..bbbbbbbbbbb.
+.bbbbbbbbbbb..
+bbbb..bb......
+.......bb.gg..
+........bggg..
+
+= Zweig | eyes 4,4 3
+.........Gg..
+.......Gbb...
+......bb.....
+....bbbbb....
+...bbbbbbb...
+..bb.....Gg..
+.bb.......G..
+GG...........
+
+= Stamm | eyes 4,3 3
+...bbbbbb...
+...bBBbbb...
+...bBbbbb...
+...bbbbbb...
+...bbbBbb...
+...bbbbbb...
+..bbbbbbbb..
+.bbb.bb.bbb.
+
+= Wurzel | eyes 4,1 3
+...bbbbbb...
+...bbbbbb...
+....bbbb....
+...bbbbbb...
+..bb.bb.bb..
+.bb..bb..bb.
+b...bb.b..b.
+...b....b...
+
+= Samen | eyes 3,3 3
+....nnn....
+...nnnnn...
+..nnnnnnn..
+..nnnnnnn..
+..nnnnnnn..
+...nnnnn...
+....nnn....
+.....G.....
+....GG.....
+
+= Dorn | eyes 3,5 3
+.......c....
+......cc....
+.....ccc....
+....gggg....
+...gggggg...
+..gggggggg..
+..gggggggg..
+
+= Eiche
+...ggggggg...
+.ggggggggggg.
+ggggNgggggggg
+ggghhgggghhgg
+ggghkgggghkgg
+.gggggggggggg
+..ggggNgggg..
+.....bbb.....
+.....bbb.....
+....bbbbb....
+
+= Kiefer
+......g......
+.....ggg.....
+....ggggg....
+...gghhghh...
+..gggkhgkgg..
+.....ggg.....
+...ggggggg...
+..ggggggggg..
+.ggggggggggg.
+......b......
+......b......
+
+# ---------------------------------------------------------------- food
+= Frühstück | eyes 4,6 4
+.WW.....NNN...
+WkkW...NNNNN..
+WkkWW..NnnnN..
+.WW.W..NNNNN..
+cccccccccccccc
+.cWWWWWWWWWWc.
+..cccccccccc..
+
+= Mittagessen | eyes 4,6 4
+....rr..NN....
+...rrrrNNNN...
+..rrGGGNNNNy..
+..yyyyyyyyyy..
+.cccccccccccc.
+.cWWWWWWWWWWc.
+..cccccccccc..
+
+= Abendessen | eyes 4,6 4
+.....b...y....
+....bbb..y....
+...bbbbb.W....
+...bBbbb.W....
+.cccccccccccc.
+.cWWWWWWWWWWc.
+..cccccccccc..
+
+= Mahlzeit | eyes 4,6 4
+..c..NNNNN..c.
+..c.NNNNNNN.c.
+..c.NNrrrNN.c.
+.ccc.NNNNN.ccc
+..ccccccccccc.
+..cWWWWWWWWWc.
+...ccccccccc..
+
+= Mahl | eyes 4,6 4
+..nnnnnnnnn...
+.nnNnnnNnnnn..
+.nnnnnnnnnnn..
+..nnnnnnnnn...
+.cccccccccccc.
+.cWWWWWWWWWWc.
+..cccccccccc..
+
+= Gericht | eyes 4,6 4
+....GG..rr....
+..yyGGyyrryy..
+.yyyyyyyyyyyy.
+.yyyyyyyyyyyy.
+cccccccccccccc
+.cWWWWWWWWWWc.
+..cccccccccc..
+
+= Spezialität | eyes 4,6 4
+......y.......
+.....yyy......
+....nnnnnn....
+..nnnnnnnnnn..
+.nnnNnnnnNnnn.
+cccccccccccccc
+.cWWWWWWWWWWc.
+
+= Portion | eyes 3,4 4
+....yyyyy....
+..yyyyyyyyy..
+.yyyyyyyyyyy.
+.yyyyyyyyyyy.
+cccccccccccccc
+.cWWWWWWWWWWc.
+
+= Buffet | eyes 3,6 6
+.rr..yy..GG..
+rrrryyyyGGGG.
+cccccccccccccc
+WWWWWWWWWWWWWW
+WWWWWWWWWWWWWW
+.c..........c.
+.c..........c.
+
+= Lebensmittel | eyes 3,7 6
+..y.G.r..N...
+..yGGGrr.NN..
+.nnnnnnnnnnn.
+.nNnnnnnnnNn.
+.nnnnnnnnnnn.
+.nnnnnnnnnnn.
+.nnnnnnnnnnn.
+..nnnnnnnnn..
+
+= Nahrung | eyes 3,7 6
+....r...yy...
+...rrr.yyyy..
+.nnnnnnnnnnn.
+.nnnnnnnnnnn.
+.nnnnnnnnnnn.
+.nnnnnnnnnnn.
+.nnnnnnnnnnn.
+
+= Nahrungsmittel | eyes 3,7 6
+..G....r.....
+.GGG..rrr....
+.nnnnnnnnnnn.
+.nNNNNNNNNNn.
+.nnnnnnnnnnn.
+.nnnnnnnnnnn.
+
+= Verpflegung | eyes 3,5 6
+......g.......
+.....gg.......
+..ggggggggg...
+.ggggggggggg..
+.ggGGGGGGGgg..
+.ggggggggggg..
+.ggggggggggg..
+
+= Futter | eyes 3,4 6
+...yyyyyyyy...
+..yYyYyYyYyy..
+.uuuuuuuuuuuu.
+.uuuuuuuuuuuu.
+.uuuuuuuuuuuu.
+..uuuuuuuuuu..
+
+= Frucht
+....b.G.....
+....bGG.....
+..rrbrrr....
+.rrrrrrrr...
+rrphrrrhrr..
+rphkrrrhkr..
+rrrrrrrrrr..
+.rrrrrrrR...
+..rrrRRR....
+
+= Beere | eyes 3,5 4
+.....g.g....
+......g.....
+..VVVVVVVV..
+.VVVVVVVVVV.
+VVhVVVVVVVVV
+VVVVVVVVVVVV
+.VVVVVVVVVV.
+..VVVVVVVV..
+
+= Olive | eyes 3,4 4
+......g.....
+.....gG.....
+...ggggggg..
+..gggggggggg
+.ggggggggggg
+.ggggggggggg
+..ggggggggg.
+...ggggggg..
+
+= Paprika
+....gg.....
+...gg......
+.rrrrrrrr..
+rrrrrrrrrr.
+rrhhrrhhrr.
+rrhkrrhkrr.
+rrrrrrrrrr.
+.rrrrrrrr..
+..rRRRRr...
+
+= Chili
+...........g
+..........g.
+.........gg.
+........rrr.
+......rrrr..
+....rrhkr...
+..rrrrrr....
+.rrrrrr.....
+rrrrr.......
+
+= Bohne | eyes 4,3 4
+...ggggg....
+.gggggggg...
+gggggggggg..
+gggggggg....
+gggggggggg..
+.gggggggggg.
+...ggggggg..
+
+= Erbse | eyes 4,5 4
+..g.........
+.gggggggggg.
+ggGGgGGgGGgg
+gGGGGGGGGGGg
+gGGGGGGGGGGg
+ggGGgGGgGGgg
+.gggggggggg.
+
+= Erdnuss | eyes 3,2 4
+...NNNNNN...
+..NNNNNNNN..
+..NNNNNNNN..
+...NNNNNN...
+...NNNNNN...
+..NNNNNNNN..
+..NNNNNNNN..
+...NNNNNN...
+
+= Mandel | eyes 3,4 4
+.....nn.....
+....nnnn....
+...nnnnnn...
+..nnnnnnnn..
+..nnnnnnnn..
+..nnnnnnnn..
+...nnnnnn...
+....nnnn....
+
+= Korn | eyes 3,6 4
+......y.....
+.....yYy....
+....yYyYy...
+.....yYy....
+....yYyYy...
+.....yYy....
+....yYyYy...
+......g.....
+......g.....
+
+= Getreide
+..y..y..y..
+.yYyyYyyYy.
+..y..y..y..
+.yYyyYyyYy.
+..y..y..y..
+..g..g..g..
+..g..g..g..
+nnnnnnnnnnn
+
+= Kraut | eyes 4,5 4
+....GGGG....
+..GGGGGGGG..
+.GGgGGGGgGG.
+GGGGgGGgGGGG
+GGGGGggGGGGG
+.GGGGGGGGGG.
+..GGGGGGGG..
+
+= Quark | eyes 3,5 4
+..ccccccccc.
+..WWWWWWWWW.
+.WWWWWWWWWWW
+.WWWWWWWWWWW
+.uuuuuuuuuuu
+.uWWWuuuuuuu
+.uuuuuuuuuuu
+
+= Pudding | eyes 3,5 4
+....bbbbb....
+...yyyyyyy...
+..yyyyyyyyy..
+..yyyyyyyyy..
+.yyyyyyyyyyy.
+.yyyyyyyyyyy.
+ccccccccccccc
+
+= Brei | eyes 3,5 4
+...wwwwwwww..
+..wwwwrwwwww.
+.uuuuuuuuuuuu
+.uuuuuuuuuuuu
+..uuuuuuuuuu.
+...uuuuuuuu..
+
+= Dessert | eyes 3,6 4
+......r......
+.....WWW.....
+....WWWWW....
+...ppppppp...
+..ppppppppp..
+...nnnnnnn...
+....nnnnn....
+...ccccccc...
+
+= Nachtisch | eyes 3,5 4
+....r.r.r....
+...WWWWWWW...
+..ppppppppp..
+..pWpWpWpWp..
+..ppppppppp..
+..nnnnnnnnn..
+.ccccccccccc.
+
+= Waffel | eyes 3,3 4
+.yyyyyyyyyy.
+.yYyYyYyYyy.
+.yyyyyyyyyy.
+.yYyYyYyYyy.
+.yyyyyyyyyy.
+.yYyYyYyYyy.
+.yyyyyyyyyy.
+
+= Pfannkuchen | eyes 3,2 4
+......r.....
+...yyyyyyy..
+..yyyyyyyyy.
+..YYYYYYYYY.
+..yyyyyyyyy.
+..YYYYYYYYY.
+.ccccccccccc
+
+= Toast | eyes 3,4 4
+..NNNNNNNN..
+.NNnnnnnnNN.
+.NnnnnnnnnN.
+.NnnnnnnnnN.
+.NnnnnnnnnN.
+.NnnnnnnnnN.
+.NNNNNNNNNN.
+
+= Plätzchen | eyes 3,3 4
+...NNNNNN...
+..NNbNNNNN..
+.NNNNNNbNNN.
+.NNNNNNNNNN.
+.NbNNNNNNbN.
+..NNNNbNNN..
+...NNNNNN...
+
+= Bonbon | eyes 4,2 3
+..........
+r.yyyyyy.r
+rryyyyyyrr
+rryyyyyyrr
+r.yyyyyy.r
+
+= Kaugummi | eyes 3,3 4
+....ppppp...
+..ppppppppp.
+.ppppppppppp
+.ppppppppppp
+..ppppppppp.
+....ppppp...
+
+= Snack | eyes 3,5 4
+...yyyyyyy...
+..rrrrrrrrr..
+..ryyyyyyyr..
+..ryyyyyyyr..
+..ryyyyyyyr..
+..rrrrrrrrr..
+...rrrrrrr...
+
+= Schnitzel | eyes 3,3 5
+...YYYYYYYY...
+.YYyyyyyyyyY..
+YyyyyyYyyyyyY.
+YyyyYyyyyyYyY.
+.YyyyyyyYyyY.y
+..YYYYYYYYY.yy
+
+= Wiener | eyes 4,2 4
+.rrrrrrrrrrr.
+rrrrrrrrrrrrr
+rrrrrrrrrrrrr
+.rrrrrrrrrrr.
+
+= Würstchen | eyes 4,3 3
+...pppppppp...
+..pppppppppp..
+.pppppppppppp.
+..pppppppppp..
+...pppppppp...
+
+= Frankfurter | eyes 4,3 4
+..yyyyyyyyyy..
+.NNNNNNNNNNNN.
+NrrrrrrrrrrrrN
+NNNNNNNNNNNNNN
+.NNNNNNNNNNNN.
+
+= Speck | eyes 3,2 5
+rrrrrrrrrrrrrr
+pppppppppppppp
+rrrrrrrrrrrrrr
+WWWWWWWWWWWWWW
+rrrrrrrrrrrrrr
+
+= Rindfleisch | eyes 3,3 4
+...RRRRRRR...
+..RRRRRRRRR..
+.RRRpRRRRRRR.
+RRRRRRRRRpRRR
+RRRRRRRRRRRRR
+.RRRRRRRRRRR.
+..WWWWWWWWW..
+
+= Schweinefleisch | eyes 3,3 4
+...ppppppp...
+..ppppppppp..
+.pppWppppppp.
+pppppppppWppp
+ppppppppppppp
+.ppppppppppp.
+..WWWWWWWWW..
+
+= Hühnchen | eyes 3,3 4
+...NNNNNN....
+..NNNNNNNN...
+.NNNNNNNNNN..
+.NNNNNNNNNNN.
+..NNNNNNNNNNW
+...NNNNNNN.WW
+.........W...
+
+= Spaghetti | eyes 4,6 4
+....rrrr.....
+..yryrrryy...
+.yyyyyyyyyy..
+.yyyyyyyyyyy.
+yyyyyyyyyyyy.
+cccccccccccc.
+.WWWWWWWWWW..
+
+= Pasta | eyes 4,6 4
+.y.y.y.y.y..
+yYyYyYyYyYy.
+.y.y.y.y.y..
+yYyYyYyYyYy.
+cccccccccccc
+.WWWWWWWWWW.
+
+= Sushi | eyes 3,3 4
+..rrrrrrrrr..
+.rrWrrrWrrrr.
+.WWWWWWWWWWW.
+.WWWWWWWWWWW.
+.kkkkkkkkkkk.
+.WWWWWWWWWWW.
+
+= Vitamin | eyes 3,2 4
+...yyyyyy..
+..yyyyyyyY.
+..YYYYYYYY.
+..yyyyyyyy.
+..YYyyyyYY.
+...yyyyyy..
+
+= Protein | eyes 3,4 4
+....kkkkk....
+...ccccccc...
+..WWWWWWWWW..
+..WuuuuuuuW..
+..WuWWWWWuW..
+..WuuuuuuuW..
+..WWWWWWWWW..
+
+= Tabak | eyes 3,3 4
+..nnnnnnnn..
+.nnBnBnBnnn.
+nnBnnBnnBnnn
+nnnBnnBnnBnn
+.nnnBnnBnnn.
+
+# ---------------------------------------------------------------- things
+= Bild | eyes 4,3 4
+nnnnnnnnnnnnnn
+nUUUUUUUUUUUUn
+nUUUUUUUUUyyUn
+nUUUUUUUUUyyUn
+nUUUUgUUUUUUUn
+nUUUgggUUgUUUn
+nUUgggggggggUn
+nnnnnnnnnnnnnn
+
+= Gemälde | eyes 4,3 4
+yyyyyyyyyyyyyy
+yUUUUUUUUUUUUy
+yUUUUUUyyUUUUy
+yUUUUUUyyUUUUy
+yUUgUUUUUUUUUy
+yUgggUUUgUUUUy
+yggggggggggggy
+yyyyyyyyyyyyyy
+
+= Porträt | eyes 5,3 2
+nnnnnnnnnnnn
+nWWWWWWWWWWn
+nWWWbbbbWWWn
+nWWbmmmmbWWn
+nWWWmmmmWWWn
+nWWWmmmmWWWn
+nWWuuuuuuWWn
+nWuuuuuuuuWn
+nnnnnnnnnnnn
+
+= Rahmen | eyes 4,3 4
+yyyyyyyyyyyy
+yYYYYYYYYYYy
+yY........Yy
+yY........Yy
+yY........Yy
+yYYYYYYYYYYy
+yyyyyyyyyyyy
+
+= Kleidung | eyes 4,3 4
+.rrr....rrr.
+rrrrrrrrrrrr
+rrrrrrrrrrrr
+.rrrrrrrrrr.
+..rrrrrrrr..
+..uuuuuuuu..
+..uuu..uuu..
+..uuu..uuu..
+
+= Klamotten | eyes 4,3 4
+.GGG....GGG.
+GGGGGGGGGGGG
+GGGGGGGGGGGG
+.GGGGGGGGGG.
+..GGGGGGGG..
+..ssssssss..
+..sss..sss..
+
+= Shirt | eyes 4,4 4
+.uuu....uuu.
+uuuuuWWuuuuu
+uuuuuuuuuuuu
+.uuuuuuuuuu.
+..uuuuuuuu..
+..uuuuuuuu..
+..uuuuuuuu..
+
+= Trikot | eyes 4,4 4
+.rrr....rrr.
+rrrrrWWrrrrr
+rrrrrrrrrrrr
+.rrrrWWrrrr.
+..rrrWWrrr..
+..rrrWWrrr..
+..rrrrrrrr..
+
+= Polo | eyes 4,5 4
+.GGG.WW.GGG.
+GGGGGWWGGGGG
+GGGGGkGGGGGG
+.GGGGGGGGGG.
+..GGGGGGGG..
+..GGGGGGGG..
+
+= Bluse | eyes 4,4 4
+.ppp.WW.ppp.
+pppppWWppppp
+pppppkpppppp
+.ppppppppppp
+..ppppkppp..
+..pppppppp..
+
+= Uniform | eyes 4,4 4
+.ggg....ggg.
+ggggyggyggggg
+gggggggggggg
+.gggygggggg.
+..gggggggg..
+..kkkkkkkk..
+..gggggggg..
+
+= Kostüm | eyes 4,4 4
+.vvv....vvv.
+vvvvvyyvvvvv
+vvvvvyyvvvvv
+.vvvvyyvvvv.
+..vvvvvvvv..
+.vvvvvvvvvv.
+vvvvvvvvvvvv
+
+= Tracht | eyes 4,3 4
+..WWWWWWWW..
+.WWWWWWWWWW.
+..rrrrrrrr..
+..rgrgrgrr..
+.uuuuuuuuuu.
+uuuWWWWWWuuu
+uuuWWWWWWuuu
+
+= Gewand | eyes 4,3 4
+...vvvvvv...
+..vvvvvvvv..
+.vvvvvvvvvv.
+.vvvvyvvvvv.
+vvvvvvvvvvvv
+vvvvvvvvvvvv
+vvvvvvvvvvvv
+
+= Outfit | eyes 4,3 4
+....kkkkk...
+..rrrrrrrr..
+.rrrrrrrrrr.
+..rrrrrrrr..
+..uuuuuuuu..
+..uu....uu..
+..kk....kk..
+
+= Jeans | eyes 3,1 4
+uuuuuuuuuu
+uuuuuuuuuu
+uuuuuuuuuu
+uuuuu.uuuu
+uuuu..uuuu
+uuuu..uuuu
+uuuu..uuuu
+uuuu..uuuu
+
+= Shorts | eyes 3,1 4
+yyyyyyyyyy
+yyyyyyyyyy
+yyyy..yyyy
+yyyy..yyyy
+
+= Unterhose | eyes 3,1 4
+WWWWWWWWWW
+WWWWWWWWWW
+.WWW..WWW.
+..WW..WW..
+
+= Unterwäsche | eyes 3,1 4
+pppppppppp
+pppppppppp
+.ppp..ppp.
+..pp..pp..
+
+= Slip | eyes 3,1 4
+VVVVVVVVVV
+VVVVVVVVVV
+.VVV..VVV.
+..VV..VV..
+
+= Höschen | eyes 3,1 4
+pppppppppp
+pVpVpVpVpp
+.ppp..ppp.
+..pp..pp..
+
+= Bikini | eyes 3,1 3
+rr..rr.....
+rrrrrr.....
+..........
+rrrrrrr...
+.rrrrr....
+
+= Strumpf | eyes 3,1 3
+...WWWW...
+...rrrr...
+...WWWW...
+...rrrr...
+...WWWW...
+...rrrrrr.
+...WWWWWWW
+....WWWWW.
+
+= Strumpfhose | eyes 3,1 4
+kkkkkkkkkk
+kkkkkkkkkk
+kkkk..kkkk
+kkkk..kkkk
+kkkk..kkkk
+kkkk..kkkk
+kkkkk.kkkkk
+
+= Kappe | eyes 4,3 4
+...rrrrrr....
+..rrrrrrrr...
+.rrrrrrrrrr..
+.rrrrrrrrrrrr
+
+= Zylinder | eyes 4,2 3
+...kkkkkk...
+...kkkkkk...
+...kkkkkk...
+...rrrrrr...
+..kkkkkkkk..
+kkkkkkkkkkkk
+
+= Perücke | eyes 4,4 4
+...yyyyyy...
+.yyyyyyyyyy.
+yyyyyyyyyyyy
+yyyy....yyyy
+yyy......yyy
+yyy......yyy
+yy........yy
+
+= Frisur | eyes 4,5 4
+...bbbbbbbb..
+..bbbbbbbbbbb
+.bbbbbbbbbbbb
+.bbmmmmmmmmbb
+.bmmmmmmmmmmb
+.bmmmmmmmmmmb
+..mmmmmmmmmm.
+
+= Kopftuch | eyes 4,5 4
+...uuuuuu...
+..uuuuuuuu..
+.uuuuuuuuuu.
+.uummmmmmuu.
+.uummmmmmuu.
+.uummmmmmuu.
+..uuuuuuuu..
+...uuuuuu...
+
+= Kapuze | eyes 4,5 4
+....ssss....
+..ssssssss..
+.ssssssssss.
+.sskkkkkkss.
+.sskkkkkkss.
+.sskkkkkkss.
+..ssssssss..
+
+= Haube | eyes 4,3 4
+...WWWWWW...
+..WWWWWWWW..
+.WWWWWWWWWW.
+.WWWWWWWWWW.
+.cWWWWWWWWc.
+
+= Schleier | eyes 4,5 4
+..WWWWWWWW..
+.WWWWWWWWWW.
+.WcWWWWWWcW.
+.WcWWWWWWcW.
+.WcWWWWWWcW.
+.WcWWWWWWcW.
+.WWWWWWWWWW.
+
+= Kragen | eyes 4,1 4
+WWWW....WWWW
+WWWWW..WWWWW
+.WWWW..WWWW.
+..WW....WW..
+
+= Ärmel | eyes 3,2 4
+uuuuuu.......
+uuuuuuuu.....
+uuuuuuuuuu...
+.uuuuuuuuuu..
+....uuuuuuWm.
+......uuuuWm.
+
+= Sonnenbrille
+kkkkkkkkkkkkkk
+kkkkkk..kkkkkk
+kUUkkk..kUUkkk
+kkkkk....kkkkk
+.kkk......kkk.
+
+= Ohrring | eyes 3,4 2
+...y...
+..y.y..
+...y...
+..yyy..
+.yyyyy.
+yyyyyyy
+.yyyyy.
+..yyy..
+
+= Armband | eyes 4,2 4
+..yyyyyyy..
+.yy.....yy.
+yy.......yy
+yry.....yuy
+.yy.....yy.
+..yyyyyyy..
+
+= Schmuck | eyes 3,4 4
+.y..........y.
+..y........y..
+...yy....yy...
+.....yyyy.....
+....yrrrry....
+....yrrrry....
+.....yyyy.....
+
+= Juwel | eyes 3,3 4
+...UUUUUU...
+..UUhUUUUU..
+.UUUUUUUUUU.
+UUUUUUUUUUUU
+.UUUUUUUUUU.
+..UUUUUUUU..
+...UUUUUU...
+....UUUU....
+
+= Edelstein | eyes 3,3 4
+...rrrrrr...
+..rrprrrrr..
+.rrrrrrrrrr.
+rrrrrrrrrrrr
+.rrrrrrrrrr.
+..rrrrrrrr..
+...rrrrrr...
+....rrrr....
+
+= Kristall | eyes 3,5 3
+.....U.....
+....UUU....
+...UUhUU...
+...UUUUU...
+..UUUUUUU..
+..UUUUUUU..
+..UUUUUUU..
+...UUUUU...
+....UUU....
+
+= Perle | eyes 3,3 4
+...WWWWW...
+..WWhWWWW..
+.WWWWWWWWW.
+.WWWWWWWWW.
+.WWWWWWWWW.
+..WWWWWWW..
+...WWWWW...
+
+= Jade | eyes 3,3 4
+...GGGGG...
+..GGlGGGG..
+.GGGGGGGGG.
+.GGGGGGGGG.
+..GGGGGGG..
+...GGGGG...
+
+= Schatz | eyes 3,7 6
+...yyyyyy....
+..yyyrrryy...
+.bbbbbbbbbbb.
+.bnnnnnnnnnb.
+.bbbbybbbbbb.
+.bnnnnnnnnnb.
+.bnnnnnnnnnb.
+.bbbbbbbbbbb.
+
+= Kleingeld | eyes 3,4 2
+..yyy..cc..
+.yYYYy.cSc.
+.yYYYycccc.
+..yyy.cSSSc
+.....yccccc
+....yYYy...
+.....yy....
+
+= Cent | eyes 3,4 4
+...YYYYYY...
+..YYYYYYYY..
+.YYYYYYYYYY.
+.YYYYYYYYYY.
+.YYYYYYYYYY.
+..YYYYYYYY..
+...YYYYYY...
+
+= Pfennig | eyes 3,4 4
+...BBBBBB...
+..BBBBBBBB..
+.BBBBBBBBBB.
+.BBBBBBBBBB.
+.BBBBBBBBBB.
+..BBBBBBBB..
+...BBBBBB...
+
+= Trinkgeld | eyes 3,5 3
+...gggggggg..
+..gggggggggg.
+..gggyygggg..
+..yyyyyyyyy..
+..yYYYYYYYy..
+..yyyyyyyyy..
+
+= Lösegeld | eyes 3,6 4
+....kkk.....
+.....k......
+...nnnnn....
+..nnnnnnn...
+.nnnnnnnnn..
+.nnngggnnnn.
+.nnnnnnnnnn.
+..nnnnnnnn..
+
+= Brieftasche | eyes 4,3 4
+bbbbbbbbbbbb
+bnnnnnnnnnbb
+bnnnnnnnnnbb
+bbbbbbbbbbbb
+bnnnnnnnnnbb
+bbbbbbbbbbbb
+
+= Geldbeutel | eyes 4,4 4
+....bb.bb....
+...bbbbbbb...
+..BBBBBBBBB..
+.BBBBBBBBBBB.
+.BBBBBBBBBBB.
+.BBBBBBBBBBB.
+..BBBBBBBBB..
+
+= Portemonnaie | eyes 4,3 4
+..yy....yy..
+.rrrrrrrrrr.
+rrrrrrrrrrrr
+rrrrrrrrrrrr
+rrrrrrrrrrrr
+.rrrrrrrrrr.
+
+= Gepäck | eyes 3,5 4
+.....kkk......
+.....k.k......
+..uuuuuuuu....
+..uuuuuuuu.nn.
+..uuuuuuuunnnn
+..uuuuuuuunnnn
+..uuuuuuuunnnn
+...k....k.k..k
+
+= Päckchen | eyes 3,4 4
+..yy...yy...
+...yy.yy....
+.nnnnynnnnn.
+.nnnnynnnnn.
+.yyyyyyyyyy.
+.nnnnynnnnn.
+.nnnnynnnnn.
+
+= Box | eyes 3,4 4
+.NNNNNNNNNN.
+NNNNNNNNNNNN
+nnnnnnnnnnnn
+nnnnnnnnnnnn
+nnnnnnnnnnnn
+nnnnnnnnnnnn
+
+= Schachtel | eyes 3,3 4
+.uuuuuuuuu.
+uuuuuuuuuuu
+UUUUUUUUUUU
+UUUUUUUUUUU
+UUUUUUUUUUU
+
+= Kasten | eyes 3,3 4
+bbbbbbbbbbbb
+bnnnnnnnnnnb
+bnnnnnnnnnnb
+bnnnnnnnnnnb
+bnnnnnnnnnnb
+bbbbbbbbbbbb
+
+= Packung | eyes 3,4 4
+.rrrrrrrrr.
+.rrrrrrrrr.
+.rWWWWWWWr.
+.rWWWWWWWr.
+.rrrrrrrrr.
+.rrrrrrrrr.
+
+= Verpackung | eyes 3,4 4
+.cccccccccc.
+.cScScScScS.
+.cccccccccc.
+.cWWWWWWWWc.
+.cccccccccc.
+
+= Behälter | eyes 3,3 4
+.ssssssssss.
+.SSSSSSSSSS.
+.SSSSSSSSSS.
+.SSSSSSSSSS.
+.SSSSSSSSSS.
+.ssssssssss.
+
+= Container | eyes 3,3 4
+rrrrrrrrrrrrrr
+rRrRrRrRrRrRrr
+rRrRrRrRrRrRrr
+rRrRrRrRrRrRrr
+rRrRrRrRrRrRrr
+rrrrrrrrrrrrrr
+
+= Safe | eyes 3,2 4
+ssssssssssss
+sSSSSSSSSSSs
+sSSSSSSSSSSs
+sSSSSSkkSSSs
+sSSSSkyykSSs
+sSSSSSkkSSSs
+ssssssssssss
+.k........k.
+
+= Tresor | eyes 3,2 4
+kkkkkkkkkkkk
+kSSSSSSSSSSk
+kSSSSSSSSSSk
+kSSSSScSSSSk
+kSSSScccSSSk
+kSSSSScSSSSk
+kkkkkkkkkkkk
+
+= Käfig | eyes 4,5 3
+.....y......
+....yyy.....
+...y.y.y....
+..y..y..y...
+.y.y.y.y.y..
+.y.y.y.y.y..
+.y.y.y.y.y..
+.yyyyyyyyy..
+
+= Sarg | eyes 4,4 3
+...bbbbb...
+..bbbbbbb..
+.bbbbbbbbb.
+.bbbbybbbb.
+.bbbyyybbb.
+.bbbbybbbb.
+..bbbbbbb..
+..bbbbbbb..
+...bbbbb...
+
+= Grabstein | eyes 3,3 4
+...ccccc...
+..ccccccc..
+.ccccccccc.
+.ccccSSccc.
+.cccSSSScc.
+.ccccSSccc.
+.ccccccccc.
+nnnnnnnnnnn
+
+= Urne | eyes 3,3 3
+...yyyy...
+..YYYYYY..
+...YYYY...
+..YYYYYY..
+.YYYYYYYY.
+.YYYYYYYY.
+..YYYYYY..
+...YYYY...
+
+= Denkmal | eyes 4,2 3
+....SSS.....
+...SSSSS....
+...SSSSS....
+....SSS.....
+...SSSSS....
+...SSSSS....
+..ccccccc...
+.ccccccccc..
+
+= Statue | eyes 4,2 3
+....SSSS....
+....SSSS....
+.....SS.....
+..SSSSSSSS..
+..S.SSSS.S..
+....SSSS....
+....S..S....
+..cccccccc..
+
+= Skulptur | eyes 3,2 3
+....nnnn....
+...nnnnnn...
+...nnnnnn...
+....nnnnn...
+...nnnnnnn..
+..nnnnnnnnn.
+..cccccccc..
+
+= Säule | eyes 3,2 3
+.cccccccc.
+..cccccc..
+..cScScS..
+..cScScS..
+..cScScS..
+..cScScS..
+..cScScS..
+.cccccccc.
+
+= Kreuz | eyes 3,5 2
+...nnn....
+...nnn....
+.nnnnnnn..
+.nnnnnnn..
+...nnn....
+...nnn....
+...nnn....
+...nnn....
+
+= Altar | eyes 4,5 3
+..y......y..
+..W......W..
+..W..yy..W..
+cccccccccccc
+crrrrrrrrrrc
+cWWWWWWWWWWc
+cc........cc
+
+= Kelch | eyes 3,2 3
+.yyyyyyyy.
+.yrrrrrry.
+.yyyyyyyy.
+..yyyyyy..
+....yy....
+....yy....
+..yyyyyy..
+
+= Trophäe | eyes 3,2 3
+.yyyyyyyy.
+yyyyyyyyyy
+y.yyyyyy.y
+..yyyyyy..
+....yy....
+...yyyy...
+..bbbbbb..
+
+= Orden | eyes 3,4 2
+..rr.uu..
+..rr.uu..
+..rruuu..
+...yyy...
+..yyyyy..
+.yyyyyyy.
+..yyyyy..
+...yyy...
+
+= Abzeichen | eyes 3,3 4
+...uuuuuu...
+..uuuuuuuu..
+.uuuuuuuuuu.
+.uuuyyyyuuu.
+.uuuuuuuuuu.
+..uuuuuuuu..
+...uuuuuu...
+
+= Wappen | eyes 3,3 4
+rrrrryyyyyy
+rrrrryyyyyy
+rrrrryyyyyy
+yyyyyrrrrrr
+.yyyyrrrrr.
+..yyyrrrr..
+....yrr....
+
+= Siegel | eyes 3,3 4
+...rrrrrr...
+..rrrrrrrr..
+.rrrRRRRrrr.
+.rrRrrrrRrr.
+.rrrRRRRrrr.
+..rrrrrrrr..
+...rrrrrr...
+
+= Stempel | eyes 3,5 2
+...bbbb....
+...bbbb....
+....bb.....
+..bbbbbb...
+.bbbbbbbb..
+.rrrrrrrr..
+
+= Aufkleber | eyes 3,4 4
+....yyyyyyy.
+...yyyyyyyyy
+..yyyyyyyyyy
+..yyyyyyyyyy
+..yyyyyyyy..
+..yyyyyyy...
+...yyyyy....
+
+= Logo | eyes 4,4 3
+....uuuu....
+..uuuuuuuu..
+.uuuWWWWuuu.
+.uuWuuuuuuu.
+.uuuWWWuuuu.
+.uuuuuuWuuu.
+..uuWWWuuu..
+....uuuu....
+
+= Symbol | eyes 4,3 3
+.....vv.....
+....vvvv....
+...vvvvvv...
+..vvvvvvvv..
+.vvvvvvvvvv.
+vvvvvvvvvvvv
+
+= Flagge | eyes 4,2 4
+k.............
+krrrrrrrrrr...
+krrrrrrrrrrrr.
+kWWWWWWWWWWWW.
+kWWWWWWWWWW...
+k.............
+k.............
+k.............
+
+= Fahne | eyes 4,2 4
+k.............
+kgggggggggg...
+kgggggggggggg.
+kyyyyyyyyyyyy.
+kyyyyyyyyyy...
+k.............
+k.............
+k.............
+
+= Banner | eyes 4,3 4
+kkkkkkkkkkkkkk
+.rrrrrrrrrrrr.
+.rrrrrrrrrrrr.
+.rrrrrrrrrrrr.
+.rrrrrrrrrrrr.
+.rrrrr..rrrrr.
+.rrr......rrr.
+
+# household, tools, machines
+= Maschine | eyes 3,2 4
+.ssssssssss.
+.sSSSSSSSSs.
+.sSSSSSSSSs.
+.ssssssssss.
+.sryguSkkks.
+.ssssssSkSs.
+.ssssssSkks.
+.k........k.
+
+= Gerät | eyes 3,3 4
+.cccccccccc.
+.cSSSSSSSSc.
+.cSUUUUUUSc.
+.cSUUUUUUSc.
+.cSSSSSSSSc.
+.crrSkkSggc.
+.cccccccccc.
+
+= Apparat | eyes 3,3 4
+..k......k..
+...k....k...
+.ssssssssss.
+.sUUUUUUUUs.
+.sUUUUUUUUs.
+.ssssssssss.
+.skSkSkSkSs.
+
+= Motor | eyes 3,3 4
+...ss..ss...
+.ssssssssss.
+sSSSSSSSSSSs
+sSkSkSkSkSSs
+sSSSSSSSSSSs
+.ssssssssss.
+..s......s..
+
+= Triebwerk | eyes 3,3 4
+.ccccccccc..
+cSSSSSSSSSc.
+cSkSkSkSkScr
+cSSSSSSSSScY
+cSkSkSkSkScr
+.ccccccccc..
+
+= Generator | eyes 3,3 4
+..y.........
+.yyy........
+yyyyy.......
+.ssssssssss.
+.sSSSSSSSSs.
+.sSSSSSSSSs.
+.ssssssssss.
+
+= Ofen | eyes 3,3 4
+.kkkkkkkkkk.
+.SSSSSSSSSS.
+.SkkkkkkkkS.
+.SkYYYYYYkS.
+.SkkkkkkkkS.
+.SSSSSSSSSS.
+.k........k.
+
+= Backofen | eyes 3,2 4
+.WWWWWWWWWW.
+.WkWkWkWWWW.
+.WWWWWWWWWW.
+.WkkkkkkkkW.
+.WkYYYYYYkW.
+.WkkkkkkkkW.
+.WWWWWWWWWW.
+
+= Kamin | eyes 4,2 4
+..bbbbbbbbbb..
+..bbbbbbbbbb..
+rrrrrrrrrrrrrr
+rRrRrrrrRrRrrr
+rrrkkkkkkkkrrr
+rRrkkrYrkkkRrr
+rrrkrYyYrkkrrr
+rrrkkkkkkkkrrr
+
+= Spülmaschine | eyes 3,3 4
+.WWWWWWWWWW.
+.WkkkkkkkkW.
+.WWWWWWWWWW.
+.WWWWWWWWWW.
+.WWWWkkWWWW.
+.WWWWWWWWWW.
+.WWWWWWWWWW.
+
+= Trockner | eyes 3,1 6
+WWWWWWWWWWWW
+WkkWWWWWWWWW
+WWWWcccccWWW
+WWWccUUUccWW
+WWWcUUUUUcWW
+WWWccUUUccWW
+WWWWcccccWWW
+WWWWWWWWWWWW
+
+= Klimaanlage | eyes 3,2 4
+WWWWWWWWWWWW
+WWWWWWWWWWWW
+WWWWWWWWWWWW
+WcccccccccWW
+WWWWWWWWWWWW
+.U..U..U..U.
+U..U..U..U..
+
+= Geldautomat | eyes 3,2 4
+.ssssssssss.
+.sUUUUUUUUs.
+.sUUUUUUUUs.
+.ssssssssss.
+.sWkWkWkkks.
+.sWkWkWskSs.
+.ssssgggsss.
+.ssssssssss.
+
+= Aufzug | eyes 3,3 4
+.ssssssssss.
+.sccccccccs.
+.sccccccccs.
+.scccsscccs.
+.scccsscccs.
+.scccsscccs.
+.ssssssssss.
+
+= Fahrstuhl | eyes 3,3 4
+.uuuuuuuuuu.
+.ucccccccu..
+.ucccsscccu.
+.ucccsscccu.
+.ucccsscccu.
+.ucccsscccu.
+.uuuuuuuuuu.
+
+= Lift | eyes 3,3 4
+...y....y...
+.ssssssssss.
+.scccsscccs.
+.scccsscccs.
+.scccsscccs.
+.ssssssssss.
+
+= Mülleimer | eyes 3,3 4
+....ssss....
+.ssssssssss.
+..SSSSSSSS..
+..SsSsSsSS..
+..SsSsSsSS..
+..SsSsSsSS..
+...SSSSSS...
+
+= Mülltonne | eyes 3,3 4
+.gggggggggg.
+.gggggggggg.
+..gGGGGGGg..
+..gGGGGGGg..
+..gGGGGGGg..
+..gGGGGGGg..
+..k......k..
+
+= Restmüll | eyes 3,3 4
+.kkkkkkkkkk.
+.kkkkkkkkkk.
+..ksssssskk.
+..ksssssssk.
+..ksssssssk.
+..ksssssssk.
+
+= Biomüll | eyes 3,4 4
+...b.G..y...
+.nnnnnnnnnn.
+.nnnnnnnnnn.
+..nNNNNNNn..
+..nNNNNNNn..
+..nNNNNNNn..
+..nNNNNNNn..
+
+= Altpapier | eyes 3,4 4
+...WWcWWW...
+.uuuuuuuuuu.
+.uuuuuuuuuu.
+..uUUUUUUu..
+..uUUUUUUu..
+..uUUUUUUu..
+
+= Altglas | eyes 3,4 4
+..g..G..W...
+..g..G..W...
+.gggggggggg.
+.gGGGGGGGGg.
+.gGGGGGGGGg.
+.gGGGGGGGGg.
+.gggggggggg.
+
+= Abfall | eyes 3,4 4
+....W.r.....
+...nWnnr....
+..ssssssss..
+.sssssssss..
+.ssssssssss.
+.sssssssss..
+..sssssss...
+
+= Schrott | eyes 3,4 4
+.....s..S....
+..S.sss.SSS..
+.SSSsssSSS...
+ssSSSsssSSSs.
+sSSsssSSSssS.
+ssssssssssss.
+
+= Dreck | eyes 3,3 4
+.....bb.....
+...bbbbbb...
+..bbbbbbbb..
+.bbbbbbbbbb.
+bbbbbbbbbbbb
+
+= Schmutz | eyes 3,3 4
+....nn......
+..nnnnnn....
+.nnnnnnnnn..
+nnnnnnnnnnnn
+.nnnnnnnnn..
+
+= Schlamm | eyes 3,2 4
+..bbbbbbbb..
+.bbBbbbbBbb.
+bbbbbbbbbbbb
+bbbbBbbbbbBb
+.bbbbbbbbbb.
+
+= Staub | eyes 3,3 4
+..c....c....
+....ccc...c.
+..ccccccc...
+.ccccccccc..
+c.ccccccc..c
+...ccccc....
+
+= Fleck | eyes 3,3 4
+...bbbbbb...
+.bbbbbbbbbb.
+bbbbbbbbbbb.
+.bbbbbbbbbbb
+..bbbbbbbb..
+.....bb.....
+
+= Asche | eyes 3,3 4
+.....S......
+....SSS.....
+...SSSSSS...
+..SSSSSSSS..
+.SSSSSSSSSS.
+ssssssssssss
+
+= Pulver | eyes 3,3 4
+.....W......
+....WWW.....
+...WWWWW....
+..WWWWWWW...
+.WWWWWWWWW..
+WWWWWWWWWWW.
+
+= Zahnbürste | eyes 9,1 2
+..........UUU.
+..........UUU.
+.........UUUU.
+........UUU...
+.......UUU....
+......UUU.....
+WWWWUUU.......
+WWWWUU........
+WWWW..........
+
+= Toilettenpapier | eyes 3,2 4
+..WWWWWWW...
+.WWWWWWWWW..
+.WWWccWWWW..
+.WWWWWWWWW..
+.WWWWWWWWWWW
+..WWWWWWWWWW
+
+= Taschentuch | eyes 4,3 4
+WWWWWWWWWWW.
+WWWWWWWWWWWW
+WcWWWWWWWWcW
+WWWWWWWWWWWW
+WcWWWWWWWWcW
+WWWWWWWWWWWW
+.WWWWWWWWWW.
+
+= Tuch | eyes 4,3 4
+rrrrrrrrrrrr
+rWWWWWWWWWWr
+rWWWWWWWWWWr
+rWWWWWWWWWWr
+rWWWWWWWWWWr
+rrrrrrrrrrrr
+
+= Lappen | eyes 4,2 4
+.yyyyyyyyy..
+yyyyyyyyyyy.
+yyyyyyyyyyyy
+.yyyyyyyyyy.
+..yyy.yyy...
+
+= Lumpen | eyes 4,3 4
+..nnnn.nnn..
+.nnnnnnnnnn.
+nnNnnnnnNnnn
+nnnnnnnnnnn.
+.nnn.nnnnnn.
+..n...nn..n.
+
+= Stoff | eyes 4,3 4
+.....uuuuuu.
+...uuuuuuuu.
+.uuuUuUuUuu.
+uuuuuuuuuu..
+uUuUuUuUuu..
+uuuuuuuuu...
+
+= Seide | eyes 4,3 4
+....ppppppp.
+..ppppppppp.
+.ppWpppWppp.
+ppppppppp...
+pWpppWppp...
+pppppppp....
+
+= Leder | eyes 4,3 4
+.bbbbbbbbbb.
+bbBbbbbbbbBb
+bbbbbbbbbbbb
+bbbbbBbbbbbb
+bbbbbbbbbbbb
+.bbbbbbbbb..
+
+= Fell | eyes 4,3 4
+.N.N.N.N.N..
+NNNNNNNNNNN.
+NNnNNNnNNNNN
+NNNNNNNNnNNN
+NnNNNNNNNNN.
+.N.N.N.N.N..
+
+= Pelz | eyes 4,3 4
+.W.W.W.W.W..
+WWWWWWWWWWW.
+WWcWWWcWWWWW
+WWWWWWWWcWWW
+WcWWWWWWWWW.
+.W.W.W.W.W..
+
+= Wäsche | eyes 4,3 4
+.k.k...k.k...
+kkkkkkkkkkkkk
+.rr.uu..yy...
+.rr.uu..yy...
+.rr.uuu.yy...
+.rrr.uu.yyy..
+
+= Matratze | eyes 3,2 6
+.WWWWWWWWWWWW.
+WUWUWUWUWUWUWW
+WWWWWWWWWWWWWW
+WUWUWUWUWUWUWW
+.WWWWWWWWWWWW.
+
+= Couch | eyes 3,3 6
+.vvvvvvvvvvvv.
+.vvvvvvvvvvvv.
+vvvvvvvvvvvvvv
+vVVVVVVVVVVVVv
+vvvvvvvvvvvvvv
+.b..........b.
+
+= Sessel | eyes 3,2 4
+.rrrrrrrrrr.
+.rrrrrrrrrr.
+rrrrrrrrrrrr
+rRRRRRRRRRRr
+rrrrrrrrrrrr
+.b........b.
+
+= Sitz | eyes 3,2 4
+.uuuuuuuu.
+.uuuuuuuu.
+.uuuuuuuu.
+.uuuuuuuuu
+.uuuuuuuuu
+..k....k..
+
+= Möbel | eyes 3,3 4
+bbbbbbbbbbbb
+bnnnnnnnnnnb
+bnnyynnyynnb
+bbbbbbbbbbbb
+bnnnnnnnnnnb
+bnnnnyynnnnb
+bbbbbbbbbbbb
+.b........b.
+
+= Schublade | eyes 3,2 4
+.nnnnnnnnnn.
+.nnnnnnnnnn.
+.nnnnyynnnn.
+.nnnnnnnnnn.
+bbbbbbbbbbbb
+
+= Wanne | eyes 3,3 6
+.c............
+WWWWWWWWWWWWWW
+WUUUUUUUUUUUUW
+WWWWWWWWWWWWWW
+.WWWWWWWWWWWW.
+..c........c..
+
+= Becken | eyes 3,2 6
+WWWWWWWWWWWWWW
+WUUUUUUUUUUUUW
+.WWWWWWWWWWWW.
+...WWWWWWWW...
+
+= Krug | eyes 3,4 3
+..cccccc.....
+.cWWWWWWc....
+..WWWWWW.WW..
+..WWWWWW..W..
+..WWWWWW..W..
+..WWWWWW.WW..
+..WWWWWW.....
+...WWWW......
+
+= Kessel | eyes 3,4 4
+....kkkk....
+...k....k...
+..ssssssss..
+.ssssssssss.
+.ssssssssss.
+.ssssssssss.
+..ssssssss..
+.r.r.r.r.r..
+
+= Schale | eyes 3,2 4
+yyyyyyyyyyyy
+yYYYYYYYYYYy
+.yyyyyyyyyy.
+..yyyyyyyy..
+
+= Geschirr | eyes 3,5 4
+...WWWWWW...
+..WWWWWWWW..
+.WWWWWWWWWW.
+cccccccccccc
+WWWWWWWWWWWW
+cccccccccccc
+.WWWWWWWWWW.
+
+= Porzellan | eyes 3,4 3
+...WWWWW....
+..WuWWWuW...
+..WWWuWWW.W.
+..WWWWWWWWW.
+..WuWWWuW.W.
+...WWWWW....
+
+= Tablett | eyes 4,1 4
+cccccccccccc
+cWWWWWWWWWWc
+cccccccccccc
+
+= Platte | eyes 4,4 3
+....kkkk....
+..kkkkkkkk..
+.kkkkkkkkkk.
+.kkkkrrkkkk.
+.kkkkrrkkkk.
+.kkkkkkkkkk.
+..kkkkkkkk..
+....kkkk....
+
+= Deckel | eyes 4,2 3
+.....kk.....
+..ssssssss..
+.ssssssssss.
+SSSSSSSSSSSS
+
+= Haken | eyes 2,1 2
+.cccc....
+.c..c....
+.cccc....
+...c.....
+...c...c.
+...c...cc
+...cc..c.
+....cccc.
+
+= Nadel | eyes 4,1 2
+.......c
+......cc
+.....cc.
+....cc..
+...cc...
+..cc....
+.cc.....
+cc......
+
+= Faden | eyes 3,3 4
+...rrrrr...
+..rrrrrrr..
+..nnnnnnn..
+..rrrrrrr..
+..nnnnnnn..
+..rrrrrrr..
+...r.......
+....r......
+
+= Knoten | eyes 4,3 3
+...nnn.....
+..nn.nn....
+..n..nnnnnn
+nnnn.nn....
+....nn.....
+
+= Seil | eyes 3,1 3
+....NNNN....
+...NnNnNN...
+..NN....NN..
+..Nn....nN..
+..NN....NN..
+...NnNnNN...
+....NNNN....
+
+= Strick | eyes 3,1 3
+....nnnn....
+...nNnNnn...
+..nn....nn..
+..nN....Nn..
+...nnnnnn...
+.......n....
+.......n....
+
+= Schnur | eyes 4,3 3
+.yyyy.......
+y....y.yyyy.
+y....yy....y
+.yyyy......y
+...........y
+
+= Leine | eyes 4,3 3
+.rrrr.......
+r....r......
+r....rrrrrrr
+.rrrr......r
+...........y
+
+= Kabel | eyes 3,1 3
+kkkk........
+kSSk........
+kkkkkk......
+.....kk.....
+......kk....
+.......kkkk.
+.........k..
+
+= Draht | eyes 3,1 3
+....SSSS....
+...S....S...
+..S..SS..S..
+..S.S..S.S..
+..S..SS..S..
+...S....S...
+....SSSS....
+
+= Rohr | eyes 3,1 4
+SSSSSSSSSSSS
+sSSSSSSSSSSs
+SSSSSSSSSSSS
+
+= Röhre | eyes 3,1 4
+cccccccccccc
+cWWWWWWWWWWc
+cccccccccccc
+
+= Schlauch | eyes 3,1 3
+..gggggggg..
+.gg......gg.
+.g........g.
+.gg......gg.
+..gggggggg..
+.......ggg..
+..........k.
+
+= Brett | eyes 4,2 4
+nnnnnnnnnnnnnn
+nNnnnnnNnnnnnn
+nnnnnnnnnnnNnn
+nnnnnnnnnnnnnn
+
+= Balken | eyes 4,2 4
+bbbbbbbbbbbbbb
+bnnnnnnnnnnnnb
+bnnnnnnnnnnnnb
+bbbbbbbbbbbbbb
+
+= Pfosten | eyes 3,2 2
+..nnnn..
+..nNnn..
+..nnnn..
+..nnnn..
+..nnnn..
+..nnnn..
+..nnnn..
+.bbbbbb.
+
+= Antenne | eyes 3,7 3
+.....k.....
+....kkk....
+.....k.....
+...k.k.k...
+....kkk....
+.....k.....
+.....k.....
+...sssss...
+
+= Gitter | eyes 3,3 4
+ssssssssssss
+s.s.s.s.s.ss
+s.s.s.s.s.ss
+s.s.s.s.s.ss
+s.s.s.s.s.ss
+ssssssssssss
+
+= Mauer | eyes 3,2 6
+rrrrrRrrrrrRrr
+RRRRRRRRRRRRRR
+rRrrrrrRrrrrrr
+RRRRRRRRRRRRRR
+rrrrrRrrrrrRrr
+
+= Wand | eyes 3,2 6
+wwwwwwwwwwwwww
+wwwwwwwwwwwwww
+wwwwwwwwwwwwww
+wwwwwwwwwwwwww
+NNNNNNNNNNNNNN
+
+= Dach | eyes 4,4 4
+......rr......
+.....rrrr.....
+....rrrrrr....
+...rrrrrrrr...
+..rrrrrrrrrr..
+.rrrrrrrrrrrr.
+rrrrrrrrrrrrrr
+
+= Tor | eyes 4,4 4
+..gggggggggg..
+.gg.g.g.g.ggg.
+gg.g.g.g.g.gg.
+g.g.g.g.g.g.g.
+g.g.g.g.g.g.g.
+g.g.g.g.g.g.g.
+
+= Haustür | eyes 3,2 4
+.bbbbbbbbbb.
+.bnnnnnnnnb.
+.bnUUnnUUnb.
+.bnnnnnnnnb.
+.bnnnnnnnyb.
+.bnnnnnnnnb.
+.bnnnnnnnnb.
+.bbbbbbbbbb.
+
+= Hintertür | eyes 3,2 4
+.ssssssssss.
+.sSSSSSSSSs.
+.sSSSSSSSSs.
+.sSSSSSSSSs.
+.sSSSSSSSys.
+.sSSSSSSSSs.
+.ssssssssss.
+
+= Schwelle | eyes 4,1 4
+bbbbbbbbbbbb
+nnnnnnnnnnnn
+bbbbbbbbbbbb
+
+= Fußboden | eyes 4,1 4
+nnnnNnnnnnNnnn
+NNNNNNNNNNNNNN
+nnNnnnnnNnnnnn
+NNNNNNNNNNNNNN
+
+= Fundament | eyes 4,1 4
+SSSSSSSSSSSSSS
+SsSSsSSsSSsSSs
+SSSSSSSSSSSSSS
+
+= Griff | eyes 3,1 2
+.ssssssss.
+.s......s.
+.s......s.
+ss......ss
+
+= Schalter | eyes 3,2 2
+WWWWWW
+WkkkkW
+WkWWkW
+WkWWkW
+WkkkkW
+WWWWWW
+
+= Taste | eyes 3,1 4
+.WWWWWWWWW.
+WWWWWWWWWWW
+WWWWWWWWWWW
+ccccccccccc
+
+= Stecker | eyes 3,4 2
+..k..k..
+..k..k..
+.WWWWWW.
+.WWWWWW.
+.WWWWWW.
+..WWWW..
+...kk...
+...kk...
+
+= Batterie | eyes 4,2 3
+....kk.....
+.ggggggggg.
+.ggggggggg.
+.gggggggg..
+.sssssssss.
+.sssssssss.
+
+= Sicherung | eyes 3,2 3
+...ss...
+.cccccc.
+.cyyyyc.
+.cyyyyc.
+.cccccc.
+...ss...
+
+= Magnet | eyes 3,3 4
+rrrr..rrrr
+rrrr..rrrr
+rrrr..rrrr
+rrrrrrrrrr
+.rrrrrrrr.
+WW......WW
+
+= Ventil | eyes 3,1 3
+..rrrrrr..
+....rr....
+SSSSSSSSSS
+SSSSSSSSSS
+....SS....
+
+= Filter | eyes 3,2 4
+cccccccccc
+.cWWWWWWc.
+..cWWWWc..
+...cWWc...
+....cc....
+
+= Chip | eyes 3,3 4
+.s.s.s.s.s.
+sssssssssss
+.sgggggggs.
+ssgggggggss
+.sgggggggs.
+sssssssssss
+.s.s.s.s.s.
+
+= Festplatte | eyes 3,2 4
+.ssssssssss.
+.sccccccccs.
+.scccsscccs.
+.sccsSSsccs.
+.scccsscccs.
+.sccccccccs.
+.ssssssssss.
+
+= Server | eyes 3,2 4
+.kkkkkkkkkk.
+.kgkkkkkkkk.
+.kkkkkkkkkk.
+.kgkkkkkkkk.
+.kkkkkkkkkk.
+.krkkkkkkkk.
+.kkkkkkkkkk.
+
+= Hardware | eyes 3,2 4
+.ssssssssss.
+.sggggggggs.
+.sgsssssggs.
+.sgsssssggs.
+.sggggggggs.
+.ssssssssss.
+
+= Elektronik | eyes 3,3 4
+..y..y..y...
+.ssssssssss.
+.sggggggggs.
+.sgyggsggsgs
+.sggggggggs.
+.ssssssssss.
+
+= Drucker | eyes 3,3 4
+...WWWWWW...
+.ssssssssss.
+.sSSSSSSSSs.
+.sSSSSSSSSs.
+.ssssssssss.
+...WWWWWW...
+
+= Scanner | eyes 3,2 4
+..ccccccccc.
+.ssssssssss.
+.sUUUUUUUUs.
+.ssssssssss.
+.ssssssssss.
+
+= Rechner | eyes 2,1 3
+.sssssssss.
+.sGGGGGGGs.
+.sGGGGGGGs.
+.sssssssss.
+.sWsWsWsrs.
+.sssssssss.
+.sWsWsWsrs.
+.sssssssss.
+
+= Fernbedienung | eyes 3,1 2
+..kkkkkk..
+..kkrrkk..
+..kkkkkk..
+..kWkWkk..
+..kkkkkk..
+..kWkWkk..
+..kkkkkk..
+..kWkWkk..
+
+= Konsole | eyes 4,2 4
+.kkkkkkkkkkk.
+kkkkkkkkkkkkk
+kkWkkkkkkrkkk
+kWWWkkkkukgkk
+kkWkkkkkkykkk
+.kkk.....kkk.
+
+= Funkgerät | eyes 3,4 2
+...k.....
+...k.....
+..ssssss.
+..sssssss
+..sggggs.
+..ssssss.
+..sksksk.
+..ssssss.
+
+= Radar | eyes 3,4 3
+.g.......g.
+.gg..g..gg.
+..ggggggg..
+..g.ggg.g..
+...ggggg...
+....ggg....
+.....g.....
+...sssss...
+
+= Sensor | eyes 3,3 2
+...sssss...
+..sssssss..
+..ssrrrss..
+..sssssss..
+...sssss...
+.....k.....
+
+= Laser | eyes 3,3 2
+ssssss........
+sSSSSSrrrrrrrr
+ssssss........
+.ss...........
+
+= Überwachungskamera | eyes 5,3 2
+kk..........
+kk..........
+.kkk........
+..ssssssss..
+..ssssssssk.
+..ssssssssU.
+...ssssss...
+
+= Sirene | eyes 3,3 4
+....rrrr....
+...rrrrrr...
+..rrrrrrrr..
+..rrrrrrrr..
+.ssssssssss.
+.r........r.
+r..........r
+
+= Alarmanlage | eyes 3,3 4
+.r...rrr...r
+r...rrrrr...
+...rrrrrrr..
+...rrrrrrr..
+..sssssssss.
+..sssssssss.
+
+= Beleuchtung | eyes 3,5 4
+.....kk.....
+.....kk.....
+..kkkkkkkk..
+.yyyyyyyyyy.
+yyyyyyyyyyyy
+.y..y..y..y.
+
+= Scheinwerfer | eyes 3,2 3
+.sssss......
+sWWWWWy..y..
+sWWWWWyyy..y
+sWWWWWy..y..
+.sssss......
+
+= Laterne | eyes 4,4 2
+....kkk.....
+...kkkkk....
+...kyyyk....
+...kyyyk....
+...kyyyk....
+...kkkkk....
+....kkk.....
+
+= Feuerzeug | eyes 3,4 2
+...r....
+..rY....
+..kk....
+.rrrr...
+.rrrr...
+.rrrr...
+.rrrr...
+
+= Streichholz | eyes 3,2 2
+...rr...
+..rrrr..
+..rrrr..
+...NN...
+...NN...
+...NN...
+...NN...
+...NN...
+
+= Zigarre | eyes 4,1 3
+...........c.
+nnnnnnnnnnrSc
+nnnnnnnnnnrS.
+

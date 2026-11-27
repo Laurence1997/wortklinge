@@ -1,4 +1,7 @@
+import { BOARDS } from '../src/core/gram/boards';
+import { GRAM_CFG } from '../src/core/gram/hook';
 import { describe, expect, it } from 'vitest';
+GRAM_CFG.chance = 0; // grammar questions have their own tests (gram.test.ts)
 import { chunks, gradeLink, gradeOrder, gradeSlot, linkTask, orderTask, slotNouns, slotTask } from '../src/core/writing';
 import { LINKS } from '../src/data/links';
 import { expectedSentence } from '../src/core/sentence';
@@ -26,16 +29,17 @@ describe('A1 写作', () => {
     expect(made).toBeGreaterThan(100);
   });
 
-  it('槽位造句: any fitting noun from the wordbook counts, article and case checked, recent nouns refused', () => {
+  it('槽位造句: only the monster\'s own noun counts (rev 219), article and case checked', () => {
     const tee = WORD_BY_ID['tee'];
     const t = slotTask(tee, makeRng(1))!;
     expect(t).toBeTruthy();
     const known = new Set(['brot', 'tasse', 'kaffee', 'stuhl', 'stift', 'lampe', 'tisch']);
     const nouns = slotNouns(t.pattern, (x) => known.has(x.id), tee);
     const other = nouns.find((x) => x.id !== 'tee')!;
-    expect(gradeSlot(expectedSentence(other, t.pattern), t, nouns, [], 'tee').ok).toBe(true);
+    const v = gradeSlot(expectedSentence(other, t.pattern), t, nouns, [], 'tee');
+    expect(v.ok).toBe(false);
+    expect(v.notes[0]).toContain('der Tee');
     expect(gradeSlot(t.answer, t, nouns, [], 'tee').ok).toBe(true);
-    expect(gradeSlot(expectedSentence(other, t.pattern), t, nouns, [other.id], 'tee').repeated).toBe(true);
     expect(gradeSlot('Ich möchte ein Zebra.', t, nouns, [], 'tee').ok).toBe(false);
   });
 
@@ -63,6 +67,7 @@ describe('A1 写作 in fights', () => {
   it('a Lv16 player meets 排句, 槽位造句 and 连句, and right answers hit', () => {
     const s = newGame('T', 'student', Date.now());
     s.level = 16;
+    s.gram = { boards: Object.keys(BOARDS) }; // 语法线 off: these fights are scripted
     s.hp = 999;
     for (const id of ['brot', 'tee', 'tasse', 'kaffee', 'stuhl', 'stift', 'lampe', 'tisch', 'flasche', 'glas']) {
       s.words[id] = { stage: 1, correct: 2, wrong: 0, read: 1, write: 1, due: Date.now() + 1e9, interval: 1, relapse: 0 } as never;

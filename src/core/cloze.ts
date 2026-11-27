@@ -9,11 +9,20 @@ import { EX1 } from '../data/examples1';
 import { EX2 } from '../data/examples2';
 import { EX3 } from '../data/examples3';
 import { EX4 } from '../data/examples4';
+import { LEX_EX } from '../data/lexicon';
 import { genderOf, WORDS } from '../data/words';
 
 export type ClozeMode = 'pick' | 'base' | 'form';
 
+/** Hand-written sentences of the old 640 words first (where the id is still in the 6000-word list), then the list's
+ *  own example sentences with their blank marked by scripts/build_lexicon.py. */
 export const EXAMPLES: Record<string, string[]> = { ...EX1, ...EX2, ...EX3, ...EX4 };
+for (const [id, lines] of Object.entries(LEX_EX)) EXAMPLES[id] = [...(EXAMPLES[id] ?? []), ...lines.filter((l) => !EXAMPLES[id]?.includes(l))];
+// Hand-written sentences of old words that are not in the 6000-word list are dropped.
+{
+  const ids = new Set(WORDS.map((w) => w.id));
+  for (const id of Object.keys(EXAMPLES)) if (!ids.has(id)) delete EXAMPLES[id];
+}
 
 export interface Cloze {
   /** Sentence with ___ where the answer goes. */
@@ -169,12 +178,14 @@ export type Case = 'nom' | 'acc' | 'dat';
 /** 格位姿态: the stances (articles) that can be picked, in key order 1–9, 0. */
 export const STANCES = ['der', 'die', 'das', 'den', 'ein', 'eine', 'einen', 'dem', 'einem', 'einer'] as const;
 /** haben / sein (0.6, region 3 Lv21+): the Perfekt stance of verb monsters. */
-export type Stance = (typeof STANCES)[number] | 'haben' | 'sein';
+/** kein stance (语法线 5, Lucas 2026-11-25): on a line whose slot needs kein, these replace the ein buttons. */
+export const KEIN_STANCES = ['kein', 'keine', 'keinen', 'keinem', 'keiner'] as const;
+export type Stance = (typeof STANCES)[number] | (typeof KEIN_STANCES)[number] | 'haben' | 'sein';
 const CASE_OF: Record<'m' | 'f' | 'n' | 'pl', Partial<Record<Stance, Case>>> = {
-  m: { der: 'nom', ein: 'nom', den: 'acc', einen: 'acc', dem: 'dat', einem: 'dat' },
-  f: { die: 'nom', eine: 'nom', der: 'dat', einer: 'dat' },
-  n: { das: 'nom', ein: 'nom', dem: 'dat', einem: 'dat' },
-  pl: { die: 'nom', den: 'dat' },
+  m: { der: 'nom', ein: 'nom', den: 'acc', einen: 'acc', dem: 'dat', einem: 'dat', kein: 'nom', keinen: 'acc', keinem: 'dat' },
+  f: { die: 'nom', eine: 'nom', der: 'dat', einer: 'dat', keine: 'nom', keiner: 'dat' },
+  n: { das: 'nom', ein: 'nom', dem: 'dat', einem: 'dat', kein: 'nom', keinem: 'dat' },
+  pl: { die: 'nom', den: 'dat', keine: 'nom', keinen: 'dat' },
 };
 
 /** Which case an article shows for a noun of this gender (die Tasse = nom/acc → nom), or null when it doesn't fit. */
@@ -188,7 +199,7 @@ export function slotArticle(w: Word, n: number): string | null {
   const parsed = (EXAMPLES[w.id] ?? []).map(parse).filter((x): x is NonNullable<typeof x> => !!x);
   if (!parsed.length) return null;
   const first = parsed[n % parsed.length].blank.split(' ')[0].toLowerCase();
-  return (STANCES as readonly string[]).includes(first) ? first : null;
+  return (STANCES as readonly string[]).includes(first) || (KEIN_STANCES as readonly string[]).includes(first) ? first : null;
 }
 
 const PREPS = new Set(['in', 'an', 'auf', 'mit', 'zu', 'von', 'bei', 'aus', 'nach', 'für', 'durch', 'um', 'ohne', 'gegen', 'neben', 'über', 'unter', 'vor', 'hinter', 'zwischen', 'im', 'am', 'zum', 'zur', 'vom', 'beim']);
@@ -218,6 +229,9 @@ export function caseClozes(w: Word, want: 'acc' | 'dat'): Array<{ shown: string;
 const COPULA = new Set(['bin', 'bist', 'ist', 'sind', 'seid', 'war', 'warst', 'waren', 'wart', 'sei', 'heiße', 'heißt', 'heißen', 'hieß', 'werde', 'wirst', 'wird', 'werden', 'werdet', 'wurde', 'bleibe', 'bleibst', 'bleibt', 'bleiben']);
 const MIDFIELD = new Set(['bitte', 'hier', 'da', 'dort', 'mal', 'jetzt', 'heute', 'morgen', 'gern', 'gerne', 'auch', 'noch', 'schon', 'immer', 'oft', 'mir', 'dir', 'ihm', 'uns', 'euch', 'ihnen']);
 
+/** A comma (relative clauses always have one) or a subordinating conjunction: a clause the pronoun swap can't handle. */
+const SUBCLAUSE = /,|\b(weil|dass|wenn|ob|obwohl|damit|bevor|nachdem|während|falls|sodass|seitdem)\b/i;
+
 export function pronounClozes(w: Word): Array<{ shown: string; full: string; zh: string; answer: string }> {
   if (!w.art) return [];
   const out: Array<{ shown: string; full: string; zh: string; answer: string }> = [];
@@ -235,6 +249,9 @@ export function pronounClozes(w: Word): Array<{ shown: string; full: string; zh:
     // A pronoun object jumps ahead of adverbs and dative objects («Mach sie bitte an», «Gib ihn mir»),
     // so a slot behind them can't simply be swapped.
     if (MIDFIELD.has(prev)) continue;
+    // 从句和关系从句 (6000-word examples have them): the slot's position rules differ there, so skip any sentence
+    // with a comma or a subordinating word / relative pronoun after a comma.
+    if (SUBCLAUSE.test(`${p.before} ${p.after}`)) continue;
     const plural = noun !== w.de || w.plOnly;
     const pron = art === 'den' && w.art === 'der' && !plural ? 'ihn' : art === 'das' && w.art === 'das' && !plural ? 'es' : art === 'die' && (plural || w.art === 'die') ? 'sie' : null;
     if (!pron) continue;

@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { newGame, migrate, type GameState } from '../src/core/state';
 import { makeRng } from '../src/core/rng';
-import { answerPlacement, applyPlacement, bandCount, bandOf, bandSamples, canPlaceToday, gradePlace, isPlaced, levelFor, placedCheck, placedPick, placeWords, regionFor, startPlacement, stopPlacement, topPassed, type PlaceRun } from '../src/core/placement';
+import { answerPlacement, applyPlacement, bandCount, bandOf, bandRange, bandSamples, canPlaceAgain, placeAgainIn, PLACE, gradePlace, isPlaced, levelFor, placedCheck, placedPick, placeWords, regionFor, startPlacement, stopPlacement, topPassed, type PlaceRun } from '../src/core/placement';
 import { answerScreen, screenPool, startScreen } from '../src/core/screen';
 import { contextQuestion, startBattle } from '../src/core/combat';
 import { kindOf, reviewMon, stageOf } from '../src/core/srs';
@@ -29,12 +29,17 @@ function play(s: GameState, run: PlaceRun, knows: number, rng = makeRng(9)) {
 }
 
 describe('入学测试', () => {
-  it('bands cover levels 1–30 in steps of 3, with sample words', () => {
-    expect(bandCount()).toBe(10);
+  it('bands cover levels 1–30 in steps of 3, then 31–160 in steps of 5 (1.0: B2 words), with sample words', () => {
+    expect(bandCount()).toBe(36);
+    expect(bandRange(35)).toEqual([156, 160]);
+    expect(bandRange(10)).toEqual([31, 35]);
+    expect(bandRange(27)).toEqual([116, 120]);
+    expect(levelFor(27)).toBe(121);
+    expect(regionFor(65)).toBe(7);
     expect(levelFor(-1)).toBe(1);
     expect(levelFor(0)).toBe(4);
     expect(levelFor(6)).toBe(22);
-    expect(levelFor(9)).toBe(30);
+    expect(levelFor(9)).toBe(31);
     expect(regionFor(10)).toBe(1);
     expect(regionFor(13)).toBe(2);
     expect(regionFor(22)).toBe(3);
@@ -128,7 +133,13 @@ describe('入学测试', () => {
     const o = applyPlacement(s, run, undefined, { daily: true });
     expect(o.gained).toEqual([]);
     expect(s.level).toBe(25);
-    expect(canPlaceToday(s)).toBe(false);
+    expect(canPlaceAgain(s)).toBe(false);
+    // Again after 30 more words 归名 or 斩杀 (Lucas 2026-11-25).
+    const fresh = placeWords().filter((w) => !s.words[w.id]).slice(0, PLACE.retakeAfter);
+    for (const w of fresh.slice(0, -1)) s.words[w.id] = { stage: 3, due: T0 + 9e9, firstSeen: T0, lastSeen: T0, relapse: 0, correct: 1, wrong: 0, read: 1 };
+    expect(placeAgainIn(s)).toBe(1);
+    s.words[fresh.slice(-1)[0].id] = { stage: 2, due: T0, firstSeen: T0, lastSeen: T0, relapse: 0, correct: 1, wrong: 0, read: 1, retired: T0 };
+    expect(canPlaceAgain(s)).toBe(true);
   });
 
   it('推定会 spot checks: right retires, wrong turns into a review monster, a bad band reverts', () => {
@@ -192,5 +203,65 @@ describe('入学测试', () => {
     const back = migrate(JSON.parse(JSON.stringify(s)))!;
     expect(back.placement?.top).toBe(o.top);
     expect(Object.values(back.words).filter((p) => p.placed).length).toBe(o.placed);
+  });
+
+  it('placing past a stage stands in for its trial; A1 still owes the grammar part', async () => {
+    const { stagePassed, levelCapFor } = await import('../src/core/stages');
+    const s = newGame('T', 'student');
+    const run = startPlacement(s, makeRng(1), 0);
+    for (let i = 0; i <= 19; i++) run.passed.add(i); // 1–80
+    stopPlacement(run);
+    applyPlacement(s, run);
+    expect(s.level).toBe(81);
+    expect(stagePassed(s.flags, 'A1')).toBe(true);
+    expect(stagePassed(s.flags, 'A2')).toBe(true);
+    expect(s.flags.a1Grammar).toBeFalsy();
+    expect(levelCapFor(s.flags)).toBe(120);
+  });
+});
+
+describe('点词 board (Lucas 11-26)', () => {
+  it('shows whole words per band plus invented ones, none of which exist', async () => {
+    const { pickBoard, FAKE_WORDS } = await import('../src/core/placement');
+    const { WORDS } = await import('../src/data/words');
+    const lower = new Set(WORDS.map((w) => (w.art ? `${w.art} ${w.de}` : w.de).toLowerCase()));
+    for (const f of FAKE_WORDS) expect(lower.has(f.toLowerCase())).toBe(false);
+    const b = pickBoard(newGame('T', 'student'), makeRng(1));
+    expect(b.items.filter((i) => !i.fake).length).toBe(bandCount() * PLACE.pickPer);
+    expect(b.items.filter((i) => i.fake).length).toBe(8);
+  });
+
+  it('estimates the cut-off from the clicks and pulls it down for invented words', async () => {
+    const { pickBoard, estimatePicks, startFromPicks } = await import('../src/core/placement');
+    const s = newGame('T', 'student');
+    const b = pickBoard(s, makeRng(2));
+    const upTo = (t: number, fakes = 0) => {
+      const set = new Set(b.items.filter((i) => !i.fake && i.band <= t).map((i) => i.key));
+      b.items.filter((i) => i.fake).slice(0, fakes).forEach((i) => set.add(i.key));
+      return set;
+    };
+    expect(estimatePicks(b, new Set()).top).toBe(-1);
+    expect(estimatePicks(b, upTo(15)).top).toBe(15);
+    const one = estimatePicks(b, upTo(15, 1));
+    expect(one.top).toBe(15 - PLACE.fakePenalty);
+    expect(one.fakes.length).toBe(1);
+    const run = startFromPicks(s, makeRng(3), estimatePicks(b, upTo(15)));
+    expect(run.band).toBe(15);
+    expect(run.claim?.unpicked.every((w) => bandOf(w) > 15)).toBe(true);
+  });
+
+  it('unclicked words in a band the typing check passed follow you as review monsters', async () => {
+    const { pickBoard, estimatePicks, startFromPicks } = await import('../src/core/placement');
+    const s = newGame('T', 'student');
+    const b = pickBoard(s, makeRng(4));
+    const picked = new Set(b.items.filter((i) => !i.fake && i.band <= 5).map((i) => i.key));
+    const miss = b.items.find((i) => !i.fake && i.band === 2)!;
+    picked.delete(miss.key);
+    const run = startFromPicks(s, makeRng(5), estimatePicks(b, picked));
+    while (!run.over) answerPlacement(s, run, run.band <= 5 ? fullForm(run.current!) : '', makeRng(6), run.band > 5);
+    applyPlacement(s, run);
+    expect(topPassed(run)).toBeGreaterThanOrEqual(5);
+    const p = s.words[miss.word!.id];
+    if (!run.results.some((r) => r.word.id === miss.word!.id)) expect(p.lapsed && !p.placed).toBe(true);
   });
 });

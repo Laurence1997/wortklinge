@@ -6,7 +6,14 @@ import type { GameState } from '../core/state';
 
 const T = 16;
 const SHEET_COLS = 49;
-const COLORS = { bg: '#140404', decor: '#4e1616', unseen: '#7a1f1f', met: '#d8333a', half: '#ffb4a8' };
+const DARK = { bg: '#140404', decor: '#4e1616', unseen: '#7a1f1f', met: '#d8333a', half: '#ffb4a8' };
+/** 明亮配色 (Lucas 2026-11-27: 小画面跟着换): parchment ground, faint props, unmet words as pale silhouettes, met
+ *  words in the region's accent, 半名 words in dark ink. 蚀变 / boss maps (no body.bright) keep the red-on-black. */
+function colors(): typeof DARK {
+  if (!document.body.classList.contains('bright')) return DARK;
+  const accent = getComputedStyle(document.body).getPropertyValue('--accent').trim() || '#d2691e';
+  return { bg: '#fbf4e4', decor: '#d3bf9c', unseen: '#a38a66', met: accent, half: '#2d2118' };
+}
 let sheet: HTMLImageElement | null = null;
 const waiting: Array<() => void> = [];
 
@@ -33,6 +40,7 @@ export function sceneArtCanvas(sceneId: string, s: GameState): HTMLCanvasElement
   cv.height = ART_ROWS * T;
   cv.className = 'scene-art';
   const draw = () => {
+    const COLORS = colors();
     const ctx = cv.getContext('2d')!;
     ctx.imageSmoothingEnabled = false;
     ctx.fillStyle = COLORS.bg;

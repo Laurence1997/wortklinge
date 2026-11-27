@@ -52,11 +52,11 @@ export function missRate(s: GameState, cat: PronCat): number {
 }
 
 /** The pair task for this word, or null (no pair, or the roll said no). */
-export function echoTask(s: GameState, w: Word, rng: Rng): EchoTask | null {
-  const found = pairsFor(w);
+export function echoTask(s: GameState, w: Word, rng: Rng, force?: PronCat[]): EchoTask | null {
+  const found = pairsFor(w).filter((x) => !force || force.includes(x.p.cat));
   if (!found.length) return null;
   const { p, side } = pick(rng, found);
-  if (rng() >= ECHO_CHANCE + ECHO_WEAK_BONUS * missRate(s, p.cat)) return null;
+  if (!force && rng() >= ECHO_CHANCE + ECHO_WEAK_BONUS * missRate(s, p.cat)) return null;
   const sayable = SAYABLE.includes(p.cat);
   // Read aloud: the monster's own word. Listening: either side, so knowing the monster doesn't give it away.
   const t: 'a' | 'b' = sayable ? side : rng() < 0.5 ? 'a' : 'b';
@@ -64,8 +64,24 @@ export function echoTask(s: GameState, w: Word, rng: Rng): EchoTask | null {
   return { pair: p, cat: p.cat, target: p[t], partner: p[o], ipaT: p[t === 'a' ? 'ipaA' : 'ipaB'], ipaP: p[o === 'a' ? 'ipaA' : 'ipaB'], zhT: p[t === 'a' ? 'zhA' : 'zhB'], zhP: p[o === 'a' ? 'zhA' : 'zhB'], sayable };
 }
 
+/** 审查修订 A7: when a read-aloud pair turns into listening, half the time the game reads the other word,
+ *  so knowing which monster it is doesn't give the answer away. */
+export function listenSide(t: EchoTask, rng: Rng): EchoTask {
+  if (!t.sayable || rng() >= 0.5) return t;
+  return { ...t, target: t.partner, partner: t.target, ipaT: t.ipaP, ipaP: t.ipaT, zhT: t.zhP, zhP: t.zhT };
+}
+
 export function echoOptions(t: EchoTask, rng: Rng): string[] {
   return shuffle(rng, [t.target, t.partner]);
+}
+
+/** 发音怪 (83, 游戏设计 八): the required B1 version of 回音怪, on the sounds Chinese speakers find hardest (小舌音 r
+ *  against l, ü and ö, ich against sch). Every attack question is the pair; other moves only graze it. Without the
+ *  phoneme model (or with the mic off) it is the listening version, with no reward lost (八「模型自愿下载」). */
+export const PRON_MON = { from: 83, cats: ['iü', 'uü', 'oö', 'eö', 'chsch', 'rl'] as PronCat[], chance: 0.5, otherMult: 0.5 };
+
+export function pronMonOk(w: Word): boolean {
+  return pairsFor(w).some((x) => PRON_MON.cats.includes(x.p.cat));
 }
 
 /** Model verdict from the two CTC scores: more like the target, like the partner, or not sure. */

@@ -14,6 +14,8 @@ export const BLIND_FROM = 26;
 export interface Box {
   slot: Slot;
   quality: Quality;
+  /** Old 高级盲盒 (cut in the 瘦身 2026-11-25): such boxes are dropped from a saved shelf. */
+  adv?: boolean;
 }
 
 const NOUN: Record<Slot, string> = {
@@ -22,6 +24,7 @@ const NOUN: Record<Slot, string> = {
   amulet: 'Ein kleines Amulett.',
   dict: 'Ein dickes Wörterbuch.',
   glasses: 'Eine klare Brille.',
+  phones: 'Ein leichter Kopfhörer.',
 };
 const RARE: Partial<Record<Quality, string>> = { green: 'Nicht schlecht.', purple: 'Selten.', orange: 'Sehr selten!' };
 const PRICE_KILLS: Partial<Record<Quality, number>> = { green: 20, purple: 80, orange: 400 };
@@ -31,7 +34,7 @@ export function boxLabel(b: Box): string {
 }
 
 export function boxPrice(s: GameState, b: Box): number {
-  return (PRICE_KILLS[b.quality] ?? 20) * CONFIG.gold.perKill(s.level);
+  return Math.round((PRICE_KILLS[b.quality] ?? 20) * CONFIG.gold.perKill(s.level));
 }
 
 function newBox(rng: Rng): Box {
@@ -50,6 +53,10 @@ export function blindBoxes(s: GameState, rng: Rng): Box[] {
   }
   if (!st || st.day !== day) {
     st = { day, boxes: [newBox(rng), newBox(rng), newBox(rng)] };
+    s.flags.blind = JSON.stringify(st);
+  }
+  if (st.boxes.some((b) => b.adv)) {
+    st.boxes = st.boxes.filter((b) => !b.adv);
     s.flags.blind = JSON.stringify(st);
   }
   return st.boxes;

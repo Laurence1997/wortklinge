@@ -19,6 +19,12 @@ export const CONFIG = {
     tutorialInterval: 3 * MINUTE,
     /** 语境复习: after 归名 a context question is due after 2 days, 1 week, 1 month and 3 months, once each. */
     context: [2 * DAY, 7 * DAY, 30 * DAY, 90 * DAY],
+    /** 写对的词 (Lucas 2026-11-27 选 1): a clean 归名 is reviewed after 2, 7 and 30 days; all three right ends its
+     *  reviews. A shaky or wrong answer puts it on the adaptive schedule below. */
+    cleanLadder: [2 * DAY, 7 * DAY, 30 * DAY],
+    /** 复习按表现 (Lucas 2026-11-25, 游戏设计 七): first gap by the 归名 record, then ×3 clean / ×1.5 shaky; wrong →
+     *  relapse and start again at 1 day; a clean pass on a gap over 90 days ends the reviews. simProg and playtests tune it. */
+    adaptive: { oneSlip: 3 * DAY, slips: 1 * DAY, restart: 1 * DAY, clean: 3, shaky: 1.5, doneAfter: 90 * DAY },
     /** A clean 归名 (no wrong answer, no 低语 in its three fights) gets only one spot check after this long (rev 51). */
     spot: 30 * DAY,
     /** A context review this many gaps overdue turns back into a review monster. */
@@ -50,14 +56,15 @@ export const CONFIG = {
   /** 0.3 提速 (curve 2): Lv1–5 need ×0.7 (was 0.25: sim put Lv5 at ~5 min), Lv6–10 ×0.4 of the base curve; Lv11+ unchanged. */
   earlyXpMult: (level: number) => (level <= 5 ? 0.7 : level <= 10 ? 0.4 : 1),
   xpPerHour: 1000,
-  /** 0.3 ships regions 1–2; the level cap keeps players inside released content. */
-  levelCap: 30,
+  /** Highest level of the released content (121–200 级 regions 13–20, rev 488). Below it, the cap is the end of the
+   *  first 突破试炼 stage not passed yet (src/core/stages.ts: 30 / 80 / 120 / 160). */
+  levelCap: 200,
+  /** 审查 E3 (Lucas 11-26「按推荐」): 0.8 stops at 120 (regions 1–12); 1.0 opens B2 by raising this to levelCap. */
+  releaseCap: 200,
   /** 终极技能 (30 级, 句型填空版): both blanks right / one right. */
   ultimate: { both: 3, one: 1.5 },
   /** 现在完成时 (0.6 第 5 块): haben/sein stance from 21 (wrong picks free until 22), 填分词 by kind 21/24/27,
    *  region-1/2 verb reviews in the Perfekt one time in three. */
-  /** 21 级: big attacks announce when they come (jetzt / gleich / in zwei Runden). */
-  timeWords: { from: 21 },
   perfekt: { from: 21, softUntil: 22, irregularFrom: 24, prefixFrom: 27, reviewChance: 1 / 3 },
   /** The neighbour's door opens onto region 2 (面包集市) at this level, after the region-1 boss. */
   region2Level: 10,
@@ -69,6 +76,9 @@ export const CONFIG = {
     atkPerLevel: 1,
     baseCrit: 0.05,
     critMult: 1.5,
+    /** 暴击率和暴击伤害的上限 (gear and talents together): 50% and ×3. */
+    critCap: 0.5,
+    critMultCap: 3,
     postFightHealPct: 0.15,
   },
 
@@ -150,7 +160,7 @@ export const CONFIG = {
 
   loot: {
     smallDropRate: 0.2,
-    qualityWeights: { white: 70, green: 24, purple: 5, orange: 1 },
+    qualityWeights: { white: 70, green: 24, purple: 5, orange: 1, red: 0 },
     bagSize: 30,
   },
 
@@ -166,12 +176,17 @@ export const CONFIG = {
   map: { nodes: true, slots: 2, hopSec: 1.2, luckyChance: 0.3, veil: 0.35, homeScenes: true, zoneSlots: 12 },
   /** 跟读 (0.5, Lv5+, optional): read the line the monster just said back; sounding right pays XP once per fight, never costs anything. */
   shadow: { xp: 10, match: 0.7 },
-  phase: { wrongArmor: 2, rightRes: 1, softUntil: 5, accFrom: 7, datFrom: 15, pronounChance: 0.3, pluralChance: 0.2, pluralHp: 1.5 },
-  pack: { hpMult: 0.6, dmgMult: [0.2, 0.12] as [number, number], strayMult: 0.5, max: 3, max3From: 13, max4: 4, max4From: 81, radiusTiles: 4, fromLevel: 11 },
+  phase: { wrongArmor: 2, rightRes: 1, softUntil: 5, accFrom: 7, datFrom: 15, pronounChance: 0.3, pluralChance: 0.2, pluralHp: 1.5, pluralRetire: 2 },
+  pack: { hpMult: 0.6, xpMult: 0.7, dmgMult: [0.2, 0.12] as [number, number], strayMult: 0.5, max: 3, max3From: 13, max4: 4, max4From: 81, radiusTiles: 4, fromLevel: 11 },
+
+  /** 审查修订 C8: AI sessions (AI 对话) that pay XP and gold each day; later ones only count the reviews. */
+  aiPaidPerDay: 5,
 
   boss: {
     /** Share of region words that must be at least 半名 before the boss appears. */
     halfNameShare: 0.4,
+    /** 审查修订 C5: iron chests for the first N boss kills a day (gold only on the very first kill). */
+    chestsPerDay: 3,
     minLevel: 8,
     hp: 6,
     firstTimeSeconds: 60,
@@ -184,10 +199,13 @@ export const CONFIG = {
   /** 晚点之王 (0.6 第 5 块, Lv28): HP 8; rewards as 吞秤者, XP scaled by the level curve. */
   /** 幽灵检票员 Lina (0.6 第 5 块): Lv25+, after Konrad's quest; 30 s a question, HP 5. */
   lina: { hp: 5, seconds: 30, fromLevel: 25 },
-  /** 锈名 (0.6 第 6 块, 27 级). */
-  rusty: { from: 27, overdue: 3, hpMult: 1.3, rewardMult: 2, shards: 1 },
+  /** 锈名 (27 级): 审查修订 — the look of 越久越肥 layers 3–4, no stats of its own. */
+  rusty: { from: 27, overdue: 3 },
   /** 刻字孔 (0.6 第 6 块, 25 级). */
-  engrave: { from: 25, bonus: 0.2 },
+  /** 语气词孔: auch / denn from 25; mal / doch from 45 (暂定: +20% on a right 终结技 whose sentence uses the particle in
+   *  its pattern — mal in a request, doch anywhere; repeats in the last 5 sentences pay 100/70/50/30%, three different
+   *  particles in the last 3 sentences +15%). */
+  engrave: { from: 25, bonus: 0.2, particleFrom: 45, decay: [1, 0.7, 0.5, 0.3], varied: 0.15 },
   /** 怪物诅咒 (0.6, 25 级): share of monsters, reward. */
   curse: { from: 25, chance: 0.1, xpMult: 1.3, shards: 1 },
   /** 野外精英 · 场景精英 (2026-11-23, 9 级): half of a scene group at 半名 → one elite; returns when `due` group words are due. */

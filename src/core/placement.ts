@@ -12,17 +12,21 @@
 // Entry level = top level of the highest passed band + 1 (at most the level cap). Only ever raises the level.
 
 import { CONFIG } from './config';
-import { gradeTyped, levenshtein, normalize, type Verdict } from './grading';
+import { gradeTyped, levenshtein, normalize, stripRefl, type Verdict } from './grading';
 import { shuffle, type Rng } from './rng';
 import { retire, stageOf } from './srs';
-import { dayKey, maxHp, now, type GameState } from './state';
+import { maxHp, now, type GameState } from './state';
 import type { Word, WordProgress } from './types';
-import { hasArticleQuestion, WORDS } from '../data/words';
+import { fullForm, hasArticleQuestion, WORDS } from '../data/words';
 import { sameMeaning } from './screen';
+import { itemScore, makeItem, slotsAt } from './loot';
+import { tierIlvl } from './forge';
+import { STAGES } from './stages';
 
 export const PLACE = {
-  /** Monster levels per band. */
+  /** Monster levels per band (1–30), and above 30. */
   band: 3,
+  bandHigh: 5,
   /** Words asked per band, and the extra ones when it is borderline. */
   per: 5,
   extra: 3,
@@ -32,9 +36,14 @@ export const PLACE = {
   stop: 2,
   /** Sample words shown per band on the self-pick screen. */
   samples: 5,
+  /** 点词 board (Lucas 11-26): real words per band, and bands an invented word pulls the estimate down by. */
+  pickPer: 2,
+  fakePenalty: 2,
   /** 推定会 spot checks: this many wrong in one band and over this share → the band's rest turns into review monsters. */
   revertFails: 3,
   revertShare: 0.4,
+  /** 分级考核 again after this many more words 归名 or 斩杀 since the last test (Lucas 2026-11-25, replaces once a day). */
+  retakeAfter: 30,
 };
 
 export type PlaceRes = 'ok' | 'half' | 'wrong' | 'skip';
@@ -51,11 +60,28 @@ export interface PlaceSave {
 
 /** Words the test can ask: no phrases, tutorial or chest words, nothing above the level cap. */
 export function placeWords(): Word[] {
-  return WORDS.filter((w) => !w.tutorial && w.family !== 'truhe' && w.pos !== 'phr' && w.lvl <= CONFIG.levelCap);
+  return WORDS.filter((w) => !w.tutorial && w.family !== 'truhe' && w.pos !== 'phr' && w.lvl <= PLACE_CAP);
 }
 
+/** 入学测试 asks only words whose Goethe list matches the game's own level (Lucas 2026-11-27): A1 words in 1–30,
+ *  A2 in 31–80, B1 in 81–120, none of the three above 120. Friedhof at level 25 is on no list up to B1, so a player
+ *  who doesn't know it would be placed too low. A band left with too few such words falls back to all its words. */
+export function fitsGoethe(w: Pick<Word, 'lvl' | 'goethe'>): boolean {
+  const want = w.lvl <= 30 ? 'A1' : w.lvl <= 80 ? 'A2' : w.lvl <= 120 ? 'B1' : undefined;
+  return w.goethe === want;
+}
+
+/** Of these words, the ones that fit the Goethe level, unless that leaves fewer than `min`. */
+function goetheFirst<T extends Pick<Word, 'lvl' | 'goethe'>>(ws: T[], min: number): T[] {
+  const fit = ws.filter(fitsGoethe);
+  return fit.length >= min ? fit : ws;
+}
+
+/** Bands: 3 levels each up to 30 (A1, unchanged so old saves keep their band keys), then 5 levels each (A2, B1; edges on 80 and 120). */
+const A1_BANDS = 30 / 3;
 export function bandOf(w: Pick<Word, 'lvl'>): number {
-  return Math.floor((w.lvl - 1) / PLACE.band);
+  if (w.lvl <= 30) return Math.floor((w.lvl - 1) / PLACE.band);
+  return A1_BANDS + Math.floor((w.lvl - 31) / PLACE.bandHigh);
 }
 
 export function bandCount(): number {
@@ -63,17 +89,22 @@ export function bandCount(): number {
 }
 
 export function bandRange(i: number): [number, number] {
-  return [i * PLACE.band + 1, Math.min(CONFIG.levelCap, (i + 1) * PLACE.band)];
+  if (i < A1_BANDS) return [i * PLACE.band + 1, Math.min(PLACE_CAP, (i + 1) * PLACE.band)];
+  const j = i - A1_BANDS;
+  return [31 + j * PLACE.bandHigh, Math.min(PLACE_CAP, 30 + (j + 1) * PLACE.bandHigh)];
 }
 
 /** Entry level when bands 0..top are passed (top = -1: none). */
 export function levelFor(top: number): number {
-  return top < 0 ? 1 : Math.min(CONFIG.levelCap, bandRange(top)[1] + 1);
+  return top < 0 ? 1 : Math.min(PLACE_CAP, bandRange(top)[1] + 1);
 }
 
-/** Region you start in at that level (region 2 from 11, region 3 from 21). */
-export function regionFor(level: number): 1 | 2 | 3 {
-  return level >= 21 ? 3 : level >= 11 ? 2 : 1;
+/** 分级考核 reaches the end of the released content (0.8: 120, regions 1–12; Lucas 11-26). */
+export const PLACE_CAP = Math.min(CONFIG.levelCap, CONFIG.releaseCap);
+
+/** Region you start in at that level (10 levels per region). */
+export function regionFor(level: number): number {
+  return Math.max(1, Math.min(Math.ceil(PLACE_CAP / 10), Math.ceil(level / 10)));
 }
 
 /** 推定会 words are 归名 on trust: they count as known but have not been written yet. */
@@ -89,16 +120,31 @@ function known(s: GameState, w: Word): boolean {
 /** Sample words per band for the self-pick screen (most useful first: list order). */
 export function bandSamples(): Word[][] {
   const out: Word[][] = Array.from({ length: bandCount() }, () => []);
-  for (const w of placeWords()) {
+  const ws = placeWords();
+  for (const w of [...ws.filter(fitsGoethe), ...ws.filter((x) => !fitsGoethe(x))]) {
     const b = out[bandOf(w)];
     if (b.length < PLACE.samples && (w.pos === 'n' || w.pos === 'v' || w.pos === 'adj')) b.push(w);
   }
   return out;
 }
 
-/** 分级考核 can be taken once per game day (the new-game test doesn't count). */
-export function canPlaceToday(s: GameState, t = now(s)): boolean {
-  return s.flags.placeDay !== dayKey(t);
+/** Words the player really knows: retired or 归名, not 推定会. */
+export function learnedCount(s: GameState): number {
+  let n = 0;
+  for (const p of Object.values(s.words)) if ((p.retired || p.stage === 3) && !isPlaced(p)) n++;
+  return n;
+}
+
+/** How many more words to 归名 / 斩杀 before 分级考核 can be taken again (0 = now). Old saves that took it before this
+ *  rule (no count stored) may take it again at once. */
+export function placeAgainIn(s: GameState): number {
+  const at = s.flags.placeKnown;
+  if (typeof at !== 'number') return 0;
+  return Math.max(0, at + PLACE.retakeAfter - learnedCount(s));
+}
+
+export function canPlaceAgain(s: GameState): boolean {
+  return placeAgainIn(s) === 0;
 }
 
 export interface PlaceRun {
@@ -126,10 +172,12 @@ export interface PlaceRun {
   verifying?: boolean;
   /** Set by applyPlacement. */
   outcome?: PlaceOutcome;
+  /** From the 点词 board: the estimate it gave, invented words clicked, real words left unclicked. */
+  claim?: PickResult;
 }
 
 function bandQueue(s: GameState, band: number, rng: Rng, exclude: Set<string>): Word[] {
-  return shuffle(rng, placeWords().filter((w) => bandOf(w) === band && !known(s, w) && !exclude.has(w.id)));
+  return shuffle(rng, goetheFirst(placeWords().filter((w) => bandOf(w) === band && !known(s, w) && !exclude.has(w.id)), PLACE.per + PLACE.extra));
 }
 
 function askedIds(run: PlaceRun): Set<string> {
@@ -200,6 +248,84 @@ function bandDone(s: GameState, run: PlaceRun, ok: boolean, perfect: boolean, rn
   return finish(run);
 }
 
+// ---- 点词 board (Lucas 2026-11-26) -----------------------------------------------------------
+// Instead of picking a band from truncated sample lines, the player sees ~2 whole words per band and clicks the ones
+// they know. A few invented German-looking words are mixed in: clicking one pulls the estimate down. The estimate is
+// only where the typing check starts; the typing check (unchanged) decides the level.
+
+/** Invented words: look German, do not exist (checked against the word list). */
+export const FAKE_WORDS = ['der Flinsel', 'die Brötung', 'das Gemörk', 'verpladern', 'die Nastheit', 'glurbig', 'der Kramsel', 'umtrölen', 'das Pleschtum', 'die Strabe', 'brimsig', 'die Serbung'];
+/** Invented words on one board. */
+export const FAKES_SHOWN = 8;
+
+export interface PickItem {
+  key: string;
+  label: string;
+  band: number;
+  word?: Word;
+  fake?: boolean;
+}
+
+export interface PickBoard {
+  items: PickItem[];
+  /** Bands with nothing left to show (all known already): count as known. */
+  known: number[];
+}
+
+export interface PickResult {
+  /** Highest band the clicks point at, after the invented-word penalty (-1 = none). */
+  top: number;
+  /** Before the penalty. */
+  raw: number;
+  fakes: string[];
+  /** Real words shown but not clicked. */
+  unpicked: Word[];
+}
+
+/** Build the board: per band a few useful words you do not know yet, plus invented ones spread over the stages. */
+export function pickBoard(s: GameState, rng: Rng): PickBoard {
+  const n = bandCount();
+  const pools: Word[][] = Array.from({ length: n }, () => []);
+  for (const w of placeWords()) if ((w.pos === 'n' || w.pos === 'v' || w.pos === 'adj') && !known(s, w)) pools[bandOf(w)].push(w);
+  const items: PickItem[] = [];
+  const knownBands: number[] = [];
+  pools.forEach((pool, b) => {
+    if (!pool.length) return knownBands.push(b);
+    for (const w of shuffle(rng, goetheFirst(pool, PLACE.pickPer).slice(0, 15)).slice(0, PLACE.pickPer)) items.push({ key: w.id, label: fullForm(w), band: b, word: w });
+  });
+  const fakes = shuffle(rng, FAKE_WORDS).slice(0, FAKES_SHOWN);
+  fakes.forEach((f, i) => items.push({ key: `fake:${f}`, label: f, band: Math.floor(((i + 0.5) / fakes.length) * n), fake: true }));
+  return { items: shuffle(rng, items), known: knownBands };
+}
+
+/** Estimate from the clicks: the cut-off band that disagrees with the fewest clicks (known below, unknown above),
+ *  ties to the higher band (the typing check steps down if it is too high); minus 2 bands per invented word. */
+export function estimatePicks(board: PickBoard, picked: Set<string>): PickResult {
+  const n = bandCount();
+  const real = board.items.filter((i) => !i.fake);
+  let best = -1;
+  let bestErr = Infinity;
+  for (let t = -1; t < n; t++) {
+    let err = 0;
+    for (const i of real) if ((i.band <= t) !== picked.has(i.key)) err++;
+    for (const b of board.known) if (b > t) err += PLACE.pickPer;
+    if (err <= bestErr) {
+      bestErr = err;
+      best = t;
+    }
+  }
+  const fakes = board.items.filter((i) => i.fake && picked.has(i.key)).map((i) => i.label);
+  const top = Math.max(-1, best - PLACE.fakePenalty * fakes.length);
+  return { top, raw: best, fakes, unpicked: real.filter((i) => !picked.has(i.key)).map((i) => i.word!) };
+}
+
+/** Start the typing check from the board: at the estimated band (nothing clicked → from the beginning). */
+export function startFromPicks(s: GameState, rng: Rng, claim: PickResult): PlaceRun {
+  const run = startPlacement(s, rng, Math.max(0, claim.top));
+  run.claim = claim;
+  return run;
+}
+
 /** Start the test at a band (0 = from the beginning). */
 export function startPlacement(s: GameState, rng: Rng, start = 0): PlaceRun {
   const n = bandCount();
@@ -217,7 +343,7 @@ export function gradePlace(input: string, w: Word): { res: Exclude<PlaceRes, 'sk
     if (v.ok) return { res: 'ok', verdict: v, wrote: c };
   }
   const verdict = gradeTyped(input, w, hasArticleQuestion(w));
-  const nIn = normalize(input);
+  const nIn = stripRefl(normalize(input), w);
   const nDe = normalize(w.de);
   const bare = w.art ? nIn.replace(/^(der|die|das|den|dem|des) /, '') : nIn;
   const longEnough = nDe.replace(/ /g, '').length >= 4;
@@ -276,7 +402,7 @@ export interface PlaceOutcome {
   level: number;
   /** Levels gained (empty when the test did not raise the level). */
   gained: number[];
-  region: 1 | 2 | 3;
+  region: number;
   retired: number;
   half: number;
   gaps: number;
@@ -287,7 +413,7 @@ const FAR = 9e15;
 
 /** Turn the answers into progress, level and open regions. Only ever raises the level; never touches words you
  *  have already started, except that a right answer retires them. */
-export function applyPlacement(s: GameState, run: PlaceRun, t = now(s), opts: { daily?: boolean } = {}): PlaceOutcome {
+export function applyPlacement(s: GameState, run: PlaceRun, t = now(s), _opts: { daily?: boolean } = {}): PlaceOutcome {
   if (run.outcome) return run.outcome;
   const top = topPassed(run);
   const passed = (b: number) => b <= top;
@@ -300,13 +426,13 @@ export function applyPlacement(s: GameState, run: PlaceRun, t = now(s), opts: { 
     seen.add(r.word.id);
     const p = s.words[r.word.id];
     if (r.res === 'ok') {
-      if (!p) s.words[r.word.id] = { stage: 3, due: t + CONFIG.srs.recheck, firstSeen: t, lastSeen: t, relapse: 0, correct: 1, wrong: 0, read: 0, write: 1, retired: t };
+      if (!p) s.words[r.word.id] = { stage: 3, due: t + CONFIG.srs.recheck, firstSeen: t, lastSeen: t, relapse: 0, correct: 1, wrong: 0, read: 0, write: 1, retired: t, sure: true }; // 会的词不再回响抽查 (Lucas 2026-11-27)
       else {
         p.correct += 1;
         p.write = (p.write ?? 0) + 1;
         delete p.placed;
         delete p.ctxDone;
-        retire(s, r.word, t);
+        retire(s, r.word, t, true);
       }
       retired++;
     } else if (r.res === 'half') {
@@ -320,10 +446,27 @@ export function applyPlacement(s: GameState, run: PlaceRun, t = now(s), opts: { 
       gaps++;
     }
   }
+  // 点词: words you said you did not know, in bands the typing check passed, follow you like typed gaps.
+  for (const w of run.claim?.unpicked ?? []) {
+    if (!passed(bandOf(w)) || seen.has(w.id)) continue;
+    seen.add(w.id);
+    const p = s.words[w.id];
+    if (p && !isPlaced(p)) continue;
+    s.words[w.id] = { stage: 1, lapsed: true, due: t, firstSeen: p?.firstSeen ?? t, lastSeen: t, relapse: 0, correct: 0, wrong: 0, read: 0, write: 0 };
+    gaps++;
+  }
   for (const w of placeWords()) {
     if (!passed(bandOf(w)) || seen.has(w.id) || s.words[w.id]) continue;
     s.words[w.id] = { stage: 3, due: FAR, ctxDone: true, placed: t, firstSeen: t, lastSeen: t, relapse: 0, correct: 0, wrong: 0, read: 0, write: 0 };
     placed++;
+  }
+  // 0.8.3 (Lucas 11-26「按推荐」): passing every band of a stage stands in for that stage's 突破试炼 words; it no
+  // longer caps the level. A1's grammar part is still owed (补考语法 at the 考官), but does not block levelling.
+  const topLevel = top < 0 ? 0 : bandRange(top)[1];
+  for (const d of STAGES) {
+    if (d.cap > topLevel) break;
+    if (d.stage === 'A1') s.flags.a1Passed = true;
+    s.flags[`place${d.stage}`] = true;
   }
   const level = Math.max(s.level, levelFor(top));
   const gained: number[] = [];
@@ -335,9 +478,20 @@ export function applyPlacement(s: GameState, run: PlaceRun, t = now(s), opts: { 
   }
   const region = regionFor(level);
   for (let r = 2; r <= region; r++) s.flags[`seenArea${r}`] = true;
+  // 审查修订 C4: a jump into a new region brings a white tier-0 set of that region (once); better pieces stay on.
+  if (gained.length && region > 1 && !s.flags[`entryKit_${region}`]) {
+    s.flags[`entryKit_${region}`] = true;
+    const ilvl = tierIlvl(region, 0);
+    for (const slot of slotsAt(ilvl)) {
+      const it = { ...makeItem(Math.random, ilvl, 'white', slot), tier: 0, region };
+      const cur = s.equipped[slot];
+      if (!cur || itemScore(cur) < itemScore(it)) s.equipped[slot] = it;
+    }
+    s.hp = maxHp(s);
+  }
   const prev = s.placement;
   s.placement = { at: t, level: levelFor(top), top: Math.max(top, prev?.top ?? -1), checks: prev?.checks ?? {} };
-  if (opts.daily) s.flags.placeDay = dayKey(t);
+  s.flags.placeKnown = learnedCount(s);
   s.flags.placeAsked = true;
   run.outcome = { top, level, gained, region, retired, half, gaps, placed };
   return run.outcome;

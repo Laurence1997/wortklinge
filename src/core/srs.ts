@@ -60,12 +60,16 @@ export function needsVerify(s: GameState, w: Word, t = now(s)): boolean {
   return !!verifyOf(s.words[w.id], t);
 }
 
-/** Retire a word (斩杀): it counts as 归名 everywhere and leaves the reviews. */
-export function retire(s: GameState, w: Word, t = now(s)): void {
+/** Retire a word (斩杀): it counts as 归名 everywhere and leaves the reviews. A normal 斩杀 gets one 回响 check after 30 days. */
+export function retire(s: GameState, w: Word, t = now(s), known = false): void {
   const p = s.words[w.id];
   if (!p) return;
+  // 会的词 (入学测试, 主城筛选, 直接叫名) skip the 30-day 回响 check (Lucas 2026-11-27).
   if (p.retired && !p.sure && t >= p.retired + CONFIG.srs.recheck) p.sure = true;
-  else p.retired = t;
+  else {
+    p.retired = t;
+    if (known) p.sure = true;
+  }
   delete p.pend;
   delete p.hinted;
   p.stage = 3;
@@ -90,7 +94,7 @@ export function failVerify(s: GameState, w: Word, t = now(s)): void {
 // Before 归名: 3 defeats (认 / 用 / 写), the word respawning in its own scene ~6 minutes after each.
 // After 归名 it never spawns on a schedule: a context question (its example sentence, typed) is put into
 // whatever fight you are in after 2 days, 1 week, 1 month, 3 months. A clean 归名 (no wrong answer, no 低语)
-// gets one 30-day spot check only. Wrong → 复发 (半名 review monster); 2 gaps overdue → review monster too.
+// comes back once after 2–3 days (审查修订), and a second clean pass ends its reviews. Wrong → 复发 (半名 review monster); 2 gaps overdue → review monster too.
 
 const FAR = 9e15;
 
@@ -106,6 +110,7 @@ export function overdueMon(p: WordProgress | undefined, t: number): boolean {
 
 /** Its context question is due now (and it has not gone overdue into a monster). */
 export function contextDue(p: WordProgress | undefined, t: number): boolean {
+  if (p?.artHalf && p.stage === 2 && !p.retired) return t >= p.due;
   return !!p && p.stage === 3 && !p.retired && !p.ctxDone && t >= p.due && !overdueMon(p, t);
 }
 
@@ -114,15 +119,19 @@ export function reviewMon(p: WordProgress | undefined, t: number): boolean {
   return !!p && !p.retired && ((p.lapsed && p.stage < 3) || overdueMon(p, t));
 }
 
-/** Put a word at 归名 with its context schedule (clean = only the 30-day spot check). */
-export function setGuiming(p: WordProgress, t: number, clean: boolean): void {
+/** Put a word at 归名 with its context schedule (clean = the 2 / 7 / 30-day ladder, Lucas 2026-11-27). */
+export function setGuiming(p: WordProgress, t: number, clean: boolean, relapsed = false): void {
+  const a = CONFIG.srs.adaptive;
+  const slips = p.flawN ?? (p.flaw ? 1 : 0);
   p.stage = 3;
   delete p.lapsed;
   delete p.flaw;
+  delete p.flawN;
   delete p.ctxDone;
-  const c = CONFIG.srs.context;
-  p.ctx = clean ? c.length - 1 : 0;
-  p.ivl = clean ? CONFIG.srs.spot : c[0];
+  p.ctx = 0;
+  if (clean) p.fix = 0;
+  else delete p.fix;
+  p.ivl = clean ? CONFIG.srs.cleanLadder[0] : relapsed ? a.restart : slips >= 2 ? a.slips : a.oneSlip;
   p.due = t + p.ivl;
 }
 
@@ -136,18 +145,38 @@ export function gapZh(ms: number): string {
 }
 
 /** A context review answered right: the next, longer gap (or done). Returns the next gap, null when done. */
-export function contextPass(s: GameState, w: Word, t = now(s)): number | null {
+export function contextPass(s: GameState, w: Word, t = now(s), quality: 'clean' | 'shaky' = 'clean'): number | null {
   const p = s.words[w.id];
   if (!p || p.stage !== 3) return null;
-  const c = CONFIG.srs.context;
-  p.ctx = (p.ctx ?? 0) + 1;
+  const a = CONFIG.srs.adaptive;
+  const L = CONFIG.srs.cleanLadder;
   p.lastSeen = t;
-  if (p.ctx >= c.length) {
+  const prev = gapOf(p);
+  // 写对的词 (Lucas 2026-11-27 选 1): 2 → 7 → 30 days; the third clean pass ends its reviews. A shaky pass moves it
+  // onto the adaptive schedule from here.
+  if (p.fix !== undefined) {
+    if (quality === 'clean') {
+      const n = p.fix + 1;
+      if (n >= L.length) {
+        delete p.fix;
+        p.ctxDone = true;
+        p.due = FAR;
+        return null;
+      }
+      p.fix = n;
+      p.ivl = L[n];
+      p.due = t + p.ivl;
+      return p.ivl;
+    }
+    delete p.fix;
+  }
+  // Adaptive: a clean pass on a gap over 90 days ends the reviews.
+  if (quality === 'clean' && prev > a.doneAfter) {
     p.ctxDone = true;
     p.due = FAR;
     return null;
   }
-  p.ivl = c[p.ctx];
+  p.ivl = Math.round(prev * (quality === 'clean' ? a.clean : a.shaky));
   p.due = t + p.ivl;
   return p.ivl;
 }
@@ -158,6 +187,7 @@ export function contextFail(s: GameState, w: Word, t = now(s)): void {
   if (!p || p.retired) return;
   p.stage = 2;
   p.lapsed = true;
+  delete p.fix;
   p.due = t;
   p.lastSeen = t;
 }
@@ -179,6 +209,15 @@ export function reviewedByWriting(s: GameState, w: Word, t = now(s)): void {
   else p.due = Math.max(p.due, t + gapOf(p));
 }
 
+/** 介词空 right (游戏设计 六): one review of the word, like a written answer, but it never confirms a 推定会 word
+ *  (the word itself was not written). */
+export function reviewedByUse(s: GameState, w: Word, t = now(s)): void {
+  const p = s.words[w.id];
+  if (!p || p.placed || p.retired || p.stage !== 3 || p.ctxDone) return;
+  if (t >= p.due) contextPass(s, w, t);
+  else p.due = Math.max(p.due, t + gapOf(p));
+}
+
 /** Words whose context question is due, most overdue first. */
 export function contextDueWords(s: GameState, t = now(s)): string[] {
   return Object.entries(s.words)
@@ -192,6 +231,8 @@ export function kindOf(s: GameState, w: Word, t = now(s)): Kind {
   if (!p) return 'new';
   if (p.retired) return 'guiming';
   if (p.stage === 3) return overdueMon(p, t) ? 'due' : 'guiming';
+  // 文章群怪 半名: it doesn't come back as a monster; its context question brings 归名.
+  if (p.artHalf) return 'shadow';
   return t >= p.due ? 'due' : 'shadow';
 }
 
@@ -237,7 +278,7 @@ export function canUse(w: Word): boolean {
  * @param opts.flaw a wrong answer or a 低语 on this word in this fight
  * @param opts.typed a typed question on it was answered right (cloze, dictation, conjugation)
  */
-export function recordKill(s: GameState, w: Word, typedFinal: boolean, slipped: boolean, t = now(s), opts: { used?: boolean; flaw?: boolean; typed?: boolean } = {}): KillOutcome {
+export function recordKill(s: GameState, w: Word, typedFinal: boolean, slipped: boolean, t = now(s), opts: { used?: boolean; flaw?: boolean; typed?: boolean; wrongs?: number } = {}): KillOutcome {
   const kind = kindOf(s, w, t);
   const from = stageOf(s, w, t);
   const p = s.words[w.id];
@@ -246,7 +287,7 @@ export function recordKill(s: GameState, w: Word, typedFinal: boolean, slipped: 
   if (kind === 'new' || !p) {
     // rev 52: every question on it right, no 低语, at least one typed → straight to 半名 (2 fights in all).
     const skip = !opts.flaw && !!opts.typed && !w.tutorial;
-    s.words[w.id] = { stage: skip ? 2 : 1, due: t + respawn, firstSeen: t, lastSeen: t, relapse: 0, correct: 0, wrong: 0, ...(opts.flaw ? { flaw: true } : {}) };
+    s.words[w.id] = { stage: skip ? 2 : 1, due: t + respawn, firstSeen: t, lastSeen: t, relapse: 0, correct: 0, wrong: 0, ...(opts.flaw ? { flaw: true } : {}), ...(opts.wrongs ? { flawN: opts.wrongs } : {}) };
     return { kind, from: 0, to: skip ? 2 : 1, guiming: false, needsTypedFinal: false };
   }
   p.lastSeen = t;
@@ -255,6 +296,7 @@ export function recordKill(s: GameState, w: Word, typedFinal: boolean, slipped: 
     return { kind, from, to: from, guiming: false, needsTypedFinal: false };
   }
   if (opts.flaw) p.flaw = true;
+  if (opts.wrongs) p.flawN = (p.flawN ?? 0) + opts.wrongs;
   if (from === 1) {
     if (!opts.used && canUse(w)) {
       p.due = t + respawn;
@@ -278,7 +320,7 @@ export function recordKill(s: GameState, w: Word, typedFinal: boolean, slipped: 
     return { kind, from, to: 2, guiming: false, needsTypedFinal: !typedFinal };
   }
   if (relapsed) p.relapse += 1;
-  setGuiming(p, t, !relapsed && !p.flaw && !p.hinted);
+  setGuiming(p, t, !relapsed && !p.flaw && !p.hinted, relapsed);
   return { kind, from, to: 3, guiming: true, needsTypedFinal: false };
 }
 

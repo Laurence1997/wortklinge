@@ -13,6 +13,12 @@ import { shuffle, type Rng } from './rng';
 import type { GameState } from './state';
 import type { Word } from './types';
 import { hasArticleQuestion, WORDS } from '../data/words';
+import { STAGE_DEF, type Stage } from './stages';
+import { LINE_GENS } from './gram/lines';
+import { adjTask } from './gram/adj';
+import { mirrorTask } from './gram/mirror';
+import { praetModalTask, praetTask } from './gram/praet';
+import type { GramTask } from './gram/task';
 
 export const BREAK = { from: 30, perPart: 8, pass: 5 };
 
@@ -45,15 +51,23 @@ export interface Exam {
   right: Record<ExamPart, number>;
   /** 补考语法: only the grammar part (saves that passed the three parts before 0.6.x). */
   grammarOnly?: boolean;
+  /** 0.7/0.8: which trial (A1 at 30, A2 at 80, B1 at 120). Missing = A1 (older code paths). */
+  stage?: Stage;
   last?: { ok: boolean; q: ExamQ; input: string };
   over: boolean;
 }
 
-function pool(s: GameState): Word[] {
-  const ok = (w: Word) => (w.region ?? 1) <= 3 && w.pos !== 'phr' && !w.digit && !w.tutorial;
+/** Only words you met; taken early (提前考, Lucas 2026-11-25) or with under 40 met, the whole stage's list. */
+function pool(s: GameState, stage: Stage = 'A1'): Word[] {
+  const [lo, hi] = STAGE_DEF[stage].regions;
+  const ok = (w: Word) => (w.region ?? 1) >= lo && (w.region ?? 1) <= hi && w.pos !== 'phr' && !w.digit && !w.tutorial;
   const met = WORDS.filter((w) => ok(w) && s.words[w.id]);
-  return met.length >= 40 ? met : WORDS.filter(ok);
+  return met.length >= 40 && s.level >= STAGE_DEF[stage].cap ? met : WORDS.filter(ok);
 }
+
+/** 突破试炼可以提前考 (Lucas 2026-11-25): open at the examiner from the level 全量筛选 opens; passing early opens the
+ *  cap at 30 with no second test. */
+export const BREAK_EARLY = true;
 
 function sentenceOf(w: Word): { de: string; zh: string } | null {
   for (const line of EXAMPLES[w.id] ?? []) {
@@ -63,8 +77,13 @@ function sentenceOf(w: Word): { de: string; zh: string } | null {
   return null;
 }
 
-export function startExam(s: GameState, rng: Rng): Exam {
-  const words = shuffle(rng, pool(s));
+/** 0.7/0.8: A2 and B1 use the same four parts on their own regions' words (游戏设计 七), the grammar part asks the
+ *  stage's own items (stageGrammarQs). Still to come: B1's short article in 读 and one AI-graded free sentence in 写. */
+export function startExam(s: GameState, rng: Rng, stage: Stage = 'A1'): Exam {
+  // 审查修订 C9: a retake asks other words first (the last try's answers were shown after each miss).
+  const last = new Set(String(s.flags[`examLast_${stage}`] ?? '').split(',').filter(Boolean));
+  const mixed = shuffle(rng, pool(s, stage));
+  const words = [...mixed.filter((w) => !last.has(w.id)), ...mixed.filter((w) => last.has(w.id))];
   const used = new Set<string>();
   const take = (fits: (w: Word) => boolean) => {
     const w = words.find((x) => !used.has(x.id) && fits(x));
@@ -101,13 +120,17 @@ export function startExam(s: GameState, rng: Rng): Exam {
     if (!w) break;
     qs.push({ part: 'write', word: w, prompt: w.zh, answer: w.de });
   }
-  qs.push(...grammarQs(s, rng));
-  return { qs, at: 0, right: { listen: 0, read: 0, write: 0, grammar: 0 }, over: false };
+  qs.push(...(stage === 'A1' ? grammarQs(s, rng, STAGE_DEF[stage].regions[1], last) : stageGrammarQs(s, rng, stage, words)));
+  s.flags[`examLast_${stage}`] = qs.map((q) => q.word.id).join(',');
+  return { qs, at: 0, right: { listen: 0, read: 0, write: 0, grammar: 0 }, over: false, stage };
 }
 
 /** 补考语法: the grammar part alone. */
 export function startGrammarExam(s: GameState, rng: Rng): Exam {
-  return { qs: grammarQs(s, rng), at: 0, right: { listen: 0, read: 0, write: 0, grammar: 0 }, over: false, grammarOnly: true };
+  const last = new Set(String(s.flags.examLast_gram ?? '').split(',').filter(Boolean));
+  const qs = grammarQs(s, rng, 3, last);
+  s.flags.examLast_gram = qs.map((q) => q.word.id).join(',');
+  return { qs, at: 0, right: { listen: 0, read: 0, write: 0, grammar: 0 }, over: false, grammarOnly: true };
 }
 
 /** Articles of this case for the noun's gender: the blank tests the case, not definite vs indefinite. */
@@ -125,10 +148,11 @@ const datHint = (prep: string | null) => (prep ? `${prep} 后面用第三格（�
 
 /** 语法 (0.6.x): 宾格 2, 与格 2, 变位 2 (one regular, one strong), 完成时 2 (one haben, one sein), all typed into a
  *  sentence, only with words you have met, reusing the battle's case and Perfekt frames. */
-export function grammarQs(s: GameState, rng: Rng): ExamQ[] {
+export function grammarQs(s: GameState, rng: Rng, maxRegion = 3, avoid: Set<string> = new Set()): ExamQ[] {
   const met = (w: Word) => !!s.words[w.id];
-  const nouns = shuffle(rng, WORDS.filter((w) => w.pos === 'n' && (w.region ?? 1) <= 3)).sort((a, b) => Number(met(b)) - Number(met(a)));
-  const verbs = shuffle(rng, WORDS.filter((w) => w.pos === 'v' && (w.region ?? 1) <= 3)).sort((a, b) => Number(met(b)) - Number(met(a)));
+  const fresh = (w: Word) => Number(!avoid.has(w.id)) * 2 + Number(met(w));
+  const nouns = shuffle(rng, WORDS.filter((w) => w.pos === 'n' && (w.region ?? 1) <= maxRegion)).sort((a, b) => fresh(b) - fresh(a));
+  const verbs = shuffle(rng, WORDS.filter((w) => w.pos === 'v' && (w.region ?? 1) <= maxRegion)).sort((a, b) => fresh(b) - fresh(a));
   const out: ExamQ[] = [];
   const used = new Set<string>();
   // 宾格: article clozes on accusative slots (den / einen), else ihn / sie / es.
@@ -205,6 +229,45 @@ export function answerExam(e: Exam, input: string): void {
   e.last = { ok, q, input };
   e.at += 1;
   if (e.at >= e.qs.length) e.over = true;
+}
+
+/** A2 / B1 语法段 (游戏设计 七): this stage's own grammar, one question per item until eight, from the words of the
+ *  trial's pool. A2: 形容词词尾、双向介词、反身代词、情态过去式、第二虚拟式、关系从句、被动、过去完成时.
+ *  B1: 其余过去式、被动过去式、属格、属格介词、与格反身、n 变化名词 (two items get a second question). */
+type ItemGen = (w: Word, rng: Rng) => GramTask | null;
+const L = (k: keyof typeof LINE_GENS): ItemGen => (w, rng) => LINE_GENS[k]!(w, rng);
+export const STAGE_GRAMMAR: Record<'A2' | 'B1' | 'B2', ItemGen[]> = {
+  A2: [(w, rng) => adjTask(w, rng, 80), L('twoway'), (w, rng) => mirrorTask(w, rng, 80), praetModalTask, L('k2'), L('relative'), L('passive'), L('plq')],
+  B1: [praetTask, L('passPast'), L('genitive'), L('genPrep'), (w, rng) => (w.pos === 'v' ? mirrorTask(w, rng, 120) : null), L('nDecl'), praetTask, L('genitive')],
+  // B2 (160): the 121–141 rules opened by then, plus two from 101–111 while the B2 sentences are few (暂定).
+  B2: [L('k1'), L('passAlt'), L('hinHer'), L('fvg'), L('nomPrep'), L('passAlt'), L('k1'), L('dblConj')],
+};
+
+export function stageGrammarQs(s: GameState, rng: Rng, stage: 'A2' | 'B1' | 'B2', words: Word[]): ExamQ[] {
+  const out: ExamQ[] = [];
+  const used = new Set<string>();
+  // Items with no fitting sentence among this pool fall back to any word in the list.
+  const all = shuffle(rng, WORDS.filter((w) => w.pos !== 'phr' && !w.digit));
+  for (const gen of STAGE_GRAMMAR[stage]) {
+    let t: GramTask | null = null;
+    let w: Word | undefined;
+    for (const src of [words, all]) {
+      for (const x of src) {
+        if (used.has(x.id)) continue;
+        t = gen(x, rng);
+        if (t) {
+          w = x;
+          break;
+        }
+      }
+      if (t) break;
+    }
+    if (!t || !w) continue;
+    used.add(w.id);
+    out.push({ part: 'grammar', word: w, prompt: t.focus, answer: t.answer, options: t.options, blanks: t.options ? undefined : [t.answer], alts: t.options ? undefined : [t.answer, ...(t.alts ?? [])], full: t.full, hint: t.rule, zh: t.zh ?? t.prompt });
+  }
+  void s;
+  return out;
 }
 
 /** Parts this exam asks (all four, or grammar alone for 补考). */

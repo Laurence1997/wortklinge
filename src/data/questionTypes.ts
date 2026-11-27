@@ -9,8 +9,9 @@ export type QKey =
   | 'clozePick' | 'clozeBase' | 'clozeForm'
   | 'sentence' | 'sayingPick' | 'sayingTyped'
   | 'storm' | 'skill' | 'steady'
-  | 'order' | 'slot' | 'link'
-  | 'echoSay' | 'echoListen';
+  | 'order' | 'slot' | 'link' | 'compose'
+  | 'echoSay' | 'echoListen'
+  | 'gramPick' | 'gramTyped' | 'gramHard';
 
 export interface QTypeRow {
   zh: string;
@@ -34,9 +35,14 @@ export const QTYPES: Record<QKey, QTypeRow> = {
   // A1 写作 (2026-11-22): 排句 is a typed sentence from given chunks; 槽位造句 picks the noun and its case like 填变形.
   order: { zh: '排句', tier: 1, res: 1 },
   slot: { zh: '槽位造句', tier: 2, res: 2 },
+  compose: { zh: '造句', tier: 2, res: 2 },
   // 回音怪 (2026-11-23): reading a minimal pair aloud counts as hard; hearing which one is a plain choice.
   echoSay: { zh: '回音怪 · 读出来', tier: 2, res: 2 },
   echoListen: { zh: '回音怪 · 听辨', tier: 0, res: 0 },
+  // 语法题 (0.6.x–0.8 语法线): the grammar task says its own tier (choice / typed / hard).
+  gramPick: { zh: '语法 · 选', tier: 0, res: 0 },
+  gramTyped: { zh: '语法 · 打字', tier: 1, res: 1 },
+  gramHard: { zh: '语法 · 难题', tier: 2, res: 2 },
   // Spenders and class moves earn nothing.
   sentence: { zh: '终结技 · 看中文写整句', tier: 2, res: 0 },
   storm: { zh: '墨水风暴', tier: 1, res: 0 },

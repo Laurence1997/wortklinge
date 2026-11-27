@@ -16,6 +16,17 @@ export interface Word {
   zh: string;
   pos: Pos;
   family: FamilyId;
+  /** 类别 for the monster's look (食物、物品、动物、人物、地点、抽象; filled by the word list). */
+  cat?: string;
+  /** 专属造型: the art pack tile of this very thing ('f8' = Tiny Farm 8), used when the art packs have it. */
+  look?: string;
+  /** 反身动词 (Lucas 2026-11-27): how sich goes with the verb — 'sich ~' (always), '(sich) ~' (one of its senses),
+   *  'sich ~ lassen'; '|Dat' when sich is the dative (sich etwas merken). `de` stays the bare verb. */
+  refl?: string;
+  /** The preposition a reflexive verb usually takes: 'an + Akk'. */
+  prep?: string;
+  /** Lowest Goethe-Zertifikat word list the lemma is on ('A1' / 'A2' / 'B1'); absent = none of them. */
+  goethe?: 'A1' | 'A2' | 'B1';
   /** Monster level = recommended level of the field it lives in. */
   lvl: number;
   zone: ZoneId;
@@ -25,15 +36,34 @@ export interface Word {
   digit?: string;
   /** Tutorial words respawn fast. */
   tutorial?: boolean;
-  /** Region the word belongs to (1 = 余烬营地, 2 = 面包集市). */
-  region?: 1 | 2 | 3;
+  /** Region the word belongs to (1 = 余烬营地, 2 = 面包集市 … 12 = 心巷). */
+  region?: RegionNo;
+  /** 0.7/0.8 placeholder (src/data/zoneWords.ts): the region 1–3 word this stand-in copies (examples are shared). */
+  base?: string;
+  /** 0.7/0.8 (游戏设计 rev 341): the field scene whose word group this word belongs to (regions 4–12 and 蚀变 words). */
+  scene?: string;
+  /** 0.7/0.8: second batch of its scene (row 9+), opens once half the scene's words are 半名 (游戏设计 四「每个区域」). */
+  batch?: 2;
+  /** 0.7/0.8 蚀变 word of segment 8, 11 or 15: lives in an old scene, `region` is the segment (level band, gear, trials). */
+  erode?: ErodeSeg;
+  /** 蚀变: the word this is the advanced form of; spawns once that one was written right once, 推定会 or 斩杀. */
+  after?: string;
   /** Short example sentence shown in the 图鉴 card once 归名. */
   ex?: string;
 }
 
 export type FamilyId = 'zahnding' | 'echo' | 'zahlwurm' | 'sippe' | 'schild' | 'krume' | 'muenzling' | 'kram' | 'gier' | 'truhe' | 'fahrzeug' | 'nachhall' | 'wegweiser' | 'uhrwerk';
 /** Region 1: camp, echogasse, schilderstrasse, aschehof. Region 2 (面包集市): markt (city), gemuesegasse, waagegasse, kornspeicher. */
-export type ZoneId = 'camp' | 'echogasse' | 'schilderstrasse' | 'aschehof' | 'markt' | 'gemuesegasse' | 'waagegasse' | 'kornspeicher' | 'gleisdorf' | 'bahnhofstrasse' | 'altstadt' | 'fahrplanhalle';
+export type ZoneId = 'camp' | 'echogasse' | 'schilderstrasse' | 'aschehof' | 'markt' | 'gemuesegasse' | 'waagegasse' | 'kornspeicher' | 'gleisdorf' | 'bahnhofstrasse' | 'altstadt' | 'fahrplanhalle' | LaterZoneId;
+/** 0.7/0.8 regions 4–12 (src/data/zones.ts): r4hub is the town, r4a / r4b / r4c its three fields. */
+export type LaterZoneId = `r${MapRegionNo}${'hub' | 'a' | 'b' | 'c'}` | `r${1 | 2 | 3}${'d' | 'e'}`;
+/** Segments 4–20 (游戏设计 rev 341 / 488: 8, 11, 15 and 19 are 蚀变 on old maps, the rest are new regions with their own map). */
+export type LaterRegionNo = 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20;
+/** Later segments that have a map of their own. */
+export type MapRegionNo = 4 | 5 | 6 | 7 | 9 | 10 | 12 | 13 | 14 | 16 | 17 | 18 | 20;
+/** 蚀变 segments (the second-to-last segment of each stage). */
+export type ErodeSeg = 8 | 11 | 15 | 19;
+export type RegionNo = 1 | 2 | 3 | LaterRegionNo;
 
 /** flee = 宝箱怪 / rare monster shouting 「Ich muss los!」: kill it this turn or it runs. */
 export type IntentKind = 'attack' | 'defend' | 'charge' | 'heal' | 'wait' | 'flee';
@@ -79,13 +109,21 @@ export interface WordProgress {
   pend?: number;
   /** 斩杀: time it was retired (退役). Retired words leave the reviews; a 回响 check comes 30 days later. */
   retired?: number;
+  /** 审查修订 B4: 半名 from an article pack (文章群怪): no respawn; a context question written right brings 归名. */
+  artHalf?: boolean;
+  /** 词族秘境: words it was mixed up with (易混, a mark only). */
+  mix?: string[];
+  /** 审查修订 D3: clean typed kills of its plural crowd; at CONFIG.phase.pluralRetire the crowd stops coming. */
+  plOk?: number;
   /** 斩杀: the 30-day 回响 check was passed: retired for good. */
   sure?: boolean;
   /** 语境复习 (2026-11-24): context reviews passed since the last 归名 (index into CONFIG.srs.context). */
   ctx?: number;
   /** 语境复习: the gap that set `due` (for 「过期 2 个间隔」 and 越久越肥). */
   ivl?: number;
-  /** 语境复习: every review passed (or the one 30-day spot check of a clean 归名): no more reviews. */
+  /** 写对的词 (Lucas 2026-11-27): which step of CONFIG.srs.cleanLadder (2 / 7 / 30 days) is due; absent = adaptive. */
+  fix?: number;
+  /** 语境复习: every review passed (or the clean 2 / 7 / 30-day ladder done): no more reviews. */
   ctxDone?: boolean;
   /** 入学测试 (2026-11-25): 推定会 since this time: counts as 归名 on trust, spot-checked one per fight. */
   placed?: number;
@@ -93,10 +131,15 @@ export interface WordProgress {
   lapsed?: boolean;
   /** Before 归名: a wrong answer or a 低语 on it (a clean 归名 skips the review schedule, rev 51). */
   flaw?: boolean;
+  /** Before 归名: how many answers on it were wrong (sets the first review gap: 1 → 3 days, 2+ → 1 day). */
+  flawN?: number;
 }
 
-export type Quality = 'white' | 'green' | 'purple' | 'orange';
-export type Slot = 'pen' | 'coat' | 'amulet' | 'dict' | 'glasses';
+export type Quality = 'white' | 'green' | 'purple' | 'orange' | 'red';
+/** 传说效果 (暂定 values, src/core/loot.ts LEGENDARY). */
+export type Legendary = 'articleJudgement' | 'inkCrit' | 'comboHeal' | 'listenEcho';
+
+export type Slot = 'pen' | 'coat' | 'amulet' | 'dict' | 'glasses' | 'phones';
 
 export interface Affix {
   key: AffixKey;
@@ -126,10 +169,18 @@ export interface Item {
   /** Main stat: atk for pen, hp for coat, crit (fraction) for amulet, hints for dict. */
   main: number;
   affixes: Affix[];
-  /** Orange legendary effect key. */
-  legendary?: 'articleJudgement';
+  /** Orange / red legendary effect key (系统审查 2026-11-26: four kinds; different kinds stack, the same kind does not). */
+  legendary?: Legendary;
   /** 紫装德语鉴定 (0.6, 23 级): affixes hidden and inactive until Mira identifies it. */
   unidentified?: boolean;
-  /** 刻字孔 (0.6, 25 级): '' = an open socket; auch / denn once engraved. */
-  socket?: '' | 'auch' | 'denn';
+  /** 语气词孔 (审查修订: 刻字孔 and the mal/doch slot are one): '' = open; auch / denn from 25, mal / doch from 45. */
+  socket?: '' | 'auch' | 'denn' | 'mal' | 'doch';
+  /** 主题套装 (101 级): the region whose set this piece belongs to. */
+  set?: number;
+  /** 碎片换档 (九, 2026-11-25 暂定): the gear tier this piece carries and the region it is from. Its tier counts in
+   *  full in that region, half in the next one, not further on (as the old 「上一区档位减半」). */
+  tier?: number;
+  region?: number;
+  /** 言石 (62 级): the gem set in this purple / orange item. */
+  gem?: import('./gems').Gem;
 }

@@ -12,6 +12,8 @@ import { has } from './unlocks';
 import { eligible } from './spawn';
 import type { SceneDef } from '../data/world';
 import { WORD_BY_ID } from '../data/words';
+import { pickChallenge } from './challenge';
+import type { Rng } from './rng';
 
 export interface ElitePick {
   scene: string;
@@ -19,6 +21,21 @@ export interface ElitePick {
   words: string[];
   /** A review elite (it came back because its words are due). */
   review: boolean;
+  /** 挑战怪 (rev 342): the part (always the 3rd, «write») that carries a challenge-pool word instead. */
+  challengeSeg?: number;
+}
+
+/** 场景精英 3rd part: 30% of the time a word from the scene's challenge pool (rev 342). */
+export const ELITE_CHALLENGE = 0.3;
+
+function withChallenge(s: GameState, sc: SceneDef, pick: ElitePick, taken: Set<string>, rng?: Rng): ElitePick {
+  if (!rng || !sc.zone || rng() >= ELITE_CHALLENGE) return pick;
+  const seg = CONFIG.elite.segs - 1;
+  const c = pickChallenge(s, sc.zone, 1, new Set([...taken, ...pick.words]), rng).find((w) => eligible(s, w));
+  if (!c) return pick;
+  const words = [...pick.words];
+  words[seg] = c.id;
+  return { ...pick, words, challengeSeg: seg };
 }
 
 /** How many times this scene's elite has been beaten (a save flag, no format change). */
@@ -33,7 +50,7 @@ export function noteEliteWin(s: GameState, sceneId: string): void {
 const halfOrBetter = (s: GameState, id: string) => isRetired(s.words[id]) || (s.words[id]?.stage ?? 0) >= 2;
 
 /** The elite this scene would send now, or null. `taken` = word ids already standing on the map. */
-export function elitePick(s: GameState, sc: SceneDef, taken: Set<string> = new Set(), t = now(s)): ElitePick | null {
+export function elitePick(s: GameState, sc: SceneDef, taken: Set<string> = new Set(), t = now(s), rng?: Rng): ElitePick | null {
   if (!has(s.level, 'elite') || sc.type !== 'field' || !sc.words?.length) return null;
   const group = sc.words.map((id) => WORD_BY_ID[id]).filter((w): w is Word => !!w);
   if (!group.length) return null;
@@ -48,10 +65,10 @@ export function elitePick(s: GameState, sc: SceneDef, taken: Set<string> = new S
     // Not written yet first, then the lowest stage; list order breaks ties (stable sort).
     const rank = (w: Word) => ((s.words[w.id]?.write ?? 0) > 0 ? 10 : 0) + (s.words[w.id]?.stage ?? 0);
     const words = [...usable].sort((a, b) => rank(a) - rank(b)).slice(0, CONFIG.elite.segs);
-    return { scene: sc.id, words: words.map((w) => w.id), review: false };
+    return withChallenge(s, sc, { scene: sc.id, words: words.map((w) => w.id), review: false }, taken, rng);
   }
   // 复习精英 (游戏设计 六, 2026-11-24): only words that relapsed into review monsters count, not learning respawns.
   const due = usable.filter((w) => reviewMon(s.words[w.id], t)).sort((a, b) => (s.words[a.id]?.due ?? 0) - (s.words[b.id]?.due ?? 0));
   if (due.length < CONFIG.elite.due) return null;
-  return { scene: sc.id, words: due.slice(0, CONFIG.elite.segs).map((w) => w.id), review: true };
+  return withChallenge(s, sc, { scene: sc.id, words: due.slice(0, CONFIG.elite.segs).map((w) => w.id), review: true }, taken, rng);
 }

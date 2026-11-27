@@ -17,9 +17,9 @@ describe('词表导入', () => {
   });
 
   it('matches against the game and keeps the rest as 待收录', () => {
-    const r = matchRows(parseDelimited('Lemma,Item type\nBrot,Word\ndas Wasser,Word\nWahnsinn,Word\nBrot,Word\nwie geht es,Phrase\n'), WORDS);
+    const r = matchRows(parseDelimited('Lemma,Item type\nBrot,Word\ndas Wasser,Word\nXyzzyquatsch,Word\nBrot,Word\nwie geht es,Phrase\n'), WORDS);
     expect(r.matched).toEqual(['brot', 'wasser']);
-    expect(r.missing).toEqual(['Wahnsinn']);
+    expect(r.missing).toEqual(['Xyzzyquatsch']);
     expect(r.rows).toBe(3);
   });
 
