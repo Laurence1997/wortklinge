@@ -28,7 +28,7 @@ import { canTarget, collocOf, gradeSplit, combatSkills, MULT, POOL, splitOf, typ
 import { SAYING_CFG, SAYINGS } from '../data/sayings';
 import { expectedSentence, gradeSentence, nextPattern, PATTERNS, sentenceTags, type Pattern } from './sentence';
 import { PERFEKT, perfektFull, perfektParts } from '../data/perfekt';
-import { EXAMPLES, caseOf, clozeWhy, maskZh, pronounClozes, slotArticle, type Case, type Stance, clozeOptions, exampleSplits, gradeCloze, hasExamples, makeCloze, parse, showsWord, twoBlank, voiceLine, wholeSentence, type ClozeMode } from './cloze';
+import { EXAMPLES, caseOf, clozeWhy, maskZh, pronounClozes, slotArticle, type Case, type Stance, clozeOptions, exampleSplits, gradeCloze, gradeWholeSentence, hasExamples, makeCloze, parse, showsWord, twoBlank, voiceLine, wholeSentence, type ClozeMode } from './cloze';
 import { CONJ, PERSON_LABEL, type Person } from '../data/verbs';
 import { QTYPES, type QKey } from '../data/questionTypes';
 import { critRunNeeded, litStars, rank, resMax, STAR_BONUS, wrongHitShare } from './classes';
@@ -856,7 +856,7 @@ export function availableMoves(s: GameState, b: Battle, alive = 1, mates = alive
   const moves: Move[] = ['attack'];
   if (has(s.level, 'inscribe')) moves.push('inscribe');
   if (has(s.level, 'chorus') && alive > 1 && mates > 0) moves.push('chorus');
-  if (has(s.level, 'sentence')) moves.push('sentence');
+  if (has(s.level, 'sentence') && !b.phrase) moves.push('sentence'); // 残句 fights ask their own steps (1.0.11 试玩)
   if (combatSkills(s).length && !b.tutorial) moves.push('skill');
   return moves;
 }
@@ -905,7 +905,7 @@ export function moveReady(s: GameState, b: Battle, move: Move): boolean {
   if (move === 'inscribe') return !b.cfx.inscribeCd;
   // 低语 is free, but a word you were hinted on is asked again without it first.
   if (move === 'whisper') return b.curse !== 'forget' && !b.hinted && !s.words[b.word.id]?.hinted;
-  if (move === 'sentence') return resMax(s) > 0 && b.cfx.res >= resMax(s);
+  if (move === 'sentence') return !b.phrase && resMax(s) > 0 && b.cfx.res >= resMax(s);
   if (move === 'chorus') return b.chorusCd === 0;
   return true;
 }
@@ -1867,8 +1867,9 @@ export function gradeQuestion(s: GameState, b: Battle, q: Question, input: strin
         const g = gradePatSentence(input, q.patKeys, q.answer!);
         return { ok: g.ok, notes: g.ok ? (g.exact ? [] : [`原句：${q.answer}`]) : [`关键词要齐全、按顺序：${q.patKeys.join(' … ')}`, `原句：${q.answer}`], correct: g.ok ? input.trim() : q.answer!, word: g.ok ? b.word : undefined };
       }
-      const ok = sayKey(input) === sayKey(q.answer!);
-      return { ok, notes: ok ? [] : [`正确答案：${q.answer}`], correct: q.answer!, word: ok ? b.word : undefined };
+      // 1.0.11 试玩: key words in order; sehr, gern/gerne and the like may be added or left out.
+      const g = gradeWholeSentence(input, q.answer!, b.word, q.focus);
+      return { ok: g.ok, notes: g.ok ? (g.exact ? [] : [`原句：${q.answer}`]) : [`正确答案：${q.answer}`], correct: g.ok ? input.trim() : q.answer!, word: g.ok ? b.word : undefined };
     }
     case 'skill': {
       const fake: Word = { id: 'skill', de: q.answer ?? '', zh: '', pos: 'phr', family: 'echo', lvl: 1, zone: 'camp' };

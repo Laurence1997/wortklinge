@@ -127,21 +127,24 @@ const AUX_FORMS: Record<'haben' | 'sein', string[]> = {
 };
 const PP_AUX: Record<string, 'haben' | 'sein'> = Object.fromEntries(Object.values(PERFEKT).map((e) => [normalize(e.pp), e.aux]));
 
-/** A Perfekt sentence about yourself: ich/wir + the right form of haben/sein … a known participle at the end. */
+/** A Perfekt sentence about yourself: ich/wir + the right form of haben/sein … a known participle at the end.
+ *  The auxiliary may also come second with the subject right after it (1.0.11 试玩: Um acht Uhr bin ich abgefahren.). */
 export function gradePerfekt(input: string): { ok: boolean; note: string | null } {
   const n = normalize(input).replace(/\s+/g, ' ').trim().replace(/^(ja|nein|doch) /, '');
   const toks = n.split(' ');
   if (toks.length < 3) return { ok: false, note: '用完成时的整句回答：Ich habe … / Ich bin …' };
-  const subj = toks[0];
-  const aux = toks[1];
+  const isAuxTok = (t: string) => AUX_FORMS.haben.includes(t) || AUX_FORMS.sein.includes(t);
+  const inv = toks[0] === 'ich' || toks[0] === 'wir' ? -1 : toks.findIndex((t, i) => i >= 2 && (t === 'ich' || t === 'wir') && isAuxTok(toks[i - 1]));
+  const subj = inv > 0 ? toks[inv] : toks[0];
+  const aux = inv > 0 ? toks[inv - 1] : toks[1];
   const last2 = toks.slice(-2).join(' ');
   const pp = PP_AUX[last2] ? last2 : toks[toks.length - 1];
   const need = PP_AUX[pp];
   if (!need) return { ok: false, note: '句子最后要放分词（gemacht、gefahren、verpasst……）' };
   const wantAux = subj === 'wir' ? (need === 'haben' ? 'haben' : 'sind') : subj === 'ich' ? (need === 'haben' ? 'habe' : 'bin') : null;
-  if (!wantAux) return { ok: false, note: '用 ich 或 wir 开头回答你自己做了什么' };
+  if (!wantAux) return { ok: false, note: '用 ich 或 wir 回答你自己做了什么（Ich bin … / Um acht Uhr bin ich …）' };
   if (aux !== wantAux) {
-    const isAux = AUX_FORMS.haben.includes(aux) || AUX_FORMS.sein.includes(aux);
+    const isAux = isAuxTok(aux);
     return { ok: false, note: isAux ? `${pp} 的完成时用 ${need}：${subj} ${wantAux} … ${pp}` : `第二位放 ${wantAux}：${subj} ${wantAux} … ${pp}` };
   }
   return { ok: true, note: null };

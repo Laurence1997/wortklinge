@@ -164,6 +164,41 @@ export function wholeSentence(w: Word, rng: Rng): { zh: string; answer: string }
   return { zh: w.zh, answer: w.de };
 }
 
+/** Words a whole sentence keeps its meaning without (intensifiers, ja, bitte). gern stays a key word; gerne = gern. */
+const OPTIONAL = new Set(['sehr', 'wirklich', 'echt', 'ganz', 'ziemlich', 'total', 'ja', 'bitte']);
+let sameZh: Map<string, string[]> | null = null;
+/** Every example sentence with this Chinese (the data sometimes words one Chinese line two ways). */
+function sentencesWithZh(zh: string): string[] {
+  if (!sameZh) {
+    sameZh = new Map();
+    for (const lines of Object.values(EXAMPLES))
+      for (const l of lines) {
+        const p = parse(l);
+        if (!p || !p.zh) continue;
+        const list = sameZh.get(p.zh) ?? [];
+        list.push((p.before + p.blank + p.after).trim());
+        sameZh.set(p.zh, list);
+      }
+  }
+  return sameZh.get(zh) ?? [];
+}
+
+/**
+ * 终结技「看中文，写整句」(1.0.11 试玩): the key words of the sentence, in order, with nothing else but optional words
+ * (sehr, wirklich, bitte …) added or left out; gerne counts as gern. The monster's own word is never optional. Another example
+ * sentence with the very same Chinese also counts (水很凉。 = Das Wasser ist kalt.).
+ */
+export function gradeWholeSentence(input: string, answer: string, w: Word, zh?: string): { ok: boolean; exact: boolean } {
+  if (key(input) === key(answer)) return { ok: true, exact: true };
+  const toks = (v: string) => key(v).split(' ').filter(Boolean).map((t) => (t === 'gerne' ? 'gern' : t));
+  const own = new Set(toks(w.art ? w.de.replace(/^(der|die|das)\s+/i, '') : w.de));
+  const core = (v: string) => toks(v).filter((t) => own.has(t) || !OPTIONAL.has(t)).join(' ');
+  const mine = core(input);
+  if (!mine) return { ok: false, exact: false };
+  const ok = [answer, ...(zh ? sentencesWithZh(zh) : [])].some((a) => core(a) === mine);
+  return { ok, exact: false };
+}
+
 const LANGS = ['deutsch', 'chinesisch', 'englisch'];
 const Q_TEMPLATES: Record<string, { zh: string; answer: string }> = {
   wer: { zh: '这是谁？', answer: 'Wer ist das?' },

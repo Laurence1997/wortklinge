@@ -92,7 +92,8 @@ export const BOSS_QUESTIONS: BossQuestion[] = [
     id: 'phone',
     ask: ['Wie ist Ihre Telefonnummer?', 'Haben Sie eine Telefonnummer?'],
     zh: '问你的电话号码',
-    accept: [/^(meine (telefon)?nummer ist |ja |die nummer ist )?[0-9 ]{3,}$/, /^((null|eins|zwei|drei|vier|fuenf|sechs|sieben|acht|neun) ?){3,}$/],
+    // 1.0.11 试玩: any number of 3+ digits in the sentence counts (Meine Handynummer ist 0176 1234567.)
+    accept: [/^(meine (telefon)?nummer ist |ja |die nummer ist )?[0-9 ]{3,}$/, /^((null|eins|zwei|drei|vier|fuenf|sechs|sieben|acht|neun) ?){3,}$/, /[0-9]{3,}/],
     model: 'Meine Nummer ist 0176 123 456.',
   },
   {
@@ -106,7 +107,8 @@ export const BOSS_QUESTIONS: BossQuestion[] = [
     id: 'siblings',
     ask: ['Haben Sie Geschwister?', 'Hast du Geschwister?'],
     zh: '问你有没有兄弟姐妹',
-    accept: [/^(ja|nein)( |$)/, /^ich habe (einen|eine|zwei|drei|vier|keine) /],
+    // 1.0.11 试玩: also Ich bin Einzelkind. / Ich habe zwei Geschwister. / Keine Geschwister.
+    accept: [/^(ja|nein)( |$)/, /^ich habe (einen|eine|zwei|drei|vier|keine) /, /einzelkind/, /^ich habe (?!kein geschwister).*geschwister/, /^keine geschwister/],
     model: 'Ja, ich habe einen Bruder. / Nein, ich habe keine Geschwister.',
     traps: [[/^ich habe kein geschwister/, 'Geschwister 是复数：keine Geschwister']],
   },

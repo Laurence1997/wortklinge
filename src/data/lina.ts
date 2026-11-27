@@ -36,7 +36,11 @@ const Q: BossQuestion[] = [
     id: 'ticket',
     ask: ['Ihre Fahrkarte, bitte!', 'Die Fahrkarte, bitte!', 'Fahrkarte, bitte. Schnell!'],
     zh: '查票：把票给她',
-    accept: [/^(ja )?(hier|bitte|bitte schoen|bitte sehr|hier bitte|hier ist (meine|die) fahrkarte|hier ist sie|hier ist mein ticket|hier bitte schoen)( bitte)?$/],
+    accept: [
+      /^(ja )?(hier|bitte|bitte schoen|bitte sehr|hier bitte|hier ist (meine|die) fahrkarte|hier ist sie|hier ist mein ticket|hier bitte schoen)( bitte)?$/,
+      // 1.0.11 试玩: polite pieces combined (Bitte schön, hier ist meine Fahrkarte. / Hier, bitte sehr.)
+      /^(ja |ok |okay |moment |einen moment |sofort )*((bitte( schoen| sehr)?|hier|natuerlich|gern|gerne|klar) )*(hier (ist|haben sie) (meine|die|mein|das) (fahrkarte|ticket)|hier ist sie|hier ist es|hier bitte|bitte( schoen| sehr)?|hier)( (bitte( schoen| sehr)?|hier|danke))*$/,
+    ],
     model: 'Hier ist meine Fahrkarte.',
     traps: [[/keine/, 'Schwarzfahren! 没票就是逃票。给她票：Hier ist meine Fahrkarte.']],
   },
