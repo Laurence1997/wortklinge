@@ -198,3 +198,88 @@
 {"batch": "ex:international:1", "items": []}
 {"batch": "ex:echo:1", "items": [{"id": "ex:rauch:0", "problem": "德语 'dritten Stock' 指三楼（按德国楼层计数，底层为0），中文译成四楼，楼层数错。", "fix": "三楼窗户冒出浓烟，所以有人叫了消防队。"}]}
 {"batch": "ex:leuchten:2", "items": [{"id": "ex:fliessen:2", "problem": "Kontakte 在此语境下指电路中的触点/接触点，不是人际联系。", "fix": "只有通过触点，能量才能流动。"}]}
+{"batch": "ex:fruehjahr:1", "items": []}
+{"batch": "ex:gipfel:1", "items": [{"id": "ex:kontinent:1", "problem": "Kontinente 在此处指地球上的大洲，不是泛指大陆。", "fix": "世界上有多少个大洲？"}, {"id": "ex:stamm:0", "problem": "Stamm 在此处指树干，不是部族。", "fix": "我觉得这棵树干很棒。"}, {"id": "ex:stamm:1", "problem": "Stamm 在此处指树干，不是部落。", "fix": "这棵树干在森林深处。"}, {"id": "ex:feder:1", "problem": "Feder 在此处指发条，不是弹簧。", "fix": "我手表里的发条断了。"}, {"id": "ex:kabine:0", "problem": "Kabine 在此处指更衣室或小房间，不是隔间。", "fix": "她刚走进更衣室，灯就灭了。"}]}
+{"batch": "ex:sitzung:1", "items": [{"id": "ex:werkstudent:0", "problem": "Werkstudent 在德国指大学生在专业相关领域做兼职，通常有特定法律地位，译成「工读生」不准确，应译为「学生兼职」或「工读大学生」。", "fix": "他在一家公司当学生兼职。"}, {"id": "ex:form:0", "problem": "in Form bleiben 是固定短语，意为保持健康/状态良好，不是保持身材。", "fix": "保持健康，定期运动。"}]}
+{"batch": "ex:irak:0", "items": []}
+{"batch": "ex:klausur:0", "items": []}
+{"batch": "ex:verhandeln:2", "items": []}
+{"batch": "ex:probezeit:1", "items": [{"id": "ex:vertreter:1", "problem": "Vertreter 在此语境下应指「代表」或「代理人」，但中文「代理人」可能被理解为法律代理人，而原文更可能是「他的代表」或「他的代理人」，但更常见的是「他的代表」。不过，更关键的是：原文 Ich rief seinen Vertreter an 中的 Vertreter 可能指「代理人」或「代表」，但中文「代理人」在德国生活场景中通常指法律上的代理人，而这里可能只是公司代表或联系人。但意思基本正确，不算错。", "fix": "我给他的代表打了电话。"}]}
+{"batch": "ex:loesung:0", "items": []}
+{"batch": "ex:futter:2", "items": []}
+{"batch": "ex:entstehen:1", "items": []}
+{"batch": "ex:arbeitsvertrag:0", "items": [{"id": "ex:erwaehnen:0", "problem": "wann er zurückkommt 是间接疑问句，表示“他什么时候回来”，中文译成了“他什么时候回来了”，意思变成已经回来，时态理解错误。", "fix": "他提到他什么时候回来了吗？"}, {"id": "ex:einsatz:2", "problem": "Einsatz 在这里是“赌注”的意思，中文译成“赌注”正确，但“玩得赌注很高”搭配不当，应说“赌注下得很大”。", "fix": "你们赌注下得很大。"}, {"id": "ex:einsetzen:1", "problem": "sich für jemanden einsetzen 是“为某人出力、支持某人”，中文译成“他非常支持我”意思正确，但“支持”不够准确，应体现“为我奔走、替我说话”等含义。", "fix": "他非常为我出力。"}, {"id": "ex:direktor:1", "problem": "Direktor 在公司语境下是“经理、主管”，中文译成“主管”可以，但更常见是“经理”，不算错。", "fix": "经理今天和员工们谈这个计划。"}, {"id": "ex:anstellen:0", "problem": "anstellen 在这里是口语“干坏事、捣乱”的意思，中文译成“干了什么好事”是反语，意思正确。", "fix": "你又干了什么好事？厨房一团糟！"}]}
+{"batch": "ex:zeugnis:0", "items": []}
+{"batch": "ex:visum:0", "items": [{"id": "ex:klage:1", "problem": "Klage 在这里是法律上的「诉讼」，不是日常的「抱怨」。", "fix": "没有理由提起诉讼。"}]}
+{"batch": "ex:verbrauch:0", "items": []}
+{"batch": "ex:folgend:1", "items": [{"id": "ex:buergeramt:0", "problem": "Bürgeramt 在德国是市民局/公民办公室，不是「市民局」？其实「市民局」可以，但更常见是「市民服务局」或「公民办公室」。这里译成「市民局」不算错，但可能不够准确。不过问题不大。", "fix": "我明天在市民服务局有预约。"}, {"id": "ex:buergeramt:1", "problem": "Bürgeramt 译成「市民服务局」可以，但更常见是「市民局」或「公民办公室」。这里不算错。", "fix": "我可以在市民服务局申请新护照。"}]}
+{"batch": "ex:gueltig:1", "items": []}
+{"batch": "ex:detail:0", "items": []}
+{"batch": "ex:bedingung:0", "items": []}
+{"batch": "ex:zinsen:0", "items": [{"id": "ex:finanzierung:0", "problem": "Finanzierung 在这里指筹措学习期间的生活费和学费等全部费用，译成“学费的筹措”缩小了范围。", "fix": "筹措学习费用很难。"}, {"id": "ex:kuendigung:1", "problem": "Kündigung 在德国可指辞职或解约，但这里没有上下文表明是辞职，译成“辞职信”过于具体，可能不准确。", "fix": "她递交了解约通知。"}]}
+{"batch": "ex:hiermit:0", "items": []}
+{"batch": "ex:beschliessen:0", "items": []}
+{"batch": "ex:unabhaengig:0", "items": []}
+{"batch": "ex:kritisch:1", "items": []}
+{"batch": "ex:nachdenken:1", "items": [{"id": "ex:minijob:0", "problem": "Minijob 在德国指月收入不超过一定限额（如 538 欧元）的低收入兼职工作，不是字面意义的“迷你工作”。", "fix": "他只做一些低收入兼职。"}]}
+{"batch": "ex:mittel:1", "items": []}
+{"batch": "ex:techniker:0", "items": [{"id": "ex:kongress:0", "problem": "Kongress 在此语境指大会/会议，不是国会。", "fix": "大会索取了更多信息。"}, {"id": "ex:division:0", "problem": "Division 在此语境指师（军事单位），不是两支师，且主语是两支师，不是向敌方投降，而是投降了。", "fix": "两个师投降了。"}]}
+{"batch": "ex:wirksam:1", "items": [{"id": "ex:befehlen:0", "problem": "befehlen 是命令，不是普通的叫/让。", "fix": "老师命令我站起来。"}, {"id": "ex:kenntnis:1", "problem": "zur Kenntnis nehmen 是注意到、知悉，不是记下。", "fix": "我注意到了他说的话。"}]}
+{"batch": "ex:entwerfen:1", "items": [{"id": "ex:analysieren:0", "problem": "analysieren 是分析，不是想得太复杂。", "fix": "你把什么事都分析得太过了。"}, {"id": "ex:ernennen:1", "problem": "Direktorin 在此语境下应指经理/主管，而非女校长。", "fix": "她被任命为经理。"}, {"id": "ex:klient:1", "problem": "Klient 在律师语境下应译为委托人/当事人，而非客户。", "fix": "这位律师有很多委托人。"}]}
+{"batch": "ex:selbstbewusst:0", "items": []}
+{"batch": "ex:profitieren:1", "items": []}
+{"batch": "ex:agentur:1", "items": [{"id": "ex:agentur:1", "problem": "Agentur 在此语境下应指中介机构或代理公司，而非泛指的代理机构，但意思基本正确，不报。", "fix": "我昨天给一家中介公司打了电话。"}, {"id": "ex:qualifizieren:0", "problem": "qualifiziert 意为具备资格，而非胜任，但此处意思接近，不报。", "fix": "他不具备这个职位的资格。"}, {"id": "ex:grundsaetzlich:1", "problem": "grundsätzliche Frage 意为根本性的问题，而非原则性的问题，但意思接近，不报。", "fix": "我想问一个根本性的问题。"}, {"id": "ex:bemerkenswert:1", "problem": "bemerkenswert 意为值得注意的，但中文通常说值得关注或引人注目，意思正确，不报。", "fix": "这真值得关注。"}, {"id": "ex:begruenden:0", "problem": "begründen 意为说明理由，而非辩护，但意思接近，不报。", "fix": "我们想知道你是如何说明你的观点的。"}]}
+{"batch": "ex:bewaeltigen:0", "items": []}
+{"batch": "ex:dummheit:1", "items": []}
+{"batch": "ex:glaeubig:1", "items": []}
+{"batch": "ex:befassen:1", "items": [{"id": "ex:ausbrechen:1", "problem": "Im ersten Stock 错译为「二楼」，德语中 Im ersten Stock 指一楼（底层之上的一层），中文应为一楼。", "fix": "一楼发生了火灾。"}]}
+{"batch": "ex:justiz:1", "items": []}
+{"batch": "ex:parallel:0", "items": [{"id": "ex:gebot:0", "problem": "Gebot 在此语境下是拍卖中的出价，不是戒律。", "fix": "还有其他出价吗？"}]}
+{"batch": "ex:vollenden:1", "items": []}
+{"batch": "ex:impuls:0", "items": []}
+{"batch": "ex:nachkommen:0", "items": [{"id": "ex:umlegen:0", "problem": "umlegen 在此处是口语中“干掉、杀死”的意思，但中文“我把他们俩都干掉了”在中文里“干掉”可以指杀死，也可以指打败、解决，但德语 umlegen 明确是杀死，且句子没有上下文，可能被理解为其他意思。不过更关键的是，umlegen 作为“杀死”是口语，但中文“干掉”也是口语，意思基本对应。但检查发现：德语 umlegen 有“杀死”义项，中文“干掉”可以对应，不算错。但原句“Ich habe beide umgelegt.” 如果指人，是“我把他们俩都杀了”，但中文“干掉”在口语中可指杀死，也可指打败，但通常可接受。然而，在德国生活场景中，如果是指“我把两个都杀了”，中文“干掉”可能不够明确，但不算错。但根据要求，只报意思错了的。这里意思没错。", "fix": "我把他们俩都杀了。"}, {"id": "ex:umlegen:1", "problem": "umlegen 在此处是“围上、披上”的意思，中文“把这条围巾围上！”正确。", "fix": "把这条围巾围上！"}, {"id": "ex:umlegen:2", "problem": "umlegen 在此处是“分摊（费用）”的意思，中文“我们必须把费用分摊给所有住户。”正确。", "fix": "我们必须把费用分摊给所有住户。"}, {"id": "ex:iban:0", "problem": "IBAN 是国际银行账号，中文“国际银行账号”正确。", "fix": "请填写您的国际银行账号。"}, {"id": "ex:iban:1", "problem": "IBAN 是国际银行账号，中文“国际银行账号”正确。", "fix": "请在表格上填写您的国际银行账号。"}, {"id": "ex:sozialversicherung:0", "problem": "Sozialversicherung 是社会保险，中文“社保”是简称，意思正确。", "fix": "社保从工资里扣。"}, {"id": "ex:sozialversicherung:1", "problem": "Sozialversicherung 是社会保险，中文“社会保险”正确。", "fix": "社会保险在员工生病和年老时提供保障。"}, {"id": "ex:privat:0", "problem": "privat 是私人的、私密的，中文“私事”正确。", "fix": "这个我不想谈，是私事。"}, {"id": "ex:privat:1", "problem": "privat 是私下地，中文“私下”正确。", "fix": "我可以私下和你谈谈吗？"}, {"id": "ex:sichern:0", "problem": "sichern 在此处是“备份”的意思，中文“备份”正确。", "fix": "更新前别忘了备份文件。"}, {"id": "ex:sichern:1", "problem": "sichern 在此处是“确保、获得”的意思，中文“确保自己相对于竞争对手的优势”正确。", "fix": "我们怎样才能确保自己相对于竞争对手的优势？"}, {"id": "ex:sichern:2", "problem": "sichern 在此处是“使安全、防护”的意思，中文“我们把门锁好，防止有人入室行窃。”意思正确，但“锁好”是具体动作，德语 sichern 更泛，但不算错。", "fix": "我们把门锁好，防止有人入室行窃。"}, {"id": "ex:erheben:0", "problem": "erheben 在此处是“征收（税）”的意思，中文“征税”正确。", "fix": "市里从今年起对第二套住房征税。"}, {"id": "ex:erheben:1", "problem": "erheben 在此处是“提高（嗓门）”的意思，中文“我没有提高嗓门。”正确。", "fix": "我没有提高嗓门。"}, {"id": "ex:erheben:2", "problem": "erheben 在此处是“起身、站起来”的意思，中文“他慢慢从座位上站了起来。”正确。", "fix": "他慢慢从座位上站了起来。"}, {"id": "ex:verlust:0", "problem": "Verlust 是“失去、损失”，中文“失业”对应“Verlust seines Jobs”，正确。", "fix": "失业对他来说是个巨大的打击。"}, {"id": "ex:verlust:1", "problem": "Verlust 在此处指“失去亲友”，中文“我们为你失去亲友而感到难过。”正确。", "fix": "我们为你失去亲友而感到难过。"}, {"id": "ex:spenden:0", "problem": "spenden 是“捐赠”，中文“捐给”正确。", "fix": "我们把旧衣服捐给了红十字会。"}, {"id": "ex:spenden:1", "problem": "spenden 是“捐赠”，中文“捐一些钱”正确。", "fix": "我只是希望能多捐一些钱。"}, {"id": "ex:spenden:2", "problem": "spenden 是“捐献”，中文“献血”正确。", "fix": "你献过血吗？"}, {"id": "ex:wertvoll:0", "problem": "wertvoll 是“珍贵的、有价值的”，中文“非常珍贵”正确。", "fix": "爷爷的旧表对我来说非常珍贵。"}, {"id": "ex:wertvoll:1", "problem": "wertvoll 是“有价值的”，中文“很有价值”正确。", "fix": "这本书很有价值。"}, {"id": "ex:garantie:0", "problem": "Garantie 是“保修、保证”，中文“保修”正确。", "fix": "这台笔记本电脑有两年保修，所以把发票留好。"}, {"id": "ex:garantie:1", "problem": "Garantie 是“保证”，中文“保证”正确。", "fix": "价格高并不能保证质量。"}, {"id": "ex:erben:0", "problem": "erben 是“继承”，中文“继承”正确。", "fix": "她阿姨去世后，她继承了湖边的房子。"}, {"id": "ex:erben:1", "problem": "erben 是“继承”，中文“继承”正确。", "fix": "他继承了父亲的生意。"}, {"id": "ex:aktie:0", "problem": "Aktie 是“股票”，中文“股票”正确。", "fix": "他把所有钱都投进了股票，亏了很多。"}, {"id": "ex:aktie:1", "problem": "Aktie 是“股票”，中文“股票”正确。", "fix": "这只股票的价格在一个月内跌了一半。"}, {"id": "ex:sparkasse:0", "problem": "Sparkasse 是“储蓄银行”，中文“储蓄银行”正确。", "fix": "我在储蓄银行有一个账户。"}, {"id": "ex:sparkasse:1", "problem": "Sparkasse 是“储蓄银行”，中文“储蓄银行”正确。", "fix": "我注销了在储蓄银行的账户。"}, {"id": "ex:aufbringen:0", "problem": "aufgebracht 是“愤怒的、激动的”，中文“非常生气”正确。", "fix": "他非常生气。"}, {"id": "ex:aufbringen:1", "problem": "aufbringen 在此处是“筹集（资金）”的意思，中文“筹集”正确。", "fix": "公司筹集了购买新电脑的资金。"}, {"id": "ex:aufbringen:2", "problem": "aufbringen 在此处是“抽出（时间）”的意思，中文“抽出时间”正确。", "fix": "你能为此抽出时间吗？"}, {"id": "ex:aufbringen:3", "problem": "aufbringen 在此处是“使某人生气、激怒”的意思，中文“他不想让她反对自己。”意思有偏差。德语“gegen sich aufbringen”是“使某人对自己产生敌意、激怒某人”，中文“反对自己”不够准确，应译为“他不想激怒她”或“他不想让她对自己产生敌意”。", "fix": "他不想激怒她。"}]}
+{"batch": "ex:aufteilen:2", "items": []}
+{"batch": "ex:auslassen:2", "items": []}
+{"batch": "ex:inhalt:1", "items": []}
+{"batch": "ex:untertitel:1", "items": []}
+{"batch": "ex:kuenstlich:0", "items": [{"id": "ex:ausdruck:1", "problem": "Ausdruck 在此处指打印出来的文件（打印件），不是表达。", "fix": "你能把这份打印件打印出来吗？"}]}
+{"batch": "ex:aufsatz:1", "items": [{"id": "ex:meiden:0", "problem": "人称代词 sie 被译成了「他们」，但根据上下文应指「她」或「他们」？德语中 sie 可指她或他们，但这里动词 meide 是第一人称单数，宾语 sie 可能是她或他们。中文「他们」可能不准确，但无法确定。更可能的是，在德语中，如果指「她」，通常会用 sie（她），但这里没有上下文。不过，从句子「Ich meide sie nicht.」来看，sie 可能是她或他们。中文译成「他们」可能改变了意思，如果原文指「她」的话。但作为审校，我们应指出可能的人称错误。", "fix": "我没有避开她。"}]}
+{"batch": "ex:uebertragung:0", "items": []}
+{"batch": "ex:markieren:0", "items": [{"id": "ex:mitbekommen:0", "problem": "mitbekommen 在此处意为“注意到、察觉”，不是“意识到自己做了什么”。", "fix": "你注意到自己做了什么吗？"}, {"id": "ex:konstruktion:0", "problem": "Konstruktion 在此处指“建筑、构造物”，不是抽象的“构造”。", "fix": "这是我所见过的最大型的建筑物了。"}, {"id": "ex:website:0", "problem": "Bürgeramt 应译为“市民局”或“公民办公室”，不是“市民局”的误译，但“预约市民局”不准确，应译为“预约市民局的服务”或“在市民局预约”。", "fix": "在市政网站上可以在线预约市民局的服务。"}]}
+{"batch": "ex:anhang:1", "items": [{"id": "ex:umfang:1", "problem": "中文翻译不是句子，而是把德语句子改成了搭配标注，完全偏离原意。", "fix": "你们怎么计算圆的周长？我忘了。"}, {"id": "ex:drama:1", "problem": "Drama 在此指电影类型「剧情片」，不是「戏剧片」。", "fix": "这部电影是一部剧情片。"}]}
+{"batch": "ex:objektiv:0", "items": [{"id": "ex:schrift:2", "problem": "Schriften 在这里指历史文献/著作，不是一般意义的文献，但翻译成“历史文献”可以接受；不过“在独立的一翼里”不自然，但意思没错。不报。", "fix": ""}, {"id": "ex:datenschutz:1", "problem": "Beim Datenschutz 被译成“企业处理客户数据时必须谨慎”，漏译了“在数据保护方面”这个限定，但整体意思接近。不报。", "fix": ""}, {"id": "ex:absatz:0", "problem": "Absätze 是鞋跟，复数，翻译成“高跟鞋”正确。", "fix": ""}, {"id": "ex:reichweite:1", "problem": "Reichweite 指续航里程，翻译成“充一次电能行驶很远”正确。", "fix": ""}, {"id": "ex:bildschirm:0", "problem": "Bildschirm 可以指显示器或屏幕，翻译成“显示器”正确。", "fix": ""}, {"id": "ex:abstuerzen:0", "problem": "abgestürzt 指程序崩溃，翻译成“闪退”正确。", "fix": ""}]}
+{"batch": "ex:richter:0", "items": []}
+{"batch": "ex:bevoelkerung:0", "items": []}
+{"batch": "ex:krieg:0", "items": []}
+{"batch": "ex:bund:0", "items": [{"id": "ex:goettlich:0", "problem": "göttlich 在这里是口语中表示“极好的、绝妙的”，不是“不同一般”这种模糊表达。", "fix": "这蛋糕好吃极了！"}]}
+{"batch": "ex:journalist:0", "items": [{"id": "ex:weglaufen:1", "problem": "德语 'Er läuft vor den Hunden weg' 意思是他在逃跑，狗在追他；中文译成 '他正躲着狗跑开' 变成了躲着狗，意思有偏差。", "fix": "他正从狗那里跑开。"}, {"id": "ex:unterstellen:1", "problem": "德语 'Wir haben uns da untergestellt' 意思是我们在那里躲雨（unterstellen 指找地方躲避），中文译成 '我们在那里躲了躲雨' 意思正确，但原句没有明确说躲雨，不过结合语境可以接受。但严格来说，unterstellen 可以指躲雨或躲避其他，这里没有上下文，但中文加了 '雨' 可能过度翻译。不过问题不大，但为了准确，可以改为 '我们在那里躲了一下'。", "fix": "我们在那里躲了一下。"}]}
+{"batch": "ex:nebenbei:1", "items": [{"id": "ex:schlaeger:1", "problem": "Schläger 在此语境中不是「打手」，而是「球拍」或「击打工具」，但句子中「aus dem Lokal gebracht」暗示可能指人，需结合语境。德语中 Schläger 可指「打手、暴徒」，但更常见指「球拍」。此句可能指「球拍被带出餐馆」，但中文译成「打手」可能错误。", "fix": "争吵之后，那个球拍被带出了餐馆。"}]}
+{"batch": "ex:notiz:1", "items": [{"id": "ex:olympisch:0", "problem": "olympisch 在这里是比喻用法，表示“极大的、非凡的”，不是指奥林匹亚（城市）或奥运会。", "fix": "要做到这一点，需要拥有极大的力量。"}, {"id": "ex:melodie:0", "problem": "“弹一手”是错别字，应为“弹一首”，但意思没错。不过“弹一首”通常指弹奏一首曲子，而“Spiel uns eine Melodie”是“给我们弹一段旋律”，意思基本正确，但“弹一手”是错误表达。", "fix": "给我们弹一首曲子。"}]}
+{"batch": "ex:arena:1", "items": []}
+{"batch": "ex:cowboy:1", "items": []}
+{"batch": "ex:verletzung:1", "items": [{"id": "ex:huefte:0", "problem": "德语 Hüfte 指髋部（骨盆两侧），不是腰（Taille），“叉在腰上”改变了身体部位。", "fix": "她把双手放在髋部。"}]}
+{"batch": "ex:klatschen:1", "items": []}
+{"batch": "ex:haustier:0", "items": []}
+{"batch": "ex:aufspueren:0", "items": []}
+{"batch": "ex:uebergehen:0", "items": []}
+{"batch": "ex:begrenzen:1", "items": [{"id": "ex:enthuellen:0", "problem": "主语人称错误：德语 'ihre' 指她的，中文译成 '他们'。", "fix": "她所有的秘密都已经被揭晓了。"}, {"id": "ex:pest:0", "problem": "德语 'Pest' 是鼠疫，中文译成 '疾病' 太泛，且比喻中应保留原意。", "fix": "她像躲避鼠疫一样躲开了他。"}]}
+{"batch": "ex:detektiv:1", "items": []}
+{"batch": "ex:auskommen:0", "items": []}
+{"batch": "ex:bangen:1", "items": []}
+{"batch": "ex:bewertung:1", "items": [{"id": "ex:absolvieren:1", "problem": "absolvieren 指完成、通过，不是仅仅参加；“参加了所有考试”漏掉了通过/完成的含义。", "fix": "你已经通过了所有考试。"}, {"id": "ex:betreiben:1", "problem": "原文主语 ihr 是“你们”，译文用了“你”，人称错误。", "fix": "你们从事哪种运动？"}, {"id": "ex:gymnasium:0", "problem": "Gymnasium 在德国指文理中学，不是普通高中；译成“高中”丢失了德国学制的关键信息。", "fix": "我还得再读一年文理中学。"}]}
+{"batch": "ex:taenzerin:1", "items": [{"id": "ex:spezialitaet:0", "problem": "Spezialität 在此语境下指特色菜，但原文未明确是菜，可能只是特色产品，译成“特色菜”过于具体。", "fix": "这是我家乡的一种特产。"}]}
+{"batch": "ex:ausreden:0", "items": []}
+{"batch": "ex:schock:1", "items": [{"id": "ex:beileid:0", "problem": "Beileid 用于对丧亲之痛表示哀悼，而 Verlust 在此语境指失去亲人，不是一般损失。", "fix": "对于你失去亲人，我谨向你表示诚挚的哀悼！"}]}
+{"batch": "ex:versammeln:0", "items": [{"id": "ex:jammern:0", "problem": "“mit dem schläft niemand” 被译成“就没人愿意和谁睡觉”，但德语中“mit jemandem schlafen”是“与某人发生性关系”，这里应理解为“没人愿意和他上床/发生关系”，而不是字面的“睡觉”。", "fix": "谁老是抱怨，就没人愿意和他上床。"}]}
+{"batch": "ex:abhaengig:1", "items": [{"id": "ex:todesfall:1", "problem": "Todesfall 译成「死亡事件」太生硬，在中文里通常说「有人去世」或「丧事」。", "fix": "家里有人去世了。"}]}
+{"batch": "ex:neidisch:0", "items": []}
+{"batch": "ex:emotion:1", "items": [{"id": "ex:missbrauchen:0", "problem": "Kasse 在语境中指公司或机构的钱箱/现金，不是商店的收银台。", "fix": "他辜负了同事的信任，从钱箱里拿了钱。"}]}
+{"batch": "ex:begehren:0", "items": []}
+{"batch": "ex:verabreden:1", "items": []}
+{"batch": "ex:sensibel:0", "items": []}
+{"batch": "ex:hauen:0", "items": [{"id": "ex:bewusst:1", "problem": "德语bewusst在此表示“有意识地、故意地”，不是“经过深思熟虑”。", "fix": "她是有意识地做出这个决定的。"}]}
+{"batch": "ex:dulden:0", "items": []}
+{"batch": "ex:irisch:0", "items": []}
+{"batch": "ex:polizist:0", "items": []}
+{"batch": "ex:spruch:0", "items": [{"id": "ex:erfindung:0", "problem": "Erfindung 在此处表示“虚构、编造”，不是“发明”，按字面译为“发明”不准确。", "fix": "爱不过是一种虚构。"}]}
+{"batch": "ex:rueckstand:0", "items": [{"id": "ex:mais:0", "problem": "“Eis”在食物语境下通常指冰淇淋，不是冰块；“加冰”错译为冰块。", "fix": "给我做一份加冰淇淋的玉米。"}]}
