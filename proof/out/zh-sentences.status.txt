@@ -1,1 +1,1 @@
-zh-sentences: this run 285 batches, 2.90 CNY; 1017 batches left; stopped: 402 Payment Required: DeepSeek balance is empty
+zh-sentences: this run 1117 batches, 3.11 CNY; -285 batches left
