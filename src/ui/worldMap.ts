@@ -1,11 +1,13 @@
-// 大地图画成一张图 (Lucas 2026-11-27, 游戏设计 四「两层地图」): five stage bands left to right (A1 … C1), the 16 cities
-// on one road in unlock order, each city's dot in its region's own colour. 蚀变 segments are not cities: once open
-// they ring their host cities in dark red and mark the boss's city; beaten, the ring fades to 「已净化」. 零号站台 is a
-// small dark-red door next to region 3 once seen. Click a city → an info card with the travel button.
+// 大地图 (Lucas 2026-11-27「做成游戏地图，有分界有特色」「像素画风，小字加等级」, 游戏设计 四「两层地图」):
+// one pixel-art continent (src/ui/worldTerrain.ts): every city owns a coloured territory with its landmark; the
+// borders between stages are landforms (river, ridge, wall, rift), locked land sits under fog. On top, crisp
+// name plates with the level range, the road, 「你在这里」, 蚀变 marks and 零号站台. Click a city → card + travel.
 import { h } from './dom';
 import { accentOf } from './theme';
 import { AREAS, SCENE_BY_ID } from '../data/world';
 import { ERODE_DEFS, REGION_DEF } from '../data/zones';
+import { terrain, TW, TH, type Stage, type TerrainCity } from './worldTerrain';
+import { landmark } from './worldIcons';
 
 export interface WorldMapCtx {
   current: number;
@@ -18,23 +20,24 @@ export interface WorldMapCtx {
   go(region: number): void;
 }
 
-const W = 1000;
-const H = 430;
-/** Hand-placed city spots (viewBox units): a winding road that runs through the five bands. */
+const W = TW;
+const H = TH;
+/** Hand-placed city spots (map units): west to east through the five stages, 雾港 on the southern bay. */
 const SPOT: Record<number, [number, number]> = {
-  1: [62, 320], 2: [112, 180], 3: [180, 300],
-  4: [262, 210], 5: [318, 330], 6: [384, 225], 7: [444, 120],
-  9: [526, 200], 10: [584, 325], 12: [640, 160],
-  13: [712, 290], 14: [762, 150], 16: [816, 300],
-  17: [878, 175], 18: [934, 310], 20: [962, 105],
+  1: [120, 395], 2: [205, 205], 3: [285, 455],
+  4: [385, 250], 5: [420, 440], 6: [505, 560], 7: [575, 215],
+  9: [680, 390], 10: [728, 170], 12: [805, 455],
+  13: [870, 215], 14: [905, 460], 16: [985, 320],
+  17: [1060, 505], 18: [1085, 160], 20: [1115, 345],
 };
-const STAGES: Array<{ id: string; zh: string; regions: number[]; x0: number; x1: number; fill: string }> = [
-  { id: 'A1', zh: '入门', regions: [1, 2, 3], x0: 0, x1: 222, fill: '#f6e7c8' },
-  { id: 'A2', zh: '基础', regions: [4, 5, 6, 7], x0: 222, x1: 482, fill: '#e6eedb' },
-  { id: 'B1', zh: '进阶', regions: [9, 10, 12], x0: 482, x1: 678, fill: '#dfe9f1' },
-  { id: 'B2', zh: '高阶', regions: [13, 14, 16], x0: 678, x1: 848, fill: '#ece2f0' },
-  { id: 'C1', zh: '精通', regions: [17, 18, 20], x0: 848, x1: 1000, fill: '#e9e6e0' },
+const STAGES: Array<{ id: Stage; zh: string; regions: number[]; x: number }> = [
+  { id: 'A1', zh: '入门', regions: [1, 2, 3], x: 190 },
+  { id: 'A2', zh: '基础', regions: [4, 5, 6, 7], x: 470 },
+  { id: 'B1', zh: '进阶', regions: [9, 10, 12], x: 735 },
+  { id: 'B2', zh: '高阶', regions: [13, 14, 16], x: 912 },
+  { id: 'C1', zh: '精通', regions: [17, 18, 20], x: 1078 },
 ];
+const stageOfRegion = (r: number): Stage => STAGES.find((st) => st.regions.includes(r))?.id ?? 'A1';
 const ERODE_RED = '#8a1424';
 const SEG_LEVELS: Record<number, string> = { 8: '71–80', 11: '101–110', 15: '141–150', 19: '181–190' };
 
@@ -79,57 +82,53 @@ export function worldMap(c: WorldMapCtx): HTMLElement {
   let selected = c.current;
   const card = h('div.wm-card');
   const svg = s('svg', { viewBox: `0 0 ${W} ${H}`, class: 'wm-svg', role: 'img', 'aria-label': '大地图' });
+  const order = AREAS.map((a) => a.region).filter((r) => SPOT[r]);
+  const segOf = (r: number): 0 | 1 | 2 => (segs.some((q) => q.state === 'open' && q.hosts.includes(r)) ? 1 : segs.some((q) => q.state === 'done' && q.hosts.includes(r)) ? 2 : 0);
+  const cities: TerrainCity[] = order.map((r) => ({ region: r, x: SPOT[r][0], y: SPOT[r][1], stage: stageOfRegion(r), accent: accentOf(r), open: c.open(r), erode: segOf(r) }));
 
-  // ---- defs: soft paper grain + a glow for "you are here"
+  // landmarks of open cities, rasterised into the pixel map
+  const icons = s('svg', { xmlns: 'http://www.w3.org/2000/svg', viewBox: `0 0 ${W} ${H}`, width: W, height: H });
+  for (const ct of cities) if (ct.open) icons.append(s('g', { transform: `translate(${ct.x},${ct.y - 10}) scale(1.9)` }, landmark(ct.region, ct.accent, true)));
+  const canvas = terrain(cities, new XMLSerializer().serializeToString(icons));
+  canvas.className = 'wm-canvas';
+
   svg.append(
     s('defs', {},
-      s('filter', { id: 'wm-glow', x: '-50%', y: '-50%', width: '200%', height: '200%' }, s('feGaussianBlur', { stdDeviation: 5 })),
-      s('pattern', { id: 'wm-hatch', width: 6, height: 6, patternUnits: 'userSpaceOnUse', patternTransform: 'rotate(45)' }, s('line', { x1: 0, y1: 0, x2: 0, y2: 6, stroke: '#b9ad97', 'stroke-width': 1.4 })),
+      s('filter', { id: 'wm-glow', x: '-50%', y: '-50%', width: '200%', height: '200%' }, s('feGaussianBlur', { stdDeviation: 6 })),
     ),
   );
 
-  // ---- stage bands
+  // ---- stage banners along the top sea
   for (const st of STAGES) {
-    svg.append(s('rect', { x: st.x0, y: 0, width: st.x1 - st.x0, height: H, fill: st.fill }));
-    svg.append(s('text', { x: (st.x0 + st.x1) / 2, y: 26, 'text-anchor': 'middle', class: 'wm-stage' }, `${st.id} · ${st.zh}`));
-    svg.append(s('text', { x: (st.x0 + st.x1) / 2, y: 44, 'text-anchor': 'middle', class: 'wm-stage-lv' }, stageLevels(st.id, st.regions)));
-    if (st.x0 > 0) svg.append(s('line', { x1: st.x0, y1: 54, x2: st.x0, y2: H - 10, stroke: '#a89a80', 'stroke-width': 1, 'stroke-dasharray': '2 5' }));
+    const g = s('g', { transform: `translate(${st.x},22)`, class: 'wm-banner' });
+    g.append(s('rect', { x: -78, y: -14, width: 156, height: 26, rx: 3, fill: '#3b2a1c', stroke: '#e8d3a6', 'stroke-width': 2 }));
+    g.append(s('text', { y: 4.5, 'text-anchor': 'middle', class: 'wm-stage' }, `${st.id} ${st.zh} · ${stageLevels(st.id, st.regions)}`));
+    svg.append(g);
   }
 
   // ---- the road, city to city in unlock order
-  const order = AREAS.map((a) => a.region).filter((r) => SPOT[r]);
   for (let i = 1; i < order.length; i++) {
     const [ax, ay] = SPOT[order[i - 1]];
     const [bx, by] = SPOT[order[i]];
     const lit = c.open(order[i - 1]) && c.open(order[i]);
-    const mx = (ax + bx) / 2 + (by - ay) * 0.18;
-    const my = (ay + by) / 2 - (bx - ax) * 0.18;
-    svg.append(s('path', { d: `M${ax},${ay} Q${mx},${my} ${bx},${by}`, fill: 'none', stroke: lit ? '#7a6447' : '#bcb2a0', 'stroke-width': lit ? 4 : 3, 'stroke-dasharray': lit ? '' : '6 7', 'stroke-linecap': 'round' }));
-  }
-
-  // ---- 蚀变 rings under the cities
-  for (const g of segs) {
-    if (g.state === 'hidden') continue;
-    for (const r of g.hosts) {
-      if (!SPOT[r]) continue;
-      const [x, y] = SPOT[r];
-      svg.append(s('circle', { cx: x, cy: y, r: 30, fill: 'none', stroke: ERODE_RED, 'stroke-width': g.state === 'open' ? 3 : 1.5, 'stroke-dasharray': g.state === 'open' ? '3 4' : '2 6', opacity: g.state === 'open' ? 0.9 : 0.35, class: g.state === 'open' ? 'wm-erode' : '' }));
-    }
+    const mx = (ax + bx) / 2 + (by - ay) * 0.15;
+    const my = (ay + by) / 2 - (bx - ax) * 0.15;
+    svg.append(s('path', { d: `M${ax},${ay} Q${mx},${my} ${bx},${by}`, fill: 'none', stroke: lit ? '#fff5d8' : 'rgba(120,112,100,.5)', 'stroke-width': lit ? 4 : 3, 'stroke-dasharray': lit ? '2 9' : '2 10', 'stroke-linecap': 'round', class: 'wm-road' }));
   }
 
   // ---- 零号站台
   if (c.zeroSeen && SPOT[3]) {
     const [x, y] = SPOT[3];
-    const g = s('g', { transform: `translate(${x + 30},${y + 34})` },
-      s('rect', { x: -8, y: -12, width: 16, height: 20, rx: 2, fill: '#2a0a10', stroke: ERODE_RED, 'stroke-width': 1.5 }),
-      s('circle', { cx: 4, cy: -1, r: 1.6, fill: '#ff5a6a' }),
-      s('text', { x: 12, y: 4, class: 'wm-zero' }, '零号站台'),
+    const g = s('g', { transform: `translate(${x + 48},${y + 6})` },
+      s('rect', { x: -9, y: -14, width: 18, height: 22, rx: 2, fill: '#2a0a10', stroke: ERODE_RED, 'stroke-width': 2 }),
+      s('circle', { cx: 4, cy: -2, r: 1.8, fill: '#ff5a6a' }),
+      s('text', { x: 0, y: 22, 'text-anchor': 'middle', class: 'wm-zero' }, '零号站台'),
     );
     g.append(s('title', {}, '零号站台：铁轨镇时刻表墙后的地下城（28 级起）'));
     svg.append(g);
   }
 
-  // ---- cities
+  // ---- cities: hit area, fog cloud, plate with the level range
   const cityEls: Record<number, SVGElement> = {};
   for (const a of AREAS) {
     const p = SPOT[a.region];
@@ -138,21 +137,27 @@ export function worldMap(c: WorldMapCtx): HTMLElement {
     const open = c.open(a.region);
     const here = a.region === c.current;
     const danger = open && !here && firstLevel(a.levels) > c.level;
-    const col = open ? accentOf(a.region) : '#a39c90';
+    const col = accentOf(a.region);
     const g = s('g', { transform: `translate(${x},${y})`, class: 'wm-city' + (open ? ' open' : ' locked') + (here ? ' here' : ''), tabindex: 0 });
-    if (here) g.append(s('circle', { r: 24, fill: col, opacity: 0.55, filter: 'url(#wm-glow)', class: 'wm-pulse' }));
-    g.append(s('circle', { r: 19, fill: '#fffaf0', stroke: col, 'stroke-width': 3 }));
-    g.append(s('circle', { r: 13, fill: open ? col : 'url(#wm-hatch)', stroke: open ? 'none' : '#a39c90', 'stroke-width': 1 }));
-    g.append(s('text', { y: 4.5, 'text-anchor': 'middle', class: 'wm-num' + (open ? '' : ' dim') }, open ? String(a.region) : '?'));
-    const next = !open && order.find((r) => !c.open(r)) === a.region;
-    if (open || next) g.append(s('text', { y: 36, 'text-anchor': 'middle', class: 'wm-name' + (open ? '' : ' dim') }, open ? a.zh : '下一站 · 以后开放'));
-    if (open) g.append(s('text', { y: 50, 'text-anchor': 'middle', class: 'wm-lv' + (danger ? ' danger' : '') }, danger ? `${a.levels} · 危险` : a.levels));
+    g.append(s('ellipse', { cx: 0, cy: 6, rx: 44, ry: 40, fill: 'transparent', class: 'wm-hit' }));
+    if (here) g.append(s('ellipse', { cx: 0, cy: 12, rx: 34, ry: 12, fill: '#fff6c0', filter: 'url(#wm-glow)', class: 'wm-pulse' }));
+    if (!open) g.append(landmark(a.region, col, false));
+    // plate
+    const name = open ? a.zh : '未开放';
+    const lvText = open ? (danger ? `${a.levels} 危险` : a.levels) : a.levels;
+    const pw = Math.max(name.length * 15 + 18, lvText.length * 7 + 16);
+    const py = 34;
+    g.append(s('rect', { x: -pw / 2, y: py, width: pw, height: 34, rx: 2, fill: open ? '#3b2a1c' : '#8f877a', stroke: open ? col : '#cfc8bb', 'stroke-width': 2.5, class: 'wm-plate' }));
+    g.append(s('text', { y: py + 15, 'text-anchor': 'middle', class: 'wm-name' }, name));
+    g.append(s('text', { y: py + 29, 'text-anchor': 'middle', class: 'wm-lv' + (danger ? ' danger' : '') }, lvText));
     const boss = segs.find((q) => q.state === 'open' && q.bossRegion === a.region);
-    if (boss) {
-      g.append(s('g', { transform: 'translate(15,-17)' }, s('circle', { r: 8.5, fill: ERODE_RED, stroke: '#fff', 'stroke-width': 1.5 }), s('text', { y: 3.8, 'text-anchor': 'middle', class: 'wm-boss' }, '☠')));
-    }
+    if (boss) g.append(s('g', { transform: 'translate(30,-26)' }, s('rect', { x: -10, y: -10, width: 20, height: 20, fill: ERODE_RED, stroke: '#fff', 'stroke-width': 2 }), s('text', { y: 5, 'text-anchor': 'middle', class: 'wm-boss' }, '☠')));
     if (here) {
-      g.append(s('g', { transform: 'translate(0,-36)', class: 'wm-here' }, s('rect', { x: -32, y: -12, width: 64, height: 18, rx: 9, fill: '#2b211a' }), s('text', { y: 1.5, 'text-anchor': 'middle' }, '你在这里')));
+      g.append(s('g', { class: 'wm-here' },
+        s('path', { d: 'M0 -30 l-8 -10 h16 z', fill: '#e8402a', stroke: '#fff', 'stroke-width': 2 }),
+        s('rect', { x: -36, y: -62, width: 72, height: 22, rx: 2, fill: '#e8402a', stroke: '#fff', 'stroke-width': 2 }),
+        s('text', { y: -46, 'text-anchor': 'middle' }, '你在这里'),
+      ));
     }
     g.append(s('title', {}, open ? `${a.zh} · ${a.de} · ${a.levels}` : '还没开放'));
     const pick = () => {
@@ -191,14 +196,16 @@ export function worldMap(c: WorldMapCtx): HTMLElement {
   renderCard();
 
   const legend = h('div.wm-legend.small.muted',
-    h('span', h('i.wm-dot', { style: `background:${accentOf(1)}` }), '开放的区（点一下看详情，双击直接去）'),
-    h('span', h('i.wm-dot.locked'), '以后开放'),
-    h('span', h('i.wm-ring'), '蚀变中'),
-    h('span', '☠ 蚀变首领'),
+    h('span', '点一座城看详情，双击直接去'),
+    h('span', h('i.wm-key.river'), '河：A1 和 A2 的分界'),
+    h('span', h('i.wm-key.ridge'), '山脉：A2 和 B1'),
+    h('span', h('i.wm-key.wall'), '旧城墙：B1 和 B2'),
+    h('span', h('i.wm-key.rift'), '裂谷：B2 和 C1'),
+    h('span', h('i.wm-key.erode'), '暗红纹 = 蚀变中，☠ = 蚀变首领'),
   );
   const segList = segs.filter((q) => q.state !== 'hidden');
   return h('div.worldmap',
-    h('div.wm-wrap', svg, card),
+    h('div.wm-wrap', canvas, svg), card,
     legend,
     segList.length ? h('div.wm-segs.small', ...segList.map((q) => h('span' + (q.state === 'done' ? '.done' : ''), `${q.zh} ${SEG_LEVELS[q.seg] ?? ''} 级 · 第 ${q.hosts.join('、')} 区${q.state === 'done' ? ' · 已净化' : ''}`))) : '',
   );
