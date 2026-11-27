@@ -98,3 +98,103 @@
 {"batch": "ex:ladenschluss:0", "items": []}
 {"batch": "ex:rest:1", "items": [{"id": "ex:abziehen:4", "problem": "abziehen 在此处意为离开、走人，不是撤走。", "fix": "我别无选择，只能离开。"}]}
 {"batch": "ex:knapp:2", "items": []}
+{"batch": "ex:getrennt:1", "items": []}
+{"batch": "ex:fein:1", "items": [{"id": "ex:quark:0", "problem": "Quark 在德国是一种常见的乳制品，类似凝乳/夸克奶酪，但中文里通常说“夸克奶酪”或“凝乳”，这里译成“夸克奶酪”可以接受，但更常见的是“凝乳”或“夸克”。不过问题不大，意思没错。", "fix": "做这个蛋糕需要凝乳、糖、鸡蛋和一点柠檬。"}, {"id": "ex:quark:1", "problem": "Quark 译成“凝乳”可以，但中文里更常说“夸克奶酪”或“凝乳”，意思没错。", "fix": "我早餐吃凝乳配水果。"}, {"id": "ex:quark:2", "problem": "Quark 译成“凝乳”可以，意思没错。", "fix": "你能把凝乳抹在面包上吗？"}]}
+{"batch": "ex:verstecken:2", "items": []}
+{"batch": "ex:unternehmen-2:2", "items": []}
+{"batch": "ex:vermieter:1", "items": []}
+{"batch": "ex:runter:0", "items": [{"id": "ex:gruen:2", "problem": "“sich nicht grün sein” 是固定表达，意为“合不来、关系不好”，不是字面的“不绿”。", "fix": "他和老板合不来。"}]}
+{"batch": "ex:einkaufswagen:0", "items": [{"id": "ex:verbindung:2", "problem": "Verbindung 在此指交通连接（如火车班次），不是列车本身。", "fix": "今天去柏林的交通连接准点。"}]}
+{"batch": "ex:zurueckschicken:0", "items": [{"id": "ex:gold:2", "problem": "“Gold” 在这里指黄金这种贵金属，不是“金价”。", "fix": "黄金现在很贵。"}, {"id": "ex:extra:1", "problem": "“extra” 在这里是“另外的、额外的”，不是“特意”。", "fix": "你能另外给我一个袋子吗？"}, {"id": "ex:verkauf:0", "problem": "“Verkauf” 在这里指销售部门或销售工作，不是“销售部”这个具体部门名称。", "fix": "我做销售工作，每天都和客户打交道。"}, {"id": "ex:gewinn:1", "problem": "“Gewinn” 在这里是“奖品、中奖”，不是“利润”。", "fix": "奖品将在所有来宾中抽选送出。"}, {"id": "ex:reklamation:0", "problem": "“Reklamation” 是“投诉、索赔”，不是“退货投诉”。", "fix": "投诉需要购物小票。"}]}
+{"batch": "ex:unterstuetzen:2", "items": []}
+{"batch": "ex:wenigstens:1", "items": [{"id": "ex:wenigstens:1", "problem": "wenigstens 在此处表示“至少”用于表达一种让步或最低要求，但原句是疑问句，中文翻译“至少我们知道是谁把它卖掉了吗？”意思不准确，应理解为“我们至少知道是谁卖掉的吗？”", "fix": "我们至少知道是谁卖掉的吗？"}, {"id": "ex:fort:3", "problem": "fort 在此处是动词 fortfahren 的过去式，意为“继续”，但中文翻译“我继续读那本书”正确，无问题。", "fix": "我继续读那本书。"}, {"id": "ex:bereiten:1", "problem": "bereiten 在此处是 zubereiten 的简写，意为“准备（饭菜）”，中文翻译“我妈妈准备早餐”正确，无问题。", "fix": "我妈妈准备早餐。"}]}
+{"batch": "ex:bevorzugen:2", "items": []}
+{"batch": "ex:stoeren:1", "items": []}
+{"batch": "ex:aussehen:3", "items": []}
+{"batch": "ex:verbringen:0", "items": []}
+{"batch": "ex:liebe:0", "items": [{"id": "ex:rufen:1", "problem": "Soll ich die Polizei rufen? 是询问对方是否需要自己报警，中文译成“我需要报警吗？”变成了说话者自己的需要，人称和意图错了。", "fix": "要我报警吗？"}, {"id": "ex:typ:1", "problem": "Da bin ich nicht der richtige Typ für. 中 Typ 指“类型的人”，整句意为“我不是适合做那件事的人”，中文译成“这件事不适合我”意思反了，主语和宾语关系颠倒。", "fix": "我不是适合做那件事的人。"}]}
+{"batch": "ex:bitten:4", "items": [{"id": "ex:verkaufen:5", "problem": "德语 'Ich kann dir das nicht verkaufen' 意为 '我不能把这个卖给你'，而中文翻译成了 '我没法把这个说法讲到让你相信'，意思完全错误。", "fix": "我不能把这个卖给你。"}]}
+{"batch": "ex:schal:0", "items": []}
+{"batch": "ex:stau:0", "items": []}
+{"batch": "ex:verrueckt:3", "items": [{"id": "ex:anschluss:1", "problem": "Anschluss 在此语境下指电话接通，不是转车。", "fix": "这个号码无法接通。"}]}
+{"batch": "ex:anschluss:2", "items": [{"id": "ex:platt:4", "problem": "plattes Land 是固定搭配，指乡村、乡下，不是平坦的乡村地区。", "fix": "我父母住在乡下。"}]}
+{"batch": "ex:einstieg:2", "items": [{"id": "ex:einstieg:3", "problem": "Einstieg 在此语境指上车，不是入门。", "fix": "你能帮我上车吗？"}]}
+{"batch": "ex:maerz:0", "items": []}
+{"batch": "ex:hamburg:2", "items": [{"id": "ex:gebaeude:0", "problem": "Bürgeramt 译成「市民局」不准确，在德国应译为「公民办公室」或「市民办公室」，是办理户籍、证件等事务的政府机构。", "fix": "公民办公室在邮局旁边那栋灰色楼里。"}]}
+{"batch": "ex:hauptstadt:0", "items": []}
+{"batch": "ex:weisen:0", "items": []}
+{"batch": "ex:einwohner:0", "items": [{"id": "ex:kreis:2", "problem": "Kreis 在此指行政区划「县」，不是几何意义的「圆」。", "fix": "县里出钱买了新的校车。"}, {"id": "ex:westen:3", "problem": "Westen 在此指「西方（国家）」，不是方位「西边」。", "fix": "它们比西方的浴室好得多。"}]}
+{"batch": "ex:raufgehen:0", "items": []}
+{"batch": "ex:etwa:0", "items": []}
+{"batch": "ex:februar:2", "items": []}
+{"batch": "ex:definitiv:1", "items": []}
+{"batch": "ex:obwohl:1", "items": []}
+{"batch": "ex:geschichte:0", "items": []}
+{"batch": "ex:august:1", "items": []}
+{"batch": "ex:tier:2", "items": []}
+{"batch": "ex:koerper:0", "items": []}
+{"batch": "ex:sicherlich:2", "items": [{"id": "ex:davor:0", "problem": "Termin 被译成「约」，在德国 Termin 是预约、约好的时间，不是约会。", "fix": "我两点有个预约，在那之前还得吃饭。"}]}
+{"batch": "ex:vorbei:2", "items": [{"id": "ex:silvester:1", "problem": "Silvester 是 12 月 31 日的新年前夜，不是中国的除夕（农历年）。", "fix": "你们新年前夜有什么安排了吗？"}, {"id": "ex:silvester:2", "problem": "Silvester 是 12 月 31 日的新年前夜，不是中国的除夕（农历年）。", "fix": "新年前夜我们和朋友一起吃瑞士奶酪锅。"}]}
+{"batch": "ex:erwachsen:2", "items": []}
+{"batch": "ex:papa:1", "items": []}
+{"batch": "ex:prozent:0", "items": []}
+{"batch": "ex:zweimal:2", "items": []}
+{"batch": "ex:aufpassen:1", "items": []}
+{"batch": "ex:woran:1", "items": []}
+{"batch": "ex:schueler:0", "items": [{"id": "ex:geburtsdatum:0", "problem": "漏译了动词“angeben”（填写/提供），导致句子不完整，影响理解。", "fix": "请提供你的护照号和出生日期。"}]}
+{"batch": "ex:party:2", "items": []}
+{"batch": "ex:putzfrau:0", "items": [{"id": "ex:nebenkosten:1", "problem": "Nebenkosten 在租房语境应译为杂费/附加费用，但这里指酒店住宿的额外费用，译成“附加费用”可以接受，但更准确是“额外费用”。不过原译“附加费用”意思没错，不报。", "fix": "每晚的价格是多少，包括所有额外费用？"}]}
+{"batch": "ex:kehren:1", "items": []}
+{"batch": "ex:kuendigen:3", "items": [{"id": "ex:kuendigen:3", "problem": "主语译错：德语是 Sie（您/他们）不能解雇我，但中文译成了「他们」，应指对方（您）不能解雇我。", "fix": "您不能解雇我。"}]}
+{"batch": "ex:reissen:1", "items": []}
+{"batch": "ex:trocknen:0", "items": [{"id": "ex:kaltmiete:1", "problem": "Nebenkosten 在德国租房语境中应译为「房租杂费/附加费」，而不是「额外费用」。", "fix": "冷租很便宜，但房租杂费很高。"}]}
+{"batch": "ex:handwerker:0", "items": [{"id": "ex:garage:0", "problem": "德语 sie 指代的是阴性名词，但中文翻译成「她」不自然，在中文里指物通常用「它」。", "fix": "我把它忘在车库里了。"}]}
+{"batch": "ex:verbrauchen:1", "items": [{"id": "ex:kammer:0", "problem": "Kammer 在此语境下指小房间/储藏室，不是泛指房间。", "fix": "他既没有储藏室，也没有地窖。"}, {"id": "ex:schimmel:0", "problem": "Schimmel 指白马，但中文“白马”就是白色的马，没有错。但原文“Ein weißes Pferd wird auch Schimmel genannt.”意思是“白马也被称为 Schimmel”，中文翻译“白色的马也叫白马”是同义反复，没有传达出德语中 Schimmel 这个词。不过意思没错，不报。"}]}
+{"batch": "ex:haufen:1", "items": []}
+{"batch": "ex:genehmigung:1", "items": []}
+{"batch": "ex:schmutzig:1", "items": [{"id": "ex:besitzer:1", "problem": "Besitzer 在此语境中指餐厅的老板，而不是一般意义上的主人。", "fix": "你和老板谈过了吗？"}]}
+{"batch": "ex:ausstellen:1", "items": [{"id": "ex:berechtigen:1", "problem": "“这张票有权让持票人入场” 意思不对，主语是票，但票本身不能“有权”，应表达为“持票人凭此票有权入场”或“这张票赋予入场资格”。", "fix": "这张票赋予入场资格。"}]}
+{"batch": "ex:ablauf:1", "items": [{"id": "ex:institution:0", "problem": "后半句 'reichen die Mitarbeiter aus?' 被误译为 '工作人员够吗？'，但德语中 'Mitarbeiter' 在此语境下不是指工作人员，而是指参与者/成员（婚姻中的双方），且 'ausreichen' 意为足够，整句是反问婚姻制度是否足够（即是否还适用），中文翻译完全偏离原意。", "fix": "婚姻是一种制度，但它还足够吗？"}]}
+{"batch": "ex:gutachten:0", "items": []}
+{"batch": "ex:energie:1", "items": [{"id": "ex:aktuell:2", "problem": "aktuell 在此处意为“当前的、时下的”，不是“热门的”。", "fix": "在我看来，这似乎是个相当当前的话题。"}]}
+{"batch": "ex:kaputtgehen:1", "items": [{"id": "ex:kreuz:0", "problem": "Kreuz 在德语中表示勾选标记（叉号），但中文翻译为“画叉”可能引起误解，因为中文“画叉”通常表示错误，而这里是在正确答案处做标记，应译为“打叉”或“画叉”但需明确是标记，不过更常见的是“打勾”或“画叉”均可，但原文是 Kreuz，通常用叉号标记，中文“画叉”可以接受，但需注意语境。实际上，在德语中，Kreuz 可以指叉号，用于标记选择，中文“画叉”意思正确，但可能不如“打叉”自然，但意思没错。", "fix": "请在正确答案处打叉。"}]}
+{"batch": "ex:betrueger:1", "items": [{"id": "ex:lizenz:0", "problem": "Lizenz 在此语境下指执照/许可证，不一定是驾照。", "fix": "我今年夏天拿到了执照。"}, {"id": "ex:lizenz:1", "problem": "Lizenz 指执照/许可证，不是特指驾照。", "fix": "执照已经过期了。"}]}
+{"batch": "ex:publikum:0", "items": []}
+{"batch": "ex:schwitzen:0", "items": []}
+{"batch": "ex:zelle:1", "items": []}
+{"batch": "ex:institution:1", "items": [{"id": "ex:inspektor:0", "problem": "Inspektor 在德国通常指检查员、稽查员或探长，译成「督察」不准确，且在中国语境中「督察」多指警务督察，易误解。", "fix": "检查员问很多问题。"}, {"id": "ex:inspektor:1", "problem": "Inspektor 在德国通常指检查员、稽查员或探长，译成「督察」不准确，且在中国语境中「督察」多指警务督察，易误解。", "fix": "检查员今天在办公室检查文件。"}, {"id": "ex:berufung:0", "problem": "Berufung 在此处意为「使命、天职」，译成「使命」正确，但原句「每个早晨都是新的使命」在中文中略显生硬，不过意思无误。", "fix": "每个早晨都是新的使命。"}]}
+{"batch": "ex:staubsauger:1", "items": []}
+{"batch": "ex:rollstuhl:0", "items": []}
+{"batch": "ex:dosis:0", "items": []}
+{"batch": "ex:rausbringen:1", "items": []}
+{"batch": "ex:blutdruck:1", "items": []}
+{"batch": "ex:depression:0", "items": []}
+{"batch": "ex:weh:0", "items": [{"id": "ex:schwangerschaft:0", "problem": "主语是单数 'Ihre Schwangerschaften' 指她的多次怀孕，但中文译成 '她们'，人称错误。", "fix": "她每次怀孕都会超过预产期。"}]}
+{"batch": "ex:ausdruecken:1", "items": []}
+{"batch": "ex:aufregen:1", "items": []}
+{"batch": "ex:teilen:3", "items": []}
+{"batch": "ex:empfinden:1", "items": []}
+{"batch": "ex:beliebt:0", "items": []}
+{"batch": "ex:spritzen:1", "items": [{"id": "ex:behandlung:1", "problem": "Behandlung 在此语境下指对待方式，但中文“对待”过于宽泛，可能引起误解。原句“Ich bin eine solche Behandlung nicht gewohnt.”意为“我不习惯这样的对待/待遇”，但“对待”在中文中通常指待人接物的方式，而这里可能指医疗处理或待遇。结合上下文，Behandlung 在医疗语境中常指治疗，但此处“solche Behandlung”可能指某种对待方式，翻译为“对待”意思没错，但不够明确。然而，根据指令，只报意思错了的翻译，这里意思基本正确，不报。", "fix": ""}]}
+{"batch": "ex:verbergen:0", "items": []}
+{"batch": "ex:guete:1", "items": [{"id": "ex:vergeben:0", "problem": "Termine 在此语境指预约名额，不是预约本身，但翻译为“预约名额”可以接受，不算错。", "fix": "预约名额按报名日期分配。"}]}
+{"batch": "ex:luege:0", "items": []}
+{"batch": "ex:kaputt:2", "items": [{"id": "ex:alarm:1", "problem": "Alarm 在此处指闹钟，但德语中闹钟通常说 Wecker，Alarm 可指警报或闹钟，此处翻译为“设闹钟”在语境中可能不准确，但更常见的是“设警报”。然而，在德国生活场景中，手机或闹钟的闹铃功能常称为 Alarm，所以“设闹钟”可以接受。但原句“Hast du den Alarm gestellt?”更可能指“你设闹钟了吗？”（如手机闹铃），因此翻译正确。", "fix": "你设闹钟了吗？"}, {"id": "ex:muster:2", "problem": "Muster 在此处是“样品”的意思，但德语中“免费样品”通常说 Gratisprobe 或 kostenloses Muster，而“freies Muster”可能指“自由模式”或“免费图案”，但结合语境，翻译为“免费样品”可能不准确。实际上，Muster 有“样品”义，但 freies Muster 不常见，可能指“免费样品”或“自由模式”。在德国生活场景中，如果是在商店，可能指“免费样品”，但更常见的说法是 Gratisprobe。因此，翻译可能错误。", "fix": "这是一个免费样品。"}]}
+{"batch": "ex:einverstanden:1", "items": []}
+{"batch": "ex:jagen:1", "items": []}
+{"batch": "ex:radio:0", "items": []}
+{"batch": "ex:argument:1", "items": []}
+{"batch": "ex:ruder:0", "items": []}
+{"batch": "ex:landwirtschaft:0", "items": []}
+{"batch": "ex:strahlen:1", "items": []}
+{"batch": "ex:ebene:0", "items": []}
+{"batch": "ex:bluehen:1", "items": []}
+{"batch": "ex:hirn:0", "items": [{"id": "ex:daumen:0", "problem": "德语原句 'Er hat nur Daumen an seinen Händen.' 意思是他的手上只有拇指（没有其他手指），中文翻译成 '他的两只手上全是拇指' 意思变成了手上长满了拇指，与原意不符。", "fix": "他的手上只有拇指。"}]}
+{"batch": "ex:tuerkisch:0", "items": [{"id": "ex:futter:1", "problem": "Futter 在宠物语境下应译为「食物」或「狗粮」，而不是「饲料」，「饲料」通常指农场动物的食物。", "fix": "你给你的狗喂什么食物？"}]}
+{"batch": "ex:flagge:1", "items": [{"id": "ex:ratte:0", "problem": "Ratte 是老鼠（大鼠），但中文「老鼠」通常指小鼠，在德国生活场景中应区分，此处可能指大鼠，但更常见的是「大老鼠」或「耗子」，不过「老鼠」也可接受，但为准确可改为「大老鼠」。", "fix": "我们在地下室看到一只大老鼠，所以给物业打了电话。"}, {"id": "ex:ratte:1", "problem": "Ratte 是老鼠（大鼠），但中文「老鼠」通常指小鼠，在德国生活场景中应区分，此处可能指大鼠，但更常见的是「大老鼠」或「耗子」，不过「老鼠」也可接受，但为准确可改为「大老鼠」。", "fix": "我觉得我看见了一只大老鼠。"}, {"id": "ex:provinz:0", "problem": "Provinz 在德语中常指「外省、乡下、偏远地区」，而不是行政上的「省」，这里译成「各省」不准确。", "fix": "他们正在乡下旅行。"}]}
+{"batch": "ex:niere:0", "items": [{"id": "ex:niere:1", "problem": "人称错误：Ihre 是您的，不是她的。", "fix": "您的肾功能非常好。"}, {"id": "ex:stechen:3", "problem": "stechen 在此指太阳晒得厉害，不是刺眼。", "fix": "今天太阳晒得厉害！"}]}
+{"batch": "ex:kueste:1", "items": []}
+{"batch": "ex:fuehrer:0", "items": []}
+{"batch": "ex:international:1", "items": []}
+{"batch": "ex:echo:1", "items": [{"id": "ex:rauch:0", "problem": "德语 'dritten Stock' 指三楼（按德国楼层计数，底层为0），中文译成四楼，楼层数错。", "fix": "三楼窗户冒出浓烟，所以有人叫了消防队。"}]}
+{"batch": "ex:leuchten:2", "items": [{"id": "ex:fliessen:2", "problem": "Kontakte 在此语境下指电路中的触点/接触点，不是人际联系。", "fix": "只有通过触点，能量才能流动。"}]}
