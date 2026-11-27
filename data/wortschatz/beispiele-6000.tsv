@@ -1188,7 +1188,7 @@ Platz	2	Ist der Platz noch frei?	这个座位还有人吗？	Tatoeba #1785190 ·
 Platz	3	Wir treffen uns auf dem Platz.	我们在广场上碰面。	Luna 写	广场	sich auf dem Platz treffen
 erinnern	1	Erinnerst du dich noch an unseren ersten Urlaub zusammen?	你还记得我们第一次一起度假吗？	自写	记得；回想起	sich erinnern an + Akk.
 erinnern	2	Ich kann mich an nichts davon erinnern.	我一点也想不起来这件事。	Tatoeba #1967652 · Pfirsichbaeumchen	记得；回想起	sich erinnern an + Akk.
-erinnern	3	Erinnere mich bitte morgen an den Termin.	明天请提醒我这个预约。	Luna 写	提醒	jemanden an + Akk. erinnern
+erinnern	3	Erinnere mich bitte morgen an den Termin.	请明天提醒我这个预约。	Luna 写	提醒	jemanden an + Akk. erinnern
 egal	1	Mir ist egal, wo wir essen, Hauptsache, es geht schnell.	在哪儿吃我无所谓，快就行。	自写	无所谓的；不在乎的	jemandem egal sein
 egal	2	Es ist uns egal, was er macht.	他做什么我们都无所谓。	Tatoeba #2529510 · Zaghawa	无所谓的；不在乎的	jemandem egal sein
 egal	3	Heute ist mir das Wetter egal.	今天我不在乎天气怎么样。	Luna 写	无所谓的；不在乎的	jemandem egal sein
@@ -12127,8 +12127,8 @@ vernachlässigen	1	Ich möchte nicht, dass er vernachlässigt wird.	我不希望
 vernachlässigen	2	Er vernachlässigte seine Familie.	他疏于照料自己的家人。	Tatoeba #9984413 · wolfgangth	忽略；疏于照料	
 vernachlässigen	3	Er vernachlässigt seine Gesundheit.	他不注意自己的健康。	Tatoeba #7000088 · Pfirsichbaeumchen	忽略；疏于照料	
 vernachlässigen	4	Sie vernachlässigte ihre Arbeit.	她怠慢了自己的工作。	Tatoeba #10111099 · wolfgangth	忽视；不认真对待（工作、责任等）	
-Verabredung	1	Um wie viel Uhr war deine Verabredung?	你的约会是几点？	Tatoeba #3929093 · Tamy	约会；约定的见面	
-Verabredung	2	Hast du eine Verabredung mit ihm?	你和他有约吗？	Tatoeba #701247 · Manfredo	约会；约定的见面	eine Verabredung mit + Dat.
+Verabredung	1	Um wie viel Uhr war deine Verabredung?	你约的是几点？	Tatoeba #3929093 · Tamy	约好的见面；约会	
+Verabredung	2	Hast du eine Verabredung mit ihm?	你和他有约吗？	Tatoeba #701247 · Manfredo	约好的见面；约会	eine Verabredung mit + Dat.
 Nutzung	1	Die Nutzung des WLANs ist kostenlos.	无线网免费使用。	自写	使用；利用	
 Nutzung	2	Die Nutzung der App ist für alle Kunden kostenlos.	所有顾客都可以免费使用这款应用。	Luna 写	使用；利用	
 aufzeichnen	1	Könntest du mir vielleicht eine Karte aufzeichnen?	你能不能帮我画张地图？	Tatoeba #1536666 · Pfirsichbaeumchen	画出；描绘	

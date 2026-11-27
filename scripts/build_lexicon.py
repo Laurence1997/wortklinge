@@ -793,7 +793,14 @@ def main():
         else:
             unmarked += 1
         if w['_sents']:
-            w['ex'] = w['_sents'][0][0] + '|' + w['_sents'][0][1]
+            # The card's own example must contain the word: some list examples were matched by substring
+            # (Anliegen → "Anlagen", zumal → "Mach mal die Augen zu"), so prefer the first one mark() finds the word in.
+            first = w['_sents'][0]
+            stem = re.sub(r'(en|n|e)$', '', w['de'].lower())
+            if not mark(first[0], w) and w['de'].lower() not in first[0].lower() and not (len(stem) >= 5 and stem in first[0].lower()):
+                good = [s for s in w['_sents'] if mark(s[0], w)]
+                first = ([s for s in good if s[1]] or good or [first])[0]
+            w['ex'] = first[0] + '|' + first[1]
         if w['pos'] == 'v':
             c = make_conj(w['de'], w.get('three', ''))
             if c:
