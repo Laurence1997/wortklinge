@@ -1,0 +1,100 @@
+{"batch": "ex:brot:0", "items": []}
+{"batch": "ex:tisch:2", "items": []}
+{"batch": "ex:familie:0", "items": []}
+{"batch": "ex:koch:3", "items": []}
+{"batch": "ex:beruf:0", "items": [{"id": "ex:land:1", "problem": "kennen 译成“去过”，应为“认识/知道”", "fix": "我知道很多国家。"}, {"id": "ex:kurs:4", "problem": "Kurs 在此指汇率，不是课程", "fix": "今天的汇率是1美元兑1.08欧元。"}]}
+{"batch": "ex:decke:3", "items": [{"id": "ex:wohnung:2", "problem": "Wohnung 应译为公寓，而不是房子。", "fix": "我们在找带阳台的公寓。"}]}
+{"batch": "ex:geschwister:0", "items": []}
+{"batch": "ex:wohnung:3", "items": [{"id": "ex:vorname:0", "problem": "Vorname 是名（名字），不是泛指的“名字”。", "fix": "请把名写在这里。"}, {"id": "ex:vorname:1", "problem": "Vorname 是名（名字），不是泛指的“名字”。", "fix": "您的名是什么？"}, {"id": "ex:vorname:2", "problem": "Vorname 是名（名字），不是泛指的“名字”。", "fix": "请用印刷体写下您的名和姓氏。"}, {"id": "ex:vorname:3", "problem": "Vorname 是名（名字），不是泛指的“名字”。", "fix": "你的名怎么读？"}]}
+{"batch": "ex:junge:1", "items": []}
+{"batch": "ex:schule:1", "items": [{"id": "ex:studentin:2", "problem": "Studentin 译成「学生」丢失了性别信息，且「新学生」不如「新来的女大学生」准确。", "fix": "她说她是新来的女大学生。"}, {"id": "ex:aerztin:3", "problem": "Ärztin 译成「女医生」在中文里不自然，通常直接说「医生」，但这里强调性别，可译为「女医生」或「医生」。", "fix": "我还没去看医生。"}]}
+{"batch": "ex:herr:4", "items": [{"id": "ex:nachbarin:2", "problem": "德语明确是女邻居（Nachbarin），中文译成“邻居”丢失了性别信息，在语境中可能造成误解。", "fix": "我讨厌我的女邻居。"}, {"id": "ex:wort:4", "problem": "“ein freundliches Wort für alle” 是固定表达，意为对每个人都说友善的话、态度友善，不是只说了一句。", "fix": "她对每个人都很友善。"}, {"id": "ex:wort:5", "problem": "“mein Wort geben” 是承诺、保证的意思，译成“答应过”可以，但“我可是答应过你的”语气稍偏，意思没错，不报。"}]}
+{"batch": "ex:kartoffel:1", "items": []}
+{"batch": "ex:woche:1", "items": []}
+{"batch": "ex:obst:2", "items": []}
+{"batch": "ex:nudel:3", "items": []}
+{"batch": "ex:reis:1", "items": [{"id": "ex:birne:3", "problem": "Birne 在此处是灯泡的口语说法，不是梨。", "fix": "走廊里的灯泡坏了。"}, {"id": "ex:oel:5", "problem": "Öl 在此处指石油，不是食用油。", "fix": "我们在寻找石油。"}]}
+{"batch": "ex:teller:3", "items": []}
+{"batch": "ex:verkaeufer:2", "items": []}
+{"batch": "ex:dose:4", "items": []}
+{"batch": "ex:steak:1", "items": [{"id": "ex:cent:3", "problem": "Cent 译成「分钱」不准确，在德国 Cent 是欧分，应译「欧分」或「分」。", "fix": "每秒只要六欧分。"}, {"id": "ex:cent:4", "problem": "Cent 译成「分钱」不准确，在德国 Cent 是欧分，应译「欧分」或「分」。", "fix": "我还差五欧分。"}]}
+{"batch": "ex:stift:1", "items": [{"id": "ex:uhr:1", "problem": "德语 'Uhr' 在此指手表或钟表，但中文翻译为「钟」缩小了范围，可能误导。", "fix": "表坏了。"}, {"id": "ex:jacke:0", "problem": "德语 'Jacke' 泛指夹克或外套，但中文翻译为「夹克」过于具体，在德国生活场景中通常说「外套」。", "fix": "天冷，带件外套。"}, {"id": "ex:jacke:1", "problem": "德语 'Jacke' 泛指夹克或外套，但中文翻译为「夹克」过于具体，在德国生活场景中通常说「外套」。", "fix": "这件外套太大了。"}, {"id": "ex:jacke:3", "problem": "德语 'Jacke' 泛指夹克或外套，但中文翻译为「夹克」过于具体，在德国生活场景中通常说「外套」。", "fix": "他脱下了外套。"}, {"id": "ex:jacke:4", "problem": "德语 'Jacke' 泛指夹克或外套，但中文翻译为「夹克」过于具体，在德国生活场景中通常说「外套」。", "fix": "这件外套我已经穿不下了。"}, {"id": "ex:decke:2", "problem": "德语 'Decke' 在此指毯子或被子，但中文翻译为「被子」可能不准确，因为前文说冷，通常用毯子。", "fix": "我好冷，你还有毯子吗？"}]}
+{"batch": "ex:stueck:1", "items": [{"id": "ex:rechnung:4", "problem": "漏译了关键信息：原文说账单今天通过电子邮件发来，中文只写了搭配说明，没有翻译句子意思。", "fix": "账单今天通过电子邮件发来。"}]}
+{"batch": "ex:kuehlschrank:0", "items": []}
+{"batch": "ex:rezept:0", "items": []}
+{"batch": "ex:brett:0", "items": []}
+{"batch": "ex:helfen:4", "items": []}
+{"batch": "ex:sagen:4", "items": []}
+{"batch": "ex:schokolade:3", "items": [{"id": "ex:cola:4", "problem": "时态错误：德语是现在时 'kauft'，中文译成了过去时 '买了'。", "fix": "下班后她买了一罐可乐。"}, {"id": "ex:paprika:3", "problem": "德语 'grüne Paprika' 是绿色的甜椒，中文译成 '青椒' 可能指辣椒，在德国语境中应明确为甜椒。", "fix": "做酱汁我需要一个绿色的甜椒。"}, {"id": "ex:knoblauch:2", "problem": "德语 'Geruch' 是气味，不一定是臭味，中文译成 '很臭' 过于负面。", "fix": "虽然我喜欢大蒜，但因为气味，所以很少吃。"}, {"id": "ex:pilz:4", "problem": "量词错误：蘑菇通常用 '朵' 或 '个'，但 '一朵蘑菇' 不自然，应改为 '一个蘑菇'。", "fix": "我在森林里发现了一个蘑菇。"}, {"id": "ex:sahne:2", "problem": "德语 'Nimmst du Sahne in den Kaffee?' 是问是否把奶油加入咖啡里，中文译成 '在咖啡上加些奶油' 意思略有偏差，但可接受。", "fix": "你要在咖啡里加些奶油吗？"}]}
+{"batch": "ex:backen:1", "items": []}
+{"batch": "ex:verstehen:1", "items": [{"id": "ex:hoeren:5", "problem": "德语原句 'Ich habe lange nichts von ihm gehört.' 意思是“我很久没有他的消息了”，但中文翻译成了“我听说了很多关于你的事”，意思完全错误。", "fix": "我很久没有他的消息了。"}]}
+{"batch": "ex:gross:1", "items": []}
+{"batch": "ex:ledig:4", "items": []}
+{"batch": "ex:brauchen:5", "items": [{"id": "ex:bezahlen:3", "problem": "「bezahlen」在此处意为「支付报酬」，不是「付钱」；原译「付你钱」意思不准确，应译为「付给你报酬」。", "fix": "正因为如此，我不能付给你报酬。"}, {"id": "ex:helfen:2", "problem": "原译「能够出一份力太好了」漏译了「dir」（你），且未明确表达「帮助了你」的意思。", "fix": "我很高兴能帮到你。"}]}
+{"batch": "ex:auch:3", "items": []}
+{"batch": "ex:heiss:2", "items": []}
+{"batch": "ex:zusammen:3", "items": []}
+{"batch": "ex:einkauf:5", "items": [{"id": "ex:pfund:0", "problem": "Pfund 在德国指 500 克，不是中国的一斤（500 克）吗？但这里译成「一斤」在德国语境下可能引起误解，因为德国人说的 Pfund 就是 500 克，而中国的一斤也是 500 克，所以意思没错。但需注意：在德国，Pfund 是 500 克，而中国的一斤也是 500 克，所以翻译成「一斤」是可以的。但原文是「ein Pfund Tomaten」，译成「一斤西红柿」在德国生活场景中，中国人会理解成 500 克，所以没问题。", "fix": "我要一斤西红柿。"}, {"id": "ex:pfund:1", "problem": "同上，Pfund 在德国是 500 克，译成「两斤」即 1000 克，正确。", "fix": "这是两斤。"}, {"id": "ex:pfund:2", "problem": "同上，Pfund 译成「斤」正确。", "fix": "做蛋糕你需要一斤面粉和半斤黄油。"}, {"id": "ex:pfund:3", "problem": "Pfund 在德国是 500 克，但这里译成「一磅」是错误的，因为磅是英制单位，约 454 克，而德国 Pfund 是 500 克。在德国生活场景中，问价格时通常说「一斤多少钱」或「500克多少钱」，而不是「一磅」。", "fix": "一斤多少钱？"}]}
+{"batch": "ex:einfach:0", "items": []}
+{"batch": "ex:wohnen:1", "items": [{"id": "ex:sprechen:3", "problem": "主语 Sie 被译成「他们」，但根据上下文（Sie sprechen gerade über dies und das）更可能是尊称「您」或「你们」，但原句无明确语境，通常 Sie 大写开头在句中是「您/你们」，而「他们」应为小写 sie。此处译成「他们」可能错误。", "fix": "您/你们正在闲聊各种事情。"}, {"id": "ex:arbeiten:6", "problem": "Hausarbeit 在此语境指「家务」，不是「课程论文」（课程论文是 Seminararbeit 或 Hausarbeit 在学术语境也可指论文，但此处无学术语境，且 arbeiten an 搭配家务不合理）。", "fix": "我正在做家务。"}]}
+{"batch": "ex:richtung:2", "items": []}
+{"batch": "ex:auto:4", "items": []}
+{"batch": "ex:zug:4", "items": []}
+{"batch": "ex:reif:1", "items": [{"id": "ex:reif:1", "problem": "Birne 译成「梨」是错的，Birne 在德语里是「梨」，但这里可能指「灯泡」？但句子是「Ist die Birne schon reif?」，「reif」是「成熟」，梨可以成熟，所以意思没错。但中文「梨已经熟了吗？」没问题。", "fix": "梨已经熟了吗？"}]}
+{"batch": "ex:fliegen:3", "items": []}
+{"batch": "ex:voll:1", "items": []}
+{"batch": "ex:schild:3", "items": []}
+{"batch": "ex:gepaeck:2", "items": [{"id": "ex:bringen:3", "problem": "翻译成了搭配说明，而不是句子意思。", "fix": "我可以带他回家吗？"}]}
+{"batch": "ex:turm:3", "items": []}
+{"batch": "ex:ampel:1", "items": []}
+{"batch": "ex:praxis:1", "items": [{"id": "ex:unfall:0", "problem": "Unfall 泛指事故，不一定是车祸，译成「车祸」缩小了范围。", "fix": "那边出事了！"}]}
+{"batch": "ex:sitzen:1", "items": []}
+{"batch": "ex:frueh:4", "items": []}
+{"batch": "ex:postkarte:2", "items": []}
+{"batch": "ex:halb:2", "items": []}
+{"batch": "ex:morgen-2:4", "items": []}
+{"batch": "ex:abfahrt:0", "items": [{"id": "ex:abfahrt:5", "problem": "Abfahrt 在此语境指发车/出发，不是出口（出口是 Ausfahrt）。", "fix": "我该坐哪趟车？"}, {"id": "ex:gleis:1", "problem": "Gleis 在火车站语境指站台，不是轨道。", "fix": "火车站有八个站台。"}, {"id": "ex:gleis:2", "problem": "Gleis 在火车站语境指站台，不是轨道。", "fix": "去慕尼黑的火车今天从七号站台发车。"}, {"id": "ex:gleis:3", "problem": "Gleis 在此指铁轨，但中文说“别穿过铁轨”意思正确，但更常见说法是“别横穿铁轨”，不过意思没错，不报。", "fix": "别穿过铁轨！"}, {"id": "ex:bahnsteig:4", "problem": "Gleis 在火车站语境指站台，不是轨道。", "fix": "我们在三号站台等车。"}]}
+{"batch": "ex:aufzug:2", "items": [{"id": "ex:praxis:0", "problem": "德语中 'erster Stock' 指二楼（底层为 Erdgeschoss），中文翻译成 '二楼' 是正确的，但需确认是否误译。实际上 'im ersten Stock' 在德国指第二层，中文说 '二楼' 没错。但原句 'Die Praxis ist im ersten Stock.' 翻译为 '诊所在二楼。' 意思正确。", "fix": "诊所在二楼。"}]}
+{"batch": "ex:dienstag:4", "items": []}
+{"batch": "ex:verlieren:0", "items": []}
+{"batch": "ex:besuchen:1", "items": []}
+{"batch": "ex:letzte-woche:1", "items": []}
+{"batch": "ex:spanien:2", "items": []}
+{"batch": "ex:fundbuero:4", "items": []}
+{"batch": "ex:wehtun:5", "items": [{"id": "ex:see:5", "problem": "德语 'die See' 是海，不是湖。句子 'Das Haus an der See' 指海边的房子，而翻译误为 '海边的那栋房子' 中的 '海边' 正确，但需确认：原文 'an der See' 是海，翻译为 '海边' 正确。但注意：德语中 'der See' 是湖，'die See' 是海。这里 'an der See' 是海，翻译正确。但检查其他：无问题。", "fix": "海边的那栋房子是我的。"}, {"id": "ex:spielplatz:2", "problem": "德语 'Spielplatz' 是游乐场/儿童游乐场，不是操场。翻译成 '操场' 不准确，在德国生活场景中应译为 '游乐场'。", "fix": "游乐场上有两个女孩。"}]}
+{"batch": "ex:ja:1", "items": []}
+{"batch": "ex:amt:1", "items": [{"id": "ex:stock:1", "problem": "德语 Stock 指楼层，但中文说“五层”通常指五层楼，而德语 Stock 从地面层开始算，这里可能指五层楼，但原文“fünf Stock”不标准，通常说“fünf Stockwerke”，意思是有五层楼，翻译“这栋楼有五层”正确。", "fix": "这栋楼有五层。"}, {"id": "ex:stock:2", "problem": "德语 Stock 指楼层，但中文翻译中“四楼（中国的五楼）”解释正确，但原文“vierten Stock”在德国是第四层，即中国的五楼，翻译正确。", "fix": "我们住在四楼（中国的五楼），没有电梯。"}, {"id": "ex:erdgeschoss:2", "problem": "德语 Erdgeschoss 指地面层，即中国的一楼，翻译“一楼（地面层）”正确。", "fix": "房子在一楼（地面层）。"}, {"id": "ex:erdgeschoss:3", "problem": "德语 Erdgeschoss 指地面层，即中国的一楼，翻译“一楼”正确。", "fix": "我的公寓在一楼。"}]}
+{"batch": "ex:eins-num:2", "items": []}
+{"batch": "ex:verlassen:0", "items": []}
+{"batch": "ex:elf-num:3", "items": []}
+{"batch": "ex:bild:1", "items": []}
+{"batch": "ex:einziehen:3", "items": []}
+{"batch": "ex:so:2", "items": []}
+{"batch": "ex:moeglich:1", "items": []}
+{"batch": "ex:bleiben:2", "items": [{"id": "ex:schlafen:0", "problem": "lange schlafen 是睡很久、睡懒觉，不是睡个好觉。", "fix": "我想睡个懒觉。"}, {"id": "ex:hallo:2", "problem": "die neue Nachbarin aus dem dritten Stock 是来自三楼的新邻居，不是新搬来的邻居。", "fix": "你好，我是三楼的新邻居。"}, {"id": "ex:danke:1", "problem": "Danke, dass du gekommen bist 是谢谢你能来，不是谢谢你的到来。", "fix": "谢谢你能来。"}, {"id": "ex:ja:0", "problem": "Ja, gern 是好的、很乐意，不是是的，乐意。", "fix": "你想喝茶吗？——好的，谢谢。"}]}
+{"batch": "ex:nutzen:0", "items": []}
+{"batch": "ex:natuerlich:3", "items": []}
+{"batch": "ex:noch-etwas:0", "items": [{"id": "ex:strom:2", "problem": "Der Strom 在这里指电力，不是电费。句子意思是电现在很贵，而不是电费很贵。", "fix": "现在电很贵。"}, {"id": "ex:bauen:1", "problem": "bauen 在这里是制作、搭建的意思，不是做（一般动作）。", "fix": "这个是我为你做的。"}]}
+{"batch": "ex:verzeihung:2", "items": [{"id": "ex:schuld:1", "problem": "原文是“这不是我的错”，译文却加了“他们告诉我”，主语和意思都变了。", "fix": "那不是我的错。"}]}
+{"batch": "ex:sorgen:0", "items": []}
+{"batch": "ex:hassen:1", "items": []}
+{"batch": "ex:stehen:0", "items": []}
+{"batch": "ex:lieben:2", "items": []}
+{"batch": "ex:tatsaechlich:1", "items": []}
+{"batch": "ex:lassen:3", "items": [{"id": "ex:anders:2", "problem": "翻译中包含了德语搭配说明 'anders als + Vergleich'，这不是中文翻译，而是语法注释。", "fix": "这座城市和十年前很不一样。"}]}
+{"batch": "ex:duerfen:2", "items": []}
+{"batch": "ex:da:1", "items": []}
+{"batch": "ex:anzeige:2", "items": []}
+{"batch": "ex:werfen:1", "items": []}
+{"batch": "ex:aendern:3", "items": []}
+{"batch": "ex:bewerbung:1", "items": []}
+{"batch": "ex:gehalt:0", "items": []}
+{"batch": "ex:vorlesung:1", "items": []}
+{"batch": "ex:eben:2", "items": []}
+{"batch": "ex:fangen:2", "items": [{"id": "ex:damit:3", "problem": "damit 在此处是副词，意为“用这个/以此”，不是连词“为了”。", "fix": "那你想用这个告诉我什么？"}]}
+{"batch": "ex:falls:1", "items": [{"id": "ex:zuerst:0", "problem": "Bürgeramt 译成「市民局」不准确，在德国应译为「市民办公室」或「户籍登记处」等，但「市民局」可能让读者困惑。", "fix": "你首先得去市民办公室登记。"}]}
+{"batch": "ex:liefern:5", "items": []}
+{"batch": "ex:schluck:2", "items": []}
+{"batch": "ex:ladenschluss:0", "items": []}
+{"batch": "ex:rest:1", "items": [{"id": "ex:abziehen:4", "problem": "abziehen 在此处意为离开、走人，不是撤走。", "fix": "我别无选择，只能离开。"}]}
+{"batch": "ex:knapp:2", "items": []}
