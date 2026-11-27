@@ -275,6 +275,7 @@ export class BattleUI {
     this.echoSetup();
     // Listening step: the monster says its own name, the player picks the meaning.
     if (this.question.type === 'pickZh' && this.question.focus) this.ctrl.speak(this.question.focus);
+    else if (this.question.teach) this.ctrl.speak(this.question.teach.de); // 初见教学: hear it once
     if (this.question.type === 'saying') this.ctrl.speak(this.question.say!.a);
     this.phase = 'answer';
     this.askedAt = performance.now();
@@ -1081,6 +1082,15 @@ export class BattleUI {
           ...(qq.board.examples.length ? [h('div.board-ex', { style: 'margin-top:4px' }, '你见过的句子：'), ...qq.board.examples.map((x) => h('div.board-ex', `· ${x}`))] : []),
         ),
       );
+    // 初见教学 (Lucas 2026-11-27): a never-met word's one choice question shows it whole first; the next one writes it.
+    if (qq.teach && this.phase === 'answer')
+      wrap.append(
+        h(
+          'div.board',
+          h('div.board-title', '初见 · 先认识它，下一题就写'),
+          h('div', { style: 'font-size:20px' }, h('b', qq.teach.de), `　${qq.teach.zh}　`, h('button.btn.ghost.small', { onclick: () => this.ctrl.speak(qq.teach!.de), title: '再听一遍' }, '🔊')),
+        ),
+      );
     wrap.append(h('div.prompt', h('span', qq.prompt), tags ? h('span.tag', tags) : '', hintBtn));
     const focusColor = qq.type === 'article' && this.phase === 'result' && this.b.word.art ? NAME_RED : '';
     const long = qq.type === 'cloze' ? 'font-size:22px;line-height:1.4;' : '';
@@ -1276,6 +1286,6 @@ function nameGlyph(b: Battle, hide = false): string {
 
 /** The question on screen asks the meaning (pick the Chinese, listen and pick, 回音听辨, Chinese options). */
 function asksMeaning(q: Question | null | undefined): boolean {
-  if (!q) return false;
+  if (!q || q.teach) return false;
   return q.type === 'pickZh' || (!!q.echo && !q.echo.say) || !!q.options?.some((o) => /[\u4e00-\u9fff]/.test(o));
 }

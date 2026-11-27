@@ -363,8 +363,10 @@ describe('question ladder', () => {
       for (let i = 0; i < 3; i++) {
         types.push(makeQuestion(s, b, 'attack', rng).type);
         b.step += 1;
+        if (i === 1) b.wrote = true; // 先认后写: the step-1 question (written from Lv2) was answered
       }
-      // 完形填空 ladder (Lv1–5): pick the German (the article lives in the stance since 0.5) → cloze → listen-and-pick.
+      // 完形填空 ladder (Lv1–5): pick the German (the one teaching choice) → cloze (typed from Lv2, 先认后写) → listen-and-pick.
+      // Before: pick the German (the article lives in the stance since 0.5) → cloze → listen-and-pick.
       expect(types).toEqual(['pickDe', 'cloze', 'pickZh']);
       for (let i = 1; i < types.length; i++) expect(types[i]).not.toBe(types[i - 1]);
     }
@@ -470,6 +472,7 @@ describe('region 2: packs, conjugation, plurals', () => {
     const s = newGame('T', 'student');
     s.level = 12;
     const b = startBattle(s, WORDS.find((w) => w.de === 'nehmen')!, rng);
+    b.wrote = true; // 先认后写 already done: walk the rest of the ladder
     let q = makeQuestion(s, b, 'attack', rng);
     while (q.type !== 'conj') {
       b.step += 1;
