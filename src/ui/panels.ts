@@ -17,6 +17,7 @@ import { SAYINGS, SAYING_CFG } from '../data/sayings';
 import { MASTERY, masteryFree, masteryIn, masteryPts, spendMastery, type MasteryTrack } from '../core/mastery';
 import { canLight, lightStar, litStars, STARS, STARS_FROM, starsPassed, TALENT_FROM_LEVEL } from '../core/classes';
 import { skillCards, talentSky } from './talentSky';
+import { gramMap } from './gramMap';
 import { finishStarTrial, starTrial, STAR_TRIAL } from '../core/stars';
 import { fullForm, fullFormLong, genderOf, reflNote, hasArticleQuestion, WORD_BY_ID, WORDS, zhWithPos } from '../data/words';
 import type { Controller } from '../game/controller';
@@ -48,7 +49,7 @@ import { checkJournal, type JournalHint } from '../core/journal';
 import { ensureShop, price, refreshCost, sellPrice, SLOT_NOUN } from '../core/shop';
 import { buyPattern, saidPrice, saidSellPrice, SELL_PATTERN } from '../core/shopTalk';
 
-export type PanelName = 'hero' | 'talents' | 'quests' | 'codex' | 'words' | 'data' | 'account' | 'settings' | 'help' | 'shop' | 'chest' | 'quiz' | 'screen' | 'bigmap' | 'diary' | 'ask' | 'exam' | 'journal' | 'place' | 'letter';
+export type PanelName = 'hero' | 'talents' | 'quests' | 'codex' | 'words' | 'data' | 'account' | 'settings' | 'help' | 'shop' | 'chest' | 'quiz' | 'screen' | 'bigmap' | 'diary' | 'ask' | 'exam' | 'journal' | 'place' | 'letter' | 'gram';
 
 export class Panels {
   open: PanelName | null = null;
@@ -157,6 +158,15 @@ export class Panels {
       clear(el).append(panel);
       el.onclick = null;
       window.setTimeout(() => (el.querySelector('input.duel, button.duel-next') as HTMLElement | null)?.focus(), 0);
+      return;
+    }
+    if (this.open === 'gram') {
+      // 语法秘境 (1.0.10, Lucas 「秘境」方案 1): three towers and a path of floors, see src/ui/gramMap.ts.
+      panel.append(h('h2', h('span', '语法秘境'), h('button.btn.ghost', { onclick: () => this.close() }, '先不进 Esc')), gramMap(this.ctrl.state, (k, f) => { this.close(); this.ctrl.startGramRun(k, f); }));
+      clear(el).append(panel);
+      el.onclick = (e) => {
+        if (e.target === el) this.close();
+      };
       return;
     }
     if (this.open === 'place' && this.place) {
@@ -285,13 +295,13 @@ export class Panels {
       if (this.saying !== null) window.setTimeout(() => (el.querySelector('input.buy-line') as HTMLInputElement | null)?.focus(), 0);
       return;
     }
-    const titles: Record<Exclude<PanelName, 'shop' | 'chest' | 'quiz' | 'screen' | 'bigmap' | 'diary' | 'ask' | 'exam' | 'journal' | 'place' | 'letter'>, string> = { hero: '角色与装备', talents: '技能与天赋', quests: '任务', codex: '图鉴', words: '单词本', data: '数据与存档', account: '账号与排行', settings: '设置', help: '怎么玩' };
+    const titles: Record<Exclude<PanelName, 'shop' | 'chest' | 'quiz' | 'screen' | 'bigmap' | 'diary' | 'ask' | 'exam' | 'journal' | 'place' | 'letter' | 'gram'>, string> = { hero: '角色与装备', talents: '技能与天赋', quests: '任务', codex: '图鉴', words: '单词本', data: '数据与存档', account: '账号与排行', settings: '设置', help: '怎么玩' };
     const tabs = h('div.tabs');
-    (Object.keys(titles) as Array<Exclude<PanelName, 'shop' | 'chest' | 'quiz' | 'screen' | 'bigmap' | 'diary' | 'ask' | 'exam' | 'journal' | 'place' | 'letter'>>).forEach((k) =>
+    (Object.keys(titles) as Array<Exclude<PanelName, 'shop' | 'chest' | 'quiz' | 'screen' | 'bigmap' | 'diary' | 'ask' | 'exam' | 'journal' | 'place' | 'letter' | 'gram'>>).forEach((k) =>
       tabs.append(h(`button.btn${this.open === k ? '.on' : ''}`, { onclick: () => this.show(k) }, titles[k])),
     );
-    panel.append(h('h2', h('span', titles[this.open as Exclude<PanelName, 'shop' | 'chest' | 'quiz' | 'screen' | 'bigmap' | 'diary' | 'ask' | 'exam' | 'journal' | 'place' | 'letter'>]), h('button.btn.ghost', { onclick: () => this.close() }, '关闭 Esc')), tabs);
-    const body = { letter: () => h('div'), journal: () => h('div'), exam: () => h('div'), ask: () => h('div'), diary: () => h('div'), bigmap: () => h('div'), shop: () => h('div'), chest: () => h('div'), quiz: () => h('div'), place: () => h('div'), screen: () => h('div'), hero: () => this.hero(), talents: () => this.talents(), quests: () => this.questsBody(), codex: () => this.codex(), words: () => this.wordbook(), data: () => this.data(), account: () => this.account(), settings: () => this.settings(), help: () => this.help() }[this.open]();
+    panel.append(h('h2', h('span', titles[this.open as Exclude<PanelName, 'shop' | 'chest' | 'quiz' | 'screen' | 'bigmap' | 'diary' | 'ask' | 'exam' | 'journal' | 'place' | 'letter' | 'gram'>]), h('button.btn.ghost', { onclick: () => this.close() }, '关闭 Esc')), tabs);
+    const body = { gram: () => h('div'), letter: () => h('div'), journal: () => h('div'), exam: () => h('div'), ask: () => h('div'), diary: () => h('div'), bigmap: () => h('div'), shop: () => h('div'), chest: () => h('div'), quiz: () => h('div'), place: () => h('div'), screen: () => h('div'), hero: () => this.hero(), talents: () => this.talents(), quests: () => this.questsBody(), codex: () => this.codex(), words: () => this.wordbook(), data: () => this.data(), account: () => this.account(), settings: () => this.settings(), help: () => this.help() }[this.open]();
     panel.append(body);
     clear(el).append(panel);
     if (keepTop) panel.scrollTop = keepTop;

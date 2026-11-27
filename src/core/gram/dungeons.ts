@@ -50,6 +50,7 @@ const ABLAUT_ZH: Record<string, string> = {
   'e,i-a': 'e → i（nehmen → nimmt）',
   'a-u': 'a → ä（fahren → fährt）',
   'a,ei-ie': 'ei / a → ie（schreiben → schrieb）',
+  'ei-i': 'ei → i（schneiden → schnitt，greifen → gegriffen）',
   'ü,ie-o': 'ie → o（fliegen → geflogen）',
   特殊: '特殊变化（gehen → ging）',
 };

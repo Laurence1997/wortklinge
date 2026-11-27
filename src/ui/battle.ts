@@ -19,6 +19,7 @@ import { resMax } from '../core/classes';
 import { fullForm, fullFormLong, genderOf, WORD_BY_ID, zhWithPos } from '../data/words';
 import type { Controller } from '../game/controller';
 import { ELEMENT_TAG, GLITCH, NAME_RED } from '../game/sprites';
+import { GRAM_DUNGEON } from '../core/gram/dungeons';
 import { $, bar, clear, h, isTyping, umlautButtons } from './dom';
 import { reportButton } from './report';
 import { logLine } from './gamelog';
@@ -1015,7 +1016,10 @@ export class BattleUI {
 
     // 教学战 (0.5 节奏表): the first fight after a new move opens points at it.
     const teach = this.phase === 'choose' && s.flags.teachSkills && !b.tutorial ? h('div.small', { style: 'color:var(--gold, #ffcf4a)' }, '新招：试试 Q 铭刻（下一题难一级，伤害 ×1.5）；答题卡住时可以按 W 低语（给提示，但这题不算会写）') : this.phase === 'choose' && b.teachFin ? h('div.small', { style: 'color:var(--gold, #ffcf4a)' }, '言灵已满：按 F 放终结技，看中文写整句') : '';
-    clear(el).append(h('div.b-top', monEl, intent, me), stance, teach, movesEl, q, blog);
+    // 语法秘境 run (1.0.10): which dungeon, floor and fight this is.
+    const gr = this.ctrl.gramRun;
+    const gramTag = gr ? h('div.small', { style: 'color:var(--gold, #ffcf4a);font-weight:700' }, `${GRAM_DUNGEON.name[gr.kind]} · ${gr.floor.label} · 第 ${gr.i + 1}/${gr.words.length} 场`) : '';
+    clear(el).append(gramTag, h('div.b-top', monEl, intent, me), stance, teach, movesEl, q, blog);
     blog.scrollTop = blog.scrollHeight;
     if (this.input && this.phase === 'answer') window.setTimeout(() => (this.mateBoxes[0] ?? this.input)?.focus(), 0);
   }

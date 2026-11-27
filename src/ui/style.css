@@ -737,3 +737,29 @@ body.bright .ts-pips i { border-color: #6a6f90; }
 .gstar.lit { border-color: var(--gold); } .gstar.lit .k { color: var(--gold); }
 .gstar.passed .k { color: var(--ink); }
 .gstar .btn { align-self: flex-start; }
+
+/* 语法秘境 (1.0.10, Lucas 方案 1): three towers, a winding path of floors, the picked floor's card. */
+.gmap { display: grid; gap: 10px; }
+.gm-towers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.gm-tower { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--line-hi); border-radius: 10px; background: var(--panel-2); color: var(--ink); text-align: left; cursor: pointer; font: inherit; }
+.gm-tower .gm-ic { color: var(--c); flex: none; }
+.gm-tower .gm-tn { display: flex; flex-direction: column; gap: 2px; }
+.gm-tower .gm-tn b { font-size: 15px; }
+.gm-tower .gm-tn .small { color: var(--muted); }
+.gm-tower.on { border: 2px solid var(--c); padding: 9px 11px; box-shadow: 0 3px 10px rgba(0,0,0,.12); }
+.gm-tower:hover:not(:disabled) { transform: translateY(-1px); }
+.gm-tower.locked { opacity: .7; cursor: default; }
+.gm-tower.locked .gm-ic { color: var(--muted); }
+.gm-what { margin: 0; }
+.gm-box { border: 1px solid var(--line); border-radius: 12px; background: linear-gradient(180deg, rgba(0,0,0,.03), rgba(0,0,0,0)); padding: 6px; }
+svg.gm-path { display: block; width: 100%; height: auto; max-height: 420px; }
+.gm-node { cursor: pointer; outline: none; }
+.gm-node .gm-num { font: 700 15px var(--mono); }
+.gm-node .gm-label { font: 12px var(--sans); fill: var(--ink); paint-order: stroke; stroke: var(--panel, #fbf5e8); stroke-width: 5px; stroke-linejoin: round; }
+.gm-node.picked .gm-label { font-weight: 700; }
+.gm-node:hover circle, .gm-node:focus circle { stroke-width: 4; }
+.gm-card { border: 1px solid var(--line-hi); border-left: 5px solid var(--c); border-radius: 8px; padding: 10px 14px; background: var(--panel-2); display: grid; gap: 6px; }
+.gm-ch { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.gm-ch b { font-size: 16px; }
+.gm-go { display: flex; justify-content: flex-end; }
+@media (max-width: 900px) { .gm-towers { grid-template-columns: 1fr; } }
