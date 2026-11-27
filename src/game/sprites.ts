@@ -536,6 +536,26 @@ export function heroTinyCanvas(tile: number, color: number, sheet: CanvasImageSo
   return cv;
 }
 
+/** 主角专属特征 (Lucas 2026-11-27): a glowing open book floats at the hero's right shoulder — the 言灵 the hero
+ *  collects. Drawn beside the 16×16 figure (the figure keeps its size), always in its own colours, also on dark maps.
+ *  `frame` 0/1 bobs it against the walk bob. Pixels: O outline, C page, G gold glyph lines, B cover. */
+const CHARM_ROWS = ['.OO..OO.', 'OCCOOCCO', 'OGGCCGGO', 'OCCCCCCO', 'OGGCCGGO', 'OBBBBBBO', '.OOOOOO.'];
+const CHARM_COL: Record<string, string> = { O: '#3f2631', C: '#fff4dc', G: '#f4b400', B: '#8a56e2' };
+const CHARM_SPARK = [[[-1, 0], [7, 3], [5, 9]], [[7, 0], [0, 8], [3, 9]]];
+/** Width the book adds on the right of the figure. */
+export const CHARM_W = 8;
+export function drawHeroCharm(ctx: CanvasRenderingContext2D, x: number, y: number, frame: number): void {
+  CHARM_ROWS.forEach((row, j) =>
+    [...row].forEach((ch, i) => {
+      if (ch === '.') return;
+      ctx.fillStyle = CHARM_COL[ch];
+      ctx.fillRect(x + i, y + j + frame, 1, 1);
+    }),
+  );
+  ctx.fillStyle = '#ffd640';
+  for (const [dx, dy] of CHARM_SPARK[frame]) ctx.fillRect(x + dx, y + dy + frame, 1, 1);
+}
+
 /** Hero figure: Tiny Dungeon 98 (男) / 99 (女) with your hair colour (体型 and 发型 no longer change the look); `mark` adds a
  *  thin light outline so you find yourself among NPCs (only your own hero). */
 export function heroFramesKenney(look: Look, dungeon: CanvasImageSource, mark = false, raw = false): HTMLCanvasElement[] {
@@ -551,10 +571,14 @@ export function heroFramesKenney(look: Look, dungeon: CanvasImageSource, mark = 
     for (const p of ring) [d[p * 4], d[p * 4 + 1], d[p * 4 + 2]] = [232, 220, 207];
     c.putImageData(img, 0, 0);
   }
+  // The map frame is padded on both sides so the figure stays centred on its origin; the book sits on the right.
   return [0, 1].map((bob) => {
     const cv = document.createElement('canvas');
-    cv.width = cv.height = 16;
-    cv.getContext('2d')!.drawImage(fig, 0, -bob);
+    cv.width = 16 + 2 * CHARM_W;
+    cv.height = 16;
+    const c = cv.getContext('2d')!;
+    c.drawImage(fig, CHARM_W, -bob);
+    drawHeroCharm(c, CHARM_W + 15, 1, bob);
     return cv;
   });
 }

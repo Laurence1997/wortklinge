@@ -210,7 +210,7 @@ function confirmOverwrite(): boolean {
 /** Two small selects (性别 发色) with a live preview. 画风统一: 体型 and 发型 stay in the save but no longer change the figure. */
 export function lookPicker(start: Look = DEFAULT_LOOK, onChange?: (l: Look) => void): { el: HTMLElement; value: () => Look } {
   const cur: Look = { ...start };
-  const preview = h('span', { style: 'display:inline-block;width:64px;height:64px;vertical-align:middle;background:#1d0a0c' });
+  const preview = h('span', { style: 'display:inline-block;width:96px;height:64px;vertical-align:middle;background:#1d0a0c' });
   const draw = () => preview.replaceChildren(heroIcon(cur, 4));
   const row = h('div.row', { style: 'gap:6px;align-items:center;flex-wrap:wrap' }, preview);
   (['gender', 'color'] as Array<keyof Look>).forEach((k) => {

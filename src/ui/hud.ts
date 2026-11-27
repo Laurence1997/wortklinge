@@ -6,6 +6,8 @@ import { maxHp, type GameState } from '../core/state';
 import { WORDS } from '../data/words';
 import { zoneAt } from '../game/map';
 import { $, bar, clear, h } from './dom';
+import { heroIcon } from './icons';
+import { DEFAULT_LOOK } from '../core/look';
 
 export function renderHud(s: GameState): void {
   const el = $('hud');
@@ -15,7 +17,7 @@ export function renderHud(s: GameState): void {
   const tier = comboTier(s.combo);
   const capped = s.level >= levelCapFor(s.flags) && s.xp >= xpToNext(s.level);
   clear(el).append(
-    h('div.name', h('span', s.name), h('span', `Lv ${s.level}`)),
+    h('div.name', heroIcon(s.look ?? DEFAULT_LOOK, 2), h('span.nm', s.name), h('span', `Lv ${s.level}`)),
     // 状态框 (Lucas 11-26: 血条里的数字看不清): taller bars, white numbers with a dark edge, label left and
     // numbers right; the counters sit in a 3-column grid with the number above its name.
     bar('hp', s.hp, maxHp(s), '生命', `${s.hp} / ${maxHp(s)}`),
