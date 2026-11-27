@@ -102,7 +102,7 @@ describe('归名 (spaced repetition)', () => {
     expect(stageOf(s, w, t6)).toBe(2);
     expect(reviewMon(p, t6)).toBe(true);
   });
-  it('rev 51 / 52: a clean first fight skips to 半名; a clean 归名 gets one 30-day check; writing it counts', () => {
+  it('rev 51 / 52: a clean first fight skips to 半名; a clean 归名 is reviewed at 2 / 7 / 30 days; writing it counts', () => {
     const s = newGame('T', 'student', T0);
     const w = WORD_BY_ID['tisch'];
     recordKill(s, w, false, false, T0, { typed: true });
@@ -110,10 +110,19 @@ describe('归名 (spaced repetition)', () => {
     const t1 = T0 + CONFIG.srs.respawn;
     expect(recordKill(s, w, true, false, t1).guiming).toBe(true);
     const p = s.words[w.id];
-    // 审查修订: back once after 2–3 days; the second clean pass ends its reviews.
-    expect(p.due).toBe(t1 + CONFIG.srs.cleanFirst);
+    // 写对的词 (Lucas 2026-11-27 选 1): reviewed after 2, 7 and 30 days; the third clean pass ends its reviews.
+    expect(p.due).toBe(t1 + 2 * DAY);
+    expect(contextPass(s, w, p.due)).toBe(7 * DAY);
+    expect(contextPass(s, w, p.due)).toBe(30 * DAY);
+    expect(p.ctxDone).toBeFalsy();
     expect(contextPass(s, w, p.due)).toBeNull();
     expect(p.ctxDone).toBe(true);
+    // A shaky pass on the ladder moves a word onto the adaptive schedule.
+    const x = WORD_BY_ID['tee'];
+    recordKill(s, x, false, false, T0, { typed: true });
+    recordKill(s, x, true, false, t1);
+    expect(contextPass(s, x, s.words[x.id].due, 'shaky')).toBe(Math.round(2 * DAY * CONFIG.srs.adaptive.shaky));
+    expect(s.words[x.id].fix).toBeUndefined();
     // A wrong context answer relapses it to a 半名 review monster; one 归名一击 names it again.
     const v = WORD_BY_ID['stuhl'];
     recordKill(s, v, false, false, T0, { flaw: true, typed: true });

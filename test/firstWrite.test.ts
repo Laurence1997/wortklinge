@@ -112,3 +112,15 @@ describe('会的词不再 30 天回响抽查 (Lucas 2026-11-27)', () => {
     expect(Object.keys(m.words).length).toBe(Object.keys(s.words).length);
   });
 });
+
+describe('写对的词 2 / 7 / 30 天 (Lucas 2026-11-27 选 1)', () => {
+  it('old saves: a clean 归名 waiting for its old one-time check joins the ladder; due date kept', async () => {
+    const { migrate } = await import('../src/core/state');
+    const { CONFIG } = await import('../src/core/config');
+    const s = newGame('T', 'student');
+    s.words['tee'] = { stage: 3, due: 7777, ivl: 2.5 * 864e5, ctx: CONFIG.srs.context.length - 1, firstSeen: 1, lastSeen: 1, relapse: 0, correct: 3, wrong: 0, read: 1, write: 1 } as never;
+    const m = migrate(JSON.parse(JSON.stringify(s)))!;
+    expect(m.words['tee'].fix).toBe(0);
+    expect(m.words['tee'].due).toBe(7777);
+  });
+});

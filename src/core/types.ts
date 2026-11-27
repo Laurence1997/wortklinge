@@ -121,7 +121,9 @@ export interface WordProgress {
   ctx?: number;
   /** 语境复习: the gap that set `due` (for 「过期 2 个间隔」 and 越久越肥). */
   ivl?: number;
-  /** 语境复习: every review passed (or the one 30-day spot check of a clean 归名): no more reviews. */
+  /** 写对的词 (Lucas 2026-11-27): which step of CONFIG.srs.cleanLadder (2 / 7 / 30 days) is due; absent = adaptive. */
+  fix?: number;
+  /** 语境复习: every review passed (or the clean 2 / 7 / 30-day ladder done): no more reviews. */
   ctxDone?: boolean;
   /** 入学测试 (2026-11-25): 推定会 since this time: counts as 归名 on trust, spot-checked one per fight. */
   placed?: number;
