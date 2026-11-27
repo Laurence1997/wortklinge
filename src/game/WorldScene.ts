@@ -229,6 +229,9 @@ export class WorldScene extends Phaser.Scene {
     this.cursors = kb.createCursorKeys();
     this.keys = kb.addKeys('W,A,S,D,E') as Record<string, Phaser.Input.Keyboard.Key>;
     kb.disableGlobalCapture();
+    // Everything below may call back into the controller (scene claim → level-up, spawns → bread), which uses
+    // ctrl.scene: hand it over now instead of waiting for onSceneReady (载入崩溃, Lucas 2026-11-27).
+    this.ctrl.scene = this;
     this.nodes?.stop();
     this.nodes = CONFIG.map.nodes && !new URLSearchParams(location.search).has('oldmap') ? new NodeNav(this) : null;
     this.nodes?.start();
