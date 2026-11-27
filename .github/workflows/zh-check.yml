@@ -1,0 +1,33 @@
+name: 中文释义排查 (Chinese gloss check)
+
+# Manual only. DeepSeek reads every gloss + example translation of wortschatz.tsv and lists suspicious ones.
+on:
+  workflow_dispatch:
+    inputs:
+      model:
+        type: choice
+        options: [deepseek-v4-pro, deepseek-flash]
+        default: deepseek-v4-pro
+      limit:
+        description: 'Only the first N words (0 = all)'
+        default: '0'
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check
+        env:
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          ZH_MODEL: ${{ inputs.model }}
+          ZH_LIMIT: ${{ inputs.limit }}
+        run: python3 scripts/proof/zh_gloss_check.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: zh-gloss
+          path: proof/out/zh-gloss.json
