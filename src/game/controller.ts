@@ -1,3 +1,4 @@
+import { freshNote } from '../core/npcNotes';
 import { articleB2ById, ARTICLE_B2_CFG, isArticleWord } from '../core/gram/articleB2';
 import { loadArticlesB1, loadArticlesB2, loadArticlesC1 } from '../data/articlesB2';
 import { revealLines, SYSTEM_TYPOS } from '../data/reveal17';
@@ -2305,6 +2306,7 @@ export class Controller {
       }
       for (const g of r.gramOk ?? []) lines.push({ who: SYS, text: `✓ 这句用对了「${g}」` });
       if (r.used?.length) this.persist();
+      r.note = freshNote(run, r.note, reply); // 审核 1.0.10: a correction shows once, in the round it is about
       if (reply && !r.note.trim()) run.clean += 1; // 天赋「健谈」: lines with nothing to correct
       const h2 = [...history, ...(reply ? [{ who: 'me' as const, de: reply }] : []), { who: 'npc' as const, de: r.de }];
       const turns = h2.filter((x) => x.who === 'me').length;
@@ -2375,6 +2377,7 @@ export class Controller {
       // A round with the wrong Sie / du doesn't count.
       if (reply && !r.registerWrong) run.rounds += 1;
       const counted = run.rounds;
+      r.note = freshNote(run, r.note, reply); // 审核 1.0.10: a correction shows once, in the round it is about
       const lines: Line[] = [...(r.note ? [{ who: '纠错', text: r.note }] : []), { who: p.npc, text: `${r.de}\n（${r.zh}）` }];
       if (r.registerWrong) lines.push({ who: SYS, text: `称呼用错了（这里要用 ${p.formal ? 'Sie' : 'du'}），这一轮不算。` });
       if (r.convinced) {

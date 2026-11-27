@@ -96,3 +96,17 @@ describe('1.0.10 句型怪 fixes', () => {
     expect(gradePatSentence('Zu Hause, wäre es möglich früher?', two, f2).ok).toBe(false); // wrong order
   });
 });
+
+describe('1.0.10 NPC talk corrections show once', () => {
+  it('drops a correction that is about an earlier line', async () => {
+    const { freshNote } = await import('../src/core/npcNotes');
+    const run = {};
+    const note = '„einen Problem“ 应为 „ein Problem“（Problem 是中性名词）。';
+    expect(freshNote(run, note, 'Ich habe einen Problem mit dem Termin.')).toBe(note);
+    expect(freshNote(run, note, 'Morgen um zehn Uhr.')).toBe('');
+    expect(freshNote(run, note, 'Das ist einen Problem für mich.')).toBe(note); // made again: shown again
+    expect(freshNote(run, '动词要放第二位。', 'Morgen ich komme.')).toBe('动词要放第二位。');
+    expect(freshNote(run, '动词要放第二位。', 'Ja.')).toBe('');
+    expect(freshNote(run, '', 'Ja.')).toBe('');
+  });
+});
