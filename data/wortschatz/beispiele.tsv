@@ -166,7 +166,7 @@ dort	Siehst du das Café dort?	你看见那边的咖啡馆了吗？	自写
 bekommen	Ich habe heute ein Paket bekommen.	我今天收到了一个包裹。	自写
 liegen	Das Handy liegt auf dem Sofa.	手机在沙发上。	自写
 weiter	Bitte gehen Sie weiter!	请继续往前走！	自写
-helfen	Ich freue mich, dass ich dir helfen konnte.	能够出一份力太好了。	Tatoeba #3403003 · Pfirsichbaeumchen
+helfen	Ich freue mich, dass ich dir helfen konnte.	我很高兴能帮到你。	Tatoeba #3403003 · Pfirsichbaeumchen
 los	Was ist los?	怎么了？	自写
 zeigen	Kannst du mir den Weg zeigen?	你能给我指路吗？	自写
 wenig	Ich habe heute wenig Zeit.	我今天没什么时间。	自写
@@ -625,7 +625,7 @@ ansehen	Wollen wir uns heute Abend einen Film ansehen?	我们今晚看部电影�
 lügen	Du lügst doch, das glaube ich dir nicht!	你在撒谎吧，我才不信！	自写
 Luft	Lass uns rausgehen, ich brauche frische Luft.	我们出去吧，我需要透透气。	自写
 Kino	Wollen wir heute Abend ins Kino gehen? Es läuft ein neuer Film.	今晚我们去看电影吗？有部新片上映。	自写
-zuerst	Zuerst musst du dich beim Bürgeramt anmelden.	你首先得去市民局登记。	自写
+zuerst	Zuerst musst du dich beim Bürgeramt anmelden.	你首先得去市民服务中心登记。	自写
 Tat	Der Täter hat die Tat sofort gestanden.	罪犯当场承认了罪行。	自写
 Schiff	Wir fahren mit dem Schiff über den Bodensee.	我们坐船游博登湖。	自写
 tatsächlich	Ich dachte, es ist ein Witz, aber es stimmt tatsächlich.	我以为是开玩笑，结果竟然是真的。	自写
@@ -789,7 +789,7 @@ Form	Bleib in Form und mach regelmäßig Sport.	保持身材，定期运动。	�
 deutlich	Kannst du bitte etwas deutlicher sprechen?	你能说得清楚一点吗？	自写
 Situation	Die Situation auf dem Wohnungsmarkt ist sehr schwierig.	住房市场的情况很困难。	自写
 außerhalb	Wir wohnen etwas außerhalb der Stadt, dafür ist es ruhig.	我们住在城外一点，不过很安静。	自写
-erwähnen	Hat er erwähnt, wann er zurückkommt?	他提到他什么时候回来了吗？	自写
+erwähnen	Hat er erwähnt, wann er zurückkommt?	他说过他什么时候回来吗？	自写
 überraschen	Wir wollen sie zum Geburtstag mit einer Party überraschen.	我们想办个派对给她一个生日惊喜。	自写
 schwierig	Die deutsche Grammatik ist manchmal ganz schön schwierig.	德语语法有时候真挺难的。	自写
 überlegen	Ich muss mir das noch überlegen, ich sage dir morgen Bescheid.	我还得考虑一下，明天告诉你。	自写
@@ -846,7 +846,7 @@ Fuß	Ich gehe zu Fuß, es ist nicht weit.	我走路去，不远。	自写
 Kleidung	Für den Winter in Deutschland brauchst du warme Kleidung.	在德国过冬你需要保暖的衣服。	自写
 treiben	Ich treibe dreimal pro Woche Sport.	我每周运动三次。	自写
 schlagen	Man darf Kinder niemals schlagen, das ist in Deutschland verboten.	绝不能打孩子，这在德国是违法的。	自写
-Gebäude	Das Bürgeramt ist in dem grauen Gebäude neben der Post.	市民局在邮局旁边那栋灰色楼里。	自写
+Gebäude	Das Bürgeramt ist in dem grauen Gebäude neben der Post.	市民服务中心在邮局旁边那栋灰色楼里。	自写
 Ergebnis	Das Ergebnis der Prüfung bekommst du in zwei Wochen.	考试结果两周后出来。	自写
 gesamt	Die gesamte Familie kommt zu Weihnachten zu uns.	全家人圣诞节都来我们家。	自写
 wachsen	Die Tomaten auf dem Balkon wachsen dieses Jahr sehr gut.	今年阳台上的西红柿长得很好。	自写
@@ -1251,7 +1251,7 @@ Schutz	Zum Schutz vor der Sonne solltest du eine Mütze tragen.	你应该戴顶�
 kontrollieren	Im Zug wurde meine Fahrkarte zweimal kontrolliert.	在火车上我的票被查了两次。	自写
 Haar	Sie hat sich die Haare kurz schneiden lassen, und es steht ihr gut.	她把头发剪短了，很适合她。	自写
 Höhe	Die Höhe der Miete hängt davon ab, wo die Wohnung liegt.	房租多少取决于房子在哪儿。	自写
-davor	Ich habe um zwei einen Termin, aber davor muss ich noch essen.	我两点有个约，在那之前还得吃饭。	自写
+davor	Ich habe um zwei einen Termin, aber davor muss ich noch essen.	我两点有个预约，在那之前还得吃饭。	自写
 erhöhen	Der Vermieter will die Miete ab Januar um fünfzig Euro erhöhen.	房东想从一月起把房租涨五十欧元。	自写
 Getränk	Die Getränke sind im Preis inbegriffen, nur das Essen kostet extra.	饮料包含在价格里，只有吃的另收费。	自写
 bezeichnen	Er bezeichnet sich selbst als Künstler, obwohl er noch nie ein Bild verkauft hat.	他自称艺术家，尽管从没卖出过一幅画。	自写
@@ -2030,7 +2030,7 @@ Kette	Die Kette, die sie von ihrer Großmutter geerbt hat, trägt sie jeden Tag.
 Phase	Jeder Student hat mal eine Phase, in der er keine Lust mehr hat.	每个学生都会有一段什么都不想干的时期。	自写
 zahlreich	Obwohl es den ganzen Tag regnete, kamen zahlreiche Besucher zum Stadtfest.	尽管下了一整天雨，还是有许多人来参加城市节。	自写
 Priester	Der Priester, der uns getraut hat, war ein alter Freund der Familie.	为我们证婚的神父是家里的老朋友。	自写
-Gleis	Der Zug nach München fährt heute von Gleis sieben ab.	去慕尼黑的火车今天从七号轨道发车。	自写
+Gleis	Der Zug nach München fährt heute von Gleis sieben ab.	去慕尼黑的火车今天从七号站台发车。	自写
 produzieren	In dieser Fabrik werden jeden Tag mehr als tausend Autos produziert.	这家工厂每天生产一千多辆汽车。	自写
 Stufe	Vorsicht, hier ist eine Stufe, die man im Dunkeln leicht übersieht!	小心，这里有个台阶，黑暗中很容易看不见！	自写
 beinahe	Ich hätte beinahe den Zug verpasst, weil mein Wecker nicht geklingelt hat.	闹钟没响，我差点错过火车。	自写
@@ -2291,7 +2291,7 @@ Brötchen	Sonntags holt mein Mann frische Brötchen vom Bäcker, bevor wir früh
 verleihen	Der Preis wird jedes Jahr an eine junge Autorin verliehen.	这个奖每年颁给一位年轻女作家。	自写
 Militär	Sein Sohn ist beim Militär.	他儿子在军队里。	自写
 Gnade	Der Angeklagte bat das Gericht um Gnade, weil er Kinder zu Hause hat.	被告请求法庭开恩，因为他家里有孩子。	自写
-Website	Auf der Website der Stadt kann man online einen Termin beim Bürgeramt buchen.	在市政网站上可以在线预约市民局。	自写
+Website	Auf der Website der Stadt kann man online einen Termin beim Bürgeramt buchen.	在市政府网站上可以在线预约市民服务中心。	自写
 Papst	Der Papst lebt in Rom.	教皇住在罗马。	自写
 Mexiko	Meine Kollegin kommt aus Mexiko und hat uns zum Abendessen eingeladen.	我同事来自墨西哥，她请我们吃了晚饭。	自写
 Krise	Während der Krise haben viele kleine Geschäfte schließen müssen.	危机期间很多小店不得不关门。	自写
@@ -2496,7 +2496,7 @@ Braut	Die Braut trug ein langes weißes Kleid, das ihre Mutter selbst genäht ha
 beschützen	Der große Bruder hat seine kleine Schwester immer vor den anderen Kindern beschützt.	哥哥总是保护妹妹不受其他孩子欺负。	自写
 ausprobieren	Ich habe das neue Rezept ausprobiert, aber leider ist der Kuchen nichts geworden.	我试了新菜谱，可惜蛋糕没做成。	自写
 Front	An der Front des Gebäudes hängt ein großes Plakat für das Stadtfest.	大楼正面挂着城市节的大海报。	自写
-missbrauchen	Er hat das Vertrauen seiner Kollegen missbraucht und Geld aus der Kasse genommen.	他辜负了同事的信任，从收银台拿了钱。	自写
+missbrauchen	Er hat das Vertrauen seiner Kollegen missbraucht und Geld aus der Kasse genommen.	他辜负了同事的信任，从钱箱里拿了钱。	自写
 Katastrophe	Das Hochwasser war eine Katastrophe für die ganze Region.	这场洪水对整个地区来说是一场灾难。	自写
 außergewöhnlich	Der Sommer war außergewöhnlich heiß. Es hat fast zwei Monate nicht geregnet.	那个夏天异常炎热，差不多有两个月没下雨。	自写（Luna 改）
 relativ	Die Wohnung ist relativ günstig, wenn man bedenkt, wie zentral sie liegt.	考虑到位置多么中心，这套房子算是比较便宜的。	自写
@@ -3041,7 +3041,7 @@ berechnen	Wissenschaftler können leicht den Abstand zwischen zwei Planeten bere
 Perspektive	Ich sehe hier für mich keine Perspektiven.	我看不到自己在这里有什么前途。	Tatoeba #13549513 · mhr
 Pool	Dieses Hotel hat keinen Pool.	这个酒店没有游泳池。	Tatoeba #6005422 · dispy
 beitragen	Auch er hat dazu beigetragen!	他也出力了。	Tatoeba #1839173 · Zaghawa
-Garage	Ich habe sie in der Garage vergessen.	我把她忘在车库里了。	Tatoeba #10125234 · Yorwba
+Garage	Ich habe sie in der Garage vergessen.	我把它忘在车库里了。	Tatoeba #10125234 · Yorwba
 Schneider	Noch bist du nicht aus dem Schneider.	你还没脱离险境呢。	Tatoeba #12551658 · Waldelfe
 beraten	Ein wahrer Freund würde dich beraten.	真正的朋友会给你建议。	Tatoeba #1044031 · Sudajaengi
 beleidigt	Warum bist du jetzt beleidigt?	你现在为什么觉得受冒犯了？	自写
@@ -3145,7 +3145,7 @@ Horn	Er hat sich die Hörner noch nicht abgelaufen.	他还没历练成熟。	Tat
 weichen	Warum weichst du bei diesem Thema immer aus?	你为什么总是逃避这个话题？	Tatoeba #9855404 · Yorwba
 Initiative	Ich halte dies für eine gute Initiative.	我认为这是一项很好的倡议。	Tatoeba #1634773 · al_ex_an_der
 inklusive	Der Preis ist inklusive Steuer.	价格含税。	Tatoeba #1932353 · Tamy
-Daumen	Er hat nur Daumen an seinen Händen.	他的两只手上全是拇指。	Tatoeba #5081357 · Esperantostern
+Daumen	Er hat nur Daumen an seinen Händen.	他的手上只有拇指。	Tatoeba #5081357 · Esperantostern
 Batterie	Die Batterien funktionieren nicht, obwohl sie neu sind.	这些电池，虽然是新的，但是没用。	Tatoeba #2631412 · Zaghawa
 Quittung	Können Sie mir bitte eine Quittung geben? Ich brauche sie für die Firma.	能给我开张收据吗？我要给公司报销。	自写
 Saal	Dieser Saal ist zu groß.	这个大厅太大了。	Tatoeba #11163844 · Oldman
@@ -3400,7 +3400,7 @@ schweben	Eine Wolke schwebte über den Himmel.	天空中飘过一朵云。	Tatoe
 verderben	Ich will euch nicht den Tag verderben.	我不想扫你们的兴。	Tatoeba #5020069 · al_ex_an_der
 jammern	Wer viel jammert, mit dem schläft niemand.	谁老是抱怨，就没人愿意和谁睡觉。	Tatoeba #5075509 · Esperantostern
 Knall	Du hast einen Knall.	你脑子有问题吧。	Tatoeba #4682921 · Pfirsichbaeumchen
-Melodie	Spiel uns eine Melodie.	给我们弹一手。	Tatoeba #815669 · jakov
+Melodie	Spiel uns eine Melodie.	给我们弹一段曲子。	Tatoeba #815669 · jakov
 einschlagen	Ich will wissen, wer dieses Fenster eingeschlagen hat!	我想知道是谁打碎了这扇窗户！	Tatoeba #1691018 · Pfirsichbaeumchen
 Fach	Was für ein Fach studierst du?	你在学什么专业？	Tatoeba #10039740 · Yorwba
 Fotograf	Du bist wirklich ein guter Fotograf.	你真是个出色的摄影师。	Tatoeba #2403939 · Pfirsichbaeumchen
@@ -3443,7 +3443,7 @@ Verzicht	Sterben muss ich sowieso; da will ich leben, ohne Verzicht zu leiden.	�
 Futter	Er hat vergessen dem Hund Futter zu geben.	他忘记喂狗了。	Tatoeba #4932080 · Hime
 Chemie	Er ist schlecht in Chemie.	他的化学很差。	Tatoeba #1173485 · Vortarulo
 verwunden	Sie wird dich nicht verwunden.	她不会伤害你的。	Tatoeba #4753458 · Esperantostern
-Erfindung	Die Liebe ist nur eine Erfindung.	爱不过是发明。	Tatoeba #10532903 · Yorwba
+Erfindung	Die Liebe ist nur eine Erfindung.	爱不过是一种虚构。	Tatoeba #10532903 · Yorwba
 Spaziergang	Mir war heute Morgen nicht nach einem Spaziergang.	我今天早上不想散步。	Tatoeba #8689763 · Yorwba
 Depression	Ich bekomme oft Depressionen.	我经常会陷入抑郁。	Tatoeba #13090257 · Waldelfe
 Käufer	Ich werd’s verkaufen, sobald ich einen Käufer finde.	我一找到买家就会把它卖掉。	Tatoeba #10495674 · Yorwba
@@ -3608,7 +3608,7 @@ Kollegin	Er hatte eine Beziehung mit einer Kollegin.	他和一位女同事谈过
 Aufzug	Weil der Aufzug schon seit einer Woche kaputt ist, müssen alle Treppen steigen.	电梯已经坏了一周，所有人都得爬楼梯。	自写
 homosexuell	Ich bin homosexuell, na und?	我是同性恋，所以呢？	Tatoeba #10157506 · Yorwba
 realisieren	Es wurde eine riesige Menge von Programmen realisiert.	大量程序得以实现。	Tatoeba #1945659 · al_ex_an_der
-göttlich	Der Kuchen schmeckt göttlich!	这蛋糕吃起来不同一般。	Tatoeba #3638172 · Tamy
+göttlich	Der Kuchen schmeckt göttlich!	这蛋糕好吃极了！	Tatoeba #3638172 · Tamy
 vorübergehend	Sie sagten, die Situation sei nur vorübergehend.	他们说情况只是暂时的。	Tatoeba #9587316 · Yorwba
 einheimisch	Lernen, die einheimischen Produkte zu lieben.	学会喜爱本国产品。	Tatoeba #4238116 · JWeighardt
 Webseite	Diese Webseite scheint ziemlich gut zu sein.	这个网站看起来相当不错。	Tatoeba #1758155 · Zaghawa
@@ -3850,7 +3850,7 @@ ertrinken	Ich will zusehen, wie du ertrinkst.	我想看你淹死。	Tatoeba #104
 unfair	Es wäre unfair, ihn so schlecht zu behandeln.	这样对待他是不公平的。	Tatoeba #1645617 · Zaghawa
 Festung	Die Soldaten nahmen bald die Festung ein.	士兵们很快就攻占了那座要塞。	Tatoeba #1795257 · Esperantostern
 notieren	Sie notierte sich seinen Namen, um ihn nicht zu vergessen.	为了不要忘掉，她把那个人的名字写下来。	Tatoeba #9979646 · giefingl
-Lizenz	Ich habe meine Lizenz diesen Sommer erhalten.	我今年夏天拿到了驾照。	Tatoeba #11850631 · Zahia_Ntmazirt
+Lizenz	Ich habe meine Lizenz diesen Sommer erhalten.	我今年夏天拿到了执照。	Tatoeba #11850631 · Zahia_Ntmazirt
 Stadtrat	Ich gehöre seit fünf Jahren dem Stadtrat an.	我在市议会任职已经五年了。	Tatoeba #1070358 · Pfirsichbaeumchen
 Schwert	Ich habe kein Schwert.	我没有剑。	Tatoeba #829540 · Pfirsichbaeumchen
 vollenden	Ohne deine Hilfe hätte ich diese Arbeit nicht vollenden können.	如果没有你的帮助，我就不可能完成这项工作。	Tatoeba #7771290 · Yorwba
@@ -3909,7 +3909,7 @@ Mandant	Mein Mandant sagt kein weiteres Wort.	我的当事人不再说一个字�
 Physik	Für Physik interessiere ich mich überhaupt nicht.	我对物理学完全没有兴趣。	Tatoeba #8132134 · Pfirsichbaeumchen
 anfragen	Er sah mich fragend an.	他疑惑地看着我。	Tatoeba #1046840 · Sudajaengi
 Quartier	Sie bezogen in einem sehr teuren Hotel Quartier.	他们住进了一家非常豪华的酒店。	Tatoeba #3428759 · Pfirsichbaeumchen
-Division	Zwei Divisionen haben sich ergeben.	两支师向敌方投降了。	Tatoeba #2289419 · Pfirsichbaeumchen
+Division	Zwei Divisionen haben sich ergeben.	两个师投降了。	Tatoeba #2289419 · Pfirsichbaeumchen
 Flieger	Wir werden den gleichen Flieger nehmen.	我们会搭乘同一班飞机。	Tatoeba #5967878 · Ronja
 Kalender	Ach, endlich habe ich einen Kalender bekommen!	啊，我终于拿到一本日历了！	Tatoeba #11255987 · translatorjo
 Kita	Wir haben fast ein Jahr gewartet, bis wir einen Platz in der Kita bekommen haben.	我们等了将近一年才拿到幼儿园的名额。	自写
@@ -3966,7 +3966,7 @@ Mitteilung	Gestern Nacht kam endlich die Mitteilung an.	昨晚，通知终于送
 Schlag	Das war ein Schlag für uns.	这对我们来说是个打击。	Tatoeba #2166522 · Tamy
 Bulle	Ruf bitte nicht die Bullen!	拜托，别叫警察！	Tatoeba #2322584 · Pfirsichbaeumchen
 Aufwand	Der Aufwand ist zu groß.	这要花的工夫太大了。	Tatoeba #1704022 · Hans07
-Schwangerschaft	Ihre Schwangerschaften gehen immer über den Termin.	她们每次怀孕都会超过预产期。	Tatoeba #3389024 · brauchinet
+Schwangerschaft	Ihre Schwangerschaften gehen immer über den Termin.	她每次怀孕都会超过预产期。	Tatoeba #3389024 · brauchinet
 belohnen	Wer den Körper fordert, belohnt den Geist.	锻炼身体，精神也会得到回报。	Tatoeba #6934435 · Esperantostern
 Betrüger	Sein Vater ist ein Betrüger.	他爸爸是个骗子。	Tatoeba #8833557 · Yorwba
 Bildschirm	Ich kaufe einen Bildschirm.	我买一台显示器。	Tatoeba #8320770 · MisterTrouser
@@ -4278,7 +4278,7 @@ Kummer	Weinen macht den Kummer weniger schlimm.	哭出来会让悲伤没那么�
 jedermann	Der Name dieses Politikers ist in Japan jedermann bekannt.	这位政治家的名字在日本人人皆知。	Tatoeba #3338605 · Pfirsichbaeumchen
 kostbar	Nichts ist so kostbar wie die Zeit.	没有什么和时间一样珍贵。	Tatoeba #501446 · al_ex_an_der
 Eisenbahn	Meine Großmutter fährt gern mit der Eisenbahn.	我奶奶喜欢坐火车旅行。	Tatoeba #707553 · Manfredo
-Gymnasium	Ich habe noch ein Jahr Gymnasium vor mir.	我还得再读一年高中。	Tatoeba #631489 · al_ex_an_der
+Gymnasium	Ich habe noch ein Jahr Gymnasium vor mir.	我还得再读一年文理中学。	Tatoeba #631489 · al_ex_an_der
 verhungern	Er wird nicht verhungern.	他不会饿死。	Tatoeba #8963505 · wolfgangth
 Privileg	Freiheit ist kein Privileg, sondern eine Aufgabe.	自由不是特权，而是一种责任。	Tatoeba #1384864 · Esperantostern
 Gründer	Die Universität trägt den Namen ihres Gründers.	这所大学以创办者的名字命名。	Tatoeba #3242642 · Pfirsichbaeumchen
@@ -4432,7 +4432,7 @@ Ukraine	Er wohnt in der Ukraine.	他住在乌克兰。	Tatoeba #10524611 · Yorw
 Taktik	Sie wechselte die Taktik.	她换了策略。	Tatoeba #9402786 · Yorwba
 Plastik	Dieser Stuhl ist aus Plastik.	这把椅子是塑料做的。	Tatoeba #954865 · Pfirsichbaeumchen
 Sportler	Ich bin ein schlechter Sportler.	我不擅长运动。	Tatoeba #1341904 · Esperantostern
-Beileid	Mein herzliches Beileid zu diesem Verlust!	对于这次损失，我谨向你表示诚挚的哀悼！	Tatoeba #11093931 · Pfirsichbaeumchen
+Beileid	Mein herzliches Beileid zu diesem Verlust!	节哀顺变，向你致以诚挚的哀悼！	Tatoeba #11093931 · Pfirsichbaeumchen
 Ähnlichkeit	Der Ähnlichkeiten sind sehr viele.	相似之处实在太多了。	Tatoeba #2447145 · al_ex_an_der
 Landung	Das Flugzeug machte eine perfekte Landung.	这架飞机完美地着陆了。	Tatoeba #611236 · Dejo
 zuschauen	Schau uns an und hör uns zu!	看着我们，听我们说！	Tatoeba #1393779 · al_ex_an_der
@@ -4555,7 +4555,7 @@ Anschreiben	Wenn du Probleme hast, schreib mich an.	如果你遇到问题，就�
 Arbeitsvertrag	Sie hatte einen Arbeitsvertrag.	她有一份劳动合同。	Tatoeba #952377 · Sudajaengi
 Probezeit	Meine Probezeit geht ihrem Ende entgegen.	我的试用期快要结束了。	Tatoeba #1454697 · Manfredo
 netto	Der Mensch will brutto geliebt werden, nicht netto.	人想要的是不打折扣地被爱，而不是扣除杂项后才被爱。	Tatoeba #2474914 · Esperantostern
-Minijob	Er macht nur Minijobs.	他只做一些迷你工作。	Tatoeba #10286409 · manese
+Minijob	Er macht nur Minijobs.	他只做 Minijob（低薪兼职）。	Tatoeba #10286409 · manese
 Monatskarte	Ich muss mir diese Woche noch die Monatskarte kaufen.	我这周还得买月票。	Tatoeba #1018418 · Sudajaengi
 Fahrplan	Laut Fahrplan wird der Zug bald ankommen.	根据时刻表，火车很快就会到。	Tatoeba #4820595 · al_ex_an_der
 Klausur	Ich habe die Klausur nicht bestanden.	我没通过考试。	Tatoeba #657324 · al_ex_an_der
@@ -4574,7 +4574,7 @@ Regenschirm	Ich weiß nicht, wo dein Regenschirm ist.	我不知道你的雨伞�
 Fundbüro	Wo ist das nächste Fundbüro?	离这里最近的失物招领处在哪里？	Tatoeba #781916 · Hans_Adler
 Staatsangehörigkeit	Sie haben die deutsche Staatsangehörigkeit.	你们拥有德国国籍。	Tatoeba #6786814 · kolonjano
 ledig	Soweit ich weiß, ist sie noch ledig.	据我所知，她还没结婚。	Tatoeba #1833476 · Tamy
-Geburtsdatum	Gib deine Reisepass-Nummer und dein Geburtsdatum an.	给你的护照号和你的出生日期。	Tatoeba #1197083 · Esperantostern
+Geburtsdatum	Gib deine Reisepass-Nummer und dein Geburtsdatum an.	请提供你的护照号和出生日期。	Tatoeba #1197083 · Esperantostern
 Familienname	Ist das dein richtiger Familienname?	那是你的真姓吗？	Tatoeba #6564368 · Pfirsichbaeumchen
 Staatsbürgerschaft	Unsere Kinder haben zwei Staatsbürgerschaften.	我们的孩子拥有双重国籍。	Tatoeba #3162279 · al_ex_an_der
 Hausnummer	Ich habe mich in der Hausnummer geirrt.	我把门牌号弄错了。	Tatoeba #1191012 · Sudajaengi
@@ -4735,7 +4735,7 @@ Kurier	Ein Kurier kündigt an, dass der Feind ankommt.	一名信使前来通报�
 auszahlen	Es hat sich nicht ausgezahlt.	这不值得。	Tatoeba #8365920 · Inego
 Geschäftsmann	Er ist ein erfolgreicher Geschäftsmann.	他是个成功的商人。	Tatoeba #1687753 · Pfirsichbaeumchen
 weitaus	Gold ist weitaus schwerer als Wasser.	金子比水重得多。	Tatoeba #1694859 · Pfirsichbaeumchen
-Pest	Sie mied ihn wie die Pest.	她像躲避疾病一样躲开了他。	Tatoeba #10531770 · Yorwba
+Pest	Sie mied ihn wie die Pest.	她像躲瘟神一样躲着他。	Tatoeba #10531770 · Yorwba
 Detektiv	Sie beschrieb ihn als einen Detektiv.	她把他形容为侦探。	Tatoeba #8589430 · Yorwba
 Anleitung	Ich habe die Anleitung noch nicht gelesen.	我还没看说明书。	Tatoeba #8496510 · Luiaard
 rammen	Der Laster hätte mich beinahe gerammt.	卡车差一点撞到我。	Tatoeba #9788481 · Yorwba
@@ -5367,7 +5367,7 @@ Halbzeit	Während der Halbzeit wechselten beide Mannschaften Spieler aus.	半场
 ausfindig	Ich habe dein Haus nur mit Mühe ausfindig gemacht.	我费了好大的劲儿才找到你家的。	Tatoeba #10371673 · Yorwba
 Autogramm	Ich kann dir ein Autogramm geben, wenn du willst.	你想要的话，我可以给你签名。	Tatoeba #6978733 · dasbeispielholz
 kauen	Man soll nicht auf beiden Seiten kauen.	人不应该两边都嚼。	Tatoeba #11918952 · Pfirsichbaeumchen（Luna 改）
-Spielplatz	Es sind zwei Mädchen auf dem Spielplatz.	操场上有两个女孩。	Tatoeba #2867643 · Pfirsichbaeumchen
+Spielplatz	Es sind zwei Mädchen auf dem Spielplatz.	游乐场上有两个女孩。	Tatoeba #2867643 · Pfirsichbaeumchen
 optimistisch	Ich bin nicht so optimistisch wie ihr.	我不像你们那么乐观。	Tatoeba #11812919 · Pfirsichbaeumchen
 Sessel	Er lässt niemanden in seinem Sessel sitzen.	他不让任何人坐他的扶手椅。	Tatoeba #3033808 · Pfirsichbaeumchen
 hiesig	Ich gewöhne mich langsam an das hiesige Wetter.	我渐渐习惯了这里的天气。	Tatoeba #6812367 · Pfirsichbaeumchen
@@ -7547,7 +7547,7 @@ Urkunde	Für die Hochzeit brauchen Sie Ihre Geburtsurkunde.	结婚需要您的�
 Besichtigung	Die Besichtigung der Wohnung ist am Samstag.	看房在周六。	自写
 Gegenzug	Ich helfe dir. Im Gegenzug kochst du heute.	我帮你，作为交换，你今天做饭。	自写（Luna 改）
 ummelden	Nach dem Umzug musst du dich ummelden.	搬家后你得变更登记地址。	自写
-Bürgeramt	Ich habe morgen einen Termin beim Bürgeramt.	我明天在市民局有预约。	自写
+Bürgeramt	Ich habe morgen einen Termin beim Bürgeramt.	我明天在市民服务中心有预约。	自写
 Ausländerbehörde	Die Ausländerbehörde hat mir einen Brief geschickt.	外国人管理局给我寄了一封信。	自写
 Aufenthaltstitel	Mein Aufenthaltstitel läuft im März ab.	我的居留许可三月到期。	自写
 Bescheinigung	Ich brauche eine Bescheinigung vom Arbeitgeber.	我需要雇主开的证明。	自写
@@ -7571,7 +7571,7 @@ Krankmeldung	Ich habe die Krankmeldung an meinen Chef geschickt.	我把病假条
 krankschreiben	Der Arzt hat mich drei Tage krankgeschrieben.	医生给我开了三天病假。	自写
 brutto	Ich verdiene 3000 Euro brutto.	我税前挣 3000 欧元。	自写
 Gehaltsabrechnung	Auf der Gehaltsabrechnung stehen alle Abzüge.	工资单上列着所有扣款。	自写
-Werkstudent	Er arbeitet als Werkstudent bei einer Firma.	他在一家公司当工读生。	自写
+Werkstudent	Er arbeitet als Werkstudent bei einer Firma.	他在一家公司做学生工（Werkstudent）。	自写
 Arbeitnehmer	Arbeitnehmer haben ein Recht auf Urlaub.	雇员有权休假。	自写
 Arbeitsamt	Nach der Kündigung ging sie zum Arbeitsamt.	被解雇后她去了劳动局。	自写
 Jobcenter	Das Jobcenter hilft bei der Suche nach Arbeit.	就业中心帮人找工作。	自写

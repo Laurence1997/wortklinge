@@ -74,7 +74,7 @@ export const EX3: Record<string, string[]> = {
   abfahrt: ['{Die Abfahrt} ist um acht Uhr.|八点出发。', 'Ich warte auf {die Abfahrt}.|我在等开车。'],
   ankunft: ['Wann ist {die Ankunft} in Berlin?|几点到柏林？', 'Nach {der Ankunft} rufe ich dich an.|到了以后我给你打电话。'],
   mitnehmen: ['Darf ich den Hund {mitnehmen}?|我可以带狗吗？', 'Ich {nehme} einen Regenschirm mit.|我带一把雨伞。'],
-  gleis: ['Der Zug fährt von {Gleis} 3.|火车从 3 号站台开。', 'Der Bahnhof hat {acht Gleise}.|火车站有八条轨道。'],
+  gleis: ['Der Zug fährt von {Gleis} 3.|火车从 3 号站台开。', 'Der Bahnhof hat {acht Gleise}.|火车站有八个站台。'],
   bahnsteig: ['Ich warte auf dem {Bahnsteig}.|我在站台上等。', '{Der Bahnsteig} ist leer.|站台上空无一人。'],
   achtung: ['{Achtung}, der Zug fährt ab!|注意，火车要开了！', '{Achtung}, Stufe!|注意台阶！'],
   vorsicht: ['{Vorsicht} an Gleis 2!|2 号站台注意安全！', '{Vorsicht}, die Tür schließt!|小心，门要关了！'],
@@ -239,5 +239,5 @@ export const EX3: Record<string, string[]> = {
   bleiben: ['Ich möchte hier {bleiben}.|我想留在这里。', 'Wie lange {bleibst} du?|你待多久？'],
   zurueckkommen: ['Wann willst du {zurückkommen}?|你想什么时候回来？', 'Ich {komme} gleich zurück.|我马上回来。'],
   weggehen: ['Ich möchte nicht {weggehen}.|我不想走。', 'Er {geht} ohne ein Wort weg.|他一句话没说就走了。'],
-  schlafen: ['Ich möchte lange {schlafen}.|我想睡个好觉。', 'Das Kind {schläft} schon.|孩子已经睡了。'],
+  schlafen: ['Ich möchte lange {schlafen}.|我想睡个懒觉。', 'Das Kind {schläft} schon.|孩子已经睡了。'],
 };

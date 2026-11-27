@@ -47,7 +47,7 @@ export const EX1: Record<string, string[]> = {
   alter: ['Bitte schreiben Sie hier {das Alter}.|请在这里写年龄。', 'In {meinem Alter} lernt man langsam.|我这个年纪学得慢。'],
   beruf: ['Was ist {der Beruf} von deinem Vater?|你爸爸是做什么工作的？', 'Ich mag {meinen Beruf}.|我喜欢我的职业。'],
   sprache: ['Deutsch ist {eine Sprache}.|德语是一门语言。', 'Welche {Sprachen} sprichst du?|你会说哪些语言？'],
-  land: ['China ist {ein großes Land}.|中国是个大国家。', 'Ich kenne {viele Länder}.|我去过很多国家。'],
+  land: ['China ist {ein großes Land}.|中国是个大国家。', 'Ich kenne {viele Länder}.|我了解很多国家。'],
   stadt: ['Berlin ist {eine Stadt}.|柏林是一座城市。', '{Die Stadt} ist schön.|这座城市很美。'],
   ausweis: ['Zeigen Sie mir bitte {den Ausweis}.|请出示证件。', 'Ich habe {keinen Ausweis} dabei.|我没带证件。'],
   pass: ['Für die Reise brauche ich {einen Pass}.|旅行我需要护照。', 'Wo ist {mein Pass}?|我的护照在哪儿？'],
