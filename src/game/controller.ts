@@ -100,6 +100,7 @@ import { AREAS, SCENES, SCENE_BY_ID } from '../data/world';
 import { dropPages, pageNo, pageRegion, readPage, regionRestored, restorePage } from '../core/diary';
 import { SAYING_CFG, SAYINGS } from '../data/sayings';
 import { renderHud } from '../ui/hud';
+import { hideLoading } from '../ui/loading';
 import { Panels } from '../ui/panels';
 import { $, isTyping } from '../ui/dom';
 
@@ -324,6 +325,7 @@ export class Controller {
       if (!this.state.flags.placeAsked) this.askPlacement();
       else this.intro();
     } else this.welcomeBack();
+    hideLoading();
   }
 
   wordById(id: string): Word | undefined {

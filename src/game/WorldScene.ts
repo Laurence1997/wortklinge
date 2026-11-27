@@ -17,6 +17,7 @@ import type { Controller } from './controller';
 import { DEFAULT_LOOK } from '../core/look';
 import { generateMap, isBlocked, MAP_H, MAP_W, TILE, walkableTilesIn, zonesOf, zoneAt, type MapData, type NpcId, type RegionId, type ZoneDef } from './map';
 import { GLITCH, heroFramesKenney, dungeonTile, SHADE_RAMP, CHAR_RAMP, makeTextures, renderMapCanvas, PAL, BRIGHT, renderBrightMap, rawFigure } from './sprites';
+import { setProgress } from '../ui/loading';
 import { NPC_TILE, isRestored, wordArt } from '../ui/icons';
 import { artKey, monsterCanvas, type SheetId } from './monsterArt';
 import { sfx } from './audio';
@@ -99,6 +100,7 @@ export class WorldScene extends Phaser.Scene {
   }
 
   preload() {
+    this.load.on('progress', (p: number) => setProgress(p));
     if (!this.textures.exists('town')) this.load.image('town', './art/kenney-tiny-town.png');
     if (!this.textures.exists('farm')) this.load.image('farm', './art/kenney-tiny-farm.png');
     if (!this.textures.exists('battle')) this.load.image('battle', './art/kenney-tiny-battle.png');

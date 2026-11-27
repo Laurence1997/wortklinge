@@ -584,3 +584,21 @@ body.bright #title .origin-card .de { color: #8a5a00; }
 #title .confirm-new p { margin: 0; line-height: 1.6; }
 #title .confirm-new input { width: 100%; padding: 9px 10px; font-size: 15px; background: #000; color: var(--ink); border: 1px solid var(--line-hi); }
 body.bright #title .confirm-new input { background: #fff; }
+
+/* 加载画面 (Lucas 2026-11-27: 让载入过程更流畅): from page open to the title, and from 继续 to the map. */
+#loading { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; background: #f4ead8; color: #5a4632; transition: opacity .35s ease; }
+#loading.ld-out { opacity: 0; pointer-events: none; }
+#loading .ld-box { width: min(360px, 80vw); text-align: center; }
+#loading .ld-name { margin: 0 0 18px; font: 700 24px/1.2 var(--mono); color: #c0561e; letter-spacing: 2px; }
+#loading .ld-name small { display: block; margin-top: 4px; font-size: 13px; color: #8a7458; letter-spacing: 3px; }
+#loading .ld-fire { position: relative; height: 34px; margin: 0 auto 16px; width: 30px; }
+#loading .ld-fire i { position: absolute; bottom: 0; left: 50%; width: 14px; height: 22px; margin-left: -7px; border-radius: 50% 50% 40% 40%; background: #e8742a; transform-origin: 50% 100%; animation: ld-flame 0.9s ease-in-out infinite alternate; }
+#loading .ld-fire i:nth-child(2) { width: 10px; height: 16px; margin-left: -12px; background: #f2a33a; animation-delay: -.3s; }
+#loading .ld-fire i:nth-child(3) { width: 8px; height: 13px; margin-left: 2px; background: #ffd25a; animation-delay: -.6s; }
+@keyframes ld-flame { from { transform: scaleY(.8) skewX(-4deg); } to { transform: scaleY(1.15) skewX(4deg); } }
+#loading .ld-bar { height: 6px; border-radius: 3px; overflow: hidden; background: #e2d4bc; }
+#loading .ld-bar span { display: block; height: 100%; width: 30%; border-radius: 3px; background: #d2691e; animation: ld-slide 1.2s ease-in-out infinite; }
+#loading .ld-bar.ld-pct span { animation: none; transition: width .2s ease; }
+@keyframes ld-slide { from { transform: translateX(-110%); } to { transform: translateX(340%); } }
+#loading .ld-tip { margin: 12px 0 0; font-size: 13px; color: #8a7458; min-height: 1.4em; }
+#loading.ld-err .ld-tip { color: #b03a2e; }

@@ -12,17 +12,19 @@ import { h } from './ui/dom';
 import { Controller } from './game/controller';
 import { WorldScene } from './game/WorldScene';
 import { showTitle } from './ui/title';
+import { hideLoading, setTip, showLoading } from './ui/loading';
 import { toast } from './ui/feedback';
 import { setReportVersion } from './net/report';
 import { loadPassages } from './data/passages';
 import { loadArticlesB2, loadArticlesC1 } from './data/articlesB2';
 
-const VERSION = '1.0.5';
+const VERSION = '1.0.6';
 setReportVersion(VERSION);
 // 审查 B3: the dev menu (+1 级 …) only on localhost or a dev build, never on the live site.
 const dev = new URLSearchParams(location.search).has('dev') && (import.meta.env.DEV || ['localhost', '127.0.0.1'].includes(location.hostname));
 
 function boot(state: ReturnType<typeof newGame>) {
+  showLoading('正在点燃篝火…');
   const ctrl = new Controller(state, dev);
   if (state.level >= 115) void loadArticlesB2(); // 文章群怪 from 121: its own chunk
   if (state.level >= 155) void loadArticlesC1(); // C1 文章怪 from 161
@@ -52,6 +54,7 @@ async function start() {
   await initCloud();
   // Login required: without a (cached) session the title screen only offers the login box.
   if (!cloud.session || mustChangePassword() || needsNickname()) return loginOnly();
+  setTip('正在读取存档…');
   const local = load();
   const existing = await syncOnBoot(local);
   if (existing && existing !== local) saveRaw(existing); // adopt the newer cloud save as-is
@@ -66,6 +69,7 @@ async function start() {
 }
 
 function loginOnly() {
+  hideLoading();
   const el = $('title');
   el.hidden = false;
   applyTheme(true, 1); // 标题页跟日常区一样明亮 (Lucas 11-26)
@@ -85,6 +89,7 @@ function loginOnly() {
 function title(existing: ReturnType<typeof load>) {
 // Lucas 11-26: the title greets you by your character's name; the account nickname (排行榜) only when there is no save.
 const account = h('p.small.muted', `已登录 ${existing?.name ?? cloud.profile?.nickname ?? cloud.session?.user.email ?? ''} · 云存档${cloud.status === 'offline' ? '暂时连不上，先存本地，联网后自动同步' : '已同步'}`);
+hideLoading();
 showTitle({
   account,
   existing,
