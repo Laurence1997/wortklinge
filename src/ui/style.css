@@ -371,7 +371,7 @@ canvas.slot-icon.q-red { border-color: var(--q-red, #ff3a3a); }
 #title .box.wide { width: min(820px, 100%); }
 #title .create { display: grid; grid-template-columns: 220px 1fr; gap: 20px; text-align: left; padding: 18px 20px; }
 #title .hero-card { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 18px 10px; border: 1px solid var(--line-hi); background: radial-gradient(circle at 50% 70%, rgba(255,120,40,.22), rgba(20,6,8,.9) 65%); }
-#title .hero-preview canvas { width: 128px; height: 128px; image-rendering: pixelated; filter: drop-shadow(0 0 10px rgba(255,140,60,.35)); }
+#title .hero-preview canvas { width: 216px; height: 128px; image-rendering: pixelated; filter: drop-shadow(0 0 10px rgba(255,140,60,.35)); }
 #title .hero-name { font-family: var(--mono); font-size: 18px; color: var(--ink); }
 #title .hero-origin { font-size: 12px; color: var(--muted); text-align: center; line-height: 1.5; }
 #title .create-steps { display: grid; gap: 14px; }
@@ -602,3 +602,53 @@ body.bright #title .confirm-new input { background: #fff; }
 @keyframes ld-slide { from { transform: translateX(-110%); } to { transform: translateX(340%); } }
 #loading .ld-tip { margin: 12px 0 0; font-size: 13px; color: #8a7458; min-height: 1.4em; }
 #loading.ld-err .ld-tip { color: #b03a2e; }
+/* 大地图 (Lucas 2026-11-27, src/ui/worldMap.ts + worldTerrain.ts): a pixel-art continent under crisp plates. */
+#modal .panel:has(.worldmap) { width: min(1160px, 100%); }
+.worldmap { display: flex; flex-direction: column; gap: 8px; }
+.wm-wrap { position: relative; border: 3px solid #3b2a1c; border-radius: 6px; overflow: hidden; box-shadow: 0 0 0 2px #e8d3a6 inset; aspect-ratio: 1200 / 660; background: #2f86b8; }
+.wm-canvas { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; }
+.wm-svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; font-family: var(--sans); user-select: none; }
+.wm-stage { font: 700 13px var(--sans); fill: #f6e6c0; letter-spacing: .5px; }
+.wm-city { cursor: pointer; outline: none; }
+.wm-city.locked { cursor: default; }
+.wm-name { font: 700 14px var(--sans); fill: #fff6dc; }
+.wm-lv { font: 11px var(--mono); fill: #e8d3a6; }
+.wm-lv.danger { fill: #ff8a7a; font-weight: 700; }
+.wm-city.locked .wm-name, .wm-city.locked .wm-lv { fill: #f4f1ec; }
+.wm-city.open:hover .wm-plate, .wm-city.sel .wm-plate { stroke: #fff; stroke-width: 3.5; }
+.wm-city.sel .wm-hit { stroke: rgba(255, 246, 192, .9); stroke-width: 3; stroke-dasharray: 4 5; }
+.wm-here text { font: 700 12px var(--sans); fill: #fff; }
+.wm-here { animation: wm-bob 1.2s ease-in-out infinite; }
+@keyframes wm-bob { 50% { transform: translateY(-4px); } }
+.wm-boss { font: 13px var(--sans); fill: #fff; }
+.wm-q { font: 700 18px var(--sans); fill: #8f877a; }
+.wm-zero { font: 700 11px var(--sans); fill: #ffd0d4; paint-order: stroke; stroke: #2a0a10; stroke-width: 3px; }
+.wm-pulse { animation: wm-pulse 1.6s ease-in-out infinite; }
+@keyframes wm-pulse { 0%, 100% { opacity: .35; } 50% { opacity: .9; } }
+.wm-card { background: #fffaf0; color: #2b211a; border: 1px solid #a89a80; border-radius: 6px; padding: 8px 12px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; min-height: 52px; }
+.wm-card > .btn { margin-left: auto; }
+.wm-card .muted, .wm-card .small { color: #6a5c48; }
+.wm-card-head { border-left: 4px solid; padding-left: 8px; }
+.wm-card-head b { font-size: 16px; }
+.wm-card-head .de { font-family: var(--mono); color: #6a5c48; }
+.wm-card .wm-danger { color: #b0182c; font-weight: 700; }
+.wm-card .wm-erode-line { color: #8a1424; }
+.wm-card .btn { background: #fffaf0; color: #2b211a; border-color: #a89a80; }
+.wm-card .btn.primary { background: #2b211a; color: #fff; border-color: #2b211a; }
+.wm-card .btn.primary:hover:not(:disabled) { background: #4a3a2c; }
+.wm-legend { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; }
+.wm-legend span { display: inline-flex; align-items: center; gap: 5px; }
+.wm-key { display: inline-block; width: 18px; height: 6px; }
+.wm-key.river { background: #3c8ec4; } .wm-key.ridge { height: 0; width: 0; border: 7px solid transparent; border-bottom: 10px solid #7a6044; border-top: 0; }
+.wm-key.wall { background: repeating-linear-gradient(90deg, #6e665e 0 4px, #b0a89e 4px 6px); height: 8px; }
+.wm-key.rift { background: #2a1420; } .wm-key.erode { background: #7a1020; height: 3px; }
+.wm-segs { display: flex; flex-wrap: wrap; gap: 10px; }
+.wm-segs span { color: #e0485a; } .wm-segs span.done { opacity: .55; }
+body.bright .wm-segs span { color: #8a1424; }
+
+/* 主角专属特征 (Lucas 2026-11-27): the hero icon is 27×16 (figure + floating book). */
+.b-me { padding-right: 156px !important; }
+.b-me > canvas.mon-icon { margin-top: -40px; }
+#hud .name { align-items: center; gap: 8px; }
+#hud .name canvas.hero-icon { width: 54px; height: 32px; image-rendering: pixelated; flex: none; }
+#hud .name .nm { flex: 1; }

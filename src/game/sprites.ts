@@ -536,6 +536,53 @@ export function heroTinyCanvas(tile: number, color: number, sheet: CanvasImageSo
   return cv;
 }
 
+/** 主角专属特征 (Lucas 2026-11-27, 「做明显一点」): a glowing open book floats at the hero's right shoulder — the 言灵
+ *  the hero collects. Drawn beside the 16×16 figure (the figure keeps its size), always in its own colours, also on dark
+ *  maps: 10×8 book, a two-step gold halo and twinkling sparks. `frame` 0/1 bobs it against the walk bob.
+ *  Pixels: O outline, C page, G gold glyph lines, B cover. */
+const CHARM_ROWS = ['.OOO..OOO.', 'OCCCOOCCCO', 'OCGGCCGGCO', 'OCCCCCCCCO', 'OCGGCCGGCO', 'OCCCCCCCCO', 'OBBBBBBBBO', '.OOOOOOOO.'];
+const CHARM_COL: Record<string, string> = { O: '#3f2631', C: '#fffbe8', G: '#ffb800', B: '#9b5cf0' };
+/** Spark centres (book coords); each is a small + with a white core. */
+const CHARM_SPARK = [[[-1, 0], [11, 6], [4, 10]], [[11, -1], [-1, 7], [7, 10]]];
+/** Width the book (with its halo) adds on the right of the figure. */
+export const CHARM_W = 11;
+/** Where the charm canvas sits relative to the figure's left edge. */
+export const CHARM_X = 13;
+const charmCache: HTMLCanvasElement[] = [];
+/** 16×16 canvas: halo + book + sparks; the book's top-left is at (2, 2 + frame). */
+export function heroCharm(frame: number): HTMLCanvasElement {
+  if (charmCache[frame]) return charmCache[frame];
+  const cv = document.createElement('canvas');
+  cv.width = cv.height = 16;
+  const c = cv.getContext('2d')!;
+  const bx = 2, by = 2 + frame;
+  const solid = (x: number, y: number) => y >= 0 && y < CHARM_ROWS.length && x >= 0 && x < 10 && CHARM_ROWS[y][x] !== '.';
+  for (let y = -2; y < CHARM_ROWS.length + 2; y++)
+    for (let x = -2; x < 12; x++) {
+      if (solid(x, y)) continue;
+      let d = 9;
+      for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) if (solid(x + dx, y + dy)) d = Math.min(d, Math.max(Math.abs(dx), Math.abs(dy)));
+      if (d > 2) continue;
+      c.fillStyle = d === 1 ? 'rgba(255, 214, 90, 0.55)' : 'rgba(255, 214, 90, 0.22)';
+      c.fillRect(bx + x, by + y, 1, 1);
+    }
+  CHARM_ROWS.forEach((row, j) =>
+    [...row].forEach((ch, i) => {
+      if (ch === '.') return;
+      c.fillStyle = CHARM_COL[ch];
+      c.fillRect(bx + i, by + j, 1, 1);
+    }),
+  );
+  for (const [sx, sy] of CHARM_SPARK[frame]) {
+    c.fillStyle = '#ffd640';
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) c.fillRect(bx + sx + dx, by + sy + dy, 1, 1);
+    c.fillStyle = '#ffffff';
+    c.fillRect(bx + sx, by + sy, 1, 1);
+  }
+  charmCache[frame] = cv;
+  return cv;
+}
+
 /** Hero figure: Tiny Dungeon 98 (男) / 99 (女) with your hair colour (体型 and 发型 no longer change the look); `mark` adds a
  *  thin light outline so you find yourself among NPCs (only your own hero). */
 export function heroFramesKenney(look: Look, dungeon: CanvasImageSource, mark = false, raw = false): HTMLCanvasElement[] {
@@ -551,10 +598,14 @@ export function heroFramesKenney(look: Look, dungeon: CanvasImageSource, mark = 
     for (const p of ring) [d[p * 4], d[p * 4 + 1], d[p * 4 + 2]] = [232, 220, 207];
     c.putImageData(img, 0, 0);
   }
+  // The map frame is padded on both sides so the figure stays centred on its origin; the book sits on the right.
   return [0, 1].map((bob) => {
     const cv = document.createElement('canvas');
-    cv.width = cv.height = 16;
-    cv.getContext('2d')!.drawImage(fig, 0, -bob);
+    cv.width = 16 + 2 * CHARM_W;
+    cv.height = 16;
+    const c = cv.getContext('2d')!;
+    c.drawImage(heroCharm(bob), CHARM_W + CHARM_X, 0);
+    c.drawImage(fig, CHARM_W, -bob);
     return cv;
   });
 }

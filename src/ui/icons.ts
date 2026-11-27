@@ -4,7 +4,7 @@
 
 import type { Battle } from '../core/combat';
 import type { Slot } from '../core/types';
-import { dungeonTile, heroTile, heroTinyCanvas, CHAR_RAMP } from '../game/sprites';
+import { dungeonTile, heroTile, heroTinyCanvas, CHAR_RAMP, CHARM_W, CHARM_X, heroCharm } from '../game/sprites';
 import type { Look } from '../core/look';
 import { NPC_ART } from '../data/npcArt';
 import { DRAWN_PAL } from '../data/drawnArt';
@@ -91,12 +91,15 @@ export function icon(tile: number, scale = 2, shadow = false, cls = 'icon'): HTM
  *  its own colours like the map figure (美术小修 A, 2026-11-26); on dark maps it stays in the red ramp. */
 export function heroIcon(look: Look, scale = 4, raw = document.body.classList.contains('bright')): HTMLCanvasElement {
   const cv = document.createElement('canvas');
-  cv.width = cv.height = T * scale;
-  cv.className = 'mon-icon';
+  // 主角专属特征: the floating book makes the icon wider than tall: (T + CHARM_W) × T (figure stays T × T at this scale).
+  cv.width = (T + CHARM_W) * scale;
+  cv.height = T * scale;
+  cv.className = 'mon-icon hero-icon';
   const draw = () => {
     const ctx = cv.getContext('2d')!;
     ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(heroTinyCanvas(heroTile(look), look.color, sheet!, raw), 0, 0, cv.width, cv.height);
+    ctx.drawImage(heroCharm(0), CHARM_X * scale, 0, T * scale, T * scale);
+    ctx.drawImage(heroTinyCanvas(heroTile(look), look.color, sheet!, raw), 0, 0, T * scale, T * scale);
   };
   const img = loadSheet();
   if (img.complete && img.naturalWidth) draw();

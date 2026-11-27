@@ -16,7 +16,7 @@ import { FAMILIES } from '../data/families';
 import type { Controller } from './controller';
 import { DEFAULT_LOOK } from '../core/look';
 import { generateMap, isBlocked, MAP_H, MAP_W, TILE, walkableTilesIn, zonesOf, zoneAt, type MapData, type NpcId, type RegionId, type ZoneDef } from './map';
-import { GLITCH, heroFramesKenney, dungeonTile, SHADE_RAMP, CHAR_RAMP, makeTextures, renderMapCanvas, PAL, BRIGHT, renderBrightMap, rawFigure } from './sprites';
+import { GLITCH, CHARM_W, heroFramesKenney, dungeonTile, SHADE_RAMP, CHAR_RAMP, makeTextures, renderMapCanvas, PAL, BRIGHT, renderBrightMap, rawFigure } from './sprites';
 import { setProgress } from '../ui/loading';
 import { NPC_TILE, isRestored, wordArt } from '../ui/icons';
 import { artKey, monsterCanvas, type SheetId } from './monsterArt';
@@ -134,7 +134,7 @@ export class WorldScene extends Phaser.Scene {
     void tex;
     for (const k of ['hero0', 'hero1']) {
       if (this.textures.exists(k)) this.textures.remove(k);
-      this.textures.createCanvas(k, 16, 16);
+      this.textures.createCanvas(k, 16 + 2 * CHARM_W, 16);
     }
     this.applyLook();
     addCanvas('fire0', tex.fire[0]);
@@ -754,7 +754,7 @@ export class WorldScene extends Phaser.Scene {
     const frames = heroFramesKenney(this.ctrl.state.look ?? DEFAULT_LOOK, this.dsheet(), true, this.bright);
     ['hero0', 'hero1'].forEach((k, i) => {
       const t = this.textures.get(k) as Phaser.Textures.CanvasTexture;
-      t.context.clearRect(0, 0, 16, 16);
+      t.context.clearRect(0, 0, 16 + 2 * CHARM_W, 16);
       t.context.drawImage(frames[i], 0, 0);
       t.refresh();
     });
