@@ -466,6 +466,9 @@ export function migrate(raw: unknown): GameState | null {
   // screening's 待领 and cursors start empty.
   s.screen = { pending: { ...(s.screen?.pending ?? {}) }, cursor: { ...(s.screen?.cursor ?? {}) } };
   migrateSrs2(s);
+  // 会的词不再回响抽查 (Lucas 2026-11-27): a word retired the moment it was first met (入学测试, 主城筛选, 直接叫名) has
+  // firstSeen within an hour of retired; a normal 斩杀 takes two days. Those become 永久 now; nothing else changes.
+  for (const p of Object.values(s.words ?? {})) if (p?.retired && !p.sure && p.retired - (p.firstSeen ?? 0) < 60 * 60 * 1000) p.sure = true;
   // 副词缀白名单 (2026-11-24): old 默写伤害 / 选择题暴击率 / 句式攻击伤害 become 伤害 +%; no item is removed.
   for (const it of [...Object.values(s.equipped ?? {}), ...(s.bag ?? [])]) convertLegacyAffixes(it);
   const shop = (s as { shop?: { items?: Item[]; wish?: { affix?: string } } }).shop;

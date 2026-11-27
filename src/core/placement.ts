@@ -426,13 +426,13 @@ export function applyPlacement(s: GameState, run: PlaceRun, t = now(s), _opts: {
     seen.add(r.word.id);
     const p = s.words[r.word.id];
     if (r.res === 'ok') {
-      if (!p) s.words[r.word.id] = { stage: 3, due: t + CONFIG.srs.recheck, firstSeen: t, lastSeen: t, relapse: 0, correct: 1, wrong: 0, read: 0, write: 1, retired: t };
+      if (!p) s.words[r.word.id] = { stage: 3, due: t + CONFIG.srs.recheck, firstSeen: t, lastSeen: t, relapse: 0, correct: 1, wrong: 0, read: 0, write: 1, retired: t, sure: true }; // 会的词不再回响抽查 (Lucas 2026-11-27)
       else {
         p.correct += 1;
         p.write = (p.write ?? 0) + 1;
         delete p.placed;
         delete p.ctxDone;
-        retire(s, r.word, t);
+        retire(s, r.word, t, true);
       }
       retired++;
     } else if (r.res === 'half') {

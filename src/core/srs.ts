@@ -60,12 +60,16 @@ export function needsVerify(s: GameState, w: Word, t = now(s)): boolean {
   return !!verifyOf(s.words[w.id], t);
 }
 
-/** Retire a word (斩杀): it counts as 归名 everywhere and leaves the reviews. */
-export function retire(s: GameState, w: Word, t = now(s)): void {
+/** Retire a word (斩杀): it counts as 归名 everywhere and leaves the reviews. A normal 斩杀 gets one 回响 check after 30 days. */
+export function retire(s: GameState, w: Word, t = now(s), known = false): void {
   const p = s.words[w.id];
   if (!p) return;
+  // 会的词 (入学测试, 主城筛选, 直接叫名) skip the 30-day 回响 check (Lucas 2026-11-27).
   if (p.retired && !p.sure && t >= p.retired + CONFIG.srs.recheck) p.sure = true;
-  else p.retired = t;
+  else {
+    p.retired = t;
+    if (known) p.sure = true;
+  }
   delete p.pend;
   delete p.hinted;
   p.stage = 3;

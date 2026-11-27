@@ -1058,7 +1058,7 @@ describe('0.4 战斗修正版', () => {
   });
   it('techniques change the next question: 铭刻 harder, 低语 gives the first letter', () => {
     const s = lvl15();
-    s.words['tee'] = { stage: 1, due: 9e15, firstSeen: 0, lastSeen: 0, relapse: 0, correct: 1, wrong: 0 };
+    s.words['tee'] = { stage: 1, due: 9e15, firstSeen: 0, lastSeen: 0, relapse: 0, correct: 1, wrong: 0, write: 1 };
     const b = startBattle(s, WORD_BY_ID['tee'], makeRng(4));
     b.intent = { ...b.intent, kind: 'wait', hits: 0 };
     b.step = 3; // ladder at the article question
@@ -1104,7 +1104,7 @@ describe('0.5 示例战斗 with 词性三相 (acceptance: right, wrong, soft bef
       const s = newGame('T', 'student', T0);
       s.level = 8;
       s.gram = { boards: Object.keys(BOARDS) }; // 语法线 off: this fight is scripted
-      s.words['brot'] = { stage: 1, due: 9e15, firstSeen: 0, lastSeen: 0, relapse: 0, correct: 1, wrong: 0 };
+      s.words['brot'] = { stage: 1, due: 9e15, firstSeen: 0, lastSeen: 0, relapse: 0, correct: 1, wrong: 0, write: 1 };
       const b = startBattle(s, WORD_BY_ID['brot'], rng);
       b.pluralMon = false;
       b.monster.lvl = 9;

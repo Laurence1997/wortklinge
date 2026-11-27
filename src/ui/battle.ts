@@ -623,7 +623,7 @@ export class BattleUI {
   cut(): void {
     if (this.phase !== 'choose' || !this.b.cutReady || this.b.outcome) return;
     stopListening();
-    logLine(`斩杀 · ${fullForm(this.b.word)}（${this.b.word.zh}）${this.b.verify === 'recheck' ? '永久退役' : '已退役，30 天后回响抽查一次'}`, 'gold');
+    logLine(`斩杀 · ${fullForm(this.b.word)}（${this.b.word.zh}）${this.b.verify === 'recheck' || this.ctrl.state.words[this.b.word.id]?.sure ? '永久退役' : '已退役，30 天后回响抽查一次'}`, 'gold');
     if (this.ctrl.cut()) return; // the fight is over
     this.startTurn();
   }

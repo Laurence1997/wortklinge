@@ -106,7 +106,8 @@ export interface Question {
   whispered?: boolean;
   /** 初见教学 (Lucas 2026-11-27): a new word's one choice question shows the word, its meaning and its sound. */
   teach?: { de: string; zh: string };
-  /** 先认后写 (Lucas 2026-11-27): the writing a new word must get in its first fight (step 2, or the killing blow). */
+  /** 先认后写 (Lucas 2026-11-27): the writing question after a new word's teaching choice, or the opener of the next
+   *  fight of a word never written yet. */
   firstWrite?: boolean;
   /** 语境复习 (2026-11-24): the word id of a due 归名 word asked in this fight; counts as an attack on the target. */
   review?: string;
@@ -381,8 +382,6 @@ export interface Battle {
   finishOwn?: boolean;
   /** 先认后写 (Lucas 2026-11-27): its own word was written right in this fight (a hint is fine). */
   wrote?: boolean;
-  /** 先认后写: it was brought to 1 HP before any writing; the last blow has to be written. */
-  mustWrite?: boolean;
   /** 先认后写: wrong answers on its first-write questions (1 → first letter, 2+ → the whole word to copy). */
   firstWriteMiss?: number;
   /** 语法线: grammar questions asked on this word this fight. */
@@ -1408,18 +1407,21 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
   }
   return q;
 
-  function ladderQ(): Question {
-  // 先认后写 (Lucas 2026-11-27): the second question of a new word's first fight is a writing one (句中默写, or 看中文
-  // 默写 without an example), and a monster brought to 1 HP before that waits for it. Misses add a hint, never a lock.
-  if (am === 'attack' && firstWriteDue(s, b) && (b.mustWrite || b.step >= 1)) {
+  function firstWriteQ(nextFight: boolean): Question {
     const v = typed();
     const miss = b.firstWriteMiss ?? 0;
-    const head = b.mustWrite ? '只剩一口气——写出它才能收掉' : '刚认识它，马上写一次';
+    const head = nextFight ? '上一场没来得及写它，这场先写一次' : '刚认识它，马上写一次';
     const base: Question = { ...v, firstWrite: true, prompt: `${head}：${v.prompt}` };
     if (miss >= 2) return { ...base, whisper: v.answer, whispered: true, prompt: `${head}：照着写一遍 ${v.answer}${v.clozeZh ? ` · ${v.clozeZh}` : ''}` };
     if (miss === 1) return whisperOf(base, w);
     return base;
   }
+
+  function ladderQ(): Question {
+  // 先认后写 (Lucas 2026-11-27): the second question of a new word's first fight is a writing one (句中默写, or 看中文
+  // 默写 without an example). No HP lock (Lucas 11-27 改): a word that died before it was written opens its next fight
+  // with the writing instead. Misses add a hint, never a lock.
+  if (am === 'attack' && firstWriteDue(s, b) && b.step >= 1) return firstWriteQ(false);
   if (am === 'attack' && b.saying && !b.sayingDone && !inPack) return sayingQuestion(s, b.saying, rng);
   // 审查修订: once an extra-damage question has brought it to 1 HP, the last blow has to answer its own word.
   if (am === 'attack' && b.listenMon && !b.listenDone && !b.finishOwn) {
@@ -1497,6 +1499,9 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
     const t = b2Task(s, w, rng, b.b2Mon);
     if (t) return gramQuestion(t, null);
   }
+  // 先认后写 (Lucas 11-27 改): a word met but never written right gets one writing try in this fight, after any special
+  // monster's own opener.
+  if (am === 'attack' && secondWriteDue(s, b)) return firstWriteQ(true);
   // 语法线 (0.7–0.8): once a system is open, the word monster sometimes asks it on its own word (first time with its board).
   if (am === 'attack' && !fresh && !b.tutorial && !b.trial && !b.pluralMon && !b.verify && !b.gramDungeon && (b.stage >= 1 || b.kind !== 'new')) {
     const g = gramFor(s, w, rng, b.gramAsked ?? 0);
@@ -2529,7 +2534,6 @@ export function resolveTurn(
         b.finishOwn = true;
         log.push({ text: `${tagOf(b)}只剩一口气：最后一下要答它自己的词。`, tone: 'info' });
       }
-      if (m.hp <= 0 && firstWriteDue(s, b)) holdForWriting(b, log, tagOf(b));
       if (m.hp <= 0) {
         const overkill = -m.hp;
         m.hp = 0;
@@ -2777,10 +2781,6 @@ export function resolveTurn(
 
   for (const x of pack) {
     if (x.outcome || x.monster.hp > 0) continue;
-    if (firstWriteDue(s, x) && !(b.chorusHits ?? []).includes(x.word.id)) {
-      holdForWriting(x, log, tagOf(x));
-      continue;
-    }
     x.outcome = 'win';
     x.lastKillTyped = false;
     kills.push(x);
@@ -2830,10 +2830,10 @@ function directTurn(s: GameState, b: Battle, q: Question, input: string): TurnRe
     p.correct += 1;
     p.write = (p.write ?? 0) + 1;
     p.lastSeen = t;
-    retire(s, w, t);
+    retire(s, w, t, true);
     b.cutReady = true;
     cut = 'ready';
-    log.push({ text: `✓ 直接叫名：${fullForm(w)}，你本来就会。可以斩杀了（30 天后回响抽查一次）${b.presumed ? '。推定会的词：给 3 碎片，不给经验' : ''}`, tone: 'good' });
+    log.push({ text: `✓ 直接叫名：${fullForm(w)}，你本来就会。可以斩杀了，永久退役${b.presumed ? '。推定会的词：给 3 碎片，不给经验' : ''}`, tone: 'good' });
   } else {
     b.spellSeen = true;
     log.push({ text: `没叫出来：${fullForm(w)}。没关系，照常学它。`, tone: 'info' });
@@ -2942,15 +2942,16 @@ function irregularQ(b: Battle, q: Question): boolean {
 /** 先认后写 (Lucas 2026-11-27): a new word in its first fight, typing open, not yet written here. Scripted fights,
  *  scene elites (their own 认/用/写 parts), sentence monsters, crowds and grammar floors keep their own rules. */
 export function firstWriteDue(s: GameState, b: Battle): boolean {
-  return b.kind === 'new' && b.stage === 0 && !b.wrote && has(s.level, 'typing') && !b.tutorial && !b.trial && !b.elite && !b.phrase && !b.pluralMon && !b.gramDungeon && b.word.pos !== 'phr';
+  return b.kind === 'new' && b.stage === 0 && !b.wrote && has(s.level, 'typing') && !ownRules(b);
 }
 
-function holdForWriting(b: Battle, log: LogLine[], tag: string): void {
-  b.monster.hp = 1;
-  b.mustWrite = true;
-  b.finishOwn = true;
-  log.push({ text: `${tag}只剩一口气：第一次见它，写出它才能收掉。`, tone: 'info' });
+/** 先认后写 (Lucas 11-27 改): a word met before but never written right opens this fight with the writing. */
+export function secondWriteDue(s: GameState, b: Battle): boolean {
+  const p = s.words[b.word.id];
+  return !!p && !p.retired && !p.placed && !(p.write ?? 0) && b.stage >= 1 && !b.wrote && !b.firstWriteMiss && has(s.level, 'typing') && !ownRules(b);
 }
+
+const ownRules = (b: Battle) => !!(b.tutorial || b.trial || b.elite || b.phrase || b.pluralMon || b.gramDungeon || b.word.pos === 'phr');
 
 export function extraHit(q: Question): boolean {
   return !!q.review || ['notice', 'mirror', 'struct', 'listen'].includes(q.gram?.sys ?? '');
