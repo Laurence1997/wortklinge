@@ -207,9 +207,13 @@ export async function syncOnBoot(local: GameState | null): Promise<GameState | n
     cloud.lastSync = Date.now();
     // A local save from another account on this browser is not yours: ignore it.
     const mine = local && (!local.owner || local.owner === id) ? local : null;
-    if (remote && (!mine || (remote.savedAt ?? 0) > (mine.savedAt ?? 0))) return { ...remote, owner: id };
+    if (remote && (!mine || (remote.savedAt ?? 0) > (mine.savedAt ?? 0))) {
+      bootAt = remote.savedAt ?? 0;
+      return { ...remote, owner: id };
+    }
     if (mine) {
       mine.owner = id;
+      bootAt = mine.savedAt ?? 0;
       void push(mine);
     }
     return mine;
@@ -225,6 +229,21 @@ export async function syncOnBoot(local: GameState | null): Promise<GameState | n
 let cloudLocked = false;
 /** updated_at of the cloud row as this page last read or wrote it (审查 A1 ②). */
 let lastRemoteAt: string | null = null;
+/** savedAt of the save this page started from: a cloud row written later but holding no newer save (the older tab of
+ *  this browser finishing its last upload as this tab opened, 审核 1.0.9 L4) is already inside this page's progress. */
+let bootAt = 0;
+
+/** Was the cloud row last written with a save no newer than the one this page started from? */
+async function notNewerThanBoot(id: string): Promise<boolean> {
+  if (!bootAt) return false;
+  try {
+    const { data, error } = await withTimeout(sb.from('saves').select('saved:data->savedAt').eq('user_id', id).maybeSingle());
+    const at = Number((data as { saved?: unknown } | null)?.saved ?? NaN);
+    return !error && Number.isFinite(at) && at <= bootAt;
+  } catch {
+    return false;
+  }
+}
 
 export async function push(s: GameState): Promise<boolean> {
   const id = uid();
@@ -234,7 +253,7 @@ export async function push(s: GameState): Promise<boolean> {
     const head = await withTimeout(sb.from('saves').select('updated_at').eq('user_id', id).maybeSingle());
     const remoteAt = (head.data as { updated_at?: string } | null)?.updated_at ?? null;
     const moved = remoteAt && (lastRemoteAt ? Date.parse(remoteAt) !== Date.parse(lastRemoteAt) : Date.parse(remoteAt) > (s.savedAt ?? 0));
-    if (!head.error && moved) {
+    if (!head.error && moved && !(await notNewerThanBoot(id))) {
       cloudLocked = true;
       cloud.status = 'offline';
       changed();

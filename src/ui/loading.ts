@@ -47,3 +47,5 @@ const onError = () => {
   setTip('载入出错了。请刷新页面；还不行的话，按 Cmd+Option+J（Windows: Ctrl+Shift+J）截图控制台发给开发者。');
 };
 window.addEventListener('error', onError);
+// 审核 1.0.9 L3: an async failure (a rejected promise) while loading says so too, instead of a loading screen forever.
+window.addEventListener('unhandledrejection', onError);

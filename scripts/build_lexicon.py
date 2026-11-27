@@ -711,7 +711,8 @@ def main():
         s = min(cands, key=lambda c: len(c['words']))
         lvl = max(words_by_id[i]['lvl'] for i in s['words'])
         assert '|' not in x['挖空'] and '{' in x['挖空'], x['id']
-        w = {'id': x['id'], 'de': x['句型'], 'zh': x['功能'], 'pos': 'phr', 'family': 'echo', 'lvl': lvl, 'zone': s['zone'], 'scene': s['id'],
+        # zh = the first example's Chinese, not the category (1.0.10: the name plate, wordbook and screen show zh as the meaning).
+        w = {'id': x['id'], 'de': x['句型'], 'zh': x['例句中文'], 'pos': 'phr', 'family': 'echo', 'lvl': lvl, 'zone': s['zone'], 'scene': s['id'],
              'region': region, 'order': 1, 'rank': 0, 'situation': s['situation'], '_sents': [], 'ex': f"{x['例句']}|{x['例句中文']}"}
         if len(s['words']) >= FIRST_BATCH:
             w['batch'] = 2

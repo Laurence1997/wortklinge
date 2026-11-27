@@ -165,8 +165,8 @@ sm-082	2	Mir ist heute so schlecht.	{Mir ist} heute so {schlecht}.	我今天好�
 sm-082	3	Mir ist nach der Busfahrt immer schlecht.	{Mir ist} nach der Busfahrt immer {schlecht}.	每次坐完公交我都恶心。
 sm-083	2	Vielen Dank für die Einladung.	{Vielen Dank für} die Einladung.	非常感谢您的邀请。
 sm-083	3	Vielen Dank für das schöne Geschenk.	{Vielen Dank für} das schöne Geschenk.	非常感谢这份漂亮的礼物。
-sm-084	2	Entschuldigung, dass ich Sie störe.	{Entschuldigung}, {dass} ich Sie störe.	抱歉打扰您。
-sm-084	3	Entschuldigung, dass ich so spät anrufe.	{Entschuldigung}, {dass} ich so spät anrufe.	抱歉这么晚打电话。
+sm-084	2	Entschuldigen Sie, dass ich Sie störe.	{Entschuldigen Sie}, {dass} ich Sie störe.	抱歉打扰您。
+sm-084	3	Entschuldigen Sie, dass ich so spät anrufe.	{Entschuldigen Sie}, {dass} ich so spät anrufe.	抱歉这么晚给您打电话。
 sm-085	2	Das ist sehr nett von Ihnen, vielen Dank.	{Das ist} sehr {nett von Ihnen}, vielen Dank.	您真是太好了，非常感谢。
 sm-085	3	Oh, das ist aber nett von Ihnen!	Oh, {das ist} aber {nett von Ihnen}!	哦，您真好！
 sm-086	2	Mir tut der Kopf weh.	{Mir tut} der Kopf {weh}.	我头疼。
@@ -227,8 +227,8 @@ sm-113	2	Bitte entschuldigen Sie die Verzögerung.	{Bitte entschuldigen Sie} die
 sm-113	3	Bitte entschuldigen Sie meine Abwesenheit am Montag.	{Bitte entschuldigen Sie} meine Abwesenheit am Montag.	请原谅我周一缺席。
 sm-114	2	Es tut mir leid, dass ich Ihnen nicht früher antworten konnte.	{Es tut mir leid}, {dass ich} Ihnen nicht früher antworten {konnte}.	很抱歉我没能早点回复您。
 sm-114	3	Es tut mir leid, dass ich den Liefertermin nicht einhalten konnte.	{Es tut mir leid}, {dass ich} den Liefertermin nicht einhalten {konnte}.	很抱歉我没能遵守交货日期。
-sm-115	2	Wäre es möglich, die Unterlagen per E-Mail zu schicken?	{Wäre es möglich}, die Unterlagen per E-Mail {zu} schicken?	能否通过电子邮件发送材料？
-sm-115	3	Wäre es möglich, die Zahlung in drei Raten zu leisten?	{Wäre es möglich}, die Zahlung in drei Raten {zu} leisten?	能否分三期付款？
+sm-115	2	Ich bitte um Verständnis für die Verzögerung.	{Ich bitte um} Verständnis für die Verzögerung.	延误之处，敬请谅解。
+sm-115	3	Ich bitte um Zusendung der fehlenden Unterlagen.	{Ich bitte um} Zusendung der fehlenden Unterlagen.	请寄来缺少的材料。
 sm-116	2	Hiermit bestätige ich meine Teilnahme an der Schulung.	{Hiermit bestätige ich} meine Teilnahme an der Schulung.	特此确认我参加培训。
 sm-116	3	Hiermit bestätige ich den Termin am 14. Mai um 10 Uhr.	{Hiermit bestätige ich} den Termin am 14. Mai um 10 Uhr.	特此确认 5 月 14 日上午 10 点的预约。
 sm-117	2	Hiermit kündige ich meine Mitgliedschaft im Sportverein zum 30. Juni.	{Hiermit kündige ich} meine Mitgliedschaft im Sportverein {zum} 30. Juni.	我特此解除体育协会会员资格，于 6 月 30 日终止。
@@ -239,8 +239,8 @@ sm-119	2	Für Rückfragen stehe ich Ihnen telefonisch gern zur Verfügung.	{Für
 sm-119	3	Für Rückfragen stehe ich Ihnen auch per E-Mail gern zur Verfügung.	{Für Rückfragen stehe ich Ihnen} auch per E-Mail {gern zur Verfügung}.	如有疑问，也可以发邮件给我。
 sm-120	2	Ich freue mich auf Ihre Antwort. Mit freundlichen Grüßen	{Ich freue mich auf Ihre} {Antwort}. {Mit freundlichen Grüßen}	期待您的答复。此致敬礼
 sm-120	3	Ich freue mich auf Ihre positive Antwort. Mit freundlichen Grüßen	{Ich freue mich auf Ihre} positive {Antwort}. {Mit freundlichen Grüßen}	期待您的积极答复。此致敬礼
-sm-121	2	Meiner Meinung nach sollte man mehr in Schulen investieren.	{Meiner Meinung nach} sollte man mehr in Schulen investieren.	我认为应该在学校上投入更多。
-sm-121	3	Meiner Meinung nach wird die Bedeutung des Ehrenamts unterschätzt.	{Meiner Meinung nach} wird die Bedeutung des Ehrenamts unterschätzt.	我认为志愿工作的意义被低估了。
+sm-121	2	Ich gehe davon aus, dass wir das Projekt rechtzeitig abschließen.	{Ich gehe davon aus}, {dass} wir das Projekt rechtzeitig abschließen.	我估计我们能按时完成这个项目。
+sm-121	3	Ich gehe davon aus, dass die meisten Mitglieder zustimmen werden.	{Ich gehe davon aus}, {dass} die meisten Mitglieder zustimmen werden.	我估计大多数成员会同意。
 sm-122	2	Ich bin der Ansicht, dass Kinder weniger Zeit am Handy verbringen sollten.	{Ich bin der Ansicht}, {dass} Kinder weniger Zeit am Handy verbringen sollten.	我认为孩子应该少玩手机。
 sm-122	3	Ich bin der Ansicht, dass Mieten stärker reguliert werden müssen.	{Ich bin der Ansicht}, {dass} Mieten stärker reguliert werden müssen.	我认为房租必须更严格地管控。
 sm-123	2	Ich halte ein Tempolimit für notwendig.	{Ich halte} ein Tempolimit {für} notwendig.	我认为限速是必要的。
@@ -253,12 +253,12 @@ sm-126	2	Das sehe ich anders, denn Bildung sollte kostenlos sein.	{Das sehe ich 
 sm-126	3	Das sehe ich anders, denn die Zahlen sprechen eine andere Sprache.	{Das sehe ich anders}, {denn} die Zahlen sprechen eine andere Sprache.	我看法不同，因为数据说明的是另一回事。
 sm-127	2	Ich bezweifle, dass sich die Situation bald verbessert.	{Ich bezweifle}, {dass} sich die Situation bald verbessert.	我怀疑情况会很快好转。
 sm-127	3	Ich bezweifle, dass alle Bürger davon profitieren.	{Ich bezweifle}, {dass} alle Bürger davon profitieren.	我怀疑所有市民都能从中受益。
-sm-128	2	Einerseits bietet die Stadt viele Möglichkeiten, andererseits ist das Leben dort teuer.	{Einerseits} bietet die Stadt viele Möglichkeiten, {andererseits} ist das Leben dort teuer.	一方面城市提供很多机会，另一方面那里生活成本高。
-sm-128	3	Einerseits sind soziale Medien praktisch, andererseits kosten sie viel Zeit.	{Einerseits} sind soziale Medien praktisch, {andererseits} kosten sie viel Zeit.	一方面社交媒体很方便，另一方面很耗时间。
+sm-128	2	Nicht nur junge Leute, sondern auch viele Ältere nutzen soziale Medien.	{Nicht nur} junge Leute, {sondern auch} viele Ältere nutzen soziale Medien.	不仅年轻人，很多老年人也在用社交媒体。
+sm-128	3	Der Lärm stört nicht nur die Anwohner, sondern auch die Tiere im Park.	Der Lärm stört {nicht nur} die Anwohner, {sondern auch} die Tiere im Park.	噪音不仅打扰居民，也打扰公园里的动物。
 sm-129	2	Ein entscheidender Nachteil ist, dass die Verbindungen auf dem Land schlecht sind.	{Ein} entscheidender {Nachteil ist}, {dass} die Verbindungen auf dem Land schlecht sind.	一个关键的缺点是乡下的交通很差。
 sm-129	3	Ein weiterer Nachteil ist, dass die Geräte schnell veralten.	{Ein} weiterer {Nachteil ist}, {dass} die Geräte schnell veralten.	另一个缺点是设备很快就过时。
-sm-130	2	Obwohl das Angebot verlockend klingt, sollte man vorsichtig sein.	{Obwohl} das Angebot verlockend klingt, sollte man vorsichtig sein.	虽然这个报价听起来很诱人，还是应该小心。
-sm-130	3	Obwohl viele Menschen umweltbewusst sind, fliegen sie oft in den Urlaub.	{Obwohl} viele Menschen umweltbewusst sind, fliegen sie oft in den Urlaub.	虽然很多人有环保意识，他们还是经常坐飞机去度假。
+sm-130	2	Im Gegensatz zu meinem Bruder lese ich gern.	{Im Gegensatz zu} meinem Bruder lese ich gern.	和我哥哥不同，我喜欢看书。
+sm-130	3	Im Gegensatz zu Großstädten gibt es auf dem Land kaum Busverbindungen.	{Im Gegensatz zu} Großstädten gibt es auf dem Land kaum Busverbindungen.	和大城市相反，乡下几乎没有公交线路。
 sm-131	2	Es mag sein, dass das Studium lange dauert, trotzdem lohnt es sich.	{Es mag sein}, {dass} das Studium lange dauert, {trotzdem} lohnt es sich.	也许读大学要很久，但还是值得。
 sm-131	3	Es mag sein, dass Elektroautos teuer sind, trotzdem gehört ihnen die Zukunft.	{Es mag sein}, {dass} Elektroautos teuer sind, {trotzdem} gehört ihnen die Zukunft.	也许电动车很贵，但未来属于它们。
 sm-132	2	Ein gutes Beispiel dafür ist Freiburg, das viel für den Klimaschutz tut.	{Ein gutes Beispiel dafür ist} Freiburg, das viel für den Klimaschutz tut.	一个很好的例子是弗莱堡，它为气候保护做了很多。

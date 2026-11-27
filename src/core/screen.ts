@@ -6,6 +6,7 @@
 // XP is stored, not paid: each retired word goes into its home scene's 待领 and is paid the first time you walk
 // into that scene (one normal kill each at the scene's level, level gap applied, at most one level's worth).
 
+import { isPattern } from './satzmuster';
 import { CONFIG, levelGapMult, xpToNext } from './config';
 import { gradeTyped, type Verdict } from './grading';
 import { isRetired, retire, stageOf } from './srs';
@@ -47,7 +48,8 @@ const learned = (s: GameState, w: Word) => stageOf(s, w) === 3 && !s.words[w.id]
 
 /** Words this scope can still ask: everything but learned, tutorial and chest words. */
 export function screenPool(s: GameState, scope: ScreenScope): Word[] {
-  return WORDS.filter((w) => inScope(w, scope) && !w.tutorial && w.family !== 'truhe' && !learned(s, w) && !s.words[w.id]?.pend);
+  // 句型怪 are learned in the field only (审核 1.0.9 H2): the examiner can't ask a pattern from its Chinese.
+  return WORDS.filter((w) => inScope(w, scope) && !w.tutorial && w.family !== 'truhe' && !isPattern(w) && !learned(s, w) && !s.words[w.id]?.pend);
 }
 
 /** Words of a region still to learn (not 归名), for the summary line. */
@@ -128,7 +130,7 @@ export function answerScreen(s: GameState, run: ScreenRun, input: string, skip =
     run.last = { ok: false, skipped: true, word: w, input: '' };
   } else {
     // Words with the same Chinese (brackets aside, same part-of-speech tag) all count; the one written retires.
-    const cands = [w, ...WORDS.filter((x) => x.id !== w.id && sameMeaning(x, w) && !x.tutorial && x.family !== 'truhe')];
+    const cands = [w, ...WORDS.filter((x) => x.id !== w.id && sameMeaning(x, w) && !x.tutorial && x.family !== 'truhe' && !isPattern(x))];
     let hit: Word | null = null;
     let verdict = gradeTyped(input, w, hasArticleQuestion(w));
     for (const c of cands) {

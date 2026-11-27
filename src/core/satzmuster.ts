@@ -66,3 +66,30 @@ export function patOptions(w: Word, p: PatLine, rng: Rng): string[] {
 export function gradePat(input: string, answer: string, full: string): boolean {
   return key(input) === key(answer) || key(input) === key(full);
 }
+
+/**
+ * 句型怪「看中文，写出整句」(审核 1.0.9 M2, Lucas 2026-11-27 按推荐): the sentence counts when its key words are all
+ * there in order and it is a sentence, not just the key words (at least half as many words as the example). The
+ * exact example still counts. The finisher keeps exact grading.
+ */
+export function gradePatSentence(input: string, blanks: string[], full: string): { ok: boolean; exact: boolean } {
+  const toks = key(input).split(' ').filter(Boolean);
+  if (key(input) === key(full)) return { ok: true, exact: true };
+  const need = key(full).split(' ').filter(Boolean).length;
+  if (toks.length < Math.ceil(need / 2)) return { ok: false, exact: false };
+  let at = 0;
+  for (const b of blanks) {
+    const bt = key(b).split(' ').filter(Boolean);
+    let found = -1;
+    for (let i = at; i + bt.length <= toks.length; i++) {
+      if (bt.every((x, j) => toks[i + j] === x)) {
+        found = i;
+        break;
+      }
+    }
+    if (found < 0) return { ok: false, exact: false };
+    at = found + bt.length;
+  }
+  return { ok: true, exact: false };
+}
+

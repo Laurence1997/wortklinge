@@ -41,7 +41,7 @@ import { dungeonTask } from './gram/dungeons';
 import { hasMirror, mirrorTask, MIRROR } from './gram/mirror';
 import { partnerOf } from './gram/partner';
 import { articleOfWord, ARTICLE_B2_CFG, contextLine, regionArticleFor } from './gram/articleB2';
-import { gradePat, isPattern, patCount, patLine, patOptions, optionText } from './satzmuster';
+import { gradePat, gradePatSentence, isPattern, patCount, patLine, patOptions, optionText } from './satzmuster';
 import { articleFor, KIND_ZH, noticeById, noticeFor, noticeTask, NOTICE_CFG } from './gram/notice';
 
 /** A grammar task as a battle question (choice when it has options, typed otherwise). */
@@ -109,6 +109,8 @@ export interface Question {
   teach?: { de: string; zh: string };
   /** 句型怪 (Lucas 2026-11-27): the key words of a classic pattern; typing the whole example also counts. */
   pat?: boolean;
+  /** 句型怪 whole-sentence question: the key words that must all be there, in order (审核 1.0.9 M2). */
+  patKeys?: string[];
   /** 先认后写 (Lucas 2026-11-27): the writing question after a new word's teaching choice, or the opener of the next
    *  fight of a word never written yet. */
   firstWrite?: boolean;
@@ -1589,7 +1591,7 @@ function patternQ(s: GameState, b: Battle, move: Move, rng: Rng, skillId?: strin
   }
   // Every third question of a pattern met before: the whole example.
   if (b.stage >= 1 && b.step % 3 === 2 && move === 'attack' && !b.verify && !b.challenge) {
-    return { type: 'sentence', pat: true, prompt: '句型怪：看中文，写出整句', focus: p.zh, answer: p.full, full: p.full };
+    return { type: 'sentence', pat: true, patKeys: p.blanks, prompt: '句型怪：看中文写出整句（关键词齐全、顺序对就算对）', focus: p.zh, answer: p.full, full: p.full };
   }
   const n = p.blanks.length;
   const head = b.verify ? '不看提示再写一次 · ' : b.challenge ? '挑战怪 · ' : '';
@@ -1860,6 +1862,11 @@ export function gradeQuestion(s: GameState, b: Battle, q: Question, input: strin
         return { ok, notes: ok ? [] : [...va.notes, ...vc.notes, `正确答案：${q.answer}`], correct: q.answer!, word: ok ? b.word : undefined };
       }
       if (q.pattern) return gradeSentence(input, b.word, q.pattern);
+      if (q.pat && q.patKeys) {
+        // 句型怪 whole sentence (审核 1.0.9 M2): key words all there, in order; the example is shown as reference.
+        const g = gradePatSentence(input, q.patKeys, q.answer!);
+        return { ok: g.ok, notes: g.ok ? (g.exact ? [] : [`原句：${q.answer}`]) : [`关键词要齐全、按顺序：${q.patKeys.join(' … ')}`, `原句：${q.answer}`], correct: g.ok ? input.trim() : q.answer!, word: g.ok ? b.word : undefined };
+      }
       const ok = sayKey(input) === sayKey(q.answer!);
       return { ok, notes: ok ? [] : [`正确答案：${q.answer}`], correct: q.answer!, word: ok ? b.word : undefined };
     }
