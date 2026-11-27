@@ -213,7 +213,10 @@ export function pkQuestion(s: GameState, region: number, rng: Rng): PkQuestion |
       }
     }
   }
-  const others = shuffle(rng, pool.filter((x) => x.id !== w.id && x.zh !== w.zh)).slice(0, 3);
+  // Distractors with distinct meanings: two buttons must never read the same (several words share one gloss).
+  const seen = new Set([w.zh]);
+  const others = shuffle(rng, pool).filter((x) => x.id !== w.id && !seen.has(x.zh) && (seen.add(x.zh), true)).slice(0, 3);
+  if (others.length < 3) return typedQ(w);
   if (r < 0.55) {
     const opts = shuffle(rng, [w, ...others]).map((x) => x.zh);
     return { kind: 'pick', word: w, prompt: '选意思', focus: fullForm(w), options: opts, answer: w.zh, full: `${fullForm(w)} · ${w.zh}` };
@@ -222,6 +225,10 @@ export function pkQuestion(s: GameState, region: number, rng: Rng): PkQuestion |
     const opts = shuffle(rng, [w, ...others]).map((x) => fullForm(x));
     return { kind: 'pick', word: w, prompt: '选德语', focus: w.zh, options: opts, answer: fullForm(w), full: `${fullForm(w)} · ${w.zh}` };
   }
+  return typedQ(w);
+}
+
+function typedQ(w: Word): PkQuestion {
   return { kind: 'typed', word: w, prompt: w.art ? '写出德语（带冠词）' : '写出德语', focus: w.zh, answer: fullForm(w), full: `${fullForm(w)} · ${w.zh}` };
 }
 
@@ -232,7 +239,10 @@ export function gradePk(q: PkQuestion, input: string): boolean {
     return [q.answer, ...(q.gram.alts ?? [])].some((a) => k(a) === k(input));
   }
   if (q.options) return input === q.answer;
-  return gradeTyped(input, q.word, !!q.word.art).ok;
+  // Only the Chinese is shown, so any word of the same region with the same gloss is right too (工作: die Arbeit / arbeiten).
+  const w = q.word;
+  const same = WORDS.filter((x) => x.id !== w.id && x.zh === w.zh && (x.region ?? 1) === (w.region ?? 1) && x.pos !== 'phr');
+  return [w, ...same].some((x) => gradeTyped(input, x, !!x.art).ok);
 }
 
 /** Today's paid PKs so far. */

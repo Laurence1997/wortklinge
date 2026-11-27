@@ -8,14 +8,14 @@
 import { ADV, adventurersOf, adventurerScene, regionTopic, type Adventurer } from '../core/adventurers';
 import { dayKey, now, type GameState } from '../core/state';
 import { worldLine } from './aiTutor';
-import { isChatLeader, joinedAt, onChatMsg, sendAiLine, social, type ChatMsg } from './social';
+import { isChatLeader, joinedAt, localNote, onChatMsg, sendAiLine, social, type ChatMsg } from './social';
 
 let lastPro = 0;
 let lastMention = 0;
 let busy = false;
 
 function recent(): string[] {
-  return social.msgs.slice(-6).map((m) => `${m.ai ? `${m.nick}(AI)` : m.nick}：${m.text}`);
+  return social.msgs.filter((m) => !m.sys).slice(-6).map((m) => `${m.ai ? `${m.nick}(AI)` : m.nick}：${m.text}`);
 }
 
 function persona(a: Adventurer) {
@@ -44,26 +44,32 @@ async function handle(m: ChatMsg, s: GameState | null): Promise<void> {
     if (m.pro) lastPro = Date.now();
     return;
   }
-  if (!s || busy) return;
-  // @ a name: only the asker's own client answers.
+  if (!s) return;
+  // @ a name: only the asker's own client answers. Every reason for no answer is told to the asker (only them).
   const at = /@([A-Za-zÄÖÜäöüß]+)/.exec(m.text);
   if (m.me && at) {
     const a = byName(at[1], s.region ?? 1);
     if (!a) return;
+    if (busy) return localNote('冒险者正在说话，稍后再 @');
     const day = dayKey(now(s));
     if (s.flags.advAtDay !== day) (s.flags.advAtDay = day), (s.flags.advAtN = 0);
-    if (Date.now() - lastMention < ADV.mentionGapSec * 1000 || ((s.flags.advAtN as number) ?? 0) >= ADV.mentionDaily) return;
-    lastMention = Date.now();
-    s.flags.advAtN = ((s.flags.advAtN as number) ?? 0) + 1;
+    if (((s.flags.advAtN as number) ?? 0) >= ADV.mentionDaily) return localNote(`今天 @ 冒险者的 ${ADV.mentionDaily} 次用完了，明天再来`);
+    if (Date.now() - lastMention < ADV.mentionGapSec * 1000) return localNote('冒险者一分钟只回一次，稍等再 @');
     busy = true;
     try {
       const de = await worldLine({ ...persona(a), level: s.level, mention: { nick: m.nick, text: m.text }, recent: recent() });
-      if (de) await sendAiLine(a.name, de);
+      // Only an answer uses up the minute and one of today's @s.
+      if (de) {
+        lastMention = Date.now();
+        s.flags.advAtN = ((s.flags.advAtN as number) ?? 0) + 1;
+        await sendAiLine(a.name, de);
+      } else localNote(`${a.name} 没回话（AI 暂时不可用），这次不算次数`);
     } finally {
       busy = false;
     }
     return;
   }
+  if (busy) return;
   // Unprompted: the leader, after a human line, when nobody has heard an adventurer for 30 minutes.
   const gap = ADV.worldGapMin * 60_000;
   if (!isChatLeader() || Date.now() - joinedAt.t < gap || Date.now() - lastPro < gap) return;

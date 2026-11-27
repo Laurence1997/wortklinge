@@ -21,6 +21,7 @@ export function mountLogBox(): { setVisible: (v: boolean) => void } {
   input.addEventListener('keydown', async (e) => {
     e.stopPropagation();
     if (e.key === 'Escape') return input.blur();
+    if (e.isComposing || e.keyCode === 229) return; // Enter that commits an IME (pinyin) composition
     if (e.key !== 'Enter') return;
     const why = await sendChat(input.value);
     if (why === null) input.value = '';
@@ -49,7 +50,7 @@ export function mountLogBox(): { setVisible: (v: boolean) => void } {
     follow(chatLog, () =>
       chatLog.replaceChildren(
         ...(social.msgs.length
-          ? social.msgs.map((m) => h(m.me ? 'div.me' : 'div', h('i', time(m.t)), ' ', m.ai ? h('span.ai-tag', 'AI') : '', m.ai ? ' ' : '', h('b', m.ai ? m.nick : `${m.nick} Lv${m.level}`), '：', m.text))
+          ? social.msgs.map((m) => m.sys ? h('div.info', h('i', time(m.t)), ' ', m.text) : h(m.me ? 'div.me' : 'div', h('i', time(m.t)), ' ', m.ai ? h('span.ai-tag', 'AI') : '', m.ai ? ' ' : '', h('b', m.ai ? m.nick : `${m.nick} Lv${m.level}`), '：', m.text))
           : [h('div.info', cloud.profile ? '全服聊天：在线的人都看得到，下线就没了。' : '登录并起好昵称后才能聊天。')]),
       ),
     );

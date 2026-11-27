@@ -74,8 +74,9 @@ export function aiGrade(sentence: string, w: Word, task: string, level: number, 
   return call<AiGrade>({ mode: 'grade', sentence, forms: wordForms(w), task, level, known });
 }
 
-export function duelTurn(scene: string, history: Array<{ who: 'npc' | 'me'; de: string }>, reply: string, level: number, targets: Word[] = [], known: string[] = [], grammar: string[] = []) {
-  return call<DuelLine>({ mode: 'duel', scene, history, reply, level, known, grammar, targets: targets.map((w) => ({ id: w.id, de: w.de, forms: wordForms(w) })) });
+/** `round` / `rounds`: which player line this is and how many the talk allows, so the NPC can wrap up in time. */
+export function duelTurn(scene: string, history: Array<{ who: 'npc' | 'me'; de: string }>, reply: string, level: number, targets: Word[] = [], known: string[] = [], grammar: string[] = [], round = 0, rounds = 0) {
+  return call<DuelLine>({ mode: 'duel', scene, history, reply, level, known, grammar, round, rounds, targets: targets.map((w) => ({ id: w.id, de: w.de, forms: wordForms(w) })) });
 }
 
 /** 小作文 (20 级): 3–5 sentences with the given words. `missing` = given words the text did not use. */

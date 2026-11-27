@@ -64,6 +64,9 @@ export function runPk(s: GameState, a: Adventurer, region: number, rng: Rng, onA
     const note = h('div.pk-note');
     const score = h('div.pk-score', `你 ${me} : ${rival} ${a.name}（AI）· 先拿 ${ADV.pkWin} 分赢`);
     const body = h('div.pk-q');
+    const decided = () => me >= ADV.pkWin || rival >= ADV.pkWin;
+    // Once the match is decided the header button just leaves with the result (win or loss reward), never as a forfeit.
+    const quit = h('button.btn.ghost', { onclick: () => (decided() ? finish() : (close(), onEnd({ won: false, me, rival: -1 }))) }, '认输离开') as HTMLButtonElement;
     const end = (why: string) => {
       if (over) return;
       over = true;
@@ -71,7 +74,8 @@ export function runPk(s: GameState, a: Adventurer, region: number, rng: Rng, onA
       note.textContent = `${why} 答案：${q.full}`;
       score.textContent = `你 ${me} : ${rival} ${a.name}（AI）`;
       for (const b of Array.from(body.querySelectorAll('button, input'))) (b as HTMLButtonElement).disabled = true;
-      const next = h('button.btn.primary', { onclick: () => (me >= ADV.pkWin || rival >= ADV.pkWin ? finish() : round()) }, me >= ADV.pkWin || rival >= ADV.pkWin ? '结束 ↵' : '下一题 ↵') as HTMLButtonElement;
+      if (decided()) quit.textContent = '离开';
+      const next = h('button.btn.primary', { onclick: () => (decided() ? finish() : round()) }, decided() ? '结束 ↵' : '下一题 ↵') as HTMLButtonElement;
       body.append(next);
       window.setTimeout(() => next.focus(), 0);
     };
@@ -110,12 +114,13 @@ export function runPk(s: GameState, a: Adventurer, region: number, rng: Rng, onA
       const input = h('input.pk-in', { type: 'text', autocomplete: 'off', spellcheck: 'false', placeholder: q.word.art ? 'der / die / das + 名词' : '' }) as HTMLInputElement;
       input.addEventListener('keydown', (e) => {
         e.stopPropagation();
+        if (e.isComposing || e.keyCode === 229) return; // Enter that commits an IME composition
         if (e.key === 'Enter' && input.value.trim()) mine(input.value);
       });
       body.append(h('div.typing', input, umlautButtons(input), h('button.btn.primary', { onclick: () => input.value.trim() && mine(input.value) }, '交 ↵')));
       window.setTimeout(() => input.focus(), 0);
     }
-    clear(root).append(h('div.panel.pk', h('h2', h('span', `PK · ${a.name}（AI）`), h('button.btn.ghost', { onclick: () => (close(), onEnd({ won: false, me, rival: -1 })) }, '认输离开')), score, say, body, note));
+    clear(root).append(h('div.panel.pk', h('h2', h('span', `PK · ${a.name}（AI）`), quit), score, say, body, note));
   };
 
   const finish = () => {

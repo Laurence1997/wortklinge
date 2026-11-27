@@ -18,6 +18,8 @@ export interface ChatMsg {
   ai?: boolean;
   /** An unprompted adventurer line (for the 30-minute gap shared by everyone online). */
   pro?: boolean;
+  /** A local hint for this player only (never sent, never seen by hooks or the AI). */
+  sys?: boolean;
 }
 
 export const social = {
@@ -52,6 +54,10 @@ export async function sendAiLine(nick: string, text: string, pro = false): Promi
   await ch.send({ type: 'broadcast', event: 'chat', payload: m });
   addMsg(m);
   for (const f of hooks) f(m);
+}
+/** Show a hint line in this player's chat only (not broadcast, runs no hooks). */
+export function localNote(text: string): void {
+  addMsg({ nick: '', level: 0, text, t: Date.now(), sys: true });
 }
 let lastSent = 0;
 let meta: () => { level: number; hidden: boolean } = () => ({ level: 1, hidden: false });

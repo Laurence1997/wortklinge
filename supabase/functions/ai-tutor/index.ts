@@ -9,10 +9,12 @@
 // 3–5 target words the player must use; this function reports by rule which of them the reply used. Used by the
 // 冒险者 (adventurers) now: `grammar` adds the region's grammar points (gramOk = the ones the player used right), and
 // an NPC line that says a target first is regenerated once; targets it still says come back as `dropped`.
-// 冒险者 in the world chat ('world'): one short German line, unprompted or answering an @ (quota 'duel').
+// 冒险者 in the world chat ('world'): one short German line. An answer to an @ takes quota 'duel'; an unprompted line
+// (sent by whichever client leads the chat, about every 30 minutes) is not billed to that player (审核 1.0.10): it only
+// needs a valid login and is throttled per user here.
 // 小作文 ('essay'): 3–5 sentences with the given words, graded like 'grade'.
 // `known`: the player's learned words; the model is told to stay inside them (and simple patterns) when it writes.
-// Every model call takes one use of the player's daily quota (public.ai_take; caps are settings, migration 0004).
+// Every model call (but an unprompted world line) takes one use of the player's daily quota (public.ai_take; caps are settings, migration 0004).
 // Secrets (Supabase dashboard → Edge Functions → Secrets): DEEPSEEK_API_KEY and/or OPENAI_API_KEY; optional DEEPSEEK_MODEL, AI_MODEL (OpenAI).
 // SUPABASE_URL and SUPABASE_ANON_KEY are provided by Supabase. No key ever reaches the browser.
 
@@ -44,6 +46,8 @@ interface GradeReq {
   sentence: string;
   /** The monster's word in its accepted forms (Tee, Tees; trinke, trinkst …). */
   forms: string[];
+  /** Optional: the word in Chinese, named when the sentence misses it (the German is never shown, it is the answer). */
+  zh?: string;
   /** The task in Chinese, e.g. 「用 der Tee 说你想要什么」. */
   task?: string;
   level?: number;
@@ -54,6 +58,8 @@ interface EssayReq {
   text: string;
   /** Each given word in its accepted forms. */
   words: string[][];
+  /** Optional: the given words in Chinese, parallel to `words`. */
+  zhs?: string[];
   task?: string;
   level?: number;
   known?: string[];
@@ -70,6 +76,9 @@ interface DuelReq {
   known?: string[];
   /** 冒险者: grammar points of this region the talk should use (Chinese names). */
   grammar?: string[];
+  /** Which player line this is and how many the talk allows (0 = not sent). */
+  round?: number;
+  rounds?: number;
 }
 
 /** 冒险者 in the world chat: one short line, unprompted or as a reply to an @. */
@@ -114,15 +123,44 @@ interface OpinionReq {
 const clip = (s: unknown, n: number) => String(s ?? '').slice(0, n);
 const norm = (s: string) => s.toLowerCase().replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss');
 
+/** Is token `t` the form part `p`, or a regular inflection of it? Besides the exact form: up to three more letters
+ *  on a stem of 4+ (schön → schöne/schönen, Kind → Kindern, Mann → Mannes, like the game's journal.usesWord), and the
+ *  regular Perfekt participle of an -en verb (machen → gemacht, arbeiten → gearbeitet, besuchen → besucht). */
+function tokenIs(t: string, p: string): boolean {
+  if (t === p) return true;
+  if (p.length >= 4 && t.startsWith(p) && t.length <= p.length + 3) return true;
+  if (p.length >= 5 && p.endsWith('en')) {
+    const st = p.slice(0, -2);
+    return t === `ge${st}t` || t === `ge${st}et` || t === `${st}et`;
+  }
+  return false;
+}
 /** Does the text use this word (all parts of one of its forms, umlauts folded)? */
 function uses(text: string, forms: string[]): boolean {
-  const words = norm(text).split(/[^a-z]+/);
-  return forms.some((f) => norm(f).split(/\s+/).every((p) => words.includes(p)));
+  const words = norm(text).split(/[^a-z]+/).filter(Boolean);
+  return forms.some((f) => norm(f).split(/\s+/).filter(Boolean).every((p) => words.some((t) => tokenIs(t, p))));
 }
 const knownLine = (k: unknown) => {
   const list = (Array.isArray(k) ? k : []).slice(0, 600).map((x) => clip(x, 30)).filter(Boolean);
   return list.length ? `玩家学过的词（你写德语时尽量只用这些词、加上最基本的代词/冠词/介词/sein/haben，句型要简单）：${list.join(', ')}` : '';
 };
+
+/** The logged-in user's id, null when the token is not valid. For the one call that takes no quota. */
+async function userId(auth: string): Promise<string | null> {
+  const url = Deno.env.get('SUPABASE_URL')!;
+  const anon = Deno.env.get('SUPABASE_ANON_KEY') || 'sb_publishable_ZP1aefkKlLhCNvaiGG3ZcA_gz46eEON';
+  try {
+    const r = await fetch(`${url}/auth/v1/user`, { headers: { apikey: anon, Authorization: auth } });
+    if (!r.ok) return null;
+    const j = await r.json();
+    return typeof j?.id === 'string' && j.id ? j.id : null;
+  } catch {
+    return null;
+  }
+}
+/** Unprompted world lines: at most one per user per 10 minutes on this instance (the game sends one per 30 minutes). */
+const WORLD_GAP = 10 * 60_000;
+const lastWorld = new Map<string, number>();
 
 async function takeQuota(auth: string, kind: 'grade' | 'duel' | 'essay'): Promise<boolean | 'unauth'> {
   const url = Deno.env.get('SUPABASE_URL')!;
@@ -255,7 +293,10 @@ Deno.serve(async (req) => {
     if (!sentence) return Response.json({ error: 'empty' }, { status: 400, headers: h });
     // 1. Rule check: no model call when the monster's word is missing.
     if (forms.length && !uses(sentence, forms)) {
-      return Response.json({ ok: false, step: 'rule', errors: [{ bad: '', fix: forms[0], why: `句子里要用上这只怪的词（${forms[0]}）` }], better: '' }, { headers: h });
+      // 审核 1.0.10: name the word in Chinese only (the German is the answer the player must recall); not every caller
+      // is a monster, so no 「这只怪」.
+      const zh = clip(body.zh, 40).trim();
+      return Response.json({ ok: false, step: 'rule', errors: [{ bad: '', fix: '', why: zh ? `句子里要用上「${zh}」这个词` : '句子里还没用上要练的词' }], better: '' }, { headers: h });
     }
     const q = await takeQuota(auth, 'grade');
     if (q === 'unauth') return Response.json({ error: 'login' }, { status: 401, headers: h });
@@ -270,11 +311,17 @@ Deno.serve(async (req) => {
 
   if (body.mode === 'essay') {
     const text = clip(body.text, 1200).trim();
-    const words = (Array.isArray(body.words) ? body.words : []).slice(0, 6).map((fs) => (Array.isArray(fs) ? fs : []).slice(0, 20).map((f) => clip(f, 40)).filter(Boolean)).filter((fs) => fs.length);
+    const zhs = Array.isArray(body.zhs) ? body.zhs : [];
+    const given = (Array.isArray(body.words) ? body.words : []).slice(0, 6).map((fs, i) => ({ forms: (Array.isArray(fs) ? fs : []).slice(0, 20).map((f) => clip(f, 40)).filter(Boolean), zh: clip(zhs[i], 40).trim() })).filter((g) => g.forms.length);
+    const words = given.map((g) => g.forms);
     if (!text) return Response.json({ error: 'empty' }, { status: 400, headers: h });
-    const missing = words.filter((fs) => !uses(text, fs)).map((fs) => fs[0]);
+    const skipped = given.filter((g) => !uses(text, g.forms));
+    const missing = skipped.map((g) => g.forms[0]); // the client matches these to its words; never shown as text
     if (missing.length === words.length && words.length) {
-      return Response.json({ ok: false, step: 'rule', errors: [{ bad: '', fix: missing.join(' / '), why: `要用上给的词（${missing.join('、')}）` }], better: '', missing }, { headers: h });
+      // 审核 1.0.10: name the skipped words in Chinese only, never the German.
+      const zhList = skipped.map((g) => g.zh).filter(Boolean);
+      const why = zhList.length === skipped.length ? `还没用上：${zhList.map((z) => `「${z}」`).join('、')}` : '还没用上给的词';
+      return Response.json({ ok: false, step: 'rule', errors: [{ bad: '', fix: '', why }], better: '', missing }, { headers: h });
     }
     const q = await takeQuota(auth, 'essay');
     if (q === 'unauth') return Response.json({ error: 'login' }, { status: 401, headers: h });
@@ -297,7 +344,10 @@ Deno.serve(async (req) => {
     const tl = targets.length ? `\n玩家要在对话里用上的词（你自己绝对不要说出这些词的任何形式）：${targets.map((t) => t.de).join('、')}` : '';
     const grammar = (Array.isArray(body.grammar) ? body.grammar : []).slice(0, 3).map((g) => clip(g, 40)).filter(Boolean);
     const gl = grammar.length ? `\n本场语法（你说话时自然地用上这些语法，也引玩家用）：${grammar.join('、')}` : '';
-    const user = `场景：${clip(body.scene, 1200)}\n玩家等级：${Number(body.level) || 10}${tl}${gl}\n${knownLine(body.known)}\n对话：\n${history.join('\n')}\n玩家：${reply || '（开始对话，你先说）'}`;
+    const int = (x: unknown) => Math.max(0, Math.min(50, Math.floor(Number(x) || 0)));
+    const round = int(body.round), rounds = int(body.rounds);
+    const rl = rounds && reply ? `\n这是玩家第 ${round}/${rounds} 句${round >= rounds ? '（最后一句：请自然地结束对话；只要场景目标基本达到就把 done 设为 true）' : round === rounds - 1 ? '（还剩一句，往收尾推进）' : ''}` : '';
+    const user = `场景：${clip(body.scene, 1200)}\n玩家等级：${Number(body.level) || 10}${tl}${gl}\n${knownLine(body.known)}\n对话：\n${history.join('\n')}\n玩家：${reply || '（开始对话，你先说）'}${rl}`;
     let out = await chat(DUEL_SYS, user);
     if (!out) return Response.json({ error: 'model' }, { status: 502, headers: h });
     // 防泄露: the NPC must not say a target first. Regenerate once; a target it still says leaves this talk.
@@ -313,9 +363,19 @@ Deno.serve(async (req) => {
     return Response.json({ de: clip(out.json.de, 400), zh: clip(out.json.zh, 400), note: clip(out.json.note, 300), done: !!out.json.done, used: used.filter((id) => !bad.has(bare(targets.find((t) => t.id === id)!.de))), dropped, gramOk, model: out.model }, { headers: h });
   }
   if (body.mode === 'world') {
-    const q = await takeQuota(auth, 'duel');
-    if (q === 'unauth') return Response.json({ error: 'login' }, { status: 401, headers: h });
-    if (!q) return Response.json({ error: 'quota' }, { status: 429, headers: h });
+    if (body.mention) {
+      const q = await takeQuota(auth, 'duel');
+      if (q === 'unauth') return Response.json({ error: 'login' }, { status: 401, headers: h });
+      if (!q) return Response.json({ error: 'quota' }, { status: 429, headers: h });
+    } else {
+      // 审核 1.0.10: the chat leader's unprompted line is not the player's own chat, so it takes none of their quota.
+      const uid = await userId(auth);
+      if (!uid) return Response.json({ error: 'login' }, { status: 401, headers: h });
+      const t = Date.now();
+      if (t - (lastWorld.get(uid) ?? 0) < WORLD_GAP) return Response.json({ error: 'quota' }, { status: 429, headers: h });
+      lastWorld.set(uid, t);
+      if (lastWorld.size > 5000) for (const [k, v] of lastWorld) if (t - v >= WORLD_GAP) lastWorld.delete(k);
+    }
     const recent = (Array.isArray(body.recent) ? body.recent : []).slice(-6).map((x) => clip(x, 200));
     const m = body.mention ? `\n${clip(body.mention.nick, 30)}（${Number(body.level) || 35} 级）@你说：${clip(body.mention.text, 200)}` : `\n（没人叫你，你自己说一句；用 A2 初级德语）`;
     const user = `你是：${clip(body.name, 30)}，来自${clip(body.origin, 40)}，说话风格：${clip(body.manner, 60)}\n你所在区域的处境：${clip(body.topic, 200)}\n最近的聊天：\n${recent.join('\n') || '（没有）'}${m}`;

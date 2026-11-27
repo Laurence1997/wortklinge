@@ -194,7 +194,7 @@ export function contextFail(s: GameState, w: Word, t = now(s)): void {
 
 /** Written right somewhere else (finisher, cloze, 排句, 槽位, 残句, diary, 篝火日记, 试炼): a due review counts as
  *  passed; a 归名 word not yet due has its due date pushed back by its current gap (rev 51). */
-export function reviewedByWriting(s: GameState, w: Word, t = now(s)): void {
+export function reviewedByWriting(s: GameState, w: Word, t = now(s)): boolean {
   const p = s.words[w.id];
   // 入学测试: a 推定会 word written right anywhere is confirmed and retires.
   if (p?.placed && !p.retired) {
@@ -202,11 +202,20 @@ export function reviewedByWriting(s: GameState, w: Word, t = now(s)): void {
     delete p.ctxDone;
     p.write = (p.write ?? 0) + 1;
     retire(s, w, t);
-    return;
+    return true;
   }
-  if (!p || p.retired || p.stage !== 3 || p.ctxDone) return;
+  if (!p || !writingCounts(s, w)) return false;
   if (t >= p.due) contextPass(s, w, t);
   else p.due = Math.max(p.due, t + gapOf(p));
+  return true;
+}
+
+/** Would writing `w` right count as a review now (审核 1.0.10)? A 半名 word (stage < 3) gets no credit. Returns true
+ *  exactly when reviewedByWriting records something, so the game only says 「算复习了一次」 when it did. */
+export function writingCounts(s: GameState, w: Word): boolean {
+  const p = s.words[w.id];
+  if (!p || p.retired) return false;
+  return !!p.placed || (p.stage === 3 && !p.ctxDone);
 }
 
 /** 介词空 right (游戏设计 六): one review of the word, like a written answer, but it never confirms a 推定会 word

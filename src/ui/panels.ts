@@ -100,7 +100,12 @@ export class Panels {
       this.asking = null;
       window.setTimeout(() => a.onAnswer(''), 0);
     }
-    if (this.open === 'journal') this.journalState = null;
+    if (this.open === 'journal' && this.journalState) {
+      // 审核 1.0.10: closing an unsaved entry keeps the draft (per session, for the same words).
+      const j = this.journalState;
+      this.journalDraft = j.saved === null && j.text.trim() ? { key: journalKey(j.words), text: j.text } : null;
+      this.journalState = null;
+    }
     if (this.open === 'letter') this.letter = null;
     if (this.open === 'quiz' && this.quiz) {
       const q = this.quiz;
@@ -209,7 +214,14 @@ export class Panels {
           }, '🎤 按住说')
         : null;
       input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && !e.isComposing && (a.multi ? e.ctrlKey || e.metaKey : !e.shiftKey)) {
+        if (e.key === 'Escape' && !e.isComposing) {
+          // 不回答 Esc (an Esc that cancels an IME composition is left alone).
+          e.preventDefault();
+          e.stopPropagation();
+          this.close();
+          return;
+        }
+        if (e.key === 'Enter' && !e.isComposing && e.keyCode !== 229 && (a.multi ? e.ctrlKey || e.metaKey : !e.shiftKey)) {
           e.preventDefault();
           e.stopPropagation();
           go();
@@ -534,8 +546,11 @@ export class Panels {
 
   private journalState: { words: Word[]; text: string; hints: JournalHint[] | null; saved: number | null } | null = null;
 
+  private journalDraft: { key: string; text: string } | null = null;
+
   showJournal(words: Word[]): void {
-    this.journalState = { words, text: '', hints: null, saved: null };
+    const text = this.journalDraft?.key === journalKey(words) ? this.journalDraft.text : '';
+    this.journalState = { words, text, hints: null, saved: null };
     this.show('journal');
   }
 
@@ -1773,4 +1788,9 @@ export class Panels {
     wrap.append(h('p.small.muted', `1–${CONFIG.releaseCap} 级已开放。当前 ${s.level} 级，等级上限 ${levelCapFor(s.flags)}（过突破试炼再往上）。`));
     return wrap;
   }
+}
+
+/** 篝火日记 draft key: the day's given words. */
+function journalKey(words: Word[]): string {
+  return words.map((w) => w.id).join(',');
 }

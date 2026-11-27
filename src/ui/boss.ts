@@ -109,7 +109,7 @@ export class BossUI {
     const figKey = bossFigureKey(f.which, f.region);
     const panel = h('div.panel');
     panel.append(
-      h('div.row', { style: 'justify-content:space-between' }, h('span.small.muted', f.which === 6 ? (f.current.id.startsWith('engrave-') ? 'Greta 在孔边写了半句话：把小词填上' : 'Mira 指着一行字：把空填上（写这个词在句子里的形式）') : f.which === 5 ? `登记表 第 ${f.maxHp - f.hp + 1} / ${f.maxHp} 项 · 用完整的句子回答 · 不限时` : `第 ${f.turn} 问 · 用完整的德语句子回答`), h('span.small', `生命 ${s.hp} / ${maxHp(s)}`)),
+      h('div.row', { style: 'justify-content:space-between' }, h('span.small.muted', f.which === 6 ? (f.current.id.startsWith('engrave-') ? 'Greta 在孔边写了半句话：把小词填上' : 'Mira 指着一行字：把空填上（写这个词在句子里的形式）') : f.which === 5 ? `登记表 第 ${Math.min(f.maxHp - f.hp + 1, f.maxHp)} / ${f.maxHp} 项 · 用完整的句子回答 · 不限时` : `第 ${f.turn} 问 · 用完整的德语句子回答`), h('span.small', `生命 ${s.hp} / ${maxHp(s)}`)),
       bar('hp', s.hp, maxHp(s)),
       h('div.timer', h('i', { style: 'width:100%' })),
     );

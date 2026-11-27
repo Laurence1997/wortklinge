@@ -670,7 +670,8 @@ body.bright .wm-segs span { color: #8a1424; }
 body { -webkit-font-smoothing: antialiased; }
 body.bright .btn:disabled { opacity: 1; color: #7a6a56; background: #f4ecdd; border-color: var(--line); }
 body.bright .btn:disabled small, body.bright .btn:disabled kbd { color: #7a6a56; }
-body.bright .b-mon .glyph { text-shadow: none !important; }
 body.bright .b-mon .glyph.plain { color: var(--ink) !important; }
+.b-mon .glyph.garble { letter-spacing: 3px; text-shadow: 2px 0 0 rgba(255, 40, 60, .55), -1px 0 0 rgba(40, 160, 255, .45); animation: garble 1.2s steps(1) infinite; display: inline-block; }
+@keyframes garble { 0%, 100% { transform: none; } 20% { transform: translateX(1px); } 40% { transform: translate(-1px, 1px); } 60% { transform: translateY(-1px); } 80% { transform: translateX(-1px); } }
 body.bright .moves .btn small { color: var(--muted); }
 .review-insert { border-width: 2px; }

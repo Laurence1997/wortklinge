@@ -37,7 +37,8 @@ import { BLESSINGS, blessCount, blessScale, bossFloor, canDescend, descend, endR
 import { makeItem, slotsAt, QUALITY_ZH, rollQuality, SLOT_ZH } from '../core/loot';
 import { applyLoss, applyWin, postFightHeal } from '../core/outcomes';
 import { defaultRng, type Rng } from '../core/rng';
-import { atLeastHalfShare, flushSkill, gapZh, instantGuiming, kindOf, recordAnswer, reviewedByWriting, stageOf } from '../core/srs';
+import { gradeLines } from '../core/aiVerdict';
+import { atLeastHalfShare, flushSkill, gapZh, instantGuiming, kindOf, recordAnswer, reviewedByWriting, stageOf, writingCounts } from '../core/srs';
 import { dailyBoard, dailyKill, dailyText } from '../core/dailies';
 import { identify, socketItems, unidentifiedItems } from '../core/identify';
 import { pickSpawns, zoneMinLevel, zoneWords } from '../core/spawn';
@@ -77,7 +78,7 @@ import { DUNGEON, RULES, type Rule } from '../data/dungeon';
 import { OPINION, opinionRule, pickClaim } from '../core/opinion';
 import { addGearKill, stampTiers } from '../core/state';
 import { bossRed, rollSetDrop, salvage, shardBalance, tierIlvl, tradeInfo, tradeShards, tradesOpen } from '../core/forge';
-import { aiOpinion, AI_TUTOR, aiEssay, aiGrade, aiGradeText, duelTurn, knownWords, persuadeTurn, wordForms, type AiGrade } from '../net/aiTutor';
+import { aiOpinion, AI_TUTOR, aiEssay, aiGrade, duelTurn, knownWords, persuadeTurn, wordForms } from '../net/aiTutor';
 import { DUEL, DUEL_SCENES, duelTurns, type DuelScene } from '../data/grammar/duels';
 import { scriptPrompt, scriptsFor, type Script } from '../data/grammar/scripts';
 import { drawPractice } from '../core/aiPractice';
@@ -104,6 +105,7 @@ import { SAYING_CFG, SAYINGS } from '../data/sayings';
 import { renderHud } from '../ui/hud';
 import { hideLoading } from '../ui/loading';
 import { Panels } from '../ui/panels';
+import { canListen } from '../ui/listen';
 import { $, isTyping } from '../ui/dom';
 
 const SYS = '系统';
@@ -111,7 +113,7 @@ const HILDE = '守火人 Hilde';
 const GRETA = '导师 Greta';
 const MIRA = '商人 Mira';
 
-type DuelRun = { d: DuelScene; turns: number; targets: Word[]; used: Set<string>; known: string[]; clean: number; grammar?: string[]; voice?: boolean; onIdle?: () => void; cues?: string[] };
+type DuelRun = { d: DuelScene; turns: number; targets: Word[]; used: Set<string>; known: string[]; clean: number; gramShown: Set<string>; grammar?: string[]; voice?: boolean; onIdle?: () => void; cues?: string[] };
 
 export class Controller {
   state: GameState;
@@ -248,11 +250,13 @@ export class Controller {
     if (xp) this.diaryXp(xp, '写了篝火日记');
     this.persist();
     // AI 批改 (10 级): logged-in players get a teacher's note on the entry; offline or over the cap, nothing changes.
+    // 审核 1.0.10: graded as a whole text (essay mode: 1200 characters, up to 5 errors), not as one clipped sentence;
+    // every failure says why in a toast (the entry is saved either way).
     if (s.level >= AI_TUTOR.grade && s.owner) {
-      void aiGradeText(text.trim(), words, '篝火日记：用今天打过的词写两三句话', s.level, knownWords(s)).then((r) => {
-        if ('error' in r) return r.error === 'quota' ? toast('今天的 AI 批改次数用完了') : r.error === 'model' ? toast('AI 暂时不可用，日记照常记下了') : undefined;
-        const lines = gradeLines(r);
-        if (lines.length) say(lines);
+      const entry = text.trim();
+      void aiEssay(entry, words, '篝火日记：用今天打过的词写两三句话', s.level, knownWords(s)).then((r) => {
+        if ('error' in r) return toast(r.error === 'model' ? 'AI 暂时不可用，日记照常记下了' : `${aiErrorZh(r.error)}日记照常记下了。`);
+        say(gradeLines(r, entry));
       });
     }
     return xp;
@@ -383,7 +387,7 @@ export class Controller {
   }
 
   uiBlocking(): boolean {
-    return !!this.battle || !!this.boss || dialogOpen() || !$('modal').hidden || !$('title').hidden || pkOpen();
+    return !!this.battle || !!this.boss || this.ambushing || dialogOpen() || !$('modal').hidden || !$('title').hidden || pkOpen();
   }
 
   refresh(): void {
@@ -577,34 +581,50 @@ export class Controller {
     const c = pickClaim(this.rng);
     m.opinion = false;
     this.milestone('m_opinion');
-    const go = (ok: boolean, lines: Line[]) => {
+    // `ambushing` stays on (and uiBlocking() with it) until the verdict is in, so no plain fight starts meanwhile.
+    const go = (ok: boolean, lines: Line[], skipped = false) => {
       this.ambushing = false;
       const start = () => {
+        if (this.battle) return;
         this.encounter(m);
-        const b = this.battle;
-        if (!b) return;
+        const b = this.battle as Battle | null; // encounter() set it; TS still narrows from the check above
+        if (!b || this.entity !== m) return;
         if (ok) {
           b.monster.hp = Math.max(1, Math.round(b.monster.hp * (1 - OPINION.hpCut)));
           b.log.push({ text: '开口表达观点：说得通，它的气势弱了一半。', tone: 'good' });
         } else {
           const d = Math.max(1, b.monster.dmg);
           s.hp = Math.max(1, s.hp - d);
-          b.log.push({ text: `开口表达观点：没说服它，它先动手了（−${d}）。`, tone: 'bad' });
+          b.log.push({ text: skipped ? `开口表达观点：你没开口，它先动手了（−${d}）。` : `开口表达观点：没说服它，它先动手了（−${d}）。`, tone: 'bad' });
         }
       };
       if (lines.length) say(lines, start);
       else start();
     };
-    this.panels.ask('开口表达观点', `「${c.de}」\n（${c.zh}）\n用观点句式回应它：表态 + 理由（Ich bin der Ansicht, dass … weil …）。可以赞成也可以反对。`, (text: string) => {
+    const ruleOk = '这次先按规则判：句式和理由都有。';
+    this.panels.ask('开口表达观点', `「${c.de}」\n（${c.zh}）\n用观点句式回应它：表态 + 理由（Ich bin der Ansicht, dass … weil …）。可以赞成也可以反对。不回答的话，它先动手。`, (text: string) => {
       const t = text.trim();
+      if (!t) return go(false, [], true);
       const rule = opinionRule(t);
       if (!rule.ok) return go(false, [{ who: SYS, text: rule.why! }]);
       if (!s.owner) return go(true, [{ who: SYS, text: '句式和理由都有（没登录，这次不请 AI 判）。' }]);
-      void aiOpinion(c.de, t, s.level, knownWords(s)).then((r) => {
-        if ('error' in r) return go(true, [{ who: SYS, text: r.error === 'model' ? 'AI 暂时不可用，这次先按规则判：句式和理由都有。' : `${aiErrorZh(r.error)}这次先按规则判：句式和理由都有。` }]);
-        const lines: Line[] = [{ who: '裁判', text: r.note || (r.ok ? '说得通。' : '说不通。') }, ...r.errors.map((x) => ({ who: '批改', text: x.bad ? `「${x.bad}」→「${x.fix}」：${x.why}` : x.why })), ...(r.better ? [{ who: '批改', text: `可以这样说：${r.better}` }] : [])];
-        go(r.ok, lines);
-      });
+      toast('裁判在想……');
+      // The world is frozen while we wait, so a request that never comes back must not keep it frozen.
+      let done = false;
+      const verdict = (ok: boolean, lines: Line[]) => {
+        if (done) return;
+        done = true;
+        window.clearTimeout(timer);
+        go(ok, lines);
+      };
+      const timer = window.setTimeout(() => verdict(true, [{ who: SYS, text: `AI 没及时回应，${ruleOk}` }]), 20000);
+      void aiOpinion(c.de, t, s.level, knownWords(s))
+        .then((r) => {
+          if ('error' in r) return verdict(true, [{ who: SYS, text: r.error === 'model' ? `AI 暂时不可用，${ruleOk}` : `${aiErrorZh(r.error)}${ruleOk}` }]);
+          const lines: Line[] = [{ who: '裁判', text: r.note || (r.ok ? '说得通。' : '说不通。') }, ...(r.errors ?? []).map((x) => ({ who: '批改', text: x.bad ? `「${x.bad}」→「${x.fix}」：${x.why}` : x.why })), ...(r.better ? [{ who: '批改', text: `可以这样说：${r.better}` }] : [])];
+          verdict(!!r.ok, lines);
+        })
+        .catch(() => verdict(true, [{ who: SYS, text: `AI 暂时不可用，${ruleOk}` }]));
     });
   }
 
@@ -2163,7 +2183,7 @@ export class Controller {
       ...(s.level >= AI_TUTOR.essay ? [{ label: '📝 小作文：用 3 个词写 3–5 句', act: () => this.openEssay() }] : []),
       ...(s.level >= PERSUADE.from ? [{ label: '🗣 说服段：用德语说服一个人', act: () => this.openPersuade() }] : []),
     ];
-    say([{ who: SYS, text: `【AI 对话】选一种。想用德语聊天（决斗场）就去找场景里挂「AI」牌子的冒险者：每天前 ${CONFIG.aiPaidPerDay} 场给金币和经验（今天已经 ${Math.min(n, CONFIG.aiPaidPerDay)} 场），之后只算复习。篝火日记在篝火休息时写。` }], undefined, [...modes, { label: '先不了', act: () => undefined }]);
+    say([{ who: SYS, text: `【AI 对话】选一种。想用德语聊天（决斗场）就去找场景里挂「AI」牌子的冒险者：每天前 ${CONFIG.aiPaidPerDay} 场给金币，每天第一场再给经验（今天已经 ${Math.min(n, CONFIG.aiPaidPerDay)} 场），之后只算复习。篝火日记在篝火休息时写。` }], undefined, [...modes, { label: '先不了', act: () => undefined }]);
   }
 
   // ---- 游荡的冒险者 (AI 玩家, Lucas 2026-11-25): talk (the duel engine) or PK; below 10 only a greeting ---------
@@ -2179,7 +2199,7 @@ export class Controller {
     const lines: Line[] = [];
     if (!s.flags.advSeen) {
       s.flags.advSeen = true;
-      lines.push({ who: SYS, text: `【冒险者】挂「AI」牌子的是 AI 扮演的冒险者，不是真人。聊天：用德语聊这个区的事，给你 3–5 个要用上的词（用对算复习），可以按住说德语；每天前 ${CONFIG.aiPaidPerDay} 场给金币和经验。PK：不用 AI，抢答本区学过的词和语法，先拿 ${ADV.pkWin} 分赢；每天前 ${ADV.pkPaid} 场有碎片（赢 ${ADV.pkShardsWin} 片、输 ${ADV.pkShardsLose} 片）。` });
+      lines.push({ who: SYS, text: `【冒险者】挂「AI」牌子的是 AI 扮演的冒险者，不是真人。聊天：用德语聊这个区的事，给你 3–5 个要用上的词（用对算复习），可以按住说德语；每天前 ${CONFIG.aiPaidPerDay} 场给金币，每天第一场再给经验。PK：不用 AI，抢答本区学过的词和语法，先拿 ${ADV.pkWin} 分赢；每天前 ${ADV.pkPaid} 场有碎片（赢 ${ADV.pkShardsWin} 片、输 ${ADV.pkShardsLose} 片）。` });
     }
     lines.push({ who, text: `${a.origin}。（${a.manner}）` });
     say(lines, undefined, [
@@ -2212,7 +2232,7 @@ export class Controller {
     const lines: Line[] = [];
     if (!s.flags.scriptSeen) {
       s.flags.scriptSeen = true;
-      lines.push({ who: SYS, text: '【剧本模式】你演剧本里的一个角色，每轮照提示说一句德语，AI 演另一方接话。提示只说这句要做什么，怎么说你自己定。和聊天一样给你 3–5 个要用上的词，奖励也一样。' });
+      lines.push({ who: SYS, text: '【剧本模式】你演剧本里的一个角色，每轮照提示写一句德语，AI 演另一方接话。提示只说这句要做什么，怎么说你自己定。和聊天一样给你 3–5 个要用上的词，奖励也一样。' });
     }
     lines.push({ who: `${a.name}（AI）`, text: '我来演对手。挑一个剧本：' });
     say(lines, undefined, [...scriptsFor(s.level).map((sc) => ({ label: `${sc.title}（你演${sc.role}）`, act: () => this.startScript(a, sc) })), { label: '先不', act: () => undefined }]);
@@ -2279,8 +2299,8 @@ export class Controller {
     const s = this.state;
     const [a, b] = DUEL.words;
     const targets = drawPractice(s, a + Math.floor(this.rng() * (b - a + 1)), this.rng);
-    const run: DuelRun = { d, turns: opt.cues?.length ?? duelTurns(s.level, this.rng), targets, used: new Set<string>(), known: knownWords(s), clean: 0, ...opt };
-    if (targets.length) say([{ who: SYS, text: `这场要用上的词（用德语说出来）：${targets.map((w) => `「${w.zh}」`).join('、')}。最多 ${run.turns} 轮。` }], () => this.duelStep(run, [], ''));
+    const run: DuelRun = { d, turns: opt.cues?.length ?? duelTurns(s.level, this.rng), targets, used: new Set<string>(), known: knownWords(s), clean: 0, gramShown: new Set<string>(), ...opt };
+    if (targets.length) say([{ who: SYS, text: `这场要用上的词（用德语${run.voice && canListen() ? '说或写' : '写'}出来）：${targets.map((w) => `「${w.zh}」`).join('、')}。最多 ${run.turns} 轮。` }], () => this.duelStep(run, [], ''));
     else this.duelStep(run, [], '');
   }
 
@@ -2289,8 +2309,16 @@ export class Controller {
     const d = run.d;
     toast('……');
     const left = run.targets.filter((w) => !run.used.has(w.id));
-    void duelTurn(d.scene, history, reply, s.level, left, run.known, run.grammar).then((r) => {
+    const round = history.filter((x) => x.who === 'me').length + (reply ? 1 : 0);
+    void duelTurn(d.scene, history, reply, s.level, left, run.known, run.grammar, round, run.turns).then((r) => {
       if ('error' in r) {
+        // 审核 1.0.10: mid-talk, a model or network error keeps the talk and the typed line; the player can retry.
+        if ((r.error === 'net' || r.error === 'model') && history.length) {
+          return say([{ who: SYS, text: `${r.error === 'model' ? 'AI 暂时不可用。' : '连不上 AI 对话（网络或服务出错）。'}刚才那句还在，可以重试。` }], undefined, [
+            { label: '重试', act: () => this.duelStep(run, history, reply, spoken) },
+            { label: '结束', act: () => this.leaveDuel(run) },
+          ]);
+        }
         // 冒险者: when the AI is out it stands 「在发呆」 and only PK is left.
         if (r.error === 'model' && run.onIdle) return run.onIdle();
         return say([{ who: SYS, text: r.error === 'quota' ? '今天的 AI 对话次数用完了，明天再来。' : r.error === 'login' ? '登录过期了，重新登录后再来。' : r.error === 'model' ? 'AI 暂时不可用，AI 对话先关着，其他玩法不受影响。稍后再来。' : '连不上 AI 对话（网络或服务出错），稍后再试。' }]);
@@ -2299,25 +2327,40 @@ export class Controller {
       // 防泄露 ②: a target the reply could not keep quiet about is dropped from this talk.
       for (const id of r.dropped ?? []) {
         const i = run.targets.findIndex((x) => x.id === id);
-        if (i >= 0 && !run.used.has(id)) run.targets.splice(i, 1);
+        if (i >= 0 && !run.used.has(id)) {
+          const [w] = run.targets.splice(i, 1);
+          lines.push({ who: SYS, text: `「${w.zh}」被对方先说出来了，这场不算这个词。` });
+        }
       }
       // Each target word used right counts as a context review (写对就算复习). Said aloud: a review, never 会写.
       for (const id of r.used ?? []) {
         const w = run.targets.find((x) => x.id === id);
         if (!w || run.used.has(id)) continue;
         run.used.add(id);
-        if (!(spoken && s.words[w.id]?.placed)) reviewedByWriting(s, w);
-        lines.push({ who: SYS, text: `✓ 用上了 ${w.art ? `${w.art} ` : ''}${w.de}（算复习一次${spoken ? '；说出来的不算会写' : ''}）` });
+        // 审核 1.0.10: say 「算复习一次」 only when reviewedByWriting really records one (same test as in srs.ts).
+        const counted = !(spoken && s.words[w.id]?.placed) && reviewedByWriting(s, w);
+        lines.push({ who: SYS, text: `✓ 用上了 ${w.art ? `${w.art} ` : ''}${w.de}${counted ? `（算复习一次${spoken ? '；说出来的不算会写' : ''}）` : ''}` });
       }
-      for (const g of r.gramOk ?? []) lines.push({ who: SYS, text: `✓ 这句用对了「${g}」` });
+      for (const g of r.gramOk ?? []) {
+        if (run.gramShown.has(g)) continue; // praised once per talk
+        run.gramShown.add(g);
+        lines.push({ who: SYS, text: `✓ 这句用对了「${g}」` });
+      }
       if (r.used?.length) this.persist();
       r.note = freshNote(run, r.note, reply); // 审核 1.0.10: a correction shows once, in the round it is about
       if (reply && !r.note.trim()) run.clean += 1; // 天赋「健谈」: lines with nothing to correct
       const h2 = [...history, ...(reply ? [{ who: 'me' as const, de: reply }] : []), { who: 'npc' as const, de: r.de }];
       const turns = h2.filter((x) => x.who === 'me').length;
       lines.push(...(r.note ? [{ who: '纠错', text: r.note }] : []), { who: d.npc, text: `${r.de}\n（${r.zh}）` });
-      if (r.done || turns >= run.turns) {
-        if (r.done) {
+      if (run.voice) this.speak(r.de);
+      // 审核 1.0.10: never done before the player has said anything; an adventurer chat or 剧本 that reaches its
+      // last round counts as done (its goal is to talk the rounds through) once at least half its words were used,
+      // so a talk of 「ja」「ok」 does not pay.
+      const freeChat = d.id.startsWith('adv-') || d.id.startsWith('script-');
+      const halfUsed = run.used.size * 2 >= run.targets.length;
+      const done = turns > 0 && (r.done || (freeChat && turns >= run.turns && halfUsed));
+      if (done || turns >= run.turns) {
+        if (done) {
           const today = dayKey(now(s));
           // 审查修订 C8: AI sessions pay XP and gold for the first 5 a day; after that only the reviews count.
           if (s.flags.aiPayDay !== today) (s.flags.aiPayDay = today), (s.flags.aiPayN = 0);
@@ -2334,14 +2377,28 @@ export class Controller {
           this.refresh();
         }
         const miss = run.targets.filter((w) => !run.used.has(w.id));
-        lines.push({ who: SYS, text: `${r.done ? `「${d.title}」办成了。` : '时间到了，这次先到这里。'}${run.targets.length ? ` 用上了 ${run.used.size}/${run.targets.length} 个词${miss.length ? `；没用上：${miss.map((w) => w.de).join('、')}` : ''}。` : ''}` });
+        lines.push({ who: SYS, text: `${done ? (freeChat ? `${d.title}：${d.id.startsWith('script-') ? '演完了' : '聊完了'}。` : `「${d.title}」办成了。`) : freeChat ? `${d.title}：${d.id.startsWith('script-') ? '演完了' : '聊完了'}，但要用的词用上不到一半，这场没有奖励。` : '时间到了，这次先到这里。'}${run.targets.length ? ` 用上了 ${run.used.size}/${run.targets.length} 个词${miss.length ? `；没用上：${miss.map((w) => w.de).join('、')}` : ''}。` : ''}` });
         return say(lines);
       }
       const need = run.targets.filter((w) => !run.used.has(w.id)).map((w) => `「${w.zh}」`); // 审查修订: targets in Chinese
       const cue = run.cues?.[turns] ? `\n🎭 这一句：${run.cues[turns]}` : '';
-      if (run.voice) this.speak(r.de);
-      say(lines, () => this.panels.ask(d.npc, `${r.de}${need.length ? `\n（还要用上：${need.join('、')}；第 ${turns + 1}/${run.turns} 轮）` : `\n（第 ${turns + 1}/${run.turns} 轮）`}${cue}`, (text: string, sp?: boolean) => (text.trim() ? this.duelStep(run, h2, text.trim(), !!sp) : say([{ who: SYS, text: '你转身走了。' }])), false, !!run.voice));
+      const ask = (): void =>
+        this.panels.ask(d.npc, `${r.de}\n（${r.zh}）${r.note ? `\n纠错：${r.note}` : ''}${need.length ? `\n（还要用上：${need.join('、')}；第 ${turns + 1}/${run.turns} 轮）` : `\n（第 ${turns + 1}/${run.turns} 轮）`}${cue}`, (text: string, sp?: boolean) => (text.trim() ? this.duelStep(run, h2, text.trim(), !!sp) : this.confirmLeave(ask, () => this.leaveDuel(run))), false, true); // 1.0.10 (Lucas): every AI talk has 🎤 按住说
+      say(lines, ask);
     });
+  }
+
+  /** 审核 1.0.10: 「不回答」 in a talk asks first, since leaving ends the whole talk, not just this line. */
+  private confirmLeave(back: () => void, leave: () => void): void {
+    say([{ who: SYS, text: '不回答就是离开这场对话（这场不算办成）。要走吗？' }], undefined, [
+      { label: '回去接着说', act: back },
+      { label: '离开对话', act: leave },
+    ]);
+  }
+
+  private leaveDuel(run: DuelRun): void {
+    const miss = run.targets.filter((w) => !run.used.has(w.id));
+    say([{ who: SYS, text: `这次先到这里。${run.targets.length ? `用上了 ${run.used.size}/${run.targets.length} 个词${miss.length ? `；没用上：${miss.map((w) => w.de).join('、')}` : ''}。` : ''}` }]);
   }
 
   // ---- 说服段 (21, AI 对话; the story's persuasion scenes use persuade() with their own scene) -------------------
@@ -2362,13 +2419,13 @@ export class Controller {
   persuade(p: PersuadeScene, onWin: () => void, onNoAi?: () => void): void {
     const s = this.state;
     const key = `persuade_${p.id}`;
+    // 审核 1.0.10: the attempt is counted in persuadeStep, once the player's first line got an answer.
     const attempt = ((s.flags[key] as number) ?? 0) + 1;
-    s.flags[key] = attempt;
-    const run = { p, attempt, known: knownWords(s), onWin, onNoAi, rounds: 0 };
-    say([{ who: SYS, text: `${p.intro}${attempt >= 2 ? '（第二次了，留意他在意什么）' : ''}` }], () => this.persuadeStep(run, [], ''));
+    const run = { p, key, attempt, known: knownWords(s), onWin, onNoAi, rounds: 0 };
+    say([{ who: SYS, text: `${p.intro}${attempt >= 2 ? '（又来了，留意他在意什么）' : ''}` }], () => this.persuadeStep(run, [], ''));
   }
 
-  private persuadeStep(run: { p: PersuadeScene; attempt: number; known: string[]; onWin: () => void; onNoAi?: () => void; rounds: number }, history: Array<{ who: 'npc' | 'me'; de: string }>, reply: string): void {
+  private persuadeStep(run: { p: PersuadeScene; key: string; attempt: number; known: string[]; onWin: () => void; onNoAi?: () => void; rounds: number }, history: Array<{ who: 'npc' | 'me'; de: string }>, reply: string): void {
     const s = this.state;
     const p = run.p;
     toast('……');
@@ -2378,11 +2435,16 @@ export class Controller {
         run.onNoAi?.();
         return;
       }
+      // 审核 1.0.10: the NPC's opening line can't convince itself or flag the player's register.
+      if (!reply) (r.convinced = false), (r.registerWrong = false);
+      else if (s.flags[run.key] !== run.attempt) s.flags[run.key] = run.attempt;
       const h2 = [...history, ...(reply ? [{ who: 'me' as const, de: reply }] : []), { who: 'npc' as const, de: r.de }];
       // A round with the wrong Sie / du doesn't count.
       if (reply && !r.registerWrong) run.rounds += 1;
       const counted = run.rounds;
       r.note = freshNote(run, r.note, reply); // 审核 1.0.10: a correction shows once, in the round it is about
+      // The wrong Sie / du already gets the NPC's reaction and a 系统 line: the note need not say it a third time.
+      if (r.registerWrong && /\b(sie|du|dich|dir|dein\w*|ihnen|ihr\w*)\b|duzen|siezen|称呼|您/i.test(r.note)) r.note = '';
       const lines: Line[] = [...(r.note ? [{ who: '纠错', text: r.note }] : []), { who: p.npc, text: `${r.de}\n（${r.zh}）` }];
       if (r.registerWrong) lines.push({ who: SYS, text: `称呼用错了（这里要用 ${p.formal ? 'Sie' : 'du'}），这一轮不算。` });
       if (r.convinced) {
@@ -2399,11 +2461,17 @@ export class Controller {
         return say(lines, run.onWin);
       }
       if (counted >= PERSUADE.rounds) {
-        lines.push({ who: SYS, text: '这次没说服他。不罚，可以再来；下次他会透露自己在意什么。' });
+        lines.push({ who: SYS, text: `这次没说服他。不罚，可以再来${run.attempt === 1 ? '；下次他会透露自己在意什么' : '；留意他说过在意什么'}。` });
         this.persist();
         return say(lines);
       }
-      say(lines, () => this.panels.ask(p.npc, `${r.de}\n（第 ${counted + 1}/${PERSUADE.rounds} 轮 · 用 ${p.formal ? 'Sie' : 'du'}）`, (text: string) => (text.trim() ? this.persuadeStep(run, h2, text.trim()) : say([{ who: SYS, text: '你转身走了。' }]))));
+      const ask = (): void =>
+        this.panels.ask(p.npc, `${r.de}\n（${r.zh}）${r.note ? `\n纠错：${r.note}` : ''}\n（第 ${counted + 1}/${PERSUADE.rounds} 轮 · 用 ${p.formal ? 'Sie' : 'du'}）`, (text: string) =>
+          text.trim() ? this.persuadeStep(run, h2, text.trim()) : this.confirmLeave(ask, () => say([{ who: SYS, text: '你转身走了。不罚，可以再来。' }])),
+          false,
+          true, // 1.0.10 (Lucas): 🎤 按住说 here too; the heard text fills the box to check before sending
+        );
+      say(lines, ask);
     });
   }
 
@@ -2416,16 +2484,17 @@ export class Controller {
     const w = drawPractice(s, 1, this.rng)[0];
     if (!w) return say([{ who: SYS, text: '现在没有需要练的词（半名或到期的词）。去野外打几只再来。' }]);
     const name = `${w.art ? `${w.art} ` : ''}${w.de}`;
-    this.panels.ask('AI 批改造句', `用「${w.zh}」这个词（德语${w.art ? '，名词带冠词' : ''}）写一句你自己的话。AI 只改错、不打分；写对算它复习一次。`, (text) => {
+    // 审核 1.0.10: only promise a review when writing it right really records one (a 半名 word gets none).
+    const credit = writingCounts(s, w) ? '写对算它复习一次。' : '这个词还在学，写对了也先不算复习。';
+    this.panels.ask('AI 批改造句', `用「${w.zh}」这个词（德语${w.art ? '，名词带冠词' : ''}）写一句你自己的话。AI 只改错、不打分；${credit}`, (text) => {
       if (!text.trim()) return;
       toast('批改中……');
       void aiGrade(text.trim(), w, `用 ${name}（${w.zh}）写一句话`, s.level, knownWords(s)).then((r) => {
         if ('error' in r) return say([{ who: SYS, text: aiErrorZh(r.error) }]);
-        const lines = gradeLines(r);
+        const lines = gradeLines(r, text.trim());
         if (r.ok) {
-          reviewedByWriting(s, w);
+          if (reviewedByWriting(s, w)) lines.push({ who: SYS, text: `${name} 算复习了一次。` });
           this.persist();
-          lines.push({ who: SYS, text: `${name} 算复习了一次。` });
         }
         say(lines);
       });
@@ -2445,18 +2514,24 @@ export class Controller {
       toast('批改中……');
       void aiEssay(text.trim(), words, '小作文：用给的词写 3–5 句', s.level, knownWords(s)).then((r) => {
         if ('error' in r) return say([{ who: SYS, text: aiErrorZh(r.error) }]);
-        const lines = gradeLines(r);
+        // 审核 1.0.10: given words the text skipped are named (in Chinese, so the hint gives nothing away); with
+        // skipped words the verdict says 「语法没问题」, not 「写得对」, and the day's XP needs at least two words used.
+        const missing = new Set(r.missing ?? []);
+        const skipped = words.filter((w) => missing.has(w.de));
+        const done = words.filter((w) => !missing.has(w.de));
+        const lines = gradeLines(r, text.trim(), skipped.length ? '语法没问题' : undefined);
+        if (skipped.length && done.length) lines.push({ who: '批改', text: `还没用到 ${skipped.map((w) => `「${w.zh}」`).join('、')}。` });
         if (r.ok) {
-          const missing = new Set(r.missing ?? []);
-          const done = words.filter((w) => !missing.has(w.de));
-          for (const w of done) reviewedByWriting(s, w);
+          const credited = done.filter((w) => reviewedByWriting(s, w));
           const today = dayKey(now(s));
           if (s.flags.essayDay !== today) {
-            s.flags.essayDay = today;
-            this.diaryXp(Math.max(1, Math.round(xpToNext(s.level) * JOURNAL_XP_SHARE)), '写了小作文');
+            if (done.length >= Math.min(2, words.length)) {
+              s.flags.essayDay = today;
+              this.diaryXp(Math.max(1, Math.round(xpToNext(s.level) * JOURNAL_XP_SHARE)), '写了小作文');
+            } else lines.push({ who: SYS, text: '至少用上两个给的词，才算今天的小作文。' });
           }
           this.persist();
-          if (done.length) lines.push({ who: SYS, text: `${done.map((w) => w.de).join('、')} 算复习了一次。` });
+          if (credited.length) lines.push({ who: SYS, text: `${credited.map((w) => w.de).join('、')} 算复习了一次。` });
         }
         say(lines);
       });
@@ -3467,11 +3542,13 @@ export class Controller {
       }
       return;
     }
-    if (isTyping()) return;
-    if (e.key === 'Escape' && this.panels.open) {
+    // Esc closes a panel even while its text box has focus (先不教 Esc / 先不写 Esc / 放弃 Esc), but not mid-IME.
+    if (e.key === 'Escape' && this.panels.open && !e.isComposing) {
+      e.preventDefault();
       this.panels.close();
       return;
     }
+    if (isTyping()) return;
     if (this.battle || this.boss) return;
     const k = e.key.toLowerCase();
     if (k === 'c' || k === 'i') this.panels.toggle('hero');
@@ -3487,12 +3564,6 @@ export class Controller {
 
 export function freshState(name: string, origin: string): GameState {
   return newGame(name, origin);
-}
-
-/** The AI teacher's verdict as dialogue lines. */
-function gradeLines(r: AiGrade): Line[] {
-  if (r.ok && !r.errors.length) return [{ who: '批改', text: `写得对。${r.better ? `更自然的说法：${r.better}` : ''}` }];
-  return [...r.errors.map((x) => ({ who: '批改', text: x.bad ? `「${x.bad}」→「${x.fix}」：${x.why}` : x.why })), ...(r.better ? [{ who: '批改', text: `改好的：${r.better}` }] : [])];
 }
 
 function aiErrorZh(e: string): string {

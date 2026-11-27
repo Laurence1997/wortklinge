@@ -19,7 +19,7 @@ import { resMax } from '../core/classes';
 import { fullForm, fullFormLong, genderOf, WORD_BY_ID, zhWithPos } from '../data/words';
 import type { Controller } from '../game/controller';
 import { ELEMENT_TAG, GLITCH, NAME_RED } from '../game/sprites';
-import { $, bar, clear, h, umlautButtons } from './dom';
+import { $, bar, clear, h, isTyping, umlautButtons } from './dom';
 import { reportButton } from './report';
 import { logLine } from './gamelog';
 import { canListen, lastConfidence, listenOnce, listening, stopHold, stopListening } from './listen';
@@ -454,10 +454,13 @@ export class BattleUI {
   private logTurn(b: Battle, q: Question, value: string, r: TurnReport, from: number): void {
     const name = b.spellSeen || b.verifyDone || b.outcome ? fullForm(b.word) : nameGlyph(b);
     const ask = q.focus ? `「${q.focus}」` : '';
-    const right = r.verdict.correct || q.answer || '';
+    // 1.0.10 (Lucas: 「你答 das Bar ✗，正确：das Bar」): 造句 / 句式题 have no single right answer — q.answer is only
+    // the word to use, so the log says what was asked instead of a 「正确」 that equals the input.
+    const free = q.write === 'compose' || q.write === 'slot';
+    const right = free ? '' : r.verdict.correct || q.answer || '';
     const head = r.correct
       ? `${name}：${ask} 你答 ${value} ✓${r.crit ? ' 暴击' : ''}${r.playerDamage ? `，造成 ${r.playerDamage} 伤害` : ''}`
-      : `${name}：${ask} 你答 ${value || '（空）'} ✗${right ? `，正确：${right}` : ''}`;
+      : `${name}：${ask} 你答 ${value || '（空）'} ✗${right ? `，正确：${right}` : free ? `（${q.write === 'compose' ? '造句题：要用这个词写一句完整的句子' : '句式题：要按句式写一整句'}）` : ''}`;
     logLine(head, r.correct ? 'good' : 'bad');
     for (const n of r.verdict.notes) if (!n.startsWith('正确答案')) logLine(`  ${n}`, 'info');
     if (r.monsterDamage) logLine(`  它出手：你受到 ${r.monsterDamage} 伤害`, 'bad');
@@ -663,7 +666,8 @@ export class BattleUI {
   /** Keyboard: A/S/D/F/R to pick a move, 1–3 for options, Enter to continue, Esc to change move. */
   onKey(e: KeyboardEvent): boolean {
     if ($('battle').hidden) return false;
-    const typing = document.activeElement === this.input;
+    // Any text box (墨水风暴 forms, ult frame, 齐鸣 mates), not only the main one: Z/V/S are letters there.
+    const typing = isTyping();
     if (!typing && e.key === 'Enter' && this.phase === 'choose' && this.b.cutReady && !this.b.outcome) {
       e.preventDefault();
       this.cut();
@@ -774,6 +778,7 @@ export class BattleUI {
 
     // Monster card.
     const glyph = nameGlyph(b, this.phase === 'answer' && asksMeaning(this.question));
+    const garbled = !b.phrase && (!!b.word.erode || (this.phase === 'answer' && asksMeaning(this.question)));
     const m = b.monster;
     const st: string[] = [];
     if (m.broken > 0) st.push(`破甲 ${m.broken}`);
@@ -786,7 +791,8 @@ export class BattleUI {
       'div.b-mon',
       h('div.fam', h('span', `${fam.zh} · Lv ${m.lvl}`), h('span', STAGE_ZH[b.stage])),
       monsterIcon(monsterArt(b, this.ctrl.dungeon?.left === 1), 5, false, 'mon-icon', this.ctrl.dungeon?.left !== 1 && !!this.ctrl.scene?.bright),
-      h(`div.glyph${b.stage === 0 || !showG ? '.plain' : ''}`, { style: `color:${color};text-shadow:0 0 8px ${b.stage === 0 ? '#ff1830' : color}` }, glyph, elTag ? h('span.tag', { style: 'margin-left:6px;font-size:11px;vertical-align:middle' }, elTag) : ''),
+      // 1.0.10 (Lucas: 字体不清晰): no blurred glow on the plate; a garbled plate is crisp symbols that jitter.
+      h(`div.glyph${b.stage === 0 || !showG ? '.plain' : ''}${garbled ? '.garble' : ''}`, { style: `color:${color}` }, glyph, elTag ? h('span.tag', { style: 'margin-left:6px;font-size:11px;vertical-align:middle' }, elTag) : ''),
       h(
         'div',
         b.rusty ? h('span.tag.due', '锈名 · 久拖的遗忘之物') : b.kind === 'due' ? h('span.tag.due', '遗忘之物') : b.kind === 'new' ? h('span.tag', '新怪') : h('span.tag', '影子'),

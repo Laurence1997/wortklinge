@@ -46,6 +46,7 @@ let idx = 0;
 
 /** Show a sequence of lines. German in 「…」 is highlighted. Enter / Space / click to continue. */
 export function say(lines: Line[], done?: () => void, choices?: Array<{ label: string; act: () => void }>): void {
+  if (!lines.length) return void done?.(); // 审核 1.0.10: an empty dialog would never close and freeze input
   dialogQueue.push({ lines, done, choices });
   if (!current) next();
 }
@@ -66,7 +67,7 @@ function render() {
   const line = current.lines[idx];
   const last = idx === current.lines.length - 1;
   const text = h('div.text');
-  text.innerHTML = line.text
+  text.innerHTML = (line.text ?? '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/「([^」]+)」/g, '「<span class="de">$1</span>」');

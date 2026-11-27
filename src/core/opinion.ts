@@ -34,8 +34,10 @@ export const CLAIMS: Array<{ de: string; zh: string }> = [
   { de: 'Ehrlichkeit ist immer die beste Lösung.', zh: '诚实永远是最好的办法。' },
 ];
 
-const OPENERS = /\b(ich bin der (ansicht|meinung|auffassung|überzeugung)|meiner (meinung|ansicht) nach|ich finde|ich denke|ich glaube|ich meine|ich bin (davon )?überzeugt|ich halte|aus meiner sicht|ich stimme|ich bin (nicht )?einverstanden|ich sehe das)\b/i;
-const REASONS = /\b(weil|denn|da|deshalb|deswegen|darum|zum beispiel|z\. ?b\.|einerseits|außerdem|trotzdem|obwohl)\b/i;
+// (?!\p{L}) instead of a closing \b: JS \b counts ü as a non-letter, so "dafür," would never end a match.
+const OPENERS = /\b(ich bin der (ansicht|meinung|auffassung|überzeugung)|meiner (meinung|ansicht) nach|meines erachtens|ich finde|ich denke|ich glaube|ich meine|ich bin (davon )?überzeugt|ich halte|aus meiner sicht|ich stimme|ich bin (nicht )?einverstanden|ich bin (dafür|dagegen|fürs?|gegen)|ich sehe das)(?!\p{L})/iu;
+// "z. B." ends in a dot, so it sits outside the \b group (a \b after the dot needs a letter right behind it).
+const REASONS = /\b(weil|denn|da|deshalb|deswegen|darum|zum beispiel|einerseits|außerdem|trotzdem|obwohl)\b|\bz\.\s?b\./i;
 
 export interface OpinionCheck {
   ok: boolean;
