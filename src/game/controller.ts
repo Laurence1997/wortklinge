@@ -1141,7 +1141,7 @@ export class Controller {
         if (!keepEntity) this.scene.removeMonster(m, res.kill.guiming || b.cutReady ? 'guiming' : 'scatter');
         if (b.cutReady) {
           sfx.guiming();
-          toast(b.verify === 'recheck' ? `斩杀 · ${fullForm(b.word)} 永久退役` : `斩杀 · ${fullForm(b.word)} 已退役，30 天后回响抽查一次`, 'gold');
+          toast(b.verify === 'recheck' || s.words[b.word.id]?.sure ? `斩杀 · ${fullForm(b.word)} 永久退役` : `斩杀 · ${fullForm(b.word)} 已退役，30 天后回响抽查一次`, 'gold');
           this.speak(fullForm(b.word));
         } else if (res.kill.guiming) {
           sfx.guiming();

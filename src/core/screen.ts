@@ -94,11 +94,11 @@ export function screenRetire(s: GameState, w: Word, t = now(s)): SceneDef | unde
     delete p.placed;
     if (wasPlaced) delete p.ctxDone;
   }
-  if (!p) s.words[w.id] = { stage: 3, due: t + CONFIG.srs.recheck, firstSeen: t, lastSeen: t, relapse: 0, correct: 1, wrong: 0, read: 0, write: 1, retired: t };
+  if (!p) s.words[w.id] = { stage: 3, due: t + CONFIG.srs.recheck, firstSeen: t, lastSeen: t, relapse: 0, correct: 1, wrong: 0, read: 0, write: 1, retired: t, sure: true }; // 会的词不再回响抽查 (Lucas 2026-11-27)
   else {
     p.correct += 1;
     p.write = (p.write ?? 0) + 1;
-    retire(s, w, t);
+    retire(s, w, t, true);
   }
   const sc = homeScene(w.id);
   if (wasPlaced) return undefined;

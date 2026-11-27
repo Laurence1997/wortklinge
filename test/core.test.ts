@@ -363,8 +363,10 @@ describe('question ladder', () => {
       for (let i = 0; i < 3; i++) {
         types.push(makeQuestion(s, b, 'attack', rng).type);
         b.step += 1;
+        if (i === 1) b.wrote = true; // 先认后写: the step-1 question (written from Lv2) was answered
       }
-      // 完形填空 ladder (Lv1–5): pick the German (the article lives in the stance since 0.5) → cloze → listen-and-pick.
+      // 完形填空 ladder (Lv1–5): pick the German (the one teaching choice) → cloze (typed from Lv2, 先认后写) → listen-and-pick.
+      // Before: pick the German (the article lives in the stance since 0.5) → cloze → listen-and-pick.
       expect(types).toEqual(['pickDe', 'cloze', 'pickZh']);
       for (let i = 1; i < types.length; i++) expect(types[i]).not.toBe(types[i - 1]);
     }
@@ -470,6 +472,7 @@ describe('region 2: packs, conjugation, plurals', () => {
     const s = newGame('T', 'student');
     s.level = 12;
     const b = startBattle(s, WORDS.find((w) => w.de === 'nehmen')!, rng);
+    b.wrote = true; // 先认后写 already done: walk the rest of the ladder
     let q = makeQuestion(s, b, 'attack', rng);
     while (q.type !== 'conj') {
       b.step += 1;
@@ -1055,7 +1058,7 @@ describe('0.4 战斗修正版', () => {
   });
   it('techniques change the next question: 铭刻 harder, 低语 gives the first letter', () => {
     const s = lvl15();
-    s.words['tee'] = { stage: 1, due: 9e15, firstSeen: 0, lastSeen: 0, relapse: 0, correct: 1, wrong: 0 };
+    s.words['tee'] = { stage: 1, due: 9e15, firstSeen: 0, lastSeen: 0, relapse: 0, correct: 1, wrong: 0, write: 1 };
     const b = startBattle(s, WORD_BY_ID['tee'], makeRng(4));
     b.intent = { ...b.intent, kind: 'wait', hits: 0 };
     b.step = 3; // ladder at the article question
@@ -1101,7 +1104,7 @@ describe('0.5 示例战斗 with 词性三相 (acceptance: right, wrong, soft bef
       const s = newGame('T', 'student', T0);
       s.level = 8;
       s.gram = { boards: Object.keys(BOARDS) }; // 语法线 off: this fight is scripted
-      s.words['brot'] = { stage: 1, due: 9e15, firstSeen: 0, lastSeen: 0, relapse: 0, correct: 1, wrong: 0 };
+      s.words['brot'] = { stage: 1, due: 9e15, firstSeen: 0, lastSeen: 0, relapse: 0, correct: 1, wrong: 0, write: 1 };
       const b = startBattle(s, WORD_BY_ID['brot'], rng);
       b.pluralMon = false;
       b.monster.lvl = 9;
