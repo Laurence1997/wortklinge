@@ -9,13 +9,14 @@ import type { AffixKey, Item, Slot, Word } from '../core/types';
 import { has, UNLOCK } from '../core/unlocks';
 import { BLIND_FROM, blindBoxes, boxLabel, boxPrice, buyBox } from '../core/blindbox';
 import { FAMILIES } from '../data/families';
-import { loadout, owned, POOL, POOL_FROM, POOL_ORDER, slotCount, toggleLoadout } from '../core/skillPool';
+import { loadout, owned, POOL, slotCount } from '../core/skillPool';
 import { phraseCards } from '../core/combat';
 import { gemText } from '../core/gems';
 import { CHARM, CHARM_BY_ID, equipCharm, equippedCharms, SLANG } from '../core/charms';
 import { SAYINGS, SAYING_CFG } from '../data/sayings';
 import { MASTERY, masteryFree, masteryIn, masteryPts, spendMastery, type MasteryTrack } from '../core/mastery';
-import { BRANCHES, canLearn, canLight, learn, learned, lightStar, litStars, ROW_GATE, spent, spentIn, STARS, STARS_FROM, starsPassed, talentPoints, TALENT_FROM_LEVEL, TALENT_TREE, type Branch } from '../core/classes';
+import { canLight, lightStar, litStars, STARS, STARS_FROM, starsPassed, TALENT_FROM_LEVEL } from '../core/classes';
+import { skillCards, talentSky } from './talentSky';
 import { finishStarTrial, starTrial, STAR_TRIAL } from '../core/stars';
 import { fullForm, fullFormLong, genderOf, reflNote, hasArticleQuestion, WORD_BY_ID, WORDS, zhWithPos } from '../data/words';
 import type { Controller } from '../game/controller';
@@ -51,6 +52,7 @@ export type PanelName = 'hero' | 'talents' | 'quests' | 'codex' | 'words' | 'dat
 
 export class Panels {
   open: PanelName | null = null;
+  private lastRendered: PanelName | null = null;
   private codexFilter: string = 'all';
 
   constructor(private ctrl: Controller) {
@@ -131,6 +133,9 @@ export class Panels {
   render(): void {
     if (!this.open) return;
     const el = $('modal');
+    // Re-rendering the same tab (点亮 a talent, 带上 a skill) keeps the scroll position.
+    const keepTop = this.open === 'talents' && this.lastRendered === 'talents' ? ((el.querySelector('.panel') as HTMLElement | null)?.scrollTop ?? 0) : 0;
+    this.lastRendered = this.open;
     const panel = h('div.panel');
     if (this.open === 'chest' && this.chest) {
       panel.append(h('h2', h('span', CHEST_ZH[this.chest.kind]), h('button.btn.ghost', { onclick: () => this.close() }, this.chest.result ? '收下 Esc' : '直接打开 Esc')), this.chestBody());
@@ -289,6 +294,7 @@ export class Panels {
     const body = { letter: () => h('div'), journal: () => h('div'), exam: () => h('div'), ask: () => h('div'), diary: () => h('div'), bigmap: () => h('div'), shop: () => h('div'), chest: () => h('div'), quiz: () => h('div'), place: () => h('div'), screen: () => h('div'), hero: () => this.hero(), talents: () => this.talents(), quests: () => this.questsBody(), codex: () => this.codex(), words: () => this.wordbook(), data: () => this.data(), account: () => this.account(), settings: () => this.settings(), help: () => this.help() }[this.open]();
     panel.append(body);
     clear(el).append(panel);
+    if (keepTop) panel.scrollTop = keepTop;
     el.onclick = (e) => {
       if (e.target === el) this.close();
     };
@@ -1235,72 +1241,27 @@ export class Panels {
 
   private talents(): HTMLElement {
     const s = this.ctrl.state;
-    const wrap = h('div');
-    // Skill pool and loadout.
-    wrap.append(h('h3', { style: 'margin-top:0' }, `技能池（出战 ${loadout(s).length} / ${slotCount(s.level)} 格）`));
-    if (s.level < POOL_FROM) wrap.append(h('p.muted.small', `${POOL_FROM} 级打完第 1 区首领后，导师 Greta 送你墨水风暴和稳住。技能格：10 级 2 格、30 级 3 格、61 级 4 格。`));
-    else {
-      wrap.append(h('p.small.muted', '技能不花资源，按回合冷却。每个技能都问眼前这只怪的词的另一层。点一下放进或拿出出战栏；战斗里按 R / G / T / Y 放。'));
-      const lo = loadout(s);
-      const own = owned(s);
-      for (const id of POOL_ORDER) {
-        const sk = POOL[id];
-        const have = own.includes(id);
-        const on = lo.includes(id);
-        wrap.append(
-          h(
-            `div.slot${have ? '' : '.dim'}`,
-            h('div.k', sk.zh, on ? h('span.tag-on', '出战') : ''),
-            h('div.small', { style: 'flex:1' }, `${sk.asks}。${sk.effect}。冷却 ${sk.cd}`),
-            have
-              ? h('button.btn.small', { disabled: !on && lo.length >= slotCount(s.level), onclick: () => { toggleLoadout(s, id); this.ctrl.persist(); this.render(); } }, on ? '拿出' : '带上')
-              : h('span.small.muted', `${sk.lv} 级`),
-          ),
-        );
-      }
-    }
-    // Shared talent tree.
-    const pts = talentPoints(s);
-    const used = spent(s);
-    wrap.append(h('h3', `天赋（已用 ${used} / ${pts} 点）`));
+    const wrap = h('div.talents-page');
+    const save = () => { this.ctrl.persist(); this.render(); };
+    // 技能池: 出战栏 + 卡片网格; 天赋: 5 个星座的星图 (src/ui/talentSky.ts, Lucas 2026-11-27).
+    wrap.append(skillCards(s, save));
+    // Before 12 the sky is shown as a preview (no points yet).
+    wrap.append(talentSky(s, save));
     if (s.level < TALENT_FROM_LEVEL) {
       wrap.append(h('p.muted.small', `${TALENT_FROM_LEVEL} 级起每 2 级得 1 点天赋（31–120 级每 3 级 1 点，121 级起每 2 级 1 点）。`));
       return wrap;
-    }
-    for (const br of Object.keys(BRANCHES) as Branch[]) {
-      const row = h('div.talent-row');
-      const inBr = spentIn(s, br);
-      row.append(h('div.small.muted', `${BRANCHES[br].zh}（${BRANCHES[br].about}）· 已点 ${inBr}`));
-      for (let r = 1; r <= 5; r++) {
-        const nodes = TALENT_TREE.filter((x) => x.branch === br && x.row === r);
-        const open = inBr >= ROW_GATE[r];
-        row.append(h('div.small.muted', r === 5 ? `大天赋（这一支点满 ${ROW_GATE[5]} 点）` : r === 1 ? '第 1 排' : `第 ${r} 排（这一支点满 ${ROW_GATE[r]} 点${open ? '' : '，还没开'}）`));
-        for (const t of nodes) {
-          const k = learned(s, t.id);
-          const grey = t.pending ? `（${t.pending}，点了暂不生效）` : t.from && s.level < t.from ? `（${t.from} 级起生效）` : '';
-          row.append(
-            h(
-              `div.slot${k && !grey ? '' : '.dim'}`,
-              h('div.k', `${t.big ? '★ ' : ''}${t.zh} ${k}/${t.max}`),
-              h('div.small', `${t.desc(Math.max(1, k))}${grey}`),
-              h('button.btn.small', { disabled: !canLearn(s, t), onclick: () => { learn(s, t.id); this.ctrl.persist(); this.render(); } }, '点'),
-            ),
-          );
-        }
-      }
-      wrap.append(row);
     }
     // 外圈：语法星位 (141+).
     wrap.append(h('h3', `语法星位（${litStars(s).length} / ${STARS.length} 已点亮）`));
     if (s.level < STARS_FROM) wrap.append(h('p.muted.small', `${STARS_FROM} 级起：每个星位是一条语法。先过这条语法的试炼（${STAR_TRIAL.n} 题对 ${STAR_TRIAL.pass}，不挨打、随时重考），再花 1 点点亮：这条语法的题伤害 +10%，答错连击只减半；每点亮 5 个生命 +3%。`));
     else {
-      const row = h('div.talent-row');
+      const row = h('div.gstar-grid');
       for (const st of STARS) {
         const lit = litStars(s).includes(st.id);
         const passed = starsPassed(s).includes(st.id);
         row.append(
           h(
-            `div.slot${lit ? '' : '.dim'}`,
+            `div.gstar${lit ? '.lit' : passed ? '.passed' : ''}`,
             h('div.k', `${lit ? '✦' : passed ? '✧' : '·'} ${st.zh}`),
             h('div.small', lit ? '已点亮' : passed ? '试炼已过，可以点亮' : '还没过试炼'),
             lit ? '' : passed
