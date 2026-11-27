@@ -15,7 +15,7 @@ import { ADV, adventurerById, adventurerPrompt, adventurerScene, GREET, notePkPa
 import { TICK_TURN } from '../core/combat';
 import { loadPron, pronCached } from '../ui/phoneme';
 import { icon, setRestored, SLOT_TILE } from '../ui/icons';
-import { answerPlacement, applyPlacement, canPlaceAgain, estimatePicks, pickBoard, placeAgainIn, regionFor, startFromPicks, startPlacement, stopPlacement, type PickBoard, type PlaceRun } from '../core/placement';
+import { answerPlacement, applyPlacement, backfillPlacementKit, PLACE_KIT_TIER, canPlaceAgain, estimatePicks, pickBoard, placeAgainIn, regionFor, startFromPicks, startPlacement, stopPlacement, type PickBoard, type PlaceRun } from '../core/placement';
 import { answerScreen, claimScene, SCREEN, startScreen, type ScreenRun, type ScreenScope } from '../core/screen';
 import type { Look } from '../core/look';
 // The game controller: owns the save, runs battles and tutorials, and glues the
@@ -31,7 +31,7 @@ import { playChest } from '../ui/chestFx';
 import { gradeTyped } from '../core/grading';
 import { buy as buyItem, openShop, refresh as refreshShop, sell as sellItem, SLOT_NOUN } from '../core/shop';
 import { buyModel } from '../core/shopTalk';
-import { hourGold, resetOldTree, resMax, respec, respecCost, spent } from '../core/classes';
+import { hourGold, resetOldTree, resMax, respec, respecCost, spent, talentPoints } from '../core/classes';
 import { noteVisit } from '../core/redname';
 import { BLESSINGS, blessCount, blessScale, bossFloor, canDescend, descend, endRift, offerBlessings, RIFT, riftAct, riftItemLevel, riftOpen, riftWord, silenceLeft, startRift, takeBlessing } from '../core/rift';
 import { makeItem, slotsAt, QUALITY_ZH, rollQuality, SLOT_ZH } from '../core/loot';
@@ -145,6 +145,8 @@ export class Controller {
       window.setTimeout(() => toast(`上次的裂隙之行在第 ${depth} 层断了：祝福和药片留在了里面`), 1500);
     }
     // 天赋树瘦身 (2026-11-25): an old 15-node tree gets every point back once.
+    const kit = backfillPlacementKit(state);
+    if (kit) window.setTimeout(() => toast(`定级补偿：换上一套 ${kit.tier} 档装备，补了 ${kit.gold} 金币${kit.tablets ? `和 ${kit.tablets} 片药片` : ''}。`, 'gold'), 3500);
     if (resetOldTree(state)) window.setTimeout(() => toast('天赋树改版了（每个方向 8 个节点）：你的天赋点已经全部免费退回，按 T 重新点。', 'gold'), 3000);
     // Levels gained when an old save was re-levelled on the faster curve: play their lessons once.
     const catchUp = String(state.flags.catchUpLevels ?? '');
@@ -392,6 +394,18 @@ export class Controller {
 
   refresh(): void {
     renderHud(this.state);
+    this.talentDot();
+  }
+
+  /** 1.0.10: a red dot on 「技能」 while talent points are left; the first time, one line says so. */
+  private talentDot(): void {
+    const left = talentPoints(this.state) - spent(this.state);
+    const b = document.querySelector<HTMLElement>('#menu button[data-k="talents"]');
+    if (b) b.classList.toggle('has-dot', left > 0);
+    if (left > 0 && b && !this.state.flags.talentDotSeen) {
+      this.state.flags.talentDotSeen = true;
+      toast(`你有 ${left} 个天赋点没点。按 T 打开「技能」点上，能加生命和伤害。`, 'gold');
+    }
   }
 
   persist(): void {
@@ -2009,7 +2023,9 @@ export class Controller {
     sfx.levelUp();
     const heads = o.gained.map((l) => ((UNLOCK_TEXT[l] ?? [])[0] ? `${l} 级 ${(UNLOCK_TEXT[l] ?? [])[0].split(/[：:，,]/)[0]}` : '')).filter(Boolean);
     const lines: Line[] = [{ who: SYS, text: `【新能力 · 跳到 ${o.level} 级】这一路的功能都开了，每样第一次出现时只给一行提示。按 H 能看怎么玩。之前各区没归名的词照常出怪，按你的等级给经验；标「推定会」的怪点「我认识它」写对一次就斩杀。营地篝火随时能传送到第 ${o.region} 区。` }];
-    if (o.region > 1) lines.push({ who: SYS, text: `入学礼：一套第 ${o.region} 区的白色 0 档装备（比身上的好才换上）。之后靠碎片在篝火换档。` });
+    if (o.region > 1) lines.push({ who: SYS, text: `入学礼：第 ${o.region} 区的碎片按一路打过来的进度记上，换上一套 ${PLACE_KIT_TIER} 档装备，补了金币，药片装满。之后靠碎片在篝火换更高档。` });
+    const tLeft = talentPoints(s) - spent(s);
+    if (tLeft > 0) lines.push({ who: SYS, text: `你有 ${tLeft} 个天赋点没点：按 T 打开「技能」点上，能加生命和伤害。` });
     for (let i = 0; i < heads.length; i += 8) lines.push({ who: SYS, text: heads.slice(i, i + 8).join(' · ') });
     say(lines, next);
   }
@@ -3496,15 +3512,16 @@ export class Controller {
   renderMenu(): void {
     const menu = $('menu');
     menu.replaceChildren();
-    const btn = (label: string, key: string, act: () => void) => {
+    const btn = (label: string, key: string, act: () => void, k = '') => {
       const b = document.createElement('button');
       b.className = 'btn panel';
+      if (k) b.dataset.k = k;
       b.innerHTML = key ? `<kbd>${key}</kbd>${label}` : label;
       b.onclick = act;
       menu.append(b);
     };
     btn('角色', 'C', () => this.panels.toggle('hero'));
-    if (this.state.level >= CONFIG.region2Level) btn('技能', 'T', () => this.panels.toggle('talents'));
+    if (this.state.level >= CONFIG.region2Level) btn('技能', 'T', () => this.panels.toggle('talents'), 'talents');
     if (this.state.quests) btn('任务', 'J', () => this.panels.toggle('quests'));
     btn('图鉴', 'B', () => this.panels.toggle('codex'));
     btn('单词本', 'N', () => this.panels.toggle('words'));

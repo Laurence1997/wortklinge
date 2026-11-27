@@ -15,7 +15,8 @@ import { CONFIG } from './config';
 import { gradeTyped, levenshtein, normalize, stripRefl, type Verdict } from './grading';
 import { shuffle, type Rng } from './rng';
 import { retire, stageOf } from './srs';
-import { maxHp, now, type GameState } from './state';
+import { itemTier, maxHp, now, type GameState } from './state';
+import { addItem, count } from './items';
 import type { Word, WordProgress } from './types';
 import { fullForm, hasArticleQuestion, WORDS } from '../data/words';
 import { sameMeaning } from './screen';
@@ -478,23 +479,56 @@ export function applyPlacement(s: GameState, run: PlaceRun, t = now(s), _opts: {
   }
   const region = regionFor(level);
   for (let r = 2; r <= region; r++) s.flags[`seenArea${r}`] = true;
-  // 审查修订 C4: a jump into a new region brings a white tier-0 set of that region (once); better pieces stay on.
-  if (gained.length && region > 1 && !s.flags[`entryKit_${region}`]) {
-    s.flags[`entryKit_${region}`] = true;
-    const ilvl = tierIlvl(region, 0);
-    for (const slot of slotsAt(ilvl)) {
-      const it = { ...makeItem(Math.random, ilvl, 'white', slot), tier: 0, region };
-      const cur = s.equipped[slot];
-      if (!cur || itemScore(cur) < itemScore(it)) s.equipped[slot] = it;
-    }
-    s.hp = maxHp(s);
-  }
+  // 审查修订 C4 → 1.0.10 (Lucas 11-27「按推荐」): a jump into a new region brings what a player who walked there would
+  // carry — that region's shards credited up to tier 3, a tier-3 set, gold for the skipped levels and a full tablet stock.
+  if (gained.length && region > 1) placementKit(s, region, gained[0] - 1, level);
   const prev = s.placement;
   s.placement = { at: t, level: levelFor(top), top: Math.max(top, prev?.top ?? -1), checks: prev?.checks ?? {} };
   s.flags.placeKnown = learnedCount(s);
   s.flags.placeAsked = true;
   run.outcome = { top, level, gained, region, retired, half, gaps, placed };
   return run.outcome;
+}
+
+/** Tier a placed player starts on in the entry region (a player who walked there leaves a region at about 2–3). */
+export const PLACE_KIT_TIER = 3;
+/** Gold for each skipped level: about 25 kills at that level. */
+export const placeKitGold = (from: number, to: number): number => {
+  let g = 0;
+  for (let l = Math.max(1, from) + 1; l <= to; l++) g += 25 * CONFIG.gold.perKill(l);
+  return g;
+};
+
+/** The entry kit of a placement (once per region, flag kit2_<region>): shards up to PLACE_KIT_TIER, a set of that tier
+ *  (better pieces stay on), gold for the levels from `from` to `to`, tablets topped up. Returns what was given. */
+export function placementKit(s: GameState, region: number, from: number, to: number): { tier: number; gold: number; tablets: number } | null {
+  if (region <= 1 || s.flags[`kit2_${region}`]) return null;
+  s.flags[`kit2_${region}`] = true;
+  s.flags[`entryKit_${region}`] = true;
+  const tier = PLACE_KIT_TIER;
+  s.gearKills = { ...(s.gearKills ?? {}) };
+  s.gearKills[String(region)] = Math.max(s.gearKills[String(region)] ?? 0, CONFIG.gear.shardsPerTierSq * tier * tier);
+  const ilvl = tierIlvl(region, tier);
+  for (const slot of slotsAt(ilvl)) {
+    const it = { ...makeItem(Math.random, ilvl, 'white', slot), tier, region };
+    const cur = s.equipped[slot];
+    if (!cur || itemTier(cur, region) < tier || (itemTier(cur, region) === tier && itemScore(cur) < itemScore(it))) s.equipped[slot] = it;
+  }
+  const gold = placeKitGold(from, to);
+  s.gold += gold;
+  const before = count(s, 'tablet');
+  addItem(s, 'tablet', CONFIG.items.tabletCap);
+  s.hp = maxHp(s);
+  return { tier, gold, tablets: count(s, 'tablet') - before };
+}
+
+/** Saves placed before 1.0.10 got only a white tier-0 set: give the kit once for the region the test put them in. */
+export function backfillPlacementKit(s: GameState): ReturnType<typeof placementKit> {
+  if (!s.placement || s.flags.kit2Done) return null;
+  s.flags.kit2Done = true;
+  const region = regionFor(s.placement.level);
+  if (region <= 1) return null;
+  return placementKit(s, region, 1, s.placement.level);
 }
 
 // ---- 推定会 spot checks --------------------------------------------------------------------
