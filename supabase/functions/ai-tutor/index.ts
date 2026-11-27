@@ -124,11 +124,14 @@ const clip = (s: unknown, n: number) => String(s ?? '').slice(0, n);
 const norm = (s: string) => s.toLowerCase().replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss');
 
 /** Is token `t` the form part `p`, or a regular inflection of it? Besides the exact form: up to three more letters
- *  on a stem of 4+ (schön → schöne/schönen, Kind → Kindern, Mann → Mannes, like the game's journal.usesWord), and the
- *  regular Perfekt participle of an -en verb (machen → gemacht, arbeiten → gearbeitet, besuchen → besucht). */
+ *  on a stem of 4+ (schön → schöne/schönen, Kind → Kindern, Mann → Mannes, like the game's journal.usesWord), an
+ *  adjective / case ending on a 3-letter stem (gut → gute, neu → neuen, alt → alter; Tee → Teer still does not count),
+ *  and the regular Perfekt participle of an -en verb (machen → gemacht, arbeiten → gearbeitet; besucht, verkauft
+ *  come in as present forms). */
 function tokenIs(t: string, p: string): boolean {
   if (t === p) return true;
   if (p.length >= 4 && t.startsWith(p) && t.length <= p.length + 3) return true;
+  if (p.length === 3 && t.startsWith(p) && /^(e|en|em|er|es)$/.test(t.slice(3))) return true;
   if (p.length >= 5 && p.endsWith('en')) {
     const st = p.slice(0, -2);
     return t === `ge${st}t` || t === `ge${st}et` || t === `${st}et`;
@@ -161,6 +164,9 @@ async function userId(auth: string): Promise<string | null> {
 /** Unprompted world lines: at most one per user per 10 minutes on this instance (the game sends one per 30 minutes). */
 const WORLD_GAP = 10 * 60_000;
 const lastWorld = new Map<string, number>();
+/** …and at most 20 a minute on this instance in all, so many accounts can't turn the free line into a free model. */
+const WORLD_PER_MIN = 20;
+let worldMin: number[] = [];
 
 async function takeQuota(auth: string, kind: 'grade' | 'duel' | 'essay'): Promise<boolean | 'unauth'> {
   const url = Deno.env.get('SUPABASE_URL')!;
@@ -247,7 +253,7 @@ const OPINION_SYS = `你在一款学德语的游戏里当辩论裁判。怪物�
 // 说服段 (游戏设计 任务, Lucas 2026-11-25): the model plays an NPC the player must talk round, in the duel engine.
 const PERSUADE_SYS = `你在一款学德语的游戏里扮演一个需要被说服的人物，和玩家用简单德语对话（按给的等级调整用词）。
 人物有自己在意的东西（给在「它在意」里）。玩家只有说到点子上（回应你在意的东西、给出合理的理由或让步）你才会被说服；空话、命令、威胁不算。
-称呼规则：场景要求 Sie 时，玩家对你用 du/dich/dir/dein 就是用错了；要求 du 时用 Sie 也算用错。用错时 register_wrong 为 true，你在 de 里用人物的口吻当场指出（例如 „Wir duzen uns nicht.“），这一轮不算数。
+称呼规则：场景要求 Sie 时，玩家对你用 du/dich/dir/dein 就是用错了；要求 du 时用 Sie 也算用错。用错时 register_wrong 为 true，你在 de 里用人物的口吻当场指出（例如 „Wir duzen uns nicht.“），这一轮不算数；这时 note 不要再提称呼（de 里已经说了），note 只写别的错，没有就留空。
 需要论证时（argue=true），玩家要有论点、理由、例子、反驳、结论，缺得多就不被说服。
 第 2 次及以后尝试（attempt≥2）时，在对话里自然透露你在意什么。每次只说一两句。
 note 只针对玩家最新的这一句，前几轮已经纠正过的错误不要再提。zh 按场景译成准确、自然的中文，不要逐词硬译：Termin 是预约、约好的时间或安排（看医生、去办事处、开会），不要译成「约会」（「约会」只用于恋爱的 Date 或朋友间的 Verabredung）；Sie 译「您」，du 译「你」。
@@ -346,7 +352,7 @@ Deno.serve(async (req) => {
     const gl = grammar.length ? `\n本场语法（你说话时自然地用上这些语法，也引玩家用）：${grammar.join('、')}` : '';
     const int = (x: unknown) => Math.max(0, Math.min(50, Math.floor(Number(x) || 0)));
     const round = int(body.round), rounds = int(body.rounds);
-    const rl = rounds && reply ? `\n这是玩家第 ${round}/${rounds} 句${round >= rounds ? '（最后一句：请自然地结束对话；只要场景目标基本达到就把 done 设为 true）' : round === rounds - 1 ? '（还剩一句，往收尾推进）' : ''}` : '';
+    const rl = rounds && round && reply ? `\n这是玩家第 ${round}/${rounds} 句${round >= rounds ? '（最后一句：请自然地结束对话；只要场景目标基本达到就把 done 设为 true）' : round === rounds - 1 ? '（还剩一句，往收尾推进）' : ''}` : '';
     const user = `场景：${clip(body.scene, 1200)}\n玩家等级：${Number(body.level) || 10}${tl}${gl}\n${knownLine(body.known)}\n对话：\n${history.join('\n')}\n玩家：${reply || '（开始对话，你先说）'}${rl}`;
     let out = await chat(DUEL_SYS, user);
     if (!out) return Response.json({ error: 'model' }, { status: 502, headers: h });
@@ -373,6 +379,9 @@ Deno.serve(async (req) => {
       if (!uid) return Response.json({ error: 'login' }, { status: 401, headers: h });
       const t = Date.now();
       if (t - (lastWorld.get(uid) ?? 0) < WORLD_GAP) return Response.json({ error: 'quota' }, { status: 429, headers: h });
+      worldMin = worldMin.filter((x) => t - x < 60_000);
+      if (worldMin.length >= WORLD_PER_MIN) return Response.json({ error: 'quota' }, { status: 429, headers: h });
+      worldMin.push(t);
       lastWorld.set(uid, t);
       if (lastWorld.size > 5000) for (const [k, v] of lastWorld) if (t - v >= WORLD_GAP) lastWorld.delete(k);
     }

@@ -3543,7 +3543,7 @@ export class Controller {
       return;
     }
     // Esc closes a panel even while its text box has focus (先不教 Esc / 先不写 Esc / 放弃 Esc), but not mid-IME.
-    if (e.key === 'Escape' && this.panels.open && !e.isComposing) {
+    if (e.key === 'Escape' && this.panels.open && !e.isComposing && e.keyCode !== 229) {
       e.preventDefault();
       this.panels.close();
       return;

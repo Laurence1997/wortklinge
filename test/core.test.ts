@@ -1111,7 +1111,7 @@ describe('0.5 示例战斗 with 词性三相 (acceptance: right, wrong, soft bef
     CONFIG.damage.roll = [1, 1];
     CONFIG.player.baseCrit = 0;
     try {
-      const rng = makeRng(9);
+      const rng = makeRng(14); // seed re-picked after Bar became die (6f06097) shifted the rng draws
       const s = newGame('T', 'student', T0);
       s.level = 8;
       s.gram = { boards: Object.keys(BOARDS) }; // 语法线 off: this fight is scripted

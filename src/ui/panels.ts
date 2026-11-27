@@ -214,7 +214,7 @@ export class Panels {
           }, '🎤 按住说')
         : null;
       input.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && !e.isComposing) {
+        if (e.key === 'Escape' && !e.isComposing && e.keyCode !== 229) {
           // 不回答 Esc (an Esc that cancels an IME composition is left alone).
           e.preventDefault();
           e.stopPropagation();

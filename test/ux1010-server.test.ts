@@ -19,7 +19,7 @@ beforeAll(async () => {
     const body = init?.body && typeof init.body === 'string' ? JSON.parse(init.body) : init?.body;
     calls.push({ url, body });
     if (url.endsWith('/rpc/ai_take')) return Response.json(true);
-    if (url.endsWith('/auth/v1/user')) return init?.headers?.Authorization === 'Bearer good' ? Response.json({ id: 'u1' }) : new Response('no', { status: 401 });
+    if (url.endsWith('/auth/v1/user')) return String(init?.headers?.Authorization).startsWith('Bearer good') ? Response.json({ id: init.headers.Authorization }) : new Response('no', { status: 401 });
     if (url.includes('languagetool')) return Response.json({ matches: [] });
     return Response.json({ choices: [{ message: { content: JSON.stringify(modelReply) } }] });
   }) as any;
@@ -69,6 +69,16 @@ describe('#25 missing-word reply and lenient matching', () => {
     }
   });
 
+  it('accepts adjective endings on short adjectives (gut, neu)', async () => {
+    for (const [sentence, forms] of [
+      ['Das ist ein guter Plan.', ['gut']],
+      ['Ich habe eine neue Wohnung.', ['neu']],
+    ] as Array<[string, string[]]>) {
+      const { j } = await post({ mode: 'grade', sentence, forms });
+      expect(j.step, sentence).toBe('ai');
+    }
+  });
+
   it('still rejects a short word that is only a prefix of another', async () => {
     const { j } = await post({ mode: 'grade', sentence: 'Ich trinke Teer.', forms: ['Tee', 'Tees'] });
     expect(j.step).toBe('rule');
@@ -111,5 +121,12 @@ describe('#10 world chat quota', () => {
     expect(quotaCalls()).toHaveLength(0);
     const second = await post(persona);
     expect(second.status).toBe(429);
+  });
+
+  it('caps unprompted lines per instance across accounts', async () => {
+    const res = [];
+    for (let i = 0; i < 25; i++) res.push((await post(persona, `Bearer good-${i}`)).status);
+    expect(res.filter((x) => x === 200).length).toBeLessThanOrEqual(20);
+    expect(res).toContain(429);
   });
 });
