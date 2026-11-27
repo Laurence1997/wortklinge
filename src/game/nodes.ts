@@ -12,6 +12,7 @@ import { PARTNER } from '../core/gram/partner';
 import { DUEL } from '../data/grammar/duels';
 import { AI_TUTOR } from '../net/aiTutor';
 import { sceneArtCanvas } from '../ui/sceneArt';
+import { worldMap } from '../ui/worldMap';
 import Phaser from 'phaser';
 import { CONFIG } from '../core/config';
 import { has } from '../core/unlocks';
@@ -418,23 +419,26 @@ export class NodeNav {
     if (this.w.ctrl.uiBlocking() || this.hopping) return;
     const s = this.s;
     const open = (r: number) => r <= this.w.map.region || !!s.flags[`seenArea${r}`] || (r === 2 && !!s.flags.bossKills && s.level >= CONFIG.region2Level) || (r === 3 && !!s.flags.boss2Kills) || (r >= 4 && !!s.flags[`boss${r - 1}Kills`]);
+    const go = (r: number) => {
+      this.w.ctrl.panels.close();
+      if (r === this.w.map.region) this.goHub();
+      else {
+        const hub = SCENE_BY_ID[AREAS.find((a) => a.region === r)!.hub];
+        this.w.ctrl.travel(hub.region, anchorPx(hub));
+      }
+    };
     this.w.ctrl.panels.showBigMap(
       h(
         'div.bigmap',
-        ...AREAS.map((a) =>
-          h(
-            'button.btn' + (a.region === this.w.map.region ? '.primary' : ''),
-            {
-              disabled: !open(a.region),
-              onclick: () => {
-                this.w.ctrl.panels.close();
-                if (a.region === this.w.map.region) this.goHub();
-                else this.w.ctrl.travel(a.region, anchorPx(SCENE_BY_ID[a.hub]));
-              },
-            },
-            `${a.zh} · ${a.de} · ${a.levels}${a.region === this.w.map.region ? '（你在这里，点一下回主城）' : open(a.region) ? '' : '（还没去过）'}`,
-          ),
-        ),
+        worldMap({
+          current: this.w.map.region,
+          level: s.level,
+          open,
+          visited: (r) => r === this.w.map.region || !!s.flags[`seenArea${r}`] || r === 1,
+          killed: (f) => !!s.flags[f],
+          zeroSeen: !!s.flags.zeroSeen,
+          go,
+        }),
         this.waystation(),
       ),
     );
