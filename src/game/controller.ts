@@ -35,7 +35,7 @@ import { hourGold, resetOldTree, resMax, respec, respecCost, spent, talentPoints
 import { noteVisit } from '../core/redname';
 import { BLESSINGS, blessCount, blessScale, bossFloor, canDescend, descend, endRift, offerBlessings, RIFT, riftAct, riftItemLevel, riftOpen, riftWord, silenceLeft, startRift, takeBlessing } from '../core/rift';
 import { makeItem, slotsAt, QUALITY_ZH, rollQuality, SLOT_ZH } from '../core/loot';
-import { applyLoss, applyWin, postFightHeal } from '../core/outcomes';
+import { applyLoss, applyWin, lossTutorialDue, postFightHeal } from '../core/outcomes';
 import { defaultRng, type Rng } from '../core/rng';
 import { gradeLines } from '../core/aiVerdict';
 import { atLeastHalfShare, flushSkill, gapZh, instantGuiming, kindOf, recordAnswer, reviewedByWriting, stageOf, writingCounts } from '../core/srs';
@@ -531,7 +531,8 @@ export class Controller {
         s.flags.teachRest = true;
         break;
       case 4:
-        s.flags.pendingLoss = true;
+        // 入学测试 jumps past Lv4 skip the scripted loss (1.0.11 试玩).
+        if (!quiet || s.level <= 4) s.flags.pendingLoss = true;
         s.flags.teachSkills = true;
         lines.push(
           { who: SYS, text: '【铭刻 Q】下一题难一级，答对伤害 ×1.5，答错丢 1 点言灵。不限次数' },
@@ -649,7 +650,7 @@ export class Controller {
     rotateCard(s, this.rng);
     this.milestone(m.phrase ? 'm_phrase' : m.rare ? 'm_rare' : m.isEcho ? 'm_echo' : `m_${m.word.pos ?? 'n'}`);
     let tutorial: Tutorial = null;
-    if (s.flags.pendingLoss && !m.isEcho) tutorial = 'loss';
+    if (lossTutorialDue(s, m.word.id, !!m.isEcho)) tutorial = 'loss';
 
     // The forced loss uses a dog that bites three times (Lv4 lesson).
     if (tutorial === 'loss') {
@@ -1263,6 +1264,7 @@ export class Controller {
     else b.outcome = 'fled';
 
     if (won) {
+      if (b.tutorial === 'loss') s.flags.pendingLoss = false;
       if (pack.length > 1) {
         pack.forEach((x, i) => { if (!x.settled) this.settleKill(x, ents[i], true); });
         postFightHeal(s);
@@ -1283,7 +1285,9 @@ export class Controller {
       this.scene.teleportToBonfire();
       this.scene.spawnAll();
       const lines: Line[] = [{ who: SYS, text: '火光。焦味。你又回来了。' }];
-      if (has(s.level, 'echo') && !this.inRift) {
+      if (b.tutorial === 'loss' && has(s.level, 'echo') && !this.inRift) {
+        lines.push({ who: SYS, text: '【回响】以后死了，金币和经验会留在打死你的怪身上，打败它就能拿回；再死一次，就没了。这次不算，什么都没丢。' });
+      } else if (has(s.level, 'echo') && !this.inRift && loss.newEcho) {
         lines.push(
           { who: SYS, text: '记住的名字还在。这个，它们拿不走。' },
           { who: SYS, text: `【回响】${loss.newEcho?.gold ?? 0} 金币和 ${loss.newEcho?.xp ?? 0} 经验留在了「${fullForm(b.word)}」身上。打败它就能拿回；再死一次，就没了` },
@@ -3379,8 +3383,9 @@ export class Controller {
     this.bossUI.close();
     setBattleMusic(false);
     this.boss = null;
-    if (f.which === 7) {
-      if (f.outcome === 'win') this.finishLater(f);
+    // 1.0.11 试玩: a lost region 4–12 / 蚀变 boss (which 7) falls through to the usual death below (it left you at 0 HP).
+    if (f.which === 7 && f.outcome === 'win') {
+      this.finishLater(f);
     } else if (f.which === 6) {
       this.finishIdentify(f);
     } else if (f.which === 5) {

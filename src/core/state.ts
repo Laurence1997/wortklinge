@@ -23,6 +23,8 @@ export interface Echo {
   xp: number;
   x: number;
   y: number;
+  /** 1.0.11: the region you died in (the echo stands there, even on a word from another region). Older saves: the word's. */
+  region?: number;
 }
 
 export interface Settings {

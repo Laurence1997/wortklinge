@@ -27,6 +27,9 @@ export const CHALLENGE_CFG = {
   xpMult: 1.75,
 };
 
+/** A challenge monster's level (as startBattle sets it): your level + 2, your level until Lv5. */
+export const challengeLevel = (level: number): number => level + (level <= 5 ? 0 : CHALLENGE_CFG.levelAbove);
+
 /** Optional data the 6000-word list adds to a word (数据整理「常用词表 6000」). */
 export interface WordLayers {
   /** 情境 (about 40 life situations). */

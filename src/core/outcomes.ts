@@ -179,21 +179,33 @@ export interface LossResult {
   newEcho: { gold: number; xp: number } | null;
 }
 
-/** Death: learning progress is never lost; unspent gold and XP stay on the word that killed you. */
+/** Death: learning progress is never lost; unspent gold and XP stay on the word that killed you, where you died.
+ *  The scripted Lv4 loss (tutorial 'loss') costs nothing: no echo, gold and XP stay (1.0.11 试玩). */
 export function applyLoss(s: GameState, b: Battle, at: { x: number; y: number }): LossResult {
   s.stats.deaths += 1;
   s.combo = 0;
   let lostEcho: LossResult['lostEcho'] = null;
   let newEcho: LossResult['newEcho'] = null;
-  if (has(s.level, 'echo') && !b.phrase) {
+  if (has(s.level, 'echo') && !b.phrase && b.tutorial !== 'loss') {
     if (s.echo) lostEcho = { gold: s.echo.gold, xp: s.echo.xp };
     newEcho = { gold: s.gold, xp: s.xp };
-    s.echo = { wordId: b.word.id, gold: s.gold, xp: s.xp, x: at.x, y: at.y };
+    s.echo = { wordId: b.word.id, gold: s.gold, xp: s.xp, x: at.x, y: at.y, region: s.region ?? 1 };
     s.gold = 0;
     s.xp = 0;
   }
   s.hp = maxHp(s);
   return { lostEcho, newEcho };
+}
+
+/** 4 级剧情战败: due on the next plain monster, never on the opening bread or an echo. A player the entry test placed
+ *  past Lv4 never gets it (a flag left over from an older version is dropped here). */
+export function lossTutorialDue(s: GameState, wordId: string, isEcho = false): boolean {
+  if (!s.flags.pendingLoss) return false;
+  if (s.placement && s.placement.level > 4) {
+    delete s.flags.pendingLoss;
+    return false;
+  }
+  return !isEcho && !(wordId === 'brot' && !s.flags.brotDone);
 }
 
 export function postFightHeal(s: GameState): void {
