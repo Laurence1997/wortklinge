@@ -353,6 +353,11 @@ ADDED_AFTER_SHEET = {'morgen'}
 # ---- build ------------------------------------------------------------------------------------------------------
 def main():
     words_tsv = {r['排名']: r for r in read_tsv('wortschatz.tsv')}
+    # 反身动词 (Lucas 2026-11-27): 'sich ~' / '(sich) ~' / 'sich ~ lassen', the reflexive's case when it is the
+    # dative (sich etwas merken) and the usual preposition. The word id and the typed answer stay the bare verb.
+    reflexive = {r['原形'].strip(): r for r in read_tsv('reflexiv.tsv')}
+    # Lowest Goethe-Zertifikat list (A1/A2/B1) the lemma is on, '' = none (scripts/goethe_levels.py).
+    goethe = {r['原形'].strip(): r['Goethe'].strip() for r in read_tsv('goethe-stufe.tsv')}
     # The scene sheet was cut from an older rank order; find each word by its lemma (closest rank wins),
     # so inserted words (morgen, 2026-11-25) don't shift everything after them.
     rows_by_lemma = defaultdict(list)
@@ -599,6 +604,12 @@ def main():
             if s[0] not in [t[0] for t in sents]:
                 sents.append(s)
         w['_sents'] = sents
+        w['goethe'] = goethe.get(de, '')
+        rf = reflexive.get(de) if pos == 'v' else None
+        if rf:
+            form = rf['形式'].strip()
+            w['refl'] = (form if '~' in form else form + ' ~') + ('|Dat' if rf['格'].strip() == 'Dat' else '')
+            w['prep'] = rf['搭配'].strip()
         by_lemma.setdefault(de, wid)
         words.append(w)
         return w
@@ -659,6 +670,26 @@ def main():
         words_by_id[w['id']] = w
         s['words'].append(w['id'])
         print('added from list:', r['原形'], '->', s['id'], file=sys.stderr)
+
+    # 推后 (Lucas 2026-11-27): words the scene sheet put in A1 although no Goethe list up to B1 has them (Friedhof's
+    # neighbours Ewigkeit, Seele, Kerl ...) move to a B1 scene (regions 9–12) of the same situation with the fewest
+    # words. Diary blank words stay where their page is. Ids stay the same, so saves keep their progress.
+    b1_scenes = [s for s in scene_list if 9 <= s['region'] <= 12 and s['region'] in MAP_REGIONS and s['words']]
+    for r in read_tsv('verschoben.tsv'):
+        wid = by_lemma.get(r['原形'].strip())
+        w = words_by_id.get(wid)
+        if not w or w['region'] > 3:
+            continue
+        old = scene_by_id[w['scene']]
+        old['words'].remove(wid)
+        cands = [s for s in b1_scenes if s['situation'] == w['situation']] or b1_scenes
+        s = min(cands, key=lambda c: len(c['words']))
+        w.update(region=s['region'], zone=s['zone'], scene=s['id'], lvl=max(words_by_id[i]['lvl'] for i in s['words']))
+        w.pop('batch', None)
+        if len(s['words']) >= FIRST_BATCH:
+            w['batch'] = 2
+        s['words'].append(wid)
+        print('moved to B1:', w['de'], old['id'], '->', s['id'], w['lvl'], file=sys.stderr)
 
     # 蚀变: host scenes.
     host_of_word = {}
@@ -791,7 +822,8 @@ def main():
         f = [w['id'], w['de'], w.get('art', ''), '+' if w.get('plOnly') else w.get('pl', ''), w['zh'], w['pos'], w['family'],
              str(w['lvl']), w['zone'], w['scene'], str(w['region']), str(w.get('erode', '')), str(w.get('batch', '')),
              w.get('after', ''), w.get('digit', ''), str(w['order']), str(w['rank']), w.get('reg', ''), '1' if w.get('art_pool') else '',
-             w.get('ex', ''), w.get('situation', ''), w.get('cat', ''), w.get('look', '')]
+             w.get('ex', ''), w.get('situation', ''), w.get('cat', ''), w.get('look', ''),
+             w.get('refl', ''), w.get('prep', ''), w.get('goethe', '')]
         for v in f:
             assert '\t' not in v, v
         return '\t'.join(v.replace('\t', ' ') for v in f)

@@ -87,7 +87,7 @@ import { PERSUADE, PERSUADE_SCENES, type PersuadeScene } from '../core/persuade'
 import { ltCheck } from '../net/languageTool';
 import { berlinHour, CHARM, CHARM_BY_ID, equippedCharms, grantSlang, rotateCard, shoutCharm, SLANG, slangOwed, type ShoutResult } from '../core/charms';
 import { cleared, floorRun, floorsOf, GRAM_DUNGEON, markCleared, type DungeonKind, type Floor } from '../core/gram/dungeons';
-import { fullForm, hasArticleQuestion, WORD_BY_ID, WORDS, zhWithPos } from '../data/words';
+import { fullForm, fullFormLong, hasArticleQuestion, WORD_BY_ID, WORDS, zhWithPos } from '../data/words';
 import { initAudio, setBattleMusic, setVolumes, sfx, speak, speechAvailable, hasGermanVoice } from './audio';
 import type { MonsterEntity, WorldScene } from './WorldScene';
 import type { RegionId } from './map';
@@ -1145,7 +1145,7 @@ export class Controller {
           this.speak(fullForm(b.word));
         } else if (res.kill.guiming) {
           sfx.guiming();
-          banner('归名', `${fullForm(b.word)} · ${b.word.zh}`);
+          banner('归名', `${fullFormLong(b.word)} · ${b.word.zh}`);
           this.speak(fullForm(b.word));
         }
         if (res.card) this.achieve('card1');

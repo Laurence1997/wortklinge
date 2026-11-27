@@ -14,7 +14,7 @@ function build(): Word[] {
   const situation = new Map<string, string>();
   for (const [, , , , sit, ids] of LEX_SCENES) for (const id of ids) situation.set(id, sit);
   const out: Word[] = LEX_ROWS.split('\n').map((line) => {
-    const [id, de, art, pl, zh, pos, family, lvl, zone, scene, region, erode, batch, after, digit, , , , , ex, sit, cat, look] = line.split('\t');
+    const [id, de, art, pl, zh, pos, family, lvl, zone, scene, region, erode, batch, after, digit, , , , , ex, sit, cat, look, refl, prep, goethe] = line.split('\t');
     const w: Word = { id, de, zh, pos: pos as Pos, family: family as FamilyId, lvl: +lvl, zone: zone as ZoneId, region: +region as RegionNo, scene };
     if (art) w.art = art as Article;
     if (pl === '+') w.plOnly = true;
@@ -27,6 +27,9 @@ function build(): Word[] {
     if (ex) w.ex = ex;
     if (cat) w.cat = cat;
     if (look) w.look = look;
+    if (refl) w.refl = refl;
+    if (prep) w.prep = prep;
+    if (goethe) w.goethe = goethe as Word['goethe'];
     // The word's own situation (列「情境」), else its scene's.
     if (pos === 'n' && !erode && w.pl && w.pl !== '-' && MOECHTE_SITUATIONS.has(sit || (situation.get(id) ?? ''))) w.moechte = true;
     return w;
@@ -77,7 +80,24 @@ export function sceneByWords(items: Array<{ key: string; ids: string[] }>): Map<
 
 /** Display form with article: "der Tee", "die Eltern", "Hallo". */
 export function fullForm(w: Word): string {
+  if (w.refl) return w.refl.split('|')[0].replace('~', w.de);
   return w.art ? `${w.art} ${w.de}` : w.de;
+}
+
+/** What a reflexive verb goes with, for the answer and the word book: "sich 用第三格 · an + Akk". Empty for other words. */
+export function reflNote(w: Word): string {
+  if (!w.refl) return '';
+  const parts: string[] = [];
+  if (w.refl.endsWith('|Dat')) parts.push('sich 是第三格（mir / dir）');
+  else if (w.refl.startsWith('(')) parts.push('有的意思要带 sich');
+  if (w.prep) parts.push(w.prep);
+  return parts.join(' · ');
+}
+
+/** fullForm plus the reflexive note: "sich gewöhnen（an + Akk）". */
+export function fullFormLong(w: Word): string {
+  const n = reflNote(w);
+  return n ? `${fullForm(w)}（${n}）` : fullForm(w);
 }
 
 export function genderOf(w: Word): 'm' | 'f' | 'n' | 'pl' | null {

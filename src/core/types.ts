@@ -20,6 +20,13 @@ export interface Word {
   cat?: string;
   /** 专属造型: the art pack tile of this very thing ('f8' = Tiny Farm 8), used when the art packs have it. */
   look?: string;
+  /** 反身动词 (Lucas 2026-11-27): how sich goes with the verb — 'sich ~' (always), '(sich) ~' (one of its senses),
+   *  'sich ~ lassen'; '|Dat' when sich is the dative (sich etwas merken). `de` stays the bare verb. */
+  refl?: string;
+  /** The preposition a reflexive verb usually takes: 'an + Akk'. */
+  prep?: string;
+  /** Lowest Goethe-Zertifikat word list the lemma is on ('A1' / 'A2' / 'B1'); absent = none of them. */
+  goethe?: 'A1' | 'A2' | 'B1';
   /** Monster level = recommended level of the field it lives in. */
   lvl: number;
   zone: ZoneId;

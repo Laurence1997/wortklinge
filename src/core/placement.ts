@@ -12,12 +12,12 @@
 // Entry level = top level of the highest passed band + 1 (at most the level cap). Only ever raises the level.
 
 import { CONFIG } from './config';
-import { gradeTyped, levenshtein, normalize, type Verdict } from './grading';
+import { gradeTyped, levenshtein, normalize, stripRefl, type Verdict } from './grading';
 import { shuffle, type Rng } from './rng';
 import { retire, stageOf } from './srs';
 import { maxHp, now, type GameState } from './state';
 import type { Word, WordProgress } from './types';
-import { hasArticleQuestion, WORDS } from '../data/words';
+import { fullForm, hasArticleQuestion, WORDS } from '../data/words';
 import { sameMeaning } from './screen';
 import { itemScore, makeItem, slotsAt } from './loot';
 import { tierIlvl } from './forge';
@@ -63,6 +63,20 @@ export function placeWords(): Word[] {
   return WORDS.filter((w) => !w.tutorial && w.family !== 'truhe' && w.pos !== 'phr' && w.lvl <= PLACE_CAP);
 }
 
+/** 入学测试 asks only words whose Goethe list matches the game's own level (Lucas 2026-11-27): A1 words in 1–30,
+ *  A2 in 31–80, B1 in 81–120, none of the three above 120. Friedhof at level 25 is on no list up to B1, so a player
+ *  who doesn't know it would be placed too low. A band left with too few such words falls back to all its words. */
+export function fitsGoethe(w: Pick<Word, 'lvl' | 'goethe'>): boolean {
+  const want = w.lvl <= 30 ? 'A1' : w.lvl <= 80 ? 'A2' : w.lvl <= 120 ? 'B1' : undefined;
+  return w.goethe === want;
+}
+
+/** Of these words, the ones that fit the Goethe level, unless that leaves fewer than `min`. */
+function goetheFirst<T extends Pick<Word, 'lvl' | 'goethe'>>(ws: T[], min: number): T[] {
+  const fit = ws.filter(fitsGoethe);
+  return fit.length >= min ? fit : ws;
+}
+
 /** Bands: 3 levels each up to 30 (A1, unchanged so old saves keep their band keys), then 5 levels each (A2, B1; edges on 80 and 120). */
 const A1_BANDS = 30 / 3;
 export function bandOf(w: Pick<Word, 'lvl'>): number {
@@ -106,7 +120,8 @@ function known(s: GameState, w: Word): boolean {
 /** Sample words per band for the self-pick screen (most useful first: list order). */
 export function bandSamples(): Word[][] {
   const out: Word[][] = Array.from({ length: bandCount() }, () => []);
-  for (const w of placeWords()) {
+  const ws = placeWords();
+  for (const w of [...ws.filter(fitsGoethe), ...ws.filter((x) => !fitsGoethe(x))]) {
     const b = out[bandOf(w)];
     if (b.length < PLACE.samples && (w.pos === 'n' || w.pos === 'v' || w.pos === 'adj')) b.push(w);
   }
@@ -162,7 +177,7 @@ export interface PlaceRun {
 }
 
 function bandQueue(s: GameState, band: number, rng: Rng, exclude: Set<string>): Word[] {
-  return shuffle(rng, placeWords().filter((w) => bandOf(w) === band && !known(s, w) && !exclude.has(w.id)));
+  return shuffle(rng, goetheFirst(placeWords().filter((w) => bandOf(w) === band && !known(s, w) && !exclude.has(w.id)), PLACE.per + PLACE.extra));
 }
 
 function askedIds(run: PlaceRun): Set<string> {
@@ -276,7 +291,7 @@ export function pickBoard(s: GameState, rng: Rng): PickBoard {
   const knownBands: number[] = [];
   pools.forEach((pool, b) => {
     if (!pool.length) return knownBands.push(b);
-    for (const w of shuffle(rng, pool.slice(0, 15)).slice(0, PLACE.pickPer)) items.push({ key: w.id, label: w.art ? `${w.art} ${w.de}` : w.de, band: b, word: w });
+    for (const w of shuffle(rng, goetheFirst(pool, PLACE.pickPer).slice(0, 15)).slice(0, PLACE.pickPer)) items.push({ key: w.id, label: fullForm(w), band: b, word: w });
   });
   const fakes = shuffle(rng, FAKE_WORDS).slice(0, FAKES_SHOWN);
   fakes.forEach((f, i) => items.push({ key: `fake:${f}`, label: f, band: Math.floor(((i + 0.5) / fakes.length) * n), fake: true }));
@@ -328,7 +343,7 @@ export function gradePlace(input: string, w: Word): { res: Exclude<PlaceRes, 'sk
     if (v.ok) return { res: 'ok', verdict: v, wrote: c };
   }
   const verdict = gradeTyped(input, w, hasArticleQuestion(w));
-  const nIn = normalize(input);
+  const nIn = stripRefl(normalize(input), w);
   const nDe = normalize(w.de);
   const bare = w.art ? nIn.replace(/^(der|die|das|den|dem|des) /, '') : nIn;
   const longEnough = nDe.replace(/ /g, '').length >= 4;

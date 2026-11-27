@@ -17,7 +17,7 @@ import { SAYINGS, SAYING_CFG } from '../data/sayings';
 import { MASTERY, masteryFree, masteryIn, masteryPts, spendMastery, type MasteryTrack } from '../core/mastery';
 import { BRANCHES, canLearn, canLight, learn, learned, lightStar, litStars, ROW_GATE, spent, spentIn, STARS, STARS_FROM, starsPassed, talentPoints, TALENT_FROM_LEVEL, TALENT_TREE, type Branch } from '../core/classes';
 import { finishStarTrial, starTrial, STAR_TRIAL } from '../core/stars';
-import { fullForm, genderOf, hasArticleQuestion, WORD_BY_ID, WORDS, zhWithPos } from '../data/words';
+import { fullForm, fullFormLong, genderOf, reflNote, hasArticleQuestion, WORD_BY_ID, WORDS, zhWithPos } from '../data/words';
 import type { Controller } from '../game/controller';
 import { $, clear, h, umlautButtons } from './dom';
 import { BREAK, examParts, examPassed, PART_ZH, type Exam } from '../core/breakthrough';
@@ -929,7 +929,7 @@ export class Panels {
         fb.append(
           h('b', '这个留到野外学。'),
           h('span.note', `你写的：${l.input || '（空）'}`),
-          h('span.note', h('b', `正确写法：${fullForm(l.word)}`)),
+          h('span.note', h('b', `正确写法：${fullFormLong(l.word)}`)),
         );
       wrap.append(fb);
     }
@@ -1382,6 +1382,7 @@ export class Panels {
           h('div.w', seen && g ? h(`span.art-mark.${g}`) : '', h(`span${seen && g ? '.art-' + g : ''}`, seen ? fullForm(w) : '？？？')),
           h('div.z', seen ? w.zh : FAMILIES[w.family].zh),
           seen && w.pl && w.pl !== '-' && st >= 2 ? h('div.small.muted', `复数 die ${w.pl}`) : '',
+          seen && reflNote(w) ? h('div.small.muted', reflNote(w)) : '',
         ),
       );
     }
@@ -1488,7 +1489,7 @@ export class Panels {
         tb.append(
           h(
             'tr',
-            h('td', h(`span${gk ? '.art-' + gk : ''}`, fullForm(w))),
+            h('td', h(`span${gk ? '.art-' + gk : ''}`, fullFormLong(w))),
             h('td', w.zh, p.mix?.length ? h('span.small.muted', { title: '词族秘境里答混过' }, ` · 易混：${p.mix.map((x) => WORD_BY_ID[x]?.de ?? x).join('、')}`) : ''),
             h('td', w.pl && w.pl !== '-' ? `die ${w.pl}` : '—'),
             h('td', p.read ? '✓' : '—'),
