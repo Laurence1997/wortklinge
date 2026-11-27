@@ -63,6 +63,9 @@ export interface MonsterEntity {
 const SPEED = 72;
 const FONT = '"Courier New", ui-monospace, monospace';
 
+/** The map's fog border (map.ts: 2 tiles, plus a ragged third) in world pixels, kept outside the camera. */
+const FOG_EDGE = 3 * TILE;
+
 export class WorldScene extends Phaser.Scene {
   ctrl!: Controller;
   /** 各区色调: this map's 5-step ramp, or null for the classic red (src/game/palette.ts). */
@@ -141,7 +144,8 @@ export class WorldScene extends Phaser.Scene {
     this.add.image(0, 0, 'map').setOrigin(0, 0).setDepth(-2);
     const W = MAP_W * TILE;
     const H = MAP_H * TILE;
-    this.cameras.main.setBounds(0, 0, W, H);
+    // 雾边不进镜头 (Lucas 2026-11-27: 顶部灰白空带难看): the map's 2–3 tile fog border stays just off screen.
+    this.cameras.main.setBounds(FOG_EDGE, FOG_EDGE, W - 2 * FOG_EDGE, H - 2 * FOG_EDGE);
     applyTheme(this.bright, region);
     setMusicMood(this.bright, region);
     this.cameras.main.setBackgroundColor(this.bright ? BRIGHT[region].fog : PAL.void);
@@ -197,7 +201,8 @@ export class WorldScene extends Phaser.Scene {
       this.add
         // 美术小修 A (2026-11-26): on bright maps two short lines instead of one long one, so neighbouring zone names
         // no longer run into each other.
-        .text((z.rect.x + z.rect.w / 2) * TILE, (z.rect.y + 1.2) * TILE, this.bright ? `${z.zh} · ${z.levels}\n${z.de}` : `${z.de} · ${z.zh} · ${z.levels}`, {
+        .text((z.rect.x + z.rect.w / 2) * TILE, Math.max((z.rect.y + 1.2) * TILE, FOG_EDGE + 9), // 雾边不进镜头: top-row names stay on screen
+           this.bright ? `${z.zh} · ${z.levels}\n${z.de}` : `${z.de} · ${z.zh} · ${z.levels}`, {
           fontFamily: FONT,
           fontSize: '8px',
           color: this.bright ? '#4a3420' : '#5a2a2e',
@@ -245,8 +250,10 @@ export class WorldScene extends Phaser.Scene {
   fitZoom() {
     const w = this.scale.width;
     // Scene map: zoomed out so most of the route (and the next scenes) fits on screen; walking keeps the close view.
-    if (this.nodes) this.cameras.main.setZoom(w < 1100 ? 1.5 : 2);
-    else this.cameras.main.setZoom(w < 900 ? 2 : w > 1700 ? 4 : 3);
+    const want = this.nodes ? (w < 1100 ? 1.5 : 2) : w < 900 ? 2 : w > 1700 ? 4 : 3;
+    // A very wide or tall window would otherwise see past the bounds (the fog) on both sides: zoom in just enough.
+    const fill = Math.max(w / (MAP_W * TILE - 2 * FOG_EDGE), this.scale.height / (MAP_H * TILE - 2 * FOG_EDGE));
+    this.cameras.main.setZoom(Math.max(want, fill));
   }
 
   // ---- Monsters ------------------------------------------------------------
