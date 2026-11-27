@@ -470,7 +470,8 @@ export class Controller {
     if (level >= 75 && level <= 125) void loadArticlesB1();
     void track();
     const s = this.state;
-    this.milestone(`lv${level}`);
+    // 入学测试 jumps record one line (place<N>) instead of 升到2 … 升到25 all at the same minute (Lucas 11-27 log).
+    if (!quiet) this.milestone(`lv${level}`);
     if (!quiet) {
       sfx.levelUp();
       banner(`Lv ${level}`, (UNLOCK_TEXT[level] ?? [])[0] ?? '');
@@ -1953,6 +1954,7 @@ export class Controller {
       stopPlacement(run);
       const o = applyPlacement(this.state, run, undefined, { daily });
       for (const l of o.gained) this.onLevelUp(l, true);
+      if (o.gained.length) this.milestone(`place${o.gained[o.gained.length - 1]}`);
       this.refresh();
       this.persist();
     }
@@ -1966,6 +1968,7 @@ export class Controller {
       stopPlacement(run);
       const o = applyPlacement(s, run, undefined, { daily });
       for (const l of o.gained) this.onLevelUp(l, true);
+      if (o.gained.length) this.milestone(`place${o.gained[o.gained.length - 1]}`);
     }
     s.flags.placeAsked = true;
     this.refresh();

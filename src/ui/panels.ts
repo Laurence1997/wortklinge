@@ -1632,7 +1632,7 @@ export class Panels {
     // 开局计时 (0.5): the active-play minute each thing first happened, for the 60-minute rhythm check.
     const ms = Object.entries(s.flags).filter(([k]) => k.startsWith('ms_')).sort((a, b) => Number(a[1]) - Number(b[1]));
     if (ms.length) {
-      const MS: Record<string, string> = { lv: '升到', q_: '题型：', mv_: '招式：', m_: '遇到：', z_: '第一次在这片打怪：', gear: '装备升到第', drop: '第一次掉装备', card: '第一张短句卡', guiming: '第一次归名', duel: '第一次默写对决', screen: '第一次全量筛选', cut: '第一次斩杀', bonfire: '第一次篝火休息', shadow: '第一次跟读成功' };
+      const MS: Record<string, string> = { lv: '升到', place: '入学测试定级到 ', q_: '题型：', mv_: '招式：', m_: '遇到：', z_: '第一次在这片打怪：', gear: '装备升到第', drop: '第一次掉装备', card: '第一张短句卡', guiming: '第一次归名', duel: '第一次默写对决', screen: '第一次全量筛选', cut: '第一次斩杀', bonfire: '第一次篝火休息', shadow: '第一次跟读成功' };
       const label = (k: string) => { const key = k.slice(3); const p = Object.keys(MS).find((x) => key.startsWith(x)); return p ? `${MS[p]}${key.slice(p.length)}` : key; };
       const lines = ms.map(([k, v]) => `${String(v).padStart(5)} 分  ${label(k)}`);
       wrap.append(h('h3', `开局计时（累计游玩 ${Math.round(((s.flags.playSec as number) ?? 0) / 60)} 分钟）`), h('pre.small', lines.join('\n')));
