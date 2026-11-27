@@ -16,7 +16,7 @@ const FLAG: Record<Consumable, string> = { hint: 'invHint', tablet: 'invTablet' 
 
 export const CONSUMABLE: Record<Consumable, { zh: string; de: string; acc: string; use: string; noun: ShopNoun }> = {
   hint: { zh: '低语纸条', de: 'der Zettel', acc: 'einen Zettel', noun: { de: 'Zettel', g: 'm', model: 'indef' }, use: '答题时按 W（打字时按 ?）：给一个提示，这题不算会写' },
-  tablet: { zh: '药片', de: 'die Tablette', acc: 'eine Tablette', noun: { de: 'Tablette', g: 'f', model: 'indef' }, use: `选招时按 H：回 ${Math.round(CONFIG.items.tabletHeal * 100)}% 生命，不占回合` },
+  tablet: { zh: '药片', de: 'die Tablette', acc: 'eine Tablette', noun: { de: 'Tablette', g: 'f', model: 'indef' }, use: `选招和作答时都能用（按 H）：立刻回 ${Math.round(CONFIG.items.tabletHeal * 100)}% 生命，不占回合` },
 };
 
 /** The bar opens with 低语 (Lv4). */
