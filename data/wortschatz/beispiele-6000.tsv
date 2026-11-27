@@ -1119,7 +1119,7 @@ bereits	2	Das habe ich ihm bereits gesagt.	我已经跟他说过这件事了。	
 bereits	3	Es ist bereits Zeit, nach Hause zu gehen.	已经到该回家的时间了。	Tatoeba #10056635 · wolfgangth	已经	
 möglich	1	Ist es möglich, den Termin auf nächste Woche zu verschieben?	能把预约改到下周吗？	自写	可能的	
 möglich	2	Ist das wirklich möglich?	这真的有可能吗？	Tatoeba #3861278 · Pfirsichbaeumchen	可能的	
-möglich	3	Ein Termin am Montag ist möglich.	周一安排时间是可以的。	Luna 写	可能的	
+möglich	3	Ein Termin am Montag ist möglich.	周一可以预约。	Luna 写	可能的	
 beginnen	1	Der Unterricht beginnt um acht, also muss ich früh aufstehen.	课八点开始，所以我得早起。	自写	开始	
 beginnen	2	Morgen werde ich eine neue Arbeit beginnen.	我明天要开始一份新工作。	Tatoeba #4859005 · al_ex_an_der	开始	
 beginnen	3	Der Film beginnt gleich.	电影马上就开始。	Luna 写	开始	
@@ -1436,7 +1436,7 @@ trinken	3	Nach dem Essen trinke ich einen Tee.	饭后我喝一杯茶。	Luna 写
 trinken	4	Ich trinke meinen Tee gerne mit Milch.	我喜欢喝加牛奶的茶。	Tatoeba #7883037 · Pfirsichbaeumchen	喝	mit + Dat.
 trinken	5	Wir trinken aus großen Gläsern.	我们用大杯子喝。	Luna 写	喝	aus + Dat.
 ändern	1	Kann man die Reservierung noch ändern?	预订还能改吗？	自写	改变，修改	etwas ändern
-ändern	2	Die Zeiten haben sich geändert.	时间安排已经变了。	Tatoeba #3046992 · Pfirsichbaeumchen	发生变化	sich ändern
+ändern	2	Die Zeiten haben sich geändert.	时代已经变了。	Tatoeba #3046992 · Pfirsichbaeumchen	发生变化	sich ändern
 ändern	3	Wir ändern heute den Speiseplan.	我们今天要改一下菜单。	Luna 写	改变，修改	etwas ändern
 ändern	4	Ich muss noch etwas an dem Text ändern.	我还得修改一下这篇文章。	动介搭配表	改变，修改	ändern an + Dat.
 Kaffee	1	Ohne meinen Kaffee am Morgen kann ich nicht arbeiten.	早上不喝咖啡我就没法工作。	自写	咖啡	Kaffee am Morgen
@@ -3608,7 +3608,7 @@ begleiten	2	Er begleitet mich auf allen meinen Reisen.	他陪伴我踏上所有�
 begleiten	3	Meine Eltern haben mich zum Flughafen begleitet.	我父母陪我去了机场。	Tatoeba #10202981 · Yorwba	陪同；陪伴	jemanden zu + Dat. begleiten
 begleiten	4	Die Gitarre begleitet den Sänger bei seinem Auftritt.	吉他为这位歌手的演出伴奏。	Luna 写	伴奏	jemanden bei + Dat. begleiten
 Geheimnis	1	Kannst du ein Geheimnis für dich behalten?	你能保守秘密吗？	自写	秘密	ein Geheimnis für sich behalten
-Geheimnis	2	Ich kann ein Geheimnis für mich behalten.	我能替自己保守一个秘密。	Tatoeba #2130900 · Pfirsichbaeumchen	秘密	ein Geheimnis für sich behalten
+Geheimnis	2	Ich kann ein Geheimnis für mich behalten.	我能保守秘密。	Tatoeba #2130900 · Pfirsichbaeumchen	秘密	ein Geheimnis für sich behalten
 Banane	1	Morgens esse ich nur eine Banane, weil ich keine Zeit habe.	早上我只吃根香蕉，因为没时间。	自写	香蕉	
 Banane	2	Was kosten diese Bananen?	这些香蕉多少钱？	Tatoeba #10285281 · Pfirsichbaeumchen	香蕉	
 Banane	3	Für den Kuchen brauche ich zwei Bananen.	做蛋糕我需要两根香蕉。	Luna 写	香蕉	
@@ -4587,7 +4587,7 @@ Westen	2	Wir gehen nach Westen.	我们往西走。	Tatoeba #5221219 · Esperanto
 Westen	3	Meine Schwester wohnt jetzt im Westen.	我姐姐现在住在西部。	Luna 写	西部	im Westen
 Westen	4	Sie sind viel besser als die Bäder im Westen.	它们比西方的浴室好得多。	Tatoeba #2075164 · Tamy	西方	im Westen
 Hass	1	Im Internet gibt es leider viel Hass gegen Ausländer.	可惜网上有很多针对外国人的仇恨。	自写	仇恨	Hass gegen + Akk.
-Hass	2	Der Hass auf andere ist ihm fremd.	他对别人的仇恨感到陌生。	Tatoeba #13052466 · Stuhr	仇恨	Hass auf + Akk.
+Hass	2	Der Hass auf andere ist ihm fremd.	他心里没有对别人的仇恨。	Tatoeba #13052466 · Stuhr	仇恨	Hass auf + Akk.
 Shop	1	Den Pullover habe ich im Online-Shop bestellt, aber er ist zu klein.	这件毛衣是我在网店订的，可惜太小了。	自写	网店	im Online-Shop
 Shop	2	Der Shop liefert kostenlos nach Hause.	这家网店免费送货上门。	Luna 写	网店，商店	
 senden	1	Bitte senden Sie uns die Rechnung per E-Mail zu.	请通过电子邮件把账单发给我们。	自写	发送	jemandem etwas zusenden
@@ -5394,7 +5394,7 @@ platt	1	Mein Fahrrad hat einen platten Reifen, deshalb komme ich zu Fuß.	我自
 platt	2	Der Ball ist schon wieder platt.	球又没气了。	Luna 写	没气的（轮胎）	
 platt	3	Mein Hinterreifen ist leider platt.	我的后轮胎没气了，真倒霉。	Luna 写	没气的（轮胎）	
 platt	4	Ich bin sehr platt von gestern.	我昨天累坏了。	Tatoeba #13664260 · Vortarulo	累坏的；筋疲力尽的	
-platt	5	Meine Eltern wohnen auf dem platten Land.	我父母住在平坦的乡村地区。	Tatoeba #1500494 · Esperantostern	平坦的	
+platt	5	Meine Eltern wohnen auf dem platten Land.	我父母住在乡下。	Tatoeba #1500494 · Esperantostern	平坦的	
 Fahrkarte	1	Die Fahrkarte kann man auch am Automaten im Bus kaufen.	车票也可以在公交车上的售票机买。	自写	车票	
 Fahrkarte	2	Was kostet die Fahrkarte?	这张车票多少钱？	Tatoeba #2272533 · Zaghawa	车票	
 Fahrkarte	3	Wo kann man Fahrkarten kaufen?	在哪里可以买车票？	Tatoeba #10849326 · Yorwba	车票	
@@ -5733,7 +5733,7 @@ Schönheit	2	Als junge Frau war sie eine Schönheit.	她年轻时是个美人。
 zudem	1	Die Wohnung ist zu klein, zudem ist sie sehr laut.	房子太小了，而且很吵。	自写	此外；而且	
 zudem	2	Das ist zudem ein ausgesprochen teures System.	此外，这还是一个特别昂贵的系统。	Tatoeba #2217609 · al_ex_an_der	此外；而且	
 Klinik	1	Meine Tante liegt seit einer Woche in der Klinik.	我姑姑住院一周了。	自写	诊所；医院	liegen in + Dat.
-Klinik	2	Arbeitest du in dieser Klinik?	你在这家诊所工作吗？	Tatoeba #6401884 · wolfgangth	诊所；医院	arbeiten in + Dat.
+Klinik	2	Arbeitest du in dieser Klinik?	你在这家医院工作吗？	Tatoeba #6401884 · wolfgangth	诊所；医院	arbeiten in + Dat.
 reparieren	1	Kannst du mir helfen, das Fahrrad zu reparieren? Die Kette ist kaputt.	你能帮我修自行车吗？链条坏了。	自写	修理；修复	reparieren + Akk.
 reparieren	2	Ich muss wirklich meine Uhr reparieren lassen.	我真的得找人修一下我的手表。	Tatoeba #1347819 · Manfredo	修理；修复	etwas reparieren lassen
 Mittwoch	1	Am Mittwoch habe ich nur eine Vorlesung, danach gehe ich arbeiten.	周三我只有一节课，之后去上班。	自写	星期三	am Mittwoch
@@ -5942,7 +5942,7 @@ Sofa	1	Wenn du willst, kannst du heute Nacht bei uns auf dem Sofa schlafen.	你�
 Sofa	2	Er liegt auf dem Sofa und liest.	他躺在沙发上看书。	Tatoeba #5885516 · Pfirsichbaeumchen	沙发	auf dem Sofa liegen
 verlegen	1	Als sie ihn nach seiner Freundin fragte, wurde er ganz verlegen.	她问起他女朋友时，他一下子很不好意思。	自写	尴尬的	verlegen werden
 verlegen	2	Ich habe meine Schlüssel verlegt.	我把钥匙放错地方了。	Tatoeba #8636828 · Melang	放错地方；弄丢	etwas verlegen
-verlegen	3	Ich habe den Termin verlegt.	我把约定改期了。	Tatoeba #12416983 · mayabe	改期；推迟	einen Termin verlegen
+verlegen	3	Ich habe den Termin verlegt.	我把预约改期了。	Tatoeba #12416983 · mayabe	改期；推迟	einen Termin verlegen
 verlegen	4	Das Büro wird nächstes Jahr nach Berlin verlegt.	办公室明年将搬迁到柏林。	Luna 写	搬迁	etwas nach + Akk. verlegen
 herrlich	1	Das Wetter war herrlich, deshalb haben wir den ganzen Tag draußen verbracht.	天气好极了，所以我们一整天都待在外面。	自写	美妙的	
 herrlich	2	Es war herrlich, nichts zu tun.	什么都不做真是太惬意了。	Tatoeba #2466653 · freddy1	美妙的	
@@ -6798,7 +6798,7 @@ Argument	2	Das ist ein gutes Argument.	这是一个很好的论据。	Tatoeba #1
 Brand	1	Bei dem Brand in der Nachbarwohnung wurde zum Glück niemand verletzt.	邻居家着火，幸好没人受伤。	自写	火灾	
 Brand	2	Das Haus ist in Brand geraten.	房子着火了。	Tatoeba #551698 · al_ex_an_der	火灾	in Brand geraten
 Konflikt	1	Den Konflikt mit dem Nachbarn konnten wir endlich in einem ruhigen Gespräch lösen.	我们终于通过心平气和的谈话解决了和邻居的矛盾。	自写	冲突；争端	Konflikt mit + Dat.
-Konflikt	2	Ihr Freund ist im Konflikt mit dem Gesetz.	她的朋友与法律有冲突。	Tatoeba #6459480 · Pfirsichbaeumchen	（与法律等的）冲突	im Konflikt mit + Dat.
+Konflikt	2	Ihr Freund ist im Konflikt mit dem Gesetz.	她的朋友触犯了法律。	Tatoeba #6459480 · Pfirsichbaeumchen	（与法律等的）冲突	im Konflikt mit + Dat.
 Schicht	1	Meine Mutter arbeitet im Krankenhaus oft in der Nachtschicht.	我妈妈在医院常上夜班。	自写	班次；轮班	
 Schicht	2	Eine dünne Schicht Butter reicht völlig.	薄薄一层黄油就足够了。	Luna 写	层	
 Anweisung	1	Bitte folgen Sie den Anweisungen des Personals, wenn der Alarm losgeht.	警报响起时，请听从工作人员的指示。	自写	指示	den Anweisungen folgen
@@ -6954,7 +6954,7 @@ voran	1	Mit dem Bau der neuen Brücke geht es nur langsam voran.	新桥的建设
 voran	2	Wie kommt ihr mit eurer Arbeit voran?	你们的工作进展得怎么样？	Tatoeba #3412172 · Pfirsichbaeumchen	进展	mit + Dat. vorankommen
 begraben	1	Ihr Großvater wurde auf dem kleinen Friedhof in dem Dorf begraben, in dem er geboren wurde.	她爷爷被葬在他出生的那个村子的小墓地里。	自写	埋葬	jemanden begraben
 begraben	2	Es tut weh, einen Traum zu begraben.	放弃一个梦想令人难受。	Tatoeba #4821730 · ruth_tatoeba	放弃；埋藏（希望、真相等）	einen Traum begraben
-beachten	1	Bitte beachten Sie, dass das Büro zwischen den Feiertagen geschlossen ist.	请注意，节日期间办公室关闭。	自写	注意；遵守	
+beachten	1	Bitte beachten Sie, dass das Büro zwischen den Feiertagen geschlossen ist.	请注意，圣诞到新年之间办公室关闭。	自写	注意；遵守	
 beachten	2	Du beachtest mich gar nicht.	你根本不理我。	Tatoeba #7585201 · brauchinet	理会；注意到	
 Produktion	1	Die Produktion wurde nach China verlegt, weil es dort billiger ist.	生产转移到了中国，因为那里更便宜。	自写	生产	
 Produktion	2	Ich habe ein Fahrrad aus neuster Produktion.	我有一辆最新生产的自行车。	Tatoeba #926060 · Sudajaengi	生产	
@@ -7085,7 +7085,7 @@ Liga	1	Unser Verein spielt seit diesem Jahr wieder in der ersten Liga.	我们俱
 Liga	2	Morgen werden wir gegen die beste Mannschaft der Liga spielen.	明天我们将对阵联赛中最好的球队。	Tatoeba #13557708 · Stuhr	联赛；联盟	gegen + Akk. spielen
 übersehen	1	Ich habe das Schild übersehen und bin deshalb in die falsche Richtung gefahren.	我没看到指示牌，所以开错了方向。	自写	没看见；漏看	
 übersehen	2	Kann es sein, dass du etwas übersehen hast?	你是不是漏掉了什么？	Tatoeba #8396589 · Yorwba	没看见；漏看	
-übersehen	3	Ich hoffe, er wird es übersehen.	我希望他不会追究这件事。	Tatoeba #7051875 · Pfirsichbaeumchen	不追究；宽恕	
+übersehen	3	Ich hoffe, er wird es übersehen.	我希望他会忽略这件事。	Tatoeba #7051875 · Pfirsichbaeumchen	不追究；宽恕	
 Eigenschaft	1	Welche Eigenschaften sollte ein guter Mitbewohner deiner Meinung nach haben?	你觉得一个好室友应该具备哪些品质？	自写	特性；特点	Eigenschaften haben
 Eigenschaft	2	Er besuchte Japan in seiner Eigenschaft als Präsident.	他以总统的身份访问了日本。	Tatoeba #808326 · Hans_Adler	身份；资格	in seiner Eigenschaft als + Nomen
 bezüglich	1	Bezüglich Ihrer Anfrage vom letzten Montag kann ich Ihnen leider noch keine Antwort geben.	关于您上周一的询问，很抱歉，我目前还不能给您答复。	自写	关于；就	bezüglich + Genitiv
@@ -8957,7 +8957,7 @@ schwingen	1	In seiner Stimme schwang etwas Ärger mit.	他的声音里带着几�
 schwingen	2	Die Lampe schwang hin und her.	灯来回摆动。	Tatoeba #2932323 · Pfirsichbaeumchen	摆动；挥动	
 höchst	1	Wir leben in einer höchst interessanten Zeit.	我们生活在一个极其有趣的时代。	Tatoeba #13038184 · mhr	极其	
 höchst	2	Dieses Buch ist höchst interessant.	这本书非常有趣。	Tatoeba #12613722 · Waldelfe	极其	
-schütteln	1	Er schüttelte seinen Kopf auf und ab.	他上下晃了晃头。	Tatoeba #8739456 · Yorwba	摇动；摇晃	den Kopf schütteln
+schütteln	1	Er schüttelte seinen Kopf auf und ab.	他上下点了点头。	Tatoeba #8739456 · Yorwba	摇动；摇晃	den Kopf schütteln
 schütteln	2	Er wollte mir nicht die Hand schütteln.	他不愿意和我握手。	Tatoeba #1184240 · Esperantostern	握手	jemandem die Hand schütteln
 Exemplar	1	Ich konnte kein weiteres Exemplar des Buches bekommen.	我没能再找到一本这本书。	Tatoeba #2306860 · Pfirsichbaeumchen	本；份	
 Exemplar	2	Bisher habe ich nur drei Exemplare meines Buches verkauft.	到目前为止，我只卖出了三本自己的书。	Tatoeba #12585019 · Waldelfe	本；份	
@@ -9105,7 +9105,7 @@ frech	1	Das Kind war frech zur Lehrerin.	那个孩子对老师没礼貌。	自�
 frech	2	Er ist ganz schön frech.	他真够无礼的。	Tatoeba #11547861 · Pfirsichbaeumchen	无礼的；放肆的	
 köstlich	1	Der Fisch hier ist köstlich.	这条鱼很美味。	Tatoeba #3013059 · Pfirsichbaeumchen	美味的	
 köstlich	2	Der Kuchen war köstlich.	蛋糕很好吃。	Tatoeba #7500236 · Yorwba	美味的	
-Lunge	1	Rauchen schadete seiner Lunge.	吸烟影响了他的肺部。	Tatoeba #913924 · Sudajaengi	肺	schaden + Dat.
+Lunge	1	Rauchen schadete seiner Lunge.	吸烟损害了他的肺。	Tatoeba #913924 · Sudajaengi	肺	schaden + Dat.
 Lunge	2	Rauchen geht auf die Lunge.	吸烟会损害肺部。	Tatoeba #10042757 · Pfirsichbaeumchen	肺	auf + Akk. gehen
 Couch	1	Ich möchte nicht so eine Couch kaufen.	我不想买这样的沙发。	Tatoeba #1168838 · Vortarulo	沙发	
 Couch	2	Diese Couch ist sehr bequem.	这张沙发很舒服。	Tatoeba #10053338 · wolfgangth	沙发	
@@ -9116,7 +9116,7 @@ brüllen	2	Der Lehrer brüllte mich an.	老师冲我大吼。	Tatoeba #8686993 �
 brüllen	3	Der Löwe hat Hunger und brüllt.	狮子饿了，正在吼叫。	Tatoeba #7160548 · manese	（动物）吼叫	
 Adler	1	Der Adler ist der König der Lüfte.	鹰是天空之王。	Tatoeba #1281168 · Esperantostern	鹰	
 Adler	2	Ein Adler fliegt am Himmel.	一只鹰在天空中飞翔。	Tatoeba #587386 · Manfredo	鹰	
-Priorität	1	Du hast wirklich keine Prioritäten!	你真的没有优先事项！	Tatoeba #7764902 · Yorwba	优先事项	Prioritäten setzen
+Priorität	1	Du hast wirklich keine Prioritäten!	你真是分不清轻重缓急！	Tatoeba #7764902 · Yorwba	优先事项	Prioritäten setzen
 Priorität	2	Wir müssen Prioritäten setzen.	我们必须确定优先事项。	Tatoeba #13231769 · Waldelfe	优先事项	Prioritäten setzen
 unterbringen	1	Kannst du mich heute Nacht bei dir unterbringen?	今晚可以住你家吗？	Tatoeba #8389989 · Yorwba	安排住宿	jemanden bei + Dat. unterbringen
 unterbringen	2	Ist sie in einem Hotel untergebracht?	她被安排住在酒店吗？	Tatoeba #12408999 · mayabe	安置；安排住宿	jemanden in + Dat. unterbringen
@@ -9464,7 +9464,7 @@ Produzent	1	Der Produzent des Films kommt aus Köln.	这部电影的制片人来
 Produzent	2	Der Produzent arbeitet oft mit Regisseuren und Schauspielern zusammen.	制片人经常与导演和演员合作。	Luna 写	制片人	
 Impfung	1	Nicht immer ist eine Impfung die beste Lösung.	接种疫苗并不总是最好的解决办法。	Tatoeba #12983056 · mhr	疫苗接种	
 Impfung	2	Ob sich eine Impfung empfiehlt, hängt von vielen verschiedenen Faktoren ab.	是否建议接种疫苗，取决于许多不同因素。	Tatoeba #12983058 · mhr	疫苗接种	
-zart	1	Ihr Kind war von zarter Gesundheit.	他的孩子身体一直很虚弱。	Tatoeba #12421667 · Waldelfe	柔弱的；娇嫩的	von zarter Gesundheit sein
+zart	1	Ihr Kind war von zarter Gesundheit.	她的孩子身体一直很虚弱。	Tatoeba #12421667 · Waldelfe	柔弱的；娇嫩的	von zarter Gesundheit sein
 zart	2	Das Fleisch ist sehr zart.	这肉很嫩。	Tatoeba #13094665 · Vortarulo	嫩的	
 Sau	1	Mein Netz hängt wie Sau.	我的网卡死了。	Tatoeba #10157499 · Yorwba	（粗俗）很；厉害	wie Sau
 Sau	2	Auf dem Bauernhof leben zwei Sauen mit ihren Ferkeln.	农场里有两头母猪和它们的小猪。	Luna 写	母猪	
@@ -9483,7 +9483,7 @@ Drehbuch	1	Sie schreibt gerade an einem Drehbuch.	她正在写一个剧本。	�
 Drehbuch	2	Das Drehbuch für den neuen Film liegt schon auf meinem Schreibtisch.	新电影的剧本已经放在我的办公桌上了。	Luna 写	电影剧本	ein Drehbuch für + Akk.
 musikalisch	1	Ich bin nicht musikalisch.	我没有音乐天赋。	Tatoeba #2814530 · Zaghawa	有音乐天赋的；擅长音乐的	
 musikalisch	2	Ich habe rein gar kein musikalisches Talent.	我一点音乐天赋都没有。	Tatoeba #3053305 · Pfirsichbaeumchen	有音乐天赋的；擅长音乐的	
-anweisen	1	Er ist nicht auf seine Eltern angewiesen.	他独立于他的父母。	Tatoeba #1634691 · Sudajaengi	依赖；需要（常用 angewiesen sein auf）	angewiesen sein auf + Akk.
+anweisen	1	Er ist nicht auf seine Eltern angewiesen.	他不需要依靠他的父母。	Tatoeba #1634691 · Sudajaengi	依赖；需要（常用 angewiesen sein auf）	angewiesen sein auf + Akk.
 anweisen	2	Der Chef wies mich an, die Tür abzuschließen.	老板吩咐我把门锁上。	Luna 写	指示；命令	jemanden anweisen, etwas zu tun
 anweisen	3	Die Firma wies das Geld auf mein Konto an.	公司把钱汇到了我的账户上。	Luna 写	（款项）汇给；转账	Geld auf + Akk. anweisen
 höflich	1	In Deutschland sagt man höflich „Sie“.	在德国礼貌地称“您”。	自写	礼貌的；有礼貌的	
@@ -9668,7 +9668,7 @@ Klient	2	Der Anwalt hat viele Klienten.	这位律师有很多委托人。	Tatoeb
 Kram	1	Kümmere dich zuerst um deinen eigenen Kram.	先管好你自己的事。	Tatoeba #10074474 · wolfgangth	事情；私事	sich um etwas kümmern
 Kram	2	Benutzt du all diesen Kram?	你用这些东西吗？	Tatoeba #3699275 · pne	杂物	
 Kram	3	Glaubst du diesen Kram wirklich?	你真的相信这种胡说八道吗？	Tatoeba #12448840 · Waldelfe	胡说八道	
-Geschäftsführer	1	Eigentlich ist er gar nicht der Geschäftsführer.	事实上他并不是主管。	Tatoeba #1387977 · Esperantostern	总经理	
+Geschäftsführer	1	Eigentlich ist er gar nicht der Geschäftsführer.	事实上他根本不是总经理。	Tatoeba #1387977 · Esperantostern	总经理	
 Geschäftsführer	2	Das ist der neue Geschäftsführer.	这是新任总经理。	Tatoeba #6028367 · Pfirsichbaeumchen	总经理	
 Busch	1	Er versteckte sich hinter einem Busch.	他躲在一丛灌木后面。	Tatoeba #13596009 · Waldelfe	灌木	sich hinter etwas verstecken
 Busch	2	Wir haben zwei Büsche im Garten.	我们花园里有两棵灌木。	Tatoeba #9522765 · Taam	灌木	
@@ -9815,7 +9815,7 @@ anordnen	1	Das Buch ist in vier Teilen angeordnet.	这本书分为四个部分�
 anordnen	2	Die Polizei ordnete an, dass alle Türen geschlossen bleiben.	警方下令所有门都保持关闭。	Luna 写	下令	anordnen, dass ...
 Verbesserung	1	Es gibt noch immer viel Raum für Verbesserungen.	还有很大的改进空间。	Tatoeba #2703334 · Pfirsichbaeumchen	改进	Raum für Verbesserungen
 Verbesserung	2	Es ist noch Raum für Verbesserungen.	还有改进的空间。	Tatoeba #4076848 · Pfirsichbaeumchen	改进	Raum für + Akk.
-Italiener	1	Ich esse gerne bei meinem Italiener.	我喜欢吃意大利菜。	Tatoeba #3365048 · Esperantostern	意大利餐馆	bei + Dat.
+Italiener	1	Ich esse gerne bei meinem Italiener.	我喜欢在我常去的那家意大利餐馆吃饭。	Tatoeba #3365048 · Esperantostern	意大利餐馆	bei + Dat.
 Italiener	2	Mein Nachbar ist Italiener.	我的邻居是意大利人。	Tatoeba #1910587 · Tamy	意大利人	sein
 kommunizieren	1	Wie kommunizieren Babys mit ihren Eltern?	婴儿是怎么和父母交流的？	Tatoeba #1335190 · Esperantostern	沟通	mit + Dat.
 kommunizieren	2	Menschen kommunizieren auf verschiedene Weisen miteinander.	人们用不同的方式相互沟通。	Tatoeba #1493504 · al_ex_an_der	沟通	miteinander kommunizieren
@@ -9999,7 +9999,7 @@ anzünden	1	Zünde die Kerze an!	把蜡烛点燃。	Tatoeba #2357760 · Pfirsich
 anzünden	2	Wir haben in unserem Zimmer Kerzen angezündet.	我们在房间里点了蜡烛。	Tatoeba #5028544 · Tamy	点燃	Kerzen anzünden
 Nuss	1	Du kriegst gleich einen auf die Nuss!	我马上就揍你一拳！	Tatoeba #872532 · Hans07	坚果	jemandem eins auf die Nuss geben
 Nuss	2	Ich esse keine Nüsse.	我不吃坚果。	Tatoeba #9162283 · Pfirsichbaeumchen	坚果	
-Ursprung	1	Was ist der Ursprung des Universums?	宇宙何以开端？	Tatoeba #923494 · Sudajaengi	起源	
+Ursprung	1	Was ist der Ursprung des Universums?	宇宙的起源是什么？	Tatoeba #923494 · Sudajaengi	起源	
 Ursprung	2	Der Ursprung dieses Wortes ist unbekannt.	这个词的起源不明。	Tatoeba #6146975 · Pfirsichbaeumchen	起源	
 Engagement	1	Sie wollen Engagement, nicht wahr?	你们想要的是投入，对吧？	Tatoeba #11263522 · GaryGaryGary	投入	
 Engagement	2	Eines wird sich nicht ändern: unser Engagement unseren Kunden gegenüber.	有一点不会改变：我们对客户的投入。	Tatoeba #1902193 · Pfirsichbaeumchen	投入	Engagement gegenüber + Dat.
@@ -10072,7 +10072,7 @@ Rucksack	2	Passt das alles in deinen Rucksack?	这些东西都放得进你的背
 überfahren	2	Du hast eine rote Ampel überfahren.	你闯红灯了。	Tatoeba #1674360 · Esperantostern	闯（红灯）	eine rote Ampel überfahren
 Ungar	1	In Ungarn war ich noch nie.	我从没去过匈牙利。	Tatoeba #10714182 · Pfirsichbaeumchen	匈牙利人；匈牙利男性	
 Ungar	2	Ich bin kein Ungar.	我不是匈牙利人。	Tatoeba #3897862 · Pfirsichbaeumchen	匈牙利人；匈牙利男性	
-Budget	1	Sie haben Probleme mit ihrem Budget.	你们的预算有问题。	Tatoeba #1813238 · Tamy	预算	Probleme mit + Dat. haben
+Budget	1	Sie haben Probleme mit ihrem Budget.	他们的预算有问题。	Tatoeba #1813238 · Tamy	预算	Probleme mit + Dat. haben
 Budget	2	Es ist wichtig, dass man ein Budget hat.	有预算很重要。	Tatoeba #8431840 · Luiaard	预算	ein Budget haben
 Behinderte	1	Der Eingang ist auch für Behinderte geeignet.	这个入口也适合残疾人。	自写	残疾人	für + Akk. geeignet sein
 Behinderte	2	Viele Behinderte nutzen diesen barrierefreien Eingang jeden Tag.	许多残疾人每天都使用这个无障碍入口。	Luna 写	残疾人	
@@ -10181,7 +10181,7 @@ Plattform	1	Der Zug fährt von Gleis drei ab.	这趟列车从三号站台发车�
 Plattform	2	Die neue Plattform macht den Austausch im Team viel einfacher.	这个新平台让团队交流方便多了。	Luna 写	平台	
 Variante	1	Das ist die schlechteste aller möglichen Varianten.	这是所有可能方案中最糟糕的一个。	Tatoeba #12973074 · mhr	变体；方案	
 Variante	2	Ich finde, hier passen beide Varianten.	我觉得这两种方案都合适。	Tatoeba #9527929 · Pfirsichbaeumchen	方案	
-keineswegs	1	Es ist keineswegs sicher, dass dies schlecht war.	这件事当时做得不好，也并非板上钉钉。	Tatoeba #3229702 · al_ex_an_der	绝不；一点也不	
+keineswegs	1	Es ist keineswegs sicher, dass dies schlecht war.	这绝对说不上那就是坏事。	Tatoeba #3229702 · al_ex_an_der	绝不；一点也不	
 keineswegs	2	Die Frage ist keineswegs einfach.	这个问题绝不简单。	Tatoeba #2859017 · Tamy	绝不	
 vornehm	1	Deine Schwester sieht so vornehm aus, als wäre sie eine Prinzessin.	你妹妹看上去那么高贵，就像是个公主一样。	Tatoeba #2480202 · Pfirsichbaeumchen	高雅的；体面的	aussehen
 vornehm	2	Er wohnt in einem vornehmen Viertel.	他住在一个高档街区。	Tatoeba #5331468 · Sudajaengi	上流的；豪华的	
@@ -10272,7 +10272,7 @@ erforschen	1	Keiner hat mein Land erforscht.	没人探索过我的国家。	Tato
 erforschen	2	Sie erforschten die Wüste auf der Suche nach einem Schatz.	他们为了寻找宝藏而探索沙漠。	Tatoeba #8106779 · kutschektar	探索沙漠	etw. erforschen
 Ruder	1	Wechseln wir uns mit dem Rudern ab!	我们轮流划船吧。	Tatoeba #10308743 · Yorwba	桨	
 Ruder	2	Sie setzte sich und nahm die Ruder.	她坐下来，拿起了桨。	Tatoeba #11534790 · Pfirsichbaeumchen	桨	
-Ruder	3	Fehlt es am Wind, so greife zum Ruder.	没有风时，就掌起舵来。	Tatoeba #1943039 · Esperantostern	舵	zum Ruder greifen
+Ruder	3	Fehlt es am Wind, so greife zum Ruder.	没有风时，就拿起桨来划。	Tatoeba #1943039 · Esperantostern	舵	zum Ruder greifen
 verfehlen	1	Der erste Angriff verfehlte das Ziel.	第一次攻击错过了目标。	Tatoeba #691481 · samueldora	没打中；错过	ein Ziel verfehlen + Akk.
 verfehlen	2	Sie hat das Thema verfehlt.	她没有抓住主题。	Tatoeba #12689360 · mayabe	未达到；未能实现	ein Thema verfehlen + Akk.
 verfehlen	3	Meine Worte verfehlten ihre Wirkung nicht.	我的话确实起到了作用。	Tatoeba #3002632 · al_ex_an_der	未能产生预期效果	seine Wirkung verfehlen
@@ -10372,7 +10372,7 @@ Bruch	1	Die Ehe ging schnell in die Brüche.	这段婚姻很快就破裂了。	T
 Bruch	2	Der Arzt stellte einen Bruch fest.	医生诊断出骨折。	Tatoeba #1783313 · Esperantostern	骨折	einen Bruch feststellen
 Bruch	3	Ein Fenster ging zu Bruch.	一扇窗户打碎了。	Tatoeba #4536276 · Pfirsichbaeumchen	破裂、损坏	zu Bruch gehen
 Bruch	4	Wie kann man entscheiden, welcher von zwei Brüchen der größere ist?	怎么判断两个分数哪个更大？	Tatoeba #11265420 · Pfirsichbaeumchen	分数	
-Mythos	1	Das ist ein Mythos.	这是个神话。	Tatoeba #1907073 · Pfirsichbaeumchen	广为流传但不真实的说法	
+Mythos	1	Das ist ein Mythos.	这是个误区。	Tatoeba #1907073 · Pfirsichbaeumchen	广为流传但不真实的说法	
 Mythos	2	Kennst du irgendwelche griechischen Mythen?	你知道什么希腊神话吗？	Tatoeba #12418596 · mayabe	神话	
 Überschrift	1	Manchmal lese ich nur die Überschriften.	我有时只看标题。	Tatoeba #9639660 · Pfirsichbaeumchen	标题	
 Überschrift	2	Ich lese gewöhnlich nur die Überschriften.	我通常只看标题。	Tatoeba #12458996 · Waldelfe	标题	
@@ -10417,7 +10417,7 @@ Division	1	Zwei Divisionen haben sich ergeben.	两个师投降了。	Tatoeba #22
 Division	2	Die Division gehört zum Militär.	这个师属于军队。	Luna 写	师	
 Division	3	In der Schule lernen wir Division.	我们在学校学习除法。	Luna 写	除法	
 Flieger	1	Wir werden den gleichen Flieger nehmen.	我们会搭乘同一班飞机。	Tatoeba #5967878 · Ronja	飞机	
-Flieger	2	Dieser Pilot ist ein sehr guter Flieger.	这位飞行员是一名很优秀的飞行员。	Tatoeba #1637732 · al_ex_an_der	飞行员	
+Flieger	2	Dieser Pilot ist ein sehr guter Flieger.	这位飞行员开飞机开得很好。	Tatoeba #1637732 · al_ex_an_der	飞行员	
 Kalender	1	Ach, endlich habe ich einen Kalender bekommen!	啊，我终于拿到一本日历了！	Tatoeba #11255987 · translatorjo	日历	
 Kalender	2	Sie hängte den Kalender an die Wand.	她把日历挂在墙上。	Tatoeba #699618 · Manfredo	挂日历	etw. an + Akk. hängen
 Konzern	1	Er arbeitet bei einem großen Konzern.	他在一家大集团工作。	自写	集团	bei einem Konzern
@@ -10590,7 +10590,7 @@ Drohne	1	Das ist eine Drohne.	这是一架无人机。	Tatoeba #13011540 · Vort
 Drohne	2	Die Drohne macht heute gute Fotos von unserem Garten.	这架无人机今天为我们的花园拍了些好照片。	Luna 写	无人机	
 endlos	1	Ihre endlose Liebe halte ich nicht aus.	我受不了她没完没了的爱。	Tatoeba #10543650 · Yorwba	没完没了的	
 endlos	2	Die Liste ist endlos.	这份清单长得没完没了。	Tatoeba #3052045 · freddy1	无尽的；没完没了的	
-opfern	1	Er opferte sich selbst und verriet die Organisation.	他牺牲生命，出卖组织。	Tatoeba #8710025 · Yorwba	牺牲自己；舍己	sich selbst opfern
+opfern	1	Er opferte sich selbst und verriet die Organisation.	他牺牲了自己，出卖了组织。	Tatoeba #8710025 · Yorwba	牺牲自己；舍己	sich selbst opfern
 opfern	2	Ich habe viel für mein Land geopfert.	我为我的国家牺牲了很多。	Tatoeba #2433601 · Pfirsichbaeumchen	牺牲；献出	etwas für + Akk. opfern
 Tank	1	Ein voller Tank reicht mir eine Woche.	一箱油够我开一个星期。	Tatoeba #8315842 · GuidoW	油箱	
 Tank	2	Der Panzer steht seit gestern im Museum und wird gerade restauriert.	这辆坦克从昨天起就停在博物馆里，正在修复。	Luna 写	坦克	
@@ -10675,7 +10675,7 @@ verfluchen	2	Er verfluchte sein Pech.	他咒骂自己的坏运气。	Tatoeba #14
 abreißen	1	Wir sahen, wie alte Häuser abgerissen wurden.	我们看到一栋栋老房子被拆掉。	Tatoeba #2221604 · Pfirsichbaeumchen	拆除	
 abreißen	2	Er riss den Zettel vom Kühlschrank ab und warf ihn weg.	他把纸条从冰箱上撕下来，扔掉了。	Luna 写	撕下；扯下	etwas von + Dat. abreißen
 abreißen	3	Er wird mir den Kopf abreißen.	他会狠狠骂我一顿的。	Tatoeba #1768871 · Pfirsichbaeumchen	（口语）狠狠责骂	jemandem den Kopf abreißen
-kriminell	1	Der Mensch ist von Natur aus kriminell.	人天生就是罪犯。	Tatoeba #6588171 · manese	犯罪的	
+kriminell	1	Der Mensch ist von Natur aus kriminell.	人天生就有犯罪倾向。	Tatoeba #6588171 · manese	犯罪的	
 kriminell	2	Er hat eine kriminelle Vergangenheit.	他有犯罪前科。	Tatoeba #10251178 · GaryGaryGary	犯罪的	
 Echo	1	Manche meinen, wenn sie ein Echo hören, der Ton stamme von ihnen.	有些人听见回声时，会以为那声音是自己发出来的。	Tatoeba #2482393 · Esperantostern	回声	ein Echo hören
 Echo	2	In der größten Höhle angekommen, schrie ich, um das Echo zu erleben.	到了最大的洞穴后，我大喊了一声，想听听回声。	Tatoeba #3078595 · al_ex_an_der	回声	das Echo erleben
@@ -10788,7 +10788,7 @@ widmen	2	Ich möchte dieses Lied meiner Mutter widmen.	我想把这首歌献给�
 widmen	3	Wem widmest du deine Zeit?	你把时间用在谁身上？	Tatoeba #3757386 · Esperantostern	把时间、精力或注意力用于	jemandem etwas widmen
 Kapital	1	Meine Gesundheit ist mein einziges Kapital.	我的健康是我唯一的本钱。	Tatoeba #448633 · Espi	可利用的资源；本钱	
 Kapital	2	Wir müssen das nötige Kapital für den Plan bereit haben.	我们必须为这个计划准备好所需的资金。	Tatoeba #8120879 · dasbeispielholz	资本	Kapital für + Akk.
-Unternehmer	1	Er ist ein erfolgreicher Unternehmer.	他是个成功的商人。	Tatoeba #1687754 · Pfirsichbaeumchen	企业家	
+Unternehmer	1	Er ist ein erfolgreicher Unternehmer.	他是个成功的企业家。	Tatoeba #1687754 · Pfirsichbaeumchen	企业家	
 Unternehmer	2	Unsere Wissenschaftler und Unternehmer beobachten das sehr aufmerksam.	我们的科学家和企业家都在密切关注这件事。	Tatoeba #2057129 · al_ex_an_der	企业家	
 allmählich	1	Seine Besuche wurden allmählich seltener.	他渐渐地不常登门了.	Tatoeba #10086417 · Yorwba	逐渐；渐渐	
 allmählich	2	Allmählich wird es im Zimmer immer dunkler.	房间里渐渐越来越暗了。	Tatoeba #2020533 · al_ex_an_der	逐渐；渐渐	
@@ -11015,7 +11015,7 @@ Reserve	1	Ich nehme es als Reserve.	我把它当备用的。	Tatoeba #3894392 ·
 Reserve	2	Manchmal muss man ihn erst aus der Reserve locken.	有时得先想办法让他放开拘谨。	Tatoeba #1628927 · al_ex_an_der	（人的）拘谨；矜持	jemanden aus der Reserve locken
 knallen	1	Er knallte seine Tür zu.	他砰的一声关上了门。	Tatoeba #1699255 · Pfirsichbaeumchen	砰地关上	etwas zuknallen
 knallen	2	Es wird gleich kaputtgehen und sehr laut knallen!	它马上就要坏了，还会发出很大的砰响！	Tatoeba #14016843 · Biderl	砰地响	
-knallen	3	Im Theater knallte sie ihm eine, weil er gelogen hatte.	戏里，她因为他撒谎而扇了他一耳光。	Luna 写	（口语）打；扇耳光	jemandem eine knallen
+knallen	3	Im Theater knallte sie ihm eine, weil er gelogen hatte.	在剧院里，她因为他撒谎而扇了他一耳光。	Luna 写	（口语）打；扇耳光	jemandem eine knallen
 ausgleichen	1	Sie müssen den Verlust ausgleichen.	您必须弥补损失。	Tatoeba #10190066 · Yorwba	弥补；补偿	einen Verlust ausgleichen
 ausgleichen	2	Die Einnahmen gleichen die höheren Kosten aus.	收入抵消了较高的成本。	Luna 写	使平衡；抵消	etwas ausgleichen
 Schottland	1	Wie lange wirst du in Schottland bleiben?	你会在苏格兰待多久？	Tatoeba #11958834 · Pfirsichbaeumchen	苏格兰	
@@ -11206,7 +11206,7 @@ nachgehen	1	Meine Uhr geht fünf Minuten nach.	我的表慢了五分钟。	Tatoe
 nachgehen	2	Sie geht gern ihrem Beruf nach.	她很喜欢从事自己的职业。	Luna 写	从事	einer Tätigkeit nachgehen + Dat.
 nachgehen	3	Die Polizei geht dem Hinweis nach.	警方正在追查这条线索。	Luna 写	追查	einer Sache nachgehen + Dat.
 Stall	1	Das Pferd kam aus dem Stall heraus.	马从马厩里出来了。	Tatoeba #5975060 · arved	畜棚	aus + Dat.
-Stall	2	Das Pferd steht im Stall.	马待在畜棚里。	Tatoeba #10774995 · Pfirsichbaeumchen	畜棚	in + Dat.
+Stall	2	Das Pferd steht im Stall.	马待在马厩里。	Tatoeba #10774995 · Pfirsichbaeumchen	畜棚	in + Dat.
 Beförderung	1	Er ist auf eine Beförderung aus.	他一心想升职。	Tatoeba #11531678 · Pfirsichbaeumchen	晋升	auf eine Beförderung aus sein
 Beförderung	2	Er hat sich eine Beförderung verdient.	他理应得到晋升。	Tatoeba #906536 · Sudajaengi	晋升	sich eine Beförderung verdienen
 Beförderung	3	Die Beförderung der Waren dauert zwei Tage.	这些货物的运输需要两天。	Luna 写	运送	Beförderung von + Dat.
@@ -11233,7 +11233,7 @@ Individuum	1	In der westlichen Kultur wird großer Wert auf das Individuum geleg
 Individuum	2	Die Gesellschaft besteht aus Individuen.	社会由个体组成。	Tatoeba #12244696 · Augustus	个体	
 Belgien	1	Sie beschloss, nach Belgien zu ziehen.	她决定搬到比利时。	Tatoeba #11491761 · mhr	比利时	nach + Dat.
 Belgien	2	Ich lebe in Belgien.	我住在比利时。	Tatoeba #12376646 · mhr	比利时	in + Dat.
-Rhein	1	Das hieße Wasser in den Rhein tragen.	那就等于把水运到莱茵河里。	Tatoeba #2121297 · Esperantostern	莱茵河	Wasser in den Rhein tragen
+Rhein	1	Das hieße Wasser in den Rhein tragen.	那就等于多此一举（往莱茵河里运水）。	Tatoeba #2121297 · Esperantostern	莱茵河	Wasser in den Rhein tragen
 Rhein	2	Köln liegt am Rhein.	科隆位于莱茵河畔。	Tatoeba #450496 · Pfirsichbaeumchen	莱茵河	am (= an + Dat.)
 Teilnahme	1	Danke allen für die Teilnahme!	感谢大家参与！	Tatoeba #13889787 · mhr	参加	für + Akk. danken
 Teilnahme	2	Die Teilnahme ist freiwillig und kostenlos.	参加是自愿且免费的。	Tatoeba #562467 · al_ex_an_der	参加	
@@ -11445,7 +11445,7 @@ Flut	1	Bei Flut steht hier alles unter Wasser.	涨潮时，这里会被水淹没
 Flut	2	Mehr als hundert Häuser wurden von der Flut beschädigt.	一百多栋房屋被洪水损坏了。	Tatoeba #4709148 · bonny37	洪水	von der Flut beschädigt
 Finanzierung	1	Die Finanzierung des Studiums ist schwierig.	学费的筹措很难。	自写	融资	Finanzierung des Studiums
 Finanzierung	2	Viele Familien brauchen eine gute Finanzierung für den Hauskauf.	许多家庭买房需要妥善的资金安排。	Luna 写	融资	Finanzierung für + Akk.
-eigenartig	1	Diese Milch hat einen eigenartigen Geruch.	这牛奶有特殊的气味。	Tatoeba #1472564 · al_ex_an_der	奇怪的	
+eigenartig	1	Diese Milch hat einen eigenartigen Geruch.	这牛奶有一股怪味。	Tatoeba #1472564 · al_ex_an_der	奇怪的	
 eigenartig	2	Das klingt eigenartig, ist aber wahr.	这听起来很奇怪，但却是真的。	Tatoeba #1706614 · al_ex_an_der	奇怪的	
 Altar	1	Ein schönes Paar für den Altar.	真是一对天造地设的新人。	Tatoeba #1223356 · al_ex_an_der	祭坛	für den Altar
 Altar	2	Der Priester steht vor dem Altar.	牧师站在祭坛前。	Tatoeba #3658271 · al_ex_an_der	祭坛	vor dem Altar
@@ -11616,7 +11616,7 @@ Feigling	1	Zeig, dass du kein Feigling bist!	来证明你不胆小。	Tatoeba #1
 Feigling	2	Er hat mich einen Feigling genannt.	他骂我是个懦夫。	Tatoeba #8809239 · wolfgangth	胆小的人	jdn. einen Feigling nennen
 Ego	1	Was für ein Ego!	真够自我的！	Tatoeba #7466820 · Yorwba	自我	Was für ein Ego!
 Ego	2	Ein großes Ego macht Gespräche mit Kollegen oft schwierig.	自我意识太强常常会让和同事的谈话变得困难。	Luna 写	自我	ein großes Ego
-befehlen	1	Der Lehrer befahl mir, aufzustehen.	老师叫我站起来。	Tatoeba #1516695 · Esperantostern	命令	jemandem befehlen, etwas zu tun
+befehlen	1	Der Lehrer befahl mir, aufzustehen.	老师命令我站起来。	Tatoeba #1516695 · Esperantostern	命令	jemandem befehlen, etwas zu tun
 befehlen	2	Ich will nicht befehlen, sondern dich bitten.	我不想命令你，而是想请你帮忙。	Tatoeba #4059463 · Esperantostern	命令；吩咐	jdm. befehlen
 Kofferraum	1	Ich habe den Kofferraum aufgemacht.	我打开了后备箱。	Tatoeba #10305571 · Yorwba	后备箱	den Kofferraum öffnen
 Kofferraum	2	Unser Kofferraum ist zu klein.	我们的后备箱太小了。	Tatoeba #5333689 · Sciuro_Kvar	汽车后备箱	
@@ -11707,7 +11707,7 @@ abstürzen	3	Unsere Aktien sind abgestürzt.	我们的股票暴跌了。	Tatoeba
 übergehen	1	Ich fühle mich übergangen.	我有一种我被忽略了的感觉。	Tatoeba #8745602 · Yorwba	忽略；不理会	jemanden übergehen
 übergehen	2	Er ging zur nächsten Frage über.	他转到了下一个问题。	Tatoeba #951921 · Sudajaengi	转入；转变	zu + Dat. übergehen
 übergehen	3	Der Regen ging in Schnee über.	雨转成了雪。	Tatoeba #450736 · al_ex_an_der	转入；转变	in + Akk. übergehen
-keinesfalls	1	Ich möchte dich keinesfalls stören.	我绝不会打扰你。	Tatoeba #10084741 · sakslane	绝不；决不	
+keinesfalls	1	Ich möchte dich keinesfalls stören.	我绝不想打扰你。	Tatoeba #10084741 · sakslane	绝不；决不	
 keinesfalls	2	Keinesfalls werde ich das tun.	我绝不会这么做。	Tatoeba #799547 · Hans_Adler	绝不	
 Krawatte	1	Sie gab ihrem Vater eine Krawatte.	她给了她父亲一条领带。	Tatoeba #532952 · Espi	领带	
 Krawatte	2	Ich habe eine rote Krawatte gekauft.	我买了一条红领带。	Tatoeba #1315370 · Pfirsichbaeumchen	领带	
@@ -11724,7 +11724,7 @@ Schalter	2	Dieses Gerät wird per Schalter in Gang gesetzt.	这台设备通过�
 erzielen	1	Die Mannschaft hat drei Tore erzielt.	这支球队进了三个球。	自写	（体育比赛中）得分	ein Tor erzielen
 erzielen	2	Hast du ein gutes Ergebnis erzielt?	你取得了好成绩吗？	Tatoeba #14116150 · Biderl	取得；获得（成果、结果）	ein Ergebnis erzielen
 dreifach	1	Das Formular muss dreifach ausgefüllt werden.	这份表格必须一式三份填写。	Tatoeba #661397 · Esperantostern	三份的	
-dreifach	2	Die Kosten für den Versand sind fast dreifach gestiegen.	邮费几乎涨了三倍。	Luna 写	三倍	
+dreifach	2	Die Kosten für den Versand sind fast dreifach gestiegen.	邮费几乎涨到了原来的三倍。	Luna 写	三倍	
 sowjetisch	1	Die sowjetischen Truppen begannen sich aus Afghanistan zurückzuziehen.	苏联军队开始从阿富汗撤军了。	Tatoeba #2727796 · Pfirsichbaeumchen	苏联的	
 sowjetisch	2	Die sowjetische Wirtschaft lag am Boden.	苏联经济当时一片萧条。	Tatoeba #10957640 · Yorwba	苏联的	
 Therapeut	1	Ich denke, du bist schon zu lange Therapeut.	我觉得你当治疗师已经太久了。	Tatoeba #12410977 · Waldelfe	治疗师	
@@ -11812,7 +11812,7 @@ Krone	2	Dieser Baum hat eine große Krone.	这棵树的树冠很大。	Tatoeba #
 Krone	3	Der Zahnarzt setzt mir nächste Woche eine neue Krone ein.	牙医下周给我装一颗新牙冠。	Luna 写	牙冠	eine Krone einsetzen
 Kaufmann	1	Er war der Sohn eines reichen Kaufmanns.	他是一位富商的儿子。	Tatoeba #6116279 · Pfirsichbaeumchen	商人；从事贸易的人	
 Kaufmann	2	Ein Kaufmann ist jemand, der Waren kauft und verkauft.	商人就是买卖商品的人。	Tatoeba #1707251 · Zaghawa	商人；从事贸易的人	
-Wirt	1	Er machte die Rechnung ohne den Wirt.	他没把店主算进去。	Tatoeba #1218794 · Esperantostern	店主	
+Wirt	1	Er machte die Rechnung ohne den Wirt.	他打了如意算盘，却没考虑到关键人物。	Tatoeba #1218794 · Esperantostern	店主	
 Wirt	2	Unser Wirt war sehr nett.	我们的店主人很好。	Tatoeba #10371990 · kutschektar	店主	
 Gegenzug	1	Ich helfe dir. Im Gegenzug kochst du heute.	我帮你，作为交换，你今天做饭。	自写（Luna 改）	作为回报	im Gegenzug
 Gegenzug	2	Was bekomme ich im Gegenzug?	作为回报，我能得到什么？	Tatoeba #5162193 · kolonjano	作为回报	im Gegenzug
@@ -12340,7 +12340,7 @@ Mailand	1	Ich lebe in Mailand.	我住在米兰。	Tatoeba #505974 · Pfirsichbae
 Mailand	2	Wie kommst du nach Mailand?	你怎么去米兰？	Tatoeba #2159548 · Vortarulo	米兰	nach + Ortsname
 Sumpf	1	Was für Tiere leben in Sümpfen?	沼泽里生活着什么动物？	Tatoeba #14073226 · mhr	沼泽	
 Sumpf	2	Welche Tiere leben in Sümpfen?	沼泽里生活着哪些动物？	Tatoeba #14073224 · mhr	沼泽	
-Update	1	Danke für das Update.	更新内容谢谢你。	Tatoeba #5606612 · Vortarulo	更新	
+Update	1	Danke für das Update.	谢谢你的最新消息。	Tatoeba #5606612 · Vortarulo	更新	
 Update	2	Ein Update ist verfügbar.	有一个更新可用。	Tatoeba #10094563 · Vortarulo	更新	
 Zutritt	1	Der Zutritt ist nach wie vor verboten.	这里至今仍禁止进入。	Tatoeba #10060243 · sakslane	入内；进入的权利	Zutritt haben
 Zutritt	2	Gäste haben hier keinen Zutritt!	客人不得入内！	Tatoeba #13398432 · Biderl	入内；进入的权利	Zutritt haben
@@ -12367,7 +12367,7 @@ statistisch	1	Statistisch gesehen ist Fliegen sicher.	从统计上看坐飞机�
 statistisch	2	Statistisch gesehen schlafen Erwachsene oft zu wenig.	从统计数据来看，成年人经常睡眠不足。	Luna 写	统计的	statistisch gesehen
 etablieren	1	Dieser Brauch hat sich bei den Japanern fest etabliert.	这种习俗已经在日本人中根深蒂固。	Tatoeba #2830660 · Tamy	确立	sich bei + Dat. etablieren
 etablieren	2	Das Café hat sich schnell im Viertel etabliert.	这家咖啡馆很快就在这个街区站稳了脚跟。	Luna 写	确立	sich in + Dat. etablieren
-Privatleben	1	Misch dich nicht in ihr Privatleben ein.	不要侵犯她的隐私。	Tatoeba #1358504 · Manfredo	私生活	sich in etwas einmischen
+Privatleben	1	Misch dich nicht in ihr Privatleben ein.	不要干涉她的私生活。	Tatoeba #1358504 · Manfredo	私生活	sich in etwas einmischen
 Privatleben	2	Wie lassen sich Arbeit und Privatleben miteinander vereinbaren?	怎样才能兼顾工作和私生活？	Tatoeba #3765126 · Jens_Odo	私生活	Arbeit und Privatleben vereinbaren
 lateinisch	1	Wenige Schüler können die lateinische Sprache lesen.	能读拉丁语的学生寥寥无几。	Tatoeba #788491 · Esperantostern	拉丁文的	
 lateinisch	2	Viele englische Wörter haben lateinische Wurzeln.	许多英语单词都有拉丁语词源。	Tatoeba #12157829 · Pfirsichbaeumchen	拉丁语的	lateinische Wurzeln
@@ -12494,7 +12494,7 @@ Tabelle	2	Die Tabelle zeigt unsere Ausgaben für diesen Monat.	这张表格展�
 wöchentlich	1	Wir kommen hier einmal wöchentlich zusammen.	我们每周在这儿聚一次。	Tatoeba #1693394 · Pfirsichbaeumchen	每周一次	
 wöchentlich	2	Ich hoffe, ich schaffe es, mein Zimmer einmal wöchentlich zu putzen.	我希望自己能做到每周打扫一次房间。	Tatoeba #11767628 · Yorwba	每周一次	
 vorziehen	1	Ich denke, der Tod ist der Schande vorzuziehen.	我觉得士可杀不可辱。	Tatoeba #474566 · landano	更喜欢	etwas jemandem vorziehen
-vorziehen	2	Wir müssen den Termin wegen des Arztbesuchs vorziehen.	因为要去看医生，我们得把约定提前。	Luna 写	提前	etwas vorziehen
+vorziehen	2	Wir müssen den Termin wegen des Arztbesuchs vorziehen.	因为要去看医生，我们得把预约提前。	Luna 写	提前	etwas vorziehen
 bangen	1	Sie sah ihn mit bangen Augen an.	她用惴惴不安的目光看着他。	Tatoeba #2193232 · Pfirsichbaeumchen	担忧	
 bangen	2	Wir bangen um sein Leben.	我们担心他的性命。	动介搭配表	担忧	bangen um + Akk.
 Kamin	1	Die Uhr ist über dem Kamin.	时钟在壁炉的上方。	Tatoeba #611421 · Dejo	壁炉	
@@ -12609,7 +12609,7 @@ spirituell	2	Meditation ist für viele Menschen wichtig.	冥想对许多人来�
 Schinken	1	Nimm dir von dem Schinken.	吃些火腿。	Tatoeba #4943240 · Hans_Adler	火腿	
 Schinken	2	Ja, ich nehme auch Schinken.	好，我也要火腿。	Tatoeba #9888900 · Pfirsichbaeumchen	火腿	
 Schinken	3	Für das Frühstück habe ich Schinken gekauft.	我买了火腿当早餐。	Luna 写	火腿	
-abgefahren	1	Der Zug war schon abgefahren, als ich den Bahnhof erreichte.	我在火车开后才到达车站。	Tatoeba #3271885 · Zaghawa	（火车等）开走了	
+abgefahren	1	Der Zug war schon abgefahren, als ich den Bahnhof erreichte.	我到车站时，火车已经开走了。	Tatoeba #3271885 · Zaghawa	（火车等）开走了	
 abgefahren	2	Das ist ja so abgefahren!	这也太酷了！	Tatoeba #2190087 · Pfirsichbaeumchen	酷毙的；很酷的	
 bürgerlich	1	Es ist deine bürgerliche Pflicht zu wählen.	投票是你的公民义务。	Tatoeba #1927694 · Pfirsichbaeumchen	公民的；市民的	
 bürgerlich	2	Er wuchs in einer bürgerlichen Familie in Hamburg auf.	他在汉堡的一个中产阶级家庭中长大。	Luna 写	市民家庭的	bürgerliche Familie
@@ -12712,7 +12712,7 @@ tierisch	2	Ich esse nichts tierischen Ursprungs.	我不吃任何动物来源的�
 Bestie	1	Das liegt in der Natur der Bestie.	这就是野兽的本性。	Tatoeba #3550678 · al_ex_an_der	野兽；凶残的人	
 Bestie	2	Diese riesigen Bestien zählen auch zu den intelligentesten.	这些巨大的野兽也属于最聪明的那一类。	Tatoeba #11830958 · Pfirsichbaeumchen	野兽；凶残的人	
 hiervon	1	Was hältst du hiervon?	你对此有何看法？	Tatoeba #625343 · kolonjano	由此；关于这个	
-hiervon	2	Es ist wichtig, dass sie hiervon hört.	她听说这件事很重要。	Tatoeba #1948498 · Pfirsichbaeumchen	由此；关于这个	
+hiervon	2	Es ist wichtig, dass sie hiervon hört.	重要的是让她听到这件事。	Tatoeba #1948498 · Pfirsichbaeumchen	由此；关于这个	
 bunkern	1	Er bunkert Süßigkeiten in seinem Zimmer.	他在房间里囤零食。	自写	囤积	etwas (Akk.) bunkern
 bunkern	2	Viele Familien bunkern im Winter Konserven und Wasser im Keller.	许多家庭冬天会在地下室囤积罐头和水。	Luna 写	囤积食物和水	bunkern + Akk.
 belangen	1	Dafür kann man ihn nicht belangen.	这事不能追究他的责任。	自写	追究；追责	jemanden (Akk.) belangen
@@ -12760,7 +12760,7 @@ Deckel	1	Ich hob den Deckel.	我掀开了盖子。	Tatoeba #12881037 · Yorwba	�
 Deckel	2	Der Buchdeckel ist aus rotem Stoff.	这本书的封面是红色布料做的。	Luna 写	（书的）封面	Deckel des Buches
 Deckel	3	Ich krieg den Deckel nicht ab.	我打不开这个盖子。	Tatoeba #1534646 · al_ex_an_der	盖子	Deckel abkriegen
 Butler	1	Der Butler öffnete die Tür.	管家打开了门。	Tatoeba #3783898 · Tlustulimu	管家	
-Butler	2	Der Butler brachte mir meinen Kaffee in die Bibliothek.	管家把咖啡送到了图书馆给我。	Tatoeba #7015365 · Pfirsichbaeumchen	管家	
+Butler	2	Der Butler brachte mir meinen Kaffee in die Bibliothek.	管家把我的咖啡送到了书房。	Tatoeba #7015365 · Pfirsichbaeumchen	管家	
 Zeugin	1	Ich bin eine Zeugin.	我是证人。	Tatoeba #13475579 · Vortarulo	女证人	
 Zeugin	2	Diese Dame war heute Nachmittag um drei Zeugin eines Unfalls.	这位女士今天下午三点是一起事故的目击证人。	Tatoeba #2820248 · Tamy	女证人	Zeugin eines Unfalls sein
 Asyl	1	Endlich habe ich Asyl bekommen.	我终于获得了庇护。	Tatoeba #10769218 · Yorwba	庇护	Asyl bekommen
@@ -13375,7 +13375,7 @@ Milde	1	Ein wirksames Heilmittel gegen Angst ist Milde.	温和是对抗恐惧的
 Milde	2	Der Richter zeigte Milde.	法官表现出了宽大。	Luna 写	温和；宽厚	
 Abmachung	1	Ich habe die Abmachung mit meinem Chef gebrochen.	我打破了和我上司的约定。	Tatoeba #8655119 · Yorwba	约定；协议	eine Abmachung brechen
 Abmachung	2	Sie müssen sich an die Abmachung halten.	你们必须遵守这个约定。	Tatoeba #14042912 · Waldelfe	约定；协议	sich an eine Abmachung halten
-Manuskript	1	Er zeigte mir das Manuskript seines neuen Stückes.	他给我看了他最新剧的底稿。	Tatoeba #580708 · samueldora	手稿	
+Manuskript	1	Er zeigte mir das Manuskript seines neuen Stückes.	他给我看了他新剧的手稿。	Tatoeba #580708 · samueldora	手稿	
 Manuskript	2	Ich schreibe seit einem Jahr an diesem Manuskript.	我写这份手稿已经一年了。	Tatoeba #1881420 · Zaghawa	手稿	an einem Manuskript schreiben
 Latte	1	Der Ball ging gegen die Latte.	球打在了球门横梁上。	Tatoeba #3635025 · al_ex_an_der	横梁；门框横杆	
 Latte	2	Der Ball traf die Latte.	球击中了横梁。	Tatoeba #3384372 · Pfirsichbaeumchen	横梁；门框横杆	
@@ -13412,11 +13412,11 @@ Anwältin	2	Sie will mit ihrer Anwältin sprechen.	她想和自己的女律师�
 erarbeiten	1	Wenn du es haben willst, erarbeite es dir!	想要的话，就靠自己努力去争取！	Tatoeba #12824827 · Yorwba	通过努力获得	erarbeiten + Akk.
 erarbeiten	2	Er hat einen Plan zur Lösung des Problems erarbeitet.	他制定了一个解决问题的计划。	Tatoeba #12895019 · mhr	制定；拟定	einen Plan erarbeiten
 erarbeiten	3	Er hat sich seinen Erfolg hart erarbeitet.	他的成功是靠努力拼搏得来的。	Tatoeba #13294212 · Waldelfe	通过努力获得	sich etwas erarbeiten
-lauschen	1	Ich lauschte, verstand aber nichts.	我听了，但什么也没听到。	Tatoeba #937382 · Sudajaengi	倾听；聆听	
+lauschen	1	Ich lauschte, verstand aber nichts.	我侧耳倾听，但什么也没听懂。	Tatoeba #937382 · Sudajaengi	倾听；聆听	
 lauschen	2	Die Kinder lauschten dem Lehrer.	孩子们认真听老师讲课。	Tatoeba #2291452 · Pfirsichbaeumchen	倾听；聆听	lauschen + Dat.
 benachrichtigen	1	Ich dachte, du wärest benachrichtigt worden.	我还以为你已经接到通知了。	Tatoeba #3966076 · Pfirsichbaeumchen	通知；告知	benachrichtigen + Akk.（被动）
 benachrichtigen	2	Warum hast du uns nicht benachrichtigt?	你为什么没有通知我们？	Tatoeba #13089038 · Pfirsichbaeumchen	通知；告知	benachrichtigen + Akk.
-benachrichtigen	3	Bitte benachrichtigen Sie mich über den Termin.	请通知我这个约定的时间。	Luna 写	通知；告知	jemanden über + Akk. benachrichtigen
+benachrichtigen	3	Bitte benachrichtigen Sie mich über den Termin.	请通知我预约的时间。	Luna 写	通知；告知	jemanden über + Akk. benachrichtigen
 Mistkerl	1	Dieser Mistkerl hat mein Fahrrad geklaut!	那个混蛋偷了我的自行车！	自写	混蛋（骂人）	
 Mistkerl	2	Du bist ein Mistkerl.	你是个混蛋。	Tatoeba #12540936 · Naina	混蛋（骂人）	
 verpissen	1	Verpiss dich, lass mich in Ruhe!	滚，别烦我！	自写	滚（粗口，常用反身形式 sich verpissen）	sich verpissen
@@ -13424,7 +13424,7 @@ verpissen	2	Ich muss arbeiten, also verpiss dich und lass mich in Ruhe.	我得�
 Fonds	1	Es ist ärgerlich für uns, dass wir keine Fonds besitzen.	我们没有任何基金，这让我们很恼火。	Tatoeba #719867 · Esperantostern	基金	
 Fonds	2	Viele Menschen investieren jeden Monat in einen Fonds.	很多人每个月都会投资一只基金。	Luna 写	基金	in einen Fonds investieren
 Psychiatrie	1	Unsere Autobahnen sind Deutschlands größte Psychiatrie.	我们的高速公路是德国最大的精神病院。	Tatoeba #2980117 · Esperantostern	精神病院	
-Psychiatrie	2	Sie studiert Psychiatrie und arbeitet später in einer Klinik.	她学习精神病学，以后会在一家诊所工作。	Luna 写	精神病学	Psychiatrie studieren
+Psychiatrie	2	Sie studiert Psychiatrie und arbeitet später in einer Klinik.	她学习精神病学，以后会在一家医院工作。	Luna 写	精神病学	Psychiatrie studieren
 Kämpfer	1	Wir sind Kämpfer für die gleiche Sache.	我们为了同一个目标而战。	Tatoeba #3420682 · al_ex_an_der	为某个事业奋斗的人	Kämpfer für + Akk.
 Kämpfer	2	Er ist kein Kämpfer.	他不是个战士。	Tatoeba #12577619 · Waldelfe	斗士；战士	
 Bestrafung	1	Wer stiehlt, verdient Bestrafung.	偷窃的人应该受到惩罚。	Tatoeba #1625859 · Pfirsichbaeumchen	惩罚	
@@ -13637,7 +13637,7 @@ Prediger	1	Der beste Prediger ist die Zeit.	时间是最好的说教者。	Tatoe
 Prediger	2	Der Prediger hielt eine schöne Predigt.	布道者作了一场精彩的布道。	Tatoeba #2120276 · Zaghawa	布道者	
 vermeintlich	1	Der vermeintliche Fehler war gar keiner.	所谓的错误其实根本不是错误。	自写	所谓的；看似……的	
 vermeintlich	2	Der vermeintliche Termin steht nicht im Kalender.	所谓的预约并没有记在日历上。	Luna 写	所谓的；看似……的	
-Abitur	1	Ich habe noch kein Abitur.	我还没拿到高中毕业证。	Tatoeba #10798397 · Pfirsichbaeumchen	高中毕业考试；德国高中毕业资格	
+Abitur	1	Ich habe noch kein Abitur.	我还没通过高中毕业考试。	Tatoeba #10798397 · Pfirsichbaeumchen	高中毕业考试；德国高中毕业资格	
 Abitur	2	Ich habe noch ein Jahr bis zum Abitur.	我还有一年就参加高中毕业考试了。	Tatoeba #1903377 · Dejo	高中毕业考试；德国高中毕业资格	bis zum Abitur
 Ameise	1	Die Menschen sehen aus wie Ameisen.	人们看起来就像蚂蚁。	Tatoeba #8161205 · Pfirsichbaeumchen	蚂蚁	
 Ameise	2	Im Flur ist eine Ameise.	走廊里有一只蚂蚁。	Tatoeba #1482647 · al_ex_an_der	蚂蚁	
@@ -13806,7 +13806,7 @@ Durchmesser	1	Sie schnitt den Apfel mit einem Messer durch.	她用刀把苹果�
 Durchmesser	2	Es hat einen Durchmesser von etwa acht Zentimetern.	它的直径大约是八厘米。	Tatoeba #6392346 · Pfirsichbaeumchen	直径	einen Durchmesser von … haben
 Telefonat	1	Ich muss noch ein wichtiges Telefonat führen.	我还得打一个重要的电话。	Tatoeba #13489411 · Waldelfe	通话	ein Telefonat führen
 Telefonat	2	Ich wollte einige Telefonate führen.	我想打几个电话。	Tatoeba #7354377 · Yorwba	通话	ein Telefonat führen
-surfen	1	Während des Sommers surft er jeden Tag.	夏天的时候，他每天都上网冲浪。	Tatoeba #4727185 · bonny37	冲浪	
+surfen	1	Während des Sommers surft er jeden Tag.	夏天的时候，他每天都去冲浪。	Tatoeba #4727185 · bonny37	冲浪	
 surfen	2	Wir surfen praktisch jeden Tag im Internet.	我们几乎每天都上网。	Tatoeba #5654646 · ThomasFAustria	上网	im Internet surfen
 vergiften	1	Versuchst du, mich zu vergiften?	你想毒死我吗？	Tatoeba #13642096 · Vortarulo	下毒；使中毒	jemanden vergiften
 vergiften	2	Abgase vergiften die Luft in unserer Stadt jeden Tag.	废气每天都在污染我们城市的空气。	Luna 写	污染空气	die Luft vergiften
@@ -13823,7 +13823,7 @@ zugunsten	1	Er entschied sich zugunsten des roten Autos.	他选择了红色汽�
 virtuell	1	Hast du schon mal die virtuelle Realität erlebt?	你有没有体验过虚拟实境？	Tatoeba #13122916 · Yorwba	虚拟的	
 virtuell	2	Virtuelle Realität ist die Zukunft.	虚拟现实是未来。	Tatoeba #10033849 · Melang	虚拟现实	
 psychiatrisch	1	Er ist in psychiatrischer Behandlung.	他在接受精神科治疗。	自写	精神病学的	
-psychiatrisch	2	Sie arbeitet seit drei Jahren in einer psychiatrischen Klinik in München.	她在慕尼黑的一家精神病诊所工作三年了。	Luna 写	精神病诊所	psychiatrische Klinik
+psychiatrisch	2	Sie arbeitet seit drei Jahren in einer psychiatrischen Klinik in München.	她在慕尼黑的一家精神科医院工作三年了。	Luna 写	精神病诊所	psychiatrische Klinik
 Verfassung	1	Ich bin heute nicht in guter Verfassung.	我今天状态不好。	自写	身体状况；状态	in guter/schlechter Verfassung sein
 Verfassung	2	Es gibt Leute, die die Verfassung ändern wollen.	有些人想修改宪法。	Tatoeba #2187775 · freddy1	宪法	
 Männchen	1	Ich glaube, ich habe die kleinen grünen Männchen gesehen.	我觉得我好像看见了那些小绿人。	Tatoeba #10106964 · Pfirsichbaeumchen	小人儿；小绿人（常指外星人）	
@@ -13850,7 +13850,7 @@ durchlaufen	1	Das neue Auto durchlief erfolgreich alle Tests.	这辆新车顺利
 durchlaufen	2	Sie durchläuft nur eine Phase.	她只是在经历一个阶段。	Tatoeba #6062192 · Pfirsichbaeumchen	经历（阶段）	eine Phase durchlaufen
 Kaugummi	1	Der Kaugummi blieb an seinem Schuh kleben.	口香糖粘到他的鞋子上了。	Tatoeba #8941978 · Yorwba	口香糖	
 Kaugummi	2	Hast du etwas Kaugummi?	你有口香糖吗？	Tatoeba #12573985 · Augustus	口香糖	
-kindisch	1	Sie ist jung und total kindisch.	她既年轻又充满了孩子气。	Tatoeba #9977085 · Yorwba	幼稚的	
+kindisch	1	Sie ist jung und total kindisch.	她既年轻又特别幼稚。	Tatoeba #9977085 · Yorwba	幼稚的	
 kindisch	2	Warum benimmst du dich so kindisch?	你为什么表现得这么幼稚？	Tatoeba #1590958 · Zaghawa	幼稚的	sich kindisch benehmen
 Mediziner	1	Ich bin kein Mediziner.	我不是医生。	Tatoeba #13465415 · mhr	医学工作者	
 Mediziner	2	Der Mediziner untersucht den Patienten und erklärt ihm die Behandlung.	这位医学工作者检查病人，并向他解释治疗方案。	Luna 写	医学工作者	
@@ -14162,11 +14162,11 @@ Schlamm	1	Sie spielt liebend gern mit Schlamm.	她非常喜欢玩泥。	Tatoeba 
 Schlamm	2	Die Kinder spielten im Schlamm.	孩子们在泥里玩。	Tatoeba #6975961 · Pfirsichbaeumchen	泥；泥浆	im Schlamm spielen
 Auftraggeber	1	Der Auftraggeber erwartet von uns genaues Arbeiten.	委托方要求我们做事一丝不苟。	Tatoeba #4820590 · al_ex_an_der	委托人；客户	etwas von jemandem erwarten
 Auftraggeber	2	Der Auftraggeber bezahlt die Rechnung nächste Woche.	委托人下周支付账单。	Luna 写	委托人；客户	
-zurückrufen	1	Die Ärztin rief ihn zurück.	医生把他叫了回来。	Tatoeba #10033556 · wolfgangth	回电话；给……回电话	jemanden zurückrufen + Akk.
+zurückrufen	1	Die Ärztin rief ihn zurück.	医生给他回了电话。	Tatoeba #10033556 · wolfgangth	回电话；给……回电话	jemanden zurückrufen + Akk.
 zurückrufen	2	Könntest du mich etwas später zurückrufen?	你能晚一点给我回电话吗？	Tatoeba #10074870 · wolfgangth	回电话；给……回电话	jemanden zurückrufen + Akk.
 anheben	1	Kannst du diesen Stein anheben?	你能举起这块石头吗？	Tatoeba #2788377 · Tamy	抬起	anheben + Akk.
 anheben	2	Es würde genügen, die Gehälter anzuheben.	提高工资就够了。	Tatoeba #8381732 · brauchinet	提高（价格、工资等）	Gehälter anheben
-fromm	1	Das ist ja ein frommer Wunsch!	这真是一个虔诚的愿望！	Tatoeba #1734278 · Esperantostern	不切实际的（用于 frommer Wunsch）	frommer Wunsch
+fromm	1	Das ist ja ein frommer Wunsch!	这真是一厢情愿的愿望！	Tatoeba #1734278 · Esperantostern	不切实际的（用于 frommer Wunsch）	frommer Wunsch
 fromm	2	Sie war eine fromme Frau.	她是一位虔诚的女人。	Tatoeba #13397332 · Waldelfe	虔诚的	
 gestrig	1	Wir sprachen über den gestrigen Test.	我们谈到了昨天的测验。	Tatoeba #1253561 · Espi	昨天的	
 gestrig	2	Wie war das gestrige Abendessen?	昨晚的晚餐怎么样？	Tatoeba #3518386 · Pfirsichbaeumchen	昨天的	
@@ -14219,7 +14219,7 @@ Reue	2	Reue kommt immer zu spät.	悔恨总是来得太迟。	Tatoeba #5607523 �
 irritieren	1	Seine Art zu sprechen irritiert mich.	他说话的方式让我很不舒服。	Tatoeba #5597184 · Esperantostern	使困惑	jemanden irritieren
 irritieren	2	Diese Lampe ist zu hell und irritiert mich.	这盏灯太亮了，刺得我不舒服。	Tatoeba #13910672 · Biderl	使烦恼、刺激	etwas irritiert jemanden
 irritieren	3	Lass dich von meiner Anwesenheit nicht irritieren.	别因为我在这里而感到不自在。	Tatoeba #3421248 · pne	使困惑	sich von etwas irritieren lassen
-Sympathie	1	Man findet oft, dass aus Sympathie Liebe wird.	人们常常觉得，同情会变成爱情。	Tatoeba #3089697 · Manfredo	好感	aus Sympathie
+Sympathie	1	Man findet oft, dass aus Sympathie Liebe wird.	人们常常觉得，好感会变成爱情。	Tatoeba #3089697 · Manfredo	好感	aus Sympathie
 Sympathie	2	Seine Sympathie war nur gespielt.	他的好感只是装出来的。	Tatoeba #982065 · Sudajaengi	好感	
 schwächen	1	Ich bin geschwächt vor Hunger.	我饿得浑身无力。	Tatoeba #9819366 · GaryGaryGary	使虚弱	geschwächt sein vor + Dat.
 schwächen	2	Der Krieg schwächt und macht ärmer, selbst wenn man gewinnt.	战争会削弱人们的力量、使人们更贫穷，即使赢了也是如此。	Tatoeba #5861189 · Pfirsichbaeumchen	削弱	etwas schwächt jemanden/etwas
@@ -14288,7 +14288,7 @@ Metapher	1	Das kann als Metapher verstanden werden.	这可以被理解为一种�
 Metapher	2	Das kann als Metapher betrachtet werden.	这可以被视为一种隐喻。	Tatoeba #13814793 · mhr	隐喻	als Metapher betrachten
 Gier	1	Je mehr der Mensch besitzt, desto größer wird seine Gier.	人拥有得愈多，贪念就愈大。	Tatoeba #10958020 · Yorwba	贪婪	Gier nach + Dat.
 Gier	2	Gier ist nicht immer gut.	贪婪并不总是好事。	Tatoeba #7793161 · manese	贪婪	
-Lappen	1	Das ist mir tatsächlich durch die Lappen gegangen.	我确实把这事给忘了。	Tatoeba #1214576 · Esperantostern	错过；溜走（durch die Lappen gehen）	durch die Lappen gehen
+Lappen	1	Das ist mir tatsächlich durch die Lappen gegangen.	这事确实让我错过了。	Tatoeba #1214576 · Esperantostern	错过；溜走（durch die Lappen gehen）	durch die Lappen gehen
 Lappen	2	Putz das Fenster mit einem feuchten Lappen.	用湿抹布擦窗户。	Tatoeba #727488 · Dejo	抹布	mit + Dat.
 ausgraben	1	Wo habt ihr diese Liste ausgegraben?	你们是从哪儿翻出这份清单的？	Tatoeba #12498623 · mhr	翻出；找出（旧东西或资料）	etwas ausgraben
 ausgraben	2	Hast du die Kartoffeln ausgegraben?	你把土豆挖出来了吗？	Tatoeba #1556007 · Pfirsichbaeumchen	挖出	etwas ausgraben
@@ -14374,7 +14374,7 @@ Achse	2	Die Achse ist gebrochen.	轴断了。	Tatoeba #2291547 · Pfirsichbaeumc
 nachlassen	1	Der Regen hat nachgelassen.	雨变小了。	Tatoeba #9927415 · Laoan	减弱；减轻	
 nachlassen	2	Es ist immer wieder schön, wenn der Schmerz nachlässt.	疼痛减轻时，总是让人松一口气。	Tatoeba #916211 · Esperantostern	减弱；减轻	
 nachlassen	3	Wir lassen nicht nach!	我们绝不松懈！	Tatoeba #5568382 · Esperantostern	松懈；不再坚持	
-Taxifahrer	1	Ihr Vater ist Taxifahrer.	他们的父亲是一个计程车司机。对应德语：Ihr Vater ist Taxifahrer. → Ihr Vater ist Taxifahrer.（若指“他们的父亲”，应写“Der Vater von ihnen ist Taxifahrer.”）	Tatoeba #2225754 · Pfirsichbaeumchen	出租车司机	
+Taxifahrer	1	Ihr Vater ist Taxifahrer.	她的父亲是出租车司机。	Tatoeba #2225754 · Pfirsichbaeumchen	出租车司机	
 Taxifahrer	2	Unterwegs hatten wir ein nettes Gespräch mit dem Taxifahrer.	路上我们和出租车司机聊得很愉快。	Tatoeba #12174987 · xallace	出租车司机	
 Rumänien	1	Vor einigen Jahren habe ich Rumänien besucht.	几年前我去过罗马尼亚。	Tatoeba #1619410 · Espi	罗马尼亚	
 Rumänien	2	Ich lebe in Rumänien.	我住在罗马尼亚。	Tatoeba #9993490 · giefingl	罗马尼亚	
@@ -14412,7 +14412,7 @@ nächtlich	1	Der nächtliche Himmel ist sehr schön.	夜空很美。	Tatoeba #14
 nächtlich	2	Am nächtlichen Himmel leuchten die Sterne.	夜空中星星闪闪发亮。	Tatoeba #11787707 · mhr	夜间的	
 einreden	1	Niemand kann mir etwas anderes einreden.	谁也别想说服我相信别的。	Tatoeba #13029499 · Yorwba	说服；使人相信	jemandem etwas einreden
 einreden	2	Hör auf, dir das einzureden!	别再这样自我说服了！	Tatoeba #10492059 · Pfirsichbaeumchen	自我说服；使自己相信	sich etwas einreden
-einreden	3	Sie hat auf ihn eingeredet, ein neues Haus zu kaufen.	她一直劝他说服他买一栋新房子。	Tatoeba #909930 · Esperantostern	说服；使人相信	auf + Akk. einreden
+einreden	3	Sie hat auf ihn eingeredet, ein neues Haus zu kaufen.	她一直劝他买一栋新房子。	Tatoeba #909930 · Esperantostern	说服；使人相信	auf + Akk. einreden
 Kommune	1	Sie leben in einer Kommune.	他们住在一个公社里。	Tatoeba #1699336 · al_ex_an_der	公社	in einer Kommune leben
 Kommune	2	Die Kommune plant einen neuen Spielplatz für die Kinder.	市镇计划为孩子们建一个新的游乐场。	Luna 写	市镇；地方行政区	
 Kinn	1	Er hat auf dem Kinn eine Narbe.	他下巴上有一道伤疤。	Tatoeba #9984314 · wolfgangth	下巴	auf dem Kinn
