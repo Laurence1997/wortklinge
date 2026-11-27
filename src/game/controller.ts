@@ -945,7 +945,8 @@ export class Controller {
   }
 
   /** 药片 (物品栏): heal, then the monsters act (the turn is spent). Null when there is none or HP is full. */
-  useTablet(): { report: TurnReport; heal: number } | null {
+  /** 药片: heal at once; it does not take the turn (Lucas 2026-11-27「用药不占回合」), the monsters don't act. */
+  useTablet(): { heal: number } | null {
     const s = this.state;
     const b = this.battle;
     if (!b || b.outcome || b.tutorial || s.hp >= maxHp(s) || itemCount(s, 'tablet') <= 0) return null;
@@ -954,15 +955,9 @@ export class Controller {
     s.hp = Math.min(maxHp(s), s.hp + tabletHeal(s));
     const heal = s.hp - before;
     this.milestone('tablet');
-    const r = resolveTurn(s, b, 'item', ITEM_TURN, '', this.rng, this.pack);
-    if (r.killer) this.killer = r.killer;
-    if (r.monsterDamage > 0) {
-      sfx.hurt();
-      this.scene.shake(0.004);
-    }
     this.refresh();
     this.persist();
-    return { report: r, heal };
+    return { heal };
   }
 
   /** 秘术栏: shout an equipped charm. Before 33 it spends the turn (the monsters act); from 33 it is a bonus action. */
