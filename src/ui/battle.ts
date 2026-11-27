@@ -16,7 +16,7 @@ import type { Move } from '../core/types';
 import { FAMILIES } from '../data/families';
 import { carriesShout, combatSkills, POOL, type PoolId } from '../core/skillPool';
 import { resMax } from '../core/classes';
-import { fullForm, genderOf, WORD_BY_ID, zhWithPos } from '../data/words';
+import { fullForm, fullFormLong, genderOf, WORD_BY_ID, zhWithPos } from '../data/words';
 import type { Controller } from '../game/controller';
 import { ELEMENT_TAG, GLITCH, NAME_RED } from '../game/sprites';
 import { $, bar, clear, h, umlautButtons } from './dom';
@@ -1242,7 +1242,7 @@ export class BattleUI {
       const head = qq.item ? '吃了药片' : r.correct ? (r.crit ? (r.newSpell ? '新言灵！暴击！' : '暴击！') : r.parried ? '躲开了' : '答对了') : '答错了';
       fb.append(h('b', head));
       if (qq.item && r.monsterDamage) fb.append(h('span', `  它趁机出手：${r.monsterDamage} 伤害`));
-      if (r.correct && this.b.word && (qq.type === 'article' || qq.type === 'typed')) fb.append(h('span', `  ${fullForm(this.b.word)} · ${this.b.word.zh}`));
+      if (r.correct && this.b.word && (qq.type === 'article' || qq.type === 'typed')) fb.append(h('span', `  ${fullFormLong(this.b.word)} · ${this.b.word.zh}`));
       if (qq.echo) fb.append(h('span', `  ${qq.echo.target}（${qq.echo.zhT}） · ${qq.echo.partner}（${qq.echo.zhP}）`));
       if (r.phase === 'right') fb.append(h('span', `  ${this.b.phase} 相 · 弱点`));
       if (r.phase === 'wrong') fb.append(h('span', `  ${this.b.phase} 相被抵抗：${phaseWrongWhy(this.b)}`));

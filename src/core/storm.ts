@@ -90,7 +90,7 @@ export function gradeStorm(w: Word, forms: StormForm[], input: string, keepGoing
   const notes: string[] = [];
   for (let i = 0; i < forms.length; i++) {
     const f = forms[i];
-    const v = f.dict ? gradeTyped(parts[i] ?? '', w, true) : gradeTyped(parts[i] ?? '', { ...w, de: f.answer, art: undefined }, false);
+    const v = f.dict ? gradeTyped(parts[i] ?? '', w, true) : gradeTyped(parts[i] ?? '', { ...w, de: f.answer, art: undefined, refl: undefined }, false);
     if (!v.ok) {
       miss = true;
       if (!keepGoing) {
