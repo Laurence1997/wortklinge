@@ -649,7 +649,7 @@ describe('classes and talents', () => {
 });
 
 describe('Mira shop', () => {
-  it('buys with "Ich nehme den …", bargains 10% off, sells for a fifth', async () => {
+  it('buys with a click or a German sentence (10% off), sells for a fifth', async () => {
     const shop = await import('../src/core/shop');
     const rng = makeRng(9);
     const s = newGame('T', 'student');
@@ -660,14 +660,18 @@ describe('Mira shop', () => {
     expect(s.shop!.items.every((it) => it.quality !== 'orange')).toBe(true);
     const it = s.shop!.items[0];
     const n = shop.SLOT_NOUN[it.slot];
-    expect(shop.gradeBuy(`Ich nehme ${n.nom}`, it.slot).ok).toBe(it.slot === 'amulet' || it.slot === 'dict');
+    expect(shop.gradeBuy(`Ich nehme ${n.nom}`, it.slot, 12).ok).toBe(it.slot === 'amulet' || it.slot === 'dict' || it.slot === 'glasses');
     const p = shop.price(s, it);
-    const r = shop.buy(s, 0, `ich nehme ${n.acc}.`, 'Geht das billiger?', 30);
+    const r = shop.buy(s, 0, `ich nehme ${n.acc}.`, 30);
     expect(r.ok).toBe(true);
     expect(r.paid).toBe(Math.round(p * 0.9));
     expect(s.bag[0].id).toBe(it.id);
-    expect(shop.sell(s, it.id)).toBe(Math.max(1, Math.round(p * 0.2)));
-    expect(shop.gradeBuy('Ich nehme der Stift', 'pen').notes[0]).toContain('den Stift');
+    expect(shop.sell(s, it.id).gold).toBe(Math.max(1, Math.round(p * 0.2)));
+    expect(shop.gradeBuy('Ich nehme der Stift', 'pen', 12).notes[0]).toContain('den');
+    const it2 = s.shop!.items[0];
+    const g = s.gold;
+    expect(shop.buy(s, 0, null, 30)).toMatchObject({ ok: true, paid: shop.price(s, it2), said: false });
+    expect(s.gold).toBe(g - shop.price(s, it2));
   });
 
   it('first refresh each hour is free, then doubles', async () => {

@@ -3,7 +3,7 @@ import { maxHp, newGame } from '../src/core/state';
 import { makeRng } from '../src/core/rng';
 import { WORDS } from '../src/data/words';
 import { availableMoves, canHint, hintOf, ITEM_TURN, makeQuestion, resolveTurn, startBattle } from '../src/core/combat';
-import { addItem, bonfireRefill, buyConsumable, buyItemLine, cap, count, grantStarter, itemPrice, rollItemDrops } from '../src/core/items';
+import { addItem, bonfireRefill, buyConsumable, cap, count, grantStarter, itemPrice, rollItemDrops } from '../src/core/items';
 import { CONFIG } from '../src/core/config';
 
 const noun = () => WORDS.find((x) => x.art && x.pos === 'n' && !x.tutorial && !x.plOnly)!;
@@ -80,21 +80,20 @@ describe('2026-11-22 物品栏：低语纸条和药片', () => {
     expect(rollItemDrops(s, () => 0.99)).toEqual([]);
   });
 
-  it('buying is a German sentence (accusative)', () => {
-    expect(buyItemLine('Ich nehme einen Zettel.', 'hint')).toBe(true);
-    expect(buyItemLine('ich nehme den zettel', 'hint')).toBe(true);
-    expect(buyItemLine('Ich nehme ein Zettel', 'hint')).toBe(false);
-    expect(buyItemLine('Ich möchte eine Tablette.', 'tablet')).toBe(true);
-    expect(buyItemLine('Ich nehme einen Tablette', 'tablet')).toBe(false);
+  it('buying is a click; the German sentence is optional and 10% off (1.0.10)', () => {
     const s = newGame('T', 'student');
     s.level = 8;
     s.gold = 0;
-    expect(buyConsumable(s, 'tablet', 'Ich nehme eine Tablette.')).toMatchObject({ ok: false, reason: 'gold' });
+    expect(buyConsumable(s, 'tablet')).toMatchObject({ ok: false, reason: 'gold' });
     s.gold = 10_000;
-    const r = buyConsumable(s, 'tablet', 'Ich nehme eine Tablette.');
-    expect(r.ok).toBe(true);
+    expect(buyConsumable(s, 'tablet')).toMatchObject({ ok: true, said: false, paid: itemPrice(s, 'tablet') });
     expect(s.gold).toBe(10_000 - itemPrice(s, 'tablet'));
-    expect(count(s, 'tablet')).toBe(1);
+    expect(buyConsumable(s, 'hint', 'Ich nehme ein Zettel')).toMatchObject({ ok: false, reason: 'sentence' });
+    const g = s.gold;
+    const r = buyConsumable(s, 'tablet', 'ich nehme eine tablette');
+    expect(r).toMatchObject({ ok: true, said: true });
+    expect(g - s.gold).toBe(Math.max(1, Math.round(itemPrice(s, 'tablet') * 0.9)));
+    expect(count(s, 'tablet')).toBe(2);
   });
 
   it('a 药片 turn asks nothing: the monster acts, combo and the word are untouched', () => {

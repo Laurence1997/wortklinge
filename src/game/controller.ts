@@ -29,7 +29,8 @@ import { favour, FAVOUR, KONRAD_WORDS, QUESTS, questEvent, questState, startQues
 import { CHEST_ZH, CHESTS, lockWord, openChest, type ChestKind } from '../core/chest';
 import { playChest } from '../ui/chestFx';
 import { gradeTyped } from '../core/grading';
-import { buy as buyItem, openShop, refresh as refreshShop, sell as sellItem } from '../core/shop';
+import { buy as buyItem, openShop, refresh as refreshShop, sell as sellItem, SLOT_NOUN } from '../core/shop';
+import { buyModel } from '../core/shopTalk';
 import { hourGold, resetOldTree, resMax, respec, respecCost, spent } from '../core/classes';
 import { noteVisit } from '../core/redname';
 import { BLESSINGS, blessCount, blessScale, bossFloor, canDescend, descend, endRift, offerBlessings, RIFT, riftAct, riftItemLevel, riftOpen, riftWord, silenceLeft, startRift, takeBlessing } from '../core/rift';
@@ -988,7 +989,7 @@ export class Controller {
     return notes;
   }
 
-  buyConsumable(k: Consumable, sentence: string) {
+  buyConsumable(k: Consumable, sentence?: string) {
     const r = buyConsumable(this.state, k, sentence);
     if (r.ok) sfx.loot();
     this.refresh();
@@ -1476,7 +1477,7 @@ export class Controller {
     this.questFire('metMira');
     const open = () => {
       openShop(s, this.rng, now(s));
-      this.panels.buying = null;
+      this.panels.saying = null;
       this.panels.show('shop');
     };
     const unid = unidentifiedItems(s);
@@ -1500,8 +1501,8 @@ export class Controller {
       say(
         [
           { who: MIRA, text: (s.region ?? 1) === 1 ? 'Hallo! 集市回不去，我先在火边摆个摊。笔、外套、护符、词典。要什么？' : 'Hallo! 笔、外套、护符、词典。要什么？' },
-          { who: MIRA, text: '在这儿，东西靠嘴买。说「Ich nehme den Stift.」，它就是你的。' },
-          { who: MIRA, text: 'der 跟在 nehme 后面要变 den，das 不变。嫌贵？「Geht das billiger?」看我心情。' },
+          { who: MIRA, text: `看中了就直接点「买」。想便宜一成？用德语跟我说：「${buyModel(s.level, SLOT_NOUN.pen.noun)}」` },
+          { who: MIRA, text: 'der Stift 做宾语要变 den Stift，die 和 das 不变。卖东西也一样，说「Ich möchte den Stift verkaufen.」，我多给一成。' },
         ],
         open,
       );
@@ -1510,8 +1511,8 @@ export class Controller {
     open();
   }
 
-  shopBuy(i: number, sentence: string, bargain: string) {
-    const r = buyItem(this.state, i, sentence, bargain, CONFIG.loot.bagSize);
+  shopBuy(i: number, sentence: string | null) {
+    const r = buyItem(this.state, i, sentence, CONFIG.loot.bagSize);
     if (r.ok) sfx.loot();
     this.refresh();
     this.persist();
@@ -1619,12 +1620,16 @@ export class Controller {
     ]);
   }
 
-  shopSell(id: string): void {
-    const g = sellItem(this.state, id);
-    if (g) toast(`卖掉了，+${g} 金币`);
-    this.refresh();
-    this.persist();
+  /** Plain sell (toast), or with the German sentence (the shop panel shows the result). */
+  shopSell(id: string, sentence?: string) {
+    const r = sellItem(this.state, id, sentence);
+    if (r.ok && sentence === undefined) toast(`卖掉了，+${r.gold} 金币`);
+    if (r.ok) {
+      this.refresh();
+      this.persist();
+    }
     this.panels.render();
+    return r;
   }
 
   shopRefresh(): void {

@@ -44,7 +44,8 @@ import { lookPicker, originPicker } from './title';
 import { CONSUMABLE, cap as itemCap, count as itemCount, itemPrice, type Consumable } from '../core/items';
 import { matchRows, mergeImport, readTable } from '../core/wordImport';
 import { checkJournal, type JournalHint } from '../core/journal';
-import { BARGAIN_LINES, ensureShop, price, refreshCost, sellPrice, SLOT_NOUN } from '../core/shop';
+import { ensureShop, price, refreshCost, sellPrice, SLOT_NOUN } from '../core/shop';
+import { buyPattern, saidPrice, saidSellPrice, SELL_PATTERN } from '../core/shopTalk';
 
 export type PanelName = 'hero' | 'talents' | 'quests' | 'codex' | 'words' | 'data' | 'account' | 'settings' | 'help' | 'shop' | 'chest' | 'quiz' | 'screen' | 'bigmap' | 'diary' | 'ask' | 'exam' | 'journal' | 'place' | 'letter';
 
@@ -264,7 +265,7 @@ export class Panels {
       el.onclick = (e) => {
         if (e.target === el) this.close();
       };
-      if (this.buying !== null) window.setTimeout(() => (el.querySelector('input.buy-line') as HTMLInputElement | null)?.focus(), 0);
+      if (this.saying !== null) window.setTimeout(() => (el.querySelector('input.buy-line') as HTMLInputElement | null)?.focus(), 0);
       return;
     }
     const titles: Record<Exclude<PanelName, 'shop' | 'chest' | 'quiz' | 'screen' | 'bigmap' | 'diary' | 'ask' | 'exam' | 'journal' | 'place' | 'letter'>, string> = { hero: '角色与装备', talents: '技能与天赋', quests: '任务', codex: '图鉴', words: '单词本', data: '数据与存档', account: '账号与排行', settings: '设置', help: '怎么玩' };
@@ -1041,21 +1042,43 @@ export class Panels {
 
   // ---- Shop (Mira) ---------------------------------------------------------------
 
-  /** Index of the shelf item being bought (the sentence box is open), or null. */
-  buying: number | null = null;
+  /** Which 「用德语说」 box is open: `c:hint` (consumable), `b:3` (shelf item 3), `s:<item id>` (selling), or null. */
+  saying: string | null = null;
   private shopMsg: { text: string; tone: 'ok' | 'no' } | null = null;
+
+  private toggleSay(key: string): void {
+    this.saying = this.saying === key ? null : key;
+    this.shopMsg = null;
+    this.render();
+  }
+
+  /** The optional German box under a card (商店说德语, 1.0.10): one input, umlauts and a button across the card. */
+  private sayBox(hint: string, btn: string, go: (text: string) => void, wide = false): HTMLElement {
+    const line = h('input.buy-line', { type: 'text', autocomplete: 'off', spellcheck: 'false' }) as HTMLInputElement;
+    const send = () => line.value.trim() && go(line.value);
+    line.addEventListener('keydown', (e) => {
+      e.stopPropagation();
+      if (e.key === 'Enter' && !e.isComposing) {
+        e.preventDefault();
+        send();
+      }
+    });
+    return h(wide ? 'div.buybox' : 'div.saybox', h('div.small.muted', hint), h('div.typing', line, umlautButtons(line), h('button.btn.primary', { onclick: send }, btn)));
+  }
 
   private shop(): HTMLElement {
     const s = this.ctrl.state;
     const shop = ensureShop(s);
     const wrap = h('div');
     const rc = refreshCost(s);
+    const pat = buyPattern(s.level);
     wrap.append(
       h(
         'div.hud-row',
         h('span', `金币 `, h('b', String(s.gold))),
         h('button.btn.small', { disabled: s.gold < rc, onclick: () => { this.ctrl.shopRefresh(); } }, rc ? `刷新货架（${rc} 金币）` : '刷新货架（这小时免费）'),
       ),
+      h('p.small.muted', `直接点「买」「卖」就行。点「用德语说」用德语跟 Mira 讲，说对了买打九折、卖多给一成。你这一级（${pat.cefr}）买东西说：${pat.show}；卖东西说：${SELL_PATTERN.show}。`),
     );
     // Wishlist.
     const wishSlot = h('select', { onchange: (e: Event) => { shop.wish.slot = ((e.target as HTMLSelectElement).value || undefined) as Slot | undefined; this.ctrl.persist(); } }) as HTMLSelectElement;
@@ -1068,54 +1091,60 @@ export class Panels {
 
     if (this.shopMsg) wrap.append(h(`div.feedback.${this.shopMsg.tone}`, this.shopMsg.text));
 
-    // 物品栏 (2026-11-22): 纸条 and 药片, one at a time, bought with a German sentence too.
+    // 物品栏 (2026-11-22): 纸条 and 药片, one at a time.
     const cons = h('div.bag');
     for (const k of ['hint', 'tablet'] as Consumable[]) {
       const c = CONSUMABLE[k];
-      const line = h('input.buy-line', { type: 'text', value: 'Ich nehme ', autocomplete: 'off', spellcheck: 'false' }) as HTMLInputElement;
-      const go = () => {
-        const r = this.ctrl.buyConsumable(k, line.value);
-        this.shopMsg = r.ok
-          ? { text: `Mira：「Gern!」花了 ${r.paid} 金币，现在有 ${itemCount(s, k)} 个${c.zh}。`, tone: 'ok' }
-          : r.reason === 'sentence'
-            ? { text: `Mira 没听懂。可以说：Ich nehme ${c.acc}.`, tone: 'no' }
-            : r.reason === 'full'
-              ? { text: `${c.zh}已经带满了（上限 ${itemCap(s, k)}）。`, tone: 'no' }
-              : { text: `钱不够：要 ${r.paid} 金币。`, tone: 'no' };
+      const full = itemPrice(s, k);
+      const buyIt = (text?: string) => {
+        const r = this.ctrl.buyConsumable(k, text);
+        if (r.ok) {
+          this.saying = null;
+          this.shopMsg = { text: `Mira：「${r.said ? 'Gern, für Sie zehn Prozent billiger!' : 'Bitte schön!'}」花了 ${r.paid} 金币，现在有 ${itemCount(s, k)} 个${c.zh}。`, tone: 'ok' };
+        } else if (r.reason === 'sentence') this.shopMsg = { text: `Mira 没听懂。可以说：${r.verdict?.correct ?? ''} ${r.verdict?.notes.join(' ') ?? ''}`, tone: 'no' };
+        else if (r.reason === 'full') this.shopMsg = { text: `${c.zh}已经带满了（上限 ${itemCap(s, k)}）。`, tone: 'no' };
+        else this.shopMsg = { text: `钱不够：要 ${r.paid} 金币。`, tone: 'no' };
         this.render();
       };
-      line.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          e.stopPropagation();
-          go();
-        }
-      });
+      const key = `c:${k}`;
       cons.append(
         h(
           'div.item.buy',
-          h('div', h('b', `${c.zh}（${c.de}）`), h('div.small', c.use), h('div.small', `价格 ${itemPrice(s, k)} 金币 · 现有 ${itemCount(s, k)} / ${itemCap(s, k)}`)),
-          h('div.typing', line, umlautButtons(line), h('button.btn.primary', { onclick: go }, '买 ↵')),
+          h('div', h('b', `${c.zh}（${c.de}）`), h('div.small', c.use), h('div.small', `价格 ${full} 金币 · 现有 ${itemCount(s, k)} / ${itemCap(s, k)}`)),
+          h('div.acts', h('button.btn', { onclick: () => buyIt() }, `买 ${full}`), h('button.btn.ghost', { onclick: () => this.toggleSay(key) }, `用德语说 ${saidPrice(full)}`)),
+          this.saying === key ? this.sayBox(`${pat.show}。东西：${c.de}`, '买 ↵', (t) => buyIt(t)) : null,
         ),
       );
     }
-    wrap.append(h('h3', '消耗品（用德语说：Ich nehme + 第四格）'), cons);
+    wrap.append(h('h3', '消耗品'), cons);
 
     const shelf = h('div.bag');
     shop.items.forEach((it, i) => {
       const p = price(s, it);
-      const card = h(
-        `div.item.${it.quality}`,
-        h('div', this.itemBody(it), h('div.small', `价格 ${p} 金币`)),
-        h('div.acts', h('button.btn', { onclick: () => { this.buying = i; this.shopMsg = null; this.render(); } }, '买')),
+      const n = SLOT_NOUN[it.slot];
+      const buyIt = (text: string | null) => {
+        const r = this.ctrl.shopBuy(i, text);
+        if (r.ok) {
+          this.saying = null;
+          this.shopMsg = { text: `Mira：「${r.said ? 'Gern, für Sie zehn Prozent billiger!' : 'Bitte schön!'}」花了 ${r.paid} 金币，${it.name} 放进了背包。`, tone: 'ok' };
+        } else if (r.reason === 'sentence') this.shopMsg = { text: `Mira 没听懂。正确说法：${r.verdict?.correct ?? ''} ${r.verdict?.notes.join(' ') ?? ''}`, tone: 'no' };
+        else if (r.reason === 'gold') this.shopMsg = { text: `钱不够：要 ${r.paid} 金币。`, tone: 'no' };
+        else this.shopMsg = { text: '背包满了，先卖掉一些。', tone: 'no' };
+        this.render();
+      };
+      const key = `b:${i}`;
+      shelf.append(
+        h(
+          `div.item.shopc.${it.quality}`,
+          h('div', this.itemBody(it), h('div.small', `价格 ${p} 金币`)),
+          h('div.acts', h('button.btn', { disabled: s.gold < p, onclick: () => buyIt(null) }, `买 ${p}`), h('button.btn.ghost', { onclick: () => this.toggleSay(key) }, `用德语说 ${saidPrice(p)}`)),
+        ),
       );
-      shelf.append(card);
-      if (this.buying === i) shelf.append(this.buyBox(i));
+      if (this.saying === key) shelf.append(this.sayBox(`用德语说「我要这个${n.zh}」：${pat.show}。东西：${n.nom}。说对了只要 ${saidPrice(p)} 金币。`, '买 ↵', (t) => buyIt(t), true));
     });
     if (!shop.items.length) shelf.append(h('p.muted.small', '货架空了。刷新一下吧。'));
     wrap.append(h('h3', '货架'), shelf);
 
-    // Selling.
     // 盲盒摊 (0.6, 26 级): read the German label to know what is inside.
     if (s.level >= BLIND_FROM) {
       const boxes = blindBoxes(s, this.ctrl.rng);
@@ -1143,10 +1172,34 @@ export class Panels {
         ),
       );
     }
-    wrap.append(h('h3', `卖掉或分解背包里的东西（卖价是买价的五分之一；分解得 3 片本区碎片，本区余额 ${s.shardBal?.[String(s.region ?? 1)] ?? 0} 片，在篝火换档）`));
+    // Selling.
+    wrap.append(h('h3', `卖掉或分解背包里的东西（卖价是买价的五分之一，用德语说多给一成；分解得 3 片本区碎片，本区余额 ${s.shardBal?.[String(s.region ?? 1)] ?? 0} 片，在篝火换档）`));
     const bag = h('div.bag');
     for (const it of s.bag) {
-      bag.append(h(`div.item.${it.quality}`, h('div', this.itemBody(it)), h('div.acts', h('button.btn.ghost', { onclick: () => this.ctrl.shopSell(it.id) }, `卖 ${sellPrice(s, it)}`), h('button.btn.ghost', { title: '分解成本区碎片', onclick: () => this.ctrl.salvageItem(it.id) }, '分解'))));
+      const g = sellPrice(s, it);
+      const key = `s:${it.id}`;
+      bag.append(
+        h(
+          `div.item.shopc.${it.quality}`,
+          h('div', this.itemBody(it)),
+          h(
+            'div.acts',
+            h('button.btn.ghost', { onclick: () => this.ctrl.shopSell(it.id) }, `卖 ${g}`),
+            h('button.btn.ghost', { onclick: () => this.toggleSay(key) }, `用德语说 ${saidSellPrice(g)}`),
+            h('button.btn.ghost', { title: '分解成本区碎片', onclick: () => this.ctrl.salvageItem(it.id) }, '分解'),
+          ),
+        ),
+      );
+      if (this.saying === key)
+        bag.append(
+          this.sayBox(`用德语说「我想卖这个${SLOT_NOUN[it.slot].zh}」：${SELL_PATTERN.show}。东西：${SLOT_NOUN[it.slot].nom}。说对了给 ${saidSellPrice(g)} 金币。`, '卖 ↵', (t) => {
+            this.saying = null;
+            const r = this.ctrl.shopSell(it.id, t);
+            this.shopMsg = r.ok ? { text: `Mira：「Abgemacht!」${it.name} 卖了 ${r.gold} 金币。`, tone: 'ok' } : { text: `Mira 没听懂。正确说法：${r.verdict?.correct ?? ''} ${r.verdict?.notes.join(' ') ?? ''}`, tone: 'no' };
+            if (!r.ok) this.saying = key;
+            this.render();
+          }, true),
+        );
     }
     if (!s.bag.length) bag.append(h('p.muted.small', '背包是空的。'));
     wrap.append(bag);
@@ -1161,40 +1214,6 @@ export class Panels {
       wrap.append(h('h3', '俚语卷轴（流浪商人）'), h('p.small.muted', '买下就学会这句俚语，可以选给「俚语」技能。只对写明的场合管用。'), list);
     }
     return wrap;
-  }
-
-  private buyBox(i: number): HTMLElement {
-    const s = this.ctrl.state;
-    const it = ensureShop(s).items[i];
-    const n = SLOT_NOUN[it.slot];
-    const bargain = h('input', { type: 'text', placeholder: `讲价（可选）：${BARGAIN_LINES[0]}`, autocomplete: 'off', spellcheck: 'false' }) as HTMLInputElement;
-    const line = h('input.buy-line', { type: 'text', value: 'Ich nehme ', autocomplete: 'off', spellcheck: 'false' }) as HTMLInputElement;
-    const go = () => {
-      const r = this.ctrl.shopBuy(i, line.value, bargain.value);
-      if (r.ok) {
-        this.buying = null;
-        this.shopMsg = { text: `Mira：「Gern!」${r.bargained ? '讲价成功，打了九折。' : ''}花了 ${r.paid} 金币，${it.name} 放进了背包。`, tone: 'ok' };
-      } else if (r.reason === 'sentence') {
-        this.shopMsg = { text: `Mira 没听懂。正确说法：${r.verdict.correct} ${r.verdict.notes.join(' ')}`, tone: 'no' };
-      } else if (r.reason === 'gold') this.shopMsg = { text: `钱不够：要 ${r.paid} 金币。`, tone: 'no' };
-      else this.shopMsg = { text: '背包满了，先卖掉一些。', tone: 'no' };
-      this.render();
-    };
-    for (const inp of [bargain, line]) {
-      inp.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          e.stopPropagation();
-          go();
-        }
-      });
-    }
-    return h(
-      'div.buybox',
-      h('div.small', `用德语说「我要这个${n.zh}」：Ich nehme + ${n.nom} 的第四格。讲价的话（Geht das billiger? / Das ist zu teuer. / Gibt es einen Rabatt?），这次打九折。`),
-      h('div.typing', bargain),
-      h('div.typing', line, umlautButtons(line), h('button.btn.primary', { onclick: go }, '成交 ↵')),
-    );
   }
 
   // ---- 技能池 & 天赋树 (游戏设计 十) ----------------------------------------------------------------

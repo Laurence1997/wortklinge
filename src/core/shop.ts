@@ -1,10 +1,11 @@
-// Mira's shop (Lv11, market square). Buying is a German sentence: "Ich nehme den Stift."
+// Mira's shop (Lv7). Buying and selling is a click; saying it in German is optional and pays (src/core/shopTalk.ts).
 // Prices are counted in 「一小时金币」 (60 kills' worth of gold at your level).
 
 import { hourGold } from './classes';
-import { normalize, type Verdict } from './grading';
+import type { Verdict } from './grading';
 import { makeItem } from './loot';
-import { pick, type Rng } from './rng';
+import type { Rng } from './rng';
+import { gradeShopBuy, gradeShopSell, saidPrice, saidSellPrice, type ShopNoun } from './shopTalk';
 import type { GameState } from './state';
 import type { AffixKey, Item, Quality, Slot } from './types';
 
@@ -12,20 +13,17 @@ export const SHOP_SLOTS = 8;
 export const PRICE: Record<Quality, number> = { white: 0.04, green: 0.1, purple: 0.5, orange: 0, red: 0 };
 const STOCK_WEIGHTS: Array<[Quality, number]> = [['white', 60], ['green', 32], ['purple', 8]];
 export const REFRESH_BASE = 0.05;
-export const BARGAIN_OFF = 0.1;
 export const SELL_SHARE = 0.2;
 
 /** The slot noun you name when buying, in the accusative. */
-export const SLOT_NOUN: Record<Slot, { nom: string; acc: string; zh: string }> = {
-  pen: { nom: 'der Stift', acc: 'den Stift', zh: '笔' },
-  coat: { nom: 'der Mantel', acc: 'den Mantel', zh: '外套' },
-  amulet: { nom: 'das Amulett', acc: 'das Amulett', zh: '护符' },
-  dict: { nom: 'das Wörterbuch', acc: 'das Wörterbuch', zh: '词典' },
-  glasses: { nom: 'die Brille', acc: 'die Brille', zh: '眼镜' },
-  phones: { nom: 'der Kopfhörer', acc: 'den Kopfhörer', zh: '耳机' },
+export const SLOT_NOUN: Record<Slot, { nom: string; acc: string; zh: string; noun: ShopNoun }> = {
+  pen: { nom: 'der Stift', acc: 'den Stift', zh: '笔', noun: { de: 'Stift', g: 'm', model: 'def' } },
+  coat: { nom: 'der Mantel', acc: 'den Mantel', zh: '外套', noun: { de: 'Mantel', g: 'm', model: 'def' } },
+  amulet: { nom: 'das Amulett', acc: 'das Amulett', zh: '护符', noun: { de: 'Amulett', g: 'n', model: 'def' } },
+  dict: { nom: 'das Wörterbuch', acc: 'das Wörterbuch', zh: '词典', noun: { de: 'Wörterbuch', g: 'n', model: 'def' } },
+  glasses: { nom: 'die Brille', acc: 'die Brille', zh: '眼镜', noun: { de: 'Brille', g: 'f', model: 'def' } },
+  phones: { nom: 'der Kopfhörer', acc: 'den Kopfhörer', zh: '耳机', noun: { de: 'Kopfhörer', g: 'm', model: 'def' } },
 };
-
-export const BARGAIN_LINES = ['Geht das billiger?', 'Das ist zu teuer.', 'Gibt es einen Rabatt?'];
 
 export interface ShopState {
   items: Item[];
@@ -107,58 +105,62 @@ export function refresh(s: GameState, rng: Rng): boolean {
   return true;
 }
 
-/** "Ich nehme den Stift." — accusative of the slot noun. */
-export function gradeBuy(input: string, slot: Slot): Verdict {
-  const n = SLOT_NOUN[slot];
-  const want = normalize(`Ich nehme ${n.acc}`);
-  const got = normalize(input);
-  if (got === want) return { ok: true, notes: [], correct: `Ich nehme ${n.acc}.` };
-  const notes: string[] = [];
-  if (!got.startsWith('ich nehme')) notes.push('买东西要说：Ich nehme + 第四格');
-  else if (slot === 'pen' || slot === 'coat') {
-    if (got.includes(normalize(n.nom))) notes.push(`${n.nom} 是阳性，在 nehmen 后面要变成第四格：${n.acc}`);
-    else if (/\b(die|das|dem|des)\b/.test(got)) notes.push(`${n.nom.split(' ')[1]} 是阳性：${n.acc}`);
-  } else if (/\b(den|der|die|dem)\b/.test(got)) notes.push(`${n.nom.split(' ')[1]} 是中性，第四格不变：${n.acc}`);
-  return { ok: false, notes, correct: `Ich nehme ${n.acc}.` };
-}
-
-export function gradeBargain(input: string): boolean {
-  const g = normalize(input);
-  return BARGAIN_LINES.some((l) => normalize(l) === g);
+/** The German buying sentence for this slot at this level (shopTalk). */
+export function gradeBuy(input: string, slot: Slot, level: number): Verdict {
+  return gradeShopBuy(input, level, SLOT_NOUN[slot].noun);
 }
 
 export interface BuyResult {
   ok: boolean;
-  verdict: Verdict;
+  /** Only when a sentence was given. */
+  verdict?: Verdict;
   paid: number;
-  bargained: boolean;
+  said: boolean;
   reason?: 'gold' | 'bag' | 'sentence';
 }
 
-export function buy(s: GameState, index: number, sentence: string, bargain: string, bagSize: number): BuyResult {
+/** A plain buy when `sentence` is null; with a sentence it must be right, and then it is 10% off. */
+export function buy(s: GameState, index: number, sentence: string | null, bagSize: number): BuyResult {
   const shop = ensureShop(s);
   const it = shop.items[index];
-  const verdict = gradeBuy(sentence, it.slot);
-  const bargained = bargain.trim() !== '' && gradeBargain(bargain);
-  const paid = Math.round(price(s, it) * (bargained ? 1 - BARGAIN_OFF : 1));
-  if (!verdict.ok) return { ok: false, verdict, paid, bargained, reason: 'sentence' };
-  if (s.gold < paid) return { ok: false, verdict, paid, bargained, reason: 'gold' };
-  if (s.bag.length >= bagSize) return { ok: false, verdict, paid, bargained, reason: 'bag' };
-  s.gold -= paid;
-  s.bag.push(it);
-  shop.items.splice(index, 1);
-  return { ok: true, verdict, paid, bargained };
+  const full = price(s, it);
+  if (sentence !== null) {
+    const verdict = gradeBuy(sentence, it.slot, s.level);
+    if (!verdict.ok) return { ok: false, verdict, paid: saidPrice(full), said: true, reason: 'sentence' };
+    return finish(s, index, saidPrice(full), true, bagSize, verdict);
+  }
+  return finish(s, index, full, false, bagSize);
 }
 
-export function sell(s: GameState, itemId: string): number {
+function finish(s: GameState, index: number, paid: number, said: boolean, bagSize: number, verdict?: Verdict): BuyResult {
+  const shop = ensureShop(s);
+  if (s.gold < paid) return { ok: false, verdict, paid, said, reason: 'gold' };
+  if (s.bag.length >= bagSize) return { ok: false, verdict, paid, said, reason: 'bag' };
+  s.gold -= paid;
+  s.bag.push(shop.items[index]);
+  shop.items.splice(index, 1);
+  return { ok: true, verdict, paid, said };
+}
+
+export interface SellResult {
+  ok: boolean;
+  gold: number;
+  verdict?: Verdict;
+}
+
+/** A plain sell when `sentence` is omitted; 「Ich möchte den Stift verkaufen.」 said right gets 10% more. */
+export function sell(s: GameState, itemId: string, sentence?: string): SellResult {
   const i = s.bag.findIndex((x) => x.id === itemId);
-  if (i < 0) return 0;
-  const g = sellPrice(s, s.bag[i]);
+  if (i < 0) return { ok: false, gold: 0 };
+  const full = sellPrice(s, s.bag[i]);
+  let g = full;
+  let verdict: Verdict | undefined;
+  if (sentence !== undefined) {
+    verdict = gradeShopSell(sentence, SLOT_NOUN[s.bag[i].slot].noun);
+    if (!verdict.ok) return { ok: false, gold: 0, verdict };
+    g = saidSellPrice(full);
+  }
   s.bag.splice(i, 1);
   s.gold += g;
-  return g;
-}
-
-export function randomBargainHint(rng: Rng): string {
-  return pick(rng, BARGAIN_LINES);
+  return { ok: true, gold: g, verdict };
 }

@@ -110,3 +110,44 @@ describe('1.0.10 NPC talk corrections show once', () => {
     expect(freshNote(run, '', 'Ja.')).toBe('');
   });
 });
+
+describe('1.0.10 商店说德语 (optional, by level, no AI)', () => {
+  it('the buying sentence follows the level and the accusative', async () => {
+    const { gradeShopBuy, gradeShopSell, buyModel, saidPrice, saidSellPrice } = await import('../src/core/shopTalk');
+    const stift = { de: 'Stift', g: 'm', model: 'def' } as const;
+    const brille = { de: 'Brille', g: 'f', model: 'def' } as const;
+    const buch = { de: 'Wörterbuch', g: 'n', model: 'def' } as const;
+    const zettel = { de: 'Zettel', g: 'm', model: 'indef' } as const;
+    // A1
+    expect(gradeShopBuy('Ich nehme den Stift.', 10, stift).ok).toBe(true);
+    expect(gradeShopBuy('ich nehme einen stift', 10, stift).ok).toBe(true);
+    expect(gradeShopBuy('Ich nehme der Stift.', 10, stift).ok).toBe(false);
+    expect(gradeShopBuy('Ich nehme ein Stift.', 10, stift).ok).toBe(false);
+    expect(gradeShopBuy('Ich nehme das Woerterbuch', 10, buch).ok).toBe(true); // ae = ä
+    expect(gradeShopBuy('Ich hätte gern die Brille.', 10, brille).ok).toBe(true); // a higher level sentence is fine
+    // A2
+    expect(buyModel(50, stift)).toBe('Ich hätte gern den Stift.');
+    expect(gradeShopBuy('Ich haette gerne den Stift', 50, stift).ok).toBe(true);
+    expect(gradeShopBuy('Ich hätte gern bitte die Brille!', 50, brille).ok).toBe(true);
+    const low = gradeShopBuy('Ich nehme den Stift.', 50, stift);
+    expect(low.ok).toBe(false);
+    expect(low.notes[0]).toContain('Ich hätte gern');
+    expect(gradeShopBuy('Ich hatte gern den Stift.', 50, stift).ok).toBe(false); // hatte ≠ hätte
+    // B1 and B2
+    expect(buyModel(100, zettel)).toBe('Könnten Sie mir einen Zettel geben?');
+    expect(gradeShopBuy('Könnten Sie mir bitte einen Zettel geben?', 100, zettel).ok).toBe(true);
+    expect(gradeShopBuy('koennten sie mir den zettel geben', 150, zettel).ok).toBe(true);
+    expect(gradeShopBuy('Könnten Sie mir der Zettel geben?', 150, zettel).ok).toBe(false);
+    expect(gradeShopBuy('Könnten Sie mir einen Zettel?', 150, zettel).ok).toBe(false);
+    expect(gradeShopBuy('Ich hätte gern einen Zettel.', 100, zettel).ok).toBe(false);
+    // selling, every level
+    expect(gradeShopSell('Ich möchte den Stift verkaufen.', stift).ok).toBe(true);
+    expect(gradeShopSell('Ich moechte das Woerterbuch verkaufen', buch).ok).toBe(true);
+    expect(gradeShopSell('Ich möchte der Stift verkaufen.', stift).ok).toBe(false);
+    expect(gradeShopSell('Ich verkaufe den Stift.', stift).ok).toBe(false);
+    expect(saidPrice(100)).toBe(90);
+    expect(saidPrice(1)).toBe(1);
+    expect(saidSellPrice(100)).toBe(110);
+    expect(saidSellPrice(3)).toBe(4);
+  });
+});

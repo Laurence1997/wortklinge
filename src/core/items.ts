@@ -4,7 +4,8 @@
 
 import { hourGold } from './classes';
 import { CONFIG } from './config';
-import { normalize } from './grading';
+import type { Verdict } from './grading';
+import { gradeShopBuy, saidPrice, type ShopNoun } from './shopTalk';
 import type { Rng } from './rng';
 import { hintsPerFight, maxHp, type GameState } from './state';
 import { has } from './unlocks';
@@ -13,9 +14,9 @@ export type Consumable = 'hint' | 'tablet';
 
 const FLAG: Record<Consumable, string> = { hint: 'invHint', tablet: 'invTablet' };
 
-export const CONSUMABLE: Record<Consumable, { zh: string; de: string; acc: string; use: string }> = {
-  hint: { zh: '低语纸条', de: 'der Zettel', acc: 'einen Zettel', use: '答题时按 W（打字时按 ?）：给一个提示，这题不算会写' },
-  tablet: { zh: '药片', de: 'die Tablette', acc: 'eine Tablette', use: `选招时按 H：回 ${Math.round(CONFIG.items.tabletHeal * 100)}% 生命，占一回合（怪照常出手）` },
+export const CONSUMABLE: Record<Consumable, { zh: string; de: string; acc: string; use: string; noun: ShopNoun }> = {
+  hint: { zh: '低语纸条', de: 'der Zettel', acc: 'einen Zettel', noun: { de: 'Zettel', g: 'm', model: 'indef' }, use: '答题时按 W（打字时按 ?）：给一个提示，这题不算会写' },
+  tablet: { zh: '药片', de: 'die Tablette', acc: 'eine Tablette', noun: { de: 'Tablette', g: 'f', model: 'indef' }, use: `选招时按 H：回 ${Math.round(CONFIG.items.tabletHeal * 100)}% 生命，占一回合（怪照常出手）` },
 };
 
 /** The bar opens with 低语 (Lv4). */
@@ -91,22 +92,19 @@ export function itemPrice(s: GameState, k: Consumable): number {
   return Math.max(1, Math.round(hourGold(s) * (k === 'hint' ? CONFIG.items.hintPrice : CONFIG.items.tabletPrice)));
 }
 
-/** Buying is a German sentence too: 「Ich nehme einen Zettel.」/「Ich nehme eine Tablette.」 (also den / die). */
-export function buyItemLine(sentence: string, k: Consumable): boolean {
-  const n = normalize(sentence).replace(/\s+/g, ' ').trim();
-  const noun = k === 'hint' ? 'zettel' : 'tablette';
-  const arts = k === 'hint' ? ['einen', 'den'] : ['eine', 'die'];
-  return arts.some((a) => n === `ich nehme ${a} ${noun}` || n === `ich moechte ${a} ${noun}`);
-}
+export type BuyItemResult = { ok: true; paid: number; said: boolean } | { ok: false; reason: 'sentence' | 'gold' | 'full'; paid: number; verdict?: Verdict };
 
-export type BuyItemResult = { ok: true; paid: number } | { ok: false; reason: 'sentence' | 'gold' | 'full'; paid: number };
-
-export function buyConsumable(s: GameState, k: Consumable, sentence: string): BuyItemResult {
-  const paid = itemPrice(s, k);
-  if (!buyItemLine(sentence, k)) return { ok: false, reason: 'sentence', paid };
+/** A plain buy without a sentence; said right in German (shopTalk, by level) it is 10% off. */
+export function buyConsumable(s: GameState, k: Consumable, sentence?: string): BuyItemResult {
+  const said = sentence !== undefined;
+  const paid = said ? saidPrice(itemPrice(s, k)) : itemPrice(s, k);
+  if (said) {
+    const verdict = gradeShopBuy(sentence, s.level, CONSUMABLE[k].noun);
+    if (!verdict.ok) return { ok: false, reason: 'sentence', paid, verdict };
+  }
   if (count(s, k) >= cap(s, k)) return { ok: false, reason: 'full', paid };
   if (s.gold < paid) return { ok: false, reason: 'gold', paid };
   s.gold -= paid;
   addItem(s, k);
-  return { ok: true, paid };
+  return { ok: true, paid, said };
 }
