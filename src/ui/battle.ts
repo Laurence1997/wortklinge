@@ -45,7 +45,7 @@ const MOVE_INFO: Record<Move, { key: string; zh: string; sub: string }> = {
   chorus: { key: 'E', zh: '齐鸣', sub: '这一题打同相的整群' },
   skill: { key: 'R', zh: '技能', sub: '' },
   cls: { key: 'G', zh: '技能', sub: '' },
-  item: { key: 'H', zh: '药片', sub: '回血 · 占一回合' },
+  item: { key: 'H', zh: '药片', sub: '回血 · 不占回合' },
 };
 
 export class BattleUI {
@@ -341,27 +341,14 @@ export class BattleUI {
     return row;
   }
 
-  /** 药片 (物品栏): heal and spend the turn; the monsters act. */
+  /** 药片 (物品栏): heal at once, no turn spent (Lucas 2026-11-27): usable while choosing or answering. */
   tablet(): void {
-    if (this.phase !== 'choose') return;
-    const target = this.b;
-    const from = target.log.length;
+    if (this.phase !== 'choose' && this.phase !== 'answer') return;
     const r = this.ctrl.useTablet();
     if (!r) return;
-    stopListening();
-    this.report = r.report;
-    this.question = { type: 'steady', prompt: '吃了一片药', focus: `生命 +${r.heal}`, item: true };
-    this.move = 'item';
-    this.phase = 'result';
-    this.lastValue = '';
-    this.voicedFull = '';
-    this.shadowText = '';
-    logLine(`吃了一片药：生命 +${r.heal}`, 'good');
-    if (r.report.monsterDamage) logLine(`  它出手：你受到 ${r.report.monsterDamage} 伤害`, 'bad');
-    for (const l of target.log.slice(from)) logLine(`  ${l.text}`, l.tone === 'good' ? 'good' : l.tone === 'bad' ? 'bad' : l.tone === 'crit' ? 'gold' : 'info');
+    logLine(`吃了一片药：生命 +${r.heal}（不占回合）`, 'good');
+    if (this.question) this.renderedQ = this.question; // keep what was typed so far
     this.render();
-    window.clearTimeout(this.autoTimer);
-    this.autoTimer = window.setTimeout(() => this.continue(), this.ctrl.fightOver() ? 1600 : 1400);
   }
 
   /** 低语 as a hint on the question already shown (2026-11-22, Lucas: 精简出手按钮). */
@@ -709,7 +696,7 @@ export class BattleUI {
     if (typing) return false;
     const k = e.key.toLowerCase();
     if (this.phase === 'choose' || (this.phase === 'answer' && this.question?.options)) {
-      if (k === 'h' && this.phase === 'choose') {
+      if (k === 'h') {
         this.tablet();
         return true;
       }
@@ -866,9 +853,9 @@ export class BattleUI {
             'div.hud-row.small',
             h('span', { title: '低语纸条：答题时按 W（打字时按 ?）给提示，这题不算会写。篝火休息补到 3 张' }, `纸条 ×${itemCount(s, 'hint')}`),
             h('button.btn.ghost.small', {
-              disabled: this.phase !== 'choose' || itemCount(s, 'tablet') <= 0 || s.hp >= maxHp(s),
+              disabled: (this.phase !== 'choose' && this.phase !== 'answer') || itemCount(s, 'tablet') <= 0 || s.hp >= maxHp(s),
               onclick: () => this.tablet(),
-              title: `药片：回 ${tabletHeal(s)} 生命，占一回合（怪照常出手）`,
+              title: `药片：回 ${tabletHeal(s)} 生命，不占回合`,
             }, h('kbd', 'H'), `药片 ×${itemCount(s, 'tablet')}`),
           )
         : '',
