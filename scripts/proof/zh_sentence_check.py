@@ -2,8 +2,8 @@
 """中文翻译排查 (2026-11-27): DeepSeek reads every German sentence that has a Chinese translation (proof/out/sentences.json
 from scripts/proof/extract.ts; articles over 600 characters are skipped, they were checked paragraph by paragraph before)
 and reports only meaning errors: a word translated with the wrong sense (Termin → 约会), false friends, wrong numbers,
-times, negation or person. Style is ignored. Report only: proof/out/zh-sentences.json. Key: DEEPSEEK_API_KEY."""
-import json, os, sys, time, urllib.request, concurrent.futures as cf
+times, negation or person. Style is ignored. Report only: proof/out/zh-sentences.jsonl (saved per batch, resumable; see dsrun.py). Key: DEEPSEEK_API_KEY."""
+import json, os, sys
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 MODEL = os.environ.get('ZH_MODEL', 'deepseek-v4-pro')
 KEY = os.environ['DEEPSEEK_API_KEY']
@@ -19,34 +19,12 @@ items = [s for s in S if s.get('zh') and len(s['text']) <= 600 and s.get('kind')
 LIMIT = int(os.environ.get('ZH_LIMIT', '0') or 0)
 if LIMIT: items = items[:LIMIT]
 B = 40
-batches = [items[i:i + B] for i in range(0, len(items), B)]
-print('items', len(items), 'batches', len(batches), flush=True)
-
-def call(batch):
-    user = '\n'.join(json.dumps({'id': s['id'], 'de': s['text'], 'zh': s['zh']}, ensure_ascii=False) for s in batch)
-    body = {'model': MODEL, 'temperature': 0, 'response_format': {'type': 'json_object'}, 'thinking': {'type': 'disabled'},
-            'messages': [{'role': 'system', 'content': SYSTEM}, {'role': 'user', 'content': user}]}
-    for attempt in range(4):
-        try:
-            req = urllib.request.Request('https://api.deepseek.com/chat/completions', data=json.dumps(body).encode(),
-                                         headers={'Authorization': 'Bearer ' + KEY, 'Content-Type': 'application/json'})
-            with urllib.request.urlopen(req, timeout=300) as r:
-                txt = json.load(r)['choices'][0]['message']['content']
-            return json.loads(txt[txt.find('{'):txt.rfind('}') + 1]).get('items', [])
-        except Exception as e:
-            print('retry', attempt, e, file=sys.stderr)
-            if attempt == 1: body.pop('thinking', None)
-            time.sleep(5 * (attempt + 1))
-    return [{'id': batch[0]['id'], 'problem': 'CALL FAILED for batch', 'fix': ''}]
-
-by = {s['id']: s for s in items}
-found = []
-with cf.ThreadPoolExecutor(10) as ex:
-    for n, res in enumerate(ex.map(call, batches)):
-        for f in res:
-            s = by.get(str(f.get('id')))
-            if s: found.append({'id': s['id'], 'src': s['src'], 'de': s['text'], 'zh': s['zh'], 'problem': f.get('problem'), 'fix': f.get('fix')})
-        if n % 100 == 0: print(n, '/', len(batches), len(found), flush=True)
-os.makedirs(os.path.join(ROOT, 'proof/out'), exist_ok=True)
-json.dump(found, open(os.path.join(ROOT, 'proof/out/zh-sentences.json'), 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
-print('flagged', len(found), 'of', len(items))
+# Batch ids are the first sentence id of each batch, so a resumed run (same sentences.json) skips finished batches.
+batches = []
+for i in range(0, len(items), B):
+    b = items[i:i + B]
+    user = '\n'.join(json.dumps({'id': s['id'], 'de': s['text'], 'zh': s['zh']}, ensure_ascii=False) for s in b)
+    batches.append((b[0]['id'], user, None))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import dsrun
+dsrun.run('zh-sentences', SYSTEM, batches, MODEL, float(os.environ.get('ZH_BUDGET', '26')))

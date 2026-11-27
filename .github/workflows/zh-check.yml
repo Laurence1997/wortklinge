@@ -38,9 +38,15 @@ jobs:
           path: proof/out/zh-gloss.json
 
   sentences:
+    # Lucas 2026-11-27 选 2: check every sentence translation and fill the missing B2 example translations.
+    # Saved per batch and pushed back to this branch every 100 batches; stops at once on 402 (no balance) or at the budget;
+    # a rerun resumes from proof/out/*.jsonl. Budget: fill 3 CNY + sentences 26 CNY.
     if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[sentences]')
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 180
+    concurrency: zh-sentences
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -49,16 +55,22 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx vite-node scripts/proof/extract.ts
-      - name: Check
+      - name: Fill missing translations
+        env:
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          ZH_MODEL: ${{ inputs.model || 'deepseek-v4-pro' }}
+        run: python3 scripts/proof/zh_fill.py
+      - name: Check sentences
         env:
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
           ZH_MODEL: ${{ inputs.model || 'deepseek-v4-pro' }}
           ZH_LIMIT: ${{ inputs.limit || '0' }}
         run: python3 scripts/proof/zh_sentence_check.py
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: zh-sentences
-          path: proof/out/zh-sentences.json
+          path: proof/out/zh-*
 
   nouns:
     if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[nouns]')
