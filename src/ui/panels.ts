@@ -207,7 +207,7 @@ export class Panels {
           go();
         } else if (a.multi) e.stopPropagation();
       });
-      panel.append(h('h2', h('span', a.title), h('button.btn.ghost', { onclick: () => this.close() }, '不回答 Esc')), h('p', { style: 'white-space:pre-line' }, a.prompt), h('div.typing', input, umlautButtons(input), mic, h('button.btn.primary', { onclick: go }, a.multi ? '交 Ctrl+↵' : '说 ↵')));
+      panel.append(h('h2', h('span', a.title), h('button.btn.ghost', { onclick: () => this.close() }, '不回答 Esc')), h('p', { style: 'white-space:pre-line' }, a.prompt), h('div.typing', input, umlautButtons(input), mic, h('button.btn.primary', { onclick: go }, a.multi ? '交 Ctrl+↵' : '回复 ↵')));
       clear(el).append(panel);
       el.onclick = null;
       window.setTimeout(() => input.focus(), 0);
@@ -517,7 +517,7 @@ export class Panels {
     wrap.append(
       h('div.small.muted', `${q.done.length} / ${q.done.length + q.queue.length}`),
       h('div.focus', { style: 'font-size:28px;margin:10px 0' }, w.zh),
-      h('div.typing', input, umlautButtons(input), h('button.btn.primary', { onclick: go }, '说 ↵')),
+      h('div.typing', input, umlautButtons(input), h('button.btn.primary', { onclick: go }, '答 ↵')),
     );
     return wrap;
   }
