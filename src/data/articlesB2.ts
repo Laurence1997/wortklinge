@@ -34,6 +34,7 @@ export const ARTICLES_B2: ArticleB2[] = [];
 
 let loading: Promise<void> | null = null;
 let loadingC1: Promise<void> | null = null;
+let loadingB1: Promise<void> | null = null;
 const seen = new Set<string>();
 function add(rows: ArticleB2[]): void {
   for (const r of rows) if (!seen.has(r.id)) (seen.add(r.id), ARTICLES_B2.push(r));
@@ -42,6 +43,11 @@ function add(rows: ArticleB2[]): void {
 export function loadArticlesB2(): Promise<void> {
   loading ??= import('./articlesB2-gen').then((m) => add(m.ARTICLE_ROWS)).catch(() => { loading = null; });
   return loading;
+}
+/** B1 reading articles (9–12, Klexikon): from level 75. */
+export function loadArticlesB1(): Promise<void> {
+  loadingB1 ??= import('./articlesB1-gen').then((m) => add(m.ARTICLE_ROWS)).catch(() => { loadingB1 = null; });
+  return loadingB1;
 }
 /** C1 articles (17–20): from level 155. */
 export function loadArticlesC1(): Promise<void> {

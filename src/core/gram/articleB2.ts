@@ -86,10 +86,24 @@ export function contextLine(a: ArticleB2, w: Word): string | null {
   return null;
 }
 
-/** C1 (17–20, no new words): a field monster's notice roll in these regions draws an article of the region. */
-export function c1ArticleFor(region: number, rng: () => number): Notice | null {
+/** Reading articles without new words: B1 (9–12, 81–120 级, Klexikon) and C1 (17–20). A field monster's notice roll in
+ *  these regions draws an article of the region; unread ones first, then the one read longest ago (Lucas 2026-11-27). */
+export function isReadingRegion(region: number): boolean {
+  return (region >= 9 && region <= 12) || region >= 17;
+}
+
+export function regionArticleFor(region: number, rng: () => number, read: Record<string, number> = {}, t = Date.now()): Notice | null {
   index();
-  const xs = ARTICLES_B2.filter((a) => a.seg === region && a.seg >= 17);
+  if (!isReadingRegion(region)) return null;
+  const xs = ARTICLES_B2.filter((a) => a.seg === region && !a.lemmas.length);
   if (!xs.length) return null;
-  return articleNotice(xs[Math.floor(rng() * xs.length)].id) ?? null;
+  const unread = xs.filter((a) => !read[a.id]);
+  const a = unread.length ? unread[Math.floor(rng() * unread.length)] : xs.reduce((m, x) => (read[x.id] < read[m.id] ? x : m));
+  read[a.id] = t;
+  return articleNotice(a.id) ?? null;
+}
+
+/** @deprecated kept for old callers: C1 draw without a read record. */
+export function c1ArticleFor(region: number, rng: () => number): Notice | null {
+  return region >= 17 ? regionArticleFor(region, rng) : null;
 }

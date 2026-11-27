@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { ARTICLE_ROWS } from '../src/data/articlesB2-gen';
 import { ARTICLES_B2 } from '../src/data/articlesB2';
 import { ARTICLE_ROWS as C1_ROWS } from '../src/data/articlesC1-gen';
-import { articleNotice, articleOfWord, c1ArticleFor, contextLine, isArticleWord } from '../src/core/gram/articleB2';
+import { articleNotice, articleOfWord, c1ArticleFor, contextLine, isArticleWord, regionArticleFor } from '../src/core/gram/articleB2';
 import { noticeById } from '../src/core/gram/notice';
 import { WORDS } from '../src/data/words';
 import { newGame } from '../src/core/state';
@@ -49,6 +49,18 @@ describe('文章群怪 (B2 articles)', () => {
   it('C1 regions draw their own articles for the notice roll', () => {
     for (const r of [17, 18, 19, 20]) expect(c1ArticleFor(r, makeRng(r))?.id.startsWith(`c1-${r}-`)).toBe(true);
     expect(c1ArticleFor(13, makeRng(1))).toBeNull();
+  });
+
+  it('reading articles come unread first, then the one read longest ago (Lucas 2026-11-27)', () => {
+    const r = 17;
+    const ids = ARTICLES_B2.filter((a) => a.seg === r).map((a) => a.id);
+    const read: Record<string, number> = {};
+    const rng = makeRng(7);
+    const got = ids.map((_, i) => regionArticleFor(r, rng, read, 1000 + i)!.id);
+    expect(new Set(got).size).toBe(ids.length);
+    // All read: the next one is the first read.
+    expect(regionArticleFor(r, rng, read, 9999)!.id).toBe(got[0]);
+    expect(regionArticleFor(13, rng, read)).toBeNull();
   });
 
   it('a new article word at 121 comes with its article; the notice is found by id', () => {

@@ -16,7 +16,7 @@ import { hideLoading, setTip, showLoading } from './ui/loading';
 import { toast } from './ui/feedback';
 import { setReportVersion } from './net/report';
 import { loadPassages } from './data/passages';
-import { loadArticlesB2, loadArticlesC1 } from './data/articlesB2';
+import { loadArticlesB1, loadArticlesB2, loadArticlesC1 } from './data/articlesB2';
 
 const VERSION = '1.0.6';
 setReportVersion(VERSION);
@@ -28,6 +28,7 @@ function boot(state: ReturnType<typeof newGame>) {
   const ctrl = new Controller(state, dev);
   if (state.level >= 115) void loadArticlesB2(); // 文章群怪 from 121: its own chunk
   if (state.level >= 155) void loadArticlesC1(); // C1 文章怪 from 161
+  if (state.level >= 75) void loadArticlesB1(); // B1 文章怪 (Klexikon) from 81: its own chunk
   if (state.level >= 30) void loadPassages(); // 听段 from 34: its own chunk, fetched once the player is close
   (window as unknown as { wk: Controller }).wk = ctrl; // handy for debugging in the console
   const logBox = mountLogBox();

@@ -1,5 +1,5 @@
 import { articleB2ById, ARTICLE_B2_CFG, isArticleWord } from '../core/gram/articleB2';
-import { loadArticlesB2, loadArticlesC1 } from '../data/articlesB2';
+import { loadArticlesB1, loadArticlesB2, loadArticlesC1 } from '../data/articlesB2';
 import { revealLines, SYSTEM_TYPOS } from '../data/reveal17';
 import { WEBER18 } from '../data/weber18';
 import { LETTER_BY_ID, LETTER_CFG, readLetter } from '../core/letters';
@@ -467,6 +467,7 @@ export class Controller {
     if (level >= 30) void loadPassages();
     if (level >= ARTICLE_B2_CFG.from - 6) void loadArticlesB2();
     if (level >= 155) void loadArticlesC1();
+    if (level >= 75 && level <= 125) void loadArticlesB1();
     void track();
     const s = this.state;
     this.milestone(`lv${level}`);

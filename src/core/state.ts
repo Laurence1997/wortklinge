@@ -95,6 +95,8 @@ export interface GameState {
   gram?: import('./gram/boards').GramSave;
   /** 失语者的遗书 (1.0): letter id → time first read. */
   letters?: Record<string, number>;
+  /** 文章怪 (81–120 级 B1 文章, 17–20 区 C1 文章): article id → time last carried by a monster (先出没读过的, Lucas 2026-11-27). */
+  articlesRead?: Record<string, number>;
   /** 排行榜 counters (optional; refreshed before each save). */
   board?: import('./board').BoardSave;
   /** Recent timed answers (冒险者 PK: the rival's accuracy and pace follow these). */
