@@ -786,7 +786,7 @@ export class BattleUI {
       'div.b-mon',
       h('div.fam', h('span', `${fam.zh} · Lv ${m.lvl}`), h('span', STAGE_ZH[b.stage])),
       monsterIcon(monsterArt(b, this.ctrl.dungeon?.left === 1), 5, false, 'mon-icon', this.ctrl.dungeon?.left !== 1 && !!this.ctrl.scene?.bright),
-      h('div.glyph', { style: `color:${color};text-shadow:0 0 8px ${b.stage === 0 ? '#ff1830' : color}` }, glyph, elTag ? h('span.tag', { style: 'margin-left:6px;font-size:11px;vertical-align:middle' }, elTag) : ''),
+      h(`div.glyph${b.stage === 0 || !showG ? '.plain' : ''}`, { style: `color:${color};text-shadow:0 0 8px ${b.stage === 0 ? '#ff1830' : color}` }, glyph, elTag ? h('span.tag', { style: 'margin-left:6px;font-size:11px;vertical-align:middle' }, elTag) : ''),
       h(
         'div',
         b.rusty ? h('span.tag.due', '锈名 · 久拖的遗忘之物') : b.kind === 'due' ? h('span.tag.due', '遗忘之物') : b.kind === 'new' ? h('span.tag', '新怪') : h('span.tag', '影子'),
@@ -1088,6 +1088,16 @@ export class BattleUI {
           'div.board',
           h('div.board-title', '初见 · 先认识它，下一题就写'),
           h('div', { style: 'font-size:20px' }, h('b', qq.teach.de), `　${qq.teach.zh}　`, h('button.btn.ghost.small', { onclick: () => this.ctrl.speak(qq.teach!.de), title: '再听一遍' }, '🔊')),
+        ),
+      );
+    // 1.0.10 (Lucas): a review / spot check slipped into this fight asks ANOTHER word — say so loudly, or the player
+    // answers with the monster's word that the name plate, 相 row and skills all show.
+    if (qq.review && !qq.partner)
+      wrap.append(
+        h(
+          'div.board.review-insert',
+          h('div.board-title', '插题 · 这题问的是另一个词，不是这只怪'),
+          h('div', `这只怪是「${this.b.word.zh}」，但这道题考的是你以前学过的另一个词（看下面的中文）。答对答错只算那个词，伤害照常打在这只怪身上。`),
         ),
       );
     wrap.append(h('div.prompt', h('span', qq.prompt), tags ? h('span.tag', tags) : '', hintBtn));

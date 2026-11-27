@@ -22,7 +22,8 @@
   --q-purple: #b07cff;
   --q-orange: #ff9a3a;
   --q-red: #ff3a3a;
-  --mono: 'Courier New', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  /* CJK fallbacks first after the Latin mono faces, so Chinese inside mono text never drops to a thin bitmap font (1.0.10). */
+  --mono: 'Courier New', ui-monospace, 'SFMono-Regular', Menlo, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', monospace;
   --sans: system-ui, -apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
   color-scheme: dark;
 }
@@ -56,7 +57,7 @@ body.bright #vignette { background: radial-gradient(ellipse at 50% 48%, rgba(0,0
 .panel { background: linear-gradient(180deg, var(--panel-2), var(--panel)); border: 1px solid var(--line); box-shadow: 0 0 0 1px #000, 0 8px 30px rgba(0,0,0,.6); }
 .btn { background: #1d1015; border: 1px solid var(--line-hi); padding: 6px 12px; border-radius: 3px; transition: background .1s, border-color .1s; }
 .btn:hover:not(:disabled) { background: #2a141b; border-color: var(--red); }
-.btn:disabled { opacity: .35; cursor: default; }
+.btn:disabled { opacity: .6; cursor: default; }
 .btn.primary { background: #3a0d14; border-color: var(--red); }
 .btn.ghost { background: transparent; }
 .btn:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
@@ -163,10 +164,10 @@ label.toggle { display: flex; gap: 8px; align-items: center; padding: 6px 0; }
 .b-intent .kind { font-size: 11px; color: var(--muted); }
 .moves { display: flex; gap: 6px; margin: 10px 0 8px; flex-wrap: wrap; }
 .moves .btn { min-width: 108px; text-align: left; padding: 6px 10px; }
-.moves .btn small { display: block; font-size: 10px; color: var(--muted); }
+.moves .btn small { display: block; font-size: 12px; color: var(--muted); }
 .moves .btn.sel { border-color: var(--gold); background: #33200c; }
 .q { border: 1px solid var(--line); background: #0b0608; padding: 10px 12px; min-height: 108px; }
-.q .prompt { font-size: 12px; color: var(--muted); display: flex; justify-content: space-between; }
+.q .prompt { font-size: 13px; color: var(--muted); display: flex; justify-content: space-between; }
 .q .focus { font-size: 26px; font-weight: 700; margin: 4px 0 8px; font-family: var(--mono); }
 .q .opts { display: flex; gap: 8px; flex-wrap: wrap; }
 .q .opts .btn { min-width: 120px; font-size: 18px; padding: 8px 14px; font-family: var(--mono); }
@@ -461,7 +462,7 @@ body.bright {
   --line: #e0cfae;
   --line-hi: #c3a676;
   --ink: #2d2118;
-  --muted: #7d6b58;
+  --muted: #65553f;
   --red: var(--accent, #d2691e);
   --red-dim: #e9c9a0;
   --gold: #a86a00;
@@ -663,3 +664,13 @@ body.bright .wm-segs span { color: #8a1424; }
 #hud .name { align-items: center; gap: 8px; }
 #hud .name canvas.hero-icon { width: 54px; height: 32px; image-rendering: pixelated; flex: none; }
 #hud .name .nm { flex: 1; }
+
+/* 1.0.10 (Lucas: 中文字体很不清晰): readable small Chinese on the bright maps. Disabled buttons stay legible (no fading
+   to 35%), a not-yet-named plate is dark ink instead of cream on white, and no glow blurs the plate. */
+body { -webkit-font-smoothing: antialiased; }
+body.bright .btn:disabled { opacity: 1; color: #7a6a56; background: #f4ecdd; border-color: var(--line); }
+body.bright .btn:disabled small, body.bright .btn:disabled kbd { color: #7a6a56; }
+body.bright .b-mon .glyph { text-shadow: none !important; }
+body.bright .b-mon .glyph.plain { color: var(--ink) !important; }
+body.bright .moves .btn small { color: var(--muted); }
+.review-insert { border-width: 2px; }

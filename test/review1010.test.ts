@@ -151,3 +151,16 @@ describe('1.0.10 商店说德语 (optional, by level, no AI)', () => {
     expect(saidSellPrice(3)).toBe(4);
   });
 });
+
+describe('1.0.10 a review slipped into another fight', () => {
+  it('typing the monster’s own word is a mix-up, not forgetting', async () => {
+    const { saidOwnWord } = await import('../src/core/combat');
+    const { WORD_BY_ID } = await import('../src/data/words');
+    const own = Object.values(WORD_BY_ID).find((w) => w.de === 'Angebot')!;
+    const rev = Object.values(WORD_BY_ID).find((w) => w.de === 'Verbindung')!;
+    expect(saidOwnWord('das Angebot', own, rev.id)).toBe(true);
+    expect(saidOwnWord('Angebot', own, rev.id)).toBe(true);
+    expect(saidOwnWord('die Verbinding', own, rev.id)).toBe(false);
+    expect(saidOwnWord('der Verbindung', own, rev.id)).toBe(false);
+  });
+});

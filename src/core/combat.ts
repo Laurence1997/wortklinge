@@ -2069,6 +2069,14 @@ function cutCheck(s: GameState, b: Battle, q: Question, input: string, ok: boole
 
 /** 语境复习 answered: right → next gap, +1 shard, 「✓ 复习 · der Apfel，下次 1 周后」; wrong → the whole sentence
  *  and the word relapses to a 半名 review monster. Either way this fight's one context question is used. */
+/** Did the answer give the fighting monster's word (der/die/das + noun, or the bare word) instead of the reviewed one? */
+export function saidOwnWord(input: string, own: Word, reviewed: string): boolean {
+  const rw = WORD_BY_ID[reviewed];
+  const mine = normalize(own.de);
+  if (!mine || (rw && normalize(rw.de) === mine)) return false;
+  return normalize(input).split(' ').includes(mine) || normalize(input) === normalize(fullForm(own));
+}
+
 function reviewAnswer(s: GameState, b: Battle, q: Question, ok: boolean): TurnReport['review'] {
   const w = WORD_BY_ID[q.review!];
   b.fx.ctxAsked = true;
@@ -2238,9 +2246,23 @@ export function resolveTurn(
     } else if (q.voiced) {
       /* 开口作答: says nothing about spelling, so no 斩杀 check either way */
     } else if (!q.review) cutFx = cutCheck(s, b, q, input, ok);
-    else {
+    else if (!ok && saidOwnWord(input, b.word, q.review)) {
+      // 1.0.10 (Lucas): the monster's own word typed into another word's review is a mix-up, not forgetting.
+      b.fx.ctxAsked = true;
+      const rw = WORD_BY_ID[q.review];
+      verdict.notes.unshift(`这道题问的是另一个词${rw ? ` ${fullForm(rw)}` : ''}，你写的是这只怪的 ${fullForm(b.word)}。这次不算，那个词的记忆进度不变。`);
+    } else {
       reviewFx = reviewAnswer(s, b, q, ok);
-      if (reviewFx) verdict.notes.unshift(reviewFx.ok ? `✓ 复习 · ${fullForm(reviewFx.word)}，${reviewFx.next ? `下次 ${gapZh(reviewFx.next)}` : '以后不用再复习了'}` : `复习没答上：${fullForm(reviewFx.word)} 复发了，会作为复习怪（半名）回到野外。`);
+      if (reviewFx)
+        verdict.notes.unshift(
+          reviewFx.ok
+            ? reviewFx.placed
+              ? `✓ 抽查 · ${fullForm(reviewFx.word)}：入学测试推定你会，这下确认了`
+              : `✓ 复习 · ${fullForm(reviewFx.word)}，${reviewFx.next ? `下次 ${gapZh(reviewFx.next)}` : '以后不用再复习了'}`
+            : reviewFx.placed
+              ? `抽查没答上：入学测试推定你会 ${fullForm(reviewFx.word)}，这次没写出来。它会作为复习怪（半名）回到野外，多练几遍就好，等级和经验不受影响。`
+              : `复习没答上：${fullForm(reviewFx.word)} 复发了，会作为复习怪（半名）回到野外。`,
+        );
     }
     if (cutFx.notes.length) verdict.notes.push(...cutFx.notes);
     if (q.type === 'saying') {
