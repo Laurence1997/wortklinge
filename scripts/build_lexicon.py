@@ -389,6 +389,12 @@ def main():
         for r in read_tsv('beispiele-grammatik-b2.tsv'):
             if r['例句'].strip():
                 extra[r['原形'].strip()].append((re.sub(r'[{}]', '', r['例句'].strip()), r['例句中文'].strip()))
+    # Nachtrag 2026-11-27 (Lucas «按推荐»): one sentence for each B2 word that had none, a second one for the
+    # top-3000 words with fewer than two, and one per missing sense of common polysemous words. Tatoeba or 自写.
+    if (DATA / 'beispiele-nachtrag-2026-11-27.tsv').exists():
+        for r in read_tsv('beispiele-nachtrag-2026-11-27.tsv'):
+            if r['例句'].strip():
+                extra[r['原形'].strip()].append((re.sub(r'[{}]', '', r['例句'].strip()), r['例句中文'].strip()))
     scenes_tsv = read_tsv('szenen-v1.tsv')
     grammar = read_tsv('grammatik-v1.tsv')
 
