@@ -1093,7 +1093,7 @@ export class Panels {
       });
       cons.append(
         h(
-          'div.item',
+          'div.item.buy',
           h('div', h('b', `${c.zh}（${c.de}）`), h('div.small', c.use), h('div.small', `价格 ${itemPrice(s, k)} 金币 · 现有 ${itemCount(s, k)} / ${itemCap(s, k)}`)),
           h('div.typing', line, umlautButtons(line), h('button.btn.primary', { onclick: go }, '买 ↵')),
         ),

@@ -174,7 +174,14 @@ label.toggle { display: flex; gap: 8px; align-items: center; padding: 6px 0; }
 .q .typing { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
 .q input[type=text] { flex: 1 1 300px; min-width: 200px; background: #000; color: #fff; border: 1px solid var(--line-hi); padding: 9px 10px; font-size: 20px; font-family: var(--mono); border-radius: 2px; }
 .q input[type=text]:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 2px rgba(255,207,74,.15); }
-.umlauts { display: flex; gap: 3px; }
+.umlauts { display: flex; gap: 3px; flex-wrap: wrap; max-width: 100%; }
+/* 1.0.10: every answer row (not only in battle) lays out in one line and wraps instead of spilling out of a card. */
+.typing { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; min-width: 0; }
+.typing > input { flex: 1 1 200px; min-width: 0; }
+/* Shop cards that buy with a sentence: name and use on top, the answer row below across the whole card. */
+.item.buy { flex-direction: column; align-items: stretch; }
+.item.buy .typing > input { flex-basis: 100%; }
+.item.buy .umlauts .btn { padding: 4px 7px; font-size: 14px; }
 .umlauts .btn { padding: 6px 9px; font-family: var(--mono); font-size: 16px; }
 .feedback { margin-top: 8px; font-size: 14px; min-height: 20px; }
 .feedback.ok { color: var(--good); }
