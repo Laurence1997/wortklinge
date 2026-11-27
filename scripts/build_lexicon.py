@@ -697,6 +697,31 @@ def main():
         s['words'].append(wid)
         print('moved to B1:', w['de'], old['id'], '->', s['id'], w['lvl'], file=sys.stderr)
 
+    # 经典句型 · 句型怪 (Lucas 2026-11-27 选 1, 游戏设计「句式块」): the 140 patterns of satzmuster-v1.tsv, one monster each,
+    # dealt in order over the map regions of their level (蚀变 segments get none), into the scene with the fewest words.
+    # The example with its key words in {} goes to LEX_PAT; the questions are built in src/core/satzmuster.ts.
+    pat_lines = {}
+    PAT_REGIONS = {'A1': [1, 2, 3], 'A2': [4, 5, 6, 7], 'B1': [9, 10, 12], 'B2': [13, 14, 16]}
+    dealt = defaultdict(int)
+    for x in read_tsv('satzmuster-v1.tsv'):
+        regs = PAT_REGIONS[x['级别']]
+        region = regs[dealt[x['级别']] % len(regs)]
+        dealt[x['级别']] += 1
+        cands = [s for s in scene_list if s['region'] == region and s['words']]
+        s = min(cands, key=lambda c: len(c['words']))
+        lvl = max(words_by_id[i]['lvl'] for i in s['words'])
+        assert '|' not in x['挖空'] and '{' in x['挖空'], x['id']
+        w = {'id': x['id'], 'de': x['句型'], 'zh': x['功能'], 'pos': 'phr', 'family': 'echo', 'lvl': lvl, 'zone': s['zone'], 'scene': s['id'],
+             'region': region, 'order': 1, 'rank': 0, 'situation': s['situation'], '_sents': [], 'ex': f"{x['例句']}|{x['例句中文']}"}
+        if len(s['words']) >= FIRST_BATCH:
+            w['batch'] = 2
+        assert w['id'] not in seen, w['id']
+        seen.add(w['id'])
+        words.append(w)
+        words_by_id[w['id']] = w
+        s['words'].append(w['id'])
+        pat_lines[w['id']] = f"{x['挖空']}|{x['例句中文']}"
+
     # 蚀变: host scenes.
     host_of_word = {}
     for s in scene_list:
@@ -859,6 +884,9 @@ def main():
     out.append('')
     out.append('/** Example sentences with the blank marked (same format as examples1.ts). */')
     out.append('export const LEX_EX: Record<string, string[]> = ' + json.dumps(ex, ensure_ascii=False, separators=(',', ':')) + ';')
+    out.append('')
+    out.append('/** 经典句型 · 句型怪: the example with its key words in {} (several blanks possible) | 中文. */')
+    out.append('export const LEX_PAT: Record<string, string> = ' + json.dumps(pat_lines, ensure_ascii=False, separators=(',', ':')) + ';')
     out.append('')
     out.append("/** Present tense of verbs the hand-written table lacks: 'ich du er wir ihr sie|flags' (_ = space, s = strong, p = strong past). */")
     out.append('export const LEX_CONJ: Record<string, string> = ' + json.dumps(conj, ensure_ascii=False, separators=(',', ':')) + ';')

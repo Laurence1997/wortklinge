@@ -41,6 +41,7 @@ import { dungeonTask } from './gram/dungeons';
 import { hasMirror, mirrorTask, MIRROR } from './gram/mirror';
 import { partnerOf } from './gram/partner';
 import { articleOfWord, ARTICLE_B2_CFG, contextLine, regionArticleFor } from './gram/articleB2';
+import { gradePat, isPattern, patLine, patOptions, optionText } from './satzmuster';
 import { articleFor, KIND_ZH, noticeById, noticeFor, noticeTask, NOTICE_CFG } from './gram/notice';
 
 /** A grammar task as a battle question (choice when it has options, typed otherwise). */
@@ -106,6 +107,8 @@ export interface Question {
   whispered?: boolean;
   /** 初见教学 (Lucas 2026-11-27): a new word's one choice question shows the word, its meaning and its sound. */
   teach?: { de: string; zh: string };
+  /** 句型怪 (Lucas 2026-11-27): the key words of a classic pattern; typing the whole example also counts. */
+  pat?: boolean;
   /** 先认后写 (Lucas 2026-11-27): the writing question after a new word's teaching choice, or the opener of the next
    *  fight of a word never written yet. */
   firstWrite?: boolean;
@@ -685,6 +688,10 @@ function nextIntent(s: GameState, b: Battle, rng: Rng): Intent {
   } else if (!tut && intent.kind !== 'charge' && intent.kind !== 'flee' && !intent.layers.includes('time') && b.pluralMon) {
     // 复数怪: its examples are singular (「… mmh … beginnt um neun」 asks der), so a crowd only mumbles; the stance is always die.
     intent = { ...intent, line: '… mmh … mmh …', zh: '一群同一个词的怪挤在一起嘟囔 · 复数一律 die', full: undefined, fullZh: undefined, caseArt: undefined };
+  } else if (!tut && intent.kind !== 'charge' && intent.kind !== 'flee' && !intent.layers.includes('time') && isPattern(b.word)) {
+    // 句型怪: it says its example with the key words swallowed; the Chinese is the question's anyway.
+    const p = patLine(b.word);
+    if (p) intent = { ...intent, line: p.shown.replace(/___/g, '… mmh …').replace(/\s+/g, ' ').trim(), zh: p.zh, full: p.full, fullZh: p.zh, caseArt: undefined };
   } else if (!tut && intent.kind !== 'charge' && intent.kind !== 'flee' && !intent.layers.includes('time')) {
     // 格位姿态 (Lv7+): only sentences whose slot is in a case this level reads, and the stance must match the slot.
     const g = genderOf(b.word);
@@ -1082,6 +1089,8 @@ export function contextQuestion(s: GameState, b: Battle, rng: Rng): Question | n
   // 审查修订: 复习伙伴 is the skin of 语境复习 — your partner word brings the due word's question.
   const pw = due ? partnerOf(s) : null;
   const tag = due ? (pw ? `复习伙伴 ${fullForm(pw)} · 语境复习` : '语境复习') : '抽查（入学测试推定你会）';
+  const pl = isPattern(rw) ? patLine(rw) : null;
+  if (pl) return { type: 'cloze', review: id, pat: true, prompt: `${tag} · 句型：按顺序打出空里的关键词（空格隔开）· ${pl.zh}`, focus: pl.shown, answer: pl.answer, clozeMode: 'base', full: pl.full, clozeZh: pl.zh };
   const c = makeCloze(rw, 'form', rng);
   if (c) return { type: 'cloze', review: id, prompt: `${tag}：打出这里要的形式（名词带冠词，动词变位）· ${c.zh}`, focus: c.shown, answer: c.answer, clozeMode: 'form', full: c.full, clozeZh: c.zh };
   return { type: 'typed', review: id, prompt: `${tag}：${hasArticleQuestion(rw) ? '默写，带上冠词' : '默写这个词'}`, focus: zhWithPos(rw), withArticle: hasArticleQuestion(rw), answer: fullForm(rw) };
@@ -1144,6 +1153,12 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
   if (move === 'attack') {
     const rq = contextQuestion(s, b, rng);
     if (rq) return rq;
+  }
+  // 句型怪 (Lucas 2026-11-27 选 1): every move asks the pattern's own key words; a monster carrying a notice keeps
+  // the notice questions until its last blow.
+  if (isPattern(w) && !((move === 'attack' || move === 'inscribe' || move === 'whisper' || move === 'chorus') && b.notice && !b.finishOwn)) {
+    const pq = patternQ(s, b, move, rng, skillId);
+    if (pq) return move === 'whisper' ? whisperOf(pq, w) : move === 'inscribe' ? { ...pq, inscribed: true } : pq;
   }
   const articleQ = (): Question => ({
     type: 'article',
@@ -1564,6 +1579,29 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
   }
 }
 
+/** 句型怪: the question of a classic-pattern monster (src/core/satzmuster.ts), or null when its line is missing. */
+function patternQ(s: GameState, b: Battle, move: Move, rng: Rng, skillId?: string): Question | null {
+  const w = b.word;
+  const p = patLine(w);
+  if (!p) return null;
+  // 终结技: write the whole example from the Chinese.
+  if (move === 'sentence') return { type: 'sentence', prompt: '终结技 · 句型：看中文，写出整句', focus: p.zh, answer: p.full, full: p.full };
+  const canType = has(s.level, 'typing');
+  const pool = move === 'skill' ? (((skillId as PoolId) && POOL[skillId as PoolId] ? skillId : combatSkills(s).find((x) => poolReady(s, b, x)) ?? 'storm') as PoolId) : undefined;
+  // 初见教学: the first question of a never-met pattern is a choice, with its spelling and meaning shown.
+  if ((b.kind === 'new' && b.stage === 0 && b.step === 0 && move !== 'skill') || !canType) {
+    return { type: 'cloze', pat: true, prompt: `句型怪：选出填进空里的关键词 · ${p.zh}`, focus: p.shown, answer: optionText(p), options: patOptions(w, p, rng), clozeMode: 'pick', full: p.full, clozeZh: p.zh, pool };
+  }
+  // Every third question of a pattern met before: the whole example.
+  if (b.stage >= 1 && b.step % 3 === 2 && move === 'attack' && !b.verify && !b.challenge) {
+    return { type: 'sentence', pat: true, prompt: '句型怪：看中文，写出整句', focus: p.zh, answer: p.full, full: p.full };
+  }
+  const n = p.blanks.length;
+  const head = b.verify ? '不看提示再写一次 · ' : b.challenge ? '挑战怪 · ' : '';
+  const tip = n > 1 ? `按顺序打出 ${n} 个空的关键词，用空格隔开` : '打出空里的关键词';
+  return { type: 'cloze', pat: true, prompt: `${head}句型怪：${tip} · ${p.zh}`, focus: p.shown, answer: p.answer, clozeMode: 'base', full: p.full, clozeZh: p.zh, pool };
+}
+
 /** 低语: choice questions lose one wrong option, typed ones show the first letter. */
 function whisperOf(q: Question, w: Word): Question {
   if (q.options && q.options.length > 2) {
@@ -1789,7 +1827,7 @@ export function gradeQuestion(s: GameState, b: Battle, q: Question, input: strin
         return { ok: v.ok, notes: v.notes, correct: v.ok ? input.trim() : q.answer!, word: v.ok && v.used?.id === b.word.id ? b.word : undefined };
       }
       const cw = q.review ? WORD_BY_ID[q.review] : q.partner ? WORD_BY_ID[q.partner] : b.word;
-      const ok = gradeCloze(input, q.answer!, cw, q.clozeZh);
+      const ok = q.pat ? gradePat(input, q.answer!, q.full!) : gradeCloze(input, q.answer!, cw, q.clozeZh);
       return { ok, notes: ok ? [q.full!] : [`正确答案：${q.answer}`, q.full!, ...clozeWhy(q.answer!, cw, input)], correct: q.answer! };
     }
     case 'saying': {
