@@ -66,7 +66,7 @@ export type ErodeSeg = 8 | 11 | 15 | 19;
 export type RegionNo = 1 | 2 | 3 | LaterRegionNo;
 
 /** flee = 宝箱怪 / rare monster shouting 「Ich muss los!」: kill it this turn or it runs. */
-export type IntentKind = 'attack' | 'defend' | 'charge' | 'heal' | 'wait' | 'flee';
+export type IntentKind = 'attack' | 'charge' | 'wait' | 'flee';
 /** cls = the class skill (书写者 墨水风暴 / 守护者 稳住). */
 /** 0.4: inscribe = 铭刻, whisper = 低语, chorus = 齐鸣 (techniques that change the next question). */
 /** item = a 药片 turn (物品栏, 2026-11-22): no question, the monsters act. */

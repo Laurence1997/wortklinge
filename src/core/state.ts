@@ -356,9 +356,18 @@ export function setSaveHook(fn: (s: GameState) => void): void {
 }
 
 let lastBody = '';
+let blocked = false;
+/** 一个浏览器只开一个标签页: a newer tab took over; this one never saves again (local or cloud). */
+export function blockSaves(): void {
+  blocked = true;
+}
+export function savesBlocked(): boolean {
+  return blocked;
+}
 /** Saves only when something changed (审查 A1): an idle tab no longer restamps savedAt and so can't win the cloud
  *  sync with old progress. `force` writes anyway (import, new game). */
 export function save(s: GameState, force = false): void {
+  if (blocked) return;
   const at = s.savedAt;
   s.savedAt = 0;
   const body = JSON.stringify(s);

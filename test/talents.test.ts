@@ -40,7 +40,7 @@ describe('talent nodes', () => {
     const b = startBattle(s, noun, makeRng(1));
     b.monster.hp = b.monster.maxHp = 99999;
     b.wrongStreak = 1;
-    b.intent = { ...b.intent, kind: 'defend' };
+    b.intent = { ...b.intent, kind: 'wait' };
     s.hp = Math.round(maxHp(s) / 2);
     const before = s.hp;
     const q = makeQuestion(s, b, 'attack', makeRng(2));
