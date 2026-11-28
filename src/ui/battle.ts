@@ -5,9 +5,10 @@ import { count as itemCount, itemsOpen, tabletHeal } from '../core/items';
 import { CHARM, equippedCharms } from '../core/charms';
 import { listenRate } from '../core/listening';
 import { bestHeard, lineLeaks, plateZh, castMs, gcdMs, realtimeOn, voiceOpen } from '../core/combat';
-import { availableMoves, chorusMates, canHint, comboTier, effArmor, moveReady, poolReady, needsPhase, phaseOf, resName, stancesFor, teachPhase, readTarget, readRecall, readShown, phaseWrongWhy } from '../core/combat';
+import { availableMoves, chorusMates, canHint, comboTier, effArmor, moveReady, poolReady, needsPhase, phaseOf, resName, stancesFor, teachPhase, readTarget, readRecall, readShown, phaseWrongWhy, nameStanceWhy } from '../core/combat';
 import { articleSlip, clarity, shadowOk } from '../core/shadow';
 import { has } from '../core/unlocks';
+import { CONFIG } from '../core/config';
 import type { Stance } from '../core/cloze';
 import { ELEMENT_ZH } from '../core/intents';
 import { STAGE_ZH } from '../core/srs';
@@ -48,6 +49,13 @@ const MOVE_INFO: Record<Move, { key: string; zh: string; sub: string }> = {
   cls: { key: 'G', zh: '技能', sub: '' },
   item: { key: 'H', zh: '药片', sub: '回血 · 不占回合' },
 };
+
+/** 试玩 #45/#52: the stance hint when the line gives no article to copy (the stance is the name's der/die/das). */
+function nameStanceTip(s: Parameters<typeof nameStanceWhy>[0], b: Battle): string {
+  const r = nameStanceWhy(s, b);
+  if (r.why === 'closed') return `这句要${r.c === 'dat' ? '第三格' : '第四格'}，${r.c === 'dat' ? CONFIG.phase.datFrom : CONFIG.phase.accFrom} 级才学：先按名字选 der/die/das`;
+  return '这句空里没有能照着选的冠词：按名字选 der/die/das';
+}
 
 export class BattleUI {
   phase: Phase = 'choose';
@@ -1017,11 +1025,11 @@ export class BattleUI {
           taught ? '' : b.perfekt
             ? s.level <= 22 ? '  完成时：移动、变化（fahren、kommen、aufstehen）多用 sein，其余用 haben；23 级前选错不罚' : '  选对护甲降一档、回资源；选错护甲翻倍'
             : this.phaseNag && !b.phase
-            ? s.level >= 7 ? '  先选相：它这句话里缺的那个冠词是什么？' : '  先选相：它是 der、die 还是 das？'
+            ? s.level >= 7 ? (b.intent.caseArt ? '  先选相：它这句话里缺的那个冠词是什么？' : `  先选相：${nameStanceTip(s, b)}`) : '  先选相：它是 der、die 还是 das？'
             : b.pluralMon
               ? ''
               : s.level >= 7
-                ? b.intent.caseArt ? '  选句子空里那个冠词：照句中形式选，可能是 ein/eine、den/dem，不一定是词典里的 der/die/das' : '  这句没有它的名字：按名字选 der/die/das'
+                ? b.intent.caseArt ? '  选句子空里那个冠词：照句中形式选，可能是 ein/eine、den/dem，不一定是词典里的 der/die/das' : `  ${nameStanceTip(s, b)}`
                 : s.level <= 5 ? (s.level >= 4 ? '  选对护甲降一档、回言灵；6 级前选错不罚' : '  选对护甲降一档；6 级前选错不罚') : '  选对护甲降一档、回资源；选错护甲翻倍',
         ),
       );

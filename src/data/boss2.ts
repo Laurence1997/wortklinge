@@ -65,8 +65,17 @@ function priceRe(cents: number): string {
 
 const cap = (s: string) => s[0].toUpperCase() + s.slice(1);
 
+/** 试玩 #24: only food and drink you buy at a stall (no Bäckerei, Teller, Hunger, Kellner …). */
+const FOOD_IDS = new Set([
+  'wasser', 'milch', 'kartoffel', 'eis', 'suppe', 'birne', 'bier', 'kaese', 'kuchen', 'gurke', 'quark', 'kaffee', 'oel', 'mehl',
+  'rindfleisch', 'schinken', 'fisch', 'brot', 'tee', 'saft', 'nudel', 'salat', 'haehnchen', 'schweinefleisch', 'pilz', 'honig',
+  'sahne', 'wein', 'salz', 'obst', 'sprudel', 'fleisch', 'apfel', 'butter', 'tomate', 'zwiebel', 'hamburger', 'erdbeere', 'steak',
+  'zitrone', 'zucker', 'joghurt', 'schokolade', 'ei', 'reis', 'wurst', 'pfeffer', 'karotte', 'paprika', 'cola', 'gemuese', 'banane',
+  'broetchen', 'orange', 'pizza',
+]);
+
 function foods(): Word[] {
-  return WORDS.filter((w) => w.region === 2 && w.pos === 'n' && w.family === 'krume');
+  return WORDS.filter((w) => w.region === 2 && w.pos === 'n' && w.family === 'krume' && FOOD_IDS.has(w.id));
 }
 
 function priceQuestion(rng: Rng): BossQuestion {

@@ -677,12 +677,13 @@ export class Controller {
       this.entity = m;
       this.battle = startBattle(s, m.word, this.rng, { isEcho: m.isEcho, tutorial, trial: opts.trial, rare: m.rare, challenge: m.challenge, struct: opts.struct || m.red });
       // 斩杀: a word being verified shouts no half sentence (it could show its letters).
-      if (!tutorial && !opts.trial && !this.battle.verify) {
+      // 试玩 #22/#81: a 复数怪 (its stance is always die) and a grammar-dungeon fight (every question asks the floor's rule) shout none either.
+      if (!tutorial && !opts.trial && !this.battle.verify && !this.battle.pluralMon && !this.gramRun) {
         const say = rollSaying(s, m.word, this.rng);
         if (say) {
           this.milestone('m_saying');
           this.battle.saying = say;
-          if (this.battle.intent.kind !== 'charge' && this.battle.intent.kind !== 'flee') this.battle.intent = { ...this.battle.intent, ...shoutLine(say) };
+          if (this.battle.intent.kind !== 'charge' && this.battle.intent.kind !== 'flee') this.battle.intent = { ...this.battle.intent, ...shoutLine(say), caseArt: undefined };
         }
       }
       if (this.battle.rusty && !s.flags.rustyTaught) {
@@ -737,13 +738,21 @@ export class Controller {
     if (b0.directOffer && this.pack.length === 1) {
       b0.directOffer = false;
       say([{ who: SYS, text: '一个没见过的名字扑了过来。你本来就认识它吗？' }], undefined, [
-        { label: '我认识它（直接叫名：不看提示写出来，写对直接斩杀）', act: () => ((b0.direct = true), this.battleUI.open()) },
+        { label: '我认识它（直接叫名：不看提示写出来，写对就能斩杀）', act: () => ((b0.direct = true), this.battleUI.open()) },
         { label: '不认识，开始学', act: () => this.battleUI.open() },
       ]);
       return;
     }
     this.battleUI.open();
-    if (this.pack.length > 1 && !s.flags.firstPackDone) {
+    // 试玩 #35: an article pack (文章群怪) has its own words and articles, so it gets its own note, once.
+    const articlePack = this.pack.some((x) => !!x.notice && noticeById(x.notice.id)?.kind === 'article');
+    if (this.pack.length > 1 && articlePack && !s.flags.articlePackTaught) {
+      s.flags.articlePackTaught = true;
+      say([
+        { who: HILDE, text: '一群文章群怪！它们是同一篇文章里的词，每只的词和冠词都不一样。' },
+        { who: HILDE, text: '文章就挂在上面。它们会问文章里写了什么，读懂了就好打；每只的词要一只一只看清再答。' },
+      ]);
+    } else if (this.pack.length > 1 && !articlePack && !s.flags.firstPackDone && this.pack.some((x) => x.tutorial === 'packCharge')) {
       say([
         { who: HILDE, text: '一群！这两只是同一个冠词。' },
         { who: HILDE, text: '选对相，按「齐鸣」：一题打两只，连那只喊「Moment!」的蓄力也一起打断。相选错，齐鸣不响，只打到目标。' },
@@ -795,7 +804,8 @@ export class Controller {
       const mates = this.scene.monsters.filter((o) => o !== m && !o.isEcho && !o.scripted && !o.rare && !o.phrase && !o.elite && o.zone === m.zone && o.word.id !== m.word.id && isArticleWord(art, o.word) && kindOf(s, o.word) === 'new');
       for (const o of mates.slice(0, ARTICLE_B2_CFG.packMax - 1)) {
         const ob = startBattle(s, o.word, this.rng, {});
-        ob.notice = { id: art.id, i: this.pack.length };
+        // 试玩 #86: the pack shares one question counter, so no two members ask the same content question.
+        ob.notice = this.pack[0].notice!.id === art.id ? this.pack[0].notice : { id: art.id, i: this.pack.length };
         ob.directOffer = false;
         this.pack.push(ob);
         this.packEntities.push(o);
@@ -831,7 +841,7 @@ export class Controller {
     for (const o of picked.slice(0, max - 1)) {
       const ob = startBattle(s, o.word, this.rng, { tutorial: tut, challenge: o.challenge });
       // 文章群怪 (81): the whole pack carries the lead's article, each asking from the next question.
-      if (lead.notice && noticeById(lead.notice.id)?.kind === 'article') (ob.notice = { id: lead.notice.id, i: this.pack.length }), (ob.mirror = undefined);
+      if (lead.notice && noticeById(lead.notice.id)?.kind === 'article') (ob.notice = lead.notice), (ob.mirror = undefined); // 试玩 #86: one shared question counter
       // A same-article pair stays a pair: a crowd (复数怪, always die) pairs with a crowd, a single with a single.
       if (o.word.art === m.word.art && !!ob.pluralMon !== !!lead.pluralMon && o.word.pl && o.word.pl !== '-' && !o.word.plOnly && !tut) {
         const k = CONFIG.phase.pluralHp;
@@ -1117,7 +1127,8 @@ export class Controller {
     }
     // Tutorial bookkeeping.
     // 前 10 级连错 2 次自动给中文提示
-    if (!r.correct && b.wrongStreak >= 2 && s.level <= 10) r.verdict.notes.push(`提示：${b.word.zh}`);
+    // 试玩 #46: not when the question already gave the whole Chinese sentence (句中默写, 完形填空).
+    if (!r.correct && b.wrongStreak >= 2 && s.level <= 10 && !q.clozeZh) r.verdict.notes.push(`提示：${b.word.zh}`);
     this.refresh();
     return r;
   }

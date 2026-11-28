@@ -252,8 +252,14 @@ export function b2MonOk(s: GameState, w: Word, k: B2Mon): boolean {
 /** Which B2 kind this word monster comes as, if any. */
 export function rollB2Mon(s: GameState, w: Word, rng: Rng): B2Mon | null {
   const open = (Object.keys(B2_MON) as B2Mon[]).filter((k) => b2MonOk(s, w, k));
-  if (!open.length || rng() >= B2_CFG.chance) return null;
-  return open[Math.floor(rng() * open.length)];
+  if (!open.length) return null;
+  // 试玩 #89: in the B2 regions most monsters are new words (article packs, which carry no kind), so a kind just
+  // opened would rarely show up: the first fitting monster after it opens always comes as it (flags.b2Met, optional).
+  const met = String(s.flags.b2Met ?? '').split(',').filter(Boolean);
+  const fresh = open.find((k) => !met.includes(k));
+  const k = fresh ?? (rng() < B2_CFG.chance ? open[Math.floor(rng() * open.length)] : null);
+  if (k && !met.includes(k)) s.flags.b2Met = [...met, k].join(',');
+  return k;
 }
 
 export function b2Task(s: GameState, w: Word, rng: Rng, k: B2Mon): GramTask | null {

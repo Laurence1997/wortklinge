@@ -683,7 +683,7 @@ function nextIntent(s: GameState, b: Battle, rng: Rng): Intent {
     intent = { ...intent, ...shoutLine(b.phrase) };
   } else if (!tut && intent.kind !== 'charge' && intent.kind !== 'flee' && !intent.layers.includes('time') && b.saying && !b.sayingDone) {
     // 接句怪: until you finish its line, the line is its half sentence (no mumbled example giving the rest away).
-    intent = { ...intent, ...shoutLine(b.saying) };
+    intent = { ...intent, ...shoutLine(b.saying), caseArt: undefined };
   } else if (!tut && intent.kind !== 'charge' && intent.kind !== 'flee' && !intent.layers.includes('time') && b.perfekt) {
     // 现在完成时: the Perfekt sentence with haben / sein swallowed.
     intent = { ...intent, ...perfektLine(b.word), caseArt: undefined };
@@ -814,7 +814,11 @@ function synonym(a: Word, b: Word): boolean {
 /** 审查修订「干扰项」: same part of speech, same gender (nouns), and never a synonym. */
 function distractors(rng: Rng, w: Word, field: 'de' | 'zh', n: number): string[] {
   const fits = (x: Word) => x.id !== w.id && x.pos === w.pos && x[field] !== w[field] && !synonym(w, x) && (!w.art || x.art === w.art);
-  const strict = WORDS.filter(fits);
+  // 试玩 #67: 'phr' holds single words (jetzt, nur) and whole sentences alike; wrong options take the same shape.
+  const words = (v: string) => v.trim().split(/\s+/).length;
+  const shaped = (x: Word) => words(x.de) === 1 ? words(w.de) === 1 : words(w.de) > 1 && Math.abs(words(x.de) - words(w.de)) <= 2;
+  const sameShape = w.pos === 'phr' ? WORDS.filter((x) => fits(x) && shaped(x) && x.zh.length <= Math.max(4, w.zh.length * 2)) : [];
+  const strict = sameShape.length >= n ? sameShape : WORDS.filter(fits);
   const samePos = strict.length >= n ? strict : WORDS.filter((x) => x.id !== w.id && x.pos === w.pos && x[field] !== w[field] && !synonym(w, x));
   const pool = samePos.length >= n ? samePos : WORDS.filter((x) => x.id !== w.id);
   const out: string[] = [];
@@ -1000,7 +1004,23 @@ export function stancesFor(level: number, b?: Battle): Stance[] {
 
 /** Whether attacks on this monster need a stance (every noun outside the scripted tutorial fights). */
 export function needsPhase(b: Battle): boolean {
-  return !!phaseOf(b) && (!b.tutorial || b.tutorial === 'packCharge');
+  // 试玩 #64/#71: 直接叫名 is a plain dictation (no line, no stance); the stance comes back if it is written wrong.
+  return !!phaseOf(b) && !b.direct && (!b.tutorial || b.tutorial === 'packCharge');
+}
+
+/** 试玩 #52: why a noun's stance comes from its name and not its line: 'closed' = the line's slot is in a case this
+ *  level hasn't opened yet (with that case), 'bare' = the slot carries no article to pick (im Keller, meine, no line). */
+export function nameStanceWhy(s: GameState, b: Battle): { why: 'closed'; c: Case } | { why: 'bare' } {
+  const w = b.word;
+  const full = b.intent?.full?.replace(/\s+/g, ' ').trim();
+  const ps = (EXAMPLES[w.id] ?? []).map(parse);
+  const i = full ? ps.findIndex((p) => !!p && (p.before + p.blank + p.after).replace(/\s+/g, ' ').trim() === full) : -1;
+  const p = i >= 0 ? ps[i] : null;
+  if (!p) return { why: 'bare' };
+  const prev = p.before.trim().split(/\s+/).pop()?.toLowerCase() ?? '';
+  const fused: Record<string, Case> = { im: 'dat', am: 'dat', vom: 'dat', beim: 'dat', zum: 'dat', zur: 'dat', ins: 'acc', ans: 'acc' };
+  const c = caseOf(genderOf(w), slotArticle(w, i)) ?? fused[prev] ?? null;
+  return c && !casesOpen(s.level).includes(c) ? { why: 'closed', c } : { why: 'bare' };
 }
 
 /** 先教后考: a noun you have never met (not in your word book) gets the right stance picked and shown on its
@@ -1094,7 +1114,7 @@ export function contextQuestion(s: GameState, b: Battle, rng: Rng): Question | n
   const pl = isPattern(rw) ? patLine(rw, Math.floor(rng() * patCount(rw))) : null;
   if (pl) return { type: 'cloze', review: id, pat: true, prompt: `${tag} · 句型：按顺序打出空里的关键词（空格隔开）· ${pl.zh}`, focus: pl.shown, answer: pl.answer, clozeMode: 'base', full: pl.full, clozeZh: pl.zh };
   const c = makeCloze(rw, 'form', rng);
-  if (c) return { type: 'cloze', review: id, prompt: `${tag}：打出这里要的形式（名词带冠词，动词变位）· ${c.zh}`, focus: c.shown, answer: c.answer, clozeMode: 'form', full: c.full, clozeZh: c.zh };
+  if (c) return { type: 'cloze', review: id, prompt: `${tag}：打出这里要的形式（${hasArticleQuestion(rw) && adjInSlot(c.answer) ? '名词带冠词和形容词' : '名词带冠词，动词变位'}）· ${c.zh}`, focus: c.shown, answer: c.answer, clozeMode: 'form', full: c.full, clozeZh: c.zh };
   return { type: 'typed', review: id, prompt: `${tag}：${hasArticleQuestion(rw) ? '默写，带上冠词' : '默写这个词'}`, focus: zhWithPos(rw), withArticle: hasArticleQuestion(rw), answer: fullForm(rw) };
 }
 
@@ -1115,12 +1135,13 @@ function composeQ(w: Word): Question {
 
 /** 句中默写 (练中学, rev 425): the word's slot blanked in one of its examples, the whole Chinese given, no letters.
  *  Nouns only from slots that carry the article (einen Tee), so the answer shows the article and case. */
-export function dictQ(w: Word, rng: Rng): Question | null {
+export function dictQ(w: Word, rng: Rng, level?: number): Question | null {
   const noun = hasArticleQuestion(w);
   const ps = (EXAMPLES[w.id] ?? [])
     .map(parse)
     .filter((x): x is NonNullable<typeof x> => !!x && !!x.zh)
     .filter((x) => (noun ? ARTICLE_RE.test(`${x.blank} `) : true))
+    .filter((x) => level === undefined || dictSlotOpen(w, x.blank, level))
     .filter((x) => !showsWord(w, `${x.before} ${x.after}`));
   if (!ps.length) return null;
   const p = pick(rng, ps);
@@ -1130,13 +1151,35 @@ export function dictQ(w: Word, rng: Rng): Question | null {
     type: 'cloze',
     clozeMode: same ? 'base' : 'form',
     dict: true,
-    prompt: `句中默写：看整句中文，打出空里的词${noun ? '（带冠词，按句子变格）' : '（按句子变形）'} · ${p.zh}`,
+    prompt: `句中默写：看整句中文，打出空里的词${noun ? `（带冠词${adjInSlot(p.blank) ? '和形容词' : ''}，按句子变格）` : '（按句子变形）'} · ${p.zh}`,
     focus: `${p.before}___${p.after}`.replace(/\s+/g, ' ').trim(),
     answer: p.blank,
     full: `${p.before}${p.blank}${p.after}`.replace(/\s+/g, ' ').trim(),
     clozeZh: p.zh,
   };
 }
+
+/** 试玩 #59: a noun slot with an adjective between article and noun (ein neues Bett, eine schwarze Hose). */
+function adjInSlot(blank: string): boolean {
+  const t = blank.trim().split(/\s+/);
+  return t.length >= 3 && ARTICLE_RE.test(`${blank.trim()} `) && /^[a-zäöüß]/.test(t[1]) && /^[A-ZÄÖÜ]/.test(t[t.length - 1]);
+}
+
+/** 试玩 #16: whether a 句中默写 slot fits this level's grammar. Before 填变形 (Lv11) only the dictionary form, or a
+ *  noun as article + noun in a case the stances already read (nom; acc from Lv7; dat from Lv15). From Lv11 any
+ *  form, but a case the level hasn't opened yet (einem Stock before Lv15) still stays out. */
+export function dictSlotOpen(w: Word, blank: string, level: number): boolean {
+  const formOpen = level >= 11;
+  const toks = blank.trim().split(/\s+/);
+  if (!hasArticleQuestion(w)) return formOpen || normalize(blank) === normalize(w.de) || normalize(blank) === normalize(fullForm(w));
+  // Possessives read like ein (meinen → einen); plural slots and the like have no stance case.
+  const art = toks[0].toLowerCase().replace(/^(mein|dein|sein|ihr|unser|eur)/, 'ein');
+  const c = caseOf(genderOf(w), art);
+  if (c && !casesOpen(level).includes(c)) return false;
+  if (formOpen) return true;
+  return !!c && toks.length === 2 && normalize(toks[1]) === normalize(w.de) && (STANCE_ARTS as readonly string[]).includes(toks[0].toLowerCase());
+}
+const STANCE_ARTS = ['der', 'die', 'das', 'den', 'dem', 'ein', 'eine', 'einen', 'einem', 'einer', 'kein', 'keine', 'keinen', 'keinem', 'keiner'] as const;
 
 /** 审查修订: sentences already shown in this fight (the monster's lines, sentences shown after answers). Until every
  *  word has 3 examples, these are not reused for a writing question. Set by makeQuestion, read by clozeQ. */
@@ -1193,7 +1236,7 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
   const meaning = (): Question => (b.kind === 'new' && b.stage === 0 ? pickZh() : (canType && hasExamples(w) ? clozeQ(s, w, rng) : null) ?? listenDe());
   // 练中学 (rev 425): 写 = 句中默写 (the word blanked in its example, the whole Chinese given, no letters);
   // plain 看中文写 only for words without an example.
-  const typed = (): Question => dictQ(w, rng) ?? bareTyped();
+  const typed = (): Question => dictQ(w, rng, s.level) ?? bareTyped();
   const bareTyped = (): Question => ({
     type: 'typed',
     prompt: isNoun ? '默写：带上冠词（der / die / das）' : '默写这个词',
@@ -1277,7 +1320,7 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
       return { ...bareTyped(), pool: id, prompt: `格之封印：默写${isNoun ? '（带冠词）' : ''}（写对：伤害 ×1.4，破甲 3 下）` };
     }
     if (id === 'dictate') {
-      const d = dictQ(w, rng);
+      const d = dictQ(w, rng, s.level);
       if (d) return { ...d, pool: id, listen: d.full, clozeZh: undefined, prompt: '听写：听它喊出的句子，打出被挖掉的词（不给中文）', focus: (d.focus ?? '').split('\n')[0] };
       return { ...bareTyped(), pool: id, listen: w.de, prompt: '听写：听它喊出的词，打出来' };
     }
@@ -1292,7 +1335,7 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
     b.chainOffer = false;
   }
   // 直接叫名 (Lucas 2026-11-25): plain dictation, no hint, nouns with the article.
-  if (b.direct && move === 'attack') return { ...bareTyped(), directName: true, prompt: `直接叫名：不看提示写出它${isNoun ? '（带冠词）' : ''}。写对直接斩杀，写错照常学、不罚` };
+  if (b.direct && move === 'attack') return { ...bareTyped(), directName: true, prompt: `直接叫名：不看提示写出它${isNoun ? '（带冠词）' : ''}。写对就能斩杀，写错照常学、不罚` };
   // 斩杀 (0.6.x): a verification fight opens with typing, no hint (nouns with the article).
   if (b.verify && !b.verifyDone && move === 'attack') {
     const v = typed();
@@ -1300,7 +1343,7 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
   }
   // 复习怪 (rev 425): its first question is the 句中默写; right brings it straight back to 归名.
   if (b.reviewMon && b.qIndex === 0 && move === 'attack' && canType && !b.tutorial) {
-    const v = dictQ(w, rng);
+    const v = dictQ(w, rng, s.level);
     if (v) return { ...v, prompt: v.prompt.replace('句中默写', '复习怪 · 句中默写（写对直接回到归名）') };
   }
   // 挑战怪 (rev 342): it opens with a dictation, no hint — know it and you can cut it today.
@@ -1452,7 +1495,8 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
   }
   if (am === 'attack' && b.notice && !b.finishOwn) {
     const n = noticeById(b.notice.id);
-    if (n) return gramQuestion(noticeTask(n, b.notice.i, rng));
+    // 试玩 #86: a pack shares the counter; once every content question was asked, the members ask their own words.
+    if (n && (!inPack || b.notice.i < n.qs.length)) return gramQuestion(noticeTask(n, b.notice.i, rng));
   }
   // 文章群怪: the word's own blow is its meaning, read from the article sentence (choice only).
   if (am === 'attack' && b.artCtx && b.kind === 'new') {
@@ -1633,7 +1677,7 @@ export function clozeQ(s: GameState, w: Word, rng: Rng, mode: ClozeMode = clozeM
   if (mode !== 'pick') for (let i = 0; i < 4 && c && seenNow.has(lineKey(c.full)); i++) c = makeCloze(w, mode, rng);
   if (!c || (mode !== 'pick' && seenNow.has(lineKey(c.full)))) return null;
   const real: ClozeMode = mode === 'base' && c.answer !== w.de && !c.answer.endsWith(w.de) ? 'form' : mode;
-  const tip = real === 'pick' ? '选出填进去的词' : real === 'base' ? '打出填进去的词' : '打出这里要的形式（带冠词、变位或复数）';
+  const tip = real === 'pick' ? '选出填进去的词' : real === 'base' ? '打出填进去的词' : hasArticleQuestion(w) && adjInSlot(c.answer) ? '打出这里要的形式（带冠词和形容词，按句子变格）' : '打出这里要的形式（带冠词、变位或复数）';
   return {
     type: 'cloze',
     prompt: `完形填空：${tip} · ${c.zh}`,
