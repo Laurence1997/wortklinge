@@ -1,4 +1,4 @@
-// Accounts and cloud saves (Supabase). Invite only (email + password); login is required to play; the local save is a cache that also keeps you playing offline.
+// Accounts and cloud saves (Supabase). Sign-up needs an invite code (PRD「登录」, 2026-11-28), then email + password; login is required to play; the local save is a cache that also keeps you playing offline.
 // Local save stays the source of play; when logged in it syncs with the cloud and the newer save wins.
 // Only the publishable (anon) key lives here; row-level security limits each player to their own save.
 
@@ -65,9 +65,12 @@ export async function initCloud(): Promise<void> {
 }
 
 const ERR_ZH: Record<string, string> = {
-  'Invalid login credentials': '邮箱或密码不对。第一次登录请用邀请里给的初始密码；忘了就点「忘记密码」。',
+  'Invalid login credentials': '邮箱或密码不对。忘了密码就点「忘记密码」。',
   'Email not confirmed': '这个邮箱还没确认',
   'Token has expired or is invalid': '验证码不对或已过期',
+  'User already registered': '这个邮箱已经注册过了，直接登录就行；忘了密码点「忘记密码」。',
+  'Database error saving new user': '邀请码不对或已经用完了。',
+  'Unable to validate email address: invalid format': '邮箱格式不对',
 };
 const NET_ZH = '连不上登录服务器。请检查网络后再试；在国内的话，可能需要换个网络或开加速器。';
 const zh = (m: string) => ERR_ZH[m] ?? (/fetch|network|timeout|load failed/i.test(m) ? NET_ZH : m);
@@ -97,7 +100,29 @@ export async function signIn(email: string, password: string): Promise<string | 
   return null;
 }
 
-/** Invited accounts start with a fixed password; until it is changed the game asks for a new one. */
+/** Sign up with an invite code (checked again by a trigger on the server, migration 0007). No confirmation mail:
+ *  "Confirm email" is off, so a session comes straight back. Returns an error in Chinese or null. */
+export async function signUp(code: string, email: string, password: string): Promise<string | null> {
+  const invite = code.trim().toLowerCase();
+  if (!invite) return '请填邀请码';
+  if (password.length < 8) return '密码至少 8 位';
+  try {
+    const ok = await withTimeout(sb.rpc('check_invite', { p_code: invite }), 8000);
+    if (ok.error) return /check_invite/.test(ok.error.message) ? '注册还没开通，请联系开发者。' : zh(ok.error.message);
+    if (ok.data !== true) return '邀请码不对或已经用完了。';
+    const res = await withTimeout(sb.auth.signUp({ email: email.trim().toLowerCase(), password, options: { data: { invite, pw_changed: true } } }), 12000);
+    if (res.error) return zh(res.error.message);
+    if (!res.data.session) return '账号建好了，但现在还不能登录（服务器还开着邮箱确认）。请联系开发者。';
+    cloud.session = res.data.session;
+  } catch {
+    return NET_ZH;
+  }
+  await loadProfile();
+  changed();
+  return null;
+}
+
+/** Old invited accounts started with a fixed password; until it is changed the game asks for a new one. */
 /** Login isn't finished until the player has a nickname (skipped when offline: profile unknown). */
 export function needsNickname(): boolean {
   return !!cloud.session && !cloud.profile && cloud.status !== 'offline';

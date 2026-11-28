@@ -3,7 +3,7 @@
 
 import { h } from './dom';
 import { gameLog, onGameLog } from './gamelog';
-import { CHAT, onSocial, sendChat, social } from '../net/social';
+import { CHAT, blockNick, blocked, onSocial, reportChat, sendChat, social, unblockAll, type ChatMsg } from '../net/social';
 import { cloud } from '../net/cloud';
 
 export function mountLogBox(): { setVisible: (v: boolean) => void } {
@@ -46,11 +46,22 @@ export function mountLogBox(): { setVisible: (v: boolean) => void } {
       }
     });
   const time = (t: number) => new Date(t).toTimeString().slice(0, 5);
+  // 屏蔽 / 举报 on another player's line (never on AI adventurers, hints or your own lines).
+  const tools = (m: ChatMsg) =>
+    m.me || m.ai || m.sys
+      ? ''
+      : h(
+          'span.chat-tools',
+          h('button', { title: '只在你这边隐藏这个人的消息', onclick: () => { blockNick(m.nick); note.textContent = `已屏蔽 ${m.nick}。`; } }, '屏蔽'),
+          h('button', { title: '把这句话报告给开发者', onclick: async () => { note.textContent = (await reportChat(m)) ?? '已举报，谢谢。开发者会看到这句话。'; } }, '举报'),
+        );
+  const unblock = () => (blocked.size ? h('div.info', `你屏蔽了 ${blocked.size} 个人。`, h('button.chat-unblock', { onclick: () => { unblockAll(); note.textContent = '已取消全部屏蔽。'; } }, '全部取消')) : '');
   const drawChat = () =>
     follow(chatLog, () =>
       chatLog.replaceChildren(
+        unblock(),
         ...(social.msgs.length
-          ? social.msgs.map((m) => m.sys ? h('div.info', h('i', time(m.t)), ' ', m.text) : h(m.me ? 'div.me' : 'div', h('i', time(m.t)), ' ', m.ai ? h('span.ai-tag', 'AI') : '', m.ai ? ' ' : '', h('b', m.ai ? m.nick : `${m.nick} Lv${m.level}`), '：', m.text))
+          ? social.msgs.map((m) => m.sys ? h('div.info', h('i', time(m.t)), ' ', m.text) : h(m.me ? 'div.me' : 'div', h('i', time(m.t)), ' ', m.ai ? h('span.ai-tag', 'AI') : '', m.ai ? ' ' : '', h('b', m.ai ? m.nick : `${m.nick} Lv${m.level}`), '：', m.text, tools(m)))
           : [h('div.info', cloud.profile ? '全服聊天：在线的人都看得到，下线就没了。' : '登录并起好昵称后才能聊天。')]),
       ),
     );

@@ -1,7 +1,8 @@
 // 全服聊天 + 「当前在线 N 人」 (Lucas 2026-11-25). One Supabase Realtime channel: presence for the count, broadcast
 // for chat. Nothing is stored: a message only reaches who is online now. Logged-in players with a nickname only;
 // they show as nickname + level, never the email. 隐身 (settings.hideBoard): you can read, you are not counted.
-// 暂定: 2 s between messages, 120 characters. Before strangers join, add report / block (and move to a private channel).
+// 暂定: 2 s between messages, 120 characters. 屏蔽 hides a nickname on this computer only; 举报 adds a row to
+// chat_reports (migration 0007, PRD「登录」 2026-11-28). Before fully open sign-up, move to a private channel.
 
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { cloud, sb } from './cloud';
@@ -107,7 +108,46 @@ export async function track(): Promise<void> {
   emit();
 }
 
+const BLOCK_KEY = 'wk-chat-blocked';
+function loadBlocked(): Set<string> {
+  try {
+    const v = JSON.parse(localStorage.getItem(BLOCK_KEY) ?? '[]');
+    return new Set(Array.isArray(v) ? v.filter((x) => typeof x === 'string') : []);
+  } catch {
+    return new Set();
+  }
+}
+/** Nicknames this player hid (stored on this computer only). */
+export const blocked = loadBlocked();
+export function blockNick(nick: string): void {
+  blocked.add(nick);
+  try {
+    localStorage.setItem(BLOCK_KEY, JSON.stringify([...blocked]));
+  } catch {
+    /* private window: the block lasts until reload */
+  }
+  social.msgs = social.msgs.filter((m) => m.ai || m.sys || m.me || !blocked.has(m.nick));
+  emit();
+}
+export function unblockAll(): void {
+  blocked.clear();
+  try {
+    localStorage.removeItem(BLOCK_KEY);
+  } catch {
+    /* ignore */
+  }
+  emit();
+}
+
+/** Report a chat line to the developer. Returns why not, or null when sent. */
+export async function reportChat(m: ChatMsg): Promise<string | null> {
+  if (!cloud.session) return '请先登录';
+  const { error } = await sb.from('chat_reports').insert({ nick: m.nick.slice(0, 40), text: m.text.slice(0, 400), msg_at: new Date(m.t).toISOString() });
+  return error ? '举报没发出去，稍后再试。' : null;
+}
+
 function addMsg(m: ChatMsg): void {
+  if (!m.ai && !m.sys && !m.me && blocked.has(m.nick)) return;
   social.msgs.push(m);
   social.total += 1;
   if (social.msgs.length > CHAT.keep) social.msgs.splice(0, social.msgs.length - CHAT.keep);

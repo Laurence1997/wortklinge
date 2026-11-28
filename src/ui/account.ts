@@ -1,10 +1,10 @@
-// Login box (invite only): email + password. First login forces a new password;
+// Login box: email + password, or sign up with an invite code (PRD「登录」, 2026-11-28). Old invited accounts change their first password;
 // "forgot password" mails a reset link (Supabase default template); coming back through it asks for a new password.
 
-import { changePassword, cloud, isRecovering, mustChangePassword, needsNickname, serverReachable, setNickname, sendResetCode, signIn } from '../net/cloud';
+import { changePassword, cloud, isRecovering, mustChangePassword, needsNickname, serverReachable, setNickname, sendResetCode, signIn, signUp } from '../net/cloud';
 import { h } from './dom';
 
-type Mode = 'login' | 'forgot' | 'sent';
+type Mode = 'login' | 'signup' | 'forgot' | 'sent';
 
 /** The reset link was already used or too old (Supabase sends you back with error_code in the URL). */
 const linkExpired = typeof location !== 'undefined' && /error_code=otp_expired|error=access_denied/.test(location.hash + location.search);
@@ -66,9 +66,35 @@ export function loginView(box: HTMLElement, onDone: () => void, mode: Mode = 'lo
     box.append(
       linkExpired ? h('p.small', '这个重设密码的链接已经用过或过期了。点「忘记密码」再发一封。') : '',
       net,
-      h('p.small.muted', '账号只能由开发者邀请。收到邀请后用邮箱和初始密码登录，第一次登录要改密码。存档保存在云端，换电脑也能接着玩。'),
+      h('p.small.muted', '用邮箱和密码登录。没有账号的话，向开发者要邀请码，点「用邀请码注册」。存档保存在云端，换电脑也能接着玩。'),
       h('div.row', em, pw, h('button.btn.primary', { onclick: go }, '登录')),
-      h('button.btn.ghost.small', { onclick: () => loginView(box, onDone, 'forgot', em.value) }, '忘记密码'),
+      h('div.row', h('button.btn.small', { onclick: () => loginView(box, onDone, 'signup', em.value) }, '用邀请码注册'), h('button.btn.ghost.small', { onclick: () => loginView(box, onDone, 'forgot', em.value) }, '忘记密码')),
+      msg,
+    );
+    return;
+  }
+
+  if (mode === 'signup') {
+    const code = field('text', '邀请码');
+    const em = field('email', '邮箱', email);
+    const p1 = field('password', '密码（至少 8 位）');
+    const p2 = field('password', '再输一遍');
+    const go = async () => {
+      if (!em.value.includes('@')) return void (msg.textContent = '请填邮箱');
+      if (p1.value.length < 8) return void (msg.textContent = '密码至少 8 位');
+      if (p1.value !== p2.value) return void (msg.textContent = '两次密码不一样');
+      msg.textContent = '注册中…';
+      const err = await signUp(code.value, em.value, p1.value);
+      if (err) return void (msg.textContent = err);
+      if (needsNickname()) loginView(box, onDone);
+      else onDone();
+    };
+    enter([code, em, p1, p2], go);
+    box.append(
+      h('p.small.muted', '填开发者给你的邀请码。邮箱就是你的登录账号，请写对。注册完直接进游戏。'),
+      h('div.row', code, em),
+      h('div.row', p1, p2, h('button.btn.primary', { onclick: go }, '注册')),
+      h('button.btn.ghost.small', { onclick: () => loginView(box, onDone, 'login', em.value) }, '已有账号，返回登录'),
       msg,
     );
     return;

@@ -836,3 +836,8 @@ svg.gm-path { display: block; width: 100%; height: auto; max-height: 420px; }
 #hud.min { width: 240px; padding: 6px 10px; }
 #hud.min .hud-stats, #hud.min .hud-zone { display: none; }
 #hud.min .bar.xp, #hud.min .bar.hp { margin-top: 5px; }
+/* 全服聊天 屏蔽 / 举报 (2026-11-28): shown on hover of another player's line. */
+#chat .chat-tools { margin-left: 6px; visibility: hidden; }
+#chat .chat-lines div:hover .chat-tools { visibility: visible; }
+#chat .chat-tools button, #chat .chat-unblock { background: none; border: none; color: #8a7a70; font-size: 12px; cursor: pointer; padding: 0 3px; }
+#chat .chat-tools button:hover, #chat .chat-unblock:hover { color: #ff8a7a; text-decoration: underline; }
