@@ -265,6 +265,18 @@ export class WorldScene extends Phaser.Scene {
     // A very wide or tall window would otherwise see past the bounds (the fog) on both sides: zoom in just enough.
     const fill = Math.max(w / (MAP_W * TILE - 2 * FOG_EDGE), this.scale.height / (MAP_H * TILE - 2 * FOG_EDGE));
     this.cameras.main.setZoom(Math.max(want, fill));
+    this.fitPanelOffset();
+  }
+
+  /** 1.0.12 panel (Lucas 11-28): the camera keeps the hero in the middle of the map area left of the open scene panel,
+   *  not under it. The map bounds still win at the map's right edge. */
+  fitPanelOffset() {
+    const el = this.nodes ? document.getElementById('scene-panel') : null;
+    const r = el && !el.hidden ? el.getBoundingClientRect() : null;
+    const cover = r && r.width ? Math.max(0, this.scale.width - r.left) : 0;
+    const cam = this.cameras.main;
+    const x = -cover / 2 / cam.zoom;
+    if (Math.abs(cam.followOffset.x - x) > 0.5) cam.setFollowOffset(x, cam.followOffset.y);
   }
 
   // ---- Monsters ------------------------------------------------------------

@@ -97,7 +97,7 @@ import type { MonsterEntity, WorldScene } from './WorldScene';
 import type { RegionId } from './map';
 import { BattleUI } from '../ui/battle';
 import { BossUI } from '../ui/boss';
-import { advance, banner, dialogHasChoices, dialogOpen, say, setPrompt, toast, type Line } from '../ui/feedback';
+import { advance, banner, dialogHasChoices, dialogOpen, say, setPrompt, toast, waitToast, type Line } from '../ui/feedback';
 import { logLine } from '../ui/gamelog';
 import { ACHIEVEMENTS, NOTES } from '../data/achievements';
 import { AREAS, SCENES, SCENE_BY_ID } from '../data/world';
@@ -644,7 +644,7 @@ export class Controller {
       const rule = opinionRule(t);
       if (!rule.ok) return go(false, [{ who: SYS, text: rule.why! }]);
       if (!s.owner) return go(true, [{ who: SYS, text: '句式和理由都有（没登录，这次不请 AI 判）。' }]);
-      toast('裁判在想……');
+      waitToast('裁判在想……');
       // The world is frozen while we wait, so a request that never comes back must not keep it frozen.
       let done = false;
       const verdict = (ok: boolean, lines: Line[]) => {
@@ -2420,7 +2420,7 @@ export class Controller {
   private duelStep(run: DuelRun, history: Array<{ who: 'npc' | 'me'; de: string }>, reply: string, spoken = false): void {
     const s = this.state;
     const d = run.d;
-    toast('……');
+    waitToast('对方在想怎么回你……');
     const left = run.targets.filter((w) => !run.used.has(w.id));
     const round = history.filter((x) => x.who === 'me').length + (reply ? 1 : 0);
     void duelTurn(d.scene, history, reply, s.level, left, run.known, run.grammar, round, run.turns).then((r) => {
@@ -2551,7 +2551,7 @@ export class Controller {
   private persuadeStep(run: { p: PersuadeScene; key: string; attempt: number; known: string[]; onWin: () => void; onNoAi?: () => void; rounds: number }, history: Array<{ who: 'npc' | 'me'; de: string }>, reply: string): void {
     const s = this.state;
     const p = run.p;
-    toast('……');
+    waitToast('对方在想怎么回你……');
     void persuadeTurn({ scene: p.scene, cares: p.cares, formal: p.formal, argue: s.level >= PERSUADE.argueFrom }, run.attempt, history, reply, s.level, run.known).then((r) => {
       if ('error' in r) {
         say([{ who: SYS, text: r.error === 'model' ? 'AI 暂时不可用，说服段这次不出结果。' : aiErrorZh(r.error) }]);
@@ -2611,7 +2611,7 @@ export class Controller {
     const credit = writingCounts(s, w) ? '写对算它复习一次。' : '这个词还在学，写对了也先不算复习。';
     this.panels.ask('AI 批改造句', `用「${w.zh}」这个词（德语${w.art ? '，名词带冠词' : ''}）写一句你自己的话。AI 只改错、不打分；${credit}`, (text) => {
       if (!text.trim()) return;
-      toast('批改中……');
+      waitToast('批改中……');
       void aiGrade(text.trim(), w, `用 ${name}（${w.zh}）写一句话`, s.level, knownWords(s)).then((r) => {
         if ('error' in r) return say([{ who: SYS, text: aiErrorZh(r.error) }]);
         const lines = gradeLines(r, text.trim());
@@ -2634,7 +2634,7 @@ export class Controller {
     const list = words.map((w) => `「${w.zh}」`).join('、'); // 审查修订: given in Chinese
     this.panels.ask('小作文', `用 ${list} 写 3–5 句，题目随你（今天、周末、你住的地方……）。AI 只改错、不打分。`, (text) => {
       if (!text.trim()) return;
-      toast('批改中……');
+      waitToast('批改中……');
       void aiEssay(text.trim(), words, '小作文：用给的词写 3–5 句', s.level, knownWords(s)).then((r) => {
         if ('error' in r) return say([{ who: SYS, text: aiErrorZh(r.error) }]);
         // 审核 1.0.10: given words the text skipped are named (in Chinese, so the hint gives nothing away); with

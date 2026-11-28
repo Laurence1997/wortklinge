@@ -4,6 +4,16 @@ import { logLine } from './gamelog';
 
 export function toast(text: string, cls = '', lead?: HTMLElement): void {
   logLine(text, cls === 'gold' ? 'gold' : 'info');
+  showToast(text, cls, lead);
+}
+
+/** 1.0.12 panel: a passing "waiting for the AI" note. Shown like a toast but kept out of the 记录 box, where a bare
+ *  「……」 used to pile up as unreadable rows. */
+export function waitToast(text: string): void {
+  showToast(text, '');
+}
+
+function showToast(text: string, cls: string, lead?: HTMLElement): void {
   const box = $('toasts');
   const el = h(`div.toast.panel${cls ? '.' + cls : ''}`, lead ?? '', text);
   box.append(el);

@@ -273,7 +273,13 @@ label.toggle { display: flex; gap: 8px; align-items: center; padding: 6px 0; }
 #chat .chat-tabs { display: flex; gap: 2px; }
 #chat .chat-tabs .tab { background: rgba(8, 4, 8, 0.7); color: #8a7a70; border: 1px solid #3a1c20; border-bottom: none; padding: 2px 10px; font-size: 14px; cursor: pointer; }
 #chat .chat-tabs .tab.on { color: #f0d8c8; border-color: #5a2a2e; }
-#chat .chat-tabs .tab.fold { margin-left: auto; padding: 2px 8px; }
+#chat .chat-tabs { align-items: flex-end; }
+#chat .chat-tabs .tab { flex: none; white-space: nowrap; }
+#chat .chat-tabs .tab.fold { padding: 2px 8px; }
+/* 1.0.12 panel: 「当前在线 N 人」 sits at the right of the tab row as its own chip, never over the 记录 / 聊天 tabs. */
+#chat .chat-online { margin-left: auto; margin-right: 4px; margin-bottom: 3px; flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; line-height: 18px; padding: 0 8px; border-radius: 9px; background: rgba(8, 4, 8, 0.7); color: #c8b8a8; border: 1px solid #3a1c20; }
+#chat .chat-online:empty { display: none; }
+#chat .chat-online:empty + .tab.fold { margin-left: auto; }
 #chat .game-log { height: 190px; overflow-y: auto; background: rgba(8, 4, 8, 0.62); padding: 4px 8px; color: #d8c8b8; line-height: 1.45; user-select: text; }
 #chat .game-log i { font-style: normal; color: #6a5a52; font-family: var(--mono); font-size: 13px; }
 #chat .game-log .good { color: #9fd89a; }
@@ -298,6 +304,14 @@ label.toggle { display: flex; gap: 8px; align-items: center; padding: 6px 0; }
 #scene-panel .sp-mon { font-family: var(--mono); }
 #scene-panel .sp-mon.gold { border-color: var(--gold, #ffcf4a); }
 #scene-panel kbd { font-size: 12px; opacity: .7; }
+/* 1.0.12 panel (Lucas 11-28): the header button folds the panel to a slim bar; P does the same. */
+#scene-panel .sp-min { float: right; margin: -2px -4px 0 8px; min-width: 24px; height: 22px; padding: 0 6px; font: 14px/20px var(--mono); color: var(--muted); background: transparent; border: 1px solid var(--line); border-radius: 3px; cursor: pointer; }
+#scene-panel .sp-min:hover { color: var(--ink); border-color: var(--line-hi); }
+#scene-panel.min { width: auto; max-width: 240px; padding: 6px 10px; overflow: hidden; }
+#scene-panel.min > :not(.sp-head) { display: none; }
+#scene-panel.min .sp-head { margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#scene-panel.min .sp-head > :not(b):not(.sp-min) { display: none; }
+#scene-panel.min .sp-min { margin: -2px -4px 0 8px; }
 .bigmap { display: flex; flex-direction: column; gap: 6px; }
 .bigmap .btn { text-align: left; }
 
@@ -528,6 +542,7 @@ body.bright #pk { background: rgba(60, 40, 15, .3); }
 body.bright #dialog .choices .btn:hover:not(:disabled) { background: #f7ecd6; }
 body.bright .diary-line.reading { background: rgba(168, 106, 0, .08); }
 body.bright .feedback.ok { color: var(--good); }
+body.bright #chat .chat-online { background: rgba(255, 252, 244, .92); color: var(--muted); border-color: var(--line-hi); }
 body.bright #chat .chat-tabs .tab.on { color: var(--accent); background: #fffdf8; border-color: var(--line-hi); }
 body.bright .b-intent .line { color: var(--ink); text-shadow: none; } body.bright .b-intent .zh { color: #8a5a00; }
 

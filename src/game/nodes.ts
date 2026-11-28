@@ -64,6 +64,24 @@ let pressing = false;
 let pressAt = 0;
 let pressHooked = false;
 
+/** 1.0.12 panel (Lucas 11-28): the scene panel can be folded to a slim bar so it stops covering the map's right side.
+ *  Remembered per browser (localStorage, never in the save); a blocked storage just means it starts open. */
+const MIN_KEY = 'wortklinge.scenePanelMin';
+const readMin = (): boolean => {
+  try {
+    return localStorage.getItem(MIN_KEY) === '1';
+  } catch {
+    return false;
+  }
+};
+const writeMin = (v: boolean): void => {
+  try {
+    localStorage.setItem(MIN_KEY, v ? '1' : '0');
+  } catch {
+    /* private window / blocked storage: only this page remembers */
+  }
+};
+
 export class NodeNav {
   here!: SceneDef;
   hopping = false;
@@ -73,6 +91,7 @@ export class NodeNav {
   private panel: HTMLElement;
   private dirty = true;
   private timer = 0;
+  private minimized = false;
 
   constructor(private w: WorldScene) {
     let el = document.getElementById('scene-panel');
@@ -84,6 +103,8 @@ export class NodeNav {
     }
     this.panel = el;
     this.panel.hidden = false;
+    this.minimized = readMin();
+    this.panel.classList.toggle('min', this.minimized);
     if (!pressHooked) {
       pressHooked = true;
       document.addEventListener('pointerdown', () => ((pressing = true), (pressAt = Date.now())), true);
@@ -324,6 +345,7 @@ export class NodeNav {
     const full = this.dirty;
     this.dirty = false;
     this.render(!full);
+    this.w.fitPanelOffset();
   }
 
   /** 1.0.12 试玩 #28: the panel starts below the top menu, however many rows the menu wraps to. */
@@ -338,6 +360,16 @@ export class NodeNav {
 
   touch(): void {
     this.dirty = true;
+  }
+
+  /** Fold / unfold the scene panel (its header button, or P). */
+  toggleMin(): void {
+    this.minimized = !this.minimized;
+    writeMin(this.minimized);
+    this.panel.classList.toggle('min', this.minimized);
+    this.dirty = true;
+    this.render();
+    this.w.fitPanelOffset();
   }
 
   /** Number keys 1–9 fight the n-th monster here. */
@@ -355,6 +387,10 @@ export class NodeNav {
     }
     if (e.key.toLowerCase() === 'm') {
       this.bigMap();
+      return true;
+    }
+    if (e.key.toLowerCase() === 'p' && !isTyping() && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      this.toggleMin();
       return true;
     }
     return false;
@@ -412,7 +448,10 @@ export class NodeNav {
       .sort((a, b) => a.no - b.no)
       .map((x) => h('button.btn', { disabled: busy, onclick: () => this.travel(x.id) }, `→ ${x.no} ${x.zh}`));
     const kids: Array<HTMLElement | string> = [
-      h('div.sp-head', h('b', `${sc.no} · ${sc.zh}`), h('span.muted', zone ? ` ${zone.zh} · ${zone.levels}` : sc.type === 'camp' ? ' 安全区' : ''), this.erodeTag(sc)),
+      h(
+        'div.sp-head',
+        h('button.sp-min', { onclick: () => this.toggleMin(), title: this.minimized ? '展开场景面板（P）' : '收起场景面板（P）' }, this.minimized ? '«' : '–'),
+        h('b', `${sc.no} · ${sc.zh}`), h('span.muted', zone ? ` ${zone.zh} · ${zone.levels}` : sc.type === 'camp' ? ' 安全区' : ''), this.erodeTag(sc)),
       this.claimMsg?.scene === sc.id ? h('div.small', { style: 'color:var(--gold, #ffcf4a)' }, this.claimMsg.text) : '',
       sceneArtCanvas(sc.id, this.s) ?? '',
       sc.zone

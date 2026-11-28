@@ -13,7 +13,8 @@ export const gameLog: GameLogLine[] = [];
 const listeners: Array<() => void> = [];
 
 export function logLine(text: string, tone: LogTone = 'info'): void {
-  if (!text) return;
+  // 1.0.12 panel: a line with no letter or digit (a bare 「……」 thinking note) says nothing in the log.
+  if (!text || !/[\p{L}\p{N}]/u.test(text)) return;
   const d = new Date();
   gameLog.push({ t: `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`, text, tone });
   if (gameLog.length > MAX) gameLog.splice(0, gameLog.length - MAX);
