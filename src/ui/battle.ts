@@ -28,6 +28,7 @@ import { reportButton } from './report';
 import { logLine } from './gamelog';
 import { dialogOpen } from './feedback';
 import { canListen, lastConfidence, listenOnce, listening, stopHold, stopListening } from './listen';
+import { defDe, defTier, SYN_NOTE, synonymHit, type DefTier } from '../core/dedef';
 import { isRecording, judgePair, playRecording, pronReady, startRecording, stopRecording } from './phoneme';
 import { ECHO_RETRIES, echoVerdict, listenSide, notePron } from '../core/pron';
 import { PRON_TIP } from '../data/pairs';
@@ -86,6 +87,11 @@ export class BattleUI {
   /** 跟读: the German sentence just read aloud after a right answer, and the last attempt's feedback. */
   private shadowText = '';
   private readMsg = '';
+  /** 德语释义 (1.0.12): words whose Chinese was opened this fight (a tap, or a miss); the question's own Chinese clue. */
+  private zhOpen = new Set<string>();
+  private qZhOpen = false;
+  /** 近义容错: the note under the box after a synonym was typed (the question stays open). */
+  private synMsg = '';
   /** When the current question showed (performance.now()). */
   private askedAt = 0;
   private shadowMsg = '';
@@ -211,6 +217,7 @@ export class BattleUI {
     this.phase = 'choose';
     this.report = null;
     this.zhShown = false;
+    this.zhOpen.clear();
     this.shadowText = '';
     this.shadowMsg = '';
     $('battle').hidden = false;
@@ -229,7 +236,10 @@ export class BattleUI {
   }
 
   private startTurn() {
-    this.zhShown = this.ctrl.state.settings.autoZh || this.ctrl.state.level <= 3;
+    // 德语释义 (1.0.12): a word shown by its German definition keeps its example's Chinese until the answer.
+    this.zhShown = (this.ctrl.state.settings.autoZh || this.ctrl.state.level <= 3) && this.defView(this.b)?.tier !== 'de';
+    this.qZhOpen = false;
+    this.synMsg = '';
     // 直接叫名 (审查修订: chosen before the fight): straight to the dictation — no teaching, nothing read aloud.
     if (this.b.direct) {
       this.readMsg = '';
@@ -400,6 +410,16 @@ export class BattleUI {
       return;
     }
     if (this.question.mates?.length) value = [value, ...this.mateBoxes.map((x) => x.value)].join('|');
+    // 近义容错 (1.0.12): a 近义 word of the target is not wrong — no HP, no record; the same question stays open.
+    const synOf = this.question.review ? WORD_BY_ID[this.question.review] : this.b.word;
+    if (synOf && !this.question.directName && synonymHit(this.question, synOf, value)) {
+      this.synMsg = SYN_NOTE;
+      this.lastValue = value;
+      logLine(`你写的 ${value.trim()}：${SYN_NOTE}`, 'info');
+      this.render();
+      return;
+    }
+    this.synMsg = '';
     // 答题用时 (速记 / A2 快答 / 一气呵成): from the question showing to the answer.
     this.question.ms ??= Math.round(performance.now() - this.askedAt);
     this.lastValue = value;
@@ -408,6 +428,8 @@ export class BattleUI {
     const target = this.b;
     const logFrom = target.log.length;
     this.report = this.ctrl.answer(this.move, this.question, value);
+    // 德语释义: a miss on the monster's own word opens its Chinese for the rest of the fight (free).
+    if (!this.report.correct && !this.question.review) this.zhOpen.add(target.word.id);
     this.answeredLine = { b: target, intent: intentBefore };
     this.phase = 'result';
     this.logTurn(target, this.question, value, this.report, logFrom);
@@ -434,6 +456,28 @@ export class BattleUI {
     // 0.6.x: a wrong cloze waits for Enter, so the correction and its rule can be read.
     if (!this.report.correct && this.question.type === 'cloze' && !this.ctrl.fightOver()) return;
     this.autoTimer = window.setTimeout(() => this.continue(), delay);
+  }
+
+  /** 德语释义 (1.0.12): how this monster's word shows its meaning, or null for plain Chinese. */
+  private defView(b: Battle): { tier: DefTier; def: string; open: boolean } | null {
+    if (!b || b.phrase) return null;
+    const def = defDe(b.word);
+    const tier = defTier(b.word, this.ctrl.state.settings);
+    if (!def || tier === 'zh') return null;
+    return { tier, def, open: tier === 'zhDe' || this.zhOpen.has(b.word.id) };
+  }
+
+  /** The word's meaning as the player sees it now: the definition while its Chinese is hidden, else the Chinese. */
+  private meaningText(b: Battle): string {
+    const v = this.defView(b);
+    return v && !v.open ? v.def : b.word.zh;
+  }
+
+  /** A pack card's short plate: the garble rule first, then a clipped definition while the Chinese is hidden. */
+  private packName(b: Battle, hide: boolean): string {
+    const v = hide || b.word.erode ? null : this.defView(b);
+    if (v && !v.open) return v.def.length > 22 ? `${v.def.slice(0, 21).trimEnd()}…` : v.def;
+    return nameGlyph(b, hide);
   }
 
   /** 「这句有问题」: the German sentence this question showed, if any, and where it came from. */
@@ -523,7 +567,7 @@ export class BattleUI {
       return;
     }
     const b = this.b;
-    const zh = b.word.zh;
+    const zh = this.meaningText(b);
     const shown = fresh ? readShown(b, fresh) : '';
     this.readMsg = (fresh ? `录音中……读出「${shown}」${shown !== fresh ? '（连冠词一起读）' : ''}` : `录音中……说出「${zh}」的德语${b.word.art ? '（带冠词）' : ''}`) + '，松开结束';
     this.render();
@@ -821,8 +865,15 @@ export class BattleUI {
     const elTag = b.stage > 0 && showG && (b.pluralMon || g) ? ELEMENT_TAG[b.pluralMon ? 'pl' : g!] : '';
 
     // Monster card.
-    const glyph = nameGlyph(b, this.phase === 'answer' && asksMeaning(this.question));
     const garbled = !b.phrase && (!!b.word.erode || (this.phase === 'answer' && asksMeaning(this.question)));
+    // 德语释义 (1.0.12): the garble rule comes first; then the definition under (zhDe) or instead of (de) the Chinese.
+    const dv = garbled ? null : this.defView(b);
+    const defOnly = !!dv && dv.tier === 'de' && !dv.open;
+    const openZh = () => {
+      this.zhOpen.add(b.word.id);
+      this.render();
+    };
+    const glyph = defOnly ? dv!.def : nameGlyph(b, this.phase === 'answer' && asksMeaning(this.question));
     const m = b.monster;
     const st: string[] = [];
     if (m.broken > 0) st.push(`破甲 ${m.broken}`);
@@ -836,7 +887,17 @@ export class BattleUI {
       h('div.fam', h('span', `${fam.zh} · Lv ${m.lvl}`), h('span', STAGE_ZH[b.stage])),
       monsterIcon(monsterArt(b, this.ctrl.dungeon?.left === 1), 5, false, 'mon-icon', this.ctrl.dungeon?.left !== 1 && !!this.ctrl.scene?.bright),
       // 1.0.10 (Lucas: 字体不清晰): no blurred glow on the plate; a garbled plate is crisp symbols that jitter.
-      h(`div.glyph${b.stage === 0 || !showG ? '.plain' : ''}${garbled ? '.garble' : ''}`, { style: `color:${color}` }, glyph, elTag ? h('span.tag', { style: 'margin-left:6px;font-size:11px;vertical-align:middle' }, elTag) : ''),
+      h(
+        `div.glyph${b.stage === 0 || !showG ? '.plain' : ''}${garbled ? '.garble' : ''}${defOnly ? '.defde' : ''}`,
+        defOnly ? { style: `color:${color};${DEF_PLATE_STYLE}`, title: '点一下看中文', onclick: openZh } : { style: `color:${color}` },
+        glyph,
+        elTag ? h('span.tag', { style: 'margin-left:6px;font-size:11px;vertical-align:middle' }, elTag) : '',
+      ),
+      defOnly
+        ? h('button.btn.ghost.tiny', { onclick: openZh, title: '看中文不花任何代价' }, '看中文')
+        : dv
+          ? h('div.plate-def.small', { style: DEF_LINE_STYLE }, dv.def)
+          : '',
       h(
         'div',
         b.rusty ? h('span.tag.due', '锈名 · 久拖的遗忘之物') : b.kind === 'due' ? h('span.tag.due', '遗忘之物') : b.kind === 'new' ? h('span.tag', '新怪') : h('span.tag', '影子'),
@@ -866,12 +927,14 @@ export class BattleUI {
       h(
         'div',
         { style: 'flex:1;min-width:0' },
-        h('div.kind', `${pack.length > 1 ? nameGlyph(b, this.phase === 'answer' && asksMeaning(this.question)) + ' ' : '它'}说`),
+        h('div.kind', `${pack.length > 1 ? this.packName(b, this.phase === 'answer' && asksMeaning(this.question)) + ' ' : '它'}说`),
         // 审查修订: the line often is the word's own example — while a finisher / ultimate or 直接叫名 is answered it
         // only mumbles.
         ...(() => {
           const mum = b.direct || (this.phase === 'choose' && this.offerDirect()) || (this.phase === 'answer' && (this.move === 'sentence' || !!this.question?.ult || lineLeaks(it.line, this.question)));
-          return [h('div.line', mum ? '… mmh …' : said.line), h('div.zh', !mum && this.zhShown && this.b.curse !== 'forget' ? plainZh(said.zh) : '')];
+          // 德语释义: a definition word's example shows its Chinese once the question is answered.
+          const zhNow = this.zhShown || (this.phase === 'result' && this.defView(b)?.tier === 'de');
+          return [h('div.line', mum ? '… mmh …' : said.line), h('div.zh', !mum && zhNow && this.b.curse !== 'forget' ? plainZh(said.zh) : '')];
         })(),
         // 即时战: its cast bar; answer right while an attack casts and it misses, during a charge and it breaks.
         this.rtOn
@@ -1008,7 +1071,7 @@ export class BattleUI {
         q.append(
           h(
             'div.note.shadow',
-            h('span.small', { style: 'color:var(--gold, #ffcf4a)' }, this.readMsg || `新词：${rs} · ${w.zh}　按住 S（或按住「按住读」）把它${rs !== rt ? '连冠词一起' : ''}读出来，松开结束，读得像就是必中的一击`),
+            h('span.small', { style: 'color:var(--gold, #ffcf4a)' }, this.readMsg || `新词：${rs} · ${this.meaningText(b)}　按住 S（或按住「按住读」）把它${rs !== rt ? '连冠词一起' : ''}读出来，松开结束，读得像就是必中的一击`),
             h('button.btn.small', { onclick: () => this.ctrl.speak(rs), title: '再听一遍' }, '再听'),
           ),
         );
@@ -1091,7 +1154,7 @@ export class BattleUI {
         { onclick: () => this.target(i), title: '选中它（Tab 切换）', disabled: dead },
         h('div.fam', h('span', `${FAMILIES[w.family].zh} · Lv ${pb.monster.lvl}`), h('span', dead ? '已打散' : STAGE_ZH[pb.stage])),
         monsterIcon(monsterArt(pb), 2, dead, 'mon-icon small', !!this.ctrl.scene?.bright),
-        h(`div.nm${color === NAME_RED ? '.named' : ''}`, { style: `color:${color}` }, dead ? (pb.pluralMon ? `die ${w.pl}` : fullForm(w)) : nameGlyph(pb, this.phase === 'answer' && asksMeaning(this.question)), elTag && !dead ? h('span.tag', { style: 'margin-left:4px;font-size:10px' }, elTag) : ''),
+        h(`div.nm${color === NAME_RED ? '.named' : ''}`, { style: `color:${color}` }, dead ? (pb.pluralMon ? `die ${w.pl}` : fullForm(w)) : this.packName(pb, this.phase === 'answer' && asksMeaning(this.question)), elTag && !dead ? h('span.tag', { style: 'margin-left:4px;font-size:10px' }, elTag) : ''),
         pb.pluralMon && !dead ? h('span.tag.echo', '复数怪 · 一律 die') : '',
         bar('hp', pb.monster.hp, pb.monster.maxHp, `${pb.monster.hp} / ${pb.monster.maxHp}`),
         dead ? '' : h('div.it', this.phase === 'answer' && lineLeaks(it.line, this.question) ? '…mmh…' : it.line),
@@ -1147,7 +1210,16 @@ export class BattleUI {
         h(
           'div.board',
           h('div.board-title', has(this.ctrl.state.level, 'typing') ? '初见 · 先认识它，下一题就写' : '初见 · 先认识它，下一题考你认不认得'), // 1.0.12 (#102): no typing at Lv1
-          h('div', { style: 'font-size:20px' }, h('b', qq.teach.de), `　${qq.teach.zh}　`, h('button.btn.ghost.small', { onclick: () => this.ctrl.speak(qq.teach!.de), title: '再听一遍' }, '🔊')),
+          h(
+            'div',
+            { style: 'font-size:20px' },
+            h('b', qq.teach.de),
+            // 德语释义: in the de tier the definition stands in for the Chinese, which is one tap away (free).
+            qq.teach.hideZh && !this.qZhOpen && !this.zhOpen.has(this.b.word.id) ? '　' : `　${qq.teach.zh}　`,
+            h('button.btn.ghost.small', { onclick: () => this.ctrl.speak(qq.teach!.de), title: '再听一遍' }, '🔊'),
+            qq.teach.hideZh && !this.qZhOpen && !this.zhOpen.has(this.b.word.id) ? h('button.btn.ghost.small', { onclick: () => { this.qZhOpen = true; this.render(); }, title: '看中文不花任何代价' }, '看中文') : '',
+          ),
+          qq.teach.def ? h('div', { style: DEF_LINE_STYLE }, qq.teach.def) : '',
         ),
       );
     // 1.0.10 (Lucas): a review / spot check slipped into this fight asks ANOTHER word — say so loudly, or the player
@@ -1157,13 +1229,22 @@ export class BattleUI {
         h(
           'div.board.review-insert',
           h('div.board-title', '插题 · 这题问的是另一个词，不是这只怪'),
-          h('div', `这只怪是「${this.b.word.zh}」，但这道题考的是你以前学过的另一个词（看下面的中文）。答对答错只算那个词，伤害照常打在这只怪身上。`),
+          h('div', `这只怪是「${this.meaningText(this.b)}」，但这道题考的是你以前学过的另一个词（看下面的中文）。答对答错只算那个词，伤害照常打在这只怪身上。`),
         ),
       );
     wrap.append(h('div.prompt', h('span', qq.prompt), tags ? h('span.tag', tags) : '', hintBtn));
     const focusColor = qq.type === 'article' && this.phase === 'result' && this.b.word.art ? NAME_RED : '';
     const long = qq.type === 'cloze' ? 'font-size:22px;line-height:1.4;' : '';
-    wrap.append(h('div.focus', { style: (focusColor ? `color:${focusColor};` : '') + long }, qq.focus));
+    wrap.append(h('div.focus', { style: (focusColor ? `color:${focusColor};` : '') + (qq.defDe && qq.type !== 'cloze' ? 'font-size:20px;line-height:1.4;' : long) }, qq.focus));
+    // 德语释义 (1.0.12): first letter + letter count, and the Chinese clue — a tap away, or shown after answering.
+    if (qq.defHint) wrap.append(h('div.def-hint', { style: 'font-family:var(--mono);font-size:18px;letter-spacing:1px;margin:2px 0 4px' }, qq.defHint));
+    if (qq.zhHidden)
+      wrap.append(
+        this.phase === 'result' || this.qZhOpen
+          ? h('div.small.muted', `中文：${qq.zhHidden}`)
+          : h('div', h('button.btn.ghost.tiny', { onclick: () => { this.qZhOpen = true; this.render(); }, title: '看中文不花任何代价' }, '看中文')),
+      );
+    if (this.synMsg && this.phase === 'answer') wrap.append(h('div.note', { style: 'color:var(--gold, #ffcf4a)' }, this.synMsg));
     this.input = null;
     // 告示怪 / 信件怪 / 文章群怪: the text the questions are about.
     // 听段题 / 盲听: no text before answering; a free replay (or two with 「Wie bitte?」).
@@ -1354,6 +1435,10 @@ export class BattleUI {
   }
 
 }
+
+/** 德语释义 on the plate: a definition is a sentence, so it wraps in a smaller, plain font. */
+const DEF_PLATE_STYLE = 'font-family:inherit;font-size:16px;line-height:1.35;letter-spacing:0;white-space:normal;overflow-wrap:anywhere;max-width:100%;cursor:pointer';
+const DEF_LINE_STYLE = 'font-size:13px;line-height:1.35;opacity:.85;overflow-wrap:anywhere;margin:2px 0';
 
 /** 名牌 (Lucas 2026-11-25, replaces 「作答时乱码、平时半名」): the meaning in Chinese in battle (the fight means you
  *  have met it); glitch only for 蚀变 words and, while a question that asks the meaning is answered, hidden. No

@@ -30,6 +30,7 @@ import { CHEST_ZH, type ChestKind } from '../core/chest';
 import { playChest } from './chestFx';
 import { favour, FAVOUR, QUESTS, type QuestId } from '../core/quests';
 import { gradeTyped } from '../core/grading';
+import { DEF_LANG_ZH, defDe, defHintLine, defLangOf, defTier, type DefLang } from '../core/dedef';
 import { recordAnswer, reviewedByWriting } from '../core/srs';
 import { track } from '../net/social';
 import { BOARD, BOARD_ZH, type BoardKind } from '../core/board';
@@ -589,7 +590,7 @@ export class Panels {
     });
     wrap.append(
       h('div.small.muted', `${q.done.length} / ${q.done.length + q.queue.length}`),
-      h('div.focus', { style: 'font-size:28px;margin:10px 0' }, w.zh),
+      ...this.writeClue(w),
       h('div.typing', input, umlautButtons(input), h('button.btn.primary', { onclick: go }, '答 ↵')),
     );
     return wrap;
@@ -1110,7 +1111,7 @@ export class Panels {
       });
       wrap.append(
         h('p', '箱子上有一道言灵锁，锁上浮着一个你最该复习的词。写对它，每件东西的品质都会再掷一次、取更好的那个；写错了箱子照样打开。'),
-        h('div.focus', { style: 'font-size:28px;margin:10px 0' }, c.word.zh),
+        ...this.writeClue(c.word),
         h('div.typing', input, umlautButtons(input), h('button.btn.primary', { onclick: go }, '开锁 ↵')),
       );
       return wrap;
@@ -1450,7 +1451,7 @@ export class Panels {
           `div.card${seen ? '' : '.unseen'}`,
           h('span.st', `${STAGE_ZH[st]}${due ? ' · 到期' : ''}`),
           h('div.w', seen && g ? h(`span.art-mark.${g}`) : '', h(`span${seen && g ? '.art-' + g : ''}`, seen ? fullForm(w) : '？？？')),
-          h('div.z', seen ? w.zh : FAMILIES[w.family].zh),
+          ...this.meaningEls(w, seen),
           seen && w.pl && w.pl !== '-' && st >= 2 ? h('div.small.muted', `复数 die ${w.pl}`) : '',
           seen && reflNote(w) ? h('div.small.muted', reflNote(w)) : '',
         ),
@@ -1560,7 +1561,7 @@ export class Panels {
           h(
             'tr',
             h('td', h(`span${gk ? '.art-' + gk : ''}`, fullFormLong(w))),
-            h('td', w.zh, p.mix?.length ? h('span.small.muted', { title: '词族秘境里答混过' }, ` · 易混：${p.mix.map((x) => WORD_BY_ID[x]?.de ?? x).join('、')}`) : ''),
+            h('td', ...this.meaningEls(w, true, true), p.mix?.length ? h('span.small.muted', { title: '词族秘境里答混过' }, ` · 易混：${p.mix.map((x) => WORD_BY_ID[x]?.de ?? x).join('、')}`) : ''),
             h('td', w.pl && w.pl !== '-' ? `die ${w.pl}` : '—'),
             h('td', p.read ? '✓' : '—'),
             h('td', p.write ? '✓' : '—'),
@@ -1726,6 +1727,55 @@ export class Panels {
     return wrap;
   }
 
+  // ---- 德语释义 (1.0.12): the word's meaning in Chinese, with or instead of its German definition ----
+
+  /** Words whose Chinese the player opened on a card (德语优先 / 121+ words hide it until tapped). */
+  private zhOpened = new Set<string>();
+
+  /** The meaning lines of a word card / 单词本 row. */
+  private meaningEls(w: Word, seen: boolean, row = false): HTMLElement[] {
+    if (!seen) return [h('div.z', FAMILIES[w.family].zh)];
+    const def = defDe(w);
+    const tier = defTier(w, this.ctrl.state.settings);
+    const tag = row ? 'span' : 'div.z';
+    if (!def || tier === 'zh') return [h(tag, w.zh)];
+    const defEl = h('div.small.muted', { style: 'overflow-wrap:anywhere;line-height:1.35' }, def);
+    if (tier === 'zhDe' || this.zhOpened.has(w.id)) return [h(tag, w.zh), defEl];
+    const open = (e: Event) => {
+      e.stopPropagation();
+      this.zhOpened.add(w.id);
+      this.render();
+    };
+    return [h('div', { style: 'overflow-wrap:anywhere;line-height:1.35' }, def), h('button.btn.ghost.tiny', { onclick: open, title: '看中文不花任何代价' }, '看中文')];
+  }
+
+  /** The clue of a write prompt outside battle (教词小测, 言灵锁): the Chinese, or the definition with its letter hint. */
+  private writeClue(w: Word): HTMLElement[] {
+    const def = defDe(w);
+    if (!def || w.digit || defTier(w, this.ctrl.state.settings) !== 'de') return [h('div.focus', { style: 'font-size:28px;margin:10px 0' }, w.zh)];
+    const open = this.zhOpened.has(w.id);
+    return [
+      h('div.focus', { style: 'font-size:20px;line-height:1.4;margin:10px 0 4px' }, def),
+      h('div', { style: 'font-family:var(--mono);font-size:18px;letter-spacing:1px;margin-bottom:6px' }, defHintLine(w)),
+      open ? h('div.small.muted', `中文：${w.zh}`) : h('button.btn.ghost.tiny', { onclick: () => { this.zhOpened.add(w.id); this.render(); }, title: '看中文不花任何代价' }, '看中文'),
+    ];
+  }
+
+  /** 释义语言: 自动 / 中文优先 / 德语优先 (any time; rewards are the same). */
+  private defLangRow(): HTMLElement {
+    const s = this.ctrl.state;
+    const sel = h('select') as HTMLSelectElement;
+    for (const k of ['auto', 'zh', 'de'] as DefLang[]) sel.append(h('option', { value: k }, DEF_LANG_ZH[k]));
+    sel.value = defLangOf(s.settings);
+    sel.onchange = () => {
+      const v = sel.value as DefLang;
+      if (v === 'auto') delete s.settings.defLang;
+      else s.settings.defLang = v;
+      this.ctrl.persist();
+    };
+    return h('label.toggle', h('span', '释义语言'), sel, h('span.small.muted', '自动：1–80 级的词看中文，81–120 级的词在中文下面多一行德语释义，121 级起的词用德语释义（中文点一下就能看）。随时能改，不影响奖励'));
+  }
+
   // ---- Settings -----------------------------------------------------------------
 
   private settings(): HTMLElement {
@@ -1753,6 +1803,7 @@ export class Panels {
       toggle('朗读怪物的台词', 'tts', this.ctrl.voiceNote()),
       toggle('自动显示台词的中文', 'autoZh', '关掉更有挑战：读懂德语就是你的情报（1–3 级总是显示）'),
       toggle('开箱动画', 'chestAnim', '宝箱抖一下再打开，东西一件件飞出来；任意键跳过'),
+      this.defLangRow(),
       slider('音乐', 'music'),
       slider('音效', 'sfx'),
     );

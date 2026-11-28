@@ -25,6 +25,7 @@ import { echoOptions, echoTask, notePron, PRON_MON, pronMonOk, type EchoTask } f
 import { count } from './items';
 import { fullForm, genderOf, hasArticleQuestion, WORD_BY_ID, WORDS, zhWithPos } from '../data/words';
 import { LEX_REL } from '../data/lexicon';
+import { defDe, defHintLine, defTier } from './dedef';
 import { canTarget, collocOf, gradeSplit, combatSkills, MULT, POOL, splitOf, type PoolId, type SplitTask } from './skillPool';
 import { SAYING_CFG, SAYINGS } from '../data/sayings';
 import { expectedSentence, gradeSentence, nextPattern, PATTERNS, sentenceTags, type Pattern } from './sentence';
@@ -107,7 +108,13 @@ export interface Question {
   whisper?: string;
   whispered?: boolean;
   /** 初见教学 (Lucas 2026-11-27): a new word's one choice question shows the word, its meaning and its sound. */
-  teach?: { de: string; zh: string };
+  teach?: { de: string; zh: string; def?: string; hideZh?: boolean };
+  /** 德语释义 (1.0.12, src/core/dedef.ts): the German definition this question shows in place of the Chinese. */
+  defDe?: string;
+  /** 德语释义: first letter + letter count of the word (「b _ _ _ _」), on a write prompt that shows a definition. */
+  defHint?: string;
+  /** 德语释义: the Chinese clue the definition replaced — one tap away, and shown once the question is answered. */
+  zhHidden?: string;
   /** 句型怪 (Lucas 2026-11-27): the key words of a classic pattern; typing the whole example also counts. */
   pat?: boolean;
   /** 句型怪 whole-sentence question: the key words that must all be there, in order (审核 1.0.9 M2). */
@@ -1209,6 +1216,35 @@ let seenNow: Set<string> = new Set();
 const lineKey = (x: string) => x.replace(/\s+/g, ' ').replace(/[.!?…]+$/, '').trim().toLowerCase();
 
 export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skillId?: string, inPack = false, mates: Battle[] = []): Question {
+  const q = makeQuestionRaw(s, b, move, rng, skillId, inPack, mates);
+  return dedefQ(s, (q.review && WORD_BY_ID[q.review]) || b.word, q);
+}
+
+/**
+ * 德语释义界面规则 (1.0.12): a question about a word that shows its German definition. 初见教学 gets the definition
+ * (beside the Chinese in the zhDe tier; instead of it, Chinese one tap away, in the de tier). In the de tier the
+ * Chinese clue of 看中文选德语 / 默写 / 句中默写 / 完形填空 is replaced by the definition (the sentence's Chinese comes
+ * after answering) and a write prompt adds the first letter and letter count. A question that asks the meaning
+ * (Chinese options) is left alone, so the definition never gives its answer away.
+ */
+export function dedefQ(s: Pick<GameState, 'settings'>, w: Word, q: Question): Question {
+  const tier = defTier(w, s.settings);
+  const def = defDe(w);
+  if (tier === 'zh' || !def || q.gram || q.echo || q.listen || q.say || q.mates?.length) return q;
+  let out = q;
+  if (q.teach) out = { ...q, teach: { ...q.teach, def, hideZh: tier === 'de' } };
+  if (tier !== 'de' || w.digit) return out;
+  if (out.type === 'pickDe' && out.focus === w.zh) return { ...out, focus: def, defDe: def, zhHidden: w.zh };
+  if (out.type === 'typed' && out.focus === zhWithPos(w)) return { ...out, focus: def, defDe: def, defHint: defHintLine(w), zhHidden: out.focus };
+  if (out.type === 'cloze' && out.clozeZh && !out.pat && !out.write && out.prompt.endsWith(` · ${out.clozeZh}`)) {
+    const writing = out.clozeMode !== 'pick' && !out.options?.length;
+    const head = out.prompt.slice(0, -out.clozeZh.length - 3).replace('看整句中文，', '看释义，');
+    return { ...out, prompt: `${head} · 释义：${def}`, defDe: def, defHint: writing ? `原形 ${defHintLine(w)}` : undefined, zhHidden: out.clozeZh };
+  }
+  return out;
+}
+
+function makeQuestionRaw(s: GameState, b: Battle, move: Move, rng: Rng, skillId?: string, inPack = false, mates: Battle[] = []): Question {
   const w = b.word;
   b.seenLines ??= [];
   for (const x of [b.intent?.line, b.intent?.full]) if (x && !b.seenLines.includes(lineKey(x))) b.seenLines.push(lineKey(x));

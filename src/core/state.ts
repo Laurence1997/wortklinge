@@ -44,6 +44,8 @@ export interface Settings {
   hideBoard?: boolean;
   /** 安静模式: no speaking asked; spoken-only tasks wait as 口语委托. */
   quiet?: boolean;
+  /** 释义语言 (1.0.12): 'auto' (absent) = by the word's level, 'zh' = 中文优先, 'de' = 德语优先 (src/core/dedef.ts). */
+  defLang?: 'auto' | 'zh' | 'de';
 }
 
 export interface GameState {
