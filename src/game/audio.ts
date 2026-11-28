@@ -321,6 +321,32 @@ export function spokenText(text: string): string {
 }
 
 let speakSeq = 0;
+/** Chrome drops callbacks (and sometimes the sound) of an utterance it has garbage-collected: keep the current one. */
+let current: SpeechSynthesisUtterance | null = null;
+
+/** Why nothing could be heard (告示牌没声音, Lucas 2026-11-28): no German voice on this computer, or the voice failed. */
+export type SpeechTrouble = 'noVoice' | 'failed';
+let troubleHook: ((t: SpeechTrouble) => void) | null = null;
+export function onSpeechTrouble(fn: (t: SpeechTrouble) => void): void {
+  troubleHook = fn;
+}
+function trouble(t: SpeechTrouble) {
+  try {
+    troubleHook?.(t);
+  } catch {
+    /* never a blocker */
+  }
+}
+
+/** Voices load late in Chrome: wait up to 1.5 s for the list before deciding there is no German voice. */
+function voicesReady(): Promise<void> {
+  if (typeof speechSynthesis === 'undefined' || speechSynthesis.getVoices().length) return Promise.resolve();
+  return new Promise((res) => {
+    const done = () => (findVoice(), res());
+    speechSynthesis.addEventListener('voiceschanged', done, { once: true });
+    window.setTimeout(done, 1500);
+  });
+}
 
 export function speak(text: string, enabled: boolean, rate = 0.9): void {
   if (!enabled || typeof speechSynthesis === 'undefined') return;
@@ -329,33 +355,52 @@ export function speak(text: string, enabled: boolean, rate = 0.9): void {
   const seq = ++speakSeq;
   const go = (retry: boolean) => {
     try {
-      speechSynthesis.cancel();
-      speechSynthesis.resume();
+      if (seq !== speakSeq) return;
+      if (!germanVoice) findVoice();
+      // No German voice at all: Chrome would read German with a Chinese voice (or stay silent). Say why instead.
+      if (!germanVoice) return trouble('noVoice');
       const u = new SpeechSynthesisUtterance(said);
-      u.lang = 'de-DE';
-      if (germanVoice) u.voice = germanVoice;
+      current = u;
+      u.lang = germanVoice.lang || 'de-DE';
+      u.voice = germanVoice;
       u.rate = rate;
       u.pitch = 0.85;
       let started = false;
       u.onstart = () => (started = true);
-      const online = !!germanVoice && !germanVoice.localService;
+      u.onend = () => {
+        if (current === u) current = null;
+      };
+      const online = !germanVoice.localService;
       const fallBack = () => {
-        if (retry || !online || seq !== speakSeq) return;
-        onlineFailed = true;
-        findVoice();
-        go(true);
+        if (seq !== speakSeq) return;
+        const before = germanVoice;
+        if (!retry && online) {
+          onlineFailed = true;
+          findVoice();
+          if (germanVoice && germanVoice !== before) return go(true);
+        }
+        trouble('failed');
       };
       u.onerror = (e) => {
         if (e.error !== 'interrupted' && e.error !== 'canceled') fallBack();
       };
       speechSynthesis.speak(u);
-      // An online voice that has not started within 2.5 s is stuck: switch to the local voice.
-      if (online && !retry) window.setTimeout(() => !started && fallBack(), 2500);
+      // A voice that has not started within 2.5 s is stuck (Chrome's online Google voices do this): try the local one.
+      window.setTimeout(() => !started && seq === speakSeq && (speechSynthesis.cancel(), fallBack()), 2500);
     } catch {
       /* speech is a bonus, never a blocker */
     }
   };
-  go(false);
+  // Chrome sometimes swallows an utterance queued in the same tick as cancel(): cancel, then speak a moment later.
+  let busy = false;
+  try {
+    busy = speechSynthesis.speaking || speechSynthesis.pending;
+    speechSynthesis.cancel();
+    speechSynthesis.resume();
+  } catch {
+    /* no TTS */
+  }
+  void voicesReady().then(() => window.setTimeout(() => go(false), busy ? 80 : 0));
 }
 
 export function hasGermanVoice(): boolean {
