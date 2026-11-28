@@ -1,4 +1,4 @@
-import { xpToNext } from '../core/config';
+import { CONFIG, xpToNext } from '../core/config';
 import { capAdvice, levelCapFor } from '../core/stages';
 import { comboTier } from '../core/combat';
 import { progressSummary } from '../core/srs';
@@ -9,7 +9,8 @@ import { $, bar, clear, h } from './dom';
 import { heroIcon } from './icons';
 import { DEFAULT_LOOK } from '../core/look';
 
-export function renderHud(s: GameState): void {
+/** place: on the scene map, the scene you stand in (1.0.12 试玩 #101); otherwise the street map's zone. */
+export function renderHud(s: GameState, place?: string): void {
   const el = $('hud');
   el.className = 'panel';
   const p = progressSummary(s, WORDS);
@@ -23,7 +24,10 @@ export function renderHud(s: GameState): void {
     // 状态框 (Lucas 11-26: 血条里的数字看不清): taller bars, white numbers with a dark edge, label left and
     // numbers right; the counters sit in a 3-column grid with the number above its name.
     bar('hp', s.hp, maxHp(s), '生命', `${s.hp} / ${maxHp(s)}`),
-    bar('xp', s.xp, xpToNext(s.level), capped ? (capTip ? `经验已满：${capTip.replace('去主城', '')}` : '经验已满：等级到当前上限') : '经验', capped ? '' : `${s.xp} / ${xpToNext(s.level)}`),
+    // 1.0.12 试玩 #91: at the top level the bar says 满级; its experience now fills toward the next 言灵精通 point.
+    s.level >= CONFIG.levelCap
+      ? bar('xp', s.xp, xpToNext(s.level), '满级 · 攒言灵精通', `${s.xp} / ${xpToNext(s.level)}`)
+      : bar('xp', s.xp, xpToNext(s.level), capped ? (capTip ? `经验已满：${capTip.replace('去主城', '')}` : '经验已满：等级到当前上限') : '经验', capped ? '' : `${s.xp} / ${xpToNext(s.level)}`),
     h(
       'div.hud-stats',
       h('div', h('b.gold', String(s.gold)), h('span', '金币')),
@@ -32,6 +36,6 @@ export function renderHud(s: GameState): void {
       h('div', h('b', String(s.daily.newCount)), h('span', '今日新词')),
       h('div', h('b', String(p.due)), h('span', '待复习')),
     ),
-    h('div.hud-zone', h('span', zone ? `${zone.zh} · ${zone.levels}` : '浓雾边缘'), s.echo ? h('span.gold', '回响未取回') : ''),
+    h('div.hud-zone', h('span', place ?? (zone ? `${zone.zh} · ${zone.levels}` : '浓雾边缘')), s.echo ? h('span.gold', '回响未取回') : ''),
   );
 }

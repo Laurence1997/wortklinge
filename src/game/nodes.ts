@@ -16,7 +16,7 @@ import { worldMap } from '../ui/worldMap';
 import Phaser from 'phaser';
 import { CONFIG } from '../core/config';
 import { has } from '../core/unlocks';
-import { toast } from '../ui/feedback';
+import { dialogOpen, toast } from '../ui/feedback';
 import { needsVerify, stageOf } from '../core/srs';
 import { eligible, fieldCleared } from '../core/spawn';
 import { erodeOpen, purified } from '../core/erosion';
@@ -27,7 +27,7 @@ import type { ZoneId } from '../core/types';
 import type { GameState } from '../core/state';
 import { WORD_BY_ID, fullForm } from '../data/words';
 import { AREAS, HOME_SCENE, SCENE_BY_ID, SCENES, neighbours, nearestScene, routeTo, scenesOf, type SceneDef } from '../data/world';
-import { h } from '../ui/dom';
+import { h, isTyping } from '../ui/dom';
 import { sfx } from './audio';
 import { ZONES, TILE, type NpcId } from './map';
 import { ERODE_DEFS, REGION_DEF, REGION_DEFS, regionLevels } from '../data/zones';
@@ -50,7 +50,19 @@ const OFFSETS = [[-28, -6], [28, -6], [0, -24], [-28, 16], [28, 16], [0, -38]];
 /** 0.6: each word's home scene (from the scene word groups). */
 const HOME = HOME_SCENE; // own groups + 蚀变 groups (src/data/world.ts)
 
+/** 1.0.12 试玩 #101: where you stand, for the status box (the field and its levels, or the scene's own name). */
+export function placeLabel(sc: SceneDef): string {
+  const zone = sc.zone ? ZONES.find((z) => z.id === sc.zone) : null;
+  if (zone && sc.type === 'field') return `${zone.zh} · ${zone.levels}`;
+  return sc.type === 'camp' ? `${sc.zh} · 安全区` : sc.zh;
+}
+
 export const anchorPx = (sc: SceneDef) => ({ x: sc.at.x * TILE + 8, y: sc.at.y * TILE + 8 });
+
+/** 1.0.12 试玩 #27: a mouse button is held down somewhere; the scene panel waits so the click lands on the same button. */
+let pressing = false;
+let pressAt = 0;
+let pressHooked = false;
 
 export class NodeNav {
   here!: SceneDef;
@@ -72,6 +84,11 @@ export class NodeNav {
     }
     this.panel = el;
     this.panel.hidden = false;
+    if (!pressHooked) {
+      pressHooked = true;
+      document.addEventListener('pointerdown', () => ((pressing = true), (pressAt = Date.now())), true);
+      for (const ev of ['pointerup', 'pointercancel', 'blur']) window.addEventListener(ev, () => (pressing = false), true);
+    }
   }
 
   get s() {
@@ -111,6 +128,7 @@ export class NodeNav {
     this.w.player.setPosition(p.x, p.y + 14).setDepth(3002);
     this.s.pos = { x: p.x, y: p.y };
     this.w.cameras.main.centerOn(p.x, p.y);
+    this.w.ctrl.refresh();
   }
 
   goHub(): void {
@@ -196,7 +214,8 @@ export class NodeNav {
     const step = () => {
       const next = SCENE_BY_ID[path.shift()!];
       // 越区引导: a field above your level asks first (the same question walking in asked).
-      if (!next || (next.zone && next.zone !== this.here.zone && !this.w.ctrl.mayEnterZone(next.zone))) return this.arrive();
+      // 1.0.12 试玩 #56: answering 「进去」 resumes the trip to the same destination.
+      if (!next || (next.zone && next.zone !== this.here.zone && !this.w.ctrl.mayEnterZone(next.zone, () => this.travel(id)))) return this.arrive();
       const p = anchorPx(next);
       sfx.step();
       this.w.player.setFlipX(p.x < this.w.player.x);
@@ -210,6 +229,7 @@ export class NodeNav {
         onComplete: () => {
           this.here = next;
           this.s.pos = { x: p.x, y: p.y };
+          this.w.ctrl.refresh();
           this.claim();
           if (path.length) step();
           else this.arrive();
@@ -265,7 +285,10 @@ export class NodeNav {
         if (!this.revealed(b) || a.id > b.id) continue;
         const pa = anchorPx(a);
         const pb = anchorPx(b);
-        g.lineStyle(bright ? 3 : 2, b.type === 'hidden' || a.type === 'hidden' ? 0xb8963a : bright ? accent : 0x7a2630, bright ? 0.85 : 0.7);
+        // 1.0.12 试玩 #106: the numbered route (1 → 2 → 3 …) is drawn bold; side paths between neighbouring fields
+        // are thin, so the numbers visibly follow one line instead of seeming to jump.
+        const side = a.type === 'field' && b.type === 'field' && Math.abs(a.no - b.no) !== 1;
+        g.lineStyle(side ? 1 : bright ? 3 : 2, b.type === 'hidden' || a.type === 'hidden' ? 0xb8963a : bright ? accent : 0x7a2630, side ? (bright ? 0.4 : 0.35) : bright ? 0.85 : 0.7);
         g.lineBetween(pa.x, pa.y, pb.x, pb.y);
       }
     for (const sc of list) {
@@ -293,9 +316,24 @@ export class NodeNav {
     this.panel.hidden = !!this.w.ctrl.battle || !!this.w.ctrl.boss;
     this.timer += dtMs;
     if (!this.dirty && this.timer < 500) return;
+    this.fitTop();
+    // 1.0.12 试玩 #27: never rebuild under a pressed mouse button (mousedown and mouseup would hit different nodes),
+    // and the 500 ms refresh only swaps the panel when its content actually changed.
+    if (pressing && Date.now() - pressAt < 1500) return;
     this.timer = 0;
+    const full = this.dirty;
     this.dirty = false;
-    this.render();
+    this.render(!full);
+  }
+
+  /** 1.0.12 试玩 #28: the panel starts below the top menu, however many rows the menu wraps to. */
+  private fitTop(): void {
+    const menu = document.getElementById('menu');
+    if (!menu) return;
+    const top = Math.max(56, Math.round(menu.getBoundingClientRect().bottom + 8));
+    if (this.panel.style.top === `${top}px`) return;
+    this.panel.style.top = `${top}px`;
+    this.panel.style.maxHeight = `calc(100vh - ${top + 164}px)`;
   }
 
   touch(): void {
@@ -304,6 +342,11 @@ export class NodeNav {
 
   /** Number keys 1–9 fight the n-th monster here. */
   key(e: KeyboardEvent): boolean {
+    // 1.0.12 试玩 #85: M toggles the big map (a second M closes it).
+    if (e.key.toLowerCase() === 'm' && this.w.ctrl.panels.open === 'bigmap' && !isTyping() && !dialogOpen()) {
+      this.w.ctrl.panels.close();
+      return true;
+    }
     if (this.hopping || this.w.ctrl.uiBlocking()) return false;
     if (/^[1-9]$/.test(e.key)) {
       const m = this.monstersIn(this.here)[Number(e.key) - 1];
@@ -331,7 +374,9 @@ export class NodeNav {
       : h('span.small', { style: 'color:#c06cff' }, ` · 蚀变 Lv ${lv}`);
   }
 
-  private render(): void {
+  private lastSig = '';
+
+  private render(onlyIfChanged = false): void {
     const sc = this.here;
     const busy = this.hopping || this.w.ctrl.uiBlocking();
     const zone = sc.zone ? ZONES.find((z) => z.id === sc.zone) : null;
@@ -362,8 +407,9 @@ export class NodeNav {
     const exits = neighbours(sc.id)
       .map((id) => SCENE_BY_ID[id])
       .filter(this.revealed)
+      .sort((a, b) => a.no - b.no)
       .map((x) => h('button.btn', { disabled: busy, onclick: () => this.travel(x.id) }, `→ ${x.no} ${x.zh}`));
-    this.panel.replaceChildren(
+    const kids: Array<HTMLElement | string> = [
       h('div.sp-head', h('b', `${sc.no} · ${sc.zh}`), h('span.muted', zone ? ` ${zone.zh} · ${zone.levels}` : sc.type === 'camp' ? ' 安全区' : ''), this.erodeTag(sc)),
       this.claimMsg?.scene === sc.id ? h('div.small', { style: 'color:var(--gold, #ffcf4a)' }, this.claimMsg.text) : '',
       sceneArtCanvas(sc.id, this.s) ?? '',
@@ -377,7 +423,7 @@ export class NodeNav {
             ...mons.map((m, i) =>
               h(
                 'button.btn.sp-mon' + (m.phrase || m.rare || m.isEcho || m.elite ? '.gold' : ''),
-                { disabled: busy, onclick: () => this.fight(m) },
+                { disabled: busy, onclick: () => this.fight(m), 'data-uid': m.uid },
                 h('kbd', String(i + 1)),
                 ` ${m.label.text.replace(/\n/g, ' ')} `,
                 h('span.muted', tag(m)),
@@ -385,12 +431,16 @@ export class NodeNav {
             ),
           )
         : mons.length
-          ? h('div.sp-sec', ...mons.map((m, i) => h('button.btn.sp-mon', { disabled: busy, onclick: () => this.fight(m) }, h('kbd', String(i + 1)), ` ${m.label.text} `, h('span.muted', tag(m)))))
+          ? h('div.sp-sec', ...mons.map((m, i) => h('button.btn.sp-mon', { disabled: busy, onclick: () => this.fight(m), 'data-uid': m.uid }, h('kbd', String(i + 1)), ` ${m.label.text} `, h('span.muted', tag(m)))))
           : '',
       things.length ? h('div.sp-sec', h('div.muted', '这里有'), ...things) : '',
       h('div.sp-sec', h('div.muted', this.hopping ? '赶路中……' : '出口（也可以点地图上的圆点，远处去过的会自动走过去）'), ...exits),
       h('div.sp-sec', h('button.btn.ghost', { onclick: () => this.bigMap() }, '🗺 大地图（M）')),
-    );
+    ];
+    const sig = kids.map((k) => (typeof k === 'string' ? k : k.outerHTML)).join('');
+    if (onlyIfChanged && sig === this.lastSig) return;
+    this.lastSig = sig;
+    this.panel.replaceChildren(...kids);
   }
 
   /** 驿站 (0.6 第 6 块 细则一): from Lv21, free jumps to any crossroads you have visited, only from a bonfire/hub. */

@@ -763,3 +763,6 @@ svg.gm-path { display: block; width: 100%; height: auto; max-height: 420px; }
 .gm-ch b { font-size: 16px; }
 .gm-go { display: flex; justify-content: flex-end; }
 @media (max-width: 900px) { .gm-towers { grid-template-columns: 1fr; } }
+/* 1.0.12 试玩 #77: 蚀变 level bands on the big map */
+.wm-seg-name { font-size: 12px; }
+.wm-seg.locked .wm-name, .wm-seg.locked .wm-lv { fill: #f4f1ec; }
