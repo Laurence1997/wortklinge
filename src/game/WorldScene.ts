@@ -178,7 +178,7 @@ export class WorldScene extends Phaser.Scene {
       this.add.sprite(n.x * TILE + 8, n.y * TILE + 6, nk).setDepth(n.y * TILE + 8);
       if (this.map.region >= 2 || n.id !== 'hilde')
         this.add
-          .text(n.x * TILE + 8, n.y * TILE - 6, NPC_LABEL[n.id], { fontFamily: FONT, fontSize: '6px', color: this.bright ? '#2d2118' : '#d8c8b8', fontStyle: this.bright ? 'bold' : '', stroke: this.bright ? '#fffdf8' : undefined, strokeThickness: this.bright ? 2 : 0, resolution: 4 })
+          .text(n.x * TILE + 8, n.y * TILE - 6, NPC_LABEL[n.id], { fontFamily: FONT, fontSize: '8px', color: this.bright ? '#2d2118' : '#e8dccf', fontStyle: this.bright ? 'bold' : '', stroke: this.bright ? '#fffdf8' : '#0c0608', strokeThickness: 2, resolution: 4 })
           .setOrigin(0.5, 1)
           .setDepth(n.y * TILE + 9);
     }
@@ -197,7 +197,8 @@ export class WorldScene extends Phaser.Scene {
     }
     this.refreshSigns();
 
-    // Zone names written on the ground, very faint.
+    // Zone names with their level ranges. 1.0.12 试玩: they used to be dark red on dark maps (barely readable), faded
+    // on bright maps and under lamps and houses; now light (or dark) text with an outline, above the map props.
     let fieldNo = 0;
     for (const z of this.zones) {
       if (z.id === 'camp' || z.id === 'markt') continue;
@@ -213,13 +214,14 @@ export class WorldScene extends Phaser.Scene {
            this.bright ? `${z.zh} · ${z.levels}\n${z.de}` : `${z.de} · ${z.zh} · ${z.levels}`, {
           fontFamily: FONT,
           fontSize: '8px',
-          color: this.bright ? '#4a3420' : '#5a2a2e',
+          color: this.bright ? '#4a3420' : '#e8d8c8',
+          stroke: this.bright ? '#fffdf8' : '#0c0608',
+          strokeThickness: 2,
           align: 'center',
           resolution: 4,
         })
         .setOrigin(0.5)
-        .setAlpha(this.bright ? 0.7 : 1)
-        .setDepth(1);
+        .setDepth(1000); // above every y-sorted prop (map height 768 px), below the route (3000)
     }
 
     // Player.
