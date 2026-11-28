@@ -115,6 +115,19 @@ export function startBoss(s: GameState, rng: Rng, which: 1 | 2 | 3 | 4 | 5 | 6 |
   };
 }
 
+/** A refilled queue: the question just asked moves to the back, so the same question never comes twice in a row. */
+export function noRepeat(queue: BossQuestion[], lastId: string): BossQuestion[] {
+  if (queue.length > 1 && queue[0].id === lastId) queue.push(queue.shift()!);
+  return queue;
+}
+
+/** 1.0.12 试玩 20: a boss pays its full XP and gold on the first kill and on the first kill of each day; a replay the
+ *  same day pays half (about what the same minutes in the field pay), never nothing. `dayN` counts today's kills. */
+export const BOSS_REPLAY_SHARE = 0.5;
+export function bossPay(base: number, first: boolean, dayN: number): number {
+  return first || dayN <= 1 ? base : Math.max(10, Math.round((base * BOSS_REPLAY_SHARE) / 10) * 10);
+}
+
 export interface BossVerdict {
   ok: boolean;
   note: string | null;
@@ -130,7 +143,8 @@ export function answerBoss(s: GameState, f: BossFight, input: string, rng: Rng, 
   const ok = !timedOut && (graded ? graded.ok : q.accept.some((re) => re.test(n)));
   let note: string | null = graded?.note ?? null;
   if (!ok && !timedOut) for (const [re, msg] of q.traps ?? []) if (re.test(n)) note = msg;
-  if (timedOut) note = '时间到了。';
+  // 1.0.12 试玩 55: a timeout is said once, in the header (the UI writes 「时间到了」), not again as a note.
+  if (timedOut) note = null;
   const model = q.model.replace('{name}', s.name || 'Lucas');
   let damageTaken = 0;
   let healed = false;
@@ -179,7 +193,7 @@ export function answerBoss(s: GameState, f: BossFight, input: string, rng: Rng, 
       f.finalAsked = true;
       f.current = LINA_NAME_Q;
     } else {
-      if (!f.queue.length) f.queue = linaQuestions(rng).slice(1);
+      if (!f.queue.length) f.queue = noRepeat(linaQuestions(rng).slice(1), q.id);
       f.current = f.queue.shift()!;
     }
     f.asked = pick(rng, f.current.ask);
@@ -236,8 +250,9 @@ export function answerBoss(s: GameState, f: BossFight, input: string, rng: Rng, 
       f.queue = f.queue.map((x) => refreshTimeQuestion(rng, x, f.board!));
     }
     // Region 4–12 bosses: a fresh draw without the opening questions (no greeting twice).
-    if (!f.queue.length && f.which === 7) f.queue = LATER_BOSS[f.region!]!.questions(rng).slice(3);
-    if (!f.queue.length) f.queue = f.which === 3 ? boss3Questions(rng, f.board!) : f.which === 2 ? boss2Questions(rng, false) : shuffle(rng, BOSS_QUESTIONS.filter((x) => x.id !== 'greet'));
+    // 1.0.12 试玩 96: a fresh draw never starts with the question just answered.
+    if (!f.queue.length && f.which === 7) f.queue = noRepeat(LATER_BOSS[f.region!]!.questions(rng).slice(3), q.id);
+    if (!f.queue.length) f.queue = noRepeat(f.which === 3 ? boss3Questions(rng, f.board!) : f.which === 2 ? boss2Questions(rng, false) : shuffle(rng, BOSS_QUESTIONS.filter((x) => x.id !== 'greet')), q.id);
     f.current = f.queue.shift()!;
     f.asked = pick(rng, f.current.ask);
     f.turn += 1;

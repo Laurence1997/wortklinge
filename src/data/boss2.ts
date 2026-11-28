@@ -89,7 +89,7 @@ function priceQuestion(rng: Rng): BossQuestion {
     visual: `${w.art} ${w.de} · ${priceTag(cents)}`,
     accept: [new RegExp(`^((${nounRe}|es|das|er|sie) )?(kostet )?${priceRe(cents)}$`)],
     model: `${cap(w.art!)} ${w.de} kostet ${priceDe(cents)}.`,
-    traps: [[/\d/, '数字要写成单词：zwei Euro fünfzig'], [/kosten /, '单数用 kostet：Das Brot kostet …']],
+    traps: [[/\d/, `数字要写成单词：${priceDe(cents)}`], [/kosten /, '单数用 kostet：Das Brot kostet …']],
   };
 }
 

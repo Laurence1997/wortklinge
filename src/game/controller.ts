@@ -21,7 +21,7 @@ import type { Look } from '../core/look';
 // The game controller: owns the save, runs battles and tutorials, and glues the
 // Phaser world to the DOM interface. Game rules live in src/core and stay pure.
 
-import { answerBoss, startBoss, type BossFight } from '../core/boss';
+import { answerBoss, bossPay, startBoss, type BossFight } from '../core/boss';
 import { bonfireRefill, grantStarter, tabletHeal, useItem, CONSUMABLE, count as itemCount, buyConsumable, type Consumable } from '../core/items';
 import { alignPairs, canHint, hintOf, ITEM_TURN, linkPack, phraseCards, startPhraseBattle, makeQuestion, monsterStats, pickHint, resetClassFx, resolveTurn, rollSaying, shoutLine, startBattle, type Battle, type Question, type TurnReport, type Tutorial } from '../core/combat';
 import { CONFIG, xpToNext } from '../core/config';
@@ -1475,7 +1475,7 @@ export class Controller {
           const words = KONRAD_WORDS.map((id) => WORD_BY_ID[id]).filter(Boolean);
           this.panels.showQuiz('教 Konrad 说话', 'Konrad 指着店里的东西。用德语说出来（名词带冠词）。', words, () => {
             this.questFire('taughtKonrad');
-            say([{ who: K, text: 'das Brot。das Brötchen。der Kuchen。……还差一个名字。你明天再来。' }]);
+            say([{ who: K, text: 'das Brot。das Brötchen。der Kuchen。……还差一个名字。让我想想，你待会儿再来找我。' }]);
             this.persist();
           });
         },
@@ -2168,7 +2168,10 @@ export class Controller {
     if (!has(s.level, 'boss3')) lines.push({ who: B, text: '末班站台那个东西，28 级以前别去。它会问你几点、怎么走、为什么来晚了。' });
     else if (!s.flags.boss3Kills) lines.push({ who: B, text: '末班站台在大厅最里面。看时刻牌，看地图，说完成时。Viel Glück!' });
     else lines.push({ who: B, text: 'Die Uhren gehen wieder. 钟又走了。谢谢你。' });
-    if (questState(s, 'konrad')?.done && !s.flags.linaFreed)
+    // 1.0.12 试玩 63: Lina waits for Konrad's quest; without it, Brandt points back to the bakery.
+    if (!questState(s, 'konrad')?.done && !s.flags.linaFreed && s.level >= CONFIG.lina.fromLevel)
+      lines.push({ who: B, text: '听说大厅里有人在查票，可谁也没看清她的样子，只知道她系着一条面包房的围裙。面包集市的 Konrad 也许认得她，你先去帮帮他。' });
+    else if (questState(s, 'konrad')?.done && !s.flags.linaFreed)
       lines.push({ who: B, text: s.level >= CONFIG.lina.fromLevel ? '大厅里有个检票员，穿着面包房的围裙。她总在问别人要票，却说不出自己的名字。' : '最近大厅里有人在查票。等你再强一点（25 级）去看看。' });
     if (!s.flags.zeroSeen) lines.push({ who: B, text: '时刻表墙上原来有个零号站台。等你认得 Fahrkarte 这个词，也许就能看见。' });
     say(lines);
@@ -2935,7 +2938,7 @@ export class Controller {
       ? left
       : forms
       ? [{ who: W, text: `「Guten Tag. Noch ein Formular?」（已交 ${forms} 份${next ? `，再交 ${next - forms} 份升下一档声望` : '，秩序会声望已满'}）` }]
-      : [...left, ...WEBER.intro.map((t, i) => ({ who: i === 2 ? SYS : W, text: t }))];
+      : [...left, ...bossLines(WEBER.intro, W)];
     say(lines, undefined, [
       {
         label: '填一份登记表',
@@ -2995,7 +2998,16 @@ export class Controller {
 
   maybeLina(): void {
     const s = this.state;
-    if (this.battle || this.boss || s.flags.linaFreed || s.level < CONFIG.lina.fromLevel || !questState(s, 'konrad')?.done) return;
+    if (this.battle || this.boss || s.flags.linaFreed || s.level < CONFIG.lina.fromLevel) return;
+    if (!questState(s, 'konrad')?.done) {
+      // 1.0.12 试玩 63: once, say why she is not here yet (she comes after Konrad's quest).
+      if (!s.flags.linaHint) {
+        s.flags.linaHint = true;
+        this.persist();
+        say([{ who: SYS, text: '大厅里好像有人在查票，可你一个人也没看见。也许要先去面包集市帮帮 Konrad（支线「面包师傅的名字」）。' }]);
+      }
+      return;
+    }
     const miss = (s.flags.linaMiss as number) ?? 0;
     if (miss + 1 < LINA.pity && this.rng() >= LINA.chance) {
       s.flags.linaMiss = miss + 1;
@@ -3005,7 +3017,7 @@ export class Controller {
     if (startQuest(s, 'lina')) toast('新任务：末班车上的人（按 J 查看）', 'gold');
     this.questFire('brandtTalk');
     say(
-      LINA.intro.map((t) => ({ who: LINA.name, text: t })),
+      bossLines(LINA.intro, LINA.name),
       () => {
         this.boss = startBoss(this.state, this.rng, 4);
         setBattleMusic(true, true);
@@ -3025,7 +3037,7 @@ export class Controller {
       s.flags.title = '还名者';
       sfx.orange();
       banner('Lina', '她的名字回来了 · 传说装备 + 称号「还名者」');
-      say(LINA.outroWin.map((t) => ({ who: SYS, text: t })));
+      say(bossLines(LINA.outroWin, SYS));
     } else {
       const fine = Math.min(s.gold, LINA.fine);
       s.gold -= fine;
@@ -3054,7 +3066,7 @@ export class Controller {
     }
     const go = () =>
       say(
-        BOSS3.intro.map((t) => ({ who: BOSS3.name, text: t })),
+        bossLines(BOSS3.intro, BOSS3.name),
         () => {
           this.boss = startBoss(this.state, this.rng, 3);
           setBattleMusic(true, true);
@@ -3100,8 +3112,10 @@ export class Controller {
     const first = !s.flags.boss3Kills;
     s.flags.boss3Kills = ((s.flags.boss3Kills as number) ?? 0) + 1;
     const chest = this.bossChest('boss3', first);
-    const lv = addXp(s, CONFIG.boss3.xp);
-    s.gold += CONFIG.boss3.gold;
+    const xp = bossPay(CONFIG.boss3.xp, first, s.flags.boss3DayN as number);
+    const gold = bossPay(CONFIG.boss3.gold, first, s.flags.boss3DayN as number);
+    const lv = addXp(s, xp);
+    s.gold += gold;
     this.questFire('boss3');
     if (chest) this.chestQueue.push({ kind: chest, ilvl: s.level });
     this.bossRedDrop();
@@ -3112,8 +3126,8 @@ export class Controller {
     }
     sfx.orange();
     banner('晚点之王倒下了', first ? '首杀：传说装备 + 称号「准点者」' : chest === 'gold' ? '金箱' : chest ? '铁箱' : '今天的宝箱已领完');
-    const lines: Line[] = BOSS3.outro.map((t) => ({ who: SYS, text: t }));
-    lines.push({ who: SYS, text: `获得 ${CONFIG.boss3.xp} 经验、${CONFIG.boss3.gold} 金币${chest ? `和一个${chest === 'gold' ? '金' : '铁'}箱` : ''}。` });
+    const lines: Line[] = first ? bossLines(BOSS3.outro, SYS) : [againLine(BOSS3.name)];
+    lines.push({ who: SYS, text: `获得 ${xp} 经验、${gold} 金币${chest ? `和一个${chest === 'gold' ? '金' : '铁'}箱` : ''}。` });
     const after = () => {
       for (const l of lv.levels) this.onLevelUp(l);
       this.refresh();
@@ -3131,7 +3145,7 @@ export class Controller {
     }
     const go = () =>
       say(
-        BOSS2.intro.map((t) => ({ who: BOSS2.name, text: t })),
+        bossLines(BOSS2.intro, BOSS2.name),
         () => {
           this.boss = startBoss(this.state, this.rng, 2);
           setBattleMusic(true, true);
@@ -3155,8 +3169,10 @@ export class Controller {
     const first = !s.flags.boss2Kills;
     s.flags.boss2Kills = ((s.flags.boss2Kills as number) ?? 0) + 1;
     const chest = this.bossChest('boss2', first);
-    const lv = addXp(s, CONFIG.boss2.xp);
-    s.gold += CONFIG.boss2.gold;
+    const xp = bossPay(CONFIG.boss2.xp, first, s.flags.boss2DayN as number);
+    const gold = bossPay(CONFIG.boss2.gold, first, s.flags.boss2DayN as number);
+    const lv = addXp(s, xp);
+    s.gold += gold;
     this.questFire('boss2');
     if (chest) this.chestQueue.push({ kind: chest, ilvl: s.level });
     this.bossRedDrop();
@@ -3167,8 +3183,8 @@ export class Controller {
     }
     sfx.orange();
     banner('吞秤者倒下了', first ? '首杀：传说装备 + 称号「Preisbrecher」' : chest === 'gold' ? '金箱' : chest ? '铁箱' : '今天的宝箱已领完');
-    const lines: Line[] = BOSS2.outro.map((t) => ({ who: SYS, text: t }));
-    lines.push({ who: SYS, text: `获得 ${CONFIG.boss2.xp} 经验、${CONFIG.boss2.gold} 金币${chest ? `和一个${chest === 'gold' ? '金' : '铁'}箱` : ''}。` });
+    const lines: Line[] = first ? bossLines(BOSS2.outro, SYS) : [againLine(BOSS2.name)];
+    lines.push({ who: SYS, text: `获得 ${xp} 经验、${gold} 金币${chest ? `和一个${chest === 'gold' ? '金' : '铁'}箱` : ''}。` });
     const after = () => {
       for (const l of lv.levels) this.onLevelUp(l);
       this.refresh();
@@ -3242,7 +3258,7 @@ export class Controller {
     }
     const go = () =>
       say(
-        b.intro.map((t) => ({ who: b.name, text: t })),
+        bossLines(b.intro, b.name),
         () => {
           this.boss = startBoss(this.state, this.rng, 7, undefined, r);
           setBattleMusic(true, true);
@@ -3270,8 +3286,8 @@ export class Controller {
     const first = !s.flags[`boss${r}Kills`];
     s.flags[`boss${r}Kills`] = ((s.flags[`boss${r}Kills`] as number) ?? 0) + 1;
     const chest = this.bossChest(`boss${r}`, first);
-    const xp = laterBossXp(b.level);
-    const gold = laterBossGold(b.level);
+    const xp = bossPay(laterBossXp(b.level), first, s.flags[`boss${r}DayN`] as number);
+    const gold = bossPay(laterBossGold(b.level), first, s.flags[`boss${r}DayN`] as number);
     const lv = addXp(s, xp);
     s.gold += gold;
     if (chest) this.chestQueue.push({ kind: chest, ilvl: s.level });
@@ -3283,7 +3299,7 @@ export class Controller {
     }
     sfx.orange();
     banner(`${b.name}倒下了`, first ? `首杀：传说装备 + 称号「${b.title}」+ 金箱` : chest === 'gold' ? '金箱' : chest ? '铁箱' : '今天的宝箱已领完');
-    const lines: Line[] = b.outro.map((t) => ({ who: SYS, text: t }));
+    const lines: Line[] = first ? bossLines(b.outro, SYS) : [againLine(b.name)];
     lines.push({ who: SYS, text: `获得 ${xp} 经验、${gold} 金币${chest ? `和一个${chest === 'gold' ? '金' : '铁'}箱` : ''}。` });
     // 18 区 Frau Weber 的选择 (Lucas 2026-11-26): once, after the first win over 审判者.
     if (first && r === 18 && !s.flags.weber18) {
@@ -3377,7 +3393,7 @@ export class Controller {
 
   private openBoss() {
     say(
-      BOSS.intro.map((t) => ({ who: BOSS.name, text: t })),
+      bossLines(this.state.flags.bossKills ? BOSS.introAgain : BOSS.intro, BOSS.name),
       () => {
         this.boss = startBoss(this.state, this.rng);
         setBattleMusic(true, true);
@@ -3432,8 +3448,10 @@ export class Controller {
       s.flags.bossKills = ((s.flags.bossKills as number) ?? 0) + 1;
       const chest = this.bossChest('boss', first);
       const dailyFirst = chest === 'gold';
-      const lv = addXp(s, CONFIG.xp.boss);
-      s.gold += 120;
+      const xp = bossPay(CONFIG.xp.boss, first, s.flags.bossDayN as number);
+      const gold = bossPay(120, first, s.flags.bossDayN as number);
+      const lv = addXp(s, xp);
+      s.gold += gold;
       // 金箱 (first kill only): ≥1 purple and an orange. Then an iron chest for the day's first 3 kills.
       const drops = dailyFirst
         ? [makeItem(this.rng, 9, 'purple'), makeItem(this.rng, 9, 'green'), makeItem(this.rng, 9, this.rng() < 0.3 ? 'purple' : 'green')]
@@ -3446,8 +3464,8 @@ export class Controller {
       for (const d of drops) if (s.bag.length < CONFIG.loot.bagSize) s.bag.push(d);
       sfx.orange();
       banner('首领被唤醒', first ? '首杀：传说装备 + 称号「被记住的人」' : dailyFirst ? '金箱' : chest ? '铁箱' : '今天的宝箱已领完');
-      const lines: Line[] = BOSS.outro.map((t) => ({ who: SYS, text: t }));
-      lines.push({ who: SYS, text: `获得 ${CONFIG.xp.boss} 经验、120 金币和 ${drops.length} 件装备（按 C 查看）。` });
+      const lines: Line[] = bossLines(first ? BOSS.outro : BOSS.outroAgain, SYS);
+      lines.push({ who: SYS, text: `获得 ${xp} 经验、${gold} 金币和 ${drops.length} 件装备（按 C 查看）。` });
       const after = () => {
         for (const l of lv.levels) this.onLevelUp(l);
         this.refresh();
@@ -3602,6 +3620,14 @@ export class Controller {
 export function freshState(name: string, origin: string): GameState {
   return newGame(name, origin);
 }
+
+/** 1.0.12 试玩 55/96: boss intro/outro lines. A 「系统：」 line is said by the system, without the prefix shown twice. */
+function bossLines(texts: string[], who: string): Line[] {
+  return texts.map((t) => (t.startsWith('系统：') ? { who: SYS, text: t.slice(3) } : { who, text: t }));
+}
+
+/** 1.0.12 试玩 20: a replay ends without the first-kill story. */
+const againLine = (name: string): Line => ({ who: SYS, text: `${name}又倒下了。它换了问法，你还是答上来了。` });
 
 function aiErrorZh(e: string): string {
   return e === 'quota' ? '今天的 AI 批改次数用完了，明天再来。' : e === 'login' ? '登录过期了，重新登录后再来。' : e === 'model' ? 'AI 暂时不可用，其他玩法不受影响，稍后再试。' : '连不上 AI 批改（网络或服务出错），稍后再试。';
