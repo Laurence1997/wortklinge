@@ -56,9 +56,10 @@ const COUNTERS: Array<{ ask: string; model: string }> = [
   { ask: 'Das kostet zu viel. Dafür haben wir kein Geld.', model: 'Das sehe ich anders, denn wenn wir nichts tun, wird es später noch teurer.' },
 ];
 
-/** 1.0.12 试玩 33: a concrete example counts with or without a marker word: a full sentence with a detail in it. */
+/** 1.0.12 试玩 33: a concrete example counts with or without a marker word: a full sentence with a detail in it
+ *  (a number, a possessive, a time or a place; a bare «ich finde das auch gut» is no example). */
 const EXAMPLE_MARK = new RegExp(`(?:zum beispiel|beispielsweise|etwa|ein beispiel|in ${S} (?:gibt|hat|haben|ist|sind|fahren)|als ich|letztes jahr|in meiner stadt|seit)`);
-const DETAIL = /(?:\d|\b(?:mein|meine|meinem|meinen|meiner|unser|unsere|unserem|unseren|unserer|ich|wir|gestern|letzte|letzten|letztes|jeden|jede|in [a-z]+|bei [a-z]+|eins|zwei|drei|vier|fuenf|sechs|sieben|acht|neun|zehn|zwoelf|zwanzig|hundert)\b)/;
+const DETAIL = /(?:\d|\b(?:mein|meine|meinem|meinen|meiner|unser|unsere|unserem|unseren|unserer|gestern|letzte|letzten|letztes|jeden|jede|in [a-z]+|bei [a-z]+|eins|zwei|drei|vier|fuenf|sechs|sieben|acht|neun|zehn|zwoelf|zwanzig|hundert)\b)/;
 const exampleGrade: BossQuestion['grade'] = (input: string) => {
   const n = normalize(input);
   if (EXAMPLE_MARK.test(n)) return { ok: true, note: null };

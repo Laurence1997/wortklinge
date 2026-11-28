@@ -48,6 +48,8 @@ describe('1.0.12 g2 bosses', () => {
       const ex = qs.find((q) => q.id === 'example')!;
       expect(accepts(ex, 'Meine Schwester ist 15 und schläft nie vor Mitternacht ein.')).toBe(true);
       expect(accepts(ex, 'Ja, genau.')).toBe(false);
+      expect(accepts(ex, 'Ich finde das auch wirklich sehr gut.')).toBe(false);
+      expect(accepts(ex, 'Ich fahre jeden Tag zwanzig Minuten mit dem Rad.')).toBe(true);
       const op = qs.find((q) => q.id === 'opinion')!;
       expect(op.ask).toHaveLength(1);
       topics.add(op.ask[0]);

@@ -2156,7 +2156,7 @@ export class Controller {
     else lines.push({ who: B, text: 'Die Uhren gehen wieder. 钟又走了。谢谢你。' });
     // 1.0.12 试玩 63: Lina waits for Konrad's quest; without it, Brandt points back to the bakery.
     if (!questState(s, 'konrad')?.done && !s.flags.linaFreed && s.level >= CONFIG.lina.fromLevel)
-      lines.push({ who: B, text: '听说大厅里有个检票员，穿着面包房的围裙，却说不出自己的名字。面包集市的 Konrad 一直在找女儿，你先去帮帮他，也许就能见到她。' });
+      lines.push({ who: B, text: '听说大厅里有人在查票，可谁也没看清她的样子，只知道她系着一条面包房的围裙。面包集市的 Konrad 也许认得她，你先去帮帮他。' });
     else if (questState(s, 'konrad')?.done && !s.flags.linaFreed)
       lines.push({ who: B, text: s.level >= CONFIG.lina.fromLevel ? '大厅里有个检票员，穿着面包房的围裙。她总在问别人要票，却说不出自己的名字。' : '最近大厅里有人在查票。等你再强一点（25 级）去看看。' });
     if (!s.flags.zeroSeen) lines.push({ who: B, text: '时刻表墙上原来有个零号站台。等你认得 Fahrkarte 这个词，也许就能看见。' });
@@ -2980,7 +2980,7 @@ export class Controller {
       if (!s.flags.linaHint) {
         s.flags.linaHint = true;
         this.persist();
-        say([{ who: SYS, text: '大厅里好像有人在查票，可你一个人也没看见。也许要先帮面包集市的 Konrad 想起女儿的名字（支线「面包师傅的名字」）。' }]);
+        say([{ who: SYS, text: '大厅里好像有人在查票，可你一个人也没看见。也许要先去面包集市帮帮 Konrad（支线「面包师傅的名字」）。' }]);
       }
       return;
     }

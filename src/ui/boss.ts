@@ -28,7 +28,7 @@ export class BossUI {
   private lastAnswer = '';
   private waiting = false;
   /** 1.0.12 试玩 23/29: the question just answered, shown (with its feedback) until Enter; answerBoss has already moved on. */
-  private shown: { asked: string; current: BossQuestion; board?: Board } | null = null;
+  private shown: { asked: string; current: BossQuestion; board?: Board; turn: number } | null = null;
   private lastTimedOut = false;
   /** Letters gained on the name plate by the last answer (the plate only grows when HP crosses a letter). */
   private gained = 0;
@@ -78,7 +78,7 @@ export class BossUI {
     this.lastAnswer = value;
     this.lastTimedOut = timedOut;
     const f = this.fight;
-    this.shown = { asked: f.asked, current: f.current, board: f.board ? { ...f.board, rows: f.board.rows } : undefined };
+    this.shown = { asked: f.asked, current: f.current, board: f.board ? { ...f.board, rows: f.board.rows } : undefined, turn: f.turn };
     const before = this.letters(f);
     this.last = this.ctrl.answerBoss(value, timedOut);
     this.gained = (f.outcome === 'win' ? this.ctrl.state.name.length : this.letters(f)) - before;
@@ -122,13 +122,13 @@ export class BossUI {
     for (let i = 0; i < f.maxHp; i++) pips.append(h(`div.pip${i < f.hp ? '' : '.off'}`));
     const letters = this.letters(f);
     // While the feedback shows, the screen keeps the question that was answered (answerBoss already drew the next).
-    const shown = this.waiting && this.shown ? this.shown : { asked: f.asked, current: f.current, board: f.board };
+    const shown = this.waiting && this.shown ? this.shown : { asked: f.asked, current: f.current, board: f.board, turn: f.turn };
     const plate = s.name.slice(0, letters) + '▒'.repeat(Math.max(0, s.name.length - letters));
 
     const figKey = bossFigureKey(f.which, f.region);
     const panel = h('div.panel');
     panel.append(
-      h('div.row', { style: 'justify-content:space-between' }, h('span.small.muted', f.which === 6 ? (f.current.id.startsWith('engrave-') ? 'Greta 在孔边写了半句话：把小词填上' : 'Mira 指着一行字：把空填上（写这个词在句子里的形式）') : f.which === 5 ? `登记表 第 ${Math.min(f.maxHp - f.hp + 1, f.maxHp)} / ${f.maxHp} 项 · 用完整的句子回答 · 不限时` : `第 ${f.turn} 问 · 用完整的德语句子回答`), h('span.small', `生命 ${s.hp} / ${maxHp(s)}`)),
+      h('div.row', { style: 'justify-content:space-between' }, h('span.small.muted', f.which === 6 ? (f.current.id.startsWith('engrave-') ? 'Greta 在孔边写了半句话：把小词填上' : 'Mira 指着一行字：把空填上（写这个词在句子里的形式）') : f.which === 5 ? `登记表 第 ${Math.min(f.maxHp - f.hp + 1, f.maxHp)} / ${f.maxHp} 项 · 用完整的句子回答 · 不限时` : `第 ${shown.turn} 问 · 用完整的德语句子回答`), h('span.small', `生命 ${s.hp} / ${maxHp(s)}`)),
       bar('hp', s.hp, maxHp(s)),
       h('div.timer', h('i', { style: 'width:100%' })),
     );
