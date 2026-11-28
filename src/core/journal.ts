@@ -7,6 +7,8 @@
 
 import { normalize } from './grading';
 import type { Word } from './types';
+import type { Settings } from './state';
+import { wordCue } from './dedef';
 import { CONJ, PERSONS, type Person } from '../data/verbs';
 import { WORDS } from '../data/words';
 import { PERFEKT } from '../data/perfekt';
@@ -150,13 +152,13 @@ function usesVerb(ts: string[], inf: string, c: (typeof CONJ)[string]): boolean 
 }
 
 /** Hints for an entry. Empty = nothing the rules are sure about. */
-export function checkJournal(text: string, given: Word[]): JournalHint[] {
+export function checkJournal(text: string, given: Word[], settings?: Pick<Settings, 'defLang'>): JournalHint[] {
   NOUNS ??= nounIndex();
   FORMS ??= formIndex();
   const out: JournalHint[] = [];
   const sentences = text.split(/[.!?]+/).map((x) => x.trim()).filter((x) => tokens(x).length >= 2);
   if (sentences.length < 2) out.push({ kind: 'short', text: '写两三句（每句以句号结尾）' });
-  for (const w of given) if (!usesWord(text, w)) out.push({ kind: 'missing', text: `还没用到「${w.zh}」` }); // 审查修订: no German here, the word must be recalled
+  for (const w of given) if (!usesWord(text, w)) out.push({ kind: 'missing', text: `还没用到${wordCue(w, settings)}` }); // 审查修订: no German here, the word must be recalled (德语释义 1.0.12: a de-tier word as given, by definition + first letter)
   const raw = tokens(text);
   for (let i = 0; i + 1 < raw.length; i++) {
     const a = k(raw[i]);

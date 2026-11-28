@@ -107,7 +107,14 @@ export function runPk(s: GameState, a: Adventurer, region: number, rng: Rng, onA
       }, rv.ms),
       window.setTimeout(() => end('时间到。'), ROUND_MS),
     );
-    body.append(h('div.small.muted', q.prompt), h('div.pk-focus', q.focus));
+    body.append(h('div.small.muted', q.prompt), h('div.pk-focus', q.zhHidden ? { style: 'font-size:18px;line-height:1.4;white-space:normal;overflow-wrap:anywhere' } : {}, q.focus));
+    // 德语释义 (1.0.12): first letter + letter count, and the Chinese one free tap away.
+    if (q.defHint) body.append(h('div', { style: 'font-family:var(--mono);font-size:16px;letter-spacing:1px' }, q.defHint));
+    if (q.zhHidden) {
+      const zhBtn = h('button.btn.ghost.tiny', { title: '看中文不花任何代价', onclick: () => zhBtn.replaceWith(h('span.small.muted', `中文：${q.zhHidden}`)) }) as HTMLButtonElement;
+      zhBtn.textContent = '看中文';
+      body.append(h('div', zhBtn));
+    }
     if (q.options?.length) {
       body.append(h('div.row', ...q.options.map((o, i) => h('button.btn', { onclick: () => mine(o) }, h('kbd', String(i + 1)), ` ${o}`))));
     } else {

@@ -25,7 +25,8 @@ import { echoOptions, echoTask, notePron, PRON_MON, pronMonOk, type EchoTask } f
 import { count } from './items';
 import { fullForm, genderOf, hasArticleQuestion, WORD_BY_ID, WORDS, zhWithPos } from '../data/words';
 import { LEX_REL } from '../data/lexicon';
-import { defDe, defHintLine, defTier } from './dedef';
+import { defDe, defHintLine, defHintsFor, defTier, hidesZh, plateMeaning, plateZh, slotMeaning } from './dedef';
+export { plateZh };
 import { canTarget, collocOf, gradeSplit, combatSkills, MULT, POOL, splitOf, type PoolId, type SplitTask } from './skillPool';
 import { SAYING_CFG, SAYINGS } from '../data/sayings';
 import { expectedSentence, gradeSentence, nextPattern, PATTERNS, sentenceTags, type Pattern } from './sentence';
@@ -1148,10 +1149,36 @@ function exampleOf(w: Word, rng: Rng): string | null {
 }
 
 /** 造句 (场景精英 ③): write a short sentence of your own with the word. `answer` is only the word, for 低语 and notes. */
-function composeQ(w: Word): Question {
+function composeQ(s: Pick<GameState, 'settings'>, w: Word): Question {
   const name = w.art ? `${w.art} ${w.de}` : w.de;
+  const tail = `写一句你自己的短句（德语${w.art ? '，名词带冠词' : ''}）`;
+  // 德语释义 (1.0.12): a de-tier word is given by its definition, with its first letter; the Chinese a tap away.
+  const def = defDe(w);
+  if (def && hidesZh(w, s.settings)) return { type: 'cloze', write: 'compose', prompt: `造句：用下面这个释义说的那个词${tail}`, focus: def, answer: name, defDe: def, defHint: defHintLine(w), zhHidden: w.zh };
   // 审查修订「题面露词」: the word is given in Chinese only, or writing it would prove nothing.
-  return { type: 'cloze', write: 'compose', prompt: `造句：用「${w.zh}」这个词写一句你自己的短句（德语${w.art ? '，名词带冠词' : ''}）`, focus: w.zh, answer: name };
+  return { type: 'cloze', write: 'compose', prompt: `造句：用「${w.zh}」这个词${tail}`, focus: w.zh, answer: name };
+}
+
+/** 德语释义 (1.0.12) in the example-sentence finisher (the usual one at Lv121+, whose words have no 句型): the word's
+ *  Chinese in the sentence becomes 〔definition〕 (maskZh finds every sense), with the first letter; the whole Chinese
+ *  a tap away. A sentence whose Chinese does not contain the gloss word for word stays as it is (nothing to hide). */
+function dedefWhole(s: Pick<GameState, 'settings'>, w: Word, q: Question): Question {
+  const def = defDe(w);
+  if (!def || w.digit || !hidesZh(w, s.settings)) return q;
+  const hint = `原形 ${defHintLine(w)}`;
+  if (q.focus === w.zh) return { ...q, prompt: '终结技：看释义，写出来', focus: def, defDe: def, defHint: hint, zhHidden: q.focus };
+  const masked = maskZh(q.focus, w);
+  if (!masked.includes('……') || masked.startsWith('（')) return q;
+  return { ...q, prompt: q.prompt.replace('看中文', '看中文和释义'), focus: masked.replace('……', `〔${def}〕`), defDe: def, defHint: hint, zhHidden: q.focus };
+}
+
+/** 德语释义 (1.0.12) in a 看中文写整句 finisher: a de-tier word's slot in the Chinese reads 〔definition〕, the hint
+ *  line gives each such word's first letter and letter count, and the all-Chinese prompt is a tap away. */
+function dedefSentence(s: Pick<GameState, 'settings'>, q: Question, words: Word[], zhFocus: string): Question {
+  const hint = defHintsFor(words, s.settings);
+  if (!hint) return { ...q, focus: zhFocus };
+  const first = words.find((x) => hidesZh(x, s.settings))!;
+  return { ...q, prompt: q.prompt.replace('看中文', '看中文和释义'), defDe: defDe(first)!, defHint: hint, zhHidden: zhFocus };
 }
 
 /** 句中默写 (练中学, rev 425): the word's slot blanked in one of its examples, the whole Chinese given, no letters.
@@ -1236,6 +1263,9 @@ export function dedefQ(s: Pick<GameState, 'settings'>, w: Word, q: Question): Qu
   if (tier !== 'de' || w.digit) return out;
   if (out.type === 'pickDe' && out.focus === w.zh) return { ...out, focus: def, defDe: def, zhHidden: w.zh };
   if (out.type === 'storm' && out.focus === zhWithPos(w)) return { ...out, focus: def, defDe: def, defHint: defHintLine(w), zhHidden: out.focus };
+  // 1.0.12 sweep: 稳住·选冠词 shows the definition (the options are der/die/das, so nothing is given away). 拆词 keeps
+  // its Chinese: its prompt spells the German word out, so the Chinese is only a gloss and a letter hint would be moot.
+  if (out.type === 'steady' && out.focus === zhWithPos(w) && out.options?.every((o) => o === 'der' || o === 'die' || o === 'das')) return { ...out, focus: def, defDe: def, zhHidden: out.focus };
   if (out.type === 'typed' && !out.split && out.focus === zhWithPos(w)) return { ...out, focus: def, defDe: def, defHint: defHintLine(w), zhHidden: out.focus };
   if (out.type === 'cloze' && out.clozeZh && !out.pat && !out.write && out.prompt.endsWith(` · ${out.clozeZh}`)) {
     const writing = out.clozeMode !== 'pick' && !out.options?.length;
@@ -1325,7 +1355,8 @@ function makeQuestionRaw(s: GameState, b: Battle, move: Move, rng: Rng, skillId?
     const pat = sentencePattern(s, b);
     if (!pat) return null;
     const extra = pat === 'nehme' ? '（也可以 zwei + 复数）' : '';
-    return { type: 'sentence', prompt: `终结技：看中文，写整句${extra}`, focus: SENTENCE_ZH[pat](w.digit ?? w.zh), pattern: pat, answer: expectedSentence(w, pat) };
+    const q: Question = { type: 'sentence', prompt: `终结技：看中文，写整句${extra}`, focus: SENTENCE_ZH[pat](slotMeaning(w, s.settings)), pattern: pat, answer: expectedSentence(w, pat) };
+    return dedefSentence(s, q, [w], SENTENCE_ZH[pat](w.digit ?? w.zh));
   };
   // A1 写作 (2026-11-22): some cloze slots become 排句 or 槽位造句 once open (not on a word's very first questions).
   const writeQ = (): Question | null => {
@@ -1444,15 +1475,17 @@ function makeQuestionRaw(s: GameState, b: Battle, move: Move, rng: Rng, skillId?
     if (s.level >= ULT97.from && !b.ultUsed && s.owner) {
       const hints = ult97Hints(s, w, rng);
       if (hints.length === 2) {
-        const hz = hints.map((id) => `「${WORD_BY_ID[id].zh}」`).join('');
-        return {
+        const hw = hints.map((id) => WORD_BY_ID[id]);
+        const hz = hw.map((x) => (hidesZh(x, s.settings) ? '〔释义〕' : `「${x.zh}」`)).join('');
+        const q: Question = {
           type: 'sentence',
           prompt: `终极技能 · 提示词造句：用上它的词和两个提示词${hz}造一句。全用上且没错 ×${ULT97.full}，还横扫场上每只怪；只用上它的词 ×${ULT97.target}`,
-          focus: `${plateZh(w)} + ${hints.map((id) => WORD_BY_ID[id].zh).join(' + ')}`,
+          focus: `${hidesZh(w, s.settings) ? slotMeaning(w, s.settings) : plateZh(w)} + ${hw.map((x) => slotMeaning(x, s.settings)).join(' + ')}`,
           answer: '',
           ult: [],
           prompt97: { hints },
         };
+        return dedefSentence(s, q, [w, ...hw], `${plateZh(w)} + ${hw.map((x) => x.zh).join(' + ')}`);
       }
     }
     if (fin && fin.pattern && PATTERNS[fin.pattern].art !== 'none' && has(s.level, 'ultimate') && !b.ultUsed) {
@@ -1463,15 +1496,17 @@ function makeQuestionRaw(s: GameState, b: Battle, move: Move, rng: Rng, skillId?
         const P = PATTERNS[pat];
         const objOf = (x: Word) => expectedSentence(x, pat).slice(P.lead.length + 1).replace(/[.?]$/, '');
         const end = P.q ? '?' : '.';
-        return {
+        const zhAll = `${SENTENCE_ZH[pat](w.digit ?? w.zh).replace(/[。？]$/, '')}，还有${mate.zh}。`;
+        const uq: Question = {
           type: 'sentence',
           prompt: '终极技能 · 句型填空：两个空都填对 ×3，对一个 ×1.5（带冠词）',
-          focus: `${SENTENCE_ZH[pat](w.digit ?? w.zh).replace(/[。？]$/, '')}，还有${mate.zh}。`,
+          focus: `${SENTENCE_ZH[pat](slotMeaning(w, s.settings)).replace(/[。？]$/, '')}，还有${slotMeaning(mate, s.settings)}。`,
           frame: `${P.lead} ___ und ___${end}`,
           pattern: pat,
           ult: [objOf(w), objOf(mate)],
           answer: `${P.lead} ${objOf(w)} und ${objOf(mate)}${end}`,
         };
+        return dedefSentence(s, uq, [w, mate], zhAll);
       }
     }
     if (has(s.level, 'ultimate') && !b.ultUsed) {
@@ -1483,13 +1518,18 @@ function makeQuestionRaw(s: GameState, b: Battle, move: Move, rng: Rng, skillId?
       if (mate) {
         const lead = PATTERNS[fin.pattern].lead;
         const objOf = (x: Word) => expectedSentence(x, fin.pattern!).slice(lead.length + 1).replace(/[.?]$/, '');
-        return {
+        const und = (x: (y: Word) => string) => SENTENCE_ZH[fin.pattern!](x(w)).replace(/。.*$/, `，还有${fin.pattern === 'suche' ? '那个' : '一个'}${x(mate.word)}。`);
+        const uq: Question = {
           ...fin,
+          defDe: undefined,
+          defHint: undefined,
+          zhHidden: undefined,
           prompt: '终结技 · und：看中文，一句话说出两只怪，两只都挨打',
-          focus: SENTENCE_ZH[fin.pattern](w.digit ?? w.zh).replace(/。.*$/, `，还有${fin.pattern === 'suche' ? '那个' : '一个'}${mate.word.zh}。`),
+          focus: und((y) => slotMeaning(y, s.settings)),
           answer: `${lead} ${objOf(w)} und ${objOf(mate.word)}.`,
           undWord: mate.word,
         };
+        return dedefSentence(s, uq, [w, mate.word], und((y) => y.digit ?? y.zh));
       }
     }
     // 连句 (2026-11-22): now and then the finisher joins two short sentences (und / oder / aber / denn; weil / dass /
@@ -1503,7 +1543,7 @@ function makeQuestionRaw(s: GameState, b: Battle, move: Move, rng: Rng, skillId?
     }
     if (fin) return fin;
     const ws = wholeSentence(w, rng);
-    return { type: 'sentence', prompt: '终结技：看中文，写整句', focus: ws.zh, answer: ws.answer };
+    return dedefWhole(s, w, { type: 'sentence', prompt: '终结技：看中文，写整句', focus: ws.zh, answer: ws.answer });
   }
   let q = ladderQ();
   // 初见教学 (Lucas 2026-11-27): the one choice question of a never-met word shows its spelling, meaning and sound.
@@ -1580,7 +1620,7 @@ function makeQuestionRaw(s: GameState, b: Battle, move: Move, rng: Rng, skillId?
     if (b.elite.seg === 1) return (hasExamples(w) ? clozeQ(s, w, rng) : null) ?? (canConj ? conj() : typed());
     // ③ 写 (rev 425/459): a short sentence of your own with the word, every other attack; rule-checked here, and from
     // level 10 a logged-in player's sentence also goes to the AI teacher (the controller shows its note).
-    if (b.step % 2 === 0) return composeQ(w);
+    if (b.step % 2 === 0) return composeQ(s, w);
     return canConj ? conj() : typed();
   }
   if (am === 'attack' && inPack && isNoun && !b.named && b.stage === 0 && !needsPhase(b)) return callout();
@@ -2128,11 +2168,6 @@ function syncShared(from: Battle, pack: Battle[]) {
 }
 
 /** A pack mate's name in the log before its spelling has been shown: article (once it is a known noun) + half. */
-/** 名牌 (Lucas 2026-11-25): the meaning in Chinese, short (first sense, no brackets), never the German letters. */
-export function plateZh(w: Word): string {
-  const z = w.zh.replace(/（[^）]*）|\([^)]*\)/g, '').split(/[；;，,／/]/)[0].trim() || w.zh;
-  return z.length > 8 ? `${z.slice(0, 8)}…` : z;
-}
 
 
 /** Question types that put the word's German spelling on screen (斩杀: a typed answer after one is not 会写). */
@@ -2256,7 +2291,7 @@ export function resolveTurn(
   b.directOffer = false; // the offer stands only before the first question
   const log: LogLine[] = [];
   const multi = pack.length > 1;
-  const tagOf = (x: Battle) => (multi ? `${x.spellSeen ? fullForm(x.word) : x.word.erode ? '它' : plateZh(x.word)} ` : '它');
+  const tagOf = (x: Battle) => (multi ? `${x.spellSeen ? fullForm(x.word) : x.word.erode ? '它' : plateMeaning(x.word, s.settings)} ` : '它');
   const alive0 = pack.filter((x) => !x.outcome);
   const dmgMult = packDamageMult(alive0.length);
   // 药片 (物品栏): no answer this turn; the monsters act as after a right one (a charged hit still lands).

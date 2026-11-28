@@ -30,7 +30,7 @@ import { CHEST_ZH, type ChestKind } from '../core/chest';
 import { playChest } from './chestFx';
 import { favour, FAVOUR, QUESTS, type QuestId } from '../core/quests';
 import { gradeTyped } from '../core/grading';
-import { DEF_LANG_ZH, defDe, defHintLine, defLangOf, defTier, SYN_NOTE, synonymHit, type DefLang } from '../core/dedef';
+import { DEF_LANG_ZH, defDe, defHintLine, defLangOf, defTier, hidesZh, letterHint, meaningLine, meaningShort, SYN_NOTE, synonymHit, type DefLang } from '../core/dedef';
 import { recordAnswer, reviewedByWriting } from '../core/srs';
 import { track } from '../net/social';
 import { BOARD, BOARD_ZH, type BoardKind } from '../core/board';
@@ -542,7 +542,9 @@ export class Panels {
         go(input.value);
       }
     });
-    wrap.append(h('div.focus', { style: 'font-size:28px;margin:10px 0' }, q.prompt), h('div.typing', input, umlautButtons(input), h('button.btn.primary', { onclick: () => go(input.value) }, '写 ↵')));
+    // 德语释义 (1.0.12): 写 of a de-tier word gives its definition with first letter and letter count, Chinese a tap away.
+    const clue = q.part === 'write' && hidesZh(q.word, this.ctrl.state.settings) ? this.writeClue(q.word) : [h('div.focus', { style: 'font-size:28px;margin:10px 0' }, q.prompt)];
+    wrap.append(...clue, h('div.typing', input, umlautButtons(input), h('button.btn.primary', { onclick: () => go(input.value) }, '写 ↵')));
     return wrap;
   }
 
@@ -617,9 +619,11 @@ export class Panels {
     const j = this.journalState!;
     const wrap = h('div');
     wrap.append(
-      h('p', '用下面 3 个今天打过的词（给的是中文，德语要自己想起来）写两三句你自己的话。写什么都行：今天去了哪儿、看见了什么、想要什么。登录后 AI 会批改，每天一篇。'),
+      h('p', `用下面 3 个今天打过的词（给的是${j.words.some((w) => hidesZh(w, this.ctrl.state.settings)) ? '中文或德语释义' : '中文'}，德语要自己想起来）写两三句你自己的话。写什么都行：今天去了哪儿、看见了什么、想要什么。登录后 AI 会批改，每天一篇。`),
       h('p.small.muted', '这里不判对错。「检查」只会指出规则能确定的错：没用到给的词、冠词和名词对不上、ich / du / er 后面的动词形式不对。查不出的就不管。写完记进日记，每天第一篇给一点经验。'),
-      h('div.row', ...j.words.map((w) => h('span.tag', `「${w.zh}」${w.art ? '（名词，带冠词）' : ''}`))), // 审查修订: the words in Chinese, so writing them is recall
+      // 审查修订: the words in Chinese, so writing them is recall. 德语释义 (1.0.12): a de-tier word shows its
+      // definition and first letter instead; tapping the tag shows the Chinese, free.
+      h('div.row', { style: 'flex-wrap:wrap;gap:6px' }, ...j.words.map((w) => this.wordTag(w, w.art ? '（名词，带冠词）' : ''))),
     );
     if (j.saved !== null) {
       wrap.append(h('div.feedback.ok', j.saved ? `记进日记了。经验 +${j.saved}` : '记进日记了。'), h('pre.small', j.text));
@@ -631,12 +635,12 @@ export class Panels {
     ta.oninput = () => (j.text = ta.value);
     const check = () => {
       j.text = ta.value;
-      j.hints = checkJournal(j.text, j.words);
+      j.hints = checkJournal(j.text, j.words, this.ctrl.state.settings);
       this.render();
     };
     const save = () => {
       j.text = ta.value;
-      const hints = checkJournal(j.text, j.words);
+      const hints = checkJournal(j.text, j.words, this.ctrl.state.settings);
       if (hints.some((x) => x.kind === 'short' || x.kind === 'missing')) {
         j.hints = hints;
         this.render();
@@ -938,7 +942,7 @@ export class Panels {
     const l = run.last;
     if (l) {
       const fb = h(`div.feedback.${l.res === 'ok' ? 'ok' : 'no'}`);
-      if (l.other) fb.append(h('b', `换一个词再写`), h('span.note', `你写的 ${fullForm(l.other)} 是「${l.other.zh}」。这题要的是另一个词，再想想；想不起来就点「不会」。`));
+      if (l.other) fb.append(h('b', `换一个词再写`), h('span.note', `你写的 ${fullForm(l.other)} 是「${meaningShort(l.other, this.ctrl.state.settings)}」。这题要的是另一个词，再想想；想不起来就点「不会」。`));
       else if (l.res === 'ok') fb.append(h('b', `✓ ${fullForm(l.word)}`));
       else if (l.res === 'half') fb.append(h('b', `差一点 · ${fullForm(l.word)}`), h('span.note', `你写的：${l.input}`), ...l.verdict.notes.slice(0, 1).map((n) => h('span.note', n)));
       else if (l.res === 'skip') fb.append(h('b', `不会 · ${fullForm(l.word)}`));
@@ -982,7 +986,7 @@ export class Panels {
       }
     });
     wrap.append(
-      h('div.place-word', zhWithPos(w)),
+      ...this.typedClue(w),
       h('div.place-typing', input, h('button.btn.primary', { onclick: go }, '写 ↵'), h('button.btn', { onclick: skip }, '不会')),
       h('div.place-typing', umlautButtons(input)),
       h('div.place-typing', h('button.btn.ghost.small', { onclick: () => { this.ctrl.placeStop(run); this.render(); } }, '后面都不会了，结束')),
@@ -1011,7 +1015,7 @@ export class Panels {
     const s = this.ctrl.state;
     const scopeZh = run.scope === 'all' ? '全部' : run.scope === 'placed' ? '推定会的词' : `第 ${run.scope} 区`;
     const wrap = h('div');
-    wrap.append(h('p.small.muted', `${scopeZh} · 这次斩杀 ${run.cut.length} 个 · 跳过 ${run.skipped} · 写错 ${run.wrong}。只给中文，名词连冠词写，必须完全写对；不扣血、不限时，随时离开，进度会保存。`));
+    wrap.append(h('p.small.muted', `${scopeZh} · 这次斩杀 ${run.cut.length} 个 · 跳过 ${run.skipped} · 写错 ${run.wrong}。只给中文（释义语言让它显示德语释义的词，给释义和首字母），名词连冠词写，必须完全写对；不扣血、不限时，随时离开，进度会保存。`));
     const l = run.last;
     if (l) {
       const fb = h(`div.feedback.${l.ok ? 'ok' : 'no'}`);
@@ -1079,7 +1083,7 @@ export class Panels {
       }
     });
     wrap.append(
-      h('div.place-word', zhWithPos(w)),
+      ...this.typedClue(w),
       h('div.typing', input, umlautButtons(input), h('button.btn.primary', { onclick: go }, '写 ↵'), h('button.btn', { onclick: skip }, '不会，下一个')),
       run.cut.length || run.skipped || run.wrong ? h('details', h('summary.small.muted', '结算'), ...summary()) : '',
     );
@@ -1758,6 +1762,35 @@ export class Panels {
       this.render();
     };
     return [h('div', { style: 'overflow-wrap:anywhere;line-height:1.35' }, def), h('button.btn.ghost.tiny', { onclick: open, title: '看中文不花任何代价' }, '看中文')];
+  }
+
+  /** A word given by its meaning as a tag (篝火日记): 「中文」, or the definition + first letter, tap for the Chinese. */
+  private wordTag(w: Word, extra = ''): HTMLElement {
+    const m = meaningLine(w, this.ctrl.state.settings);
+    if (m.tier !== 'de') return h('span.tag', `「${w.zh}」${extra}`);
+    const open = this.zhOpened.has(w.id);
+    return h(
+      'span.tag.def-tag',
+      { style: 'cursor:pointer;white-space:normal;overflow-wrap:anywhere;line-height:1.35', title: '点一下看中文，不花任何代价', onclick: () => { this.zhOpened.add(w.id); this.render(); } },
+      `〔${m.main}〕${extra}`,
+      h('span', { style: 'font-family:var(--mono);margin-left:6px' }, letterHint(w.de)),
+      open ? h('span.muted', { style: 'margin-left:8px' }, `中文：${w.zh}`) : '',
+    );
+  }
+
+  /** The typed clue of 分级考核 and 主城全量筛选. 德语释义 (1.0.12): it follows the same tiers as the game's own 默写
+   *  at that word's level (the test checks what the player will be asked there): a de-tier word shows its definition
+   *  with first letter and letter count, the Chinese one free tap away; zhDe adds the German line under the Chinese. */
+  private typedClue(w: Word): HTMLElement[] {
+    const m = meaningLine(w, this.ctrl.state.settings);
+    if (m.tier === 'zhDe') return [h('div.place-word', zhWithPos(w)), h('div.small.muted', { style: 'text-align:center;overflow-wrap:anywhere' }, m.sub!)];
+    if (m.tier !== 'de') return [h('div.place-word', zhWithPos(w))];
+    const open = this.zhOpened.has(w.id);
+    return [
+      h('div.place-word', { style: 'font-size:20px;line-height:1.4;white-space:normal;overflow-wrap:anywhere' }, m.main),
+      h('div.def-hint', { style: 'font-family:var(--mono);font-size:18px;letter-spacing:1px;text-align:center;margin:2px 0 4px' }, defHintLine(w)),
+      h('div', { style: 'text-align:center' }, open ? h('span.small.muted', `中文：${zhWithPos(w)}`) : h('button.btn.ghost.tiny', { onclick: () => { this.zhOpened.add(w.id); this.render(); }, title: '看中文不花任何代价' }, '看中文')),
+    ];
   }
 
   /** The clue of a write prompt outside battle (教词小测, 言灵锁): the Chinese, or the definition with its letter hint. */
