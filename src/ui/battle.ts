@@ -70,6 +70,9 @@ export class BattleUI {
   /** Where the player had scrolled the current notice / article to. */
   private passageAt: { text: string; top: number } | null = null;
   private voicedFull = '';
+  /** 1.0.12 试玩 107: the line the monster said for the question just answered; the result screen keeps showing it
+   *  (the monster's next line comes with the next turn), so 「它刚才念的是」 matches the line on top. */
+  private answeredLine: { b: Battle; intent: Battle['intent'] } | null = null;
   /** 跟读: the German sentence just read aloud after a right answer, and the last attempt's feedback. */
   private shadowText = '';
   private readMsg = '';
@@ -307,7 +310,6 @@ export class BattleUI {
     this.lastValue = '';
     this.voicedFull = '';
     this.shadowText = '';
-    if (r.report.monsterDamage) logLine(`  它出手：你受到 ${r.report.monsterDamage} 伤害`, 'bad');
     for (const l of target.log.slice(from + 1)) logLine(`  ${l.text}`, l.tone === 'good' ? 'good' : l.tone === 'bad' ? 'bad' : l.tone === 'crit' ? 'gold' : 'info');
     this.render();
     window.clearTimeout(this.autoTimer);
@@ -394,6 +396,7 @@ export class BattleUI {
     const target = this.b;
     const logFrom = target.log.length;
     this.report = this.ctrl.answer(this.move, this.question, value);
+    this.answeredLine = { b: target, intent: intentBefore };
     this.phase = 'result';
     this.logTurn(target, this.question, value, this.report, logFrom);
     // 完形填空: read the whole sentence once the blank is answered.
@@ -405,8 +408,9 @@ export class BattleUI {
     this.shadowMsg = '';
     this.render();
     // Auto-advance: about a second for a clean hit, longer when there is a correction to read.
+    // 1.0.12 试玩 51: a clean hit that gives the whole sentence back stays long enough to read it (Enter skips).
     const clean = this.report.correct && !this.report.verdict.notes.length;
-    const delay = this.ctrl.fightOver() ? 1600 : clean ? 1000 : 2600;
+    const delay = this.ctrl.fightOver() ? 1600 : clean ? (this.voicedFull ? resultReadMs(this.voicedFull) : 1000) : 2600;
     window.clearTimeout(this.autoTimer);
     if (this.rtOn) {
       // 即时战: an interrupted cast restarts with its next move; the next question comes after the global cooldown
@@ -454,7 +458,7 @@ export class BattleUI {
       : `${name}：${ask} 你答 ${value || '（空）'} ✗${right ? `，正确：${right}` : free ? `（${q.write === 'compose' ? '造句题：要用这个词写一句完整的句子' : '句式题：要按句式写一整句'}）` : ''}`;
     logLine(head, r.correct ? 'good' : 'bad');
     for (const n of r.verdict.notes) if (!n.startsWith('正确答案')) logLine(`  ${n}`, 'info');
-    if (r.monsterDamage) logLine(`  它出手：你受到 ${r.monsterDamage} 伤害`, 'bad');
+    // 1.0.12 试玩 66: the fight's own log already says every hit (「它打中你，共 N 点」), so no second line here.
     for (const l of b.log.slice(from)) logLine(`  ${l.text}`, l.tone === 'good' ? 'good' : l.tone === 'bad' ? 'bad' : l.tone === 'crit' ? 'gold' : 'info');
   }
 
@@ -564,6 +568,8 @@ export class BattleUI {
    *  cooldown / the 2 s stagger of a wrong choice (REALTIME.gcd / stagger), and that time is meant to cost. */
   private castHeld(): boolean {
     if (this.phase === 'answer' && longRead(this.question)) return true;
+    // 1.0.12 试玩 40: 直接叫名 (nobody hits during it) and 造句 (a sentence of your own) wait too.
+    if (this.phase === 'answer' && (this.question?.directName || this.question?.write === 'compose')) return true;
     if (dialogOpen()) return true;
     if (typeof document === 'undefined') return false;
     if (document.visibilityState === 'hidden') return true;
@@ -592,7 +598,7 @@ export class BattleUI {
     for (const l of target.log.slice(from)) logLine(`  ${l.text}`, l.tone === 'good' ? 'good' : l.tone === 'bad' ? 'bad' : l.tone === 'crit' ? 'gold' : 'info');
     if (this.ctrl.fightOver()) {
       this.report = r;
-      this.question = { type: 'steady', prompt: '它出手了', focus: '', item: true };
+      this.question = { type: 'steady', prompt: '它出手了', focus: '', item: true, tick: true };
       this.phase = 'result';
       this.render();
       window.clearTimeout(this.autoTimer);
@@ -636,7 +642,7 @@ export class BattleUI {
   cut(): void {
     if (this.phase !== 'choose' || !this.b.cutReady || this.b.outcome) return;
     stopListening();
-    logLine(`斩杀 · ${fullForm(this.b.word)}（${this.b.word.zh}）${this.b.verify === 'recheck' || this.ctrl.state.words[this.b.word.id]?.sure ? '永久退役' : '已退役，30 天后回响抽查一次'}`, 'gold');
+    // 1.0.12 试玩 66: the controller's 斩杀 toast is the log line (toast() logs it); no second one here.
     if (this.ctrl.cut()) return; // the fight is over
     this.startTurn();
   }
@@ -830,6 +836,7 @@ export class BattleUI {
     // 0.4 难题就是预告: no intent icon or rule text. The monster's line is still shouted and read aloud;
     // what it is about to do shows in the question it asks.
     const it = b.intent;
+    const said = this.phase === 'result' && this.answeredLine?.b === b ? this.answeredLine.intent : it;
     const intent = h(
       'div.b-intent',
       h(
@@ -840,7 +847,7 @@ export class BattleUI {
         // only mumbles.
         ...(() => {
           const mum = b.direct || (this.phase === 'answer' && (this.move === 'sentence' || !!this.question?.ult || lineLeaks(it.line, this.question)));
-          return [h('div.line', mum ? '… mmh …' : it.line), h('div.zh', !mum && this.zhShown && this.b.curse !== 'forget' ? plainZh(it.zh) : '')];
+          return [h('div.line', mum ? '… mmh …' : said.line), h('div.zh', !mum && this.zhShown && this.b.curse !== 'forget' ? plainZh(said.zh) : '')];
         })(),
         // 即时战: its cast bar; answer right while an attack casts and it misses, during a charge and it breaks.
         this.rtOn
@@ -1056,7 +1063,7 @@ export class BattleUI {
         { onclick: () => this.target(i), title: '选中它（Tab 切换）', disabled: dead },
         h('div.fam', h('span', `${FAMILIES[w.family].zh} · Lv ${pb.monster.lvl}`), h('span', dead ? '已打散' : STAGE_ZH[pb.stage])),
         monsterIcon(monsterArt(pb), 2, dead, 'mon-icon small', !!this.ctrl.scene?.bright),
-        h('div.nm', { style: `color:${color}` }, dead ? (pb.pluralMon ? `die ${w.pl}` : fullForm(w)) : nameGlyph(pb, this.phase === 'answer' && asksMeaning(this.question)), elTag && !dead ? h('span.tag', { style: 'margin-left:4px;font-size:10px' }, elTag) : ''),
+        h(`div.nm${color === NAME_RED ? '.named' : ''}`, { style: `color:${color}` }, dead ? (pb.pluralMon ? `die ${w.pl}` : fullForm(w)) : nameGlyph(pb, this.phase === 'answer' && asksMeaning(this.question)), elTag && !dead ? h('span.tag', { style: 'margin-left:4px;font-size:10px' }, elTag) : ''),
         pb.pluralMon && !dead ? h('span.tag.echo', '复数怪 · 一律 die') : '',
         bar('hp', pb.monster.hp, pb.monster.maxHp, `${pb.monster.hp} / ${pb.monster.maxHp}`),
         dead ? '' : h('div.it', this.phase === 'answer' && lineLeaks(it.line, this.question) ? '…mmh…' : it.line),
@@ -1186,10 +1193,17 @@ export class BattleUI {
       wrap.append(h('div.opts', btn, h('button.btn.ghost.small', { onclick: () => this.ctrl.speak(qq.echo!.target), disabled: this.phase !== 'answer' }, '🔊 听示范'), h('button.btn.ghost.small', { onclick: () => { this.echoMsg = ''; this.echoListen(); this.render(); }, disabled: this.phase !== 'answer' }, '改成听辨')));
     } else if (qq.options) {
       const opts = h('div.opts');
+      // 1.0.12 试玩 51: on the result screen the picked option and the right one are marked.
+      const mark = (o: string): string => {
+        if (this.phase !== 'result' || !r || qq.item) return '';
+        if (o === this.lastValue) return r.correct ? '.right' : '.wrong';
+        return !r.correct && (o === qq.answer || o === r.verdict.correct) ? '.right' : '';
+      };
       qq.options.forEach((o, i) => {
         const cls = qq.type === 'article' ? `.${o}` : '';
+        const m = mark(o);
         opts.append(
-          h(`button.btn${cls}`, { disabled: this.phase !== 'answer', onclick: () => this.submit(o) }, h('kbd', String(i + 1)), o),
+          h(`button.btn${cls}${m}`, { disabled: this.phase !== 'answer', onclick: () => this.submit(o) }, h('kbd', String(i + 1)), o, m ? h('span.mark', m === '.right' ? ' ✓' : ' ✗') : ''),
         );
       });
       wrap.append(opts);
@@ -1283,9 +1297,10 @@ export class BattleUI {
     }
     if (this.phase === 'result' && r) {
       const fb = h(`div.feedback.${r.correct ? 'ok' : 'no'}`);
-      const head = qq.item ? '吃了药片' : r.correct ? (r.crit ? (r.newSpell ? '新言灵！暴击！' : '暴击！') : r.parried ? '躲开了' : '答对了') : '答错了';
+      // 1.0.12 试玩 73: an item turn is now a cast that landed (tick) or a shouted phrase; 药片 takes no turn.
+      const head = qq.tick ? '它出手了' : qq.item ? '喊出了短句' : r.correct ? (r.crit ? (r.newSpell ? '新言灵！暴击！' : '暴击！') : r.parried ? '躲开了' : '答对了') : '答错了';
       fb.append(h('b', head));
-      if (qq.item && r.monsterDamage) fb.append(h('span', `  它趁机出手：${r.monsterDamage} 伤害`));
+      if (qq.item && r.monsterDamage) fb.append(h('span', qq.tick ? `  你受到 ${r.monsterDamage} 伤害` : `  它趁机出手：${r.monsterDamage} 伤害`));
       if (r.correct && this.b.word && (qq.type === 'article' || qq.type === 'typed')) fb.append(h('span', `  ${fullFormLong(this.b.word)} · ${this.b.word.zh}`));
       if (qq.echo) fb.append(h('span', `  ${qq.echo.target}（${qq.echo.zhT}） · ${qq.echo.partner}（${qq.echo.zhP}）`));
       if (r.phase === 'right') fb.append(h('span', `  ${this.b.phase} 相 · 弱点`));
@@ -1361,6 +1376,11 @@ export function restoreInputs(root: BoxRoot, kept: KeptInputs): (() => void) | n
 }
 
 /** 1.0.11 试玩 15: a question with a text to read (告示 / 信件 / 文章) or a passage to listen to. */
+/** 1.0.12 试玩 51: how long a clean hit's result stays when it gives the whole sentence back (ms). */
+export function resultReadMs(full: string): number {
+  return Math.min(4000, Math.max(1800, 1000 + 45 * full.length));
+}
+
 export function longRead(q: Question | null | undefined): boolean {
   if (!q?.gram) return false;
   return !!q.gram.passage || ((q.gram.sys === 'listen' || q.gram.sys === 'blind') && !!q.listen);

@@ -665,7 +665,7 @@ export class Controller {
         s.flags.eliteTaught = true;
         say([
           { who: SYS, text: '【场景精英 ◈】这个场景的词你学了一半，它把其中 3 个攥在一起来考你。' },
-          { who: SYS, text: '分 3 段，每段换一个词：先认（选择题），再用（例句填空），最后写（默写）。中间不回血，每段打完都算打败这个词。' },
+          { who: SYS, text: '分 3 段，每段换一个词：先认（选择题），再用（例句填空），最后写（默写或用它造一句）。中间不回血，每段打完都算打败这个词。' },
           { who: SYS, text: '第一次打赢必掉铁箱。以后这个场景有 3 个词到期复习，它还会再来。' },
         ]);
       }
@@ -1180,7 +1180,7 @@ export class Controller {
         if (!keepEntity) this.scene.removeMonster(m, res.kill.guiming || b.cutReady ? 'guiming' : 'scatter');
         if (b.cutReady) {
           sfx.guiming();
-          toast(b.verify === 'recheck' || s.words[b.word.id]?.sure ? `斩杀 · ${fullForm(b.word)} 永久退役` : `斩杀 · ${fullForm(b.word)} 已退役，30 天后回响抽查一次`, 'gold');
+          toast(b.verify === 'recheck' || s.words[b.word.id]?.sure ? `斩杀 · ${fullForm(b.word)}（${b.word.zh}）永久退役` : `斩杀 · ${fullForm(b.word)}（${b.word.zh}）已退役，30 天后回响抽查一次`, 'gold');
           this.speak(fullForm(b.word));
         } else if (res.kill.guiming) {
           sfx.guiming();
@@ -1335,8 +1335,16 @@ export class Controller {
 
   readonly chestSfx = { open: () => sfx.loot(), item: (q: Quality) => (q === 'orange' ? sfx.orange : q === 'white' ? () => {} : sfx.loot)() };
 
+  private chestWait = 0;
+
   private nextChest() {
     if (this.battle || this.boss) return;
+    // 1.0.12 试玩 25: a locked chest waits until the dialog is read (Enter goes to the dialog, not to the lock).
+    if (this.chestQueue.length && dialogOpen()) {
+      window.clearTimeout(this.chestWait);
+      this.chestWait = window.setTimeout(() => this.nextChest(), 300);
+      return;
+    }
     const c = this.chestQueue.shift();
     if (!c) return;
     const w = lockWord(this.state, WORDS[0]);

@@ -148,7 +148,7 @@ details > summary { cursor: pointer; color: var(--muted, #a99); margin: 6px 0; }
 label.toggle { display: flex; gap: 8px; align-items: center; padding: 6px 0; }
 
 /* Battle */
-#battle { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); width: min(1000px, calc(100vw - 24px)); padding: 12px 14px; }
+#battle { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); width: min(1000px, calc(100vw - 24px)); padding: 12px 14px; max-height: calc(100vh - 24px); overflow-y: auto; } /* 1.0.12 试玩 36 */
 .b-top { display: grid; grid-template-columns: 1fr 1.4fr 0.9fr; gap: 12px; align-items: stretch; }
 .b-mon, .b-intent, .b-me { border: 1px solid var(--line); background: #0b0608; padding: 8px 10px; }
 .b-mon .fam, .b-me .fam { font-size: 11px; color: var(--muted); display: flex; justify-content: space-between; }
@@ -174,6 +174,9 @@ label.toggle { display: flex; gap: 8px; align-items: center; padding: 6px 0; }
 .q .opts { display: flex; gap: 8px; flex-wrap: wrap; }
 .q .opts .btn { min-width: 120px; font-size: 18px; padding: 8px 14px; font-family: var(--mono); }
 .q .opts .btn.der { border-color: var(--der); } .q .opts .btn.die { border-color: var(--die); } .q .opts .btn.das { border-color: var(--das); }
+/* 1.0.12 试玩 51: the result screen marks the picked option and the right one. */
+.q .opts .btn.right, body.bright .q .opts .btn.right:disabled { border-color: var(--good); color: var(--good); box-shadow: inset 0 0 0 1px var(--good); opacity: 1; }
+.q .opts .btn.wrong, body.bright .q .opts .btn.wrong:disabled { border-color: var(--bad); color: var(--bad); box-shadow: inset 0 0 0 1px var(--bad); opacity: 1; }
 .q .typing { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
 .q input[type=text] { flex: 1 1 300px; min-width: 200px; background: #000; color: #fff; border: 1px solid var(--line-hi); padding: 9px 10px; font-size: 20px; font-family: var(--mono); border-radius: 2px; }
 .q input[type=text]:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 2px rgba(255,207,74,.15); }
@@ -232,7 +235,7 @@ label.toggle { display: flex; gap: 8px; align-items: center; padding: 6px 0; }
 .b-pack .pk .fam { font-size: 10px; color: var(--muted); display: flex; justify-content: space-between; }
 .b-pack .pk .it { font-size: 11px; display: flex; gap: 4px; align-items: center; margin-top: 2px; font-family: var(--mono); }
 .b-pack .pk .it img { width: 14px; height: 14px; image-rendering: pixelated; }
-.b-pack .pk .bar { height: 7px; }
+.b-pack .pk .bar { height: 14px; } /* 1.0.12 试玩 58: tall enough for its 65 / 65 */
 
 /* Shop (Mira) and talents */
 .buybox { grid-column: 1 / -1; border: 1px solid var(--line, #3a2026); padding: 10px; margin: 4px 0 10px; display: grid; gap: 8px; }
@@ -663,6 +666,12 @@ body.bright .wm-segs span { color: #8a1424; }
 /* 主角专属特征 (Lucas 2026-11-27): the hero icon is 27×16 (figure + floating book). */
 .b-me { padding-right: 156px !important; }
 .b-me > canvas.mon-icon { margin-top: -40px; }
+/* 1.0.12 试玩 104: the hero floats top right and the rows below it (纸条 / 药片 / 护符 / 撤退) use the whole width,
+   instead of every row squeezed into the narrow strip left of the figure. */
+.b-me { padding-right: 10px !important; }
+.b-me > canvas.mon-icon { position: static; float: right; margin: 0 0 4px 8px; }
+.b-me .hud-row > * { white-space: nowrap; }
+.b-me .hud-row { flex-wrap: wrap; }
 #hud .name { align-items: center; gap: 8px; }
 #hud .name canvas.hero-icon { width: 54px; height: 32px; image-rendering: pixelated; flex: none; }
 #hud .name .nm { flex: 1; }
@@ -673,6 +682,9 @@ body { -webkit-font-smoothing: antialiased; }
 body.bright .btn:disabled { opacity: 1; color: #7a6a56; background: #f4ecdd; border-color: var(--line); }
 body.bright .btn:disabled small, body.bright .btn:disabled kbd { color: #7a6a56; }
 body.bright .b-mon .glyph.plain { color: var(--ink) !important; }
+/* 1.0.12 试玩 58: 群怪 card names in dark ink on the bright maps (cream and pink were nearly invisible on cream). */
+body.bright .b-pack .pk .nm { color: var(--ink) !important; }
+body.bright .b-pack .pk .nm.named { color: #b3261e !important; }
 .b-mon .glyph.garble { letter-spacing: 3px; text-shadow: 2px 0 0 rgba(255, 40, 60, .55), -1px 0 0 rgba(40, 160, 255, .45); animation: garble 1.2s steps(1) infinite; display: inline-block; }
 @keyframes garble { 0%, 100% { transform: none; } 20% { transform: translateX(1px); } 40% { transform: translate(-1px, 1px); } 60% { transform: translateY(-1px); } 80% { transform: translateX(-1px); } }
 body.bright .moves .btn small { color: var(--muted); }
