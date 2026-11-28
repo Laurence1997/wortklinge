@@ -19,6 +19,7 @@ import { has } from '../core/unlocks';
 import { dialogOpen, toast } from '../ui/feedback';
 import { needsVerify, stageOf } from '../core/srs';
 import { eligible, fieldCleared } from '../core/spawn';
+import { sceneProgress, sceneState } from '../core/sceneProgress';
 import { erodeOpen, purified } from '../core/erosion';
 import { challengeLevel } from '../core/challenge';
 import { fastTrackWord } from '../core/combat';
@@ -232,7 +233,9 @@ export class NodeNav {
     if (!path) return;
     this.hopping = true;
     this.dirty = true;
+    let taken = 0;
     const step = () => {
+      taken++;
       const next = SCENE_BY_ID[path.shift()!];
       // 越区引导: a field above your level asks first (the same question walking in asked).
       // 1.0.12 试玩 #56: answering 「进去」 resumes the trip to the same destination.
@@ -245,7 +248,8 @@ export class NodeNav {
         targets: this.w.player,
         x: p.x,
         y: p.y + 14,
-        duration: CONFIG.map.hopSec * 1000,
+        // 区内路网: one route and no side paths, so a long walk speeds up after the first steps (a step a third as long).
+        duration: CONFIG.map.hopSec * 1000 * (taken >= 3 ? CONFIG.map.hopFast : 1),
         ease: 'Sine.easeInOut',
         onComplete: () => {
           this.here = next;
@@ -306,10 +310,8 @@ export class NodeNav {
         if (!this.revealed(b) || a.id > b.id) continue;
         const pa = anchorPx(a);
         const pb = anchorPx(b);
-        // 1.0.12 试玩 #106: the numbered route (1 → 2 → 3 …) is drawn bold; side paths between neighbouring fields
-        // are thin, so the numbers visibly follow one line instead of seeming to jump.
-        const side = a.type === 'field' && b.type === 'field' && Math.abs(a.no - b.no) !== 1;
-        g.lineStyle(side ? 1 : bright ? 3 : 2, b.type === 'hidden' || a.type === 'hidden' ? 0xb8963a : bright ? accent : 0x7a2630, side ? (bright ? 0.4 : 0.35) : bright ? 0.85 : 0.7);
+        // 区内路网 (方案 3): one route, all of it drawn bold; only the hidden path is gold.
+        g.lineStyle(bright ? 3 : 2, b.type === 'hidden' || a.type === 'hidden' ? 0xb8963a : bright ? accent : 0x7a2630, bright ? 0.85 : 0.7);
         g.lineBetween(pa.x, pa.y, pb.x, pb.y);
       }
     for (const sc of list) {
@@ -317,13 +319,27 @@ export class NodeNav {
       const color = bright
         ? sc.type === 'door' ? 0xc0392b : sc.type === 'hidden' ? 0xb8963a : sc.type === 'road' ? 0x8a7a68 : accent
         : sc.type === 'camp' ? 0xffb347 : sc.type === 'door' ? 0xff2040 : sc.type === 'hidden' ? 0xffcf4a : sc.type === 'road' ? 0x9a8a80 : 0xc23040;
-      g.fillStyle(bright ? 0xfffaf0 : 0x07040a, bright ? 0.95 : 0.85).fillCircle(p.x, p.y, 9);
-      g.lineStyle(sc === this.here ? 2.5 : bright ? 1.5 : 1, sc === this.here ? (bright ? 0x2d2118 : 0xffffff) : color, 1).strokeCircle(p.x, p.y, 9);
+      // 区内路网 进度 (方案 3): a field scene you have not started is a grey dashed ring; one under way has an arc of
+      // its colour as far round as you have met its words; one whose words you have all met is filled, with a tick.
+      const st = sc.type === 'field' ? sceneState(sceneProgress(this.s, sc)) : null;
+      const pr = st === 'part' ? sceneProgress(this.s, sc) : null;
+      const grey = bright ? 0xa09a90 : 0x6a6260;
+      g.fillStyle(st === 'done' ? color : bright ? 0xfffaf0 : 0x07040a, st === 'done' ? 1 : bright ? 0.95 : 0.85).fillCircle(p.x, p.y, 9);
+      if (st === 'new') {
+        g.lineStyle(1.5, grey, 1);
+        for (let a = 0; a < 12; a++) g.beginPath().arc(p.x, p.y, 9, (a * Math.PI) / 6, (a * Math.PI) / 6 + Math.PI / 12).strokePath();
+      } else if (pr) {
+        g.lineStyle(1, grey, 1).strokeCircle(p.x, p.y, 9);
+        const end = -Math.PI / 2 + (Math.PI * 2 * pr.met) / Math.max(1, pr.total);
+        g.lineStyle(bright ? 2.5 : 2, color, 1).beginPath().arc(p.x, p.y, 9, -Math.PI / 2, end).strokePath();
+      } else g.lineStyle(bright ? 1.5 : 1, color, 1).strokeCircle(p.x, p.y, 9);
+      if (sc === this.here) g.lineStyle(2, bright ? 0x2d2118 : 0xffffff, 1).strokeCircle(p.x, p.y, 12);
+      if (st === 'done') g.lineStyle(2, bright ? 0x1e7a32 : 0x7ad08a, 1).beginPath().moveTo(p.x + 6, p.y - 9).lineTo(p.x + 8.5, p.y - 6).lineTo(p.x + 13, p.y - 13).strokePath();
       // 全量筛选: XP waiting here (待领) → a small gold dot beside the circle until it is claimed.
       if (this.s.screen?.pending?.[sc.id]?.length) g.fillStyle(0xffcf4a, 1).fillCircle(p.x + 9, p.y - 8, 2.5);
       this.labels.push(
         this.w.add
-          .text(p.x, p.y, String(sc.no), { fontFamily: '"Courier New", monospace', fontSize: '8px', color: bright ? '#2d2118' : '#e8dccf', fontStyle: bright ? 'bold' : '', resolution: 4 })
+          .text(p.x, p.y, String(sc.no), { fontFamily: '"Courier New", monospace', fontSize: '8px', color: st === 'done' ? '#ffffff' : st === 'new' ? (bright ? '#8a847a' : '#9a928a') : bright ? '#2d2118' : '#e8dccf', fontStyle: bright ? 'bold' : '', resolution: 4 })
           .setOrigin(0.5)
           .setDepth(3001),
       );
@@ -471,6 +487,7 @@ export class NodeNav {
         ? h(
             'div.sp-sec',
             h('div.muted', mons.length ? '这里的怪（点它或按数字键开打）' : '这里暂时没有怪，去下一个场景'),
+            sc.type === 'field' ? this.progressLine(sc) : '',
             fieldCleared(this.s, sc.zone)
               ? h('div.small', { style: 'color:var(--gold, #ffcf4a)' }, '这里的词你大多会了，去下一区吧，或者找主城考官考「分级考核」')
               : '',
@@ -488,13 +505,36 @@ export class NodeNav {
           ? h('div.sp-sec', ...mons.map((m, i) => h('button.btn.sp-mon', { disabled: busy, onclick: () => this.fight(m), 'data-uid': m.uid }, h('kbd', String(i + 1)), ` ${m.label.text} `, h('span.muted', tag(m)))))
           : '',
       things.length ? h('div.sp-sec', h('div.muted', '这里有'), ...things) : '',
-      h('div.sp-sec', h('div.muted', this.hopping ? '赶路中……' : '出口（也可以点地图上的圆点，远处去过的会自动走过去）'), ...exits),
+      h('div.sp-sec', h('div.muted', this.hopping ? '赶路中……' : '出口（也可以点地图上的圆点，远处的会沿路自动走过去）'), ...exits, this.nextButton(busy)),
       h('div.sp-sec', h('button.btn.ghost', { onclick: () => this.bigMap() }, '🗺 大地图（M）')),
     ];
     const sig = kids.map((k) => (typeof k === 'string' ? k : k.outerHTML)).join('');
     if (onlyIfChanged && sig === this.lastSig) return;
     this.lastSig = sig;
     this.panel.replaceChildren(...kids);
+  }
+
+  /** 区内路网 进度: 「这格的词 met / total」 under the scene's monsters. */
+  private progressLine(sc: SceneDef): HTMLElement {
+    const pr = sceneProgress(this.s, sc);
+    const st = sceneState(pr);
+    return h('div.small.muted', st === 'done' ? `这格的词都打过了（${pr.total} 个）` : `这格的词：打过 ${pr.met} / ${pr.total}`);
+  }
+
+  /** 区内路网 (方案 3): the first scene along this region's route that still has a word you can meet now. */
+  nextOpenScene(): SceneDef | null {
+    return (
+      scenesOf(this.w.map.region)
+        .filter((x) => x.type === 'field' && x !== this.here && this.revealed(x))
+        .sort((a, b) => a.no - b.no)
+        .find((x) => sceneProgress(this.s, x).open) ?? null
+    );
+  }
+
+  private nextButton(busy: boolean): HTMLElement | string {
+    const t = this.nextOpenScene();
+    if (!t) return '';
+    return h('button.btn.primary', { disabled: busy, onclick: () => this.travel(t.id), title: '沿着路走到下一个还有新词的格子' }, `➜ 去下一个没学完的格子：${t.no} ${t.zh}`);
   }
 
   /** 驿站 (0.6 第 6 块 细则一): from Lv21, free jumps to any crossroads you have visited, only from a bonfire/hub. */

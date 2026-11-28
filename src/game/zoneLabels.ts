@@ -155,3 +155,24 @@ export function placeZoneLabel(a: PlaceArgs): { x: number; y: number } {
     };
   return best;
 }
+
+/** 区内路网 (方案 3): a field's plate starts above the middle scene of the field along its route (fields wind now,
+ *  so a centre of the scenes can fall far from any of them). */
+export function fieldPlatePref(at: Array<{ x: number; y: number }>): { x: number; y: number } {
+  const mid = at[Math.floor(at.length / 2)];
+  return { x: mid.x * TILE + 8, y: mid.y * TILE + 8 - 40 };
+}
+
+/** A field's plate: the cheapest spot near any of its scenes (the middle one preferred a little). */
+export function placeFieldLabel(a: Omit<PlaceArgs, 'pref'>, at: Array<{ x: number; y: number }>): { x: number; y: number } {
+  const home = fieldPlatePref(at);
+  let best = home;
+  let bestCost = Infinity;
+  for (const p of at) {
+    const pref = { x: p.x * TILE + 8, y: p.y * TILE + 8 - 40 };
+    const c0 = placeZoneLabel({ ...a, pref });
+    const c = plateCost({ ...a, pref: home }, c0.x, c0.y) - Math.hypot(c0.x - home.x, (c0.y - home.y) * 1.3) / 4 + Math.hypot(c0.x - home.x, (c0.y - home.y) * 1.3) / 40;
+    if (c < bestCost) (bestCost = c), (best = c0);
+  }
+  return best;
+}

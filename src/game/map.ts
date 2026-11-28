@@ -158,6 +158,10 @@ function generateRegion1(): MapData {
       }
   };
   for (const z of zonesOf(1)) if (z.id !== 'camp') blocks(z.rect);
+  // 区内路网 (方案 3): the old street grid between the ruins grows over (grass), so only the route reads as a street;
+  // the main road stays only at both ends (from the crossroads, and up to the neighbour's door).
+  for (let y = 3; y < 45; y++) for (let x = 24; x < 70; x++) if (get(x, y) === T.Road && !((y === 24 || y === 25) && (x < 27 || x >= 66))) set(x, y, rng() < 0.08 ? T.Rubble : T.Ground);
+  paintRoute(1, set, get, true);
 
   // The camp: an ash clearing around the bonfire.
   const bonfire = { x: 11, y: 24 };
@@ -501,6 +505,49 @@ function generateLater(d: RegionDef): MapData {
   };
 }
 
+/** 区内路网 (方案 3, Lucas 2026-11-28): the tiles of a region's route between its scenes — `core` is the 2-wide street,
+ *  `margin` the tile either side. Layouts keep houses, hedges and walls off both, so the route reads as the main
+ *  street; water may run under it (it becomes a causeway). Hidden paths keep their own look. */
+export function routeCorridor(region: number): { core: Set<number>; margin: Set<number> } {
+  const at = new Map(SCENES.filter((sc) => sc.region === region).map((sc) => [sc.id, sc]));
+  const core = new Set<number>();
+  const margin = new Set<number>();
+  const mark = (x: number, y: number, into: Set<number>) => {
+    if (x >= 0 && y >= 0 && x < MAP_W && y < MAP_H) into.add(idx(x, y));
+  };
+  for (const [a, b] of LINKS) {
+    const p = at.get(a);
+    const q = at.get(b);
+    if (!p || !q || p.type === 'hidden' || q.type === 'hidden' || p.type === 'camp' || q.type === 'camp') continue;
+    const n = Math.max(1, Math.ceil(Math.hypot(q.at.x - p.at.x, q.at.y - p.at.y) * 3));
+    for (let i = 0; i <= n; i++) {
+      const x = Math.round(p.at.x + ((q.at.x - p.at.x) * i) / n);
+      const y = Math.round(p.at.y + ((q.at.y - p.at.y) * i) / n);
+      for (const [dx, dy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) mark(x + dx, y + dy, core);
+      for (let dy = -1; dy <= 2; dy++) for (let dx = -1; dx <= 2; dx++) mark(x + dx, y + dy, margin);
+    }
+  }
+  for (const i of core) margin.delete(i);
+  return { core, margin };
+}
+
+/** Paint the route's street over whatever the layout drew (fog stays fog). `clear` also turns blocking tiles in the
+ *  margin to ground (region 1's ruins, drawn without the layout helpers). */
+function paintRoute(region: number, set: SetT, get: GetT, clear = false) {
+  const { core, margin } = routeCorridor(region);
+  for (const i of core) {
+    const x = i % MAP_W;
+    const y = Math.floor(i / MAP_W);
+    if (get(x, y) !== T.Fog) set(x, y, T.Road);
+  }
+  if (clear)
+    for (const i of margin) {
+      const x = i % MAP_W;
+      const y = Math.floor(i / MAP_W);
+      if (BLOCKING.has(get(x, y)) && get(x, y) !== T.Fog) set(x, y, T.Ground);
+    }
+}
+
 type SetT = (x: number, y: number, t: T) => void;
 type GetT = (x: number, y: number) => number;
 export type LayoutKind = 'blocks' | 'spa' | 'harbour' | 'boulevard' | 'works' | 'ring' | 'garden' | 'market' | 'rail' | 'citadel' | 'canals' | 'theatre' | 'maze' | 'court' | 'islands';
@@ -518,7 +565,11 @@ function layoutFields(region: number, set: SetT, get: GetT, rng: () => number) {
   const Y0 = 3;
   const Y1 = 44;
   const open = (x: number, y: number) => get(x, y) !== T.Fog;
+  // 区内路网: nothing but street, water, ground or ash goes on the route and the tile beside it.
+  const { core, margin } = routeCorridor(region);
+  const onRoute = (x: number, y: number) => core.has(idx(x, y)) || margin.has(idx(x, y));
   const put = (x: number, y: number, t: T) => {
+    if (onRoute(x, y) && t !== T.Road && t !== T.Water && t !== T.Ground && t !== T.Ash) return;
     if (x >= X0 - 2 && x <= X1 && y >= Y0 && y <= Y1 && open(x, y)) set(x, y, t);
   };
   const hroad = (y: number, xa: number, xb: number, w = 2) => {
@@ -529,6 +580,7 @@ function layoutFields(region: number, set: SetT, get: GetT, rng: () => number) {
   };
   /** A house seen from the front: roof rows over one row of wall (Tiny Town style). */
   const house = (x: number, y: number, w: number, h: number) => {
+    for (let yy = y; yy < y + h; yy++) for (let xx = x; xx < x + w; xx++) if (onRoute(xx, yy)) return;
     for (let yy = y; yy < y + h; yy++)
       for (let xx = x; xx < x + w; xx++) {
         if (get(xx, yy) === T.Road) continue;
@@ -540,6 +592,7 @@ function layoutFields(region: number, set: SetT, get: GetT, rng: () => number) {
       for (let xx = x - 1; xx <= x + w; xx++) {
         if (xx < X0 - 1 || xx > X1 || yy < Y0 || yy > Y1) return false;
         const inside = xx >= x && xx < x + w && yy >= y && yy < y + h;
+        if (inside && onRoute(xx, yy)) return false;
         const t = get(xx, yy);
         if (inside ? t !== T.Ground : t !== T.Ground && t !== T.Road) return false;
       }
@@ -576,19 +629,11 @@ function layoutFields(region: number, set: SetT, get: GetT, rng: () => number) {
       for (const [y, h] of [[4, 5], [11, 6], [19, 5], [26, 5], [33, 5], [40, 4]] as const) street(x, y, 8, h, [3, 4], [3, 3]);
     scatter(T.Tree, 0.05);
   } else if (kind === 'spa') {
-    // 泉疗镇: a big spring pond with a path round it, cottages in flower meadows, a park of bushes.
-    hroad(24, X0 - 2, 34);
-    water(47, 23, 9, 7);
-    for (let a = 0; a < Math.PI * 2; a += 0.02) {
-      const x = Math.round(47 + Math.cos(a) * 12);
-      const y = Math.round(23 + Math.sin(a) * 10);
-      put(x, y, T.Road);
-      put(x + 1, y, T.Road);
-    }
-    hroad(24, 58, X1);
-    vroad(46, Y0 + 1, 13);
-    vroad(46, 33, Y1 - 1);
-    for (const [x, y] of [[26, 4], [33, 6], [27, 30], [34, 36], [58, 4], [63, 9], [57, 34], [63, 38], [26, 15], [62, 28]] as const) if (fits(x, y, 5, 3)) house(x, y, 5, 3);
+    // 泉疗镇: three spring ponds the route walks round (区内路网 方案 3), cottages in flower meadows, a park of bushes.
+    water(37, 14, 6, 4);
+    water(58, 13, 5, 3);
+    water(51, 34, 7, 4);
+    for (const [x, y] of [[26, 4], [27, 30], [34, 36], [63, 38], [26, 15], [62, 24], [40, 24], [44, 42]] as const) if (fits(x, y, 5, 3)) house(x, y, 5, 3);
     scatter(T.Tree, 0.07, X0, X1, Y0, 11);
     scatter(T.Tree, 0.07, X0, X1, 37, Y1);
     scatter(T.Rubble, 0.03);
@@ -854,6 +899,11 @@ function layoutFields(region: number, set: SetT, get: GetT, rng: () => number) {
     }
     scatter(T.Tree, 0.06);
   }
+  // 区内路网 (方案 3): the layout's own streets turn to grass so only the route reads as a street; piers and bridges
+  // (street next to water) stay.
+  const wet = (x: number, y: number) => [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => get(x + dx, y + dy) === T.Water);
+  for (let y = Y0; y <= Y1; y++) for (let x = X0 - 2; x <= X1; x++) if (get(x, y) === T.Road && !core.has(idx(x, y)) && !wet(x, y)) set(x, y, T.Ground);
+  paintRoute(region, set, get);
   // A scene never stands in water or inside a wall: a little jetty of road round it.
   for (const sc of SCENES)
     if (sc.region === region)

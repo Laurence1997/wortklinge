@@ -26,7 +26,7 @@ import { CONFIG } from '../core/config';
 import { NodeNav } from './nodes';
 import { charRamp, mapRamp, mapShades, shadeRamp, type Ramp5 } from './palette';
 import { REGION_DEF } from '../data/zones';
-import { labelObstacles, placeZoneLabel, ZONE_LABEL_DEPTH, ZONE_LABEL_DEPTH_ROUTE, HUD_MAP_PX, type Box } from './zoneLabels';
+import { fieldPlatePref, placeFieldLabel, labelObstacles, placeZoneLabel, ZONE_LABEL_DEPTH, ZONE_LABEL_DEPTH_ROUTE, HUD_MAP_PX, type Box } from './zoneLabels';
 
 export interface MonsterEntity {
   uid: number;
@@ -206,15 +206,13 @@ export class WorldScene extends Phaser.Scene {
     const obs = labelObstacles(this.map, region, !oldmap);
     const placed: Box[] = [];
     const accent = parseInt(accentOf(region).slice(1), 16);
-    let fieldNo = 0;
     const depth = oldmap ? ZONE_LABEL_DEPTH : ZONE_LABEL_DEPTH_ROUTE;
     for (const z of this.zones) {
       if (z.id === 'camp' || z.id === 'markt') continue;
-      // 1.0.12 试玩 #105: on the scene map a field's name stands in the open band along the main road (between the
-      // north and south rows of scenes), alternating just above / below it, instead of on the map's top edge where
-      // it hid under the top menu or ran off the side.
+      // 区内路网 (方案 3): on the scene map a field's name stands in the freest spot next to one of its own scenes
+      // along the route (1.0.12 试玩 #105: never on the map's top edge, where it hid under the top menu).
       const at = oldmap ? [] : SCENES.filter((x) => x.region === region && x.type === 'field' && x.zone === z.id).map((x) => x.at);
-      const band = at.length ? { x: (at.reduce((a, p) => a + p.x, 0) / at.length) * TILE + 8, y: (fieldNo++ % 2 ? 27.6 : 20.4) * TILE } : null;
+      const band = at.length ? fieldPlatePref(at) : null;
       // A town's name on the scene map starts from the right part of its top edge: the left part lies under the
       // status box whenever the camera stands at the map's west edge.
       const pref = band ?? { x: (z.rect.x + z.rect.w * (oldmap ? 0.5 : 0.75)) * TILE, y: Math.max((z.rect.y + 1.2) * TILE, FOG_EDGE + 9) }; // 雾边不进镜头
@@ -235,7 +233,8 @@ export class WorldScene extends Phaser.Scene {
       const h = Math.ceil(t.height) + 4;
       // A town plate on the scene map keeps right of the status box even at the smallest zoom (1.5).
       const x0 = FOG_EDGE + (band || oldmap ? 2 : HUD_MAP_PX);
-      const c = placeZoneLabel({ tiles: this.map.tiles, pref, w, h, obs, placed, above: !oldmap, bounds: { x0, x1: MAP_W * TILE - FOG_EDGE - 2, y0: FOG_EDGE + 2, y1: MAP_H * TILE - FOG_EDGE - 2 } });
+      const args = { tiles: this.map.tiles, w, h, obs, placed, above: !oldmap, bounds: { x0, x1: MAP_W * TILE - FOG_EDGE - 2, y0: FOG_EDGE + 2, y1: MAP_H * TILE - FOG_EDGE - 2 } };
+      const c = band ? placeFieldLabel(args, at) : placeZoneLabel({ ...args, pref });
       const box = { x0: c.x - w / 2, x1: c.x + w / 2, y0: c.y - h / 2, y1: c.y + h / 2 };
       placed.push(box);
       t.setPosition(c.x, c.y);

@@ -1476,14 +1476,16 @@ describe('0.5 跟读: read-along scoring', () => {
 });
 
 describe('0.5 小世界: scene data', async () => {
-  const { SCENES, LINKS, SCENE_BY_ID, routeTo } = await import('../src/data/world');
+  const { SCENES, LINKS, SCENE_BY_ID, routeTo, neighbours } = await import('../src/data/world');
   const { generateMap, isBlocked } = await import('../src/game/map');
-  it('every scene stands on a walkable tile, scenes are ≥6 tiles apart (packs stay inside one scene)', () => {
-    for (const r of [1, 2, 3] as const) {
+  // 区内路网 (方案 3): scenes stand ≥4.5 tiles apart on every map (packs reach 1.75 tiles sideways and 2.4 up, so
+  // two neighbouring packs never overlap; a monster keeps the scene it spawned in, WorldScene sets m.node).
+  it('every scene stands on a walkable tile, scenes are ≥4.5 tiles apart (packs never overlap)', () => {
+    for (const r of AREAS.map((a) => a.region)) {
       const m = generateMap(r);
       const ss = SCENES.filter((s) => s.region === r);
       for (const s of ss) expect(isBlocked(m, s.at.x, s.at.y), s.id).toBe(false);
-      for (const a of ss) for (const b of ss) if (a !== b) expect(Math.hypot(a.at.x - b.at.x, a.at.y - b.at.y), `${a.id}/${b.id}`).toBeGreaterThanOrEqual(6);
+      for (const a of ss) for (const b of ss) if (a !== b) expect(Math.hypot(a.at.x - b.at.x, a.at.y - b.at.y), `${a.id}/${b.id}`).toBeGreaterThanOrEqual(4.5);
       for (const n of m.npcs) expect(ss.some((s) => s.npcs?.includes(n.id)), n.id).toBe(true);
       for (const sg of m.signs) expect(ss.some((s) => s.signs?.includes(sg.wordId)), sg.wordId).toBe(true);
     }
@@ -1492,8 +1494,14 @@ describe('0.5 小世界: scene data', async () => {
     for (const [a, b] of LINKS) expect(!!SCENE_BY_ID[a] && !!SCENE_BY_ID[b] && SCENE_BY_ID[a].region === SCENE_BY_ID[b].region).toBe(true);
     for (const s of SCENES) expect(routeTo(AREAS.find((a) => a.region === s.region)!.hub, s.id), s.id).not.toBeNull();
     for (const r of AREAS.map((a) => a.region)) expect(SCENES.some((s) => s.region === r && s.hiddenBy)).toBe(true);
-    // 6000 词导入: fields fill a grid east of the camp; the neighbour's door is on the far side of it.
-    expect(routeTo('r1-camp', 'r1-door')!.length).toBeGreaterThanOrEqual(6);
+    // 区内路网 (方案 3): the door is at the end of the one route, after every field scene.
+    for (const r of AREAS.map((a) => a.region)) {
+      const fields = SCENES.filter((s) => s.region === r && s.type === 'field');
+      const door = SCENES.find((s) => s.region === r && s.type === 'door')!;
+      expect(routeTo(AREAS.find((a) => a.region === r)!.hub, door.id)!.length, `r${r}`).toBeGreaterThan(fields.length);
+      // field scenes link only to the one before and the one after (plus the hidden path, the road on, a boss scene)
+      for (const f of fields) expect(neighbours(f.id).filter((id) => SCENE_BY_ID[id].type === 'field').length, f.id).toBeLessThanOrEqual(2);
+    }
   });
 });
 

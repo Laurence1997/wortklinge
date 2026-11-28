@@ -183,8 +183,9 @@ export const CONFIG = {
    */
   /** 词性三相 (0.5): right stance = this hit meets armor one tier lower and +1 resource; wrong (Lv6+) = armor ×2, breaks cleared. */
   /** 大地图 + 小世界 (0.5 block 5). nodes: point-and-click scenes instead of walking (?oldmap = the 0.4 map).
-   *  slots: monsters per field scene; hopSec: one step between neighbouring scenes. Baseline: 游戏设计 第 5 块验收. */
-  map: { nodes: true, slots: 2, hopSec: 1.2, luckyChance: 0.3, veil: 0.35, homeScenes: true, zoneSlots: 12 },
+   *  slots: monsters per field scene; hopSec: one step between neighbouring scenes; hopFast: a long walk's steps from
+   *  the 4th on take this share of hopSec (区内路网 方案 3). Baseline: 游戏设计 第 5 块验收. */
+  map: { nodes: true, slots: 2, hopSec: 1.2, hopFast: 0.33, luckyChance: 0.3, veil: 0.35, homeScenes: true, zoneSlots: 12 },
   /** 跟读 (0.5, Lv5+, optional): read the line the monster just said back; sounding right pays XP once per fight, never costs anything. */
   shadow: { xp: 10, match: 0.7 },
   phase: { wrongArmor: 2, rightRes: 1, softUntil: 5, accFrom: 7, datFrom: 15, pronounChance: 0.3, pluralChance: 0.2, pluralHp: 1.5, pluralRetire: 2 },
