@@ -128,6 +128,7 @@ export class Panels {
 
   toggle(name: PanelName): void {
     if (this.open === name) this.close();
+    else if (this.ctrl.battle || this.ctrl.boss) toast('战斗中不能打开菜单，打完再看'); // 1.0.11 试玩 9
     else this.show(name);
   }
 
