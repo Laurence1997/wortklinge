@@ -170,12 +170,13 @@ describe('归名 (spaced repetition)', () => {
 
 describe('levels', () => {
   it('follows the design curve and stops at the version cap', () => {
-    // 0.5 开局节奏表: Lv1–5 minutes [67, 49, 40, 38, 60] ×0.7; Lv6–10 ×0.4, Lv11+ unchanged.
-    expect(xpToNext(1)).toBe(782);
+    // 0.5 开局节奏表: Lv1–5 minutes [30, 49, 40, 38, 60] ×0.7 (Lv1 67 → 30: 「调快」 2026-11-28); Lv6–10 ×0.4, Lv11+ unchanged.
+    expect(xpToNext(1)).toBe(350);
+    expect(xpToNext(2)).toBe(572);
     expect(xpToNext(5)).toBe(700);
     expect(xpToNext(10)).toBeGreaterThan(950);
     expect(xpToNext(11)).toBeGreaterThan(2400);
-    expect(xpToNext(1, 1)).toBe(1117);
+    expect(xpToNext(1, 1)).toBe(500); // curve 1 only re-levels pre-0.7 saves (none alive since the 6000-word reset)
     const s = newGame('T', 'student', T0);
     addXp(s, 1_000_000);
     // 0.7/0.8: the cap is the end of the first 突破试炼 not passed yet (30 → 80 → 120).
