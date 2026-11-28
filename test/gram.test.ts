@@ -214,9 +214,9 @@ describe('镜像怪 and 告示怪', () => {
 });
 
 describe('复习伙伴', () => {
-  it('is the skin of 语境复习: the partner brings the due word\'s context question, no question on itself', async () => {
+  it('is the skin of 语境复习: the partner keeps you company at the bonfire round, no question on itself', async () => {
     const { setPartner } = await import('../src/core/gram/partner');
-    const { contextQuestion } = await import('../src/core/combat');
+    const { reviewQuestion } = await import('../src/core/combat');
     const s = newGame('T', 'student', T0);
     s.level = 43;
     s.hp = 999;
@@ -231,7 +231,7 @@ describe('复习伙伴', () => {
     const b = startBattle(s, w, makeRng(1));
     b.turn = 2;
     b.qIndex = 1;
-    const q = contextQuestion(s, b, makeRng(1))!;
+    const q = reviewQuestion(s, d.id, makeRng(1))!;
     expect(q.review).toBe(d.id);
     expect(q.prompt).toContain('复习伙伴');
     for (let i = 0; i < 4; i++) expect(makeQuestion(s, b, 'attack', makeRng(i)).partner).toBeUndefined();

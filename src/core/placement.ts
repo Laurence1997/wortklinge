@@ -8,7 +8,7 @@
 // Failing the starting band steps down one band until one passes (or band 1 fails).
 // Result: right → retired (斩杀, no XP stored); right word but wrong/missing article or one letter off → 半名
 // review monster; wrong/skipped in a passed band → 裂形 review monster (follows you, your level, full pay);
-// untested words of passed bands → 推定会 (counts as 归名, never spawns, spot-checked one per fight).
+// untested words of passed bands → 推定会 (counts as 归名; spot-checked at the bonfire's 抽查和复习, 1.0.13).
 // Entry level = top level of the highest passed band + 1 (at most the level cap). Only ever raises the level.
 
 import { CONFIG } from './config';
@@ -43,6 +43,11 @@ export const PLACE = {
   /** 推定会 spot checks: this many wrong in one band and over this share → the band's rest turns into review monsters. */
   revertFails: 3,
   revertShare: 0.4,
+  /** 1.0.13 (篝火抽查): this many checks in a band with at most `confirmWrong` wrong → the band's other 推定会 words
+   *  are confirmed too (retired for good). A Lv131 placement leaves ~5,700 推定会 words; checking each one at 10 a
+   *  round would take ~570 rounds, so a band is sampled instead (about 40 bands × 8 ≈ 32 rounds for everything). */
+  confirmAfter: 8,
+  confirmWrong: 1,
   /** 分级考核 again after this many more words 归名 or 斩杀 since the last test (Lucas 2026-11-25, replaces once a day). */
   retakeAfter: 30,
 };
@@ -637,14 +642,41 @@ export function backfillPlacementKit(s: GameState): ReturnType<typeof placementK
 
 // ---- 推定会 spot checks --------------------------------------------------------------------
 
-/** A 推定会 word to spot-check in this fight (random, so a band's words are sampled evenly). */
-export function placedPick(s: GameState, rng: Rng, not?: string): string | null {
-  const ids = Object.entries(s.words)
-    .filter(([id, p]) => id !== not && isPlaced(p))
-    .map(([id]) => id);
-  if (!ids.length) return null;
+/** A 推定会 word to spot-check (篝火抽查, 1.0.13): from the band checked least so far (lower bands first on a tie),
+ *  a random word of it, so every band gets its sample and can be confirmed as a whole. */
+export function placedPick(s: GameState, rng: Rng, not?: string | Set<string>): string | null {
+  const skip = (id: string) => (typeof not === 'string' ? id === not : !!not?.has(id));
+  const byBand = new Map<number, string[]>();
+  for (const [id, p] of Object.entries(s.words)) {
+    const w = WORD_BY_ID[id];
+    if (!w || skip(id) || !isPlaced(p)) continue;
+    const b = bandOf(w);
+    (byBand.get(b) ?? byBand.set(b, []).get(b)!).push(id);
+  }
+  if (!byBand.size) return null;
+  const n = (b: number) => s.placement?.checks[String(b)]?.n ?? 0;
+  const band = [...byBand.keys()].sort((a, b) => n(a) - n(b) || a - b)[0];
+  const ids = byBand.get(band)!;
   return ids[Math.floor(rng() * ids.length)];
 }
+
+/** After a right spot check: a band sampled enough with few mistakes → its other 推定会 words retire too. */
+export function placedConfirm(s: GameState, w: Word, t = now(s)): number {
+  const band = String(bandOf(w));
+  const c = s.placement?.checks[band];
+  if (!c || c.n < PLACE.confirmAfter || c.wrong > PLACE.confirmWrong) return 0;
+  let n = 0;
+  for (const x of placeWords()) {
+    const q = s.words[x.id];
+    if (String(bandOf(x)) !== band || !isPlaced(q)) continue;
+    delete q!.placed;
+    delete q!.ctxDone;
+    retire(s, x, t, true);
+    n++;
+  }
+  return n;
+}
+
 
 /** Spot check answered. Right → retired. Wrong → 半名 review monster; too many wrong in a band → its remaining
  *  推定会 words all turn into review monsters (the test placed you too high there). Returns the words reverted. */
@@ -660,7 +692,7 @@ export function placedCheck(s: GameState, w: Word, ok: boolean, t = now(s)): num
   if (ok) {
     p.correct += 1;
     p.write = (p.write ?? 0) + 1;
-    retire(s, w, t);
+    retire(s, w, t, true);
     return 0;
   }
   c.wrong += 1;

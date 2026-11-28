@@ -1743,8 +1743,9 @@ describe('0.6 第 3 区: 幽灵检票员 Lina', () => {
   });
 });
 
-describe('语境复习 in a fight (2026-11-24)', () => {
-  it('a due 归名 word is asked once per fight from turn 2, counts as a hard attack; wrong relapses it', () => {
+describe('语境复习 at the bonfire (1.0.13, was in a fight since 2026-11-24)', () => {
+  it('a due 归名 word is never slipped into a fight; the bonfire round asks it; right → next gap, wrong relapses it', async () => {
+    const { startCamp, answerCamp } = await import('../src/core/campCheck');
     const s = newGame('T', 'student');
     s.level = 12;
     const t = Date.now();
@@ -1752,26 +1753,21 @@ describe('语境复习 in a fight (2026-11-24)', () => {
     s.words[rv.id] = { stage: 3, due: t - 1000, firstSeen: 0, lastSeen: 0, relapse: 0, correct: 3, wrong: 0, ctx: 0, ivl: CONFIG.srs.context[0] };
     const b = startBattle(s, WORD_BY_ID['tee'], makeRng(2));
     b.monster.hp = b.monster.maxHp = 999;
-    expect(makeQuestion(s, b, 'attack', makeRng(3)).review).toBeUndefined(); // turn 1: the monster's own question
-    b.turn = 2;
-    const q = makeQuestion(s, b, 'attack', makeRng(3));
-    expect(q.review).toBe(rv.id);
-    expect(qTier(q)).toBe(2);
-    const r = resolveTurn(s, b, 'attack', q, q.answer!, makeRng(4));
-    expect(r.review?.ok).toBe(true);
-    expect(r.playerDamage).toBeGreaterThan(0);
+    for (const turn of [1, 2, 3]) {
+      b.turn = turn;
+      expect(makeQuestion(s, b, 'attack', makeRng(3)).review).toBeUndefined();
+    }
+    const run = startCamp(s, makeRng(3))!;
+    expect(run.q?.review).toBe(rv.id);
+    answerCamp(s, run, run.q!.answer!, makeRng(4));
+    expect(run.last?.ok).toBe(true);
     expect(s.words[rv.id].due).toBeGreaterThan(t + CONFIG.srs.context[0] * CONFIG.srs.adaptive.clean - 60_000); // clean pass: gap ×3
-    expect(makeQuestion(s, b, 'attack', makeRng(5)).review).toBeUndefined(); // once per fight
-    // Wrong in another fight: the word relapses to a 半名 review monster.
+    // Wrong another day: the word relapses to a 半名 review monster.
     s.words[rv.id].due = t - 1000;
-    const b2 = startBattle(s, WORD_BY_ID['tee'], makeRng(6));
-    b2.monster.hp = b2.monster.maxHp = 999;
-    b2.turn = 2;
-    const q2 = makeQuestion(s, b2, 'attack', makeRng(7));
-    const r2 = resolveTurn(s, b2, 'attack', q2, 'zzz', makeRng(8));
-    expect(r2.review?.ok).toBe(false);
+    const run2 = startCamp(s, makeRng(6))!;
+    answerCamp(s, run2, 'zzz', makeRng(8));
+    expect(run2.last?.ok).toBe(false);
     expect(reviewMon(s.words[rv.id], Date.now())).toBe(true);
-    expect(b2.slipped).toBe(false);
   });
 });
 

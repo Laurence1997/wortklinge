@@ -4,7 +4,8 @@ import { newGame, migrate, type GameState } from '../src/core/state';
 import { makeRng } from '../src/core/rng';
 import { answerPlacement, applyPlacement, bandCount, bandOf, bandRange, bandSamples, canPlaceAgain, placeAgainIn, PLACE, gradePlace, isPlaced, levelFor, placedCheck, placedPick, placeWords, regionFor, startPlacement, stopPlacement, topPassed, type PlaceRun } from '../src/core/placement';
 import { answerScreen, screenPool, startScreen } from '../src/core/screen';
-import { contextQuestion, startBattle } from '../src/core/combat';
+import { makeQuestion, startBattle } from '../src/core/combat';
+import { startCamp } from '../src/core/campCheck';
 import { kindOf, reviewMon, stageOf } from '../src/core/srs';
 import { pickSpawns } from '../src/core/spawn';
 import { fullForm, WORD_BY_ID } from '../src/data/words';
@@ -147,11 +148,12 @@ describe('入学测试', () => {
     const run = startPlacement(s, makeRng(7));
     play(s, run, 21);
     applyPlacement(s, run);
-    // the context slot asks a 推定会 word when no review is due
+    // the bonfire round asks 推定会 words when no review is due (1.0.13: nothing slipped into fights)
     const target = placeWords().find((w) => w.lvl === 22 && !s.words[w.id])!;
     const b = startBattle(s, target, makeRng(1));
     b.turn = 2;
-    const q = contextQuestion(s, b, makeRng(1));
+    for (let i = 0; i < 6; i++) expect(makeQuestion(s, b, 'attack', makeRng(i)).review).toBeUndefined();
+    const q = startCamp(s, makeRng(1))?.q;
     expect(q?.review).toBeTruthy();
     expect(isPlaced(s.words[q!.review!])).toBe(true);
     expect(q!.prompt).toContain('抽查');

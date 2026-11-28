@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { newGame } from '../src/core/state';
 import { WORDS, WORD_BY_ID } from '../src/data/words';
-import { contextQuestion, gradeQuestion, makeQuestion, resolveTurn, startBattle } from '../src/core/combat';
+import { reviewQuestion, gradeQuestion, makeQuestion, resolveTurn, startBattle } from '../src/core/combat';
 import { makeRng } from '../src/core/rng';
 import { isPattern, parsePat, patCount, patLine } from '../src/core/satzmuster';
 import { LEX_SCENES } from '../src/data/lexicon';
@@ -103,9 +103,8 @@ describe('句型怪', () => {
     const s = game();
     s.words[w.id] = { stage: 3, due: 0, firstSeen: 1, lastSeen: 1, relapse: 0, correct: 3, wrong: 0, read: 1, write: 2, ctx: 0 } as never;
     const other = WORDS.find((x) => x.region === w.region && !isPattern(x) && x.pos === 'n')!;
-    const b = startBattle(s, other, makeRng(1));
-    b.turn = 3;
-    const q = contextQuestion(s, b, makeRng(2));
+    void other;
+    const q = reviewQuestion(s, w.id, makeRng(2));
     if (q?.review === w.id) {
       expect(q.pat).toBe(true);
       expect(q.answer).toBe('Wäre es möglich zu');

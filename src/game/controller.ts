@@ -16,6 +16,7 @@ import { TICK_TURN } from '../core/combat';
 import { loadPron, pronCached } from '../ui/phoneme';
 import { icon, setRestored, SLOT_TILE } from '../ui/icons';
 import { answerPlacement, applyPlacement, backfillPlacementKit, PLACE, PLACE_KIT_TIER, canPlaceAgain, estimatePicks, loadPlaceRun, pickBoard, placeAgainIn, regionFor, savePlaceRun, startFromPicks, startPlacement, stopPlacement, type PickBoard, type PlaceRun } from '../core/placement';
+import { answerCamp, campBadge, campPending, CAMP, startCamp, type CampRun } from '../core/campCheck';
 import { answerScreen, claimScene, SCREEN, screenPool, startScreen, type ScreenRun, type ScreenScope } from '../core/screen';
 import type { Look } from '../core/look';
 // The game controller: owns the save, runs battles and tutorials, and glues the
@@ -1904,7 +1905,12 @@ export class Controller {
     const ti = tradeInfo(s, region);
     if (free) lines.push({ who: SYS, text: `【碎片换档】本区解锁了第 ${ti.tier} 档：这次换一件免费${free > 1 ? `（还有 ${free} 次免费）` : ''}。` });
     const trades = ti.can;
+    // 篝火「抽查和复习」(1.0.13): nothing is slipped into fights; the 守火人 asks here, when you choose.
+    const camp = this.campBadge();
+    this.scene.nodes?.draw(); // the 守火人's 「!」
+    if (camp) lines.push({ who: SYS, text: `【抽查和复习】守火人那里有 ${camp > CAMP.badgeMax ? `${CAMP.badgeMax}+` : camp} 道题等你（到期的语境复习和入学测试推定会的词）。一组 ${CAMP.round} 道，不扣血、不限时，答对给经验和碎片；不做也不罚。` });
     const tradeOpt = [
+      ...(camp ? [{ label: `抽查和复习（${camp > CAMP.badgeMax ? `${CAMP.badgeMax}+` : camp}）`, act: () => this.openCamp() }] : []),
       ...(trades ? [{ label: free ? '碎片换档（免费）' : `碎片换档（${ti.cost} 片）`, act: () => this.shardTrade() }] : []),
       ...(s.level >= GEM.from ? [{ label: '言石', act: () => this.gemMenu() }] : []),
       // 快速通道 不硬锁: from the camp bonfire, straight to the region the test placed you in.
@@ -1913,7 +1919,7 @@ export class Controller {
     if (jw) {
       lines.push({ who: SYS, text: `【篝火日记】今天打过 ${jw.map((w) => wordCue(w, s.settings)).join('、')}。用它们写两三句话？每天一篇，登录后 AI 批改。` });
       say(lines, undefined, [{ label: '写日记', act: () => this.panels.showJournal(jw) }, ...tradeOpt, { label: '今天不写', act: () => undefined }]);
-    } else if (tradeOpt.length) say(lines, undefined, [...tradeOpt, { label: '先不换', act: () => undefined }]);
+    } else if (tradeOpt.length) say(lines, undefined, [...tradeOpt, { label: '先不了', act: () => undefined }]);
     else say(lines);
     if (s.flags.teachRest) s.flags.teachRest = false;
     this.refresh();
@@ -2147,6 +2153,48 @@ export class Controller {
   }
 
   /** 全量筛选: called by the panel after each answer (skip = 「不会，下一个」). */
+  /** 篝火「抽查和复习」(1.0.13): how many wait at the 守火人 (0 before typing opens). */
+  campBadge(): number {
+    return has(this.state.level, 'typing') ? campBadge(this.state) : 0;
+  }
+
+  /** Start a round of 抽查和复习 at the bonfire (守火人). */
+  openCamp(): void {
+    const s = this.state;
+    const run = startCamp(s, this.rng);
+    if (!run) return say([{ who: '守火人', text: '今天没什么要问你的。去外面走走吧。' }]);
+    if (!s.flags.campIntro) {
+      s.flags.campIntro = true;
+      say([{ who: '守火人', text: `坐下，我问你几句。一组 ${CAMP.round} 句，句子里挖了个空，填你会的那个词。答对的就算数，答不上的明天在外面再碰见它。` }], () => this.panels.showCamp(run));
+      return;
+    }
+    this.panels.showCamp(run);
+  }
+
+  campAnswer(run: CampRun, input: string): void {
+    const s = this.state;
+    answerCamp(s, run, input, this.rng);
+    const l = run.last;
+    if (l) {
+      const w = l.review.word;
+      if (l.review.placed) {
+        logLine(l.ok ? `✓ 抽查 · ${fullForm(w)}：确认会了，斩杀` : `抽查没答上：${fullForm(w)} 会作为复习怪跟着你。`, l.ok ? 'good' : 'bad');
+        if (l.review.reverted) toast(`这一段的词抽查错得多，剩下 ${l.review.reverted} 个推定会的词改成复习怪，跟着你练`, 'gold');
+        if (l.review.confirmed) toast(`这一段抽查得够多、几乎全对：同段另外 ${l.review.confirmed} 个推定会的词一起确认，永久斩杀`, 'gold');
+      } else logLine(l.ok ? `✓ 复习 · ${fullForm(w)}，${l.review.next ? `下次 ${gapZh(l.review.next)}` : '不用再复习了'}` : `复习没答上：${fullForm(w)} 复发了，会作为复习怪回到野外。`, l.ok ? 'good' : 'bad');
+      if (l.ok) this.dailyTick(undefined, true);
+      for (const lv of l.levels) this.onLevelUp(lv);
+    }
+    this.scene.nodes?.draw();
+    this.refresh();
+    this.persist();
+  }
+
+  /** What is waiting at the 守火人, for the round's end screen. */
+  campLeft(): { due: number; placed: number } {
+    return campPending(this.state);
+  }
+
   screenAnswer(run: ScreenRun, input: string, skip = false): void {
     answerScreen(this.state, run, input, skip);
     this.scene.nodes?.draw(); // gold dots for scenes with XP waiting

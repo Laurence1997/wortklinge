@@ -6,9 +6,9 @@ import { CONFIG, DAY, HOUR, monsterHpAt, playerBaseHp } from './config';
 import { gradeTyped, levenshtein, normalize, type Verdict } from './grading';
 import { ELEMENT_ZH, generateIntent, INTENT_ZH } from './intents';
 import { between, makeRng, pick, shuffle, type Rng } from './rng';
-import { contextDueWords, contextFail, contextPass, gapZh, reviewedByUse, reviewedByWriting, reviewMon, failVerify, retire, setGuiming, kindOf, stageOf, overdueSteps, verifyOf, type Kind, type Stage } from './srs';
+import { contextFail, contextPass, reviewedByUse, reviewedByWriting, reviewMon, failVerify, retire, setGuiming, kindOf, stageOf, overdueSteps, verifyOf, type Kind, type Stage } from './srs';
 import { typoOk } from './cut';
-import { isPlaced, placedCheck, placedPick, regionFor } from './placement';
+import { isPlaced, placedCheck, placedConfirm, regionFor } from './placement';
 import { blindLine, blindTask, LISTEN, passageFor, passageTask, rollListen } from './listening';
 import { fillGems, gemSum } from './gems';
 import { dictMain, PHONES_PER_TIER } from './loot';
@@ -32,7 +32,7 @@ import { SAYING_CFG, SAYINGS } from '../data/sayings';
 import { expectedSentence, gradeSentence, nextPattern, PATTERNS, sentenceTags, type Pattern } from './sentence';
 import { PERFEKT, perfektFull, perfektParts } from '../data/perfekt';
 import { EXAMPLES, caseOf, clozeWhy, maskZh, pronounClozes, slotArticle, type Case, type Stance, clozeOptions, exampleSplits, gradeCloze, gradeWholeSentence, hasExamples, makeCloze, parse, showsWord, twoBlank, voiceLine, wholeSentence, type ClozeMode } from './cloze';
-import { CONJ, PERSON_LABEL, type Person } from '../data/verbs';
+import { CONJ, PERSONS, PERSON_LABEL, type Person } from '../data/verbs';
 import { QTYPES, type QKey } from '../data/questionTypes';
 import { critRunNeeded, litStars, rank, resMax, STAR_BONUS, wrongHitShare } from './classes';
 import { gradeStorm, stormForms, type StormForm } from './storm';
@@ -43,6 +43,7 @@ import { notePrep, prepBlankTask, PREP_CFG } from './gram/prepBlank';
 import { dungeonTask } from './gram/dungeons';
 import { hasMirror, mirrorTask, MIRROR } from './gram/mirror';
 import { partnerOf } from './gram/partner';
+import { praetFull } from './gram/praet';
 import { articleOfWord, ARTICLE_B2_CFG, contextLine, regionArticleFor } from './gram/articleB2';
 import { c1ArticleOpen } from './c1';
 import { gradePat, gradePatSentence, isPattern, patCount, patLine, patOptions, optionText } from './satzmuster';
@@ -115,6 +116,8 @@ export interface Question {
   defDe?: string;
   /** 德语释义: first letter + letter count of the word (「b _ _ _ _」), on a write prompt that shows a definition. */
   defHint?: string;
+  /** 语境复习 / 抽查 (1.0.13): word class, the form wanted and the first letter, under the blank. */
+  formHint?: string;
   /** 德语释义: the Chinese clue the definition replaced — one tap away, and shown once the question is answered. */
   zhHidden?: string;
   /** 句型怪 (Lucas 2026-11-27): the key words of a classic pattern; typing the whole example also counts. */
@@ -1135,25 +1138,51 @@ const SENTENCE_ZH: Record<Pattern, (zh: string) => string> = {
   sind: (z) => `这是我的${z}。（复数）`,
 };
 
-/** 语境复习 (2026-11-24): from the 2nd turn of an ordinary field fight, at most once per fight, a due 归名 word's
- *  example sentence with that word blanked (nouns with the declined article, verbs conjugated), typed. Words
- *  without an example sentence are asked as 看中文写 instead. */
-export function contextQuestion(s: GameState, b: Battle, rng: Rng): Question | null {
-  if (b.fx.ctxAsked || b.turn < 2 || b.tutorial || b.verify || b.elite || b.trial || b.phrase || b.isEcho || (b.saying && !b.sayingDone)) return null;
-  if (!has(s.level, 'typing')) return null;
-  const due = contextDueWords(s).find((x) => x !== b.word.id && WORD_BY_ID[x]);
-  // 入学测试: with no review due, one 推定会 word is spot-checked instead.
-  const id = due ?? placedPick(s, rng, b.word.id);
-  if (!id || !WORD_BY_ID[id]) return null;
+/** 语境复习 / 抽查 question for one word (1.0.13, Lucas 2026-11-28: asked at the bonfire's 「抽查和复习」, never slipped
+ *  into a fight any more): the word's example sentence with that word blanked (nouns with the declined article,
+ *  verbs conjugated), typed, with a hint line (word class, the form wanted, first letter — not the whole
+ *  dictionary form, or it turns into copying a conjugation). Words without an example sentence: 看中文写. */
+export function reviewQuestion(s: GameState, id: string, rng: Rng): Question | null {
   const rw = WORD_BY_ID[id];
-  // 审查修订: 复习伙伴 is the skin of 语境复习 — your partner word brings the due word's question.
-  const pw = due ? partnerOf(s) : null;
-  const tag = due ? (pw ? `复习伙伴 ${fullForm(pw)} · 语境复习` : '语境复习') : '抽查（入学测试推定你会）';
+  if (!rw) return null;
+  const placed = isPlaced(s.words[id]);
+  const pw = placed ? null : partnerOf(s);
+  const tag = placed ? '抽查（入学测试推定你会）' : pw ? `语境复习 · 复习伙伴 ${fullForm(pw)} 陪你` : '语境复习';
   const pl = isPattern(rw) ? patLine(rw, Math.floor(rng() * patCount(rw))) : null;
-  if (pl) return { type: 'cloze', review: id, pat: true, prompt: `${tag} · 句型：按顺序打出空里的关键词（空格隔开）· ${pl.zh}`, focus: pl.shown, answer: pl.answer, clozeMode: 'base', full: pl.full, clozeZh: pl.zh };
+  if (pl) return dedefQ(s, rw, { type: 'cloze', review: id, pat: true, prompt: `${tag} · 句型：按顺序打出空里的关键词（空格隔开）· ${pl.zh}`, focus: pl.shown, answer: pl.answer, clozeMode: 'base', full: pl.full, clozeZh: pl.zh });
   const c = makeCloze(rw, 'form', rng);
-  if (c) return { type: 'cloze', review: id, prompt: `${tag}：打出这里要的形式（${hasArticleQuestion(rw) && adjInSlot(c.answer) ? '名词带冠词和形容词' : '名词带冠词，动词变位'}）· ${c.zh}`, focus: c.shown, answer: c.answer, clozeMode: 'form', full: c.full, clozeZh: c.zh };
-  return { type: 'typed', review: id, prompt: `${tag}：${hasArticleQuestion(rw) ? '默写，带上冠词' : '默写这个词'}`, focus: zhWithPos(rw), withArticle: hasArticleQuestion(rw), answer: fullForm(rw) };
+  if (c) return dedefQ(s, rw, { type: 'cloze', review: id, prompt: `${tag}：打出空里的词 · ${c.zh}`, focus: c.shown, answer: c.answer, clozeMode: 'form', full: c.full, clozeZh: c.zh, formHint: formHint(rw, c.answer) });
+  return dedefQ(s, rw, { type: 'typed', review: id, prompt: `${tag}：${hasArticleQuestion(rw) ? '默写，带上冠词' : '默写这个词'}`, focus: zhWithPos(rw), withArticle: hasArticleQuestion(rw), answer: fullForm(rw) });
+}
+
+const REFL = new Set(['mich', 'dich', 'sich', 'uns', 'euch', 'mir', 'dir']);
+
+/** The hint line under a 语境复习 / 抽查 blank: word class, the form the sentence wants, the first letter.
+ *  Er ___ viel Geld bei.（beisteuern → steuerte）reads 「动词 · 过去式 · 首字母 s」. */
+export function formHint(w: Word, answer: string): string {
+  const toks = normalize(answer).split(' ').filter((x) => x && !REFL.has(x));
+  const first = toks[0] ?? '';
+  const letter = (x: string) => `首字母 ${x.charAt(0)}`;
+  if (hasArticleQuestion(w)) {
+    const noun = w.de.replace(/^(der|die|das) /i, '');
+    return `名词 · 带冠词${adjInSlot(answer) ? '和形容词' : ''}，按句子变格 · 名词首字母 ${noun.charAt(0)}`;
+  }
+  if (w.pos === 'v') {
+    const inf = w.de.replace(/^sich /, '');
+    const k = (x: string) => normalize(x).split(' ')[0];
+    let form = '按句子变位';
+    const pp = PERFEKT[w.de]?.pp ?? PERFEKT[inf]?.pp;
+    const present = CONJ[inf] ? Object.values(CONJ[inf].forms).map(k) : [];
+    if (first === normalize(inf) || toks.join('') === normalize(inf).replace(/ /g, '')) form = '原形（不定式）';
+    else if (pp && first === normalize(pp)) form = '完成时分词（Partizip II）';
+    else if (PERSONS.some((p) => { const f = praetFull(inf, p); return !!f && k(f) === first; })) form = '过去式';
+    else if (present.includes(first)) form = '现在时变位';
+    else if (/^(ge|.+ge).+(t|en)$/.test(first) && !normalize(inf).startsWith('ge')) form = '完成时分词（Partizip II）';
+    return `动词 · ${form} · ${letter(first)}`;
+  }
+  if (w.pos === 'adj') return `形容词 · ${first === normalize(w.de) ? '原形' : '按句子加词尾或比较'} · ${letter(first)}`;
+  if (w.pos === 'num') return `数词 · ${letter(first)}`;
+  return `按句子要的形式 · ${letter(first)}`;
 }
 
 /** One whole example sentence of the word (for 「听整句选意思」), or null. */
@@ -1320,10 +1349,6 @@ function makeQuestionRaw(s: GameState, b: Battle, move: Move, rng: Rng, skillId?
   const canType = has(s.level, 'typing');
   const promptZh = w.digit ? w.digit : w.zh;
 
-  if (move === 'attack') {
-    const rq = contextQuestion(s, b, rng);
-    if (rq) return rq;
-  }
   // 句型怪 (Lucas 2026-11-27 选 1): every move asks the pattern's own key words; a monster carrying a notice keeps
   // the notice questions until its last blow.
   if (isPattern(w) && !((move === 'attack' || move === 'inscribe' || move === 'whisper' || move === 'chorus') && b.notice && !b.finishOwn)) {
@@ -2121,7 +2146,7 @@ export interface TurnReport {
   /** 斩杀: the 会写 / verification was a 笔误 (one letter off) — counted, but not a hit. */
   cutTypo?: boolean;
   /** 语境复习 answered this turn: the word, right or wrong, and the next gap (null = no more reviews). */
-  review?: { word: Word; ok: boolean; next: number | null; placed?: boolean; reverted?: number };
+  review?: { word: Word; ok: boolean; next: number | null; placed?: boolean; reverted?: number; confirmed?: number };
 }
 
 function comboMult(combo: number): number {
@@ -2264,8 +2289,6 @@ function cutCheck(s: GameState, b: Battle, q: Question, input: string, ok: boole
   return { notes, report };
 }
 
-/** 语境复习 answered: right → next gap, +1 shard, 「✓ 复习 · der Apfel，下次 1 周后」; wrong → the whole sentence
- *  and the word relapses to a 半名 review monster. Either way this fight's one context question is used. */
 /** Did the answer give the fighting monster's word (der/die/das + noun, or the bare word) instead of the reviewed one? */
 export function saidOwnWord(input: string, own: Word, reviewed: string): boolean {
   const rw = WORD_BY_ID[reviewed];
@@ -2274,16 +2297,18 @@ export function saidOwnWord(input: string, own: Word, reviewed: string): boolean
   return normalize(input).split(' ').includes(mine) || normalize(input) === normalize(fullForm(own));
 }
 
-function reviewAnswer(s: GameState, b: Battle, q: Question, ok: boolean): TurnReport['review'] {
+/** 语境复习 / 抽查 answered (at the bonfire, 1.0.13): right → next gap (or retired, for a 推定会 word), +1 shard and the
+ *  next kill's drop ×1.5; wrong → the word relapses to a 半名 review monster. */
+export function answerReview(s: GameState, q: Question, ok: boolean): TurnReport['review'] {
   const w = WORD_BY_ID[q.review!];
-  b.fx.ctxAsked = true;
   if (!w) return undefined;
   const p = s.words[w.id];
   if (p?.placed && !p.retired) {
     // 入学测试 spot check: right → retired; wrong → review monster (and maybe the whole band).
     const reverted = placedCheck(s, w, ok);
+    const confirmed = ok ? placedConfirm(s, w) : 0;
     if (ok) addGearKill(s, w.region ?? 1, 1, 1);
-    return { word: w, ok, next: null, placed: true, reverted };
+    return { word: w, ok, next: null, placed: true, reverted, confirmed };
   }
   if (p) {
     if (ok) p.correct += 1;
@@ -2450,24 +2475,6 @@ export function resolveTurn(
     } else if (q.voiced) {
       /* 开口作答: says nothing about spelling, so no 斩杀 check either way */
     } else if (!q.review) cutFx = cutCheck(s, b, q, input, ok);
-    else if (!ok && saidOwnWord(input, b.word, q.review)) {
-      // 1.0.10 (Lucas): the monster's own word typed into another word's review is a mix-up, not forgetting.
-      b.fx.ctxAsked = true;
-      const rw = WORD_BY_ID[q.review];
-      verdict.notes.unshift(`这道题问的是另一个词${rw ? ` ${fullForm(rw)}` : ''}，你写的是这只怪的 ${fullForm(b.word)}。这次不算，那个词的记忆进度不变。`);
-    } else {
-      reviewFx = reviewAnswer(s, b, q, ok);
-      if (reviewFx)
-        verdict.notes.unshift(
-          reviewFx.ok
-            ? reviewFx.placed
-              ? `✓ 抽查 · ${fullForm(reviewFx.word)}：入学测试推定你会，这下确认了`
-              : `✓ 复习 · ${fullForm(reviewFx.word)}，${reviewFx.next ? `下次 ${gapZh(reviewFx.next)}` : '以后不用再复习了'}`
-            : reviewFx.placed
-              ? `抽查没答上：入学测试推定你会 ${fullForm(reviewFx.word)}，这次没写出来。它会作为复习怪（半名）回到野外，多练几遍就好，等级和经验不受影响。`
-              : `复习没答上：${fullForm(reviewFx.word)} 复发了，会作为复习怪（半名）回到野外。`,
-        );
-    }
     if (cutFx.notes.length) verdict.notes.push(...cutFx.notes);
     if (q.type === 'saying') {
       b.sayingDone = true;

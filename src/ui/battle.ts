@@ -1242,16 +1242,6 @@ export class BattleUI {
           qq.teach.def ? h('div', { style: DEF_LINE_STYLE }, qq.teach.def) : '',
         ),
       );
-    // 1.0.10 (Lucas): a review / spot check slipped into this fight asks ANOTHER word — say so loudly, or the player
-    // answers with the monster's word that the name plate, 相 row and skills all show.
-    if (qq.review && !qq.partner)
-      wrap.append(
-        h(
-          'div.board.review-insert',
-          h('div.board-title', '插题 · 这题问的是另一个词，不是这只怪'),
-          h('div', `这只怪是「${this.meaningText(this.b)}」，但这道题考的是你以前学过的另一个词（看下面的${qq.defDe ? '释义' : '中文'}）。答对答错只算那个词，伤害照常打在这只怪身上。`),
-        ),
-      );
     wrap.append(h('div.prompt', h('span', qq.prompt), tags ? h('span.tag', tags) : '', hintBtn));
     const focusColor = qq.type === 'article' && this.phase === 'result' && this.b.word.art ? NAME_RED : '';
     const long = qq.type === 'cloze' ? 'font-size:22px;line-height:1.4;' : '';

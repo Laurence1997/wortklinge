@@ -328,6 +328,16 @@ export class NodeNav {
           .setDepth(3001),
       );
     }
+    // 篝火「抽查和复习」(1.0.13): the 守火人 stands with a 「!」 and how many questions wait.
+    const camp = this.w.ctrl.campBadge();
+    const keeper = this.w.map.npcs.find((n) => n.id === 'hilde');
+    if (camp && keeper)
+      this.labels.push(
+        this.w.add
+          .text(keeper.x * TILE + 17, keeper.y * TILE + 4, `! ${camp > 99 ? '99+' : camp}`, { fontFamily: '"Courier New", monospace', fontSize: '10px', color: '#ffcf4a', fontStyle: 'bold', stroke: '#2d2118', strokeThickness: 3, resolution: 4 })
+          .setOrigin(0, 0.5)
+          .setDepth(3002),
+      );
     this.dirty = true;
   }
 
@@ -423,6 +433,9 @@ export class NodeNav {
     };
     const things: HTMLElement[] = [];
     if (sc.bonfire) things.push(h('button.btn', { onclick: ia('bonfire') }, '🔥 篝火休息'));
+    // 篝火「抽查和复习」(1.0.13): the 守火人 asks what used to be slipped into fights; a 「!」 with how many.
+    const camp = sc.bonfire ? this.w.ctrl.campBadge() : 0;
+    if (camp) things.push(h('button.btn.primary', { disabled: busy, onclick: () => this.w.ctrl.openCamp(), title: '到期的语境复习和入学测试推定会的词。一组 10 题，不扣血、不限时' }, `❗ 守火人 · 抽查和复习（${camp > 99 ? '99+' : camp}）`));
     // 告示牌 (Lucas 2026-11-28): der/die/das and pronunciation rules at the spawn camp (also in the menu's 「规律」 tab).
     if (sc.id === 'r1-camp') things.push(h('button.btn', { onclick: () => this.w.ctrl.panels.showRules() }, '📜 告示牌：德语小规律'));
     if (sc.id === 'r3-hide' && this.s.level >= DUNGEON.from) things.push(h('button.btn.primary', { disabled: busy, onclick: () => this.w.ctrl.enterDungeon() }, '🚪 进入零号站台（规则表地下城）'));
