@@ -122,12 +122,14 @@ export function gradeCloze(input: string, answer: string, w?: Word, zh?: string)
   const alts = sameCaseArticles(answer, w);
   const [idet, ...irest] = input.trim().split(/\s+/);
   const rest = answer.trim().split(/\s+/).slice(1);
+  // A negated answer (kein Nachbar) is only matched by another kein form, never by der / ein.
+  if (/^kein/i.test(answer.trim()) && !/^kein/i.test(idet ?? '')) return false;
   return !!alts && !!idet && key(irest.join(' ')) === key(rest.join(' ')) && alts.includes(idet.toLowerCase());
 }
 
-/** Chinese that names the determiner: 一个/一杯…, 这/那, 我的…, 没有. */
 /** 这 / 那 that do not stand on a noun: 这是 (das ist), 这里, 那么, 这样. */
-const ZH_NOT_DET = /[这那](?:就|也|不|可|真|才|都)?是|[这那](?:里|儿|么|样)/g;
+const ZH_NOT_DET = /[这那](?:就|也|可|真|才|都)?是|[这那](?:里|儿|么|样)/g; // not 这不是: that one asks for kein
+/** Chinese that names the determiner: 一个/一杯…, 这/那, 我的…, 没有. */
 const ZH_DET = /[一两][个位只张本件杯块条把台辆间双份种家盒瓶袋根片口所部盏碗套首封]|喝杯|这|那|[我你他她它您]们?的|没有/;
 
 const CASE_ARTS: Record<Case, Record<'m' | 'f' | 'n' | 'pl', string[]>> = {

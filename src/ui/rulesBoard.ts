@@ -50,7 +50,7 @@ export const GENDER_PAGES: Page[] = [
       { head: '-tion、-sion', rule: 'tion', ex: ['die Information|信息', 'die Station|站', 'die Diskussion|讨论'], exc: '只算 -tion、-sion。别的 -ion 不一定：der Spion（间谍）、das Stadion（体育场）。' },
       { head: '-tät（-ität）', rule: 'taet', ex: ['die Universität|大学', 'die Qualität|质量', 'die Realität|现实'] },
       { head: '-enz', rule: 'enz', ex: ['die Konferenz|会议', 'die Konkurrenz|竞争', 'die Tendenz|趋势'] },
-      { head: '-ade、-age、-ette', rule: 'ade', ex: ['die Limonade|汽水', 'die Garage|车库', 'die Etage|楼层', 'die Toilette|厕所'], exc: 'das Image（形象）照英语读，不算这类。die Frage、die Lage、die Kette 这些是德语本族词，不是外来词，它们是 die 是因为 -e 结尾。' },
+      { head: '-ade、-age、-ette', rule: 'ade', ex: ['die Limonade|汽水', 'die Garage|车库', 'die Etage|楼层', 'die Toilette|厕所'], exc: 'das Image（形象）照英语读，不算这类。die Frage、die Lage、die Kette 是德语本族词，不是外来词；它们用 die，是因为以 -e 结尾。' },
       { head: '-erei、-elei', rule: 'erei', ex: ['die Bäckerei|面包店', 'die Metzgerei|肉铺', 'die Bücherei|图书馆'] },
       { head: '-in（指女性）', rule: 'fem', ex: ['die Lehrerin|女老师', 'die Ärztin|女医生', 'die Freundin|女朋友'], exc: '只算指女性的 -in。别的 -in 不算：der Termin、der Wein、das Benzin。' },
     ],

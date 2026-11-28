@@ -82,6 +82,8 @@ export function usesWord(text: string, w: Word): boolean {
 }
 
 const INSEP = /^(be|ver|er|ent|zer|emp|miss|ge|hinter|ueber|unter|wider)/;
+/** One or more verb prefixes in front of a strong verb (vor+be+reiten is still caught by its weak Perfekt). */
+const STRONG_PREFIX = /^(be|ver|er|ent|zer|emp|miss|ge|hinter|ueber|unter|wider|ab|an|auf|aus|bei|dar|durch|ein|empor|entgegen|fern|fest|fort|frei|her|heraus|herein|herum|hin|hinaus|hinein|los|mit|nach|nieder|um|vor|voran|vorbei|weg|weiter|wieder|zu|zurueck|zusammen|raus|rein|rum|statt|teil|kennen|spazieren|kaputt|sicher|fertig|offen|bereit|hoch|nahe?)+$/;
 
 /** A verb in any form a learner writes: present (split or joined: rufe … an, anrufe), imperative, zu-infinitive,
  *  Partizip II and Präteritum (also split: zog … aus). Loose on purpose: it only checks that the word is there. */
@@ -95,9 +97,23 @@ function usesVerb(ts: string[], inf: string, c: (typeof CONJ)[string]): boolean 
   const stems = new Set<string>([base, stem, `${stem}e`]);
   for (const p of PERSONS) for (const f of [c.forms[p], ...(c.alt?.[p] ?? [])]) stems.add(k(f.split(' ')[0]));
   const du = k(c.forms.du.split(' ')[0]);
-  stems.add(du.replace(/s?t$/, '')); // imperative: zieh, nimm, lies
+  // Imperative of e → i verbs (nimm, gib, lies, iss); the others use the stem (zieh, kauf). Not from any du form:
+  // werden → wir, wissen → weiß would make unrelated words count. sein / werden: sei / werde are stem forms already.
+  if (/e/.test(stem) && /i/.test(du) && base !== 'sein' && base !== 'werden')
+    for (const f of [du.replace(/st$/, ''), du.replace(/t$/, '')]) if (f !== du && f.length > 2) stems.add(f);
   // Präteritum.
-  const sv = STRONG_VERBS.filter((v) => base.endsWith(k(v.inf))).sort((a, b) => b.inf.length - a.inf.length)[0];
+  // A strong verb only through a real prefix (verstehen ← stehen), and not when the word's own Perfekt says it is
+  // weak (bereiten is not reiten, beantragen not tragen, schalten not halten, handhaben not haben).
+  const knownPp = PERFEKT[inf]?.pp;
+  const sv = STRONG_VERBS.filter((v) => {
+    const kv = k(v.inf);
+    if (!base.endsWith(kv)) return false;
+    if (base === kv) return true;
+    if (!STRONG_PREFIX.test(base.slice(0, base.length - kv.length))) return false;
+    // The word list marks strong compounds (verstehen, bekommen); a mixed verb (verbringen, nachdenken) may be unmarked.
+    if (!c.strong && !c.pastStrong && !(/te$/.test(v.praet) && v.inf !== 'haben')) return false;
+    return !knownPp || /t$/.test(knownPp) === /t$/.test(v.pp);
+  }).sort((a, b) => b.inf.length - a.inf.length)[0];
   const pre = sv ? base.slice(0, base.length - k(sv.inf).length) : '';
   let praet = '';
   if (sv) praet = pre + k(sv.praet);
@@ -106,7 +122,7 @@ function usesVerb(ts: string[], inf: string, c: (typeof CONJ)[string]): boolean 
   for (const f of past) stems.add(f);
   // Partizip II.
   const pps = new Set<string>();
-  const known = PERFEKT[inf]?.pp;
+  const known = knownPp;
   if (known) pps.add(k(known).replace(/\s+/g, ''));
   if (sv) pps.add(pre && !INSEP.test(pre) ? pre + k(sv.pp) : pre ? pre + k(sv.pp).replace(/^ge/, '') : k(sv.pp));
   else if (!c.strong && !c.pastStrong) pps.add(INSEP.test(base) || base.endsWith('ieren') ? `${stem}t` : `ge${stem}${/[td]$/.test(stem) ? 'et' : 't'}`);
