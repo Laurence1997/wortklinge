@@ -43,6 +43,7 @@ import { dungeonTask } from './gram/dungeons';
 import { hasMirror, mirrorTask, MIRROR } from './gram/mirror';
 import { partnerOf } from './gram/partner';
 import { articleOfWord, ARTICLE_B2_CFG, contextLine, regionArticleFor } from './gram/articleB2';
+import { c1ArticleOpen } from './c1';
 import { gradePat, gradePatSentence, isPattern, patCount, patLine, patOptions, optionText } from './satzmuster';
 import { articleFor, KIND_ZH, noticeById, noticeFor, noticeTask, NOTICE_CFG } from './gram/notice';
 
@@ -386,7 +387,11 @@ export interface Battle {
   /** 复习伙伴: its question was asked this fight. */
   partnerDone?: boolean;
   /** 告示怪 / 信件怪 (15): the notice it carries, and how many of its questions were asked. */
-  notice?: { id: string; i: number };
+  notice?: { id: string; i: number; right?: number[]; miss?: boolean };
+  /** C1 field monster (161+, src/core/c1.ts): stands at your level, pays at least the due rate. */
+  c1?: boolean;
+  /** C1 article bonus (src/core/c1.ts): this kill finished an unread C1 article all right (set on the kill). */
+  c1Article?: boolean;
   /** 文章群怪 (121+): the article sentence this new word stands in; its own blow picks the meaning from it. */
   artCtx?: string;
   /** 镜像怪 (35): every attack question is the reflexive pronoun on this verb. */
@@ -471,7 +476,7 @@ export function startBattle(
   s: GameState,
   word: Word,
   rng: Rng,
-  opts: { isEcho?: boolean; tutorial?: Tutorial; trial?: string; rare?: boolean; elite?: boolean; challenge?: boolean; struct?: boolean } = {},
+  opts: { isEcho?: boolean; tutorial?: Tutorial; trial?: string; rare?: boolean; elite?: boolean; challenge?: boolean; struct?: boolean; c1?: boolean } = {},
 ): Battle {
   const t = now(s);
   // 快速通道: a 推定会 word comes as a new monster with the 「我认识它」 offer; its entry is dropped (missed unless named).
@@ -489,7 +494,11 @@ export function startBattle(
   const challenge = !!opts.challenge && !opts.isEcho && !opts.tutorial && !opts.trial;
   // 审查修订 B2: Lv1–5 a challenge monster is your level (the 1–5 cap of 0 above), +2 from Lv6.
   // 快速通道: a placed player's not-yet-归名 words in the regions before the entry region stand at the player's level.
-  const lvl = (presumed || fastTrackWord(s, word)) && !opts.isEcho ? Math.max(word.lvl, s.level) : challenge ? s.level + (s.level <= 5 ? 0 : CHALLENGE_CFG.levelAbove) : opts.isEcho ? Math.min(word.lvl, s.level) : isReview ? Math.max(word.lvl, s.level) : s.flags[`zoneOk_${word.zone}`] ? word.lvl : Math.min(word.lvl, s.level + CONFIG.monster.maxAbove(s.level));
+  const lvl0 = (presumed || fastTrackWord(s, word)) && !opts.isEcho ? Math.max(word.lvl, s.level) : challenge ? s.level + (s.level <= 5 ? 0 : CHALLENGE_CFG.levelAbove) : opts.isEcho ? Math.min(word.lvl, s.level) : isReview ? Math.max(word.lvl, s.level) : s.flags[`zoneOk_${word.zone}`] ? word.lvl : Math.min(word.lvl, s.level + CONFIG.monster.maxAbove(s.level));
+  // C1 fields (161+, Lucas 2026-11-28「按推荐」): the known words that fill them stand at your level, as 复习怪 do, so
+  // the level gap no longer cuts them to 1 XP; HP and damage are those of any monster of your level (src/core/c1.ts).
+  const c1 = !!opts.c1 && !opts.isEcho && !opts.tutorial && !opts.trial;
+  const lvl = c1 ? Math.max(lvl0, s.level) : lvl0;
   const overdue = overdueSteps(s, word, t);
   // 锈名 (27 级): 审查修订 — only the look of 越久越肥 layers 3–4 (3+ intervals overdue); the HP comes from 越久越肥.
   const rusty = isReview && overdue >= CONFIG.rusty.overdue && s.level >= CONFIG.rusty.from && !opts.tutorial && !opts.elite;
@@ -506,6 +515,7 @@ export function startBattle(
     word,
     kind,
     challenge: challenge || undefined,
+    c1: c1 || undefined,
     reviewMon: isReview || undefined,
     overdue,
     rusty: rusty || undefined,
@@ -2305,7 +2315,13 @@ export function resolveTurn(
     if (q.gram && !q.gram.pb?.blank) b.gramAsked = (b.gramAsked ?? 0) + 1;
     // 介词空 / 介词秘境: per-preposition and per-kind accuracy (more questions where you miss, 3-choice below 60%).
     if (q.gram?.pb && !q.whispered) notePrep(s, q.gram.pb, ok);
-    if (q.gram?.sys === 'notice' && b.notice) b.notice.i += 1;
+    if (q.gram?.sys === 'notice' && b.notice) {
+      // C1 文章: which content questions were answered right (a hint or a miss ends the article bonus).
+      const n = noticeById(b.notice.id);
+      if (ok && !q.whispered && n) b.notice.right = [...new Set([...(b.notice.right ?? []), b.notice.i % n.qs.length])];
+      else b.notice.miss = true;
+      b.notice.i += 1;
+    }
     if (q.gram?.sys === 'listen' || q.gram?.sys === 'blind') {
       b.listenDone = true;
       log.push({ text: `原文：${q.gram.full ?? ''}${q.gram.zh ? `（${q.gram.zh}）` : ''}`, tone: 'info' });
@@ -2711,8 +2727,12 @@ export function resolveTurn(
       // clause never finish it — at most down to 1 HP; the last blow has to answer its own word.
       if (m.hp <= 0 && extraHit(q)) {
         m.hp = 1;
-        b.finishOwn = true;
-        log.push({ text: `${tagOf(b)}只剩一口气：最后一下要答它自己的词。`, tone: 'info' });
+        // C1 文章 not read yet: it holds at 1 HP until every content question was asked, so all-right can pay.
+        const artLeft = q.gram?.sys === 'notice' && c1ArticleOpen(s, b) && b.notice!.i < (noticeById(b.notice!.id)?.qs.length ?? 0);
+        if (!artLeft) {
+          b.finishOwn = true;
+          log.push({ text: `${tagOf(b)}只剩一口气：最后一下要答它自己的词。`, tone: 'info' });
+        } else log.push({ text: `${tagOf(b)}只剩一口气，可文章还有题没答：答完它们，最后一下再答它自己的词。`, tone: 'info' });
       }
       if (m.hp <= 0) {
         const overkill = -m.hp;

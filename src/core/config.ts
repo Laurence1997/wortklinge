@@ -56,8 +56,10 @@ export const CONFIG = {
   /** 0.3 提速 (curve 2): Lv1–5 need ×0.7 (was 0.25: sim put Lv5 at ~5 min), Lv6–10 ×0.4 of the base curve; Lv11+ unchanged. */
   earlyXpMult: (level: number) => (level <= 5 ? 0.7 : level <= 10 ? 0.4 : 1),
   /** 1.0.12 (Lucas 2026-11-28「按推荐」): 121–160 级 asked about 108 XP per new B2 word against 87 at 81–120, and every
-   *  B2 fight starts with an article. ×0.8 brings the XP per word back in line with 81–120. 161–200 is looked at apart. */
-  b2XpMult: (level: number) => (level >= 121 && level <= 160 ? 0.8 : 1),
+   *  B2 fight starts with an article. ×0.8 brings the XP per word back in line with 81–120.
+   *  Lucas 2026-11-28「按推荐」: 161–200 (C1, no new words) ×0.8 too, together with C1 field monsters at your level
+   *  (src/core/c1.ts) and boss replays far below you paying the level-gap share (src/core/boss.ts bossPay). */
+  b2XpMult: (level: number) => (level >= 121 && level <= 200 ? 0.8 : 1),
   xpPerHour: 1000,
   /** Highest level of the released content (121–200 级 regions 13–20, rev 488). Below it, the cap is the end of the
    *  first 突破试炼 stage not passed yet (src/core/stages.ts: 30 / 80 / 120 / 160). */
