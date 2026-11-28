@@ -799,3 +799,7 @@ svg.gm-path { display: block; width: 100%; height: auto; max-height: 420px; }
 .rules-board .rb-exc-tag { display: inline-block; font-size: 12px; color: var(--bad); border: 1px solid currentColor; border-radius: 3px; padding: 0 5px; margin-right: 6px; }
 .rules-board .rb-nav { justify-content: space-between; }
 .gender-hint { color: var(--gold); }
+
+/* 1.0.12 试玩 #77: 蚀变 level bands on the big map */
+.wm-seg-name { font-size: 12px; }
+.wm-seg.locked .wm-name, .wm-seg.locked .wm-lv { fill: #f4f1ec; }

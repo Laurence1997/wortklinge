@@ -40,6 +40,8 @@ const STAGES: Array<{ id: Stage; zh: string; regions: number[]; x: number }> = [
 const stageOfRegion = (r: number): Stage => STAGES.find((st) => st.regions.includes(r))?.id ?? 'A1';
 const ERODE_RED = '#8a1424';
 const SEG_LEVELS: Record<number, string> = { 8: '71–80', 11: '101–110', 15: '141–150', 19: '181–190' };
+/** 1.0.12 试玩 #77: where the 蚀变 band plates stand (near the road between the two cities each sits between). */
+const SEG_SPOT: Record<number, [number, number]> = { 8: [612, 312], 11: [782, 305], 15: [1000, 420], 19: [1120, 268] };
 
 const NS = 'http://www.w3.org/2000/svg';
 function s(tag: string, attrs: Record<string, string | number> = {}, ...kids: Array<SVGElement | string>): SVGElement {
@@ -114,6 +116,26 @@ export function worldMap(c: WorldMapCtx): HTMLElement {
     const mx = (ax + bx) / 2 + (by - ay) * 0.15;
     const my = (ay + by) / 2 - (bx - ax) * 0.15;
     svg.append(s('path', { d: `M${ax},${ay} Q${mx},${my} ${bx},${by}`, fill: 'none', stroke: lit ? '#fff5d8' : 'rgba(120,112,100,.5)', 'stroke-width': lit ? 4 : 3, 'stroke-dasharray': lit ? '2 9' : '2 10', 'stroke-linecap': 'round', class: 'wm-road' }));
+  }
+
+  // ---- 1.0.12 试玩 #77: the 蚀变 level bands (71–80, 101–110, 141–150, 181–190) have no city of their own; a small
+  // plate on the road between the two cities they sit between keeps the level plates continuous.
+  for (const e of ERODE_DEFS) {
+    const i = order.findIndex((r) => r === e.seg + 1);
+    if (i < 1 || order[i - 1] !== e.seg - 1) continue;
+    const [x, y] = SEG_SPOT[e.seg] ?? SPOT[order[i]];
+    const q = segs.find((z) => z.seg === e.seg);
+    const st = q?.state ?? 'hidden';
+    const name = st === 'hidden' ? '蚀变带' : e.zh.replace(/「.*」/, '');
+    const lv = `Lv ${SEG_LEVELS[e.seg] ?? ''}${st === 'hidden' ? ' 未开放' : st === 'done' ? ' 已净化' : ''}`;
+    const pw = Math.max(name.length * 13 + 14, lv.length * 7 + 14);
+    const g = s('g', { transform: `translate(${x},${y})`, class: 'wm-seg' + (st === 'hidden' ? ' locked' : '') });
+    g.append(s('rect', { x: -pw / 2, y: -15, width: pw, height: 30, rx: 2, fill: st === 'hidden' ? '#8f877a' : st === 'done' ? '#3b2a1c' : ERODE_RED, stroke: st === 'hidden' ? '#cfc8bb' : '#e8d3a6', 'stroke-width': 2, 'stroke-dasharray': st === 'hidden' ? '4 3' : '' }));
+    g.append(s('text', { y: -2, 'text-anchor': 'middle', class: 'wm-name wm-seg-name' }, name));
+    g.append(s('text', { y: 11, 'text-anchor': 'middle', class: 'wm-lv' }, lv));
+    const where = q?.hosts.length ? `第 ${q.hosts.join('、')} 区` : '';
+    g.append(s('title', {}, st === 'hidden' ? `${SEG_LEVELS[e.seg]} 级是蚀变带：打败第 ${e.after} 区的首领后，${where || '前面'}的旧场景会蚀变` : `${e.zh} · ${SEG_LEVELS[e.seg]} 级${where ? `：在${where}的旧场景里` : ''}${st === 'done' ? '（已净化）' : ''}`));
+    svg.append(g);
   }
 
   // ---- 零号站台

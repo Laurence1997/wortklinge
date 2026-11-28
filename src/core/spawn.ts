@@ -79,6 +79,18 @@ export function pickSpawns(s: GameState, zone: ZoneId, count: number, alive: Set
 
   // New words in list order (easiest first). No daily cap (言灵过载 removed 2026-11-20).
   // 词表导入 (2026-11-22): imported 优先 words of this scene come first, at most 3 at a time.
+  // 1.0.12 试玩 #34: 推定会 words (presumed known after placement) no longer crowd out the words you still have to
+  // learn (later-opening 蚀变 words sit at the end of the list): they take every other new slot, real new words first.
+  const placedFresh = fresh.filter((w) => isPlaced(s.words[w.id]));
+  if (placedFresh.length && placedFresh.length < fresh.length) {
+    const real = fresh.filter((w) => !isPlaced(s.words[w.id]));
+    const mixed: Word[] = [];
+    for (let i = 0; i < Math.max(real.length, placedFresh.length); i++) {
+      if (i < real.length) mixed.push(real[i]);
+      if (i < placedFresh.length) mixed.push(placedFresh[i]);
+    }
+    fresh.splice(0, fresh.length, ...mixed);
+  }
   const prio = new Set(s.wordImport?.ids ?? []);
   if (prio.size) fresh.splice(0, fresh.length, ...prioritise(fresh, prio));
   const newSlots = Math.min(count - out.length, Math.max(1, Math.ceil(count * 0.6)));

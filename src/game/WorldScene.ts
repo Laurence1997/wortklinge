@@ -198,12 +198,18 @@ export class WorldScene extends Phaser.Scene {
     this.refreshSigns();
 
     // Zone names written on the ground, very faint.
+    let fieldNo = 0;
     for (const z of this.zones) {
       if (z.id === 'camp' || z.id === 'markt') continue;
+      // 1.0.12 试玩 #105: on the scene map a field's name stands in the open band along the main road (between the
+      // north and south rows of scenes), alternating just above / below it, instead of on the map's top edge where
+      // it hid under the top menu or ran off the side.
+      const at = oldmap ? [] : SCENES.filter((x) => x.region === region && x.type === 'field' && x.zone === z.id).map((x) => x.at);
+      const band = at.length ? { x: (at.reduce((a, p) => a + p.x, 0) / at.length) * TILE + 8, y: (fieldNo++ % 2 ? 27.6 : 20.4) * TILE } : null;
       this.add
         // 美术小修 A (2026-11-26): on bright maps two short lines instead of one long one, so neighbouring zone names
         // no longer run into each other.
-        .text((z.rect.x + z.rect.w / 2) * TILE, Math.max((z.rect.y + 1.2) * TILE, FOG_EDGE + 9), // 雾边不进镜头: top-row names stay on screen
+        .text(band ? band.x : (z.rect.x + z.rect.w / 2) * TILE, band ? band.y : Math.max((z.rect.y + 1.2) * TILE, FOG_EDGE + 9), // 雾边不进镜头: top-row names stay on screen
            this.bright ? `${z.zh} · ${z.levels}\n${z.de}` : `${z.de} · ${z.zh} · ${z.levels}`, {
           fontFamily: FONT,
           fontSize: '8px',
@@ -478,6 +484,7 @@ export class WorldScene extends Phaser.Scene {
     else if (!opts.isEcho && !opts.scripted && kind !== 'shadow' && !m.elite && opinionEligible(this.ctrl.state, word) && Math.random() < OPINION.chance) m.opinion = true;
     this.styleMonster(m);
     this.monsters.push(m);
+    this.declutterPlates();
     this.nodes?.touch();
     container.setAlpha(0);
     this.tweens.add({ targets: container, alpha: m.kind === 'shadow' ? 0.5 : 1, duration: 600 });
@@ -534,6 +541,34 @@ export class WorldScene extends Phaser.Scene {
 
   refreshPlates(): void {
     for (const m of this.monsters) this.updateGlyph(m);
+    this.declutterPlates();
+  }
+
+  /** 1.0.12 试玩 #98: name plates on the scene map must not cover each other (long 「推定会·…」 plates side by side,
+   *  also those of the next scene over): a plate that would overlap one already placed moves below its monster
+   *  (under the ▼ teeth). Plates that jitter (stage 0) stay where they are and only count as taken space. */
+  declutterPlates(): void {
+    if (!this.nodes) return;
+    type Box = { x0: number; x1: number; y0: number; y1: number };
+    const taken: Box[] = [];
+    const rect = (m: MonsterEntity, top: number): Box => {
+      const k = m.container.scale || 1;
+      const w = m.label.width * k;
+      const hgt = m.label.height * k;
+      const { x, y } = m.container;
+      return { x0: x - w / 2, x1: x + w / 2, y0: y + top * k, y1: y + top * k + hgt };
+    };
+    const hits = (r: Box) => taken.some((t) => r.x0 < t.x1 && t.x0 < r.x1 && r.y0 < t.y1 && t.y0 < r.y1);
+    const fixed = (m: MonsterEntity) => m.stage === 0 || !m.label.text;
+    for (const m of this.monsters) if (fixed(m) && m.label.text) taken.push(rect(m, m.label.y - m.label.height));
+    for (const m of this.monsters) {
+      if (fixed(m)) continue;
+      const above = rect(m, -14 - m.label.height);
+      const below = rect(m, 12);
+      const under = hits(above) && !hits(below);
+      m.label.setOrigin(0.5, under ? 0 : 1).setY(under ? 12 : -14);
+      taken.push(under ? below : above);
+    }
   }
 
   /** 名牌 (Lucas 2026-11-25): the meaning in Chinese once you have met the word; glitch for a word never met and for

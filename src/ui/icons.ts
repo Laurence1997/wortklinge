@@ -7,7 +7,7 @@ import type { Slot } from '../core/types';
 import { dungeonTile, heroTile, heroTinyCanvas, CHAR_RAMP, CHARM_W, CHARM_X, heroCharm } from '../game/sprites';
 import type { Look } from '../core/look';
 import { NPC_ART } from '../data/npcArt';
-import { DRAWN_PAL } from '../data/drawnArt';
+import { DRAWN, DRAWN_PAL } from '../data/drawnArt';
 import { artKey, monsterCanvas, SHEET_URL, wordArt as kindArt, type MonArt, type SheetId } from '../game/monsterArt';
 
 const T = 16;
@@ -29,11 +29,33 @@ function loadSheet(): HTMLImageElement {
 
 const rgb = (hex: string) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
 
+/** 1.0.12 试玩 #78: Tiny Dungeon has no glasses or headphones; these negative tile ids draw the code-drawn word art. */
+const DRAWN_TILE: Record<number, string> = { [-1]: 'brille', [-2]: 'kopfhoerer' };
+
+function drawnTile(id: string): HTMLCanvasElement {
+  const cv = document.createElement('canvas');
+  cv.width = cv.height = T;
+  const ctx = cv.getContext('2d')!;
+  (DRAWN[id] ?? '').split('/').forEach((row, y) =>
+    [...row].forEach((ch, x) => {
+      if (ch === '.' || !DRAWN_PAL[ch]) return;
+      ctx.fillStyle = DRAWN_PAL[ch];
+      ctx.fillRect(x, y, 1, 1);
+    }),
+  );
+  return cv;
+}
+
 /** One 16×16 tile, recoloured (or as a shadow), cached. */
 function tileCanvas(tile: number, shadow: boolean, bright = false): HTMLCanvasElement {
   const key = `${tile}${shadow ? 's' : ''}${bright ? 'b' : ''}`;
   const hit = cache.get(key);
   if (hit) return hit;
+  const own = DRAWN_TILE[tile] ? drawnTile(DRAWN_TILE[tile]) : null;
+  if (own && !shadow) {
+    cache.set(key, own);
+    return own;
+  }
   // 美术小修 A (2026-11-26): on bright daily maps gear icons and portraits keep Kenney's own colours (like the map
   // figures), and shadows / empty slots are a light silhouette instead of near-black.
   if (bright && !shadow) {
@@ -51,7 +73,8 @@ function tileCanvas(tile: number, shadow: boolean, bright = false): HTMLCanvasEl
   const cv = document.createElement('canvas');
   cv.width = cv.height = T;
   const ctx = cv.getContext('2d', { willReadFrequently: true })!;
-  ctx.drawImage(sheet!, (tile % COLS) * T, Math.floor(tile / COLS) * T, T, T, 0, 0, T, T);
+  if (own) ctx.drawImage(own, 0, 0);
+  else ctx.drawImage(sheet!, (tile % COLS) * T, Math.floor(tile / COLS) * T, T, T, 0, 0, T, T);
   const img = ctx.getImageData(0, 0, T, T);
   const d = img.data;
   const ramp = (bright ? ['#a8957c', '#d6c8b2', '#d6c8b2', '#d6c8b2', '#d6c8b2'] : RAMP).map(rgb);
@@ -178,7 +201,7 @@ export function monsterIcon(art: MonArt, scale = 2, dead = false, cls = 'icon', 
 /** Map figures for NPCs (same tiles as their dialog portraits). */
 export const NPC_TILE: Record<string, number> = { hilde: 111, greta: 84, mira: 99, konrad: 86, brandt: 85, examiner: 96, weber: 100, lina: 88 };
 
-export const SLOT_TILE: Record<Slot, number> = { pen: 130, coat: 102, amulet: 101, dict: 66, glasses: 60, phones: 60 };
+export const SLOT_TILE: Record<Slot, number> = { pen: 130, coat: 102, amulet: 101, dict: 66, glasses: -1, phones: -2 };
 
 /** Speaker → portrait tile; shadow until the person is restored. */
 const PEOPLE: Array<[RegExp, number, string?]> = [

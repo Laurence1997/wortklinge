@@ -104,6 +104,7 @@ import { AREAS, SCENES, SCENE_BY_ID } from '../data/world';
 import { dropPages, pageNo, pageRegion, readPage, regionRestored, restorePage } from '../core/diary';
 import { SAYING_CFG, SAYINGS } from '../data/sayings';
 import { renderHud } from '../ui/hud';
+import { placeLabel } from './nodes';
 import { hideLoading } from '../ui/loading';
 import { Panels } from '../ui/panels';
 import { canListen } from '../ui/listen';
@@ -368,6 +369,8 @@ export class Controller {
 
   /** Standing by the bonfire (looks can be changed there for free). */
   nearBonfire(): boolean {
+    // 1.0.12 试玩 #18: on the scene map, standing in a scene with a bonfire (the camp) counts.
+    if (this.scene?.nodes?.here?.bonfire) return true;
     const b = this.scene?.map?.bonfire;
     const p = this.scene?.player;
     return !!b && !!p && Math.hypot(b.x * 16 + 8 - p.x, b.y * 16 + 8 - p.y) < 40;
@@ -397,7 +400,8 @@ export class Controller {
   }
 
   refresh(): void {
-    renderHud(this.state);
+    const here = this.scene?.nodes?.here;
+    renderHud(this.state, here ? placeLabel(here) : undefined);
     this.talentDot();
   }
 
@@ -1849,12 +1853,13 @@ export class Controller {
   }
 
   /** 越区引导: a field above your level asks once; after a yes its monsters keep their full level. */
-  mayEnterZone(zone: ZoneId): boolean {
+  mayEnterZone(zone: ZoneId, then?: () => void): boolean {
     const s = this.state;
     const gap = zoneMinLevel(zone) - s.level;
     if (gap <= 0 || s.flags[`zoneOk_${zone}`]) return true;
+    // 1.0.12 试玩 #56: 「进去」 carries on with the move that asked (then), instead of leaving you where you stood.
     say([{ who: SYS, text: `这里的怪比你高 ${gap} 级起。等级每差 1 级，它们的护甲翻一倍，也打得更疼。` }], undefined, [
-      { label: '进去', act: () => { s.flags[`zoneOk_${zone}`] = true; this.persist(); } },
+      { label: '进去', act: () => { s.flags[`zoneOk_${zone}`] = true; this.persist(); then?.(); } },
       { label: '先回去', act: () => undefined },
     ]);
     return false;
@@ -3678,8 +3683,9 @@ export class Controller {
     if (k === 'c' || k === 'i') this.panels.toggle('hero');
     else if (k === 'b') this.panels.toggle('codex');
     else if (k === 'n') this.panels.toggle('words');
-    else if (k === 't') this.panels.toggle('talents');
-    else if (k === 'j') this.panels.toggle('quests');
+    // 1.0.12 试玩 #76: T / J only where the menu shows 技能 / 任务.
+    else if (k === 't' && this.state.level >= CONFIG.region2Level) this.panels.toggle('talents');
+    else if (k === 'j' && this.state.quests) this.panels.toggle('quests');
     else if (k === 'h') this.panels.toggle('help');
     // First interaction unlocks audio in browsers.
     initAudio(this.state.settings.music, this.state.settings.sfx);
