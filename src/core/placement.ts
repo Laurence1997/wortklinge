@@ -18,7 +18,7 @@ import { retire, stageOf } from './srs';
 import { itemTier, maxHp, now, type GameState } from './state';
 import { addItem, count } from './items';
 import type { Word, WordProgress } from './types';
-import { fullForm, hasArticleQuestion, WORDS } from '../data/words';
+import { fullForm, hasArticleQuestion, WORD_BY_ID, WORDS } from '../data/words';
 import { sameMeaning } from './screen';
 import { itemScore, makeItem, slotsAt } from './loot';
 import { tierIlvl } from './forge';
@@ -167,7 +167,9 @@ export interface PlaceRun {
   failed: Set<number>;
   results: Array<{ word: Word; res: PlaceRes; input: string; band: number }>;
   current: Word | null;
-  last?: { word: Word; res: PlaceRes; input: string; verdict: Verdict };
+  last?: { word: Word; res: PlaceRes; input: string; verdict: Verdict; other?: Word };
+  /** 1.0.12 (#43): the word whose one 「换一个词再写」 retry is used up (the player wrote another real word). */
+  retried?: string;
   over: boolean;
   /** Checking a skipped band after the next one failed: pass or fail, the test ends there. */
   verifying?: boolean;
@@ -336,6 +338,13 @@ export function startPlacement(s: GameState, rng: Rng, start = 0): PlaceRun {
   return run;
 }
 
+/** Another real word the input spells (a synonym like völlig for 「彻底的」, or just another word), if any. */
+export function otherWord(input: string, w: Word): Word | undefined {
+  const n = normalize(input).replace(/^(der|die|das) /, '');
+  if (!n || n === normalize(w.de)) return undefined;
+  return WORDS.find((x) => x.id !== w.id && !x.tutorial && x.family !== 'truhe' && normalize(x.de) === n);
+}
+
 /** Grade one answer: right, 半对 (right word, article wrong or missing, or one letter off), or wrong. */
 export function gradePlace(input: string, w: Word): { res: Exclude<PlaceRes, 'skip'>; verdict: Verdict; wrote: Word } {
   const cands = [w, ...placeWords().filter((x) => x.id !== w.id && sameMeaning(x, w))];
@@ -361,6 +370,14 @@ export function answerPlacement(s: GameState, run: PlaceRun, input: string, rng:
   let wrote = w;
   if (!skip && input.trim()) ({ res, verdict, wrote } = gradePlace(input, w));
   else verdict = gradeTyped('', w, hasArticleQuestion(w));
+  // 1.0.12 (#43): a real German word that is not the one asked (often a synonym) is not graded the first time:
+  // the player is told what it means and writes again (once per word).
+  const other = res === 'wrong' && run.retried !== w.id ? otherWord(input, w) : undefined;
+  if (other) {
+    run.retried = w.id;
+    run.last = { word: w, res, input: input.trim(), verdict, other };
+    return;
+  }
   run.results.push({ word: wrote, res, input: input.trim(), band: run.band });
   run.last = { word: wrote, res, input: input.trim(), verdict };
   run.asked += 1;
@@ -408,6 +425,8 @@ export interface PlaceOutcome {
   half: number;
   gaps: number;
   placed: number;
+  /** 1.0.12 (#94): the 入学礼 given with the jump (shown on the result page). */
+  kit?: { tier: number; gold: number; tablets: number } | null;
 }
 
 const FAR = 9e15;
@@ -481,13 +500,92 @@ export function applyPlacement(s: GameState, run: PlaceRun, t = now(s), _opts: {
   for (let r = 2; r <= region; r++) s.flags[`seenArea${r}`] = true;
   // 审查修订 C4 → 1.0.10 (Lucas 11-27「按推荐」): a jump into a new region brings what a player who walked there would
   // carry — that region's shards credited up to tier 3, a tier-3 set, gold for the skipped levels and a full tablet stock.
-  if (gained.length && region > 1) placementKit(s, region, gained[0] - 1, level);
+  const kit = gained.length && region > 1 ? placementKit(s, region, gained[0] - 1, level) : null;
   const prev = s.placement;
   s.placement = { at: t, level: levelFor(top), top: Math.max(top, prev?.top ?? -1), checks: prev?.checks ?? {} };
   s.flags.placeKnown = learnedCount(s);
   s.flags.placeAsked = true;
-  run.outcome = { top, level, gained, region, retired, half, gaps, placed };
+  run.outcome = { top, level, gained, region, retired, half, gaps, placed, kit };
   return run.outcome;
+}
+
+// ---- 1.0.12 (#37): a test in progress survives a reload ---------------------------------------
+
+/** A PlaceRun as plain JSON (word ids instead of words, arrays instead of sets). */
+export interface PlaceRunSave {
+  daily: boolean;
+  band: number;
+  start: number;
+  descending: boolean;
+  queue: string[];
+  asked: number;
+  right: number;
+  extended: boolean;
+  passed: number[];
+  skipped: number | null;
+  failed: number[];
+  results: Array<{ id: string; res: PlaceRes; input: string; band: number }>;
+  current: string | null;
+  over: boolean;
+  verifying?: boolean;
+  retried?: string;
+  claim?: { top: number; raw: number; fakes: string[]; unpicked: string[] };
+}
+
+export function savePlaceRun(run: PlaceRun, daily: boolean): PlaceRunSave {
+  const c = run.claim;
+  return {
+    daily,
+    band: run.band,
+    start: run.start,
+    descending: run.descending,
+    queue: run.queue.map((w) => w.id),
+    asked: run.asked,
+    right: run.right,
+    extended: run.extended,
+    passed: [...run.passed],
+    skipped: run.skipped,
+    failed: [...run.failed],
+    results: run.results.map((r) => ({ id: r.word.id, res: r.res, input: r.input, band: r.band })),
+    current: run.current?.id ?? null,
+    over: run.over,
+    verifying: run.verifying || undefined,
+    retried: run.retried,
+    claim: c ? { top: c.top, raw: c.raw, fakes: c.fakes, unpicked: c.unpicked.map((w) => w.id) } : undefined,
+  };
+}
+
+/** Back from JSON; words no longer on the list are dropped. Null when nothing usable is left. */
+export function loadPlaceRun(x: PlaceRunSave | undefined): PlaceRun | null {
+  if (!x || !Array.isArray(x.results)) return null;
+  const word = (id: string | null | undefined) => (id ? WORD_BY_ID[id] : undefined);
+  const ws = (ids: string[] | undefined) => (ids ?? []).map(word).filter((w): w is Word => !!w);
+  const results = x.results.flatMap((r) => {
+    const w = word(r.id);
+    return w ? [{ word: w, res: r.res, input: r.input, band: r.band }] : [];
+  });
+  const current = word(x.current) ?? null;
+  const queue = ws(x.queue);
+  const run: PlaceRun = {
+    band: x.band,
+    start: x.start,
+    descending: !!x.descending,
+    queue,
+    asked: x.asked,
+    right: x.right,
+    extended: !!x.extended,
+    passed: new Set(x.passed ?? []),
+    skipped: x.skipped ?? null,
+    failed: new Set(x.failed ?? []),
+    results,
+    current: current ?? (x.over ? null : queue.shift() ?? null),
+    over: !!x.over,
+    verifying: x.verifying || undefined,
+    retried: x.retried,
+    claim: x.claim ? { top: x.claim.top, raw: x.claim.raw, fakes: x.claim.fakes ?? [], unpicked: ws(x.claim.unpicked) } : undefined,
+  };
+  if (!run.current) run.over = true;
+  return run;
 }
 
 /** Tier a placed player starts on in the entry region (a player who walked there leaves a region at about 2–3). */

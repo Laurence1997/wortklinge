@@ -13,7 +13,7 @@ import { fillGems, gemSum } from './gems';
 import { dictMain, PHONES_PER_TIER } from './loot';
 import { itemTier } from './state';
 import { addGearKill, gear, affinityOf, affixTotal, attack, engraved, critChance, gearPen, maxHp, now, wearsLegend, type GameState } from './state';
-import type { Element, Intent, Move, Word } from './types';
+import type { Element, Intent, Move, Word, WordProgress } from './types';
 import { gradeCompose } from './aiPractice';
 import { clozeModeAt, noteCloze } from './adaptive';
 import { gradeLink, gradeOrder, gradeSlot, linkTask, orderTask, SLOT_RECENT, slotNouns, slotTask, WRITE_CHANCE, type SlotTask } from './writing';
@@ -410,6 +410,8 @@ export interface Battle {
   /** 快速通道 (Lucas 2026-11-25): a 推定会 word met in the field. 「我认识它」 written right retires it (3 shards, no
    *  XP); declined or wrong, it is a missed word and is learned as new. */
   presumed?: boolean;
+  /** 1.0.12 (#92): the 推定会 entry dropped at the start; put back if the fight ends with the word never answered. */
+  presumedEntry?: WordProgress;
   /** The player took the 直接叫名 offer: the next attack question is that dictation. */
   direct?: boolean;
   /** 斩杀: this fight showed the word's spelling (a question with the German on screen, or a wrong answer's
@@ -446,6 +448,14 @@ export function monsterStats(level: number, stage: Stage, kind: Kind, overdue: n
   return { hp, dmg };
 }
 
+/** 1.0.12 (#92): a 推定会 word whose fight ended without a single answer (fled, or the fight ended elsewhere) stays
+ *  推定会 instead of turning into a new word. True when the entry was put back. */
+export function restorePresumed(s: GameState, b: Pick<Battle, 'presumedEntry' | 'settled' | 'word'>): boolean {
+  if (!b.presumedEntry || b.settled || s.words[b.word.id]) return false;
+  s.words[b.word.id] = b.presumedEntry;
+  return true;
+}
+
 export function startBattle(
   s: GameState,
   word: Word,
@@ -455,6 +465,7 @@ export function startBattle(
   const t = now(s);
   // 快速通道: a 推定会 word comes as a new monster with the 「我认识它」 offer; its entry is dropped (missed unless named).
   const presumed = !opts.tutorial && !opts.trial && isPlaced(s.words[word.id]);
+  const presumedEntry = presumed ? s.words[word.id] : undefined;
   if (presumed) delete s.words[word.id];
   const kind = kindOf(s, word, t);
   const stage = stageOf(s, word, t);
@@ -488,6 +499,7 @@ export function startBattle(
     overdue,
     rusty: rusty || undefined,
     presumed: presumed || undefined,
+    presumedEntry,
     stage,
     isEcho: !!opts.isEcho,
     tutorial,

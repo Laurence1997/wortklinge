@@ -896,6 +896,9 @@ export class BattleUI {
     if (b.cutReady && !b.outcome)
       movesEl.append(h('button.btn.primary', { disabled: this.phase !== 'choose', onclick: () => this.cut(), title: '斩杀（Enter）：你会写它了，一键秒杀，经验和掉落照拿' }, h('kbd', 'Enter'), '斩杀', h('small', '一键秒杀 · 以后不用再背')));
     // 直接叫名 (Lucas 2026-11-25): first meeting only, before its first question.
+    // 1.0.12 (#47): players who said 「没学过」 get this small button instead of a pop-up before every new word.
+    if (b.directOffer && !b.outcome && this.phase === 'choose' && moves.length > 1)
+      movesEl.append(h('button.btn.ghost', { onclick: () => this.directName(), title: '直接叫名：不看提示写出它，写对直接斩杀，写错照常学、不罚' }, '我认识它', h('small', '直接叫名')));
     if (moves.length > 1 || b.cutReady) {
       for (const mv of moves) {
         // 2026-11-22 精简出手按钮: the finisher shows only when the resource bar is full.
@@ -1110,7 +1113,7 @@ export class BattleUI {
       wrap.append(
         h(
           'div.board',
-          h('div.board-title', '初见 · 先认识它，下一题就写'),
+          h('div.board-title', has(this.ctrl.state.level, 'typing') ? '初见 · 先认识它，下一题就写' : '初见 · 先认识它，下一题考你认不认得'), // 1.0.12 (#102): no typing at Lv1
           h('div', { style: 'font-size:20px' }, h('b', qq.teach.de), `　${qq.teach.zh}　`, h('button.btn.ghost.small', { onclick: () => this.ctrl.speak(qq.teach!.de), title: '再听一遍' }, '🔊')),
         ),
       );

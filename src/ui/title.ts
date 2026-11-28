@@ -1,7 +1,7 @@
 import { applyTheme } from './theme';
 import { CONFIG } from '../core/config';
 import { LATER_BOSS } from '../data/bossesLater';
-import { heroIcon } from './icons';
+import { heroIcon, heroPreview } from './icons';
 import { DEFAULT_LOOK, HAIR_COLORS, LOOK_OPTIONS, type Look } from '../core/look';
 import type { GameState } from '../core/state';
 import { $, clear, h } from './dom';
@@ -65,7 +65,7 @@ export function showTitle(opts: {
   const preview = h('div.hero-preview');
   const card = h('div.hero-card', preview, h('div.hero-name', '……'), h('div.hero-origin'));
   const drawCard = () => {
-    preview.replaceChildren(heroIcon(look.value(), 8));
+    preview.replaceChildren(heroPreview(look.value()));
     (card.querySelector('.hero-name') as HTMLElement).textContent = name.value.trim() || 'Lucas';
     const o = ORIGINS.find(([v]) => v === origin.value())?.[1] ?? '';
     (card.querySelector('.hero-origin') as HTMLElement).textContent = `${o} · ${ORIGIN_INFO[origin.value()]?.de[look.value().gender === 1 ? 1 : 0] ?? ''}`;
