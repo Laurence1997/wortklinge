@@ -15,7 +15,7 @@ import { ADV, adventurerById, adventurerPrompt, adventurerScene, GREET, notePkPa
 import { TICK_TURN } from '../core/combat';
 import { loadPron, pronCached } from '../ui/phoneme';
 import { icon, setRestored, SLOT_TILE } from '../ui/icons';
-import { answerPlacement, applyPlacement, backfillPlacementKit, PLACE_KIT_TIER, canPlaceAgain, estimatePicks, pickBoard, placeAgainIn, regionFor, startFromPicks, startPlacement, stopPlacement, type PickBoard, type PlaceRun } from '../core/placement';
+import { answerPlacement, applyPlacement, backfillPlacementKit, PLACE_KIT_TIER, canPlaceAgain, estimatePicks, loadPlaceRun, pickBoard, placeAgainIn, regionFor, savePlaceRun, startFromPicks, startPlacement, stopPlacement, type PickBoard, type PlaceRun } from '../core/placement';
 import { answerScreen, claimScene, SCREEN, startScreen, type ScreenRun, type ScreenScope } from '../core/screen';
 import type { Look } from '../core/look';
 // The game controller: owns the save, runs battles and tutorials, and glues the
@@ -23,7 +23,7 @@ import type { Look } from '../core/look';
 
 import { answerBoss, bossPay, startBoss, type BossFight } from '../core/boss';
 import { bonfireRefill, grantStarter, tabletHeal, useItem, CONSUMABLE, count as itemCount, buyConsumable, type Consumable } from '../core/items';
-import { alignPairs, canHint, hintOf, ITEM_TURN, linkPack, phraseCards, startPhraseBattle, makeQuestion, monsterStats, pickHint, resetClassFx, resolveTurn, rollSaying, shoutLine, startBattle, type Battle, type Question, type TurnReport, type Tutorial } from '../core/combat';
+import { alignPairs, canHint, hintOf, ITEM_TURN, linkPack, phraseCards, startPhraseBattle, makeQuestion, monsterStats, pickHint, resetClassFx, resolveTurn, restorePresumed, rollSaying, shoutLine, startBattle, type Battle, type Question, type TurnReport, type Tutorial } from '../core/combat';
 import { CONFIG, xpToNext } from '../core/config';
 import { favour, FAVOUR, KONRAD_WORDS, QUESTS, questEvent, questState, startQuest, type QuestEvent, type QuestId } from '../core/quests';
 import { CHEST_ZH, CHESTS, lockWord, openChest, type ChestKind } from '../core/chest';
@@ -331,8 +331,11 @@ export class Controller {
     if (rollDay(this.state)) this.scene.spawnAll();
     if (this.state.region === 2 && startQuest(this.state, 'main2')) questEvent(this.state, 'enterMarket');
     if (!this.state.flags.intro) {
-      if (!this.state.flags.placeAsked) this.askPlacement();
-      else this.intro();
+      if (!this.state.flags.placeAsked) {
+        // 1.0.12 (#37): a test interrupted by a reload carries on where it stopped.
+        if (this.state.placeRun && !this.state.placeRun.daily) this.openPlacement(false);
+        else this.askPlacement();
+      } else this.opening(regionFor(this.state.level));
     } else this.welcomeBack();
     hideLoading();
   }
@@ -412,7 +415,10 @@ export class Controller {
   persist(): void {
     stampTiers(this.state);
     stampBoard(this.state);
+    // 1.0.12 (#92): a 推定会 word in a fight not yet answered is saved as 推定会, so a reload mid-fight keeps it.
+    const back = this.pack.filter((x) => restorePresumed(this.state, x));
     save(this.state);
+    for (const x of back) delete this.state.words[x.word.id];
   }
 
   speak(text: string, rate?: number): void {
@@ -431,8 +437,25 @@ export class Controller {
 
   // ---- Story & tutorials --------------------------------------------------------------
 
-  private intro() {
-    // 6000 词导入: the one save reset, explained once to players who were here before.
+  /** 1.0.12 (#88): the level-1 opening (heartbeat, the bread) only for a level-1 start; a placed player skips it. */
+  private opening(region?: number, go = false) {
+    const s = this.state;
+    if (s.level <= 1) return this.intro();
+    s.flags.intro = true;
+    s.flags.brotDone = true;
+    // The tutorial bread never spawns again: it counts as 推定会 like the rest of the passed bands.
+    if (!s.words.brot) s.words.brot = { stage: 3, due: 9e15, ctxDone: true, placed: now(s), firstSeen: now(s), lastSeen: now(s), relapse: 0, correct: 0, wrong: 0, read: 0, write: 0 };
+    const reset = this.resetLines();
+    this.persist();
+    const far = region !== undefined && region > (s.region ?? 1);
+    if (far && go) return reset.length ? say(reset, () => this.travel(region as RegionId)) : this.travel(region as RegionId);
+    say([...reset, { who: HILDE, text: '醒了？看来你早就认得不少名字，用不着我从火边那块面包教起。' }], () => {
+      if (far) this.offerPlaceTravel(region!);
+    });
+  }
+
+  /** 6000 词导入: the one save reset, explained once to players who were here before. */
+  private resetLines(): Line[] {
     const reset: Line[] = this.state.flags.reset6000
       ? [
           { who: SYS, text: '【0.7 + 0.8】词表换成了 6000 词，场景和地图都重排了，旧存档里的词对不上了，所以这一次所有存档从头开始（以后的更新不会再清档）。' },
@@ -440,6 +463,11 @@ export class Controller {
         ]
       : [];
     delete this.state.flags.reset6000;
+    return reset;
+  }
+
+  private intro() {
+    const reset = this.resetLines();
     const lines: Line[] = [
       ...reset,
       { who: SYS, text: '……心跳恢复。' },
@@ -470,16 +498,9 @@ export class Controller {
       if (s.level >= 3) lines.push({ who: SYS, text: '金色名牌的「残句」是句子怪，打散它收短句卡。' });
       window.setTimeout(() => say(lines), 800);
     }
-    // 0.6: one note for players who were already playing.
-    if (!s.flags.seen06) {
-      s.flags.seen06 = true;
-      if (s.level < 3) return;
-      const lines: Line[] = [{ who: SYS, text: '【0.6】每个场景有了自己的小插画和一组固定的词：词学到半名，画里对应的东西就亮起来。' }];
-      lines.push({ who: SYS, text: '一个场景的词全到半名，会掉一页邻居的日记残页，按 B 在图鉴里填回去，还可以读出来。' });
-      if (s.level >= 9) lines.push({ who: SYS, text: '护符亲和改了：对上亲和的怪选对相，言灵 +2；破甲照旧。' });
-      if (s.level >= 18) lines.push({ who: SYS, text: '第 3 区铁轨镇开了（21–30 级），等级上限到 30。打赢第 2 区首领吞秤者就能过去；21 级起几乎每一级都有新东西。' });
-      window.setTimeout(() => say(lines), 900);
-    }
+    // 0.6 note removed in 1.0.12 (#42/#49/#60/#69/#87): every save alive now was
+    // started after the 0.7+0.8 reset, so nobody is a 0.6 player any more; the flag is set silently.
+    s.flags.seen06 = true;
   }
 
   /** Lessons tied to a level (游戏设计 › 新手引导). */
@@ -736,11 +757,16 @@ export class Controller {
     setPrompt(null);
     // 直接叫名 (审查修订): asked before the fight, so nothing about the word is shown or read first.
     const b0 = this.battle;
+    if (b0.directOffer && this.pack.length === 1 && s.flags.noGerman) {
+      // 1.0.12 (#47): a player who said 「没学过」 gets no pop-up for every new word, only a small button in the fight.
+      this.battleUI.open();
+      return;
+    }
     if (b0.directOffer && this.pack.length === 1) {
       b0.directOffer = false;
       say([{ who: SYS, text: '一个没见过的名字扑了过来。你本来就认识它吗？' }], undefined, [
         { label: '我认识它（直接叫名：不看提示写出来，写对就能斩杀）', act: () => ((b0.direct = true), this.battleUI.open()) },
-        { label: '不认识，开始学', act: () => this.battleUI.open() },
+        { label: '不认识，开始学', act: () => (delete b0.presumedEntry, this.battleUI.open()) }, // declined: a missed word (#92)
       ]);
       return;
     }
@@ -1093,6 +1119,7 @@ export class Controller {
     }
     // 直接叫名 missed: no penalty, so it isn't counted as a wrong answer either.
     const free = (!!q.directName && !r.correct) || !!q.chain; // 格位连锁 is a bonus, not a record on the word
+    if (q.directName && !r.correct) delete b.presumedEntry; // a missed 直接叫名 on a 推定会 word stays missed (#92)
     if (!free) recordAnswer(s, b.word, r.correct);
     flushSkill(s, b.word, b);
     // 场景精英 ③ 造句 (rev 459): from level 10 a logged-in player's sentence also goes to the AI teacher. The rule check
@@ -1177,15 +1204,20 @@ export class Controller {
       const isBread = b.word.id === 'brot' && !s.flags.brotDone;
       const res = applyWin(s, b, this.rng, { heal: !inPack, pack: inPack });
       if (isBread) {
-        instantGuiming(s, b.word);
+        // 1.0.12 (#41): a 直接叫名 / 斩杀 kill already retired the word; the lent 归名 must not overwrite it.
+        const cut = !!b.cutReady || !!s.words[b.word.id]?.retired;
+        if (!cut) instantGuiming(s, b.word);
         s.flags.brotDone = true;
         this.scene.removeMonster(m, 'guiming');
         sfx.guiming();
-        banner('归名', 'das Brot · 面包');
+        banner(cut ? '斩杀' : '归名', 'das Brot · 面包');
         say([
           { who: SYS, text: '牙一颗颗掉下来。它又是一块面包了。' },
-          { who: SYS, text: '【归名】这次是借你的。以后要在不同的三天各打败它一次，最后一下默写全名' },
-          { who: HILDE, text: '……真叫回来了。东边回声巷，这种东西到处都是。去吧。火我守着。' },
+          cut
+            ? { who: SYS, text: '【斩杀】你不看提示就写出了全名：das Brot 直接退役，不用再练它了' }
+            : { who: SYS, text: '【归名】这次是借你的。以后要在不同的三天各打败它一次，最后一下默写全名' },
+          ...(s.level < 2 ? [{ who: SYS, text: '【1 级】这一级先用选择题认词，升到 2 级就开始自己打字写。' }] : []), // 1.0.12 (#103)
+          { who: HILDE, text: cut ? '……一口就叫回来了。东边回声巷，这种东西到处都是。去吧。火我守着。' : '……真叫回来了。东边回声巷，这种东西到处都是。去吧。火我守着。' },
         ], () => {
           const target = regionFor(s.level);
           if (target > (s.region ?? 1)) this.offerPlaceTravel(target);
@@ -1278,6 +1310,7 @@ export class Controller {
     if (lost) b.outcome = 'lose';
     else if (won) b.outcome = 'win';
     else b.outcome = 'fled';
+    if (!won) for (const x of pack) restorePresumed(s, x);
 
     if (won) {
       if (b.tutorial === 'loss') s.flags.pendingLoss = false;
@@ -1890,7 +1923,7 @@ export class Controller {
     if (s.level < SCREEN.fromLevel)
       return say([{ who: '考官', text: `「Noch nicht.」筛选 ${SCREEN.fromLevel} 级再来。不过你要是以前学过德语，可以先考分级考核。` }], undefined, [
         ...(trial ? [{ label: trial.label, act: () => this.stageExam(trial.stage) }] : []),
-        ...(canPlaceAgain(s) ? [{ label: '分级考核（测你会到哪一级）', act: () => this.openPlacement(true) }] : [{ label: `分级考核（再归名或斩杀 ${placeAgainIn(s)} 个词就能再考）`, act: () => {} }]),
+        ...(canPlaceAgain(s) ? [{ label: s.placeRun?.daily ? '分级考核（接着上次没考完的）' : '分级考核（测你会到哪一级）', act: () => this.openPlacement(true) }] : [{ label: `分级考核（再归名或斩杀 ${placeAgainIn(s)} 个词就能再考）`, act: () => {} }]),
         { label: '先不了', act: () => {} },
       ]);
     void region;
@@ -1913,7 +1946,7 @@ export class Controller {
       ...(trial ? [{ label: trial.label, act: () => this.stageExam(trial.stage) }] : []),
       ...((s.level >= BREAK.from || BREAK_EARLY) && !s.flags.a1Passed ? [{ label: s.level >= BREAK.from ? 'A1 突破试炼' : 'A1 突破试炼（提前考）', act: () => this.breakExam() }] : []),
       ...((s.level >= BREAK.from || BREAK_EARLY) && s.flags.a1Passed && !s.flags.a1Grammar ? [{ label: '补考语法', act: () => this.grammarRetake() }] : []),
-      ...(canPlaceAgain(s) ? [{ label: '分级考核（测你会到哪一级）', act: () => this.openPlacement(true) }] : [{ label: `分级考核（再归名或斩杀 ${placeAgainIn(s)} 个词就能再考）`, act: () => {} }]),
+      ...(canPlaceAgain(s) ? [{ label: s.placeRun?.daily ? '分级考核（接着上次没考完的）' : '分级考核（测你会到哪一级）', act: () => this.openPlacement(true) }] : [{ label: `分级考核（再归名或斩杀 ${placeAgainIn(s)} 个词就能再考）`, act: () => {} }]),
       { label: '先不了', act: () => {} },
     ]);
   }
@@ -1977,7 +2010,21 @@ export class Controller {
 
   /** New game (daily = false) or the examiner's 分级考核 (again after 30 more words learned). */
   openPlacement(daily: boolean): void {
-    this.panels.showPlacement(daily);
+    this.placeDaily = daily;
+    const saved = this.state.placeRun;
+    const run = saved && saved.daily === daily ? loadPlaceRun(saved) : null;
+    if (saved && !run) delete this.state.placeRun;
+    if (run) toast(run.results.length ? `接着上次的测试：已经答了 ${run.results.length} 题` : '接着上次的测试');
+    this.panels.showPlacement(daily, run);
+  }
+
+  private placeDaily = false;
+
+  /** 1.0.12 (#37): the run so far goes into the save after every step, so a reload does not lose it. */
+  private keepPlaceRun(run: PlaceRun): void {
+    if (run.outcome) delete this.state.placeRun;
+    else this.state.placeRun = savePlaceRun(run, this.placeDaily);
+    this.persist();
   }
 
   canPlaceNow(): boolean {
@@ -1990,22 +2037,26 @@ export class Controller {
 
   placeFromPicks(board: PickBoard, picked: Set<string>): void {
     const run = startFromPicks(this.state, this.rng, estimatePicks(board, picked));
+    this.keepPlaceRun(run);
     this.panels.setPlaceRun(run);
   }
 
   placeStart(band: number): void {
     const run = startPlacement(this.state, this.rng, band);
+    this.keepPlaceRun(run);
     this.panels.setPlaceRun(run);
   }
 
   placeAnswer(run: PlaceRun, input: string, skip = false): void {
     answerPlacement(this.state, run, input, this.rng, skip);
     const l = run.last;
-    if (l) logLine(`入学测试：${zhWithPos(l.word)} ${l.res === 'ok' ? `✓ ${fullForm(l.word)}` : l.res === 'half' ? `差一点 · ${fullForm(l.word)}` : `✗ ${fullForm(l.word)}`}`, l.res === 'ok' ? 'good' : 'bad');
+    if (l && !l.other) logLine(`入学测试：${zhWithPos(l.word)} ${l.res === 'ok' ? `✓ ${fullForm(l.word)}` : l.res === 'half' ? `差一点 · ${fullForm(l.word)}` : `✗ ${fullForm(l.word)}`}`, l.res === 'ok' ? 'good' : 'bad');
+    this.keepPlaceRun(run);
   }
 
   placeStop(run: PlaceRun): void {
     stopPlacement(run);
+    this.keepPlaceRun(run);
   }
 
   /** Apply the result (levels without a lesson each; one summary comes when the panel closes). */
@@ -2015,6 +2066,7 @@ export class Controller {
       const o = applyPlacement(this.state, run, undefined, { daily });
       for (const l of o.gained) this.onLevelUp(l, true);
       if (o.gained.length) this.milestone(`place${o.gained[o.gained.length - 1]}`);
+      delete this.state.placeRun;
       this.refresh();
       this.persist();
     }
@@ -2022,7 +2074,7 @@ export class Controller {
   }
 
   /** The test panel closed: apply what was answered, sum up the levels, then carry on (the opening for a new game). */
-  placeClosed(run: PlaceRun | null, daily: boolean): void {
+  placeClosed(run: PlaceRun | null, daily: boolean, go = false): void {
     const s = this.state;
     if (run && !run.outcome && run.results.length) {
       stopPlacement(run);
@@ -2030,20 +2082,24 @@ export class Controller {
       for (const l of o.gained) this.onLevelUp(l, true);
       if (o.gained.length) this.milestone(`place${o.gained[o.gained.length - 1]}`);
     }
+    delete s.placeRun;
     s.flags.placeAsked = true;
     this.refresh();
     this.persist();
     const o = run?.outcome;
     const next = () => {
-      if (!s.flags.intro) return this.intro();
-      if (o && o.region > (s.region ?? 1)) this.offerPlaceTravel(o.region);
+      // 1.0.12 (#94): 「去第 N 区」 on the result page goes straight there.
+      const far = !!o && o.region > (s.region ?? 1);
+      if (!s.flags.intro) return this.opening(far ? o!.region : undefined, go);
+      if (far && go) return this.travel(o!.region as RegionId);
+      if (far) this.offerPlaceTravel(o!.region);
     };
     if (!o?.gained.length) return next();
     banner(`Lv ${o.level}`, '分级入场');
     sfx.levelUp();
     const heads = o.gained.map((l) => ((UNLOCK_TEXT[l] ?? [])[0] ? `${l} 级 ${(UNLOCK_TEXT[l] ?? [])[0].split(/[：:，,]/)[0]}` : '')).filter(Boolean);
     const lines: Line[] = [{ who: SYS, text: `【新能力 · 跳到 ${o.level} 级】这一路的功能都开了，每样第一次出现时只给一行提示。按 H 能看怎么玩。之前各区没归名的词照常出怪，按你的等级给经验；标「推定会」的怪点「我认识它」写对一次就斩杀。营地篝火随时能传送到第 ${o.region} 区。` }];
-    if (o.region > 1) lines.push({ who: SYS, text: `入学礼：第 ${o.region} 区的碎片按一路打过来的进度记上，换上一套 ${PLACE_KIT_TIER} 档装备，补了金币，药片装满。之后靠碎片在篝火换更高档。` });
+    if (o.region > 1 && o.kit) lines.push({ who: SYS, text: `入学礼：第 ${o.region} 区的碎片按一路打过来的进度记上，换上一套 ${PLACE_KIT_TIER} 档装备，补了${o.kit?.gold ? ` ${o.kit.gold} ` : ''}金币，药片装满。之后靠碎片在篝火换更高档。` });
     const tLeft = talentPoints(s) - spent(s);
     if (tLeft > 0) lines.push({ who: SYS, text: `你有 ${tLeft} 个天赋点没点：按 T 打开「技能」点上，能加生命和伤害。` });
     for (let i = 0; i < heads.length; i += 8) lines.push({ who: SYS, text: heads.slice(i, i + 8).join(' · ') });
@@ -2061,8 +2117,8 @@ export class Controller {
   /** New game: asked once before the opening. */
   private askPlacement(): void {
     say([{ who: SYS, text: '开始之前：你学过德语吗？学过的话，先测一下你会多少词，会的直接跳过。' }], undefined, [
-      { label: '没学过，从头开始', act: () => { this.state.flags.placeAsked = true; this.persist(); this.intro(); } },
-      { label: '学过一些，先测一下（5 到 10 分钟）', act: () => this.openPlacement(false) },
+      { label: '没学过，从头开始', act: () => { this.state.flags.placeAsked = true; this.state.flags.noGerman = true; this.persist(); this.intro(); } },
+      { label: '学过一些，先测一下（会得越多题越多，随时可以停，进度会保存）', act: () => this.openPlacement(false) },
     ]);
   }
 

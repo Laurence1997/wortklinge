@@ -385,7 +385,7 @@ canvas.slot-icon.q-red { border-color: var(--q-red, #ff3a3a); }
 #title .box.wide { width: min(820px, 100%); }
 #title .create { display: grid; grid-template-columns: 220px 1fr; gap: 20px; text-align: left; padding: 18px 20px; }
 #title .hero-card { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 18px 10px; border: 1px solid var(--line-hi); background: radial-gradient(circle at 50% 70%, rgba(255,120,40,.22), rgba(20,6,8,.9) 65%); }
-#title .hero-preview canvas { width: 216px; height: 128px; image-rendering: pixelated; filter: drop-shadow(0 0 10px rgba(255,140,60,.35)); }
+#title .hero-preview canvas { max-width: 100%; image-rendering: pixelated; filter: drop-shadow(0 0 10px rgba(255,140,60,.35)); }
 #title .hero-name { font-family: var(--mono); font-size: 18px; color: var(--ink); }
 #title .hero-origin { font-size: 12px; color: var(--muted); text-align: center; line-height: 1.5; }
 #title .create-steps { display: grid; gap: 14px; }
@@ -445,6 +445,7 @@ body:has(#dialog:not([hidden])) #chat .chat-tabs .fold, body:has(#dialog:not([hi
 .place-word-tile { padding: 6px 12px; background: rgba(0,0,0,.25); border: 1px solid var(--line); color: var(--ink); cursor: pointer; font: inherit; font-size: 15px; border-radius: 4px; }
 .place-word-tile:hover { border-color: var(--red); }
 .place-word-tile.on { background: #3fae5a; border-color: #3fae5a; color: #fff; }
+.place-go { position: sticky; bottom: -18px; padding: 10px 0; background: var(--panel); z-index: 1; }
 .place-progress { display: flex; gap: 12px; align-items: center; margin: 4px 0 6px; }
 .place-pips { display: flex; gap: 4px; }
 .place-pips i { width: 14px; height: 14px; border-radius: 50%; border: 1px solid var(--line-hi); }

@@ -25,7 +25,7 @@ import type { Controller } from '../game/controller';
 import { $, autoGrow, clear, h, umlautButtons } from './dom';
 import { BREAK, examParts, examPassed, PART_ZH, type Exam } from '../core/breakthrough';
 import { pendingScenes, regionLeft, type ScreenRun } from '../core/screen';
-import { bandRange, levelFor, PLACE, regionFor, topPassed, type PickBoard, type PlaceRun } from '../core/placement';
+import { bandRange, levelFor, PLACE, PLACE_CAP, regionFor, topPassed, type PickBoard, type PlaceRun } from '../core/placement';
 import { CHEST_ZH, type ChestKind } from '../core/chest';
 import { playChest } from './chestFx';
 import { favour, FAVOUR, QUESTS, type QuestId } from '../core/quests';
@@ -98,8 +98,9 @@ export class Panels {
       // Closing mid-test keeps what was answered (it only ever raises the level).
       const run = this.place.run;
       const daily = this.place.daily;
+      const go = !!this.place.go;
       this.place = null;
-      window.setTimeout(() => this.ctrl.placeClosed(run, daily), 0);
+      window.setTimeout(() => this.ctrl.placeClosed(run, daily, go), 0);
     }
     if (this.open === 'exam' && this.exam) {
       const e = this.exam;
@@ -809,10 +810,10 @@ export class Panels {
 
   private screen: ScreenRun | null = null;
   /** 入学测试 / 分级考核: run is null while picking the starting band. */
-  private place: { run: PlaceRun | null; daily: boolean; hold: boolean; board?: PickBoard; picked: Set<string> } | null = null;
+  private place: { run: PlaceRun | null; daily: boolean; hold: boolean; board?: PickBoard; picked: Set<string>; go?: boolean } | null = null;
 
-  showPlacement(daily: boolean): void {
-    this.place = { run: null, daily, hold: false, picked: new Set() };
+  showPlacement(daily: boolean, run: PlaceRun | null = null): void {
+    this.place = { run, daily, hold: false, picked: new Set() };
     this.show('place');
   }
 
@@ -831,7 +832,8 @@ export class Panels {
         h('div.place-head', portrait('考官', 3) ?? '', h('div', h('div.place-say', '「Was kannst du schon?」'), h('div.small.muted', '先点出你认识的词（知道大概意思就算），我从你认识到的地方开始考几道打字题确认。会的直接斩杀，测出的等级只会往上调，随时可以结束。里面混了几个不存在的词，别乱点。'))),
         h('p.place-ask', '点出你认识的词：'),
       );
-      const groups: Array<[string, number, number]> = [['A1', 1, 30], ['A2', 31, 80], ['B1', 81, 120], ['B2', 121, 160]];
+      // 1.0.12 (#99): the groups reach the test's cap (200), so the 161–200 bands are on the board too.
+      const groups: Array<[string, number, number]> = [['A1', 1, 30], ['A2', 31, 80], ['B1', 81, 120], ['B2', 121, 160], ['C1', 161, PLACE_CAP]];
       for (const [label, glo, ghi] of groups) {
         const tiles = board.items.filter((it) => {
           const lo = bandRange(it.band)[0];
@@ -853,7 +855,7 @@ export class Panels {
       }
       wrap.append(
         h(
-          'div.row',
+          'div.row.place-go',
           { style: 'margin-top:12px;align-items:center;gap:10px' },
           h('button.btn.primary', { onclick: () => this.ctrl.placeFromPicks(board, picked) }, '点好了，开始确认 →'),
           h('button.btn', { onclick: () => this.ctrl.placeStart(0) }, '不点了，从头开始测'),
@@ -867,12 +869,17 @@ export class Panels {
     if (run.outcome) {
       const o = run.outcome;
       const rz = o.region === 1 ? '余烬营地' : AREAS.find((a) => a.region === o.region)?.zh ?? '';
+      const far = o.region > (this.ctrl.state.region ?? 1);
       wrap.append(
         h('h3', o.gained.length ? `测完了：从 ${o.level} 级起步，进第 ${o.region} 区「${rz}」。` : top < 0 ? '测完了：从头开始最合适。' : `测完了：你现在的等级已经够了（测出 ${levelFor(top)} 级）。`),
         h('p', `写对 ${o.retired} 个，直接斩杀。` + (o.half ? `冠词或拼写差一点的 ${o.half} 个记成半名，野外再写对一次就归名。` : '')),
         o.gaps ? h('p', `会的那几段里有 ${o.gaps} 个词没写出来或没点，它们会作为复习怪跟着你，按你的等级出、经验照拿。`) : '',
         o.placed ? h('p', `没抽到的 ${o.placed} 个词先算你会了（推定会）。之后每场战斗可能抽查一道：写对就斩杀，写错就变成复习怪。想快点清掉，可以找考官做全量筛选。`) : '',
-        h('div.row', h('button.btn.primary.duel-next', { onclick: () => this.close() }, '出发 ↵')),
+        // 1.0.12 (#94): the 入学礼 and a button straight to the entry region.
+        o.kit ? h('p', `入学礼：第 ${o.region} 区的碎片记到第 ${o.kit.tier} 档，换上一套 ${o.kit.tier} 档装备，${o.kit.gold} 金币${o.kit.tablets ? `，药片补了 ${o.kit.tablets} 片` : ''}。`) : '',
+        far
+          ? h('div.row', h('button.btn.primary.duel-next', { onclick: () => { pl.go = true; this.close(); } }, `去第 ${o.region} 区「${rz}」 ↵`), h('button.btn', { onclick: () => this.close() }, '先留在这里'))
+          : h('div.row', h('button.btn.primary.duel-next', { onclick: () => this.close() }, '出发 ↵')),
       );
       return wrap;
     }
@@ -881,6 +888,12 @@ export class Panels {
     const mine = run.results.filter((r) => r.band === run.band).slice(-run.asked);
     const pips = h('div.place-pips', ...Array.from({ length: need }, (_, k) => h(`i${mine[k] ? (mine[k].res === 'ok' || mine[k].res === 'half' ? '.ok' : '.no') : ''}`)));
     wrap.append(h('div.place-progress', h('b', `${lo}–${hi} 级`), pips, h('span.small.muted', `目前测出：${top < 0 ? '从头开始' : `${lv} 级起步（第 ${regionFor(lv)} 区）`}`)));
+    // 1.0.12 (#93): say when a band was skipped after 5/5, or when the test went back to check a skipped band.
+    if (run.verifying) wrap.append(h('p.small.muted', `上一段没过，回头确认刚才跳过的 ${lo}–${hi} 级：这一段过了就定在这里，没过就定在它下面。`));
+    else if (run.skipped !== null && run.skipped === run.band - 1) {
+      const [slo, shi] = bandRange(run.skipped);
+      wrap.append(h('p.small.muted', `上一段全对，${slo}–${shi} 级先跳过（算你会）。这一段要是没过，会回头确认那一段。`));
+    }
     const c = run.claim;
     if (c && !run.results.length)
       wrap.append(
@@ -893,7 +906,8 @@ export class Panels {
     const l = run.last;
     if (l) {
       const fb = h(`div.feedback.${l.res === 'ok' ? 'ok' : 'no'}`);
-      if (l.res === 'ok') fb.append(h('b', `✓ ${fullForm(l.word)}`));
+      if (l.other) fb.append(h('b', `换一个词再写`), h('span.note', `你写的 ${fullForm(l.other)} 是「${l.other.zh}」。这题要的是另一个词，再想想；想不起来就点「不会」。`));
+      else if (l.res === 'ok') fb.append(h('b', `✓ ${fullForm(l.word)}`));
       else if (l.res === 'half') fb.append(h('b', `差一点 · ${fullForm(l.word)}`), h('span.note', `你写的：${l.input}`), ...l.verdict.notes.slice(0, 1).map((n) => h('span.note', n)));
       else if (l.res === 'skip') fb.append(h('b', `不会 · ${fullForm(l.word)}`));
       else fb.append(h('b', `✗ ${fullForm(l.word)}`), h('span.note', `你写的：${l.input}`));
@@ -920,7 +934,7 @@ export class Panels {
     const go = () => {
       if (!input.value.trim()) return;
       this.ctrl.placeAnswer(run, input.value);
-      pl.hold = run.last?.res !== 'ok' && !run.over;
+      pl.hold = run.last?.res !== 'ok' && !run.last?.other && !run.over;
       this.render();
     };
     const skip = () => {

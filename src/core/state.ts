@@ -91,6 +91,8 @@ export interface GameState {
   wordImport?: { ids: string[]; pending: string[] };
   /** 入学测试 / 分级考核 (2026-11-25): last result and 推定会 spot-check counts. Optional: absent = never taken. */
   placement?: import('./placement').PlaceSave;
+  /** 1.0.12: a 入学测试 / 分级考核 still in progress (answers so far), so a reload does not lose it. Optional: absent = none. */
+  placeRun?: import('./placement').PlaceRunSave;
   /** 挑战怪 (rev 342): first-try record of the last field monsters. Optional: absent = none yet. */
   challenge?: import('./challenge').ChallengeSave;
   /** 语法线 (0.7–0.8): boards seen, dungeon floors cleared, review partner. Optional: absent = nothing yet. */
@@ -172,7 +174,7 @@ export function newGame(name: string, origin: string, t = Date.now()): GameState
     equipped: {},
     bag: [],
     echo: null,
-    flags: { seen05: true, srs2: true },
+    flags: { seen05: true, seen06: true, srs2: true },
     screen: { pending: {}, cursor: {} },
     xpCurve: XP_CURVE,
     skills: [],

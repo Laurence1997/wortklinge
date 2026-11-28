@@ -107,6 +107,27 @@ export function heroIcon(look: Look, scale = 4, raw = document.body.classList.co
   return cv;
 }
 
+/** 1.0.12 (#108): the character-creation preview. Same figure and book as heroIcon, but with a margin on the left
+ *  and the book clear of the figure (heroIcon packs them tight for the HUD). */
+export function heroPreview(look: Look, scale = 6, raw = document.body.classList.contains('bright')): HTMLCanvasElement {
+  const pad = 1;
+  const gap = 0;
+  const cv = document.createElement('canvas');
+  cv.width = (pad + T + gap + T) * scale;
+  cv.height = T * scale;
+  cv.className = 'mon-icon hero-icon';
+  const draw = () => {
+    const ctx = cv.getContext('2d')!;
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(heroCharm(0), (pad + T + gap) * scale, 0, T * scale, T * scale);
+    ctx.drawImage(heroTinyCanvas(heroTile(look), look.color, sheet!, raw), pad * scale, 0, T * scale, T * scale);
+  };
+  const img = loadSheet();
+  if (img.complete && img.naturalWidth) draw();
+  else waiting.push(draw);
+  return cv;
+}
+
 /** The monster's look: special monsters keep their old Tiny Dungeon tiles, everyone else looks like their word. */
 export function monsterArt(b: Battle, boss = false): MonArt {
   const d = (n: number): MonArt => ({ sheet: 'd', n });

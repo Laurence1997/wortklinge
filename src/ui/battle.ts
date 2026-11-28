@@ -239,7 +239,8 @@ export class BattleUI {
       this.render();
       return;
     }
-    this.ctrl.speak(this.b.intent.line);
+    // 1.0.12 (#47): while the 「我认识它」 button stands, the monster's line (often the word's own example) is not read.
+    if (!this.offerDirect()) this.ctrl.speak(this.b.intent.line);
     teachPhase(this.b);
     const moves = this.moves().filter((m) => moveReady(this.ctrl.state, this.b, m));
     // 词性三相: a noun monster waits for a stance first (it stays picked for this monster).
@@ -635,11 +636,17 @@ export class BattleUI {
     this.submit(pick);
   }
 
+  /** 1.0.12 (#47): the in-fight 「我认识它」 button stands (「没学过」 players) — not while the 读出来 note shows the word. */
+  private offerDirect(): boolean {
+    const b = this.b;
+    return !!b.directOffer && !b.outcome && !(canListen() && readTarget(this.ctrl.state, b));
+  }
+
   /** 直接叫名: the next attack question is a plain dictation. */
   directName(): void {
-    if (this.phase !== 'choose' || !this.b.directOffer || this.b.outcome) return;
+    if (this.phase !== 'choose' || !this.offerDirect()) return;
     this.b.direct = true;
-    this.choose('attack');
+    this.startTurn(); // straight to the dictation, like the offer before the fight (no stance first)
   }
 
   /** 斩杀: the verified monster dies on the spot. */
@@ -851,7 +858,7 @@ export class BattleUI {
         // 审查修订: the line often is the word's own example — while a finisher / ultimate or 直接叫名 is answered it
         // only mumbles.
         ...(() => {
-          const mum = b.direct || (this.phase === 'answer' && (this.move === 'sentence' || !!this.question?.ult || lineLeaks(it.line, this.question)));
+          const mum = b.direct || (this.phase === 'choose' && this.offerDirect()) || (this.phase === 'answer' && (this.move === 'sentence' || !!this.question?.ult || lineLeaks(it.line, this.question)));
           return [h('div.line', mum ? '… mmh …' : it.line), h('div.zh', !mum && this.zhShown && this.b.curse !== 'forget' ? plainZh(it.zh) : '')];
         })(),
         // 即时战: its cast bar; answer right while an attack casts and it misses, during a charge and it breaks.
@@ -908,6 +915,9 @@ export class BattleUI {
     if (b.cutReady && !b.outcome)
       movesEl.append(h('button.btn.primary', { disabled: this.phase !== 'choose', onclick: () => this.cut(), title: '斩杀（Enter）：你会写它了，一键秒杀，经验和掉落照拿' }, h('kbd', 'Enter'), '斩杀', h('small', '一键秒杀 · 以后不用再背')));
     // 直接叫名 (Lucas 2026-11-25): first meeting only, before its first question.
+    // 1.0.12 (#47): players who said 「没学过」 get this small button instead of a pop-up before every new word.
+    if (this.offerDirect() && this.phase === 'choose' && moves.length > 1)
+      movesEl.append(h('button.btn.ghost', { onclick: () => this.directName(), title: '直接叫名：不看提示写出它，写对直接斩杀，写错照常学、不罚' }, '我认识它', h('small', '直接叫名')));
     if (moves.length > 1 || b.cutReady) {
       for (const mv of moves) {
         // 2026-11-22 精简出手按钮: the finisher shows only when the resource bar is full.
@@ -1082,6 +1092,7 @@ export class BattleUI {
   private speakLine(): void {
     const line = this.b.intent.line;
     if (this.phase === 'answer' && lineLeaks(line, this.question)) return;
+    if (this.b.direct || (this.phase === 'choose' && this.offerDirect())) return; // 1.0.12 (#47): it only mumbles
     this.ctrl.speak(line);
   }
 
@@ -1122,7 +1133,7 @@ export class BattleUI {
       wrap.append(
         h(
           'div.board',
-          h('div.board-title', '初见 · 先认识它，下一题就写'),
+          h('div.board-title', has(this.ctrl.state.level, 'typing') ? '初见 · 先认识它，下一题就写' : '初见 · 先认识它，下一题考你认不认得'), // 1.0.12 (#102): no typing at Lv1
           h('div', { style: 'font-size:20px' }, h('b', qq.teach.de), `　${qq.teach.zh}　`, h('button.btn.ghost.small', { onclick: () => this.ctrl.speak(qq.teach!.de), title: '再听一遍' }, '🔊')),
         ),
       );
