@@ -544,36 +544,30 @@ export class WorldScene extends Phaser.Scene {
     this.declutterPlates();
   }
 
-  /** 1.0.12 试玩 #98: name plates of monsters standing in one scene must not cover each other (long 「推定会·…」
-   *  plates side by side): a plate that would overlap one already placed moves below its monster. Plates that
-   *  jitter (stage 0) stay where they are and only count as taken space. */
+  /** 1.0.12 试玩 #98: name plates on the scene map must not cover each other (long 「推定会·…」 plates side by side,
+   *  also those of the next scene over): a plate that would overlap one already placed moves below its monster
+   *  (under the ▼ teeth). Plates that jitter (stage 0) stay where they are and only count as taken space. */
   declutterPlates(): void {
     if (!this.nodes) return;
-    const byScene = new Map<string, MonsterEntity[]>();
-    const nav = this.nodes;
+    type Box = { x0: number; x1: number; y0: number; y1: number };
+    const taken: Box[] = [];
+    const rect = (m: MonsterEntity, top: number): Box => {
+      const k = m.container.scale || 1;
+      const w = m.label.width * k;
+      const hgt = m.label.height * k;
+      const { x, y } = m.container;
+      return { x0: x - w / 2, x1: x + w / 2, y0: y + top * k, y1: y + top * k + hgt };
+    };
+    const hits = (r: Box) => taken.some((t) => r.x0 < t.x1 && t.x0 < r.x1 && r.y0 < t.y1 && t.y0 < r.y1);
+    const fixed = (m: MonsterEntity) => m.stage === 0 || !m.label.text;
+    for (const m of this.monsters) if (fixed(m) && m.label.text) taken.push(rect(m, m.label.y - m.label.height));
     for (const m of this.monsters) {
-      const id = nav.sceneOf(m).id;
-      byScene.set(id, [...(byScene.get(id) ?? []), m]);
-    }
-    for (const list of byScene.values()) {
-      const taken: Array<{ x0: number; x1: number; y0: number; y1: number }> = [];
-      const rect = (m: MonsterEntity, top: number) => {
-        const k = m.container.scale || 1;
-        const w = m.label.width * k;
-        const hgt = m.label.height * k;
-        return { x0: m.x - w / 2, x1: m.x + w / 2, y0: m.y + top * k, y1: m.y + top * k + hgt };
-      };
-      const hits = (r: { x0: number; x1: number; y0: number; y1: number }) => taken.some((t) => r.x0 < t.x1 && t.x0 < r.x1 && r.y0 < t.y1 && t.y0 < r.y1);
-      const fixed = list.filter((m) => m.stage === 0 || !m.label.text);
-      for (const m of fixed) if (m.label.text) taken.push(rect(m, m.label.y - m.label.height));
-      for (const m of list) {
-        if (fixed.includes(m)) continue;
-        const above = rect(m, -14 - m.label.height);
-        const below = rect(m, 9);
-        const under = hits(above) && !hits(below);
-        m.label.setOrigin(0.5, under ? 0 : 1).setY(under ? 9 : -14);
-        taken.push(under ? below : above);
-      }
+      if (fixed(m)) continue;
+      const above = rect(m, -14 - m.label.height);
+      const below = rect(m, 12);
+      const under = hits(above) && !hits(below);
+      m.label.setOrigin(0.5, under ? 0 : 1).setY(under ? 12 : -14);
+      taken.push(under ? below : above);
     }
   }
 

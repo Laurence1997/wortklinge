@@ -127,14 +127,14 @@ export function worldMap(c: WorldMapCtx): HTMLElement {
     const q = segs.find((z) => z.seg === e.seg);
     const st = q?.state ?? 'hidden';
     const name = st === 'hidden' ? '蚀变带' : e.zh.replace(/「.*」/, '');
-    const lv = `${SEG_LEVELS[e.seg] ?? ''}${st === 'hidden' ? ' 未开放' : st === 'done' ? ' 已净化' : ''}`;
+    const lv = `Lv ${SEG_LEVELS[e.seg] ?? ''}${st === 'hidden' ? ' 未开放' : st === 'done' ? ' 已净化' : ''}`;
     const pw = Math.max(name.length * 13 + 14, lv.length * 7 + 14);
     const g = s('g', { transform: `translate(${x},${y})`, class: 'wm-seg' + (st === 'hidden' ? ' locked' : '') });
     g.append(s('rect', { x: -pw / 2, y: -15, width: pw, height: 30, rx: 2, fill: st === 'hidden' ? '#8f877a' : st === 'done' ? '#3b2a1c' : ERODE_RED, stroke: st === 'hidden' ? '#cfc8bb' : '#e8d3a6', 'stroke-width': 2, 'stroke-dasharray': st === 'hidden' ? '4 3' : '' }));
     g.append(s('text', { y: -2, 'text-anchor': 'middle', class: 'wm-name wm-seg-name' }, name));
     g.append(s('text', { y: 11, 'text-anchor': 'middle', class: 'wm-lv' }, lv));
-    const hosts = q?.hosts.length ? `：回第 ${q.hosts.join('、')} 区` : '';
-    g.append(s('title', {}, st === 'hidden' ? `${SEG_LEVELS[e.seg]} 级是蚀变带：打败第 ${e.after} 区首领后，旧地方会蚀变${hosts}` : `${e.zh} · ${SEG_LEVELS[e.seg]} 级${hosts}`));
+    const where = q?.hosts.length ? `第 ${q.hosts.join('、')} 区` : '';
+    g.append(s('title', {}, st === 'hidden' ? `${SEG_LEVELS[e.seg]} 级是蚀变带：打败第 ${e.after} 区的首领后，${where || '前面'}的旧场景会蚀变` : `${e.zh} · ${SEG_LEVELS[e.seg]} 级${where ? `：在${where}的旧场景里` : ''}${st === 'done' ? '（已净化）' : ''}`));
     svg.append(g);
   }
 
