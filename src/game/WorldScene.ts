@@ -1,5 +1,5 @@
 import { neighbours, SCENES, scenesOf } from '../data/world';
-import { applyTheme } from '../ui/theme';
+import { accentOf, applyTheme } from '../ui/theme';
 import { setMusicMood } from './audio';
 import { RED, redAsleep, redEligible } from '../core/redname';
 import { OPINION, opinionEligible } from '../core/opinion';
@@ -25,6 +25,7 @@ import { CONFIG } from '../core/config';
 import { NodeNav } from './nodes';
 import { charRamp, mapRamp, mapShades, shadeRamp, type Ramp5 } from './palette';
 import { REGION_DEF } from '../data/zones';
+import { labelObstacles, placeZoneLabel, ZONE_LABEL_DEPTH, type Box } from './zoneLabels';
 
 export interface MonsterEntity {
   uid: number;
@@ -198,7 +199,12 @@ export class WorldScene extends Phaser.Scene {
     this.refreshSigns();
 
     // Zone names with their level ranges. 1.0.12 试玩: they used to be dark red on dark maps (barely readable), faded
-    // on bright maps and under lamps and houses; now light (or dark) text with an outline, above the map props.
+    // on bright maps and under lamps and houses. 1.0.12 试玩 (Lucas 11-28「修改」): still faint straight on the roofs,
+    // so each name now sits on a small plate (parchment on bright maps, near-black on dark and 蚀变 maps, like the
+    // scene circles) in the freest spot near its old place (zoneLabels.ts), below every figure and name plate.
+    const obs = labelObstacles(this.map, region, !oldmap);
+    const placed: Box[] = [];
+    const accent = parseInt(accentOf(region).slice(1), 16);
     let fieldNo = 0;
     for (const z of this.zones) {
       if (z.id === 'camp' || z.id === 'markt') continue;
@@ -207,21 +213,35 @@ export class WorldScene extends Phaser.Scene {
       // it hid under the top menu or ran off the side.
       const at = oldmap ? [] : SCENES.filter((x) => x.region === region && x.type === 'field' && x.zone === z.id).map((x) => x.at);
       const band = at.length ? { x: (at.reduce((a, p) => a + p.x, 0) / at.length) * TILE + 8, y: (fieldNo++ % 2 ? 27.6 : 20.4) * TILE } : null;
-      this.add
-        // 美术小修 A (2026-11-26): on bright maps two short lines instead of one long one, so neighbouring zone names
-        // no longer run into each other.
-        .text(band ? band.x : (z.rect.x + z.rect.w / 2) * TILE, band ? band.y : Math.max((z.rect.y + 1.2) * TILE, FOG_EDGE + 9), // 雾边不进镜头: top-row names stay on screen
-           this.bright ? `${z.zh} · ${z.levels}\n${z.de}` : `${z.de} · ${z.zh} · ${z.levels}`, {
+      // A town's name on the scene map starts from the right part of its top edge: the left part lies under the
+      // status box whenever the camera stands at the map's west edge.
+      const pref = band ?? { x: (z.rect.x + z.rect.w * (oldmap ? 0.5 : 0.75)) * TILE, y: Math.max((z.rect.y + 1.2) * TILE, FOG_EDGE + 9) }; // 雾边不进镜头
+      // 美术小修 A (2026-11-26): two short lines instead of one long one (now on dark maps too), so neighbouring zone
+      // names no longer run into each other or under the scene panel.
+      const t = this.add
+        .text(0, 0, `${z.zh} · ${z.levels}\n${z.de}`, {
           fontFamily: FONT,
           fontSize: '8px',
-          color: this.bright ? '#4a3420' : '#e8d8c8',
-          stroke: this.bright ? '#fffdf8' : '#0c0608',
-          strokeThickness: 2,
+          color: this.bright ? '#3a2716' : '#f0e4d6',
+          fontStyle: this.bright ? 'bold' : '',
           align: 'center',
           resolution: 4,
         })
         .setOrigin(0.5)
-        .setDepth(1000); // above every y-sorted prop (map height 768 px), below the route (3000)
+        .setDepth(ZONE_LABEL_DEPTH + 0.1);
+      const w = Math.ceil(t.width) + 10;
+      const h = Math.ceil(t.height) + 4;
+      const c = placeZoneLabel({ tiles: this.map.tiles, pref, w, h, obs, placed, bounds: { x0: FOG_EDGE + 2, x1: MAP_W * TILE - FOG_EDGE - 2, y0: FOG_EDGE + 2, y1: MAP_H * TILE - FOG_EDGE - 2 } });
+      const box = { x0: c.x - w / 2, x1: c.x + w / 2, y0: c.y - h / 2, y1: c.y + h / 2 };
+      placed.push(box);
+      t.setPosition(c.x, c.y);
+      this.add
+        .graphics()
+        .setDepth(ZONE_LABEL_DEPTH)
+        .fillStyle(this.bright ? 0xfffaf0 : 0x07040a, this.bright ? 0.9 : 0.82)
+        .fillRoundedRect(box.x0, box.y0, w, h, 3)
+        .lineStyle(1, this.bright ? accent : 0x7a2630, this.bright ? 0.75 : 0.9)
+        .strokeRoundedRect(box.x0 + 0.5, box.y0 + 0.5, w - 1, h - 1, 3);
     }
 
     // Player.
