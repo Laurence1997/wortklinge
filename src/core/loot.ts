@@ -11,7 +11,7 @@ const NAMES: Record<Slot, Record<Quality, string[]>> = {
     red: ['失语者的最后一支笔'],
   },
   coat: {
-    white: ['破外套', '旧雨衣', '烧焦的毛衣'],
+    white: ['破外套', '旧雨衣', '烧焦的外套'],
     green: ['厚呢大衣', '补过的雨衣', '工装夹克'],
     purple: ['守火人斗篷', '铁轨工大衣'],
     orange: ['冠词审判者的长袍'],

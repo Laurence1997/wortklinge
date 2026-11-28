@@ -74,6 +74,9 @@ const FOOD_IDS = new Set([
   'broetchen', 'orange', 'pizza',
 ]);
 
+/** The food sense only (die Birne: 梨, not 灯泡; das Eis: 冰激凌). */
+const foodZh = (w: Word) => (w.id === 'eis' ? '冰激凌' : w.zh.split(/[；;]/)[0]);
+
 function foods(): Word[] {
   return WORDS.filter((w) => w.region === 2 && w.pos === 'n' && w.family === 'krume' && FOOD_IDS.has(w.id));
 }
@@ -85,7 +88,7 @@ function priceQuestion(rng: Rng): BossQuestion {
   return {
     id: `price-${w.id}`,
     ask: [`Was kostet ${w.art} ${w.de}?`, `Wie viel kostet ${w.art} ${w.de}?`],
-    zh: `问${w.zh}多少钱`,
+    zh: `问${foodZh(w)}多少钱`,
     visual: `${w.art} ${w.de} · ${priceTag(cents)}`,
     accept: [new RegExp(`^((${nounRe}|es|das|er|sie) )?(kostet )?${priceRe(cents)}$`)],
     model: `${cap(w.art!)} ${w.de} kostet ${priceDe(cents)}.`,
@@ -101,9 +104,9 @@ function countQuestion(rng: Rng): BossQuestion {
   return {
     id: `count-${w.id}`,
     ask: [`Wie viele ${w.pl} möchtest du?`, `Wie viele ${w.pl} nimmst du?`],
-    zh: `问你要几个${w.zh}`,
-    visual: `${w.zh} × ${n}`,
-    accept: [new RegExp(`^(ich (moechte|nehme|haette gern|haette gerne|kaufe) )?${normalize(numDe(n))} ${pl}( bitte)?$`)],
+    zh: `问你要几个${foodZh(w)}`,
+    visual: `${foodZh(w)} × ${n}`,
+    accept: [new RegExp(`^(ich ((moechte|nehme|kaufe)( gerne?)?|haette gerne?)( bitte)? )?${normalize(numDe(n))} ${pl}( bitte)?$`)],
     model: `Ich möchte ${numDe(n)} ${w.pl}.`,
     traps: [[new RegExp(` ${normalize(w.de)}$`), `数字后面要用复数：${w.pl}`], [/\d/, '数字要写成单词']],
   };

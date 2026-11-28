@@ -140,8 +140,9 @@ export function answerBoss(s: GameState, f: BossFight, input: string, rng: Rng, 
   const q = f.current;
   const n = normalize(input);
   const graded = q.grade && !timedOut ? q.grade(input) : null;
-  const ok = !timedOut && (graded ? graded.ok : q.accept.some((re) => re.test(n)));
-  let note: string | null = graded?.note ?? null;
+  const tip = !timedOut && !graded ? q.tips?.find(([re]) => re.test(n)) : undefined;
+  const ok = !timedOut && (graded ? graded.ok : q.accept.some((re) => re.test(n)) || !!tip);
+  let note: string | null = graded?.note ?? tip?.[1] ?? null;
   if (!ok && !timedOut) for (const [re, msg] of q.traps ?? []) if (re.test(n)) note = msg;
   // 1.0.12 试玩 55: a timeout is said once, in the header (the UI writes 「时间到了」), not again as a note.
   if (timedOut) note = null;

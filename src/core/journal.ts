@@ -9,6 +9,8 @@ import { normalize } from './grading';
 import type { Word } from './types';
 import { CONJ, PERSONS, type Person } from '../data/verbs';
 import { WORDS } from '../data/words';
+import { PERFEKT } from '../data/perfekt';
+import { STRONG_VERBS } from '../data/grammar/strongVerbs';
 
 /** XP for the first entry of the day, as a share of the XP to the next level. */
 export const JOURNAL_XP_SHARE = 0.04;
@@ -68,14 +70,66 @@ const PRON: Record<string, Person[]> = { ich: ['ich'], du: ['du'], er: ['er'], e
 /** Does the text use this word (any form we know: plural, conjugated, declined adjective)? */
 export function usesWord(text: string, w: Word): boolean {
   const ts = tokens(text).map(k);
-  const bare = k(w.de.replace(/^(der|die|das|sich) /i, ''));
+  const inf = w.de.replace(/^(der|die|das|sich) /i, '');
+  const bare = k(inf);
+  const c = CONJ[w.de] ?? CONJ[inf];
+  if (c && usesVerb(ts, inf, c)) return true;
   if (bare.includes(' ')) return ` ${ts.join(' ')} `.includes(` ${bare} `);
   if (ts.includes(bare)) return true;
   if (w.pl && w.pl !== '-' && ts.includes(k(w.pl))) return true;
-  const c = CONJ[w.de];
-  if (c && PERSONS.some((p) => ts.includes(k(c.forms[p])))) return true;
   if (w.pos === 'adj') return ts.some((t) => t.startsWith(bare) && t.length <= bare.length + 3);
-  // Separable / reflexive verbs: the stem's forms count too (ich freue mich, er sieht … aus).
+  return false;
+}
+
+const INSEP = /^(be|ver|er|ent|zer|emp|miss|ge|hinter|ueber|unter|wider)/;
+
+/** A verb in any form a learner writes: present (split or joined: rufe … an, anrufe), imperative, zu-infinitive,
+ *  Partizip II and Präteritum (also split: zog … aus). Loose on purpose: it only checks that the word is there. */
+function usesVerb(ts: string[], inf: string, c: (typeof CONJ)[string]): boolean {
+  const word = k(inf);
+  const parts = c.forms.er.split(' ');
+  const particle = parts.length > 1 ? k(parts.slice(1).join(' ')) : '';
+  const base = particle && word.replace(/\s+/g, '').startsWith(particle.replace(/\s+/g, '')) ? word.replace(/\s+/g, '').slice(particle.replace(/\s+/g, '').length) : word;
+  const stem = base.replace(/e?n$/, '');
+  // Stem forms that stand alone in a main clause (the particle follows later).
+  const stems = new Set<string>([base, stem, `${stem}e`]);
+  for (const p of PERSONS) for (const f of [c.forms[p], ...(c.alt?.[p] ?? [])]) stems.add(k(f.split(' ')[0]));
+  const du = k(c.forms.du.split(' ')[0]);
+  stems.add(du.replace(/s?t$/, '')); // imperative: zieh, nimm, lies
+  // Präteritum.
+  const sv = STRONG_VERBS.filter((v) => base.endsWith(k(v.inf))).sort((a, b) => b.inf.length - a.inf.length)[0];
+  const pre = sv ? base.slice(0, base.length - k(sv.inf).length) : '';
+  let praet = '';
+  if (sv) praet = pre + k(sv.praet);
+  else if (!c.strong && !c.pastStrong) praet = /[td]$/.test(stem) ? `${stem}ete` : `${stem}te`;
+  const past = praet ? [praet, `${praet}st`, `${praet}n`, `${praet}en`, `${praet}t`, `${praet}est`, `${praet}et`] : [];
+  for (const f of past) stems.add(f);
+  // Partizip II.
+  const pps = new Set<string>();
+  const known = PERFEKT[inf]?.pp;
+  if (known) pps.add(k(known).replace(/\s+/g, ''));
+  if (sv) pps.add(pre && !INSEP.test(pre) ? pre + k(sv.pp) : pre ? pre + k(sv.pp).replace(/^ge/, '') : k(sv.pp));
+  else if (!c.strong && !c.pastStrong) pps.add(INSEP.test(base) || base.endsWith('ieren') ? `${stem}t` : `ge${stem}${/[td]$/.test(stem) ? 'et' : 't'}`);
+  const glue = particle.replace(/\s+/g, '');
+  const joined = (f: string) => (glue ? glue + f : f);
+  const singles = new Set<string>([word.replace(/\s+/g, ''), `${glue}zu${base}`]);
+  for (const f of stems) singles.add(joined(f));
+  for (const f of pps) singles.add(glue && !f.startsWith(glue) ? glue + f : f);
+  if (!particle) {
+    for (const f of [...stems, ...pps]) singles.add(f);
+    return ts.some((t) => singles.has(t));
+  }
+  if (ts.some((t) => singles.has(t))) return true;
+  // Particle written apart: a stem form, then the particle later (ich rufe dich morgen an), or a multi-word verb.
+  const pw = particle.split(' ');
+  const ppBare = [...pps].map((f) => (f.startsWith(glue) ? f.slice(glue.length) : f));
+  for (let i = 0; i < ts.length; i++) {
+    if (!stems.has(ts[i]) && !ppBare.includes(ts[i])) continue;
+    for (let j = 0; j + pw.length <= ts.length; j++) {
+      if (j === i) continue;
+      if (pw.every((x, n) => ts[j + n] === x) && (stems.has(ts[i]) ? j > i : true)) return true;
+    }
+  }
   return false;
 }
 

@@ -42,6 +42,16 @@ function agentNoun(w: Word): boolean {
   return v.has(st + 'en') || v.has(st + 'n');
 }
 
+/** -er nouns that only look like verb + -er (Zucker has nothing to do with zucken). */
+const NOT_AGENT = new Set(['Zucker']);
+
+/** Native words in -age / -ade / -ette (die Frage, die Lage, die Kette): plain -e nouns, no loanword rule. */
+function nativeAge(w: Word): boolean {
+  const d = w.de.toLowerCase();
+  if (d.endsWith('sage')) return !/(mas|pas)sage$/.test(d);
+  return ['lage', 'frage', 'klage', 'plage', 'waage', 'schublade', 'wade', 'gnade', 'kette', 'wette'].some((x) => d.endsWith(x));
+}
+
 const ART_ZH: Record<Article, string> = { der: '阳性 der', die: '阴性 die', das: '中性 das' };
 
 /** Ordered: the first rule that matches decides (sure suffixes, then natural gender, then the softer rules). */
@@ -54,23 +64,23 @@ export const GENDER_RULES: GenderRule[] = [
   { id: 'tion', art: 'die', label: '-tion / -sion', who: '-tion、-sion 结尾的名词', sure: true, test: ends('tion', 'sion') },
   { id: 'taet', art: 'die', label: '-tät', who: '-tät 结尾的名词', sure: true, test: ends('tät') },
   { id: 'enz', art: 'die', label: '-enz', who: '-enz 结尾的名词', sure: true, test: ends('enz') },
-  { id: 'ade', art: 'die', label: '-ade / -age / -ette', who: '-ade、-age、-ette 结尾的外来词', sure: true, test: ends('ade', 'age', 'ette'),
+  { id: 'ade', art: 'die', label: '-ade / -age / -ette', who: '-ade、-age、-ette 结尾的外来词', sure: true, test: (w) => ends('ade', 'age', 'ette')(w) && !nativeAge(w),
     why: { Image: 'Image 是英语借词，照英语读，不算这类' } },
   { id: 'erei', art: 'die', label: '-erei / -elei', who: '-erei、-elei 结尾的名词（Bäckerei 这类）', sure: true, test: ends('erei', 'elei') },
   // ---- das: sure suffixes
-  { id: 'chen', art: 'das', label: '-chen / -lein', who: '-chen、-lein 结尾的小称（指小的东西）', sure: true, test: ends('chen', 'lein'),
+  { id: 'chen', art: 'das', label: '-chen / -lein', who: '-chen、-lein 结尾的小称（指小的东西）', sure: true, test: (w) => ends('chen', 'lein')(w) && !/(zeichen|brechen)$/i.test(w.de),
     why: { Kuchen: '它的 -chen 本来就是词的一部分，不是小称', Knochen: '它的 -chen 本来就是词的一部分，不是小称', Pfannkuchen: '它的最后一部分是 der Kuchen，-chen 不是小称' } },
   { id: 'ment', art: 'das', label: '-ment', who: '-ment 结尾的外来词', sure: true, test: ends('ment'),
     why: { Moment: '另有一个 das Moment，意思是「因素」，别弄混' } },
-  { id: 'um', art: 'das', label: '-um', who: '-um 结尾的拉丁来源词（Museum、Zentrum）', sure: true, test: (w) => w.de.endsWith('um') && !w.de.endsWith('aum') && !w.de.endsWith('tum') },
-  { id: 'ett', art: 'das', label: '-ett', who: '-ett 结尾的外来词', sure: true, test: ends('ett') },
+  { id: 'um', art: 'das', label: '-um', who: '-um 结尾的拉丁来源词（Museum、Zentrum）', sure: true, test: (w) => w.de.endsWith('um') && !w.de.endsWith('aum') && (!w.de.endsWith('tum') || /[Dd]atum$/.test(w.de)) },
+  { id: 'ett', art: 'das', label: '-ett', who: '-ett 结尾的外来词', sure: true, test: (w) => w.de.endsWith('ett') && !/[Bb]r?ett$/.test(w.de) },
   // ---- der: sure suffixes
   { id: 'ling', art: 'der', label: '-ling', who: '-ling 结尾的名词', sure: true, test: ends('ling') },
   { id: 'ismus', art: 'der', label: '-ismus', who: '-ismus 结尾的名词', sure: true, test: ends('ismus') },
   { id: 'eur', art: 'der', label: '-eur', who: '-eur 结尾的职业（Friseur）', sure: true, test: ends('eur') },
   // ---- natural gender
   { id: 'fem', art: 'die', label: '女性 -in', who: '-in 结尾、指女性的名词', sure: true, test: (w) => w.de.endsWith('in') && (female(w) || w.de.endsWith('erin')) },
-  { id: 'agent', art: 'der', label: '动词 + -er', who: '动词变来的 -er（做事的人或工具：Lehrer、Wecker）', sure: false, test: agentNoun,
+  { id: 'agent', art: 'der', label: '动词 + -er', who: '动词变来的 -er（做事的人或工具：Lehrer、Wecker）', sure: false, test: (w) => agentNoun(w) && !NOT_AGENT.has(w.de),
     why: { Trauer: '它不是做事的人或工具，是抽象名词', Leber: '它和 leben 没有关系', Messer: '它和 messen 没有关系' } },
   { id: 'nmasc', art: 'der', label: '男人和雄性动物 -e', who: '-e 结尾、指男人或动物的这类词（der Kunde、der Löwe）', sure: false,
     test: (w) => w.de.endsWith('e') && (person(w) || w.cat === 'animal') && w.art === 'der' },
@@ -97,14 +107,14 @@ export const GENDER_RULES: GenderRule[] = [
   { id: 'anz', art: 'die', label: '-anz', who: '-anz 结尾的外来词（Distanz、Toleranz）', sure: false, test: (w) => w.de.endsWith('anz') && !/(T|t)anz$|(G|g)lanz$|(S|s)chwanz$|(K|k)ranz$/.test(w.de) },
   { id: 'ma', art: 'das', label: '-ma', who: '-ma 结尾的名词（Thema、Klima 这类希腊来源词）', sure: false, test: ends('ma'),
     why: { Mama: '指女性的词按自然性别', Oma: '指女性的词按自然性别' } },
-  { id: 'tum', art: 'das', label: '-tum', who: '-tum 结尾的名词', sure: false, test: ends('tum'),
+  { id: 'tum', art: 'das', label: '-tum', who: '-tum 结尾的名词', sure: false, test: (w) => w.de.endsWith('tum') && !/[Dd]atum$/.test(w.de),
     why: { Reichtum: 'Reichtum 和 Irrtum 是 -tum 里最常见的两个 der', Irrtum: 'Irrtum 和 Reichtum 是 -tum 里最常见的两个 der' } },
   { id: 'ist', art: 'der', label: '-ist / -ant / -ent（人）', who: '-ist、-ant 结尾的名词，和 -ent 结尾的人（Polizist、Elefant、Student）', sure: false,
     test: (w) => (w.de.endsWith('ist') && w.de.length > 5) || (w.de.endsWith('ant') && w.de.length > 5) || (w.de.endsWith('ent') && !w.de.endsWith('ment') && person(w)),
     why: { Restaurant: '它是法语借词，而且不是人' } },
   { id: 'or', art: 'der', label: '-or', who: '-or 结尾的外来词（Motor、Doktor）', sure: false, test: (w) => w.de.endsWith('or') && w.de.length > 4,
     why: { Labor: '它是 Laboratorium 的缩写，跟原词走' } },
-  { id: 'ig', art: 'der', label: '-ig / -ich', who: '-ig、-ich 结尾的名词（König、Teppich）', sure: false, test: (w) => (w.de.endsWith('ig') || w.de.endsWith('ich')) && w.de.length > 4 },
+  { id: 'ig', art: 'der', label: '-ig / -ich', who: '-ig、-ich 结尾的名词（König、Teppich）', sure: false, test: (w) => w.de.length > 4 && /[aeiouäöüy][^aeiouäöüy]+(ig|ich)$/i.test(w.de) },
   { id: 'e', art: 'die', label: '-e', who: '-e 结尾的名词', sure: false, test: ends('e') },
 ];
 

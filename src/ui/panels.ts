@@ -1321,7 +1321,7 @@ export class Panels {
   private talents(): HTMLElement {
     const s = this.ctrl.state;
     const wrap = h('div.talents-page');
-    const save = () => { this.ctrl.persist(); this.render(); };
+    const save = () => { this.ctrl.persist(); this.ctrl.refresh(); this.render(); }; // refresh: an HP talent changes the HUD's max HP
     // 技能池: 出战栏 + 卡片网格; 天赋: 5 个星座的星图 (src/ui/talentSky.ts, Lucas 2026-11-27).
     wrap.append(skillCards(s, save));
     // Before 12 the sky is shown as a preview (no points yet).

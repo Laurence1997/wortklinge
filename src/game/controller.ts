@@ -555,7 +555,7 @@ export class Controller {
         break;
       case 3:
         lines.push({ who: HILDE, text: this.scene.nodes ? '累了就回营地坐坐。打散的东西会再长出来。牙少一点。' : '累了就回来坐（E）。打散的东西会再长出来。牙少一点。' });
-        lines.push({ who: SYS, text: `【装备】下一只怪会掉东西。C 打开角色，穿上。打得越多，碎片越多，攒够 40 片装备升一档${gearTier(s) ? `。你一路打来已经攒够了：现在是第 ${gearTier(s)} 档，伤害更高，同级的怪少挨一下` : ''}` });
+        lines.push({ who: SYS, text: `【装备】${s.flags.firstGreen ? '刚才那只怪掉了一件装备。' : '下一只怪会掉东西。'}C 打开角色，穿上。打得越多，碎片越多，攒够 40 片装备升一档${gearTier(s) ? `。你一路打来已经攒够了：现在是第 ${gearTier(s)} 档，伤害更高，同级的怪少挨一下` : ''}` });
         s.flags.teachRest = true;
         if (!quiet) s.flags.taughtGear = true; // the line above already says C (试玩 48: no second 【装备】 popup on the drop)
         break;
@@ -756,6 +756,8 @@ export class Controller {
     setPrompt(null);
     // 直接叫名 (审查修订): asked before the fight, so nothing about the word is shown or read first.
     const b0 = this.battle;
+    // 1.0.12 试玩: every grammar-dungeon fight asks the floor's rule, so 直接叫名 is not offered there.
+    if (this.gramRun) b0.directOffer = false;
     if (b0.directOffer && this.pack.length === 1 && s.flags.noGerman) {
       // 1.0.12 (#47): a player who said 「没学过」 gets no pop-up for every new word, only a small button in the fight.
       this.battleUI.open();
@@ -1264,7 +1266,8 @@ export class Controller {
         if (res.drop) {
           (res.drop.quality === 'orange' || res.drop.quality === 'red' ? sfx.orange : sfx.loot)();
           toast(`掉落：${res.drop.name}（${QUALITY_ZH[res.drop.quality]}）`, res.drop.quality === 'white' ? '' : 'gold', icon(SLOT_TILE[res.drop.slot], 1, false, `slot-icon q-${res.drop.quality}`));
-          if (!s.flags.taughtGear) {
+          // 1.0.12 试玩: the kill that opens gear says it in its level-up line (no second, different 【装备】 tip).
+          if (!s.flags.taughtGear && !res.levelUp.levels.includes(UNLOCK.gear)) {
             s.flags.taughtGear = true;
             say([{ who: SYS, text: '【装备】C 打开角色，点「穿上」' }]);
           }

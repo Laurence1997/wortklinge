@@ -118,7 +118,7 @@ export function gradeCloze(input: string, answer: string, w?: Word, zh?: string)
   if (key(input) === key(answer)) return true;
   // 0.6.x: when the Chinese does not say which determiner (一个 / 这 / 我的 / 没有), any article of the right case
   // and gender counts, as in the A1 exam (den or einen, dem or einem).
-  if (!w || zh === undefined || ZH_DET.test(zh)) return false;
+  if (!w || zh === undefined || ZH_DET.test(zh.replace(ZH_NOT_DET, ''))) return false;
   const alts = sameCaseArticles(answer, w);
   const [idet, ...irest] = input.trim().split(/\s+/);
   const rest = answer.trim().split(/\s+/).slice(1);
@@ -126,6 +126,8 @@ export function gradeCloze(input: string, answer: string, w?: Word, zh?: string)
 }
 
 /** Chinese that names the determiner: 一个/一杯…, 这/那, 我的…, 没有. */
+/** 这 / 那 that do not stand on a noun: 这是 (das ist), 这里, 那么, 这样. */
+const ZH_NOT_DET = /[这那](?:就|也|不|可|真|才|都)?是|[这那](?:里|儿|么|样)/g;
 const ZH_DET = /[一两][个位只张本件杯块条把台辆间双份种家盒瓶袋根片口所部盏碗套首封]|喝杯|这|那|[我你他她它您]们?的|没有/;
 
 const CASE_ARTS: Record<Case, Record<'m' | 'f' | 'n' | 'pl', string[]>> = {

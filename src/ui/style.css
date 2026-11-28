@@ -517,6 +517,10 @@ body.bright .q input[type=text], body.bright .panel select { background: #fff; c
 body.bright input::placeholder { color: #b3a28c; }
 body.bright table.log th, body.bright table.log td { border-bottom-color: var(--line); }
 body.bright #chat .game-log, body.bright #chat .chat-lines { background: rgba(255, 252, 244, .92); border-color: var(--line-hi); color: var(--ink); }
+body.bright #chat .game-log .good { color: #2e7d32; }
+body.bright #chat .game-log .bad { color: #b3261e; }
+body.bright #chat .game-log .gold { color: #8a5a00; }
+body.bright #chat .game-log i { color: #8a7a6c; }
 body.bright .tabs { border-bottom-color: var(--line); }
 body.bright .place-band { background: #fff; }
 body.bright .place-word-tile { background: #fff; }

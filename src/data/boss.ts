@@ -17,6 +17,8 @@ export interface BossQuestion {
   grade?: (input: string) => { ok: boolean; note: string | null };
   /** Mistakes worth naming: [pattern, note]. */
   traps?: Array<[RegExp, string]>;
+  /** Answers that are right but less usual: accepted, with the note shown and no damage. */
+  tips?: Array<[RegExp, string]>;
 }
 
 const WORD = "[a-z]+";
@@ -43,10 +45,8 @@ export const BOSS_QUESTIONS: BossQuestion[] = [
     zh: '问你从哪里来',
     accept: [new RegExp(`^ich komme aus ${WORD}`), new RegExp(`^aus ${WORD}`)],
     model: 'Ich komme aus China.',
-    traps: [
-      [/^ich komme von /, '从某个国家来用 aus：Ich komme aus …'],
-      [/^ich bin aus /, '可以理解，但更常说：Ich komme aus …'],
-    ],
+    traps: [[/^ich komme von /, '从某个国家来用 aus：Ich komme aus …']],
+    tips: [[/^ich bin aus /, '也对，不过更常说：Ich komme aus …']],
   },
   {
     id: 'home',
@@ -54,7 +54,7 @@ export const BOSS_QUESTIONS: BossQuestion[] = [
     zh: '问你住在哪里',
     accept: [new RegExp(`^ich wohne (jetzt )?(in|hier|im|bei) ?${WORD}?`), new RegExp(`^in ${WORD}`)],
     model: 'Ich wohne in Berlin.',
-    traps: [[/^ich lebe /, 'leben 也对，但问 wohnen 就答 Ich wohne in …']],
+    tips: [[/^ich lebe (jetzt )?(in|hier|im|bei)( |$)/, 'leben 也对。别人用 wohnen 问，就常用 wohnen 答：Ich wohne in …']],
   },
   {
     id: 'lang',
