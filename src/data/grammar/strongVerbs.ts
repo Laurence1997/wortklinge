@@ -2,6 +2,8 @@
 // Columns: infinitive, Chinese, er-present, Präteritum (er), Perfekt (aux + Partizip II), ablaut group, note.
 // The level column of the source is a reference only (游戏设计 四「语法秘境」: open levels follow 十五).
 // Written by Claude from a public-domain style grammar list; goes through the auto-proofreading pipeline.
+// 1.0.11 试玩: schaffen left out (the word list's schaffen is 做成，搞定 = schaffte / hat geschafft, and it would make
+// verschaffen → verschuf); backen moved out of a-u (er backt has no umlaut). Every a-u verb must umlaut in du / er.
 
 export interface StrongVerb {
   inf: string;
@@ -18,10 +20,9 @@ export interface StrongVerb {
 
 export const STRONG_VERBS: StrongVerb[] = [
   {"inf": "graben", "zh": "挖", "er": "gräbt", "praet": "grub", "aux": "haben", "pp": "gegraben", "group": "a-u", "ref": "B1"},
-  {"inf": "schaffen", "zh": "创造", "er": "schafft", "praet": "schuf", "aux": "haben", "pp": "geschaffen", "group": "a-u", "ref": "B1", "note": "“完成、搞定”是规则变化 schaffte/hat geschafft"},
   {"inf": "schlagen", "zh": "打", "er": "schlägt", "praet": "schlug", "aux": "haben", "pp": "geschlagen", "group": "a-u", "ref": "B1"},
   {"inf": "tragen", "zh": "搬运；穿戴", "er": "trägt", "praet": "trug", "aux": "haben", "pp": "getragen", "group": "a-u", "ref": "B1"},
-  {"inf": "backen", "zh": "烤", "er": "backt", "praet": "buk", "aux": "haben", "pp": "gebacken", "group": "a-u", "ref": "A2", "note": "现在也常用规则变化 backte"},
+  {"inf": "backen", "zh": "烤", "er": "backt", "praet": "backte", "aux": "haben", "pp": "gebacken", "group": "特殊", "ref": "A2", "note": "er backt（也说 bäckt），过去式 backte（buk 已少用）"},
   {"inf": "laden", "zh": "装载；（电脑）加载", "er": "lädt", "praet": "lud", "aux": "haben", "pp": "geladen", "group": "a-u", "ref": "A2"},
   {"inf": "waschen", "zh": "洗", "er": "wäscht", "praet": "wusch", "aux": "haben", "pp": "gewaschen", "group": "a-u", "ref": "A2"},
   {"inf": "wachsen", "zh": "生长", "er": "wächst", "praet": "wuchs", "aux": "sein", "pp": "gewachsen", "group": "a-u", "ref": "A2"},

@@ -207,7 +207,7 @@ export function ablautTask(s: GameState, w: Word, floor: string, rng: Rng, step:
     return { sys: 'ablaut', prompt: `变音秘境 · 完成时：er ___（hat / ist + 分词）· ${w.zh}`, focus: `er ___ (${w.de})`, answer: `${aux} ${v.pp}`, alts: v.aux === 'haben/sein' ? [`hat ${v.pp}`, `ist ${v.pp}`] : undefined, tier: 2, rule, wordId: w.id };
   }
   const p = k as Person;
-  return { sys: 'ablaut', prompt: `变音秘境：写出 ${PERSON_LABEL[p]} 的现在时（${w.zh}）`, focus: `${p} ___ (${w.de})`, answer: c.forms[p], tier: 1, rule, wordId: w.id };
+  return { sys: 'ablaut', prompt: `变音秘境：写出 ${PERSON_LABEL[p]} 的现在时（${w.zh}）`, focus: `${p} ___ (${w.de})`, answer: c.forms[p], alts: c.alt?.[p], tier: 1, rule, wordId: w.id };
 }
 
 /** After a family's floor is cleared, its verbs in the field ask the vowel change (du / er form). */

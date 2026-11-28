@@ -57,3 +57,18 @@ export function nextStage(flags: Record<string, unknown>): Stage | null {
   for (const d of STAGES) if (!stagePassed(flags, d.stage)) return d.stage;
   return null;
 }
+
+/** 1.0.11 试玩: the examiner's A2 / B1 / B2 突破试炼 button, in every branch of his menu (A1 keeps its own button and
+ *  补考语法). Labelled 提前考 below the stage's cap. Null once B2 is passed or while A1 is still open. */
+export function examinerTrial(level: number, flags: Record<string, unknown>): { stage: Stage; label: string } | null {
+  const st = nextStage(flags);
+  if (!st || st === 'A1') return null;
+  return { stage: st, label: `${st} 突破试炼${level < STAGE_DEF[st].cap ? '（提前考）' : ''}` };
+}
+
+/** What to do at the level cap (HUD and examiner): the trial that opens it. Null below the cap and at 200. */
+export function capAdvice(level: number, flags: Record<string, unknown>): string | null {
+  const st = trialDue(level, flags);
+  if (!st) return null;
+  return st === 'A1' && flags.a1Passed ? '去主城找考官补考语法' : `去主城找考官考 ${st} 突破试炼`;
+}
