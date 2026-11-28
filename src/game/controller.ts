@@ -87,6 +87,7 @@ import { partnerChoices, partnerOf, setPartner } from '../core/gram/partner';
 import { allGems, craftGem, recarve, recarveChoices, GEM, GEM_KIND_ZH, gemGrammars, gemItems, gemText, gemTitle, setGem, unsetGem } from '../core/gems';
 import type { GramSys } from '../core/gram/task';
 import { PERSUADE, PERSUADE_SCENES, type PersuadeScene } from '../core/persuade';
+import { regionPersuade } from '../data/persuadeRegions';
 import { ltCheck } from '../net/languageTool';
 import { berlinHour, CHARM, CHARM_BY_ID, equippedCharms, grantSlang, rotateCard, shoutCharm, SLANG, slangOwed, type ShoutResult } from '../core/charms';
 import { floorRun, floorsOf, GRAM_DUNGEON, markCleared, type DungeonKind, type Floor } from '../core/gram/dungeons';
@@ -2432,8 +2433,18 @@ export class Controller {
       s.flags.persuadeSeen = true;
       lines.push({ who: SYS, text: `【说服段】AI 扮演一个人，你用德语说服他，最多 ${PERSUADE.rounds} 轮。说到点子上他才会答应。对房东、官员用 Sie，对室友、同事用 du；用错他会当场指出，这一轮不算。没说服不罚，可以重来，第二次起他会透露自己在意什么。` });
     }
-    lines.push({ who: SYS, text: '选一个人：' });
-    say(lines, undefined, [...PERSUADE_SCENES.map((p) => ({ label: `${s.flags[`persuaded_${p.id}`] ? '✓ ' : ''}${p.title}`, act: () => this.persuade(p, () => undefined) })), { label: '先不', act: () => undefined }]);
+    // 各区说服对象 (Lucas 2026-11-28): this region's people first (蚀变段: the old region you stand in), then the five
+    // 通用. A region's NPC works its grammar in at your level.
+    const region = s.region ?? 1;
+    const local = regionPersuade(region);
+    const where = region === 1 ? '余烬营地' : AREAS.find((a) => a.region === region)?.zh ?? `第 ${region} 区`;
+    lines.push({ who: SYS, text: local.length ? `选一个人。前 ${local.length} 个是${where}本地的，后面是哪儿都能遇到的：` : '选一个人：' });
+    const pick = (p: PersuadeScene, tag: string, run: PersuadeScene = p) => ({ label: `${s.flags[`persuaded_${p.id}`] ? '✓ ' : ''}${tag}${p.title}`, act: () => this.persuade(run, () => undefined) });
+    const withGram = (p: PersuadeScene): PersuadeScene => {
+      const g = regionGrammar(region, s.level, this.rng);
+      return g.length ? { ...p, scene: `${p.scene}说话时自然用到这些语法（别讲语法）：${g.join('、')}。` } : p;
+    };
+    say(lines, undefined, [...local.map((p) => pick(p, `📍${where} · `, withGram(p))), ...PERSUADE_SCENES.map((p) => pick(p, '')), { label: '先不', act: () => undefined }]);
   }
 
   /** Run one persuasion. `onWin` after the NPC is convinced; `onNoAi` when the AI can't be reached (the story then
