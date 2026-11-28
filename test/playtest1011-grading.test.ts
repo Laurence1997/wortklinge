@@ -74,6 +74,12 @@ describe('[2][5] 终结技 whole sentence: key words in order', () => {
   it('another example sentence with the same Chinese counts', () => {
     expect(gradeWholeSentence('Das Wasser ist kalt.', 'Kann ich bitte ein Wasser haben?', WORD_BY_ID.wasser, '水很凉。').ok).toBe(true);
   });
+  it('but only if it keeps the monster word', () => {
+    const bt = WORD_BY_ID.brieftasche;
+    expect(gradeWholeSentence('Ich kann mein Portemonnaie nicht finden.', 'Ich kann meine Brieftasche nicht finden.', bt, '我找不到我的钱包了。').ok).toBe(false);
+    expect(gradeWholeSentence('Ich habe Hunger.', 'Ich bin hungrig.', WORD_BY_ID.hungrig, '我饿了。').ok).toBe(false);
+    expect(gradeWholeSentence('Ich bin hungrig.', 'Ich habe Hunger.', WORD_BY_ID.hunger, '我饿了。').ok).toBe(false);
+  });
   it('a new word (not in the wordbook): Das Wasser ist kalt. hits for 水很凉。', () => {
     let done = false;
     for (let seed = 1; seed < 60 && !done; seed++) {

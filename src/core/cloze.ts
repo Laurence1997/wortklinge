@@ -186,7 +186,7 @@ function sentencesWithZh(zh: string): string[] {
 /**
  * 终结技「看中文，写整句」(1.0.11 试玩): the key words of the sentence, in order, with nothing else but optional words
  * (sehr, wirklich, bitte …) added or left out; gerne counts as gern. The monster's own word is never optional. Another example
- * sentence with the very same Chinese also counts (水很凉。 = Das Wasser ist kalt.).
+ * sentence with the very same Chinese also counts if it keeps the monster's word (水很凉。 = Das Wasser ist kalt.).
  */
 export function gradeWholeSentence(input: string, answer: string, w: Word, zh?: string): { ok: boolean; exact: boolean } {
   if (key(input) === key(answer)) return { ok: true, exact: true };
@@ -195,7 +195,11 @@ export function gradeWholeSentence(input: string, answer: string, w: Word, zh?: 
   const core = (v: string) => toks(v).filter((t) => own.has(t) || !OPTIONAL.has(t)).join(' ');
   const mine = core(input);
   if (!mine) return { ok: false, exact: false };
-  const ok = [answer, ...(zh ? sentencesWithZh(zh) : [])].some((a) => core(a) === mine);
+  // Another sentence with the same Chinese counts only if it keeps the monster's word as the stored sentence has it
+  // (Brieftasche: "Ich kann mein Portemonnaie nicht finden." is a fine translation but does not use the word).
+  const kept = toks(answer).filter((t) => own.has(t));
+  const alts = (zh ? sentencesWithZh(zh) : []).filter((a) => { const at = toks(a); return kept.every((t) => at.includes(t)); });
+  const ok = [answer, ...alts].some((a) => core(a) === mine);
   return { ok, exact: false };
 }
 
