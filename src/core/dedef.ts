@@ -125,3 +125,72 @@ export function synonymHit(q: SynQuestion, w: Word, input: string): Word | null 
   }
   return null;
 }
+
+// ---- 1.0.12 sweep: one helper set for every place outside the battle card that shows a word's meaning ----
+
+/** How a word's meaning reads in a card-like place: `main` is the line shown; `sub` the German line under the
+ *  Chinese (zhDe); `hiddenZh` the Chinese a tap away (de). */
+export interface MeaningLine {
+  tier: DefTier;
+  main: string;
+  sub: string | null;
+  hiddenZh: string | null;
+}
+
+export function meaningLine(w: Word, settings: Pick<Settings, 'defLang'> | undefined): MeaningLine {
+  const tier = w.digit ? 'zh' : defTier(w, settings);
+  const def = defDe(w);
+  if (tier === 'de' && def) return { tier, main: def, sub: null, hiddenZh: w.zh };
+  if (tier === 'zhDe' && def) return { tier, main: w.zh, sub: def, hiddenZh: null };
+  return { tier: 'zh', main: w.zh, sub: null, hiddenZh: null };
+}
+
+/** True when this word's Chinese is hidden behind its German definition. */
+export function hidesZh(w: Word, settings: Pick<Settings, 'defLang'> | undefined): boolean {
+  return meaningLine(w, settings).tier === 'de';
+}
+
+/** A definition clipped for a small label. */
+export function clipDef(def: string, max = 22): string {
+  return def.length > max ? `${def.slice(0, max - 1).trimEnd()}…` : def;
+}
+
+/** 名牌 (Lucas 2026-11-25): the meaning in Chinese, short (first sense, no brackets), never the German letters. */
+export function plateZh(w: Word): string {
+  const z = w.zh.replace(/（[^）]*）|\([^)]*\)/g, '').split(/[；;，,／/]/)[0].trim() || w.zh;
+  return z.length > 8 ? `${z.slice(0, 8)}…` : z;
+}
+
+/** A name plate outside battle (map label, scene list, pack log): a clipped definition while the Chinese is hidden. */
+export function plateMeaning(w: Word, settings: Pick<Settings, 'defLang'> | undefined, max = 18): string {
+  const m = meaningLine(w, settings);
+  return m.tier === 'de' ? clipDef(m.main, max) : plateZh(w);
+}
+
+/** The meaning in one short line (tags, toasts, feedback): a clipped definition while the Chinese is hidden. */
+export function meaningShort(w: Word, settings: Pick<Settings, 'defLang'> | undefined, max = 28): string {
+  const m = meaningLine(w, settings);
+  return m.tier === 'de' ? clipDef(m.main, max) : w.zh;
+}
+
+/** A word given by its meaning in a write prompt (日记, 小作文, 对话, 造句): 「中文」, or 〔definition〕 with its first
+ *  letter and letter count (德语释义界面规则 2). The German letters beyond the first are never shown. */
+export function wordCue(w: Word, settings: Pick<Settings, 'defLang'> | undefined): string {
+  const m = meaningLine(w, settings);
+  return m.tier === 'de' ? `〔${m.main}〕 ${letterHint(w.de)} ` : `「${w.zh}」`;
+}
+
+/** The word's slot in a Chinese sentence prompt (终结技 看中文写整句): its Chinese, or 〔definition〕. */
+export function slotMeaning(w: Word, settings: Pick<Settings, 'defLang'> | undefined): string {
+  const m = meaningLine(w, settings);
+  return m.tier === 'de' ? `〔${m.main}〕` : (w.digit ?? w.zh);
+}
+
+/** The hint line of a write prompt that names one or more words by definition: 「原形 b _ _ _（4 个字母）」 per
+ *  de-tier word (numbered when there are two or more), or null when none hides its Chinese. */
+export function defHintsFor(words: Word[], settings: Pick<Settings, 'defLang'> | undefined): string | null {
+  const de = words.filter((x) => hidesZh(x, settings));
+  if (!de.length) return null;
+  const marks = ['①', '②', '③', '④'];
+  return de.map((x, i) => `${de.length > 1 ? `${marks[i] ?? i + 1} ` : ''}原形 ${defHintLine(x)}`).join('   ');
+}

@@ -12,6 +12,7 @@ import { gradeTyped } from './grading';
 import { shuffle, type Rng } from './rng';
 import { dayKey, now, type GameState } from './state';
 import type { Word } from './types';
+import { defDe, defHintLine, hidesZh } from './dedef';
 import { WORDS, fullForm } from '../data/words';
 import { ERODE_DEF, REGION_DEF, regionLevels } from '../data/zones';
 import { SCENES, scenesOf, type SceneDef } from '../data/world';
@@ -167,6 +168,9 @@ export interface PkQuestion {
   gram?: GramTask;
   /** Shown after the round. */
   full: string;
+  /** 德语释义 (1.0.12): the focus is the German definition; the Chinese a tap away, the first letter for a typed answer. */
+  zhHidden?: string;
+  defHint?: string;
 }
 
 /** Recent answers (battle), for the adventurer's accuracy and pace. */
@@ -216,20 +220,27 @@ export function pkQuestion(s: GameState, region: number, rng: Rng): PkQuestion |
   // Distractors with distinct meanings: two buttons must never read the same (several words share one gloss).
   const seen = new Set([w.zh]);
   const others = shuffle(rng, pool).filter((x) => x.id !== w.id && !seen.has(x.zh) && (seen.add(x.zh), true)).slice(0, 3);
-  if (others.length < 3) return typedQ(w);
+  if (others.length < 3) return typedQ(w, s);
   if (r < 0.55) {
     const opts = shuffle(rng, [w, ...others]).map((x) => x.zh);
     return { kind: 'pick', word: w, prompt: '选意思', focus: fullForm(w), options: opts, answer: w.zh, full: `${fullForm(w)} · ${w.zh}` };
   }
   if (r < 0.75) {
     const opts = shuffle(rng, [w, ...others]).map((x) => fullForm(x));
-    return { kind: 'pick', word: w, prompt: '选德语', focus: w.zh, options: opts, answer: fullForm(w), full: `${fullForm(w)} · ${w.zh}` };
+    return dedefPk(s, { kind: 'pick', word: w, prompt: '选德语', focus: w.zh, options: opts, answer: fullForm(w), full: `${fullForm(w)} · ${w.zh}` });
   }
-  return typedQ(w);
+  return typedQ(w, s);
 }
 
-function typedQ(w: Word): PkQuestion {
-  return { kind: 'typed', word: w, prompt: w.art ? '写出德语（带冠词）' : '写出德语', focus: w.zh, answer: fullForm(w), full: `${fullForm(w)} · ${w.zh}` };
+function typedQ(w: Word, s?: Pick<GameState, 'settings'>): PkQuestion {
+  return dedefPk(s, { kind: 'typed', word: w, prompt: w.art ? '写出德语（带冠词）' : '写出德语', focus: w.zh, answer: fullForm(w), full: `${fullForm(w)} · ${w.zh}` });
+}
+
+/** 德语释义 (1.0.12): 选德语 / 写出德语 of a de-tier word show its definition (and, typed, its first letter). */
+function dedefPk(s: Pick<GameState, 'settings'> | undefined, q: PkQuestion): PkQuestion {
+  const def = defDe(q.word);
+  if (!def || q.focus !== q.word.zh || !hidesZh(q.word, s?.settings)) return q;
+  return { ...q, focus: def, zhHidden: q.word.zh, defHint: q.options?.length ? undefined : defHintLine(q.word) };
 }
 
 export function gradePk(q: PkQuestion, input: string): boolean {

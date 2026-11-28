@@ -9,6 +9,7 @@ import { now } from './state';
 import type { Word } from './types';
 import { makeCloze } from './cloze';
 import { normalize } from './grading';
+import { defDe, hidesZh, letterHint } from './dedef';
 import { AFFIX_RANGE } from './loot';
 import type { Rng } from './rng';
 import type { GameState } from './state';
@@ -80,7 +81,9 @@ export function identifyQuestion(s: GameState, rng: Rng): BossQuestion {
     return {
       id: `identify-${w.id}`,
       ask: [c.shown],
-      zh: `${c.zh}（填空：${w.zh}）`,
+      // 德语释义 (1.0.12): a de-tier word gives its definition and its dictionary form's first letter; the sentence's
+      // Chinese is held back (examples show German only until answered).
+      zh: hidesZh(w, s.settings) ? `填空：〔${defDe(w)}〕 原形 ${letterHint(w.de)}` : `${c.zh}（填空：${w.zh}）`,
       accept: [new RegExp(`^${ans.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`)],
       model: c.full,
     };

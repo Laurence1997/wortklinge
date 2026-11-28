@@ -109,6 +109,7 @@ import { hideLoading } from '../ui/loading';
 import { Panels } from '../ui/panels';
 import { canListen } from '../ui/listen';
 import { $, isTyping } from '../ui/dom';
+import { meaningLine, meaningShort, wordCue } from '../core/dedef';
 
 const SYS = '系统';
 const HILDE = '守火人 Hilde';
@@ -1849,7 +1850,7 @@ export class Controller {
       const w = WORD_BY_ID[it.data!];
       const st = stageOf(this.state, w);
       if (st >= 3) {
-        say([{ who: '路牌', text: `「${fullForm(w)}」——${w.zh}。字不动了。` }]);
+        say([{ who: '路牌', text: `「${fullForm(w)}」——${meaningLine(w, this.state.settings).main}。字不动了。` }]);
         this.speak(fullForm(w));
       } else say([{ who: '路牌', text: '字母在木板上爬。读不出来。（这个词归名后，字会停下）' }]);
     }
@@ -1908,7 +1909,7 @@ export class Controller {
       ...(region === 1 && s.placement && regionFor(s.placement.level) > 1 ? [{ label: `传送到第 ${regionFor(s.placement.level)} 区（定级）`, act: () => this.travel(regionFor(s.placement!.level) as RegionId) }] : []),
     ];
     if (jw) {
-      lines.push({ who: SYS, text: `【篝火日记】今天打过 ${jw.map((w) => `「${w.zh}」`).join('、')}。用它们写两三句话？每天一篇，登录后 AI 批改。` });
+      lines.push({ who: SYS, text: `【篝火日记】今天打过 ${jw.map((w) => wordCue(w, s.settings)).join('、')}。用它们写两三句话？每天一篇，登录后 AI 批改。` });
       say(lines, undefined, [{ label: '写日记', act: () => this.panels.showJournal(jw) }, ...tradeOpt, { label: '今天不写', act: () => undefined }]);
     } else if (tradeOpt.length) say(lines, undefined, [...tradeOpt, { label: '先不换', act: () => undefined }]);
     else say(lines);
@@ -2416,7 +2417,7 @@ export class Controller {
     const [a, b] = DUEL.words;
     const targets = drawPractice(s, a + Math.floor(this.rng() * (b - a + 1)), this.rng);
     const run: DuelRun = { d, turns: opt.cues?.length ?? duelTurns(s.level, this.rng), targets, used: new Set<string>(), known: knownWords(s), clean: 0, gramShown: new Set<string>(), ...opt };
-    if (targets.length) say([{ who: SYS, text: `这场要用上的词（用德语${run.voice && canListen() ? '说或写' : '写'}出来）：${targets.map((w) => `「${w.zh}」`).join('、')}。最多 ${run.turns} 轮。` }], () => this.duelStep(run, [], ''));
+    if (targets.length) say([{ who: SYS, text: `这场要用上的词（用德语${run.voice && canListen() ? '说或写' : '写'}出来）：${targets.map((w) => wordCue(w, s.settings)).join('、')}。最多 ${run.turns} 轮。` }], () => this.duelStep(run, [], ''));
     else this.duelStep(run, [], '');
   }
 
@@ -2445,7 +2446,7 @@ export class Controller {
         const i = run.targets.findIndex((x) => x.id === id);
         if (i >= 0 && !run.used.has(id)) {
           const [w] = run.targets.splice(i, 1);
-          lines.push({ who: SYS, text: `「${w.zh}」被对方先说出来了，这场不算这个词。` });
+          lines.push({ who: SYS, text: `「${meaningShort(w, s.settings)}」被对方先说出来了，这场不算这个词。` });
         }
       }
       // Each target word used right counts as a context review (写对就算复习). Said aloud: a review, never 会写.
@@ -2496,7 +2497,7 @@ export class Controller {
         lines.push({ who: SYS, text: `${done ? (freeChat ? `${d.title}：${d.id.startsWith('script-') ? '演完了' : '聊完了'}。` : `「${d.title}」办成了。`) : freeChat ? `${d.title}：${d.id.startsWith('script-') ? '演完了' : '聊完了'}，但要用的词用上不到一半，这场没有奖励。` : '时间到了，这次先到这里。'}${run.targets.length ? ` 用上了 ${run.used.size}/${run.targets.length} 个词${miss.length ? `；没用上：${miss.map((w) => w.de).join('、')}` : ''}。` : ''}` });
         return say(lines);
       }
-      const need = run.targets.filter((w) => !run.used.has(w.id)).map((w) => `「${w.zh}」`); // 审查修订: targets in Chinese
+      const need = run.targets.filter((w) => !run.used.has(w.id)).map((w) => wordCue(w, s.settings)); // 审查修订: targets in Chinese (德语释义 1.0.12: or the definition + first letter)
       const cue = run.cues?.[turns] ? `\n🎭 这一句：${run.cues[turns]}` : '';
       const ask = (): void =>
         this.panels.ask(d.npc, `${r.de}\n（${r.zh}）${r.note ? `\n纠错：${r.note}` : ''}${need.length ? `\n（还要用上：${need.join('、')}；第 ${turns + 1}/${run.turns} 轮）` : `\n（第 ${turns + 1}/${run.turns} 轮）`}${cue}`, (text: string, sp?: boolean) => (text.trim() ? this.duelStep(run, h2, text.trim(), !!sp) : this.confirmLeave(ask, () => this.leaveDuel(run))), false, true); // 1.0.10 (Lucas): every AI talk has 🎤 按住说
@@ -2612,7 +2613,7 @@ export class Controller {
     const name = `${w.art ? `${w.art} ` : ''}${w.de}`;
     // 审核 1.0.10: only promise a review when writing it right really records one (a 半名 word gets none).
     const credit = writingCounts(s, w) ? '写对算它复习一次。' : '这个词还在学，写对了也先不算复习。';
-    this.panels.ask('AI 批改造句', `用「${w.zh}」这个词（德语${w.art ? '，名词带冠词' : ''}）写一句你自己的话。AI 只改错、不打分；${credit}`, (text) => {
+    this.panels.ask('AI 批改造句', `用${wordCue(w, s.settings)}这个词（德语${w.art ? '，名词带冠词' : ''}）写一句你自己的话。AI 只改错、不打分；${credit}`, (text) => {
       if (!text.trim()) return;
       waitToast('批改中……');
       void aiGrade(text.trim(), w, `用 ${name}（${w.zh}）写一句话`, s.level, knownWords(s)).then((r) => {
@@ -2634,7 +2635,7 @@ export class Controller {
     if (!s.owner) return say([{ who: SYS, text: '小作文要登录才能用（AI 批改在云端）。' }]);
     const words = drawPractice(s, 3, this.rng);
     if (words.length < 2) return say([{ who: SYS, text: '现在需要练的词不够（半名或到期的词）。去野外打几只再来。' }]);
-    const list = words.map((w) => `「${w.zh}」`).join('、'); // 审查修订: given in Chinese
+    const list = words.map((w) => wordCue(w, s.settings)).join('、'); // 审查修订: given in Chinese (德语释义 1.0.12: or the definition + first letter)
     this.panels.ask('小作文', `用 ${list} 写 3–5 句，题目随你（今天、周末、你住的地方……）。AI 只改错、不打分。`, (text) => {
       if (!text.trim()) return;
       waitToast('批改中……');
@@ -2646,7 +2647,7 @@ export class Controller {
         const skipped = words.filter((w) => missing.has(w.de));
         const done = words.filter((w) => !missing.has(w.de));
         const lines = gradeLines(r, text.trim(), skipped.length ? '语法没问题' : undefined);
-        if (skipped.length && done.length) lines.push({ who: '批改', text: `还没用到 ${skipped.map((w) => `「${w.zh}」`).join('、')}。` });
+        if (skipped.length && done.length) lines.push({ who: '批改', text: `还没用到 ${skipped.map((w) => wordCue(w, s.settings)).join('、')}。` });
         if (r.ok) {
           const credited = done.filter((w) => reviewedByWriting(s, w));
           const today = dayKey(now(s));
@@ -2674,8 +2675,8 @@ export class Controller {
       s.flags.partnerSeen = true;
       lines.push({ who: SYS, text: '【复习伙伴】选一个已经归名的词陪你打：语境复习的题由它来出（只是换个样子，规则和奖励都不变）。' });
     }
-    lines.push({ who: SYS, text: cur ? `现在的伙伴：${fullForm(cur)}（${cur.zh}）。换一个？` : '还没有归名的词可以当伙伴。' });
-    say(lines, undefined, [...list.map((w) => ({ label: `${fullForm(w)} · ${w.zh}`, act: () => (setPartner(s, w.id), toast(`复习伙伴：${fullForm(w)}`), this.persist()) })), { label: '不换', act: () => {} }]);
+    lines.push({ who: SYS, text: cur ? `现在的伙伴：${fullForm(cur)}（${meaningShort(cur, s.settings)}）。换一个？` : '还没有归名的词可以当伙伴。' });
+    say(lines, undefined, [...list.map((w) => ({ label: `${fullForm(w)} · ${meaningShort(w, s.settings)}`, act: () => (setPartner(s, w.id), toast(`复习伙伴：${fullForm(w)}`), this.persist()) })), { label: '不换', act: () => {} }]);
   }
 
   // ---- 语法秘境 (0.7–0.8: 变音 24 · 介词 31 · 词族 37), entered from a camp's 「语法秘境」 button -------------------

@@ -10,7 +10,8 @@ import { now } from '../core/state';
 import type { Word, ZoneId } from '../core/types';
 import { fullForm, WORD_BY_ID } from '../data/words';
 import { has } from '../core/unlocks';
-import { phraseCards, phraseWord, plateZh } from '../core/combat';
+import { phraseCards, phraseWord } from '../core/combat';
+import { plateMeaning } from '../core/dedef';
 import { SAYING_CFG, SAYINGS } from '../data/sayings';
 import { FAMILIES } from '../data/families';
 import type { Controller } from './controller';
@@ -624,7 +625,9 @@ export class WorldScene extends Phaser.Scene {
     const p = this.ctrl.state.words[w.id];
     const met = !!p;
     const presumed = !!p?.placed && !p.retired; // 快速通道: 名牌标「推定会」
-    m.label.setText(!met || w.erode ? Array.from({ length: Math.max(3, Math.min(9, w.de.length)) }, rnd).join('') : presumed ? `推定会·${plateZh(w)}` : plateZh(w));
+    // 德语释义 (1.0.12): a word whose Chinese is hidden wears a clipped definition (the garble rule above stays first).
+    const plate = plateMeaning(w, this.ctrl.state.settings, 16);
+    m.label.setText(!met || w.erode ? Array.from({ length: Math.max(3, Math.min(9, w.de.length)) }, rnd).join('') : presumed ? `推定会·${plate}` : plate);
   }
 
   removeMonster(m: MonsterEntity, how: 'scatter' | 'guiming' | 'flee') {

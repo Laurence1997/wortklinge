@@ -3,6 +3,7 @@ import { ART_COLS, ART_ROWS, parseArt, SCENE_ART } from '../data/sceneArt';
 import { WORD_BY_ID, fullForm } from '../data/words';
 import { stageOf } from '../core/srs';
 import type { GameState } from '../core/state';
+import { meaningLine } from '../core/dedef';
 
 const T = 16;
 const SHEET_COLS = 49;
@@ -77,7 +78,8 @@ export function sceneArtCanvas(sceneId: string, s: GameState): HTMLCanvasElement
     const row = Math.floor(((e.clientY - r.top) / r.height) * ART_ROWS);
     const hit = tiles.find((t) => t.word && t.col === col && t.row === row);
     const w = hit ? WORD_BY_ID[hit.word!] : null;
-    cv.title = w && stageOf(s, w) >= 1 ? `${fullForm(w)} · ${w.zh}` : w ? '▒▒▒（还没见过）' : '';
+    // 德语释义 (1.0.12): a word whose Chinese is hidden shows its definition in the hover title.
+    cv.title = w && stageOf(s, w) >= 1 ? `${fullForm(w)} · ${meaningLine(w, s.settings).main}` : w ? '▒▒▒（还没见过）' : '';
   });
   return cv;
 }

@@ -28,7 +28,7 @@ import { reportButton } from './report';
 import { logLine } from './gamelog';
 import { dialogOpen } from './feedback';
 import { canListen, lastConfidence, listenOnce, listening, stopHold, stopListening } from './listen';
-import { defDe, defTier, SYN_NOTE, synonymHit, type DefTier } from '../core/dedef';
+import { clipDef, defDe, defTier, letterHint, meaningLine, SYN_NOTE, synonymHit, type DefTier } from '../core/dedef';
 import { isRecording, judgePair, playRecording, pronReady, startRecording, stopRecording } from './phoneme';
 import { ECHO_RETRIES, echoVerdict, listenSide, notePron } from '../core/pron';
 import { PRON_TIP } from '../data/pairs';
@@ -1305,7 +1305,10 @@ export class BattleUI {
           (this.mateBoxes[i + 1] ?? this.input)?.focus();
         });
         this.mateBoxes.push(box);
-        return h('div.typing', h('span.small', `齐鸣 → ${mw ? zhWithPos(mw) : id}`), box, umlautButtons(box));
+        // 德语释义 (1.0.12): a mate whose Chinese is hidden is named by its clipped definition and first letter.
+        const mm = mw ? meaningLine(mw, this.ctrl.state.settings) : null;
+        const mateName = !mw ? id : mm!.tier === 'de' ? `〔${clipDef(mm!.main, 30)}〕 ${letterHint(mw.de)}` : zhWithPos(mw);
+        return h('div.typing', h('span.small', `齐鸣 → ${mateName}`), box, umlautButtons(box));
       });
       wrap.append(h('div.small.muted', '齐鸣：先写下同相伙伴的词（带冠词），写对一个伤一只；再答目标的题'), ...rows);
     }
@@ -1457,10 +1460,6 @@ export class BattleUI {
 
 }
 
-/** A definition clipped for a small label. */
-function clipDef(def: string): string {
-  return def.length > 22 ? `${def.slice(0, 21).trimEnd()}…` : def;
-}
 
 /** 德语释义 on the plate: a definition is a sentence, so it wraps in a smaller, plain font. */
 const DEF_PLATE_STYLE = 'font-family:inherit;font-size:16px;line-height:1.35;letter-spacing:0;white-space:normal;overflow-wrap:anywhere;max-width:100%;cursor:pointer';
