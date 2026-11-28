@@ -136,4 +136,14 @@ export const BOSS = {
     '「… Freut mich.」它第一次笑了。',
     '系统：你完成了来到这里以后的第一场德语对话。',
   ],
+  /** 1.0.12 试玩 20: a replay has its own opening and ending (the first-kill story is told once). */
+  introAgain: [
+    '门又开了一条缝。名牌上的字又褪成了空白。',
+    '「Guten Tag … Kennen wir uns?」',
+    '系统：它又忘了你是谁。再告诉它一次，它这次换了问法。',
+  ],
+  outroAgain: [
+    '名牌上的字母又浮了出来，比上一次快。',
+    '「Ach, Sie sind das! Freut mich.」',
+  ],
 };

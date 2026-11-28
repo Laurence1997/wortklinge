@@ -1,5 +1,7 @@
 import { portrait } from './icons';
 import type { BossFight, BossVerdict } from '../core/boss';
+import type { BossQuestion } from '../data/boss';
+import type { Board } from '../data/boss3';
 import { maxHp } from '../core/state';
 import { rank } from '../core/classes';
 import { VOICE } from '../core/combat';
@@ -25,6 +27,11 @@ export class BossUI {
   private last: BossVerdict | null = null;
   private lastAnswer = '';
   private waiting = false;
+  /** 1.0.12 试玩 23/29: the question just answered, shown (with its feedback) until Enter; answerBoss has already moved on. */
+  private shown: { asked: string; current: BossQuestion; board?: Board } | null = null;
+  private lastTimedOut = false;
+  /** Letters gained on the name plate by the last answer (the plate only grows when HP crosses a letter). */
+  private gained = 0;
 
   constructor(private ctrl: Controller) {}
 
@@ -69,7 +76,12 @@ export class BossUI {
     window.clearInterval(this.tick);
     this.waiting = true;
     this.lastAnswer = value;
+    this.lastTimedOut = timedOut;
+    const f = this.fight;
+    this.shown = { asked: f.asked, current: f.current, board: f.board ? { ...f.board, rows: f.board.rows } : undefined };
+    const before = this.letters(f);
     this.last = this.ctrl.answerBoss(value, timedOut);
+    this.gained = (f.outcome === 'win' ? this.ctrl.state.name.length : this.letters(f)) - before;
     // 天赋「争分」: each right answer in a timed boss dialogue adds a second.
     if (this.last.ok && Number.isFinite(this.deadline) && rank(this.ctrl.state, 'zhengfen')) this.deadline += 1000;
     this.render();
@@ -82,7 +94,12 @@ export class BossUI {
       return;
     }
     this.last = null;
+    this.shown = null;
     this.ask();
+  }
+
+  private letters(f: BossFight): number {
+    return Math.round(((f.maxHp - f.hp) / f.maxHp) * this.ctrl.state.name.length);
   }
 
   onKey(e: KeyboardEvent): boolean {
@@ -103,7 +120,9 @@ export class BossUI {
     const killed = f.which === 7 ? s.flags[`boss${f.region}Kills`] : f.which === 6 ? false : f.which === 5 ? s.flags.weberForms : f.which === 3 ? s.flags.boss3Kills : f.which === 2 ? s.flags.boss2Kills : s.flags.bossKills;
     const pips = h('div.pips');
     for (let i = 0; i < f.maxHp; i++) pips.append(h(`div.pip${i < f.hp ? '' : '.off'}`));
-    const letters = Math.round(((f.maxHp - f.hp) / f.maxHp) * s.name.length);
+    const letters = this.letters(f);
+    // While the feedback shows, the screen keeps the question that was answered (answerBoss already drew the next).
+    const shown = this.waiting && this.shown ? this.shown : { asked: f.asked, current: f.current, board: f.board };
     const plate = s.name.slice(0, letters) + '▒'.repeat(Math.max(0, s.name.length - letters));
 
     const figKey = bossFigureKey(f.which, f.region);
@@ -114,7 +133,7 @@ export class BossUI {
       h('div.timer', h('i', { style: 'width:100%' })),
     );
     if (!this.waiting) {
-      const input = h('input', { type: 'text', autocomplete: 'off', spellcheck: 'false', placeholder: /^(time|way)-/.test(f.current.id) ? '…' : 'Ich …' }) as HTMLInputElement;
+      const input = h('input', { type: 'text', autocomplete: 'off', spellcheck: 'false', placeholder: /^ich /i.test(f.current.model) ? 'Ich …' : '…' }) as HTMLInputElement;
       input.style.cssText = 'flex:1 1 300px;background:#000;color:#fff;border:1px solid var(--line-hi);padding:9px 10px;font-size:20px;font-family:var(--mono)';
       input.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
@@ -143,7 +162,7 @@ export class BossUI {
     } else if (this.last) {
       const v = this.last;
       panel.append(
-        h('div.feedback.' + (v.ok ? 'ok' : 'no'), h('b', f.which === 6 ? (f.current.id.startsWith('engrave-') ? (v.ok ? '字刻进去了。' : '刻歪了，这次没刻上。') : v.ok ? '「Genau!」Mira 擦掉灰：词缀亮了，而且每条都挑了更好的那个。' : '「Fast …」Mira 还是帮你把词缀擦亮了。') : f.which === 5 ? (v.ok ? 'Frau Weber 点点头，在表格上写了一行。' : '这一项还没填好，再说一次。') : v.ok ? (f.which === 4 ? '她点点头，在票上打了个孔。' : '它听懂了。名牌上多了一个字母。') : f.which === 4 ? '她皱起眉：「Schwarzfahren!」' : `它没听懂，你受到 ${v.damageTaken} 点伤害。`)),
+        h('div.feedback.' + (v.ok ? 'ok' : 'no'), h('b', f.which === 6 ? (f.current.id.startsWith('engrave-') ? (v.ok ? '字刻进去了。' : '刻歪了，这次没刻上。') : v.ok ? '「Genau!」Mira 擦掉灰：词缀亮了，而且每条都挑了更好的那个。' : '「Fast …」Mira 还是帮你把词缀擦亮了。') : f.which === 5 ? (v.ok ? 'Frau Weber 点点头，在表格上写了一行。' : '这一项还没填好，再说一次。') : v.ok ? (f.which === 4 ? '她点点头，在票上打了个孔。' : `它听懂了。${this.gained > 1 ? `名牌上多了 ${this.gained} 个字母。` : this.gained === 1 ? '名牌上多了一个字母。' : ''}`) : f.which === 4 ? `${this.lastTimedOut ? '时间到了。' : ''}她皱起眉：「Schwarzfahren!」` : this.lastTimedOut ? `时间到了，它不等你了。你受到 ${v.damageTaken} 点伤害。` : v.healed && !v.damageTaken ? '它没听懂。' : `它没听懂，你受到 ${v.damageTaken} 点伤害。`)),
         this.lastAnswer ? h('div.small.muted', `你说：${this.lastAnswer}`) : '',
         v.note ? h('div.small', v.note) : '',
         !v.ok ? h('div.small', `可以这样说：${v.model}`) : '',
@@ -161,13 +180,13 @@ export class BossUI {
       f.finalAsked && !this.waiting ? h('div.askzh', LINA.finalZh) : '',
       f.delayNow && !this.waiting ? h('div', { style: 'color:var(--bad);font-family:var(--mono);font-size:18px' }, `「${BOSS3.delayLine}」`) : '',
       f.delayNow && !this.waiting ? h('div.askzh', BOSS3.delayZh) : '',
-      h('div.ask', f.asked),
-      f.current.visual
-        ? h('div.tagplate', { style: `font-size:${f.which === 3 || f.which === 7 ? 18 : 22}px;margin:6px auto;display:inline-block;white-space:pre;text-align:left` }, f.current.visual)
-        : f.board
-          ? h('div.tagplate', { style: 'font-size:16px;margin:6px auto;display:inline-block;white-space:pre;text-align:left;opacity:.7' }, `Abfahrt\n${boardText(f.board)}`)
+      h('div.ask', shown.asked),
+      shown.current.visual
+        ? h('div.tagplate', { style: `font-size:${f.which === 3 || f.which === 7 ? 18 : 22}px;margin:6px auto;display:inline-block;white-space:pre;text-align:left` }, shown.current.visual)
+        : shown.board
+          ? h('div.tagplate', { style: 'font-size:16px;margin:6px auto;display:inline-block;white-space:pre;text-align:left;opacity:.7' }, `Abfahrt\n${boardText(shown.board)}`)
           : '',
-      h('div.row', { style: 'justify-content:center' }, h('button.btn.ghost.small', { onclick: () => this.ctrl.speak(f.asked) }, '🔊 再听'), h('span.askzh', killed ? '' : `（${f.current.zh}）`)),
+      h('div.row', { style: 'justify-content:center' }, h('button.btn.ghost.small', { onclick: () => this.ctrl.speak(shown.asked) }, '🔊 再听'), h('span.askzh', killed ? '' : `（${shown.current.zh}）`)),
       panel,
     );
   }

@@ -41,13 +41,30 @@ const concedeGrade: BossQuestion['grade'] = (input: string) => {
 
 // ---- 13 · 议会堡 · 空话议员 (debate: opinion + reason + example; Konjunktiv I; 功能动词结构) ---------------------------
 
-const TOPICS = [
-  'Sollte der Nahverkehr kostenlos sein?',
-  'Brauchen wir ein Tempolimit auf der Autobahn?',
-  'Sollte die Schule später anfangen?',
-  'Sollte man ab 16 wählen dürfen?',
-  'Sollten Städte Autos aus der Innenstadt verbannen?',
+// 1.0.12 试玩 33: each topic has its own model answers (they used to talk about the Nahverkehr whatever was asked).
+const TOPICS: Array<{ ask: string; opinion: string; example: string }> = [
+  { ask: 'Sollte der Nahverkehr kostenlos sein?', opinion: 'Ich bin der Ansicht, dass der Nahverkehr kostenlos sein sollte, weil dann weniger Menschen Auto fahren.', example: 'Zum Beispiel ist der Bus in Luxemburg schon kostenlos.' },
+  { ask: 'Brauchen wir ein Tempolimit auf der Autobahn?', opinion: 'Ich bin der Ansicht, dass wir ein Tempolimit brauchen, weil es dann weniger schwere Unfälle gibt.', example: 'Zum Beispiel gibt es in fast allen Ländern Europas schon ein Tempolimit.' },
+  { ask: 'Sollte die Schule später anfangen?', opinion: 'Meiner Meinung nach sollte die Schule später anfangen, weil viele Jugendliche morgens sehr müde sind.', example: 'Meine Schwester ist zum Beispiel 15 und schläft nie vor Mitternacht ein.' },
+  { ask: 'Sollte man ab 16 wählen dürfen?', opinion: 'Ich bin der Ansicht, dass man ab 16 wählen dürfen sollte, weil es auch um die Zukunft der Jugendlichen geht.', example: 'In Österreich dürfen Jugendliche zum Beispiel schon seit 2007 ab 16 wählen.' },
+  { ask: 'Sollten Städte Autos aus der Innenstadt verbannen?', opinion: 'Ich bin dafür, dass Städte Autos aus der Innenstadt verbannen, weil die Luft dann sauberer wird.', example: 'In Kopenhagen fahren zum Beispiel die meisten Menschen mit dem Fahrrad in die Innenstadt.' },
 ];
+
+const COUNTERS: Array<{ ask: string; model: string }> = [
+  { ask: 'Ohne Autos gibt es keine Arbeitsplätze. Was sagen Sie dazu?', model: 'Das sehe ich anders, denn Busse und Bahnen schaffen auch Arbeitsplätze.' },
+  { ask: 'Alle Experten sind meiner Meinung. Stimmen Sie zu?', model: 'Nein, da widerspreche ich, denn viele Experten sehen das ganz anders.' },
+  { ask: 'Das kostet zu viel. Dafür haben wir kein Geld.', model: 'Das sehe ich anders, denn wenn wir nichts tun, wird es später noch teurer.' },
+];
+
+/** 1.0.12 试玩 33: a concrete example counts with or without a marker word: a full sentence with a detail in it. */
+const EXAMPLE_MARK = new RegExp(`(?:zum beispiel|beispielsweise|etwa|ein beispiel|in ${S} (?:gibt|hat|haben|ist|sind|fahren)|als ich|letztes jahr|in meiner stadt|seit)`);
+const DETAIL = /(?:\d|\b(?:mein|meine|meinem|meinen|meiner|unser|unsere|unserem|unseren|unserer|ich|wir|gestern|letzte|letzten|letztes|jeden|jede|in [a-z]+|bei [a-z]+|eins|zwei|drei|vier|fuenf|sechs|sieben|acht|neun|zehn|zwoelf|zwanzig|hundert)\b)/;
+const exampleGrade: BossQuestion['grade'] = (input: string) => {
+  const n = normalize(input);
+  if (EXAMPLE_MARK.test(n)) return { ok: true, note: null };
+  if (n.split(' ').filter(Boolean).length >= 6 && DETAIL.test(n)) return { ok: true, note: null };
+  return { ok: false, note: '说一个具体的例子：谁、在哪里、什么时候（Zum Beispiel … / In meiner Stadt …）。' };
+};
 
 const QUOTES: Array<{ who: string; said: string; acc: string; model: string }> = [
   { who: 'Der Bürgermeister', said: 'Die Stadt hat kein Geld.', acc: 'die stadt habe kein geld', model: 'Er sagte, die Stadt habe kein Geld.' },
@@ -59,35 +76,43 @@ const QUOTES: Array<{ who: string; said: string; acc: string; model: string }> =
 
 const FVG: Array<{ verb: string; acc: string; model: string }> = [
   { verb: 'entscheiden', acc: 'eine entscheidung treffen', model: 'Wir müssen eine Entscheidung treffen.' },
-  { verb: 'kritisieren', acc: 'kritik (?:ueben|aeussern)', model: 'Wir müssen Kritik üben.' },
-  { verb: 'beantragen', acc: 'einen antrag stellen', model: 'Wir müssen einen Antrag stellen.' },
-  { verb: 'vorschlagen', acc: 'einen vorschlag (?:machen|unterbreiten)', model: 'Wir müssen einen Vorschlag machen.' },
+  { verb: 'das kritisieren', acc: 'kritik (?:ueben|aeussern)', model: 'Wir müssen Kritik üben.' },
+  { verb: 'das beantragen', acc: 'einen antrag stellen', model: 'Wir müssen einen Antrag stellen.' },
+  { verb: 'etwas vorschlagen', acc: 'einen vorschlag (?:machen|unterbreiten)', model: 'Wir müssen einen Vorschlag machen.' },
   { verb: 'diskutieren', acc: '(?:eine diskussion fuehren|zur diskussion stellen)', model: 'Wir müssen eine Diskussion führen.' },
-  { verb: 'beeinflussen', acc: 'einfluss (?:nehmen|ausueben)', model: 'Wir müssen Einfluss nehmen.' },
-  { verb: 'berücksichtigen', acc: '(?:in betracht ziehen|beruecksichtigung finden|ruecksicht nehmen)', model: 'Wir müssen das in Betracht ziehen.' },
+  { verb: 'das beeinflussen', acc: 'einfluss (?:nehmen|ausueben)', model: 'Wir müssen Einfluss nehmen.' },
+  { verb: 'das berücksichtigen', acc: '(?:in betracht ziehen|beruecksichtigung finden|ruecksicht nehmen)', model: 'Wir müssen das in Betracht ziehen.' },
 ];
 
 const DEBATE = (rng: Rng): BossQuestion[] => {
-  const qt = pick(rng, QUOTES);
-  const f = pick(rng, FVG);
+  const t = pick(rng, TOPICS);
+  // 1.0.12 试玩 33: HP 12 needs more than 8 questions; two quotes, two 功能动词 and the counter vary between draws.
+  const [qt, qt2] = shuffle(rng, QUOTES);
+  const [f, f2] = shuffle(rng, FVG);
+  const c = pick(rng, COUNTERS);
+  const report = (id: string, x: typeof qt) =>
+    q(id, [`${x.who} hat gesagt: „${x.said}“ Was hat er oder sie gesagt?`], '用 Konjunktiv I 转述（er sagte, …habe / sei …）',
+      [`(?:sagte|sagt|behauptete|behauptet|meinte|erklaerte)(?: dass)? ${x.acc}`, `^${x.acc}`], x.model, {
+        visual: `${x.who}: „${x.said}“`,
+        traps: [[/(?:sagte|sagt|meinte)(?: dass)? (?:\w+ )+(?:hat|ist|kennt|kostet|bin)(?: |$)/, '转述用 Konjunktiv I：habe / sei / kenne / koste。']],
+      });
+  const fvg = (id: string, x: typeof f) => q(id, [`Sagen Sie es förmlicher, mit Nomen und Verb: „Wir müssen ${x.verb}.“`], '功能动词结构：把动词换成「名词 + 动词」', [x.acc], x.model, { visual: `${x.verb} → ? + Verb` });
   const first = [
-    q('opinion', TOPICS, '用观点句式回答，并给出理由（Ich bin der Ansicht, dass … weil …）', [], 'Ich bin der Ansicht, dass der Nahverkehr kostenlos sein sollte, weil dann weniger Menschen Auto fahren.', {
+    q('opinion', [t.ask], '用观点句式回答，并给出理由（Ich bin der Ansicht, dass … weil …）', [], t.opinion, {
       grade: needs([[OPINION, '先亮明观点：Ich bin der Ansicht / Meiner Meinung nach …'], [REASON, '空话伤不了它：说出理由（weil / denn …）。']]),
     }),
     q('example', ['Schöne Worte. Haben Sie ein Beispiel?', 'Woher wissen Sie das? Ein Beispiel, bitte.'], '举一个具体的例子',
-      [`(?:zum beispiel|beispielsweise|etwa|ein beispiel|in ${S} (?:gibt|hat|haben|ist|sind|fahren)|als ich|letztes jahr|in meiner stadt|seit)`], 'Zum Beispiel ist der Bus in Luxemburg schon kostenlos.'),
-    q('report', [`${qt.who} hat gesagt: „${qt.said}“ Was hat er oder sie gesagt?`], '用 Konjunktiv I 转述（er sagte, …habe / sei …）',
-      [`(?:sagte|sagt|behauptete|behauptet|meinte|erklaerte)(?: dass)? ${qt.acc}`, `^${qt.acc}`], qt.model, {
-        visual: `${qt.who}: „${qt.said}“`,
-        traps: [[/(?:sagte|sagt|meinte)(?: dass)? (?:\w+ )+(?:hat|ist|kennt|kostet|bin)(?: |$)/, '转述用 Konjunktiv I：habe / sei / kenne / koste。']],
-      }),
+      [], t.example, { grade: exampleGrade }),
+    report('report', qt),
   ];
   const rest = [
-    q('counter', ['Ohne Autos gibt es keine Arbeitsplätze. Was sagen Sie dazu?', 'Alle Experten sind meiner Meinung. Stimmen Sie zu?'], '反驳它，并给出理由',
-      [], 'Das sehe ich anders, denn Busse und Bahnen schaffen auch Arbeitsplätze.', {
+    q('counter', [c.ask], '反驳它，并给出理由',
+      [], c.model, {
         grade: needs([[/(?:das stimmt (?:so )?nicht|ich bin anderer meinung|da widerspreche ich|nicht unbedingt|im gegenteil|das sehe ich anders|ich stimme nicht zu|nein|zwar|einerseits|das ist falsch)/, '先表明你不同意：Das sehe ich anders / Da widerspreche ich …'], [REASON, '反驳要带理由：denn / weil …']]),
       }),
-    q('fvg', [`Sagen Sie es förmlicher, mit Nomen und Verb: „Wir müssen ${f.verb}.“`], '功能动词结构：把动词换成「名词 + 动词」', [f.acc], f.model, { visual: `${f.verb} → ? + Verb` }),
+    fvg('fvg', f),
+    fvg('fvg2', f2),
+    report('report2', qt2),
     q('concrete', ['Wir müssen die Zukunft gemeinsam gestalten. Sie verstehen sicher.', 'Es gibt viel zu tun. Packen wir es an.'], '它在说空话。追问或说出具体要做什么',
       [`(?:die stadt (?:soll|sollte|muss|muesste)|man (?:sollte|muss|koennte)|wir (?:sollten|muessen|koennten)|was genau|wie genau|konkret|mehr ${S}|weniger ${S}|bauen|investieren|senken|erhoehen)`], 'Was genau? Die Stadt sollte mehr Radwege bauen.',
       { traps: [[/^(?:ja|genau|richtig|stimmt|klar)$/, '跟着说「对」等于没说。问它「Was genau?」或者说出具体做法。']] }),
@@ -95,7 +120,7 @@ const DEBATE = (rng: Rng): BossQuestion[] => {
       grade: needs([[/(?:vorteil|dafuer spricht|positiv|gut ist|der nutzen)/, '先说好处：Ein Vorteil ist …'], [/(?:nachteil|dagegen spricht|negativ|problem|aber|allerdings|jedoch)/, '再说坏处：Ein Nachteil ist …']]),
     }),
     q('fazit', ['Und Ihr Fazit?', 'Fassen Sie zusammen.'], '总结（Zusammenfassend … / Alles in allem …）',
-      [`(?:zusammenfassend|insgesamt|alles in allem|abschliessend|mein fazit|im grossen und ganzen|kurz gesagt|deshalb|daher)`], 'Alles in allem bin ich für einen kostenlosen Nahverkehr.'),
+      [`(?:zusammenfassend|insgesamt|alles in allem|abschliessend|mein fazit|im grossen und ganzen|kurz gesagt|deshalb|daher)`], 'Alles in allem überwiegen für mich die Vorteile.'),
   ];
   return [...first, ...shuffle(rng, rest)];
 };
@@ -109,12 +134,13 @@ const ZU: Array<{ pass: string; acc: string; model: string }> = [
   { pass: 'Der Müll muss getrennt werden.', acc: 'der muell ist (?:noch |immer )?zu trennen', model: 'Der Müll ist zu trennen.' },
   { pass: 'Die Frist muss eingehalten werden.', acc: 'die frist ist (?:unbedingt )?einzuhalten', model: 'Die Frist ist einzuhalten.' },
 ];
-const BAR: Array<{ thing: string; inf: string; adj: string }> = [
-  { thing: 'die Flasche', inf: 'recyceln', adj: 'recycelbar' },
-  { thing: 'das Handy', inf: 'reparieren', adj: 'reparierbar' },
-  { thing: 'der Pilz', inf: 'essen', adj: 'essbar' },
-  { thing: 'die Jacke', inf: 'waschen', adj: 'waschbar' },
-  { thing: 'die Schrift', inf: 'lesen', adj: 'lesbar' },
+/** `acc`: the object of «Kann man … ?» (1.0.12 试玩 32: Kann man den Pilz essen?); «Lässt sich …» keeps `thing`. */
+const BAR: Array<{ thing: string; acc: string; inf: string; adj: string }> = [
+  { thing: 'die Flasche', acc: 'die Flasche', inf: 'recyceln', adj: 'recycelbar' },
+  { thing: 'das Handy', acc: 'das Handy', inf: 'reparieren', adj: 'reparierbar' },
+  { thing: 'der Pilz', acc: 'den Pilz', inf: 'essen', adj: 'essbar' },
+  { thing: 'die Jacke', acc: 'die Jacke', inf: 'waschen', adj: 'waschbar' },
+  { thing: 'die Schrift', acc: 'die Schrift', inf: 'lesen', adj: 'lesbar' },
 ];
 const GEN: Array<{ prep: string; noun: string; acc: string; model: string; ask: string }> = [
   { prep: 'aufgrund', noun: 'der Streik', acc: 'aufgrund (?:des|eines) streiks?', model: 'Aufgrund des Streiks ist der Laden geschlossen.', ask: 'Warum ist der Laden geschlossen?' },
@@ -148,7 +174,7 @@ const GREED = (rng: Rng): BossQuestion[] => {
   ];
   const rest = [
     q('zu', [`Sag es mit sein + zu: „${zu.pass}“`], '被动的替代形式：sein + zu + 不定式', [zu.acc], zu.model, { visual: zu.pass }),
-    q('bar', [`Kann man ${bar.thing} ${bar.inf}?`, `Lässt sich ${bar.thing} ${bar.inf}?`], `用 -bar 或 sich lassen 回答（${bar.adj} / lässt sich ${bar.inf}）`,
+    q('bar', [`Kann man ${bar.acc} ${bar.inf}?`, `Lässt sich ${bar.thing} ${bar.inf}?`], `用 -bar 或 sich lassen 回答（${bar.adj} / lässt sich ${bar.inf}）`,
       [`(?:ist|sind) (?:nicht |gut |leicht |kaum )?${bar.adj}`, `(?:laesst|lassen) sich (?:nicht |gut |leicht |kaum )?${bar.inf}`], `Ja, ${bar.thing} ist ${bar.adj}.`),
     q('gen', [`${g.ask} Sag es mit „${g.prep}“: ${g.noun}.`], `属格介词：${g.prep} + 第二格`, [g.acc], g.model, {
       visual: `${g.prep} + ${g.noun}`,
