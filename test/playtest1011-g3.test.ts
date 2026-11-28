@@ -75,4 +75,18 @@ describe('变音秘境 a → ä 层 (finding 10)', () => {
     if (!w) return;
     for (let i = 0; i < 3; i++) expect(ablautTask(s, w, 'a-u', makeRng(i), i)).toBeNull();
   });
+  it('backen on the 特殊 floor takes backt and also bäckt / bäckst (verbs.ts alt)', async () => {
+    const { ablautTask } = await import('../src/core/gram/dungeons');
+    const { gradeGram } = await import('../src/core/gram/task');
+    const s = newGame('T', 'student', T0);
+    s.level = 81;
+    const w = WORDS.find((x) => x.de === 'backen' && x.pos === 'v');
+    if (!w) return;
+    const er = ablautTask(s, w, '特殊', makeRng(1), 0)!;
+    const du = ablautTask(s, w, '特殊', makeRng(1), 1)!;
+    expect(er.answer).toBe('backt');
+    expect(er.alts).toEqual(['bäckt']);
+    expect(du.alts).toEqual(['bäckst']);
+    expect(gradeGram(er, 'bäckt').ok).toBe(true);
+  });
 });
