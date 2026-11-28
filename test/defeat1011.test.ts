@@ -196,6 +196,14 @@ describe('(3) 挑战怪: side-panel tag and the echo where you died', () => {
     expect(monsterTag(s, ent(w))).toBe('新');
   });
 
+  it('a 快速通道 challenge word of a placed player shows the level its fight really uses', () => {
+    const s = game(101);
+    s.placement = { at: T0, level: 101, top: 0, checks: {} } as GameState['placement'];
+    const w = WORDS.find((x) => (x.region ?? 1) === 1 && x.art && !s.words[x.id])!;
+    const b = startBattle(s, w, makeRng(3), { challenge: true });
+    expect(monsterTag(s, ent(w, { challenge: true }))).toBe(`▲ 挑战 Lv ${b.monster.lvl}`);
+  });
+
   it('dying to a word from another region records the region you died in', () => {
     const s = game(11);
     s.gold = 50;
