@@ -128,14 +128,27 @@ function prepPartners(prep: string): Array<{ ws: string[]; kasus: string }> {
       const lemma = withEs ? ws[1] : ws[0];
       if (!lemma || !/^[a-zäöüß]{3,}$/.test(lemma) || (SPATIAL_TOO.has(lemma) && !v.reflexive)) continue;
       const c = CONJ[lemma];
-      const forms = new Set<string>([lemma, lemma.replace(/e?n$/, ''), ...(c ? Object.values(c.forms) : []), ...(PERFEKT[lemma] ? [PERFEKT[lemma].pp] : [])]);
       const part = PARTICLES.find((x) => lemma.startsWith(x) && lemma.length > x.length + 2);
+      const base = part ? lemma.slice(part.length) : '';
+      // Separable: CONJ writes «nehme teil» (or, for some, «teilnehme»); the base verb's forms give the split ones.
+      const sepC = !!c && c.forms.ich.includes(' ');
+      const baseC = part ? CONJ[base] : undefined;
       const list = pairedVerbs.get(v.prep) ?? [];
       // A reflexive pairing only counts with its pronoun (sich halten an ≠ an der Kasse halten).
       const es = withEs ? ['es'] : v.reflexive ? ['@refl'] : [];
-      for (const f of forms) {
-        list.push({ ws: [f.toLowerCase(), ...es], kasus: v.kasus });
-        if (part && f.startsWith(part) && f.length > part.length + 1) list.push({ ws: [f.slice(part.length).toLowerCase(), part, ...es], kasus: v.kasus });
+      const add = (ws: string[]) => list.push({ ws: [...ws.map((x) => x.toLowerCase()), ...es], kasus: v.kasus });
+      if (part && (sepC || baseC)) {
+        const pp = PERFEKT[lemma]?.pp ?? (PERFEKT[base] ? part + PERFEKT[base].pp : undefined);
+        for (const f of [lemma, `${part}zu${base}`, ...(pp ? [pp] : [])]) add([f]);
+        const bforms = new Set<string>([base, base.replace(/e?n$/, ''), ...Object.values((sepC ? c : baseC)!.forms).map((f) => f.split(' ')[0])]);
+        // aufpassen auf: the particle is the preposition itself, so the split form needs it twice (Pass auf die Straße auf).
+        for (const f of bforms) add([f, part === v.prep ? `${part}#2` : part]), add([part + f]);
+      } else {
+        const forms = new Set<string>([lemma, lemma.replace(/e?n$/, ''), ...(c ? Object.values(c.forms) : []), ...(PERFEKT[lemma] ? [PERFEKT[lemma].pp] : [])]);
+        for (const f of forms) {
+          add([f]);
+          if (part && !c && f.startsWith(part) && f.length > part.length + 1) add([f.slice(part.length), part]);
+        }
       }
       pairedVerbs.set(v.prep, list);
     }
@@ -143,10 +156,12 @@ function prepPartners(prep: string): Array<{ ws: string[]; kasus: string }> {
   return pairedVerbs.get(prep) ?? [];
 }
 function prepObjectVerb(prep: string, art: string, de: string): boolean {
-  const toks = new Set(de.toLowerCase().split(/[^a-zäöüß]+/).filter(Boolean));
+  const all = de.toLowerCase().split(/[^a-zäöüß]+/).filter(Boolean);
+  const toks = new Set(all);
+  const has = (x: string) => (x.endsWith('#2') ? all.filter((t) => t === x.slice(0, -2)).length >= 2 : toks.has(x));
   // The article must fit the pairing's case (ich warte auf dem Bahnsteig is a place, warten auf takes Akk.).
   const fits = (k: string) => (k === 'A' ? ['den', 'die', 'das', 'einen', 'eine', 'ein'] : k === 'D' ? ['dem', 'den', 'der', 'einem', 'einer'] : [art]).includes(art.toLowerCase());
-  return prepPartners(prep.toLowerCase()).some(({ ws, kasus }) => fits(kasus) && ws.every((x) => (x === '@refl' ? [...REFL].some((r) => toks.has(r)) : toks.has(x))));
+  return prepPartners(prep.toLowerCase()).some(({ ws, kasus }) => fits(kasus) && ws.every((x) => (x === '@refl' ? [...REFL].some((r) => toks.has(r)) : has(x))));
 }
 
 const TWOWAY: Spec = {

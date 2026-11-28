@@ -53,7 +53,7 @@ const MOVE_INFO: Record<Move, { key: string; zh: string; sub: string }> = {
 /** 试玩 #45/#52: the stance hint when the line gives no article to copy (the stance is the name's der/die/das). */
 function nameStanceTip(s: Parameters<typeof nameStanceWhy>[0], b: Battle): string {
   const r = nameStanceWhy(s, b);
-  if (r.why === 'closed') return `这句要${r.c === 'dat' ? '第三格' : '第四格'}，${r.c === 'dat' ? CONFIG.phase.datFrom : CONFIG.phase.accFrom} 级才学：先按名字选 der/die/das`;
+  if (r.why === 'closed') return `这句的空要用${r.c === 'dat' ? '第三格' : '第四格'}，${r.c === 'dat' ? CONFIG.phase.datFrom : CONFIG.phase.accFrom} 级才学到：先按名字选 der/die/das`;
   return '这句空里没有能照着选的冠词：按名字选 der/die/das';
 }
 
@@ -788,7 +788,9 @@ export class BattleUI {
     const kept = keep !== undefined ? keepInputs($('battle')) : null;
     const s = this.ctrl.state;
     const b = this.b;
-    const taught = b.direct ? false : this.phase !== 'result' ? teachPhase(b) : !!b.phaseTaught && b.phaseTaught === b.turn && b.phase === phaseOf(b); // a pack's next target is taught too
+    // 试玩 #64/#71: a 直接叫名 turn (and its result) has no line and no stance: no hint, no 第一次见 strip.
+    const directQ = b.direct || !!this.question?.directName;
+    const taught = directQ ? false : this.phase !== 'result' ? teachPhase(b) : !!b.phaseTaught && b.phaseTaught === b.turn && b.phase === phaseOf(b); // a pack's next target is taught too
     const el = $('battle');
     el.className = 'panel';
     const w = b.word;
@@ -997,7 +999,7 @@ export class BattleUI {
 
     // 词性三相 row: the stance for this monster.
     let stance: HTMLElement | string = '';
-    if (needsPhase(b)) {
+    if (needsPhase(b) && !directQ) {
       stance = h(
         'div.stance',
         h('span.muted', '相：'),
@@ -1025,7 +1027,7 @@ export class BattleUI {
           taught ? '' : b.perfekt
             ? s.level <= 22 ? '  完成时：移动、变化（fahren、kommen、aufstehen）多用 sein，其余用 haben；23 级前选错不罚' : '  选对护甲降一档、回资源；选错护甲翻倍'
             : this.phaseNag && !b.phase
-            ? s.level >= 7 ? (b.intent.caseArt ? '  先选相：它这句话里缺的那个冠词是什么？' : `  先选相：${nameStanceTip(s, b)}`) : '  先选相：它是 der、die 还是 das？'
+            ? b.pluralMon ? '  先选相：复数怪一律选 die' : s.level >= 7 ? (b.intent.caseArt ? '  先选相：它这句话里缺的那个冠词是什么？' : `  先选相：${nameStanceTip(s, b)}`) : '  先选相：它是 der、die 还是 das？'
             : b.pluralMon
               ? ''
               : s.level >= 7

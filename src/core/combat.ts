@@ -1013,13 +1013,11 @@ export function needsPhase(b: Battle): boolean {
 export function nameStanceWhy(s: GameState, b: Battle): { why: 'closed'; c: Case } | { why: 'bare' } {
   const w = b.word;
   const full = b.intent?.full?.replace(/\s+/g, ' ').trim();
-  const ps = (EXAMPLES[w.id] ?? []).map(parse);
-  const i = full ? ps.findIndex((p) => !!p && (p.before + p.blank + p.after).replace(/\s+/g, ' ').trim() === full) : -1;
-  const p = i >= 0 ? ps[i] : null;
+  const p = full ? (EXAMPLES[w.id] ?? []).map(parse).find((x) => !!x && (x.before + x.blank + x.after).replace(/\s+/g, ' ').trim() === full) : null;
   if (!p) return { why: 'bare' };
   const prev = p.before.trim().split(/\s+/).pop()?.toLowerCase() ?? '';
   const fused: Record<string, Case> = { im: 'dat', am: 'dat', vom: 'dat', beim: 'dat', zum: 'dat', zur: 'dat', ins: 'acc', ans: 'acc' };
-  const c = caseOf(genderOf(w), slotArticle(w, i)) ?? fused[prev] ?? null;
+  const c = caseOf(genderOf(w), p.blank.trim().split(/\s+/)[0]) ?? fused[prev] ?? null;
   return c && !casesOpen(s.level).includes(c) ? { why: 'closed', c } : { why: 'bare' };
 }
 
@@ -1174,7 +1172,15 @@ export function dictSlotOpen(w: Word, blank: string, level: number): boolean {
   if (!hasArticleQuestion(w)) return formOpen || normalize(blank) === normalize(w.de) || normalize(blank) === normalize(fullForm(w));
   // Possessives read like ein (meinen → einen); plural slots and the like have no stance case.
   const art = toks[0].toLowerCase().replace(/^(mein|dein|sein|ihr|unser|eur)/, 'ein');
-  const c = caseOf(genderOf(w), art);
+  // kein comes with the negation (Lv5).
+  if (art.startsWith('kein') && level < 5) return false;
+  // The genitive (des Monats, eines Freundes) opens with its grammar floor (Lv81).
+  if ((art === 'des' || art === 'eines' || art === 'keines') && level < 81) return false;
+  // A plural slot reads its case as a plural (den Taschen, ihren Zimmern = dative plural, not open before Lv15).
+  const last = normalize(toks[toks.length - 1]);
+  const pl = !!w.pl && w.pl !== '-' && last !== normalize(w.de) && (last === normalize(w.pl) || last === normalize(`${w.pl}n`));
+  const g = pl ? 'pl' : genderOf(w);
+  const c = caseOf(g, g === 'pl' ? art.replace(/^ein/, 'kein') : art);
   if (c && !casesOpen(level).includes(c)) return false;
   if (formOpen) return true;
   return !!c && toks.length === 2 && normalize(toks[1]) === normalize(w.de) && (STANCE_ARTS as readonly string[]).includes(toks[0].toLowerCase());

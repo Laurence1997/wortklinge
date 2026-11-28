@@ -21,6 +21,14 @@ describe('1.0.12 g1 试玩修复: questions', () => {
     expect(dictSlotOpen(tee, 'einem Tee', 11)).toBe(false); // dative from Lv15
     expect(dictSlotOpen(tee, 'einem Tee', 15)).toBe(true);
     expect(dictSlotOpen(tee, 'meinen Tee', 7)).toBe(false); // possessives with 填变形 (Lv11)
+    const tasche = WORD_BY_ID['tasche'];
+    if (tasche?.pl === 'Taschen') {
+      expect(dictSlotOpen(tasche, 'den Taschen', 11)).toBe(false); // dative plural from Lv15
+      expect(dictSlotOpen(tasche, 'den Taschen', 15)).toBe(true);
+    }
+    expect(dictSlotOpen(WORD_BY_ID['monat'], 'des Monats', 20)).toBe(false); // genitive from Lv81
+    expect(dictSlotOpen(WORD_BY_ID['problem'], 'Kein Problem', 2)).toBe(false); // kein from Lv5
+    expect(dictSlotOpen(WORD_BY_ID['problem'], 'Kein Problem', 5)).toBe(true);
     for (let i = 0; i < 20; i++) {
       const q = dictQ(hose, makeRng(i), 2);
       if (q) expect(q.answer).not.toMatch(/schwarze/);
@@ -71,6 +79,9 @@ describe('1.0.12 g1 试玩修复: questions', () => {
     const all = WORDS.flatMap((w) => allLineTasks(w, 'twoway').map((t) => t.full ?? ''));
     expect(all.some((x) => /halte dich an die Regeln/.test(x))).toBe(false);
     expect(all.some((x) => /^Ich warte auf den Bus\.$/.test(x))).toBe(false);
+    expect(all.some((x) => /^Pass auf die Straße auf!$/.test(x))).toBe(false);
+    expect(all.some((x) => /an der Demonstration teilgenommen/.test(x))).toBe(false);
+    expect(all.some((x) => /^Dieser Verschluss passt nicht auf die Flasche\.$/.test(x))).toBe(true);
     expect(all.length).toBeGreaterThan(1000);
   });
 });

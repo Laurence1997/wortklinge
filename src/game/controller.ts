@@ -744,18 +744,20 @@ export class Controller {
       return;
     }
     this.battleUI.open();
-    // 试玩 #35: an article pack (文章群怪) has its own words and articles, so it gets its own note, once.
+    // 试玩 #35: the same-article lesson goes with the teaching pack (packCharge) only; an article pack (文章群怪) has
+    // words of one text whose articles differ, so it gets its own note, once (flags.articlePackTaught, optional).
+    const tutPack = this.pack.some((x) => x.tutorial === 'packCharge');
     const articlePack = this.pack.some((x) => !!x.notice && noticeById(x.notice.id)?.kind === 'article');
-    if (this.pack.length > 1 && articlePack && !s.flags.articlePackTaught) {
-      s.flags.articlePackTaught = true;
-      say([
-        { who: HILDE, text: '一群文章群怪！它们是同一篇文章里的词，每只的词和冠词都不一样。' },
-        { who: HILDE, text: '文章就挂在上面。它们会问文章里写了什么，读懂了就好打；每只的词要一只一只看清再答。' },
-      ]);
-    } else if (this.pack.length > 1 && !articlePack && !s.flags.firstPackDone && this.pack.some((x) => x.tutorial === 'packCharge')) {
+    if (this.pack.length > 1 && tutPack && !s.flags.firstPackDone) {
       say([
         { who: HILDE, text: '一群！这两只是同一个冠词。' },
         { who: HILDE, text: '选对相，按「齐鸣」：一题打两只，连那只喊「Moment!」的蓄力也一起打断。相选错，齐鸣不响，只打到目标。' },
+      ]);
+    } else if (this.pack.length > 1 && articlePack && !s.flags.articlePackTaught) {
+      s.flags.articlePackTaught = true;
+      say([
+        { who: HILDE, text: '一群文章群怪！它们都是同一篇文章里的词，冠词不一定一样，每只都要看清自己的名字。' },
+        { who: HILDE, text: '文章就显示在题目上面。它们会问文章里写了什么，先读懂文章再答。' },
       ]);
     }
   }

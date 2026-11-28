@@ -94,7 +94,8 @@ function priceQuestion(rng: Rng): BossQuestion {
 }
 
 function countQuestion(rng: Rng): BossQuestion {
-  const w = pick(rng, foods().filter((x) => x.pl && x.pl !== '-' && x.pl !== x.de));
+  // 试玩 #24: counted by the piece (no «fünf Salze», «drei Öle»).
+  const w = pick(rng, foods().filter((x) => x.pl && x.pl !== '-' && x.pl !== x.de && !['salz', 'oel', 'schokolade'].includes(x.id)));
   const n = 2 + Math.floor(rng() * 8);
   const pl = normalize(w.pl!);
   return {
