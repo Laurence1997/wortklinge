@@ -94,7 +94,7 @@ import { ltCheck } from '../net/languageTool';
 import { berlinHour, CHARM, CHARM_BY_ID, equippedCharms, grantSlang, rotateCard, shoutCharm, SLANG, slangOwed, type ShoutResult } from '../core/charms';
 import { floorRun, floorsOf, GRAM_DUNGEON, markCleared, type DungeonKind, type Floor } from '../core/gram/dungeons';
 import { fullForm, fullFormLong, hasArticleQuestion, WORD_BY_ID, WORDS, zhWithPos } from '../data/words';
-import { initAudio, setBattleMusic, setVolumes, sfx, speak, speechAvailable, hasGermanVoice } from './audio';
+import { initAudio, setBattleMusic, setVolumes, sfx, speak, speechAvailable, hasGermanVoice, onSpeechTrouble } from './audio';
 import type { MonsterEntity, WorldScene } from './WorldScene';
 import type { RegionId } from './map';
 import { BattleUI } from '../ui/battle';
@@ -138,6 +138,15 @@ export class Controller {
   private lastInput = Date.now();
 
   constructor(state: GameState, dev: boolean) {
+    // 告示牌没声音 (Lucas 2026-11-28): when a German line cannot be read aloud, say why once per page load.
+    let toldSpeech = false;
+    onSpeechTrouble((t) => {
+      if (toldSpeech) return;
+      toldSpeech = true;
+      toast(t === 'noVoice'
+        ? '没有声音：这台电脑的浏览器里没有德语语音。Windows：设置 → 时间和语言 → 语音 → 添加语音，选「Deutsch (Deutschland)」，装好后重开 Chrome。'
+        : '德语语音没读出来（Chrome 的在线语音可能连不上 Google）。可以在 Windows 设置 → 时间和语言 → 语音 → 添加语音 里装「Deutsch (Deutschland)」，装好后重开 Chrome，就会改用这台电脑自己的德语语音。', 'bad');
+    });
     // Jonas is the neighbour (boss 1): lit once you have beaten him; Lina once her name is back.
     setRestored((who) => (who === 'lina' ? !!this.state.flags.linaFreed : !!this.state.flags.bossKills));
     this.state = state;
@@ -434,7 +443,7 @@ export class Controller {
 
   voiceNote(): string {
     if (!speechAvailable()) return '这个浏览器不支持朗读';
-    return hasGermanVoice() ? '使用浏览器自带的德语语音' : '没找到德语语音：请用电脑上的 Chrome';
+    return hasGermanVoice() ? '使用浏览器自带的德语语音' : '没找到德语语音：Windows 设置 → 时间和语言 → 语音 → 添加语音，装「Deutsch (Deutschland)」后重开 Chrome';
   }
 
   applyVolumes(): void {

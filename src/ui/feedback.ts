@@ -18,7 +18,7 @@ function showToast(text: string, cls: string, lead?: HTMLElement): void {
   const el = h(`div.toast.panel${cls ? '.' + cls : ''}`, lead ?? '', text);
   box.append(el);
   while (box.children.length > 5) box.firstElementChild?.remove();
-  window.setTimeout(() => el.remove(), 3300);
+  window.setTimeout(() => el.remove(), Math.max(3300, text.length * 110)); // long notes stay long enough to read
 }
 
 let bannerTimer = 0;

@@ -33,7 +33,7 @@ export const GENDER_PAGES: Page[] = [
     intro: 'der、die、das 大部分得跟着词一起记，但有不少规律能帮你猜，而且越到后面越准：B1、B2 的长词多半带后缀，或者是复合词，看词尾就能定。下面每条都标了「都是」还是「多半是」，后面的数字是这个游戏词表里实际数出来的。',
     items: [
       { head: '记名词永远连冠词一起记', body: '背 der Tisch，不背 Tisch。打字题也要带冠词。', ex: ['der Tisch|桌子', 'die Lampe|灯', 'das Buch|书'] },
-      { head: '先看词尾，再看是不是复合词，最后看意思', body: '词尾规律最稳；复合词看最后一个词；意思类别（星期、酒、金属……）能补上一部分。都对不上的，就是要硬记的那一批。' },
+      { head: '先看词尾，再看是不是复合词，最后看意思', body: '① 词尾最稳：-ung 一定是 die，-chen 一定是 das。② 复合词跟最后一个词：die Tür + der Schlüssel = der Türschlüssel。③ 有些词按意思就能猜：星期、月份、季节、方向、天气多是 der（der Montag、der Mai、der Sommer、der Norden、der Regen）；酒多是 der（der Wein，例外 das Bier）；金属多是 das（das Gold）；动词原形当名词一律 das（das Essen）。三样都对不上的，就是要硬记的那一批。', ex: ['die Zeitung|报纸', 'das Mädchen|女孩', 'der Türschlüssel|门钥匙', 'der Montag|星期一', 'der Wein|葡萄酒', 'das Bier|啤酒', 'das Gold|金', 'das Essen|饭'] },
       { head: '复数一律 die', body: '不管单数是什么，复数的定冠词都是 die（第三格 den）。', ex: ['der Tisch → die Tische', 'das Kind → die Kinder', 'die Frau → die Frauen'] },
       { head: '战斗里会提醒你', body: '选错相、冠词写错，或者第一次见到一个新名词时，如果这个词归哪条规律，反馈里会顺带写出来；是例外也会告诉你。不归任何规律的词不显示。' },
     ],
