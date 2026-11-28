@@ -25,10 +25,13 @@ Ausgabe JSON: {"items":[{"id":"id genau kopieren","def":"Erklärung","flag":"opt
 
 Grundwortschatz (nur diese Wörter benutzen):
 """ + ', '.join(basic)
+# DEF_SET=b1 (Lucas 2026-11-28 按推荐): the Lv81–120 words, listed in proof/out/de-def-b1-ranks.json (from lexicon lvl).
+SET = os.environ.get('DEF_SET', 'b2')
+want = set(json.load(open(os.path.join(ROOT, 'proof/out/de-def-b1-ranks.json')))) if SET == 'b1' else set(range(6001, 8001))
 items = []
 for r in rows:
-    if r[I['排名']].isdigit() and 6000 < int(r[I['排名']]) <= 8000:
+    if r[I['排名']].isdigit() and int(r[I['排名']]) in want and not r[I['德语释义']].strip():
         items.append({'id': r[I['排名']], 'w': r[I['原形']], 'art': r[I['冠词']], 'pos': r[I['词性']], 'zh': r[I['中文']], 'ex': r[I['例句']]})
 B = 40
 batches = [('d' + items[i]['id'], '\n'.join(json.dumps(x, ensure_ascii=False) for x in items[i:i + B]), None) for i in range(0, len(items), B)]
-dsrun.run('de-def', SYSTEM, batches, os.environ.get('ZH_MODEL', 'deepseek-flash'), float(os.environ.get('ZH_BUDGET', '1.5')))
+dsrun.run('de-def' if SET == 'b2' else 'de-def-b1', SYSTEM, batches, os.environ.get('ZH_MODEL', 'deepseek-flash'), float(os.environ.get('ZH_BUDGET', '1.5')))
