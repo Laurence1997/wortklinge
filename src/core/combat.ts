@@ -1,6 +1,7 @@
 // Turn-based combat as a reading game: the monster says its next move in German,
 // you pick a counter, then answer a question. You act first.
 
+import { genderHint } from './genderRules';
 import { CONFIG, DAY, HOUR, monsterHpAt, playerBaseHp } from './config';
 import { gradeTyped, levenshtein, normalize, type Verdict } from './grading';
 import { ELEMENT_ZH, generateIntent, INTENT_ZH } from './intents';
@@ -1767,6 +1768,19 @@ export function knownMoechteNouns(s: GameState): Word[] {
   return WORDS.filter((w) => w.moechte && s.words[w.id]);
 }
 
+/** 词性规律 (Lucas 2026-11-28): the one gender rule a noun falls under, as a note ([] when none covers it). */
+function ruleNote(w: Word | undefined): string[] {
+  const g = w ? genderHint(w) : null;
+  return g ? [g.text] : [];
+}
+
+/** 词性规律 after a wrong (or not yet punished) stance: only when the pick missed the noun's own der/die/das, so a
+ *  right gender in the wrong case is not lectured about gender. Not for 复数怪 or Perfekt. */
+export function stanceRuleNote(b: Battle): string {
+  if (b.pluralMon || b.perfekt || !b.word.art || b.phase === b.word.art) return '';
+  return genderHint(b.word)?.text ?? '';
+}
+
 export function gradeQuestion(s: GameState, b: Battle, q: Question, input: string): Verdict & { word?: Word } {
   // 齐鸣 (点名齐鸣, rev 234): the mates' boxes come after the target's answer, joined with |; each mate written right
   // (its own word with the article) is hit, the others are not.
@@ -1792,10 +1806,14 @@ export function gradeQuestion(s: GameState, b: Battle, q: Question, input: strin
     case 'pickDe':
     case 'pickZh': {
       const ok = input === q.answer;
-      return { ok, notes: ok ? [] : [`正确答案：${q.type === 'article' ? fullForm(b.word) : q.answer}`], correct: q.answer! };
+      return { ok, notes: ok ? [] : [`正确答案：${q.type === 'article' ? fullForm(b.word) : q.answer}`, ...(q.type === 'article' ? ruleNote(b.word) : [])], correct: q.answer! };
     }
-    case 'typed':
-      return gradeTyped(input, q.review ? WORD_BY_ID[q.review] : b.word, !!q.withArticle);
+    case 'typed': {
+      const tw = q.review ? WORD_BY_ID[q.review] : b.word;
+      const v = gradeTyped(input, tw, !!q.withArticle);
+      // 词性规律 (2026-11-28): a wrong article says the rule the noun falls under, if any.
+      return v.notes.some((n) => n.startsWith('冠词错了')) ? { ...v, notes: [...v.notes, ...ruleNote(tw)] } : v;
+    }
     case 'storm': {
       if (!q.forms) return gradeTyped(input, q.word!, !!q.withArticle);
       const g = gradeStorm(q.word!, q.forms, input, false);
