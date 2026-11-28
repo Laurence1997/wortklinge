@@ -334,7 +334,7 @@ export class Controller {
         // 1.0.12 (#37): a test interrupted by a reload carries on where it stopped.
         if (this.state.placeRun && !this.state.placeRun.daily) this.openPlacement(false);
         else this.askPlacement();
-      } else this.opening();
+      } else this.opening(regionFor(this.state.level));
     } else this.welcomeBack();
     hideLoading();
   }
@@ -414,7 +414,10 @@ export class Controller {
   persist(): void {
     stampTiers(this.state);
     stampBoard(this.state);
+    // 1.0.12 (#92): a 推定会 word in a fight not yet answered is saved as 推定会, so a reload mid-fight keeps it.
+    const back = this.pack.filter((x) => restorePresumed(this.state, x));
     save(this.state);
+    for (const x of back) delete this.state.words[x.word.id];
   }
 
   speak(text: string, rate?: number): void {
@@ -441,17 +444,17 @@ export class Controller {
     s.flags.brotDone = true;
     // The tutorial bread never spawns again: it counts as 推定会 like the rest of the passed bands.
     if (!s.words.brot) s.words.brot = { stage: 3, due: 9e15, ctxDone: true, placed: now(s), firstSeen: now(s), lastSeen: now(s), relapse: 0, correct: 0, wrong: 0, read: 0, write: 0 };
-    delete s.flags.reset6000;
+    const reset = this.resetLines();
     this.persist();
     const far = region !== undefined && region > (s.region ?? 1);
-    if (far && go) return this.travel(region as RegionId);
-    say([{ who: HILDE, text: '醒了？你身上的名字比火边这些东西多多了。' }], () => {
+    if (far && go) return reset.length ? say(reset, () => this.travel(region as RegionId)) : this.travel(region as RegionId);
+    say([...reset, { who: HILDE, text: '醒了？看来你早就认得不少名字，用不着我从火边那块面包教起。' }], () => {
       if (far) this.offerPlaceTravel(region!);
     });
   }
 
-  private intro() {
-    // 6000 词导入: the one save reset, explained once to players who were here before.
+  /** 6000 词导入: the one save reset, explained once to players who were here before. */
+  private resetLines(): Line[] {
     const reset: Line[] = this.state.flags.reset6000
       ? [
           { who: SYS, text: '【0.7 + 0.8】词表换成了 6000 词，场景和地图都重排了，旧存档里的词对不上了，所以这一次所有存档从头开始（以后的更新不会再清档）。' },
@@ -459,6 +462,11 @@ export class Controller {
         ]
       : [];
     delete this.state.flags.reset6000;
+    return reset;
+  }
+
+  private intro() {
+    const reset = this.resetLines();
     const lines: Line[] = [
       ...reset,
       { who: SYS, text: '……心跳恢复。' },
@@ -756,7 +764,7 @@ export class Controller {
       b0.directOffer = false;
       say([{ who: SYS, text: '一个没见过的名字扑了过来。你本来就认识它吗？' }], undefined, [
         { label: '我认识它（直接叫名：不看提示写出来，写对直接斩杀）', act: () => ((b0.direct = true), this.battleUI.open()) },
-        { label: '不认识，开始学', act: () => this.battleUI.open() },
+        { label: '不认识，开始学', act: () => (delete b0.presumedEntry, this.battleUI.open()) }, // declined: a missed word (#92)
       ]);
       return;
     }
@@ -2077,7 +2085,7 @@ export class Controller {
     sfx.levelUp();
     const heads = o.gained.map((l) => ((UNLOCK_TEXT[l] ?? [])[0] ? `${l} 级 ${(UNLOCK_TEXT[l] ?? [])[0].split(/[：:，,]/)[0]}` : '')).filter(Boolean);
     const lines: Line[] = [{ who: SYS, text: `【新能力 · 跳到 ${o.level} 级】这一路的功能都开了，每样第一次出现时只给一行提示。按 H 能看怎么玩。之前各区没归名的词照常出怪，按你的等级给经验；标「推定会」的怪点「我认识它」写对一次就斩杀。营地篝火随时能传送到第 ${o.region} 区。` }];
-    if (o.region > 1) lines.push({ who: SYS, text: `入学礼：第 ${o.region} 区的碎片按一路打过来的进度记上，换上一套 ${PLACE_KIT_TIER} 档装备，补了${o.kit?.gold ? ` ${o.kit.gold} ` : ''}金币，药片装满。之后靠碎片在篝火换更高档。` });
+    if (o.region > 1 && o.kit) lines.push({ who: SYS, text: `入学礼：第 ${o.region} 区的碎片按一路打过来的进度记上，换上一套 ${PLACE_KIT_TIER} 档装备，补了${o.kit?.gold ? ` ${o.kit.gold} ` : ''}金币，药片装满。之后靠碎片在篝火换更高档。` });
     const tLeft = talentPoints(s) - spent(s);
     if (tLeft > 0) lines.push({ who: SYS, text: `你有 ${tLeft} 个天赋点没点：按 T 打开「技能」点上，能加生命和伤害。` });
     for (let i = 0; i < heads.length; i += 8) lines.push({ who: SYS, text: heads.slice(i, i + 8).join(' · ') });

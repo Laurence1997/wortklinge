@@ -880,7 +880,7 @@ export class Panels {
     const pips = h('div.place-pips', ...Array.from({ length: need }, (_, k) => h(`i${mine[k] ? (mine[k].res === 'ok' || mine[k].res === 'half' ? '.ok' : '.no') : ''}`)));
     wrap.append(h('div.place-progress', h('b', `${lo}–${hi} 级`), pips, h('span.small.muted', `目前测出：${top < 0 ? '从头开始' : `${lv} 级起步（第 ${regionFor(lv)} 区）`}`)));
     // 1.0.12 (#93): say when a band was skipped after 5/5, or when the test went back to check a skipped band.
-    if (run.verifying) wrap.append(h('p.small.muted', `上一段没答够，回头确认刚才跳过的 ${lo}–${hi} 级：这一段过了就定在这里，没过就定在它下面。`));
+    if (run.verifying) wrap.append(h('p.small.muted', `上一段没过，回头确认刚才跳过的 ${lo}–${hi} 级：这一段过了就定在这里，没过就定在它下面。`));
     else if (run.skipped !== null && run.skipped === run.band - 1) {
       const [slo, shi] = bandRange(run.skipped);
       wrap.append(h('p.small.muted', `上一段全对，${slo}–${shi} 级先跳过（算你会）。这一段要是没过，会回头确认那一段。`));
