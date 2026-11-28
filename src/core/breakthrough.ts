@@ -12,7 +12,8 @@ import { PERFEKT, perfektParts } from '../data/perfekt';
 import { shuffle, type Rng } from './rng';
 import type { GameState } from './state';
 import type { Word } from './types';
-import { hasArticleQuestion, WORDS } from '../data/words';
+import { hasArticleQuestion, WORDS, zhWithPos } from '../data/words';
+import { sameMeaning } from './screen';
 import { STAGE_DEF, type Stage } from './stages';
 import { LINE_GENS } from './gram/lines';
 import { adjTask } from './gram/adj';
@@ -114,11 +115,12 @@ export function startExam(s: GameState, rng: Rng, stage: Stage = 'A1'): Exam {
     }
     if (made) qs.push(made);
   }
-  // 写: Chinese to German.
+  // 写: Chinese to German. The prompt carries the word class (攻击〔动词〕), and another word with the same
+  // Chinese and class (angreifen / attackieren) is accepted too.
   for (let i = 0; i < BREAK.perPart; i++) {
     const w = take(() => true);
     if (!w) break;
-    qs.push({ part: 'write', word: w, prompt: w.zh, answer: w.de });
+    qs.push({ part: 'write', word: w, prompt: zhWithPos(w), answer: w.de });
   }
   qs.push(...(stage === 'A1' ? grammarQs(s, rng, STAGE_DEF[stage].regions[1], last) : stageGrammarQs(s, rng, stage, words)));
   s.flags[`examLast_${stage}`] = qs.map((q) => q.word.id).join(',');
@@ -223,7 +225,7 @@ export function answerExam(e: Exam, input: string): void {
     : q.blanks
     ? q.blanks.every((b, i) => key(parts[i] ?? '') === key(b))
     : q.part === 'write'
-      ? gradeTyped(input, q.word, hasArticleQuestion(q.word)).ok
+      ? [q.word, ...WORDS.filter((x) => x.id !== q.word.id && !x.tutorial && x.family !== 'truhe' && sameMeaning(x, q.word))].some((c) => gradeTyped(input, c, hasArticleQuestion(c)).ok)
       : input === q.answer;
   if (ok) e.right[q.part] += 1;
   e.last = { ok, q, input };

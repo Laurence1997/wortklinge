@@ -73,6 +73,8 @@ export class BossUI {
 
   submit(value: string, timedOut = false): void {
     if (!this.fight || this.waiting) return;
+    // An empty box is ignored (a double-tapped Enter after 继续), as in normal battles; only the timer submits ''.
+    if (!timedOut && !value.trim()) return;
     window.clearInterval(this.tick);
     this.waiting = true;
     this.lastAnswer = value;

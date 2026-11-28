@@ -986,8 +986,8 @@ export function phaseRight(b: Battle, p: Stance | undefined = b.phase): boolean 
  *  so a right der/die/das is not read as wrong; a stance from the name alone keeps the answer hidden. */
 export function phaseWrongWhy(b: Battle): string {
   const ph = phaseOf(b);
-  if (b.perfekt) return `${b.word.de} 的完成时不用 ${b.phase}`;
-  if (!ph || !b.intent?.caseArt || b.pluralMon) return b.pluralMon ? '复数一律 die' : `它不是 ${b.phase ?? '这个'} 词`;
+  if (b.perfekt) return b.phase ? `${b.word.de} 的完成时不用 ${b.phase}` : '出手前要先选相';
+  if (!ph || !b.intent?.caseArt || b.pluralMon) return b.pluralMon ? '复数一律 die' : b.phase ? `它不是 ${b.phase} 词` : '出手前要先选相';
   const c = phaseCase(b);
   // Neuter/feminine forms look the same in nom and acc, so only a form that shows its case names it.
   const why = [ph.startsWith('kein') ? '否定 kein' : ph.startsWith('ein') ? '不定冠词' : '定冠词', ...(c === 'acc' ? ['第四格'] : c === 'dat' ? ['第三格'] : [])].join('，');
@@ -1239,7 +1239,7 @@ export function dedefQ(s: Pick<GameState, 'settings'>, w: Word, q: Question): Qu
   if (out.type === 'typed' && !out.split && out.focus === zhWithPos(w)) return { ...out, focus: def, defDe: def, defHint: defHintLine(w), zhHidden: out.focus };
   if (out.type === 'cloze' && out.clozeZh && !out.pat && !out.write && out.prompt.endsWith(` · ${out.clozeZh}`)) {
     const writing = out.clozeMode !== 'pick' && !out.options?.length;
-    const head = out.prompt.slice(0, -out.clozeZh.length - 3).replace('看整句中文，', '看释义，');
+    const head = out.prompt.slice(0, -out.clozeZh.length - 3).replace('看整句中文，', '看释义，').replace('看中文，不看提示直接写', '看释义直接写');
     return { ...out, prompt: `${head} · 释义：${def}`, defDe: def, defHint: writing ? `原形 ${defHintLine(w)}` : undefined, zhHidden: out.clozeZh };
   }
   return out;
@@ -2320,7 +2320,8 @@ export function resolveTurn(
     if (b.reviewMon && q.dict && ok && !q.whispered && b.qIndex === 1) {
       const p = s.words[b.word.id];
       if (p && !p.retired && (p.lapsed || p.stage === 3)) {
-        p.relapse += p.lapsed ? 1 : 0;
+        p.relapse += p.lapsed && !p.gap ? 1 : 0;
+        delete p.gap;
         setGuiming(p, now(s), false, true);
         b.backToGuiming = true;
         log.push({ text: `✓ 还记得：${fullForm(b.word)} 回到归名。`, tone: 'good' });
@@ -2598,7 +2599,7 @@ export function resolveTurn(
           if (has(s.level, 'layerElement')) element = ELEMENT_BY_GENDER[b.pluralMon ? 'pl' : genderOf(b.word) ?? 'n'] ?? element;
           if (wearsLegend(s, 'articleJudgement')) b.judgement = true;
           log.push({ text: `${b.phase} 相打中弱点：护甲降一档${resMax(s) && move !== 'sentence' ? `，${resName(s)} +${gain}${aff ? `（护符亲和 ${affinityOf(s)} 共鸣）` : ''}` : ''}。`, tone: 'good' });
-        } else if (phaseFx === 'wrong') log.push({ text: `${b.phase ?? '无'} 相被抵抗：${phaseWrongWhy(b)}。护甲翻倍。`, tone: 'bad' });
+        } else if (phaseFx === 'wrong') log.push({ text: `${b.phase ? `${b.phase} 相被抵抗` : '没选相，被抵抗'}：${phaseWrongWhy(b)}。护甲翻倍。`, tone: 'bad' });
         else if (phaseFx === 'soft') log.push({ text: `${b.phase ? `${b.phase} 相不对` : '没选相'}：这里要 ${ph}${b.pluralMon ? '（复数一律 die）' : phaseCase(b) === 'acc' ? '（第四格）' : phaseCase(b) === 'dat' ? '（第三格）' : ''}。这一级还不罚，选对了护甲降一档。`, tone: 'sys' });
         mult *= talentDamage(s, b, q, { typedLike, clozeTyped, tier, phaseRight: phaseFx === 'right', broken: wasBroken || tier === 2, log });
         if (b.structMon && q.gram?.sys !== 'struct') mult *= STRUCT.otherMult;

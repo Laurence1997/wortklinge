@@ -112,7 +112,7 @@ export function posTag(w: Word): string {
   if (w.pos === 'name') {
     // Languages (Deutsch, Chinesisch) and countries share the 'name' pos; tell them apart by the Chinese (…语).
     if (/语$/.test(w.zh)) return '语言名·不带冠词';
-    return w.art ? '国名·带冠词' : '国名·不带冠词';
+    return w.art ? '地名·带冠词' : '地名·不带冠词'; // countries and cities (Berlin) alike
   }
   return { n: w.art ? '名词·带冠词' : '名词', v: '动词', adj: '形容词·副词', phr: '日常用语', num: '数词', q: '疑问词' }[w.pos];
 }

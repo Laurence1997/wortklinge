@@ -410,8 +410,14 @@ function after(s: GameState, run: PlaceRun, ok: boolean, perfect: boolean, rng: 
   bandDone(s, run, ok, perfect, rng);
 }
 
-/** 「后面都不会了，结束」. */
-export function stopPlacement(run: PlaceRun): void {
+/** 「后面都不会了，结束」. Giving up right after a skipped band counts as failing this band: with `s` and `rng` the
+ *  skipped band is checked first (as the on-screen note promises); without them (the panel closed) it is dropped. */
+export function stopPlacement(run: PlaceRun, s?: GameState, rng?: Rng): void {
+  if (!run.over && !run.verifying && run.skipped !== null && run.skipped === run.band - 1) {
+    if (s && rng) return bandDone(s, run, false, false, rng);
+    run.passed.delete(run.skipped);
+    run.skipped = null;
+  }
   finish(run);
 }
 
@@ -457,12 +463,12 @@ export function applyPlacement(s: GameState, run: PlaceRun, t = now(s), _opts: {
       retired++;
     } else if (r.res === 'half') {
       if (!p || isPlaced(p)) {
-        s.words[r.word.id] = { stage: 2, lapsed: true, due: t, firstSeen: p?.firstSeen ?? t, lastSeen: t, relapse: 0, correct: 1, wrong: 0, read: 1, write: 0 };
+        s.words[r.word.id] = { stage: 2, lapsed: true, gap: true, due: t, firstSeen: p?.firstSeen ?? t, lastSeen: t, relapse: 0, correct: 1, wrong: 0, read: 1, write: 0 };
         half++;
       }
     } else if (passed(r.band) && (!p || isPlaced(p))) {
       // A gap below your level: it follows you as a review monster (your level, full pay).
-      s.words[r.word.id] = { stage: 1, lapsed: true, due: t, firstSeen: p?.firstSeen ?? t, lastSeen: t, relapse: 0, correct: 0, wrong: 1, read: 0, write: 0 };
+      s.words[r.word.id] = { stage: 1, lapsed: true, gap: true, due: t, firstSeen: p?.firstSeen ?? t, lastSeen: t, relapse: 0, correct: 0, wrong: 1, read: 0, write: 0 };
       gaps++;
     }
   }
@@ -472,7 +478,7 @@ export function applyPlacement(s: GameState, run: PlaceRun, t = now(s), _opts: {
     seen.add(w.id);
     const p = s.words[w.id];
     if (p && !isPlaced(p)) continue;
-    s.words[w.id] = { stage: 1, lapsed: true, due: t, firstSeen: p?.firstSeen ?? t, lastSeen: t, relapse: 0, correct: 0, wrong: 0, read: 0, write: 0 };
+    s.words[w.id] = { stage: 1, lapsed: true, gap: true, due: t, firstSeen: p?.firstSeen ?? t, lastSeen: t, relapse: 0, correct: 0, wrong: 0, read: 0, write: 0 };
     gaps++;
   }
   for (const w of placeWords()) {
@@ -661,6 +667,7 @@ export function placedCheck(s: GameState, w: Word, ok: boolean, t = now(s)): num
   p.wrong += 1;
   p.stage = 2;
   p.lapsed = true;
+  p.gap = true;
   p.due = t;
   p.lastSeen = t;
   if (c.wrong < PLACE.revertFails || c.wrong / c.n <= PLACE.revertShare) return 0;
@@ -672,6 +679,7 @@ export function placedCheck(s: GameState, w: Word, ok: boolean, t = now(s)): num
     delete q!.ctxDone;
     q!.stage = 1;
     q!.lapsed = true;
+    q!.gap = true;
     q!.due = t;
     n++;
   }
