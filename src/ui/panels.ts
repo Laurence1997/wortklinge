@@ -62,6 +62,7 @@ export class Panels {
       if (this.open === 'account') this.render();
     };
     // 日记残页: hold S to read the current line (release ends it; battle.ts stops the hold on keyup).
+    window.addEventListener('keydown', (e) => this.examKey(e));
     window.addEventListener('keydown', (e) => {
       if (this.open !== 'diary' || e.repeat || e.key.toLowerCase() !== 's' || document.activeElement?.tagName === 'INPUT') return;
       e.preventDefault();
@@ -194,7 +195,8 @@ export class Panels {
       panel.append(h('h2', h('span', `${this.exam.stage ?? 'A1'} 突破试炼 · 考官`), h('button.btn.ghost', { onclick: () => this.close() }, this.exam.over ? '离开 Esc' : '放弃 Esc')), this.examBody());
       clear(el).append(panel);
       el.onclick = null;
-      window.setTimeout(() => (el.querySelector('input.exam, button.exam-first') as HTMLElement | null)?.focus(), 0);
+      // 1.0.12 试玩 26: only a text box gets the focus; a choice is picked with 1–4 or a click, never by a stray Enter.
+      window.setTimeout(() => (el.querySelector('input.exam') as HTMLElement | null)?.focus(), 0);
       return;
     }
     if (this.open === 'ask' && this.asking) {
@@ -427,6 +429,21 @@ export class Panels {
   }
 
   private exam: Exam | null = null;
+  /** 1.0.12 试玩 26: the current choice question's options, for the 1–4 keys. */
+  private examPick: ((v: string) => void) | null = null;
+  private examOpts: string[] = [];
+
+  /** 突破试炼: 1–4 answer a choice question (the buttons are labelled 1. 2. 3. 4.). */
+  examKey(e: KeyboardEvent): boolean {
+    if (this.open !== 'exam' || !this.exam || this.exam.over || !this.examPick || e.repeat) return false;
+    const a = document.activeElement as HTMLElement | null;
+    if (a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA')) return false;
+    const n = Number(e.key);
+    if (!Number.isInteger(n) || n < 1 || n > this.examOpts.length) return false;
+    e.preventDefault();
+    this.examPick(this.examOpts[n - 1]);
+    return true;
+  }
 
   showExam(e: Exam): void {
     this.exam = e;
@@ -463,6 +480,8 @@ export class Panels {
       return wrap;
     }
     const q = e.qs[e.at];
+    this.examPick = null;
+    this.examOpts = [];
     const go = (v: string) => {
       if (!v.trim()) return;
       this.ctrl.examAnswer(e, v);
@@ -477,6 +496,8 @@ export class Panels {
       // A2 / B1 语法段: some items are a contrast to choose (stellen / stehen, wegen / trotz …).
       const row = h('div.choices');
       q.options.forEach((o, i) => row.append(h(`button.btn${i === 0 ? '.exam-first' : ''}`, { onclick: () => go(o) }, `${i + 1}. ${o}`)));
+      this.examPick = go;
+      this.examOpts = q.options;
       wrap.append(h('p', '选出空里的词。'), h('div.focus', { style: 'font-size:22px;margin:10px 0' }, q.prompt), q.zh ? h('div.small.muted', q.zh) : '', row);
       return wrap;
     }
@@ -504,6 +525,8 @@ export class Panels {
     if (q.options) {
       const row = h('div.choices');
       q.options.forEach((o, i) => row.append(h(`button.btn${i === 0 ? '.exam-first' : ''}`, { onclick: () => go(o) }, `${i + 1}. ${o}`)));
+      this.examPick = go;
+      this.examOpts = q.options;
       wrap.append(row);
       return wrap;
     }
@@ -1068,6 +1091,8 @@ export class Panels {
     if (!c.result) {
       const input = h('input.lock', { type: 'text', autocomplete: 'off', spellcheck: 'false', placeholder: hasArticleQuestion(c.word) ? 'der / die / das + 名词' : '' }) as HTMLInputElement;
       const go = () => {
+        // 1.0.12 试玩 25: an empty box does not try the lock (a stray Enter would waste the reroll); Esc opens it plain.
+        if (!input.value.trim()) return input.focus();
         c.result = this.ctrl.openLockedChest(c.kind, c.ilvl, c.word, input.value);
         this.render();
         if (this.ctrl.state.settings.chestAnim !== false) playChest({ kind: c.kind, title: `${CHEST_ZH[c.kind]} · ${c.result.ok ? '锁开了，品质各掷两次' : '锁没认出来，箱子照样打开'}`, result: c.result }, () => {}, this.ctrl.chestSfx);
