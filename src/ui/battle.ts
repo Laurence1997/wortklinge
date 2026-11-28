@@ -306,6 +306,7 @@ export class BattleUI {
     this.report = r.report;
     this.question = { type: 'steady', prompt: '喊出短句', focus: r.res.text, item: true };
     this.move = 'item';
+    this.answeredLine = null; // 1.0.12 试玩 107: no line was answered; show its current one
     this.phase = 'result';
     this.lastValue = '';
     this.voicedFull = '';
@@ -599,6 +600,7 @@ export class BattleUI {
     if (this.ctrl.fightOver()) {
       this.report = r;
       this.question = { type: 'steady', prompt: '它出手了', focus: '', item: true, tick: true };
+      this.answeredLine = null;
       this.phase = 'result';
       this.render();
       window.clearTimeout(this.autoTimer);
@@ -784,6 +786,9 @@ export class BattleUI {
     this.pending = keep;
     // 1.0.11 试玩 13: the same for every box (墨水风暴, 终结技, 齐鸣) and the one that had the focus.
     const kept = keep !== undefined ? keepInputs($('battle')) : null;
+    // 1.0.12 试玩 36: the box scrolls inside when it is taller than the window; a re-render of the same question keeps the place.
+    const sameQ = !!this.question && this.renderedQ === this.question;
+    const scrolled = $('battle').scrollTop;
     const s = this.ctrl.state;
     const b = this.b;
     const taught = b.direct ? false : this.phase !== 'result' ? teachPhase(b) : !!b.phaseTaught && b.phaseTaught === b.turn && b.phase === phaseOf(b); // a pack's next target is taught too
@@ -1041,6 +1046,7 @@ export class BattleUI {
     const gramTag = gr ? h('div.small', { style: 'color:var(--gold, #ffcf4a);font-weight:700' }, `${GRAM_DUNGEON.name[gr.kind]} · ${gr.floor.label} · 第 ${gr.i + 1}/${gr.words.length} 场`) : '';
     clear(el).append(gramTag, h('div.b-top', monEl, intent, me), stance, teach, movesEl, q, blog);
     blog.scrollTop = blog.scrollHeight;
+    if (sameQ) el.scrollTop = scrolled;
     const again = kept ? restoreInputs(el, kept) : null;
     if (this.input && this.phase === 'answer') window.setTimeout(() => (again ? again() : (this.mateBoxes[0] ?? this.input)?.focus()), 0);
   }
