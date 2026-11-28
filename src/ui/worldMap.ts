@@ -37,11 +37,13 @@ const STAGES: Array<{ id: Stage; zh: string; regions: number[]; x: number }> = [
   { id: 'B2', zh: '高阶', regions: [13, 14, 16], x: 912 },
   { id: 'C1', zh: '精通', regions: [17, 18, 20], x: 1078 },
 ];
+/** Sideways shift of a city's name plate (map units), where two plates would touch. */
+const PLATE_DX: Record<number, number> = { 12: -10, 14: 10 };
 const stageOfRegion = (r: number): Stage => STAGES.find((st) => st.regions.includes(r))?.id ?? 'A1';
 const ERODE_RED = '#8a1424';
 const SEG_LEVELS: Record<number, string> = { 8: '71–80', 11: '101–110', 15: '141–150', 19: '181–190' };
 /** 1.0.12 试玩 #77: where the 蚀变 band plates stand (near the road between the two cities each sits between). */
-const SEG_SPOT: Record<number, [number, number]> = { 8: [612, 312], 11: [782, 305], 15: [1000, 420], 19: [1120, 268] };
+const SEG_SPOT: Record<number, [number, number]> = { 8: [612, 314], 11: [782, 314], 15: [1000, 420], 19: [1120, 268] };
 
 const NS = 'http://www.w3.org/2000/svg';
 function s(tag: string, attrs: Record<string, string | number> = {}, ...kids: Array<SVGElement | string>): SVGElement {
@@ -49,6 +51,13 @@ function s(tag: string, attrs: Record<string, string | number> = {}, ...kids: Ar
   for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, String(v));
   for (const k of kids) el.append(typeof k === 'string' ? document.createTextNode(k) : k);
   return el;
+}
+
+/** 1.0.12 试玩: rough width (map units) of a label at the 16-unit map font: CJK full width, the rest about 0.58. */
+function textW(t: string, fs = 16): number {
+  let w = 0;
+  for (const ch of t) w += /[\u2e80-\u9fff\uff00-\uffef]/.test(ch) ? fs : fs * 0.58;
+  return Math.ceil(w);
 }
 
 /** First level of an area ("Lv 21–30" → 21). */
@@ -103,8 +112,8 @@ export function worldMap(c: WorldMapCtx): HTMLElement {
   // ---- stage banners along the top sea
   for (const st of STAGES) {
     const g = s('g', { transform: `translate(${st.x},22)`, class: 'wm-banner' });
-    g.append(s('rect', { x: -78, y: -14, width: 156, height: 26, rx: 3, fill: '#3b2a1c', stroke: '#e8d3a6', 'stroke-width': 2 }));
-    g.append(s('text', { y: 4.5, 'text-anchor': 'middle', class: 'wm-stage' }, `${st.id} ${st.zh} · ${stageLevels(st.id, st.regions)}`));
+    g.append(s('rect', { x: -82, y: -15, width: 164, height: 28, rx: 3, fill: '#3b2a1c', stroke: '#e8d3a6', 'stroke-width': 2 }));
+    g.append(s('text', { y: 5.5, 'text-anchor': 'middle', class: 'wm-stage' }, `${st.id} ${st.zh} · ${stageLevels(st.id, st.regions)}`));
     svg.append(g);
   }
 
@@ -128,11 +137,11 @@ export function worldMap(c: WorldMapCtx): HTMLElement {
     const st = q?.state ?? 'hidden';
     const name = st === 'hidden' ? '蚀变带' : e.zh.replace(/「.*」/, '');
     const lv = `Lv ${SEG_LEVELS[e.seg] ?? ''}${st === 'hidden' ? ' 未开放' : st === 'done' ? ' 已净化' : ''}`;
-    const pw = Math.max(name.length * 13 + 14, lv.length * 7 + 14);
+    const pw = Math.max(textW(name) + 14, textW(lv) + 14);
     const g = s('g', { transform: `translate(${x},${y})`, class: 'wm-seg' + (st === 'hidden' ? ' locked' : '') });
-    g.append(s('rect', { x: -pw / 2, y: -15, width: pw, height: 30, rx: 2, fill: st === 'hidden' ? '#8f877a' : st === 'done' ? '#3b2a1c' : ERODE_RED, stroke: st === 'hidden' ? '#cfc8bb' : '#e8d3a6', 'stroke-width': 2, 'stroke-dasharray': st === 'hidden' ? '4 3' : '' }));
+    g.append(s('rect', { x: -pw / 2, y: -19, width: pw, height: 38, rx: 2, fill: st === 'hidden' ? '#8f877a' : st === 'done' ? '#3b2a1c' : ERODE_RED, stroke: st === 'hidden' ? '#cfc8bb' : '#e8d3a6', 'stroke-width': 2, 'stroke-dasharray': st === 'hidden' ? '4 3' : '' }));
     g.append(s('text', { y: -2, 'text-anchor': 'middle', class: 'wm-name wm-seg-name' }, name));
-    g.append(s('text', { y: 11, 'text-anchor': 'middle', class: 'wm-lv' }, lv));
+    g.append(s('text', { y: 14, 'text-anchor': 'middle', class: 'wm-lv' }, lv));
     const where = q?.hosts.length ? `第 ${q.hosts.join('、')} 区` : '';
     g.append(s('title', {}, st === 'hidden' ? `${SEG_LEVELS[e.seg]} 级是蚀变带：打败第 ${e.after} 区的首领后，${where || '前面'}的旧场景会蚀变` : `${e.zh} · ${SEG_LEVELS[e.seg]} 级${where ? `：在${where}的旧场景里` : ''}${st === 'done' ? '（已净化）' : ''}`));
     svg.append(g);
@@ -144,7 +153,7 @@ export function worldMap(c: WorldMapCtx): HTMLElement {
     const g = s('g', { transform: `translate(${x + 48},${y + 6})` },
       s('rect', { x: -9, y: -14, width: 18, height: 22, rx: 2, fill: '#2a0a10', stroke: ERODE_RED, 'stroke-width': 2 }),
       s('circle', { cx: 4, cy: -2, r: 1.8, fill: '#ff5a6a' }),
-      s('text', { x: 0, y: 22, 'text-anchor': 'middle', class: 'wm-zero' }, '零号站台'),
+      s('text', { x: 0, y: 26, 'text-anchor': 'middle', class: 'wm-zero' }, '零号站台'),
     );
     g.append(s('title', {}, '零号站台：铁轨镇时刻表墙后的地下城（28 级起）'));
     svg.append(g);
@@ -167,18 +176,20 @@ export function worldMap(c: WorldMapCtx): HTMLElement {
     // plate
     const name = open ? a.zh : '未开放';
     const lvText = open ? (danger ? `${a.levels} 危险` : a.levels) : a.levels;
-    const pw = Math.max(name.length * 15 + 18, lvText.length * 7 + 16);
+    const pw = Math.max(textW(name) + 18, textW(lvText) + 16);
     const py = 34;
-    g.append(s('rect', { x: -pw / 2, y: py, width: pw, height: 34, rx: 2, fill: open ? '#3b2a1c' : '#8f877a', stroke: open ? col : '#cfc8bb', 'stroke-width': 2.5, class: 'wm-plate' }));
-    g.append(s('text', { y: py + 15, 'text-anchor': 'middle', class: 'wm-name' }, name));
-    g.append(s('text', { y: py + 29, 'text-anchor': 'middle', class: 'wm-lv' + (danger ? ' danger' : '') }, lvText));
+    // 心巷 and 铸币场 stand only 100 units apart: their (now larger) plates lean away from each other.
+    const px = PLATE_DX[a.region] ?? 0;
+    g.append(s('rect', { x: px - pw / 2, y: py, width: pw, height: 40, rx: 2, fill: open ? '#3b2a1c' : '#8f877a', stroke: open ? col : '#cfc8bb', 'stroke-width': 2.5, class: 'wm-plate' }));
+    g.append(s('text', { x: px, y: py + 17, 'text-anchor': 'middle', class: 'wm-name' }, name));
+    g.append(s('text', { x: px, y: py + 35, 'text-anchor': 'middle', class: 'wm-lv' + (danger ? ' danger' : '') }, lvText));
     const boss = segs.find((q) => q.state === 'open' && q.bossRegion === a.region);
     if (boss) g.append(s('g', { transform: 'translate(30,-26)' }, s('rect', { x: -10, y: -10, width: 20, height: 20, fill: ERODE_RED, stroke: '#fff', 'stroke-width': 2 }), s('text', { y: 5, 'text-anchor': 'middle', class: 'wm-boss' }, '☠')));
     if (here) {
       g.append(s('g', { class: 'wm-here' },
         s('path', { d: 'M0 -30 l-8 -10 h16 z', fill: '#e8402a', stroke: '#fff', 'stroke-width': 2 }),
-        s('rect', { x: -36, y: -62, width: 72, height: 22, rx: 2, fill: '#e8402a', stroke: '#fff', 'stroke-width': 2 }),
-        s('text', { y: -46, 'text-anchor': 'middle' }, '你在这里'),
+        s('rect', { x: -40, y: -64, width: 80, height: 24, rx: 2, fill: '#e8402a', stroke: '#fff', 'stroke-width': 2 }),
+        s('text', { y: -46.5, 'text-anchor': 'middle' }, '你在这里'),
       ));
     }
     g.append(s('title', {}, open ? `${a.zh} · ${a.de} · ${a.levels}` : '还没开放'));
