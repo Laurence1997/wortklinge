@@ -24,7 +24,7 @@ import { fullForm, fullFormLong, genderOf, reflNote, hasArticleQuestion, WORD_BY
 import type { Controller } from '../game/controller';
 import { $, autoGrow, clear, h, umlautButtons } from './dom';
 import { BREAK, examParts, examPassed, PART_ZH, type Exam } from '../core/breakthrough';
-import { pendingScenes, regionLeft, type ScreenRun } from '../core/screen';
+import { pendingScenes, regionLeft, screenPool, type ScreenRun } from '../core/screen';
 import { bandRange, levelFor, PLACE, PLACE_CAP, regionFor, topPassed, type PickBoard, type PlaceRun } from '../core/placement';
 import { CHEST_ZH, type ChestKind } from '../core/chest';
 import { playChest } from './chestFx';
@@ -88,6 +88,7 @@ export class Panels {
 
   show(name: PanelName): void {
     this.open = name;
+    this.dropAsk = null;
     this.render();
     $('modal').hidden = false;
   }
@@ -361,7 +362,7 @@ export class Panels {
 
     const right = h('div');
     if (!has(s.level, 'gear')) {
-      right.append(h('p.muted', '5 级开放装备。'));
+      right.append(h('p.muted', `${UNLOCK.gear} 级开放装备。`));
       return h('div.grid2', left, right);
     }
     right.append(h('h3', { style: 'margin-top:0' }, '已装备'));
@@ -390,14 +391,16 @@ export class Panels {
           h(
             'div.acts',
             h('button.btn', { disabled: tooHigh, title: tooHigh ? `需要 ${requiredLevel(it)} 级` : '', onclick: () => this.ctrl.equip(it.id) }, '穿上'),
-            h('button.btn.ghost', { onclick: () => this.ctrl.discard(it.id) }, '丢弃'),
+            this.dropAsk === it.id
+              ? h('button.btn.danger', { title: '丢掉就找不回来了', onclick: () => { if (Date.now() - this.dropAt < 400) return; this.dropAsk = null; this.ctrl.discard(it.id); } }, '确定丢弃')
+              : h('button.btn.ghost', { onclick: () => ((this.dropAsk = it.id), (this.dropAt = Date.now()), this.render()) }, '丢弃'),
           ),
         ),
       );
     }
     if (!s.bag.length) bag.append(h('p.muted.small', '空。小怪有 20% 的概率掉装备，用默写和句子打、打到期的怪，好东西更多。'));
     right.append(bag);
-    if (s.bag.length) right.append(h('p.small.muted', has(s.level, 'shop') ? '不要的装备可以卖给商人 Mira（营地篝火边，或面包集市）。' : `${UNLOCK.shop} 级后可以把装备卖给营地的商人 Mira，现在只能丢弃。`));
+    if (s.bag.length) right.append(h('p.small.muted', has(s.level, 'shop') ? '不要的装备可以卖给商人 Mira（营地和每个主城都有她的摊子）。' : `${UNLOCK.shop} 级后可以把装备卖给营地的商人 Mira，现在只能丢弃。`));
     return h('div.grid2', left, right);
   }
 
@@ -1000,7 +1003,7 @@ export class Panels {
   private screenBody(): HTMLElement {
     const run = this.screen!;
     const s = this.ctrl.state;
-    const scopeZh = run.scope === 'all' ? '全部' : `第 ${run.scope} 区`;
+    const scopeZh = run.scope === 'all' ? '全部' : run.scope === 'placed' ? '推定会的词' : `第 ${run.scope} 区`;
     const wrap = h('div');
     wrap.append(h('p.small.muted', `${scopeZh} · 这次斩杀 ${run.cut.length} 个 · 跳过 ${run.skipped} · 写错 ${run.wrong}。只给中文，名词连冠词写，必须完全写对；不扣血、不限时，随时离开，进度会保存。`));
     const l = run.last;
@@ -1022,8 +1025,9 @@ export class Panels {
     }
     const summary = () => {
       const lines: Array<HTMLElement | string> = [];
-      for (const r of [1, 2, 3]) {
-        if (run.scope !== 'all' && run.scope !== String(r)) continue;
+      if (run.scope === 'placed') lines.push(h('p', `推定会的词还剩 ${screenPool(s, 'placed').length} 个没确认。`));
+      const regions = run.scope === 'all' ? Array.from({ length: Math.max(3, s.region ?? 1) }, (_, i) => i + 1) : [run.scope === 'placed' ? (s.region ?? 1) : Number(run.scope)];
+      for (const r of regions) {
         const x = regionLeft(s, r);
         lines.push(h('p', `第 ${r} 区：归名 ${x.learned} 个，还剩 ${x.left} 个要学（共 ${x.total} 个）。`));
         // A region more than half retired → the placement test can move you up.
@@ -1124,7 +1128,11 @@ export class Panels {
 
   /** Which 「用德语说」 box is open: `c:hint` (consumable), `b:3` (shelf item 3), `s:<item id>` (selling), or null. */
   saying: string | null = null;
-  private shopMsg: { text: string; tone: 'ok' | 'no' } | null = null;
+  /** The bag item whose 「丢弃」 was clicked once: a second click on 「确定丢弃」 deletes it (试玩 30). */
+  dropAsk: string | null = null;
+  /** When 「丢弃」 was clicked: a double click doesn't count as the confirm. */
+  private dropAt = 0;
+  shopMsg: { text: string; tone: 'ok' | 'no' } | null = null;
 
   private toggleSay(key: string): void {
     this.saying = this.saying === key ? null : key;
@@ -1158,7 +1166,7 @@ export class Panels {
         h('span', `金币 `, h('b', String(s.gold))),
         h('button.btn.small', { disabled: s.gold < rc, onclick: () => { this.ctrl.shopRefresh(); } }, rc ? `刷新货架（${rc} 金币）` : '刷新货架（这小时免费）'),
       ),
-      h('p.small.muted', `直接点「买」「卖」就行。点「用德语说」用德语跟 Mira 讲，说对了买打九折、卖多给一成。你这一级（${pat.cefr}）买东西说：${pat.show}；卖东西说：${SELL_PATTERN.show}。`),
+      h('p.small.muted', `直接点「买」「卖」就行。点「用德语说」用德语跟 Mira 讲，说对了买打九折、卖多给一成。你这一级（${pat.cefr}）买东西说「${pat.show}」，卖东西说「${SELL_PATTERN.show}」。`),
     );
     // Wishlist.
     const wishSlot = h('select', { onchange: (e: Event) => { shop.wish.slot = ((e.target as HTMLSelectElement).value || undefined) as Slot | undefined; this.ctrl.persist(); } }) as HTMLSelectElement;
@@ -1192,7 +1200,7 @@ export class Panels {
           'div.item.buy',
           h('div', h('b', `${c.zh}（${c.de}）`), h('div.small', c.use), h('div.small', `价格 ${full} 金币 · 现有 ${itemCount(s, k)} / ${itemCap(s, k)}`)),
           h('div.acts', h('button.btn', { onclick: () => buyIt() }, `买 ${full}`), h('button.btn.ghost', { onclick: () => this.toggleSay(key) }, `用德语说 ${saidPrice(full)}`)),
-          this.saying === key ? this.sayBox(`${pat.show}。东西：${c.de}`, '买 ↵', (t) => buyIt(t)) : null,
+          this.saying === key ? this.sayBox(`${endZh(pat.show)}东西：${c.de}`, '买 ↵', (t) => buyIt(t)) : null,
         ),
       );
     }
@@ -1220,7 +1228,7 @@ export class Panels {
           h('div.acts', h('button.btn', { disabled: s.gold < p, onclick: () => buyIt(null) }, `买 ${p}`), h('button.btn.ghost', { onclick: () => this.toggleSay(key) }, `用德语说 ${saidPrice(p)}`)),
         ),
       );
-      if (this.saying === key) shelf.append(this.sayBox(`用德语说「我要这个${n.zh}」：${pat.show}。东西：${n.nom}。说对了只要 ${saidPrice(p)} 金币。`, '买 ↵', (t) => buyIt(t), true));
+      if (this.saying === key) shelf.append(this.sayBox(`用德语说「我要这个${n.zh}」：${endZh(pat.show)}东西：${n.nom}。说对了只要 ${saidPrice(p)} 金币。`, '买 ↵', (t) => buyIt(t), true));
     });
     if (!shop.items.length) shelf.append(h('p.muted.small', '货架空了。刷新一下吧。'));
     wrap.append(h('h3', '货架'), shelf);
@@ -1272,7 +1280,7 @@ export class Panels {
       );
       if (this.saying === key)
         bag.append(
-          this.sayBox(`用德语说「我想卖这个${SLOT_NOUN[it.slot].zh}」：${SELL_PATTERN.show}。东西：${SLOT_NOUN[it.slot].nom}。说对了给 ${saidSellPrice(g)} 金币。`, '卖 ↵', (t) => {
+          this.sayBox(`用德语说「我想卖这个${SLOT_NOUN[it.slot].zh}」：${endZh(SELL_PATTERN.show)}东西：${SLOT_NOUN[it.slot].nom}。说对了给 ${saidSellPrice(g)} 金币。`, '卖 ↵', (t) => {
             this.saying = null;
             const r = this.ctrl.shopSell(it.id, t);
             this.shopMsg = r.ok ? { text: `Mira：「Abgemacht!」${it.name} 卖了 ${r.gold} 金币。`, tone: 'ok' } : { text: `Mira 没听懂。正确说法：${r.verdict?.correct ?? ''} ${r.verdict?.notes.join(' ') ?? ''}`, tone: 'no' };
@@ -1527,7 +1535,7 @@ export class Panels {
       const tries = p.correct + p.wrong;
       const weak = p.wrong >= 2 && p.wrong / Math.max(1, tries) >= 0.34;
       if (weak || p.relapse > 0) shaky.push({ w, p });
-      else if (p.stage === 3 && p.write) known.push({ w, p });
+      else if (p.stage === 3) known.push({ w, p }); // 归名 is 熟练 whatever the counts say (试玩 74)
       else if (p.write) wrote.push({ w, p });
       else if (p.read) readOnly.push({ w, p });
       else notYet.push({ w, p });
@@ -1809,6 +1817,11 @@ export class Panels {
     wrap.append(h('p.small.muted', `1–${CONFIG.releaseCap} 级已开放。当前 ${s.level} 级，等级上限 ${levelCapFor(s.flags)}（过突破试炼再往上）。`));
     return wrap;
   }
+}
+
+/** A hint that already ends in ?/!/. gets no extra 「。」 (Könnten Sie … geben?。, 试玩 80). */
+function endZh(t: string): string {
+  return /[。.！!？?]$/.test(t) ? t + ' ' : t + '。';
 }
 
 /** 篝火日记 draft key: the day's given words. */

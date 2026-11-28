@@ -79,7 +79,7 @@ export function skillCards(st: GameState, save: () => void): HTMLElement {
     let cls = '';
     if (on) { foot = '出战中 · 点一下拿出'; cls = '.on'; }
     else if (have) { foot = full ? '出战栏满了，先拿出一个' : '点一下带上'; cls = full ? '.full' : '.can'; }
-    else if (st.level >= sk.lv && st.level >= POOL_FROM && (id === 'saying' || id === 'slang')) { foot = id === 'saying' ? '先去单词本选一张短句卡' : '先去单词本选一条俚语'; cls = '.locked'; }
+    else if (st.level >= sk.lv && st.level >= POOL_FROM && (id === 'saying' || id === 'slang')) { foot = id === 'saying' ? '先收一张短句卡（打残句怪或接句怪）' : '先去单词本选一条俚语'; cls = '.locked'; }
     else { foot = `🔒 ${Math.max(sk.lv, POOL_FROM)} 级开放`; cls = '.locked'; }
     const click = have && (on || !full) ? () => { toggleLoadout(st, id); save(); } : undefined;
     grid.append(

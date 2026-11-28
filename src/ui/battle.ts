@@ -1327,7 +1327,7 @@ export class BattleUI {
     if (this.phase === 'result' && r) {
       const fb = h(`div.feedback.${r.correct ? 'ok' : 'no'}`);
       // 1.0.12 试玩 73: an item turn is now a cast that landed (tick) or a shouted phrase; 药片 takes no turn.
-      const head = qq.tick ? '它出手了' : qq.item ? '喊出了短句' : r.correct ? (r.crit ? (r.newSpell ? '新言灵！暴击！' : '暴击！') : r.parried ? '躲开了' : '答对了') : '答错了';
+      const head = qq.tick ? '它出手了' : qq.item ? '喊出了短句' : r.correct ? (r.crit ? (r.newSpell ? '初识暴击！' : '暴击！') : r.parried ? '躲开了' : '答对了') : '答错了';
       fb.append(h('b', head));
       if (qq.item && r.monsterDamage) fb.append(h('span', qq.tick ? `  你受到 ${r.monsterDamage} 伤害` : `  它趁机出手：${r.monsterDamage} 伤害`));
       if (r.correct && this.b.word && (qq.type === 'article' || qq.type === 'typed')) fb.append(h('span', `  ${fullFormLong(this.b.word)} · ${this.b.word.zh}`));

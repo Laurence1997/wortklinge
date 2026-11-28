@@ -334,13 +334,24 @@ export function recordKill(s: GameState, w: Word, typedFinal: boolean, slipped: 
 }
 
 /** Moves the fight's 认得 / 会写 counts into the word's progress (once the word is in the wordbook). */
-export function flushSkill(s: GameState, w: Word, b: { readOk?: number; writeOk?: number }): void {
+export function flushSkill(s: GameState, w: Word, b: { readOk?: number; writeOk?: number; rightN?: number; wrongN?: number }): void {
   const p = s.words[w.id];
-  if (!p || (!b.readOk && !b.writeOk)) return;
+  if (!p || (!b.readOk && !b.writeOk && !b.rightN && !b.wrongN)) return;
   p.read = (p.read ?? 0) + (b.readOk ?? 0);
   p.write = (p.write ?? 0) + (b.writeOk ?? 0);
+  p.correct += b.rightN ?? 0;
+  p.wrong += b.wrongN ?? 0;
   b.readOk = 0;
   b.writeOk = 0;
+  b.rightN = 0;
+  b.wrongN = 0;
+}
+
+/** 对 / 错 of a fight answer: straight into the wordbook, or held on the fight until a new word joins it (试玩 74). */
+export function countAnswer(s: GameState, w: Word, ok: boolean, b: { rightN?: number; wrongN?: number }): void {
+  if (s.words[w.id]) return recordAnswer(s, w, ok);
+  if (ok) b.rightN = (b.rightN ?? 0) + 1;
+  else b.wrongN = (b.wrongN ?? 0) + 1;
 }
 
 export function recordAnswer(s: GameState, w: Word, ok: boolean, skill?: 'read' | 'write'): void {
