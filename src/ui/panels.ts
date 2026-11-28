@@ -30,7 +30,7 @@ import { CHEST_ZH, type ChestKind } from '../core/chest';
 import { playChest } from './chestFx';
 import { favour, FAVOUR, QUESTS, type QuestId } from '../core/quests';
 import { gradeTyped } from '../core/grading';
-import { DEF_LANG_ZH, defDe, defHintLine, defLangOf, defTier, type DefLang } from '../core/dedef';
+import { DEF_LANG_ZH, defDe, defHintLine, defLangOf, defTier, SYN_NOTE, synonymHit, type DefLang } from '../core/dedef';
 import { recordAnswer, reviewedByWriting } from '../core/srs';
 import { track } from '../net/social';
 import { BOARD, BOARD_ZH, type BoardKind } from '../core/board';
@@ -554,7 +554,7 @@ export class Panels {
     this.show('ask');
   }
 
-  private quiz: { title: string; intro: string; queue: Word[]; done: Word[]; last?: { ok: boolean; text: string }; onDone: () => void } | null = null;
+  private quiz: { title: string; intro: string; queue: Word[]; done: Word[]; last?: { ok: boolean; text: string; syn?: boolean }; onDone: () => void } | null = null;
 
   /** Type each word (German with article, from the Chinese); a miss goes back into the queue. */
   showQuiz(title: string, intro: string, words: Word[], onDone: () => void): void {
@@ -565,7 +565,7 @@ export class Panels {
   private quizBody(): HTMLElement {
     const q = this.quiz!;
     const wrap = h('div', h('p', q.intro));
-    if (q.last) wrap.append(h(`div.feedback.${q.last.ok ? 'ok' : 'no'}`, q.last.text));
+    if (q.last) wrap.append(q.last.syn ? h('div.note', { style: 'color:var(--gold, #ffcf4a)' }, q.last.text) : h(`div.feedback.${q.last.ok ? 'ok' : 'no'}`, q.last.text));
     if (!q.queue.length) {
       wrap.append(h('p', '都教会了。'));
       return wrap;
@@ -573,6 +573,11 @@ export class Panels {
     const w = q.queue[0];
     const input = h('input.quiz', { type: 'text', autocomplete: 'off', spellcheck: 'false', placeholder: hasArticleQuestion(w) ? 'der / die / das + 名词' : '' }) as HTMLInputElement;
     const go = () => {
+      // 近义容错 (1.0.12): a 近义 word is not wrong — nothing recorded, the same word stays.
+      if (synonymHit({ type: 'typed', answer: fullForm(w), withArticle: hasArticleQuestion(w) }, w, input.value)) {
+        q.last = { ok: false, syn: true, text: `${input.value.trim()}：${SYN_NOTE}` };
+        return this.render();
+      }
       const v = gradeTyped(input.value, w, hasArticleQuestion(w));
       recordAnswer(this.ctrl.state, w, v.ok, 'write');
       q.queue.shift();
@@ -1083,10 +1088,10 @@ export class Panels {
 
   // ---- Chest (言灵锁) -------------------------------------------------------------
 
-  private chest: { kind: ChestKind; ilvl: number; word: Word; result?: ReturnType<Controller['openLockedChest']> } | null = null;
+  private chest: { kind: ChestKind; ilvl: number; word: Word; result?: ReturnType<Controller['openLockedChest']>; syn?: string } | null = null;
 
   showChest(c: { kind: ChestKind; ilvl: number; word: Word }): void {
-    this.chest = c;
+    this.chest = { ...c };
     this.show('chest');
   }
 
@@ -1098,6 +1103,11 @@ export class Panels {
       const go = () => {
         // 1.0.12 试玩 25: an empty box does not try the lock (a stray Enter would waste the reroll); Esc opens it plain.
         if (!input.value.trim()) return input.focus();
+        // 近义容错 (1.0.12): a 近义 word does not try the lock — write it again.
+        if (synonymHit({ type: 'typed', answer: fullForm(c.word), withArticle: hasArticleQuestion(c.word) }, c.word, input.value)) {
+          c.syn = `${input.value.trim()}：${SYN_NOTE}`;
+          return this.render();
+        }
         c.result = this.ctrl.openLockedChest(c.kind, c.ilvl, c.word, input.value);
         this.render();
         if (this.ctrl.state.settings.chestAnim !== false) playChest({ kind: c.kind, title: `${CHEST_ZH[c.kind]} · ${c.result.ok ? '锁开了，品质各掷两次' : '锁没认出来，箱子照样打开'}`, result: c.result }, () => {}, this.ctrl.chestSfx);
@@ -1112,6 +1122,7 @@ export class Panels {
       wrap.append(
         h('p', '箱子上有一道言灵锁，锁上浮着一个你最该复习的词。写对它，每件东西的品质都会再掷一次、取更好的那个；写错了箱子照样打开。'),
         ...this.writeClue(c.word),
+        c.syn ? h('div.note', { style: 'color:var(--gold, #ffcf4a)' }, c.syn) : '',
         h('div.typing', input, umlautButtons(input), h('button.btn.primary', { onclick: go }, '开锁 ↵')),
       );
       return wrap;
@@ -1773,7 +1784,7 @@ export class Panels {
       else s.settings.defLang = v;
       this.ctrl.persist();
     };
-    return h('label.toggle', h('span', '释义语言'), sel, h('span.small.muted', '自动：1–80 级的词看中文，81–120 级的词在中文下面多一行德语释义，121 级起的词用德语释义（中文点一下就能看）。随时能改，不影响奖励'));
+    return h('label.toggle', h('span', { style: 'white-space:nowrap' }, '释义语言'), sel, h('span.small.muted', '自动：1–80 级的词看中文，81–120 级的词在中文下面多一行德语释义，121 级起的词用德语释义（中文点一下就能看）。随时能改，不影响奖励'));
   }
 
   // ---- Settings -----------------------------------------------------------------

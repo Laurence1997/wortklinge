@@ -412,7 +412,7 @@ export class BattleUI {
     if (this.question.mates?.length) value = [value, ...this.mateBoxes.map((x) => x.value)].join('|');
     // 近义容错 (1.0.12): a 近义 word of the target is not wrong — no HP, no record; the same question stays open.
     const synOf = this.question.review ? WORD_BY_ID[this.question.review] : this.b.word;
-    if (synOf && !this.question.directName && synonymHit(this.question, synOf, value)) {
+    if (synOf && synonymHit(this.question, synOf, value)) {
       this.synMsg = SYN_NOTE;
       this.lastValue = value;
       logLine(`你写的 ${value.trim()}：${SYN_NOTE}`, 'info');
@@ -473,10 +473,16 @@ export class BattleUI {
     return v && !v.open ? v.def : b.word.zh;
   }
 
+  /** The meaning in a short label (move button, stance bar): a long definition is clipped. */
+  private shortMeaning(b: Battle): string {
+    const v = this.defView(b);
+    return v && !v.open ? clipDef(v.def) : b.word.zh;
+  }
+
   /** A pack card's short plate: the garble rule first, then a clipped definition while the Chinese is hidden. */
   private packName(b: Battle, hide: boolean): string {
     const v = hide || b.word.erode ? null : this.defView(b);
-    if (v && !v.open) return v.def.length > 22 ? `${v.def.slice(0, 21).trimEnd()}…` : v.def;
+    if (v && !v.open) return clipDef(v.def) + (b.pluralMon ? ' · 复数' : '');
     return nameGlyph(b, hide);
   }
 
@@ -873,7 +879,7 @@ export class BattleUI {
       this.zhOpen.add(b.word.id);
       this.render();
     };
-    const glyph = defOnly ? dv!.def : nameGlyph(b, this.phase === 'answer' && asksMeaning(this.question));
+    const glyph = defOnly ? dv!.def + (b.pluralMon ? ' · 复数' : '') : nameGlyph(b, this.phase === 'answer' && asksMeaning(this.question));
     const m = b.monster;
     const st: string[] = [];
     if (m.broken > 0) st.push(`破甲 ${m.broken}`);
@@ -1041,7 +1047,7 @@ export class BattleUI {
         : rt
           ? `必中 · ${readShown(b, rt)}${readShown(b, rt) !== rt ? '（连冠词读）' : ''}`
           : rr
-            ? `弱一击 · 凭记忆说出「${w.zh}」`
+            ? `弱一击 · 凭记忆说出「${this.shortMeaning(b)}」`
             : canShadowNow
               ? '跟读上一句 · 多给经验'
               : this.ctrl.canShadow()
@@ -1101,13 +1107,13 @@ export class BattleUI {
               'span.small',
               { style: 'color:var(--gold, #ffcf4a)' },
               b.perfekt
-                ? `  新词：${w.de} · ${w.zh}　完成时用 ${b.phase}，相已替你选好，记住它`
-                : `  新词：${fullForm(w)} · ${w.zh}　第一次见，相已替你选好${b.phase !== w.art ? `（这句要 ${b.phase}）` : ''}，记住它${taughtRule(w)}`,
+                ? `  新词：${w.de} · ${this.shortMeaning(b)}　完成时用 ${b.phase}，相已替你选好，记住它`
+                : `  新词：${fullForm(w)} · ${this.shortMeaning(b)}　第一次见，相已替你选好${b.phase !== w.art ? `（这句要 ${b.phase}）` : ''}，记住它${taughtRule(w)}`,
             )
           : b.pluralMon
-            ? h('span.small', { style: 'color:var(--gold, #ffcf4a)' }, this.phase === 'answer' && this.question?.type === 'pickZh' ? '  复数怪 → 一律选 die' : `  这是一群「${w.zh}」（复数怪）→ 一律选 die`)
+            ? h('span.small', { style: 'color:var(--gold, #ffcf4a)' }, this.phase === 'answer' && this.question?.type === 'pickZh' ? '  复数怪 → 一律选 die' : `  这是一群「${this.shortMeaning(b)}」（复数怪）→ 一律选 die`)
           : b.curse !== 'forget' && !(this.phase === 'answer' && this.question?.type === 'pickZh')
-            ? h('span.small', { style: 'color:var(--gold, #ffcf4a)' }, `  它是「${w.zh}」→ 选它的相`)
+            ? h('span.small', { style: 'color:var(--gold, #ffcf4a)' }, `  它是「${this.shortMeaning(b)}」→ 选它的相`)
             : '',
         h(
           'span.small.muted',
@@ -1229,7 +1235,7 @@ export class BattleUI {
         h(
           'div.board.review-insert',
           h('div.board-title', '插题 · 这题问的是另一个词，不是这只怪'),
-          h('div', `这只怪是「${this.meaningText(this.b)}」，但这道题考的是你以前学过的另一个词（看下面的中文）。答对答错只算那个词，伤害照常打在这只怪身上。`),
+          h('div', `这只怪是「${this.meaningText(this.b)}」，但这道题考的是你以前学过的另一个词（看下面的${qq.defDe ? '释义' : '中文'}）。答对答错只算那个词，伤害照常打在这只怪身上。`),
         ),
       );
     wrap.append(h('div.prompt', h('span', qq.prompt), tags ? h('span.tag', tags) : '', hintBtn));
@@ -1434,6 +1440,11 @@ export class BattleUI {
     return wrap;
   }
 
+}
+
+/** A definition clipped for a small label. */
+function clipDef(def: string): string {
+  return def.length > 22 ? `${def.slice(0, 21).trimEnd()}…` : def;
 }
 
 /** 德语释义 on the plate: a definition is a sentence, so it wraps in a smaller, plain font. */

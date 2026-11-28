@@ -1224,7 +1224,7 @@ export function makeQuestion(s: GameState, b: Battle, move: Move, rng: Rng, skil
  * 德语释义界面规则 (1.0.12): a question about a word that shows its German definition. 初见教学 gets the definition
  * (beside the Chinese in the zhDe tier; instead of it, Chinese one tap away, in the de tier). In the de tier the
  * Chinese clue of 看中文选德语 / 默写 / 句中默写 / 完形填空 is replaced by the definition (the sentence's Chinese comes
- * after answering) and a write prompt adds the first letter and letter count. A question that asks the meaning
+ * after answering) and a write prompt (默写 / 墨水风暴 / 句中默写) adds the first letter and letter count. A question that asks the meaning
  * (Chinese options) is left alone, so the definition never gives its answer away.
  */
 export function dedefQ(s: Pick<GameState, 'settings'>, w: Word, q: Question): Question {
@@ -1235,7 +1235,8 @@ export function dedefQ(s: Pick<GameState, 'settings'>, w: Word, q: Question): Qu
   if (q.teach) out = { ...q, teach: { ...q.teach, def, hideZh: tier === 'de' } };
   if (tier !== 'de' || w.digit) return out;
   if (out.type === 'pickDe' && out.focus === w.zh) return { ...out, focus: def, defDe: def, zhHidden: w.zh };
-  if (out.type === 'typed' && out.focus === zhWithPos(w)) return { ...out, focus: def, defDe: def, defHint: defHintLine(w), zhHidden: out.focus };
+  if (out.type === 'storm' && out.focus === zhWithPos(w)) return { ...out, focus: def, defDe: def, defHint: defHintLine(w), zhHidden: out.focus };
+  if (out.type === 'typed' && !out.split && out.focus === zhWithPos(w)) return { ...out, focus: def, defDe: def, defHint: defHintLine(w), zhHidden: out.focus };
   if (out.type === 'cloze' && out.clozeZh && !out.pat && !out.write && out.prompt.endsWith(` · ${out.clozeZh}`)) {
     const writing = out.clozeMode !== 'pick' && !out.options?.length;
     const head = out.prompt.slice(0, -out.clozeZh.length - 3).replace('看整句中文，', '看释义，');

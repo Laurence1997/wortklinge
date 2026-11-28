@@ -73,6 +73,17 @@ describe('首字母 + 字母数', () => {
     expect(dedefQ(s, high, q)).toBe(q);
   });
 
+  it('墨水风暴 shows the definition with the hint; 拆词 (its prompt names the word) keeps its Chinese', () => {
+    const s = newGame('T', 'student');
+    const st: Question = { type: 'storm', pool: 'storm', prompt: '墨水风暴', focus: zhWithPos(high), boxes: ['原形'], answer: high.de };
+    const d = dedefQ(s, high, st);
+    expect(d.focus).toBe(defDe(high));
+    expect(d.defHint).toBe(defHintLine(high));
+    expect(d.zhHidden).toBe(zhWithPos(high));
+    const sp: Question = { type: 'typed', pool: 'split', split: { kind: 'separable', answer: 'Ich x', prompt: 'x' }, prompt: '拆词', focus: zhWithPos(high), answer: 'Ich x' };
+    expect(dedefQ(s, high, sp)).toBe(sp);
+  });
+
   it('a cloze swaps the sentence Chinese for the definition (shown after answering)', () => {
     const s = newGame('T', 'student');
     const q: Question = { type: 'cloze', clozeMode: 'base', dict: true, prompt: '句中默写：看整句中文，打出空里的词 · 这是一句中文。', focus: 'Das ___ hier.', answer: high.de, clozeZh: '这是一句中文。' };
