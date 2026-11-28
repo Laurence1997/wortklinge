@@ -20,7 +20,17 @@ export const C1_CFG = {
   from: 161,
   /** C1 article segments (regions / 蚀变 segment 17–20). */
   articleSegFrom: 17,
+  /** 零号站台 / 语法秘境 clear reward from 161 (review 1.0.12). The clear pays a fixed share of a level; from 161 an
+   *  at-level monster dies to 1–2 answers, so a run lasts about 100 s and the dungeon paid about 2× the C1 field's XP
+   *  per hour (sim: L170 7068 vs 3499 XP/h; the B2 field at L130 is within 1.26× of it). ×0.4 brings it back to about
+   *  1.1–1.2× (kills are a quarter of a run's XP and stay as they are). */
+  dungeonClearMult: 0.4,
 };
+
+/** The share of a dungeon's clear reward paid at this level (1 below C1). */
+export function dungeonClearMult(level: number): number {
+  return level >= C1_CFG.from ? C1_CFG.dungeonClearMult : 1;
+}
 
 const ZONES_WITH_WORDS = new Set<string>(WORDS.map((w) => w.zone));
 
@@ -46,10 +56,11 @@ export function isC1Article(id: string | undefined): boolean {
   return !!a && a.seg >= C1_CFG.articleSegFrom && !a.lemmas.length;
 }
 
-/** This fight's C1 article still pays the bonus: never finished all right before, and no miss on it yet. */
+/** This fight's C1 article still pays the bonus: unread when this fight drew it (a failed article that comes back is
+ *  read, its answers seen), never finished all right before, and no miss on it yet. */
 export function c1ArticleOpen(s: GameState, b: Pick<Battle, 'notice'>): boolean {
   const n = b.notice;
-  return !!n && !n.miss && isC1Article(n.id) && !s.articlesDone?.[n.id];
+  return !!n && !n.miss && !n.reread && isC1Article(n.id) && !s.articlesDone?.[n.id];
 }
 
 /** Every content question of the C1 article was answered right in this fight (and the bonus is still open). */

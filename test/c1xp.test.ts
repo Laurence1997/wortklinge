@@ -6,7 +6,8 @@ import { makeRng } from '../src/core/rng';
 import { makeQuestion, monsterStats, resolveTurn, startBattle } from '../src/core/combat';
 import { applyWin } from '../src/core/outcomes';
 import { CONFIG, xpToNext } from '../src/core/config';
-import { C1_ZONES, c1Field } from '../src/core/c1';
+import { C1_ZONES, c1Field, dungeonClearMult, isC1Article } from '../src/core/c1';
+import { articleB2ById } from '../src/core/gram/articleB2';
 import { CHALLENGE_CFG } from '../src/core/challenge';
 import { bossPay, BOSS_REPLAY_SHARE } from '../src/core/boss';
 import { laterBossXp, LATER_BOSS } from '../src/data/bossesLater';
@@ -134,6 +135,33 @@ describe('C1 articles (1b)', () => {
     expect(applyWin(s, b2, makeRng(5)).xp).toBe(CONFIG.xp.dueMonster);
     expect(s.articlesDone?.[art().id]).toBeUndefined();
   });
+  it('an article drawn before (read, its answers seen after a miss) pays no bonus when it comes back', () => {
+    const s = game(170);
+    const b = articleFight(s);
+    b.notice!.reread = true;
+    b.notice!.right = art().qs.map((_, i) => i);
+    b.outcome = 'win';
+    expect(applyWin(s, b, makeRng(5)).xp).toBe(CONFIG.xp.dueMonster);
+    expect(b.c1Article).toBeFalsy();
+  });
+  it('the draw marks an article read before as reread, and 蚀变④ scenes (s.region 9–12) draw segment-19 articles', () => {
+    const drawn = (region: number, pre: boolean) => {
+      for (let seed = 1; seed < 4000; seed++) {
+        const s = game(170);
+        s.region = region as GameState['region'];
+        s.articlesRead = pre ? Object.fromEntries(ARTICLES_B2.filter((a) => a.seg === (region < 17 ? 19 : region)).map((a) => [a.id, 1])) : {};
+        shadowOf(s, noun);
+        const b = startBattle(s, noun, makeRng(seed), { c1: true });
+        if (b.notice && isC1Article(b.notice.id)) return b.notice;
+      }
+      return null;
+    };
+    expect(drawn(17, false)?.reread).toBeUndefined();
+    expect(drawn(17, true)?.reread).toBe(true);
+    const n19 = drawn(10, false);
+    expect(n19).toBeTruthy();
+    expect(articleB2ById(n19!.id)!.seg).toBe(19);
+  });
   it('in the fight: right answers are recorded and it holds at 1 HP until every question was asked', () => {
     const s = game(170);
     const b = articleFight(s);
@@ -159,6 +187,15 @@ describe('C1 articles (1b)', () => {
     const q2 = makeQuestion(s, b, 'attack', makeRng(4));
     resolveTurn(s, b, 'attack', q2, q2.answer!, makeRng(4));
     expect(b.finishOwn).toBe(true);
+  });
+});
+
+describe('dungeon clears from 161 (review 1.0.12)', () => {
+  it('pay 0.4 of the clear share from 161, unchanged below', () => {
+    expect(dungeonClearMult(120)).toBe(1);
+    expect(dungeonClearMult(160)).toBe(1);
+    expect(dungeonClearMult(161)).toBe(0.4);
+    expect(dungeonClearMult(200)).toBe(0.4);
   });
 });
 

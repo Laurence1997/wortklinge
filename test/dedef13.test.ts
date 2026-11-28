@@ -13,6 +13,8 @@ import {
   meaningLine,
   meaningShort,
   plateMeaning,
+  mapPlate,
+  wrapDef,
   slotMeaning,
   wordCue,
 } from '../src/core/dedef';
@@ -59,6 +61,37 @@ describe('meaningLine and the short forms', () => {
     expect(clipDef('x'.repeat(40), 10)).toHaveLength(10);
   });
 
+  it('the world-map plate gives the definition on two short lines, so Lv121+ monsters stay apart', () => {
+    expect(wrapDef('so, dass man es nicht akzeptieren kann')).toBe('so, dass man es\nnicht akzeptier…');
+    expect(wrapDef('kurz')).toBe('kurz');
+    expect(wrapDef('große Aufmerksamkeit vieler Leute')).toBe('große\nAufmerksamkeit…');
+    expect(wrapDef('Gesundheitsministerium des Landes')).toBe('Gesundheitsmini-\nsterium des Lan…');
+    for (const line of wrapDef('Person, die vom Volk in die Politik gewählt wird').split('\n')) expect(line.length).toBeLessThanOrEqual(16);
+    expect(mapPlate(mid, auto)).toBe(plateZh(mid));
+    const plates = new Map<string, number>();
+    let n = 0;
+    for (const w of WORDS) {
+      if (w.lvl < 121 || !defDe(w) || w.digit) continue;
+      const p = mapPlate(w, auto);
+      expect(p).not.toContain(w.zh);
+      expect(p.split('\n').length).toBeLessThanOrEqual(2);
+      plates.set(p, (plates.get(p) ?? 0) + 1);
+      n++;
+    }
+    // One clipped line gave 1603 different plates for 2000 words.
+    expect(plates.size / n).toBeGreaterThan(0.95);
+  });
+
+  it('no definition contains its own word (the write prompts add the first letter and length)', () => {
+    const bad: string[] = [];
+    for (const w of WORDS) {
+      const d = LEX_DEF_DE[w.id];
+      const head = w.de.replace(/^(der|die|das|sich) /i, '').toLowerCase();
+      if (d && head.length >= 3 && d.toLowerCase().includes(head)) bad.push(`${w.id}: ${d}`);
+    }
+    expect(bad).toEqual([]);
+  });
+
   it('defHintsFor gives one 原形 hint per de-tier word, numbered when there are two', () => {
     expect(defHintsFor([mid, low], auto)).toBeNull();
     expect(defHintsFor([high], auto)).toBe(`原形 ${defHintLine(high)}`);
@@ -100,6 +133,25 @@ describe('combat prompts', () => {
       whole++;
     }
     expect(whole).toBeGreaterThan(10);
+  });
+
+  it('终极技能 · 句型填空 (two blanks, the first finisher at Lv121+) never shows a de-tier word Chinese', () => {
+    const s = newGame('T', 'student');
+    s.level = 130;
+    let seen = 0;
+    for (const w of WORDS.filter((x) => x.lvl >= 121 && LEX_DEF_DE[x.id] && !x.digit && x.pos !== 'phr').slice(0, 60)) {
+      s.words[w.id] = { ...progress };
+      const b = startBattle(s, w, makeRng(1));
+      b.directOffer = false;
+      const q = makeQuestion(s, b, 'sentence', makeRng(5));
+      if (q.type !== 'sentence' || !q.ult || q.ult.length !== 2 || !q.frame?.includes('___')) continue;
+      expect(q.focus).toContain(`〔${defDe(w)}〕`);
+      expect(q.defHint).toContain(`原形 ${defHintLine(w)}`);
+      expect(q.zhHidden).toBeTruthy();
+      expect(q.zhHidden).not.toBe(q.focus);
+      seen++;
+    }
+    expect(seen).toBeGreaterThan(5);
   });
 
   it('终结技 句型 (看中文写整句 with a pattern) under 德语优先 puts the definition in the slot', () => {

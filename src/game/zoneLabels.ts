@@ -13,9 +13,17 @@ export interface Box {
   y1: number;
 }
 
-/** Where the zone name plates lie: above the map and its lamp glows, below every y-sorted figure (monsters, NPCs and
- *  their name plates, signs) and the route (3000). */
+/** Where the zone name plates lie on the old walking map: above the map and its lamp glows, below every y-sorted
+ *  figure (monsters, NPCs and their name plates, signs). */
 export const ZONE_LABEL_DEPTH = 1;
+/** On the scene map: above the route (3000) but below the scene circles and their numbers (3001). The route columns
+ *  lie about as far apart as a plate is wide, so most plates cannot avoid a line; drawn below it, the line ran
+ *  through the letters (review 1.0.12: 27 of about 50 field plates). Above every figure too, so there the plates keep
+ *  much harder off monsters, NPCs and signs (`above`). */
+export const ZONE_LABEL_DEPTH_ROUTE = 3000.4;
+/** How much of the map the status box covers at the scene map's smallest zoom (1.5): about 300 screen px. A town
+ *  plate keeps its left edge this far right of the camera's west bound. */
+export const HUD_MAP_PX = 210;
 
 /** Scene circles are drawn with radius 9 (nodes.ts); a little air around them. */
 const NODE_R = 12;
@@ -98,8 +106,10 @@ export interface PlaceArgs {
   obs: LabelObstacles;
   /** Plates already placed (they must not touch). */
   placed: Box[];
-  /** The part of the map the camera can show. */
+  /** The part of the map the camera can show (a town plate passes a larger x0 to stay right of the status box). */
   bounds: Box;
+  /** The plate is drawn above the figures (scene map): covering a monster, NPC or sign costs much more. */
+  above?: boolean;
 }
 
 /** How bad a plate there would be (0 = open ground right where it used to stand). */
@@ -111,7 +121,7 @@ export function plateCost(a: PlaceArgs, cx: number, cy: number): number {
   for (const p of a.placed) if (overlap(b, { x0: p.x0 - 8, x1: p.x1 + 8, y0: p.y0 - 4, y1: p.y1 + 4 }) > 0) cost += 5000;
   for (const n of a.obs.nodes) if (overlap(b, { x0: n.x - NODE_R, x1: n.x + NODE_R, y0: n.y - NODE_R, y1: n.y + NODE_R }) > 0) cost += 2000;
   for (const s of a.obs.segs) if (segHitsBox(s, { x0: b.x0 - 2, x1: b.x1 + 2, y0: b.y0 - 2, y1: b.y1 + 2 })) cost += 400;
-  for (const o of a.obs.boxes) cost += (600 * overlap(b, o)) / area;
+  for (const o of a.obs.boxes) cost += ((a.above ? 2400 : 600) * overlap(b, o)) / area;
   // Tiles under the plate, weighted by how much of each it covers.
   let tiles = 0;
   for (let ty = Math.floor(b.y0 / TILE); ty <= Math.floor((b.y1 - 0.01) / TILE); ty++)

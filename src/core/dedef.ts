@@ -167,6 +167,33 @@ export function plateMeaning(w: Word, settings: Pick<Settings, 'defLang'> | unde
   return m.tier === 'de' ? clipDef(m.main, max) : plateZh(w);
 }
 
+/** A definition on at most `lines` lines of about `per` characters, broken between words, the last line clipped.
+ *  One clipped line kept only the filler many definitions open with ('so, dass man es…' stood on 23 plates,
+ *  review 1.0.12); two lines tell almost every Lv121+ monster apart (1978 plates for 2000 words). */
+export function wrapDef(def: string, per = 16, lines = 2): string {
+  const out: string[] = [];
+  let rest = def.trim();
+  while (rest && out.length < lines - 1 && rest.length > per) {
+    const cut = rest.lastIndexOf(' ', per);
+    // One word longer than the line: break it with a hyphen.
+    if (cut <= 0) {
+      out.push(`${rest.slice(0, per - 1)}-`);
+      rest = rest.slice(per - 1);
+      continue;
+    }
+    out.push(rest.slice(0, cut).trimEnd());
+    rest = rest.slice(cut).trimStart();
+  }
+  if (rest) out.push(clipDef(rest, per));
+  return out.join('\n');
+}
+
+/** The world-map name plate: the Chinese, or the definition on two short lines while the Chinese is hidden. */
+export function mapPlate(w: Word, settings: Pick<Settings, 'defLang'> | undefined, per = 16): string {
+  const m = meaningLine(w, settings);
+  return m.tier === 'de' ? wrapDef(m.main, per, 2) : plateZh(w);
+}
+
 /** The meaning in one short line (tags, toasts, feedback): a clipped definition while the Chinese is hidden. */
 export function meaningShort(w: Word, settings: Pick<Settings, 'defLang'> | undefined, max = 28): string {
   const m = meaningLine(w, settings);

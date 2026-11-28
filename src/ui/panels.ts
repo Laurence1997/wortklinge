@@ -1780,7 +1780,9 @@ export class Panels {
 
   /** The typed clue of 分级考核 and 主城全量筛选. 德语释义 (1.0.12): it follows the same tiers as the game's own 默写
    *  at that word's level (the test checks what the player will be asked there): a de-tier word shows its definition
-   *  with first letter and letter count, the Chinese one free tap away; zhDe adds the German line under the Chinese. */
+   *  with first letter and letter count, the Chinese one free tap away; zhDe adds the German line under the Chinese.
+   *  Opening the Chinese takes the letter hint away (review 1.0.12): Chinese plus first letter plus length was more help
+   *  than the old Chinese-only clue, and a passed band marks its untested words 推定会. */
   private typedClue(w: Word): HTMLElement[] {
     const m = meaningLine(w, this.ctrl.state.settings);
     if (m.tier === 'zhDe') return [h('div.place-word', zhWithPos(w)), h('div.small.muted', { style: 'text-align:center;overflow-wrap:anywhere' }, m.sub!)];
@@ -1788,7 +1790,7 @@ export class Panels {
     const open = this.zhOpened.has(w.id);
     return [
       h('div.place-word', { style: 'font-size:20px;line-height:1.4;white-space:normal;overflow-wrap:anywhere' }, m.main),
-      h('div.def-hint', { style: 'font-family:var(--mono);font-size:18px;letter-spacing:1px;text-align:center;margin:2px 0 4px' }, defHintLine(w)),
+      open ? h('div') : h('div.def-hint', { style: 'font-family:var(--mono);font-size:18px;letter-spacing:1px;text-align:center;margin:2px 0 4px' }, defHintLine(w)),
       h('div', { style: 'text-align:center' }, open ? h('span.small.muted', `中文：${zhWithPos(w)}`) : h('button.btn.ghost.tiny', { onclick: () => { this.zhOpened.add(w.id); this.render(); }, title: '看中文不花任何代价' }, '看中文')),
     ];
   }

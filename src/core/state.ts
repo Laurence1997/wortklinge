@@ -481,6 +481,21 @@ export function migrate(raw: unknown): GameState | null {
     }
     s.xpCurve = XP_CURVE;
   }
+  // A need that shrank under an unchanged curve number (Lv1 pace, B2/C1 multiplier): a save already holding a full
+  // bar levels up on load, through the same catch-up replay, instead of showing 'XP 700 / 350' until its next kill.
+  {
+    const cap = levelCapFor(s.flags ?? {});
+    const gained: number[] = [];
+    while (s.level < cap && s.xp >= xpToNext(s.level)) {
+      s.xp -= xpToNext(s.level);
+      s.level += 1;
+      gained.push(s.level);
+    }
+    if (gained.length) {
+      const prev = String(s.flags?.catchUpLevels ?? '');
+      s.flags = { ...(s.flags ?? {}), catchUpLevels: [prev, ...gained].filter(Boolean).join(',') };
+    }
+  }
   const base = newGame(s.name ?? '旅人', s.origin ?? 'student', s.createdAt);
   // 0.6.x 斩杀: WordProgress.pend / retired / sure are optional (absent = not pending, not retired); the town
   // screening's 待领 and cursors start empty.

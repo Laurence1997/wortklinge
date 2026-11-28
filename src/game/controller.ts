@@ -42,7 +42,7 @@ import { atLeastHalfShare, countAnswer, flushSkill, gapZh, instantGuiming, kindO
 import { dailyBoard, dailyKill, dailyText } from '../core/dailies';
 import { identify, socketItems, unidentifiedItems } from '../core/identify';
 import { pickSpawns, zoneMinLevel, zoneWords } from '../core/spawn';
-import { c1Field } from '../core/c1';
+import { c1Field, dungeonClearMult } from '../core/c1';
 import {
   addXp,
   gearTier,
@@ -2741,7 +2741,7 @@ export class Controller {
     }
     this.gramRun = null;
     const first = markCleared(s, r.kind, r.floor.id);
-    const xp = Math.round(xpToNext(s.level) * GRAM_DUNGEON.clearXp * (r.words.length / GRAM_DUNGEON.fights));
+    const xp = Math.round(xpToNext(s.level) * GRAM_DUNGEON.clearXp * (r.words.length / GRAM_DUNGEON.fights) * dungeonClearMult(s.level));
     const lv = addXp(s, xp);
     banner(`${GRAM_DUNGEON.name[r.kind]} · ${r.floor.label}`, `打通 · ${xp} 经验`);
     if (first && r.kind === 'ablaut' && r.floor.id !== 'praet') say([{ who: SYS, text: `${r.floor.id} 族打通了：这一族的动词在野外也会考它的变音（du / er 的形式${s.level >= CONFIG.perfekt.irregularFrom ? '、完成时' : ''}）。` }]);
@@ -2981,7 +2981,7 @@ export class Controller {
     s.flags.dungeonDay = today;
     s.flags.dungeonClears = ((s.flags.dungeonClears as number) ?? 0) + 1;
     const mult = d.kept ? d.rule.mult : 1;
-    const xp = Math.round(xpToNext(s.level) * DUNGEON.clearXp * mult);
+    const xp = Math.round(xpToNext(s.level) * DUNGEON.clearXp * mult * dungeonClearMult(s.level));
     const gold = Math.round(CONFIG.gold.perKill(s.level) * DUNGEON.clearGoldKills * mult);
     const lv = addXp(s, xp);
     s.gold += gold;

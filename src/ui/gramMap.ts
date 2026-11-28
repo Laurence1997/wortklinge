@@ -7,6 +7,7 @@ import { cleared, floorsOf, GRAM_DUNGEON, REL_ZH, type DungeonKind, type Floor, 
 import type { GameState } from '../core/state';
 import { WORD_BY_ID } from '../data/words';
 import { clear, h } from './dom';
+import { dungeonClearMult } from '../core/c1';
 
 const SVG = 'http://www.w3.org/2000/svg';
 function s<K extends keyof SVGElementTagNameMap>(tag: K, attrs: Record<string, string | number> = {}, ...kids: Array<Node | string>): SVGElementTagNameMap[K] {
@@ -112,7 +113,7 @@ export function gramMap(st: GameState, enter: (kind: DungeonKind, f: Floor) => v
     // 3. The picked floor's card.
     const f = floors.find((x) => x.id === pickedFloor)!;
     const n = Math.min(f.words.length, GRAM_DUNGEON.fights);
-    const xp = Math.round(xpToNext(st.level) * GRAM_DUNGEON.clearXp * (n / GRAM_DUNGEON.fights));
+    const xp = Math.round(xpToNext(st.level) * GRAM_DUNGEON.clearXp * (n / GRAM_DUNGEON.fights) * dungeonClearMult(st.level));
     const isDone = done.has(f.id);
     const sample = f.words.slice(0, 6).map((id) => WORD_BY_ID[id]?.de).filter(Boolean).join('、');
     root.append(

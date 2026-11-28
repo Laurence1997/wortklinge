@@ -11,7 +11,7 @@ import type { Word, ZoneId } from '../core/types';
 import { fullForm, WORD_BY_ID } from '../data/words';
 import { has } from '../core/unlocks';
 import { phraseCards, phraseWord } from '../core/combat';
-import { plateMeaning } from '../core/dedef';
+import { mapPlate } from '../core/dedef';
 import { SAYING_CFG, SAYINGS } from '../data/sayings';
 import { FAMILIES } from '../data/families';
 import type { Controller } from './controller';
@@ -26,7 +26,7 @@ import { CONFIG } from '../core/config';
 import { NodeNav } from './nodes';
 import { charRamp, mapRamp, mapShades, shadeRamp, type Ramp5 } from './palette';
 import { REGION_DEF } from '../data/zones';
-import { labelObstacles, placeZoneLabel, ZONE_LABEL_DEPTH, type Box } from './zoneLabels';
+import { labelObstacles, placeZoneLabel, ZONE_LABEL_DEPTH, ZONE_LABEL_DEPTH_ROUTE, HUD_MAP_PX, type Box } from './zoneLabels';
 
 export interface MonsterEntity {
   uid: number;
@@ -202,11 +202,12 @@ export class WorldScene extends Phaser.Scene {
     // Zone names with their level ranges. 1.0.12 试玩: they used to be dark red on dark maps (barely readable), faded
     // on bright maps and under lamps and houses. 1.0.12 试玩 (Lucas 11-28「修改」): still faint straight on the roofs,
     // so each name now sits on a small plate (parchment on bright maps, near-black on dark and 蚀变 maps, like the
-    // scene circles) in the freest spot near its old place (zoneLabels.ts), below every figure and name plate.
+    // scene circles) in the freest spot near its old place (zoneLabels.ts): on the scene map above the route, below its circles.
     const obs = labelObstacles(this.map, region, !oldmap);
     const placed: Box[] = [];
     const accent = parseInt(accentOf(region).slice(1), 16);
     let fieldNo = 0;
+    const depth = oldmap ? ZONE_LABEL_DEPTH : ZONE_LABEL_DEPTH_ROUTE;
     for (const z of this.zones) {
       if (z.id === 'camp' || z.id === 'markt') continue;
       // 1.0.12 试玩 #105: on the scene map a field's name stands in the open band along the main road (between the
@@ -229,16 +230,18 @@ export class WorldScene extends Phaser.Scene {
           resolution: 4,
         })
         .setOrigin(0.5)
-        .setDepth(ZONE_LABEL_DEPTH + 0.1);
+        .setDepth(depth + 0.1);
       const w = Math.ceil(t.width) + 10;
       const h = Math.ceil(t.height) + 4;
-      const c = placeZoneLabel({ tiles: this.map.tiles, pref, w, h, obs, placed, bounds: { x0: FOG_EDGE + 2, x1: MAP_W * TILE - FOG_EDGE - 2, y0: FOG_EDGE + 2, y1: MAP_H * TILE - FOG_EDGE - 2 } });
+      // A town plate on the scene map keeps right of the status box even at the smallest zoom (1.5).
+      const x0 = FOG_EDGE + (band || oldmap ? 2 : HUD_MAP_PX);
+      const c = placeZoneLabel({ tiles: this.map.tiles, pref, w, h, obs, placed, above: !oldmap, bounds: { x0, x1: MAP_W * TILE - FOG_EDGE - 2, y0: FOG_EDGE + 2, y1: MAP_H * TILE - FOG_EDGE - 2 } });
       const box = { x0: c.x - w / 2, x1: c.x + w / 2, y0: c.y - h / 2, y1: c.y + h / 2 };
       placed.push(box);
       t.setPosition(c.x, c.y);
       this.add
         .graphics()
-        .setDepth(ZONE_LABEL_DEPTH)
+        .setDepth(depth)
         .fillStyle(this.bright ? 0xfffaf0 : 0x07040a, this.bright ? 0.9 : 0.82)
         .fillRoundedRect(box.x0, box.y0, w, h, 3)
         .lineStyle(1, this.bright ? accent : 0x7a2630, this.bright ? 0.75 : 0.9)
@@ -478,7 +481,7 @@ export class WorldScene extends Phaser.Scene {
   }
 
   addMonster(word: Word, kind: MonsterEntity['kind'], zone: ZoneId, x: number, y: number, opts: { isEcho?: boolean; scripted?: 'loss' | 'trial' } = {}): MonsterEntity {
-    const label = this.add.text(0, 0, '', { fontFamily: FONT, fontSize: '9px', fontStyle: 'bold', color: '#fff', resolution: 4 }).setOrigin(0.5, 1);
+    const label = this.add.text(0, 0, '', { fontFamily: FONT, fontSize: '9px', fontStyle: 'bold', color: '#fff', align: 'center', resolution: 4 }).setOrigin(0.5, 1);
     const teeth = this.add.text(0, 1, '', { fontFamily: FONT, fontSize: '5px', color: '#ff3040', resolution: 4 }).setOrigin(0.5, 0);
     const marker = this.add.text(0, -12, '', { fontFamily: FONT, fontSize: '8px', fontStyle: 'bold', color: '#ffcf4a', resolution: 4 }).setOrigin(0.5, 1);
     const shadow = this.add.ellipse(0, 4, 18, 4, 0x000000, 0.6);
@@ -625,8 +628,9 @@ export class WorldScene extends Phaser.Scene {
     const p = this.ctrl.state.words[w.id];
     const met = !!p;
     const presumed = !!p?.placed && !p.retired; // 快速通道: 名牌标「推定会」
-    // 德语释义 (1.0.12): a word whose Chinese is hidden wears a clipped definition (the garble rule above stays first).
-    const plate = plateMeaning(w, this.ctrl.state.settings, 16);
+    // 德语释义 (1.0.12): a word whose Chinese is hidden wears its definition on two short lines (the garble rule above
+    // stays first).
+    const plate = mapPlate(w, this.ctrl.state.settings, 16);
     m.label.setText(!met || w.erode ? Array.from({ length: Math.max(3, Math.min(9, w.de.length)) }, rnd).join('') : presumed ? `推定会·${plate}` : plate);
   }
 

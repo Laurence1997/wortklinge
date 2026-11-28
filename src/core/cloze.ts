@@ -82,10 +82,10 @@ export function makeCloze(w: Word, mode: ClozeMode, rng: Rng): Cloze | null {
 
 /** 终极技能 (30 级, 句型填空版) for words without a noun pattern: one of the word's example sentences with two
  *  blanks, the word's own form and another word of the sentence (preferring words you know). */
-export function twoBlank(w: Word, rng: Rng, known: (x: Word) => boolean): { frame: string; zh: string; blanks: [string, string]; full: string } | null {
+export function twoBlank(w: Word, rng: Rng, known: (x: Word) => boolean): { frame: string; zh: string; blanks: [string, string]; full: string; mate: Word } | null {
   const bare = (de: string) => de.replace(/^(der|die|das|sich) /i, '');
   const cands = WORDS.filter((x) => x.id !== w.id && x.pos !== 'phr' && !x.digit && bare(x.de).length >= 3 && !bare(x.de).includes(' '));
-  const options: Array<{ frame: string; zh: string; blanks: [string, string]; full: string; k: boolean }> = [];
+  const options: Array<{ frame: string; zh: string; blanks: [string, string]; full: string; k: boolean; mate: Word }> = [];
   for (const line of EXAMPLES[w.id] ?? []) {
     const p = parse(line);
     if (!p || !p.zh) continue;
@@ -97,14 +97,14 @@ export function twoBlank(w: Word, rng: Rng, known: (x: Word) => boolean): { fram
         const cut = p[side].slice(0, m.index + m[1].length) + '___' + p[side].slice(m.index + m[0].length);
         const frame = side === 'before' ? `${cut}___${p.after}` : `${p.before}___${cut}`;
         const blanks: [string, string] = side === 'before' ? [m[2], p.blank] : [p.blank, m[2]];
-        options.push({ frame, zh: p.zh, blanks, full: p.before + p.blank + p.after, k: known(x) });
+        options.push({ frame, zh: p.zh, blanks, full: p.before + p.blank + p.after, k: known(x), mate: x });
       }
     }
   }
   if (!options.length) return null;
   const good = options.filter((o) => o.k);
   const o = pick(rng, good.length ? good : options);
-  return { frame: o.frame, zh: o.zh, blanks: o.blanks, full: o.full };
+  return { frame: o.frame, zh: o.zh, blanks: o.blanks, full: o.full, mate: o.mate };
 }
 
 /** Two wrong options of the same kind of word, from the same region. */

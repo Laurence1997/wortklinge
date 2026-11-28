@@ -9,7 +9,7 @@ import { DIARY, parseLine } from '../src/data/diary';
 import { newGame, addXp, migrate, migrateSrs2, attack, gearTier, addGearKill, affinityOf, stampTiers } from '../src/core/state';
 import { applyWin } from '../src/core/outcomes';
 import { recordKill, kindOf, stageOf, contextDue, contextPass, contextFail, reviewMon, reviewedByWriting } from '../src/core/srs';
-import { CONFIG, DAY, HOUR, monsterHpAt, xpToNext } from '../src/core/config';
+import { CONFIG, DAY, HOUR, monsterHpAt, xpToNext, XP_CURVE } from '../src/core/config';
 import { startBattle, makeQuestion, resolveTurn, spillStorm, effArmor, affinityMatch, qTier, linkPack, moveReady, phaseOf, phaseRight, chorusMates, availableMoves, alignPairs, voiceCases } from '../src/core/combat';
 import { makeRng } from '../src/core/rng';
 import { makeItem } from '../src/core/loot';
@@ -200,6 +200,20 @@ describe('levels', () => {
     expect(m.level).toBeGreaterThan(5);
     expect(m.xpCurve).toBe(2);
     expect(String(m.flags.catchUpLevels)).toContain('6');
+  });
+
+  it('a curve-2 save holding more XP than its (now smaller) need levels up on load, once', () => {
+    const lv1 = migrate(JSON.parse(JSON.stringify({ ...newGame('T', 'student', T0), level: 1, xp: xpToNext(1) + 20, xpCurve: XP_CURVE })))!;
+    expect(lv1.level).toBe(2);
+    expect(lv1.xp).toBe(20);
+    expect(String(lv1.flags.catchUpLevels)).toBe('2');
+    const lv150 = migrate(JSON.parse(JSON.stringify({ ...newGame('T', 'student', T0), level: 150, xp: xpToNext(150) + 5, xpCurve: XP_CURVE, flags: { a1Passed: true, a1Grammar: true, a2Passed: true, b1Passed: true } })))!;
+    expect(lv150.level).toBe(151);
+    expect(lv150.xp).toBeLessThan(xpToNext(151));
+    // At a trial cap nothing moves.
+    const cap = migrate(JSON.parse(JSON.stringify({ ...newGame('T', 'student', T0), level: 160, xp: xpToNext(160), xpCurve: XP_CURVE, flags: { a1Passed: true, a1Grammar: true, a2Passed: true, b1Passed: true } })))!;
+    expect(cap.level).toBe(160);
+    expect(cap.flags.catchUpLevels).toBeUndefined();
   });
 });
 

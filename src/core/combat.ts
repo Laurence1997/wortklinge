@@ -388,7 +388,7 @@ export interface Battle {
   /** 复习伙伴: its question was asked this fight. */
   partnerDone?: boolean;
   /** 告示怪 / 信件怪 (15): the notice it carries, and how many of its questions were asked. */
-  notice?: { id: string; i: number; right?: number[]; miss?: boolean };
+  notice?: { id: string; i: number; right?: number[]; miss?: boolean; reread?: boolean };
   /** C1 field monster (161+, src/core/c1.ts): stands at your level, pays at least the due rate. */
   c1?: boolean;
   /** C1 article bonus (src/core/c1.ts): this kill finished an unread C1 article all right (set on the kill). */
@@ -574,9 +574,15 @@ export function startBattle(
   b.perfekt = opts.struct ? false : perfektBattle(s, word, kind, rng, !!tutorial || !!opts.trial);
   // 告示怪 / 信件怪 (15): now and then a field monster of a zone with a notice carries it.
   if (!b.perfekt && !opts.struct && !tutorial && !opts.trial && !opts.elite && !opts.isEcho && !challenge && s.level >= NOTICE_CFG.from && kind !== 'new' && rng() < NOTICE_CFG.chance) {
-    const n = s.level >= NOTICE_CFG.articleFrom && rng() < NOTICE_CFG.articleChance / NOTICE_CFG.chance ? (regionArticleFor(s.region ?? 1, rng, (s.articlesRead ??= {}), now(s)) ?? articleFor(rng)) : noticeFor(word.zone, rng, word.region);
+    // A C1 field monster below region 17 stands in a 蚀变④ scene (s.region stays 9–12 there): it draws from the
+    // segment-19 C1 articles, not the region's B1 ones. `reread`: the article was drawn before (the draw stamps it
+    // read), so a C1 article bonus is for a really unread one only (review 1.0.12).
+    const artRegion = c1 && (s.region ?? 1) < 17 ? 19 : s.region ?? 1;
+    const read = (s.articlesRead ??= {});
+    const readBefore = new Set(Object.keys(read));
+    const n = s.level >= NOTICE_CFG.articleFrom && rng() < NOTICE_CFG.articleChance / NOTICE_CFG.chance ? (regionArticleFor(artRegion, rng, read, now(s)) ?? articleFor(rng)) : noticeFor(word.zone, rng, word.region);
     if (n) {
-      b.notice = { id: n.id, i: 0 };
+      b.notice = { id: n.id, i: 0, ...(readBefore.has(n.id) ? { reread: true } : {}) };
       b.log.push({ text: `${KIND_ZH[n.kind]}：它身上${n.kind === 'article' ? '带着一篇文章' : '贴着一张'}「${n.title}」。读懂它，答对上面的问题才打得中。`, tone: 'info' });
     }
   }
@@ -1191,6 +1197,26 @@ function dedefSentence(s: Pick<GameState, 'settings'>, q: Question, words: Word[
   return { ...q, prompt: q.prompt.replace('看中文', '看中文和释义'), defDe: defDe(first)!, defHint: hint, zhHidden: zhFocus };
 }
 
+/** The Chinese of a 句型填空 sentence with each de-tier word's gloss (where it can be found) as 〔definition〕, and the
+ *  words so masked (for the hint line). Null when the first word (the monster) hides its Chinese but its gloss is not
+ *  in the sentence: the Chinese would then give the answer away. */
+function dedefTwo(s: Pick<GameState, 'settings'>, zh: string, words: Word[]): { focus: string; words: Word[] } | null {
+  let focus = zh;
+  const masked: Word[] = [];
+  for (const [i, x] of words.entries()) {
+    const def = defDe(x);
+    if (!hidesZh(x, s.settings) || !def || x.digit) continue;
+    const m = maskZh(focus, x);
+    if (!m.includes('……') || m.startsWith('（')) {
+      if (i === 0) return null;
+      continue;
+    }
+    focus = m.replace('……', `〔${def}〕`);
+    masked.push(x);
+  }
+  return { focus, words: masked };
+}
+
 /** 句中默写 (练中学, rev 425): the word's slot blanked in one of its examples, the whole Chinese given, no letters.
  *  Nouns only from slots that carry the article (einen Tee), so the answer shows the article and case. */
 export function dictQ(w: Word, rng: Rng, level?: number): Question | null {
@@ -1521,7 +1547,12 @@ function makeQuestionRaw(s: GameState, b: Battle, move: Move, rng: Rng, skillId?
     }
     if (has(s.level, 'ultimate') && !b.ultUsed) {
       const two = twoBlank(w, rng, (x) => !!s.words[x.id]);
-      if (two) return { type: 'sentence', prompt: '终极技能 · 句型填空：两个空都填对 ×3，对一个 ×1.5', focus: two.zh, frame: two.frame, ult: two.blanks, answer: two.full };
+      // 德语释义 (review 1.0.12): a de-tier word's gloss in the Chinese reads 〔definition〕, the hint line gives its
+      // first letter and length, and the whole Chinese is a tap away, as in the other finishers. When the monster's
+      // own gloss cannot be found in the sentence the Chinese would hand over the answer: the next finisher instead.
+      const masked = two ? dedefTwo(s, two.zh, [w, two.mate]) : null;
+      if (two && masked)
+        return dedefSentence(s, { type: 'sentence', prompt: '终极技能 · 句型填空：两个空都填对 ×3，对一个 ×1.5', focus: masked.focus, frame: two.frame, ult: two.blanks, answer: two.full }, masked.words, two.zh);
     }
     if (fin && fin.pattern && UND.includes(fin.pattern) && has(s.level, 'und')) {
       const mate = mates.find((o) => o !== b && !o.outcome && !!o.word.art && o.word.id !== w.id && sentenceTags(o.word).includes(fin.pattern!));
