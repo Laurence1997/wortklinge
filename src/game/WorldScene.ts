@@ -496,7 +496,8 @@ export class WorldScene extends Phaser.Scene {
       }
       return true;
     });
-    if ((w.region ?? 1) !== this.map.region) return;
+    // 1.0.11 试玩: it stands where you died (a 挑战怪 word can come from another region); older saves: the word's region.
+    if ((e.region ?? w.region ?? 1) !== this.map.region) return;
     const z = zoneAt(e.x, e.y, this.map.region)?.id ?? w.zone;
     this.addMonster(w, 'new', z, e.x, e.y, { isEcho: true });
   }

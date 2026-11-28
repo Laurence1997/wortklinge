@@ -20,7 +20,11 @@ import { toast } from '../ui/feedback';
 import { needsVerify, stageOf } from '../core/srs';
 import { eligible, fieldCleared } from '../core/spawn';
 import { erodeOpen, purified } from '../core/erosion';
+import { challengeLevel } from '../core/challenge';
+import { fastTrackWord } from '../core/combat';
+import { isPlaced } from '../core/placement';
 import type { ZoneId } from '../core/types';
+import type { GameState } from '../core/state';
 import { WORD_BY_ID, fullForm } from '../data/words';
 import { AREAS, HOME_SCENE, SCENE_BY_ID, SCENES, neighbours, nearestScene, routeTo, scenesOf, type SceneDef } from '../data/world';
 import { h } from '../ui/dom';
@@ -28,6 +32,16 @@ import { sfx } from './audio';
 import { ZONES, TILE, type NpcId } from './map';
 import { ERODE_DEFS, REGION_DEF, REGION_DEFS, regionLevels } from '../data/zones';
 import type { MonsterEntity, WorldScene } from './WorldScene';
+
+/** A 挑战怪's battle level as startBattle sets it: a 快速通道 / 推定会 word stands at max(its level, yours), others at challengeLevel. */
+function tagLevel(s: GameState, m: MonsterEntity): number {
+  return fastTrackWord(s, m.word) || isPlaced(s.words[m.word.id]) ? Math.max(m.word.lvl, s.level) : challengeLevel(s.level);
+}
+
+/** The side panel's tag after a monster's name (1.0.11 试玩: a 挑战怪 says so, with its level, as on the map). */
+export function monsterTag(s: GameState, m: MonsterEntity): string {
+  return m.isEcho ? '回响' : m.elite ? '◈ 精英' : m.phrase ? '残句' : m.rare ? '◆ 稀有' : m.challenge ? `▲ 挑战 Lv ${tagLevel(s, m)}` : !m.phrase && !m.isEcho && needsVerify(s, m.word) ? '待验证' : m.kind === 'due' ? '! 复习' : m.kind === 'shadow' ? '旧识' : '新';
+}
 
 const NPC_ZH: Record<NpcId, string> = { hilde: '守火人 Hilde', greta: '导师 Greta', mira: '商人 Mira', konrad: '面包师傅 Konrad', examiner: '考官', brandt: '站长 Herr Brandt', lina: 'Lina', weber: '秩序会 Frau Weber' };
 const GATE_ZH: Record<number, string> = { 1: '穿过门回余烬营地', 2: '过桥回面包集市', 3: '过铁路桥去铁轨镇', ...Object.fromEntries(REGION_DEFS.map((d) => [d.region, `去${d.zh}`])) };
@@ -322,7 +336,7 @@ export class NodeNav {
     const busy = this.hopping || this.w.ctrl.uiBlocking();
     const zone = sc.zone ? ZONES.find((z) => z.id === sc.zone) : null;
     const mons = this.monstersIn(sc);
-    const tag = (m: MonsterEntity) => (m.isEcho ? '回响' : m.elite ? '◈ 精英' : m.phrase ? '残句' : m.rare ? '◆ 稀有' : !m.phrase && !m.isEcho && needsVerify(this.s, m.word) ? '待验证' : m.kind === 'due' ? '! 复习' : m.kind === 'shadow' ? '旧识' : '新');
+    const tag = (m: MonsterEntity) => monsterTag(this.s, m);
     const ia = (kind: string, data?: string) => () => {
       if (!this.w.ctrl.uiBlocking()) this.w.ctrl.interact({ kind, data });
     };
