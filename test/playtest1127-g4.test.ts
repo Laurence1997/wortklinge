@@ -52,7 +52,7 @@ function rtFight() {
   return { ui, u, tick, clock, run };
 }
 
-describe('试玩 15: the real-time cast waits while you read, see feedback, or look away', () => {
+describe('试玩 15: the real-time cast waits while you read a passage, a panel is open, or you look away', () => {
   it('longRead: articles, notices and listening passages; not a plain question', () => {
     expect(battleMod.longRead(article)).toBe(true);
     expect(battleMod.longRead(listen)).toBe(true);
@@ -84,14 +84,20 @@ describe('试玩 15: the real-time cast waits while you read, see feedback, or l
     expect(f.tick).toHaveBeenCalled();
   });
 
-  it('listening passage and the result page hold the cast', () => {
+  it('a listening passage holds the cast', () => {
     const f = rtFight();
     f.ui.phase = 'answer';
     f.ui.question = listen;
     f.run(20_000);
-    f.ui.phase = 'result';
-    f.run(20_000);
     expect(f.tick).not.toHaveBeenCalled();
+  });
+
+  it('the feedback after an answer (global cooldown / stagger) is not held: that time is the cost', () => {
+    const f = rtFight();
+    f.ui.phase = 'result';
+    f.ui.question = article;
+    f.run(5200);
+    expect(f.tick).toHaveBeenCalled();
   });
 
   it('an open panel or a hidden tab holds the cast', () => {

@@ -410,7 +410,7 @@ export class BattleUI {
     window.clearTimeout(this.autoTimer);
     if (this.rtOn) {
       // 即时战: an interrupted cast restarts with its next move; the next question comes after the global cooldown
-      // (a wrong choice answer staggers you longer). The cast waits while the feedback shows (1.0.11 试玩 15).
+      // (a wrong choice answer staggers you longer). Time keeps running meanwhile: the cooldown is the cost.
       if (this.b && this.b.intent !== intentBefore) this.startCast();
       this.autoTimer = window.setTimeout(() => this.continue(), this.ctrl.fightOver() ? 1600 : gcdMs(this.ctrl.state, this.question, this.report.correct));
       return;
@@ -559,10 +559,10 @@ export class BattleUI {
     return Math.max(0, this.castStart + this.castLen - performance.now());
   }
 
-  /** 1.0.11 试玩 15: the cast waits while a long text or a listening passage is answered, while the feedback shows,
-   *  while a dialog or panel is open and while the tab is hidden. */
+  /** 1.0.11 试玩 15: the cast waits while a long text or a listening passage is answered, while a dialog or panel is
+   *  open and while the tab is hidden. The feedback after an answer is not held: in 即时战 it lasts exactly the global
+   *  cooldown / the 2 s stagger of a wrong choice (REALTIME.gcd / stagger), and that time is meant to cost. */
   private castHeld(): boolean {
-    if (this.phase === 'result') return true;
     if (this.phase === 'answer' && longRead(this.question)) return true;
     if (dialogOpen()) return true;
     if (typeof document === 'undefined') return false;
