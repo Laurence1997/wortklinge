@@ -2,7 +2,7 @@
 // Lv1–5 pick from three, Lv6–10 type the dictionary form, Lv11+ type the form the sentence needs
 // (den Tee, zwei Äpfel, nimmst). Only the blank is graded.
 
-import { normalize } from './grading';
+import { levenshtein, normalize } from './grading';
 import { pick, shuffle, type Rng } from './rng';
 import type { Word } from './types';
 import { EX1 } from '../data/examples1';
@@ -353,6 +353,12 @@ export function clozeWhy(answer: string, w: Word, input: string): string[] {
   if (w.pos !== 'n' || !g || !rest.length || !base || key(rest.join(' ')) !== key(w.de)) return [];
   const c = caseOf(g, base);
   if (!c) return []; // e.g. a plural form (die Äpfel) of a masculine noun: no gender rule to give
+  // 试玩 #46: the right article and the noun only a letter or two off is a spelling slip, not a case mistake.
+  const [idet0, ...irest0] = input.trim().split(/\s+/);
+  const inoun = irest0.join(' ');
+  if (idet0 && inoun && key(idet0) === key(det) && key(inoun) !== key(w.de) && levenshtein(key(inoun), key(w.de)) <= (w.de.length >= 6 ? 2 : 1)) {
+    return [`冠词和格都对，只是拼写错了：${w.de}（你写的是 ${inoun}）。`];
+  }
   const rule =
     c === 'acc'
       ? '这里是动词的直接宾语，用第四格：阳性 der → den，ein → einen；阴性、中性不变。'

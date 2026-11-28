@@ -11,6 +11,9 @@ import { shuffle, type Rng } from '../rng';
 import type { Word } from '../types';
 import type { GramSys, GramTask } from './task';
 import { WORDS } from '../../data/words';
+import { PREP_VERBS } from '../../data/grammar/prepVerbs';
+import { CONJ } from '../../data/verbs';
+import { PERFEKT } from '../../data/perfekt';
 
 interface Line {
   de: string;
@@ -106,6 +109,61 @@ const pickOne = (rng: Rng, xs: GramTask[]): GramTask | null => {
 
 // ---- 32 双向介词 wo / wohin, woher, 位置动词 -----------------------------------------------------------------
 
+// 试玩 #90: a two-way preposition that a verb takes as its fixed partner (sich halten an, denken an, warten auf) asks
+// no Wo? / Wohin?: its case belongs to the verb. Per preposition, the verb forms that pair with it (with a separable
+// particle: the stem form and the particle as two words, «nehme … teil»).
+// Verbs that just as often stand with a real place (hängt an der Wand, arbeitet an der Schule, auf dem Platz ankommen).
+const SPATIAL_TOO = new Set(['hängen', 'arbeiten', 'bestehen', 'ankommen', 'verlieren', 'teilen', 'eintragen', 'eintreten', 'beißen', 'geraten', 'pfeifen', 'halten']);
+const REFL = new Set(['mich', 'dich', 'sich', 'uns', 'euch']);
+const PARTICLES = ['vorbei', 'zurück', 'heraus', 'teil', 'fest', 'nach', 'auf', 'aus', 'ein', 'mit', 'an', 'ab', 'zu', 'weg', 'her', 'hin', 'vor', 'um'];
+let pairedVerbs: Map<string, Array<{ ws: string[]; kasus: string }>> | null = null;
+function prepPartners(prep: string): Array<{ ws: string[]; kasus: string }> {
+  if (!pairedVerbs) {
+    pairedVerbs = new Map();
+    for (const v of PREP_VERBS) {
+      if (!v.fixed) continue;
+      const ws = v.combo.replace(/\+.*$/, '').replace(/\b(sich|jdn\.|jdm\.|etw\.)(\/\S+)?/g, '').trim().split(/\s+/).filter((x) => x !== v.prep);
+      // «es liegt an», «es fehlt an»: only together with es (das Buch liegt an der Wand is a place).
+      const withEs = ws[0] === 'es';
+      const lemma = withEs ? ws[1] : ws[0];
+      if (!lemma || !/^[a-zäöüß]{3,}$/.test(lemma) || (SPATIAL_TOO.has(lemma) && !v.reflexive)) continue;
+      const c = CONJ[lemma];
+      const part = PARTICLES.find((x) => lemma.startsWith(x) && lemma.length > x.length + 2);
+      const base = part ? lemma.slice(part.length) : '';
+      // Separable: CONJ writes «nehme teil» (or, for some, «teilnehme»); the base verb's forms give the split ones.
+      const sepC = !!c && c.forms.ich.includes(' ');
+      const baseC = part ? CONJ[base] : undefined;
+      const list = pairedVerbs.get(v.prep) ?? [];
+      // A reflexive pairing only counts with its pronoun (sich halten an ≠ an der Kasse halten).
+      const es = withEs ? ['es'] : v.reflexive ? ['@refl'] : [];
+      const add = (ws: string[]) => list.push({ ws: [...ws.map((x) => x.toLowerCase()), ...es], kasus: v.kasus });
+      if (part && (sepC || baseC)) {
+        const pp = PERFEKT[lemma]?.pp ?? (PERFEKT[base] ? part + PERFEKT[base].pp : undefined);
+        for (const f of [lemma, `${part}zu${base}`, ...(pp ? [pp] : [])]) add([f]);
+        const bforms = new Set<string>([base, base.replace(/e?n$/, ''), ...Object.values((sepC ? c : baseC)!.forms).map((f) => f.split(' ')[0])]);
+        // aufpassen auf: the particle is the preposition itself, so the split form needs it twice (Pass auf die Straße auf).
+        for (const f of bforms) add([f, part === v.prep ? `${part}#2` : part]), add([part + f]);
+      } else {
+        const forms = new Set<string>([lemma, lemma.replace(/e?n$/, ''), ...(c ? Object.values(c.forms) : []), ...(PERFEKT[lemma] ? [PERFEKT[lemma].pp] : [])]);
+        for (const f of forms) {
+          add([f]);
+          if (part && !c && f.startsWith(part) && f.length > part.length + 1) add([f.slice(part.length), part]);
+        }
+      }
+      pairedVerbs.set(v.prep, list);
+    }
+  }
+  return pairedVerbs.get(prep) ?? [];
+}
+function prepObjectVerb(prep: string, art: string, de: string): boolean {
+  const all = de.toLowerCase().split(/[^a-zäöüß]+/).filter(Boolean);
+  const toks = new Set(all);
+  const has = (x: string) => (x.endsWith('#2') ? all.filter((t) => t === x.slice(0, -2)).length >= 2 : toks.has(x));
+  // The article must fit the pairing's case (ich warte auf dem Bahnsteig is a place, warten auf takes Akk.).
+  const fits = (k: string) => (k === 'A' ? ['den', 'die', 'das', 'einen', 'eine', 'ein'] : k === 'D' ? ['dem', 'den', 'der', 'einem', 'einer'] : [art]).includes(art.toLowerCase());
+  return prepPartners(prep.toLowerCase()).some(({ ws, kasus }) => fits(kasus) && ws.every((x) => (x === '@refl' ? [...REFL].some((r) => toks.has(r)) : has(x))));
+}
+
 const TWOWAY: Spec = {
   sys: 'twoway',
   re: /\b(in|an|auf|über|unter|vor|hinter|neben|zwischen) (dem|den|der|die|das|einem|einen|einer|eine|ein)\b (?=[A-ZÄÖÜ])/,
@@ -113,7 +171,7 @@ const TWOWAY: Spec = {
   prompt: '双向介词：填冠词（Wo? 第三格 / Wohin? 第四格）',
   rule: '双向介词（in, an, auf, über, unter, vor, hinter, neben, zwischen）：在哪里（Wo?）用第三格，去哪里、放到哪里（Wohin?）用第四格。',
   // vor + time (vor einem Jahr) and fixed phrases are not places.
-  skip: (m, de) => m[1] === 'vor' && /\b(Jahr|Jahren|Monat|Monaten|Woche|Wochen|Tag|Tagen|Stunde|Stunden|Minute|Minuten)\b/.test(de.slice(m.index)),
+  skip: (m, de) => (m[1] === 'vor' && /\b(Jahr|Jahren|Monat|Monaten|Woche|Wochen|Tag|Tagen|Stunde|Stunden|Minute|Minuten)\b/.test(de.slice(m.index))) || prepObjectVerb(m[1], m[2], de),
 };
 
 const PLACES = 'Arzt|Ärztin|Zahnarzt|Bäcker|Metzger|Friseur|Amt|Bahnhof|Supermarkt|Markt|Post|Bank|Apotheke|Flughafen|Rathaus|Kino|Training|Arbeit|Schule|Uni|Universität|Haltestelle|Kiosk|Hausarzt|Notarzt|Notaufnahme|Bürgeramt|Jobcenter|Ausländerbehörde|Konsulat|Fitnessstudio|Schwimmbad|Strand|Sport|Kurs|Unterricht|Kindergarten|Kita|Krankenhaus|Termin';

@@ -35,15 +35,18 @@ export function datPlural(pl: string): string {
   return /[ns]$/.test(pl) ? pl : `${pl}n`;
 }
 
-function examplePhrase(w: Word): StormForm | null {
+function examplePhrases(w: Word): StormForm[] {
+  const out: StormForm[] = [];
   for (const line of EXAMPLES[w.id] ?? []) {
     const p = parse(line);
     if (!p) continue;
     if (normalize(p.blank) === normalize(w.de)) continue;
-    return { label: `例句里的说法：${`${p.before}___${p.after}`.replace(/\s+/g, ' ').trim()}`, answer: p.blank };
+    out.push({ label: `例句里的说法：${`${p.before}___${p.after}`.replace(/\s+/g, ' ').trim()}`, answer: p.blank });
   }
-  return null;
+  return out;
 }
+
+const KEIN_ACC: Record<'m' | 'f' | 'n' | 'pl', string> = { m: 'keinen', f: 'keine', n: 'kein', pl: 'keine' };
 
 /** The forms the chain asks, in order, for this player's level (2 before Lv21, 3 from Lv21). */
 export function stormForms(level: number, w: Word, conjOpen: boolean): StormForm[] {
@@ -71,13 +74,18 @@ export function stormForms(level: number, w: Word, conjOpen: boolean): StormForm
   } else {
     out.push({ label: w.pos === 'adj' ? '原形' : '这个说法', answer: w.de });
   }
-  if (out.length < want) {
-    const ph = examplePhrase(w);
-    if (ph && !out.some((f) => normalize(f.answer) === normalize(ph.answer))) out.push(ph);
-  }
-  // Drop repeats (der Kuchen → die Kuchen is fine, but «die Eltern» twice is not).
+  // Drop repeats first (der Kuchen → die Kuchen is fine, but «die Eltern» or «das Wasser» twice is not), then top up
+  // (试玩 #57: das Wasser has no plural and its accusative is the dictionary form, so it ended with one box).
   const seen = new Set<string>();
-  return out.filter((f) => (seen.has(normalize(f.answer)) ? false : (seen.add(normalize(f.answer)), true))).slice(0, want);
+  const res: StormForm[] = [];
+  const add = (f: StormForm) => {
+    if (res.length < want && !seen.has(normalize(f.answer))) seen.add(normalize(f.answer)), res.push(f);
+  };
+  out.forEach(add);
+  examplePhrases(w).forEach(add);
+  // Nouns: the negation with kein (open since Lv5) fits any noun, countable or not.
+  if (w.art) add({ label: 'Ich habe ___（否定：没有，用 kein）', answer: `${KEIN_ACC[(genderOf(w) ?? 'n') as 'm' | 'f' | 'n' | 'pl']} ${w.de}` });
+  return res;
 }
 
 /** How many forms were right before the first wrong one. Input = the boxes joined with |. */
