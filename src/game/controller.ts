@@ -70,7 +70,7 @@ import { BOSS3 } from '../data/boss3';
 import { LATER_BOSS, laterBossGold, laterBossXp } from '../data/bossesLater';
 import { ERODE_DEF, ERODE_DEFS, REGION_DEF } from '../data/zones';
 import { erodeOpen } from '../core/erosion';
-import { levelCapFor, nextStage, STAGE_DEF, stagePassFlag, stagePassed, trialDue, type Stage } from '../core/stages';
+import { capAdvice, examinerTrial, levelCapFor, STAGE_DEF, stagePassFlag, stagePassed, type Stage } from '../core/stages';
 import { LINA } from '../data/lina';
 import { WEBER, WEBER_POOL, usesDu } from '../data/weber';
 import { answerExam, BREAK, BREAK_EARLY, examPassed, PART_ZH, startExam, startGrammarExam, type Exam } from '../core/breakthrough';
@@ -1234,10 +1234,12 @@ export class Controller {
         this.dailyTick(m.zone, false);
         for (const lv of res.levelUp.levels) this.onLevelUp(lv);
         if (res.levelUp.mastery) banner('言灵精通', `+${res.levelUp.mastery} 点（在「技能与天赋」里加）`);
-        if (res.levelUp.capped && !s.flags.taughtCapLevel) {
-          s.flags.taughtCapLevel = true;
-          const st = trialDue(s.level, s.flags);
-          say([{ who: SYS, text: `【等级上限 ${levelCapFor(s.flags)}】经验先存着（最多存一级）。${st ? `去主城找考官考 ${st} 突破试炼，过了才能继续升级。` : ''}归名和装备照样涨` }]);
+        // 1.0.11 试玩: once per cap (30 keeps the old flag), so 80 / 120 / 160 say it too.
+        const capKey = levelCapFor(s.flags) <= 30 ? 'taughtCapLevel' : `taughtCap${levelCapFor(s.flags)}`;
+        if (res.levelUp.capped && !s.flags[capKey]) {
+          s.flags[capKey] = true;
+          const adv = capAdvice(s.level, s.flags);
+          say([{ who: SYS, text: `【等级上限 ${levelCapFor(s.flags)}】经验先存着（最多存一级）。${adv ? `${adv}，过了才能继续升级。` : ''}归名和装备照样涨` }]);
         }
       }
     }
@@ -1864,9 +1866,12 @@ export class Controller {
   private talkExaminer() {
     const s = this.state;
     const region = s.region ?? 1;
+    // 1.0.11 试玩: the A2 / B1 / B2 trial sits in both menus (it was only in the under-Lv2 one, so Lv80/120/160 got stuck).
+    const trial = examinerTrial(s.level, s.flags);
+    const atCap = capAdvice(s.level, s.flags);
     if (s.level < SCREEN.fromLevel)
       return say([{ who: '考官', text: `「Noch nicht.」筛选 ${SCREEN.fromLevel} 级再来。不过你要是以前学过德语，可以先考分级考核。` }], undefined, [
-        ...(nextStage(s.flags) && nextStage(s.flags) !== 'A1' ? [{ label: `${nextStage(s.flags)} 突破试炼${s.level < STAGE_DEF[nextStage(s.flags)!].cap ? '（提前考）' : ''}`, act: () => this.stageExam(nextStage(s.flags)!) }] : []),
+        ...(trial ? [{ label: trial.label, act: () => this.stageExam(trial.stage) }] : []),
         ...(canPlaceAgain(s) ? [{ label: '分级考核（测你会到哪一级）', act: () => this.openPlacement(true) }] : [{ label: `分级考核（再归名或斩杀 ${placeAgainIn(s)} 个词就能再考）`, act: () => {} }]),
         { label: '先不了', act: () => {} },
       ]);
@@ -1884,8 +1889,10 @@ export class Controller {
         ? { who: '考官', text: '「Was kannst du schon?」你会的词先写给我，就不用在野外再打一遍。' }
         : { who: '考官', text: '「Weiter?」接着写你会的词。' },
       ...(intro ? [{ who: SYS, text: '【全量筛选】只给中文，名词连冠词写。写对的词直接斩杀，经验存在它住的场景，走到那里就领。不会就跳过，什么都不扣。' }] : []),
+      ...(atCap ? [{ who: SYS, text: `【等级上限 ${levelCapFor(s.flags)}】你到上限了，经验先存着（最多存一级）。${atCap.replace('去主城找考官', '在这里')}，过了就接着升级。` }] : []),
     ], undefined, [
       ...scopes.map((x) => ({ label: x.label, act: () => (this.milestone('screen'), this.panels.showScreen(startScreen(s, x.scope))) })),
+      ...(trial ? [{ label: trial.label, act: () => this.stageExam(trial.stage) }] : []),
       ...((s.level >= BREAK.from || BREAK_EARLY) && !s.flags.a1Passed ? [{ label: s.level >= BREAK.from ? 'A1 突破试炼' : 'A1 突破试炼（提前考）', act: () => this.breakExam() }] : []),
       ...((s.level >= BREAK.from || BREAK_EARLY) && s.flags.a1Passed && !s.flags.a1Grammar ? [{ label: '补考语法', act: () => this.grammarRetake() }] : []),
       ...(canPlaceAgain(s) ? [{ label: '分级考核（测你会到哪一级）', act: () => this.openPlacement(true) }] : [{ label: `分级考核（再归名或斩杀 ${placeAgainIn(s)} 个词就能再考）`, act: () => {} }]),

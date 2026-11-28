@@ -1,5 +1,5 @@
 import { xpToNext } from '../core/config';
-import { levelCapFor } from '../core/stages';
+import { capAdvice, levelCapFor } from '../core/stages';
 import { comboTier } from '../core/combat';
 import { progressSummary } from '../core/srs';
 import { maxHp, type GameState } from '../core/state';
@@ -16,12 +16,14 @@ export function renderHud(s: GameState): void {
   const zone = zoneAt(s.pos.x, s.pos.y, s.region ?? 1);
   const tier = comboTier(s.combo);
   const capped = s.level >= levelCapFor(s.flags) && s.xp >= xpToNext(s.level);
+  // 1.0.11 试玩: at 30 / 80 / 120 / 160 the bar says which trial opens the cap.
+  const capTip = capped ? capAdvice(s.level, s.flags) : null;
   clear(el).append(
     h('div.name', heroIcon(s.look ?? DEFAULT_LOOK, 2), h('span.nm', s.name), h('span', `Lv ${s.level}`)),
     // 状态框 (Lucas 11-26: 血条里的数字看不清): taller bars, white numbers with a dark edge, label left and
     // numbers right; the counters sit in a 3-column grid with the number above its name.
     bar('hp', s.hp, maxHp(s), '生命', `${s.hp} / ${maxHp(s)}`),
-    bar('xp', s.xp, xpToNext(s.level), capped ? '经验已满：等级到当前上限' : '经验', capped ? '' : `${s.xp} / ${xpToNext(s.level)}`),
+    bar('xp', s.xp, xpToNext(s.level), capped ? (capTip ? `经验已满：${capTip.replace('去主城', '')}` : '经验已满：等级到当前上限') : '经验', capped ? '' : `${s.xp} / ${xpToNext(s.level)}`),
     h(
       'div.hud-stats',
       h('div', h('b.gold', String(s.gold)), h('span', '金币')),
