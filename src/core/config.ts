@@ -55,6 +55,9 @@ export const CONFIG = {
   levelMinutes: [67, 49, 40, 38, 60],
   /** 0.3 提速 (curve 2): Lv1–5 need ×0.7 (was 0.25: sim put Lv5 at ~5 min), Lv6–10 ×0.4 of the base curve; Lv11+ unchanged. */
   earlyXpMult: (level: number) => (level <= 5 ? 0.7 : level <= 10 ? 0.4 : 1),
+  /** 1.0.12 (Lucas 2026-11-28「按推荐」): 121–160 级 asked about 108 XP per new B2 word against 87 at 81–120, and every
+   *  B2 fight starts with an article. ×0.8 brings the XP per word back in line with 81–120. 161–200 is looked at apart. */
+  b2XpMult: (level: number) => (level >= 121 && level <= 160 ? 0.8 : 1),
   xpPerHour: 1000,
   /** Highest level of the released content (121–200 级 regions 13–20, rev 488). Below it, the cap is the end of the
    *  first 突破试炼 stage not passed yet (src/core/stages.ts: 30 / 80 / 120 / 160). */
@@ -231,7 +234,7 @@ export function levelHours(level: number): number {
 /** XP needed to go from `level` to `level + 1`. */
 export const XP_CURVE = 2;
 export function xpToNext(level: number, curve = XP_CURVE): number {
-  return Math.round(levelHours(level) * CONFIG.xpPerHour * (curve >= 2 ? CONFIG.earlyXpMult(level) : 1));
+  return Math.round(levelHours(level) * CONFIG.xpPerHour * (curve >= 2 ? CONFIG.earlyXpMult(level) : 1) * CONFIG.b2XpMult(level));
 }
 
 /** Level-gap decay: monsters far below you give almost nothing. */
