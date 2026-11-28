@@ -546,6 +546,8 @@ def main():
         # German inside the Chinese ('拉；搬家（umziehen）', '美国（die USA）') would give the answer away.
         zh = re.sub(r'[（(][^）)]*[A-Za-zÄÖÜäöüß][^）)]*[）)]', '', r['中文']).strip() or r['中文'].strip()
         w = {'de': de, 'zh': zh, 'rank': int(rank), 'order': {'先': 1, '中': 2, '后': 3}.get(r['先后'], 2)}
+        if r.get('德语释义', '').strip():
+            w['defDe'] = r['德语释义'].strip()  # 游戏设计 七「前期中文、后期德德」: shown instead of zh (zh hidden, tap to open)
         # 怪物美术: the monster's kind (类别) and, where the art packs have the very thing, its own look (专属造型).
         w['cat'] = {'食物': 'food', '物品': 'item', '动物': 'animal', '人物': 'person', '地点': 'place'}.get(r.get('类别', '').strip(), '')
         look = re.match(r'(farm|town|dungeon|battle)#(\d+)', r.get('专属造型', '').strip())
@@ -911,6 +913,10 @@ def main():
     out.append('')
     out.append('/** Grammar words (taught by grammar play, not as monsters): [de, 词性, 中文]. */')
     out.append('export const LEX_GRAMMAR: Array<[string, string, string]> = ' + json.dumps([[g['原形'], g['词性'], g['中文']] for g in grammar], ensure_ascii=False) + ';')
+    # 德语释义 (Lucas 2026-11-28 选 1, ranks 6001–8000 first): word id → one-line German definition. Where a word has one, the
+    # name plate, card, teaching item and write prompt show it; the Chinese stays hidden until tapped or after a wrong answer.
+    out.append('/** 德语释义: word id → German definition (游戏设计 七「前期中文、后期德德」). */')
+    out.append('export const LEX_DEF_DE: Record<string, string> = ' + json.dumps({w['id']: w['defDe'] for w in words if w.get('defDe')}, ensure_ascii=False, separators=(',', ':')) + ';')
     # 词族秘境 (游戏设计 四): 同根 / 近义 / 形近 from relations.tsv (word-list thread), as in-game word ids.
     rel_path = DATA / 'relations.tsv'
     rel = {}
