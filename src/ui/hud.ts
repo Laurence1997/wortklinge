@@ -9,10 +9,37 @@ import { $, bar, clear, h } from './dom';
 import { heroIcon } from './icons';
 import { DEFAULT_LOOK } from '../core/look';
 
+/** 1.0.12 (Lucas 11-28): the status box folds to name + 生命 + 经验, so it covers less of the map's top-left corner.
+ *  Remembered per browser (localStorage, never in the save); blocked storage just starts it open. */
+const HUD_MIN_KEY = 'wortklinge.hudMin';
+let hudMin: boolean | null = null;
+let lastArgs: [GameState, string | undefined] | null = null;
+function readHudMin(): boolean {
+  if (hudMin === null) {
+    try {
+      hudMin = localStorage.getItem(HUD_MIN_KEY) === '1';
+    } catch {
+      hudMin = false;
+    }
+  }
+  return hudMin;
+}
+function toggleHudMin(): void {
+  hudMin = !readHudMin();
+  try {
+    localStorage.setItem(HUD_MIN_KEY, hudMin ? '1' : '0');
+  } catch {
+    /* private window: only this page remembers */
+  }
+  if (lastArgs) renderHud(...lastArgs);
+}
+
 /** place: on the scene map, the scene you stand in (1.0.12 试玩 #101); otherwise the street map's zone. */
 export function renderHud(s: GameState, place?: string): void {
   const el = $('hud');
-  el.className = 'panel';
+  lastArgs = [s, place];
+  const min = readHudMin();
+  el.className = min ? 'panel min' : 'panel';
   const p = progressSummary(s, WORDS);
   const zone = zoneAt(s.pos.x, s.pos.y, s.region ?? 1);
   const tier = comboTier(s.combo);
@@ -20,7 +47,13 @@ export function renderHud(s: GameState, place?: string): void {
   // 1.0.11 试玩: at 30 / 80 / 120 / 160 the bar says which trial opens the cap.
   const capTip = capped ? capAdvice(s.level, s.flags) : null;
   clear(el).append(
-    h('div.name', heroIcon(s.look ?? DEFAULT_LOOK, 2), h('span.nm', s.name), h('span', `Lv ${s.level}`)),
+    h(
+      'div.name',
+      heroIcon(s.look ?? DEFAULT_LOOK, 2),
+      h('span.nm', s.name),
+      h('span', `Lv ${s.level}`),
+      h('button.hud-min', { onclick: toggleHudMin, title: min ? '展开状态框' : '收起状态框（只留生命和经验）' }, min ? '+' : '–'),
+    ),
     // 状态框 (Lucas 11-26: 血条里的数字看不清): taller bars, white numbers with a dark edge, label left and
     // numbers right; the counters sit in a 3-column grid with the number above its name.
     bar('hp', s.hp, maxHp(s), '生命', `${s.hp} / ${maxHp(s)}`),

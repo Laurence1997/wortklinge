@@ -699,7 +699,8 @@ body.bright .wm-segs span { color: #8a1424; }
 .b-me .hud-row { flex-wrap: wrap; }
 #hud .name { align-items: center; gap: 8px; }
 #hud .name canvas.hero-icon { width: 54px; height: 32px; image-rendering: pixelated; flex: none; }
-#hud .name .nm { flex: 1; }
+#hud .name > span { white-space: nowrap; }
+#hud .name .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 
 /* 1.0.10 (Lucas: 中文字体很不清晰): readable small Chinese on the bright maps. Disabled buttons stay legible (no fading
    to 35%), a not-yet-named plate is dark ink instead of cream on white, and no glow blurs the plate. */
@@ -826,3 +827,12 @@ svg.gm-path { display: block; width: 100%; height: auto; max-height: 420px; }
 /* 1.0.12 试玩 #77: 蚀变 level bands on the big map */
 .wm-seg-name { font-size: 12px; }
 .wm-seg.locked .wm-name, .wm-seg.locked .wm-lv { fill: #f4f1ec; }
+
+/* 1.0.12 (Lucas 11-28): foldable status box */
+#hud .hud-min { margin: -2px -4px 0 8px; min-width: 22px; height: 20px; padding: 0 5px; font: 13px/18px var(--mono); color: var(--muted); background: transparent; border: 1px solid var(--line); border-radius: 3px; cursor: pointer; align-self: center; }
+#hud .hud-min:hover { color: var(--ink); border-color: var(--line-hi); }
+#hud .name > span { white-space: nowrap; }
+#hud .name .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+#hud.min { width: 240px; padding: 6px 10px; }
+#hud.min .hud-stats, #hud.min .hud-zone { display: none; }
+#hud.min .bar.xp, #hud.min .bar.hp { margin-top: 5px; }
