@@ -14,6 +14,7 @@ import { rollItemDrops, type Consumable } from './items';
 import { CONJ } from '../data/verbs';
 import { CHEST_RATE, type ChestKind } from './chest';
 import { noticeById } from './gram/notice';
+import { c1ArticleAllRight } from './c1';
 
 export interface WinResult {
   xp: number;
@@ -67,6 +68,16 @@ export function applyWin(s: GameState, b: Battle, rng: Rng, opts: { heal?: boole
   if (!b.tutorial && !b.trial && !b.phrase && !b.isEcho) noteFirstTry(s, b.firstTry);
 
   let xp = b.kind === 'new' ? CONFIG.xp.newMonster : b.kind === 'due' ? CONFIG.xp.dueMonster : CONFIG.xp.shadowMonster;
+  // C1 fields (161+, Lucas 2026-11-28「按推荐」): a known word there pays at least the due rate, even as a shadow
+  // (the kill still records as a shadow: no step on the ladder). src/core/c1.ts.
+  if (b.c1 && b.kind !== 'new') xp = Math.max(xp, CONFIG.xp.dueMonster);
+  // C1 文章: an unread C1 article answered all right pays as a new word ×1.75 (the 挑战怪 rate), once per article.
+  const c1Art = !b.tutorial && !b.trial && !b.phrase && !b.isEcho && c1ArticleAllRight(s, b);
+  if (c1Art) {
+    xp = CONFIG.xp.newMonster;
+    (s.articlesDone ??= {})[b.notice!.id] = t;
+    b.c1Article = true;
+  }
   // 2026-11-24: only 复习怪 pay the review bonus; a learning respawn (认 → 用 → 写, minutes later) pays as due.
   // 审查修订: 复习怪 pay like normal monsters (the bonus moved to context reviews answered on time); 越久越肥 only
   // adds HP, not reward.
@@ -82,7 +93,7 @@ export function applyWin(s: GameState, b: Battle, rng: Rng, opts: { heal?: boole
   if (b.cursed) xp *= CONFIG.curse.xpMult;
   // 场景精英: each part pays what its word pays as a normal monster, ×1.2.
   if (b.elite) xp *= CONFIG.elite.rewardMult;
-  if (b.challenge) xp *= CHALLENGE_CFG.xpMult;
+  if (b.challenge || c1Art) xp *= CHALLENGE_CFG.xpMult;
   // 审查修订 C7: a pack member pays ×0.7 of a lone monster (less HP each, and 齐鸣 hits two).
   if (opts.pack && !b.elite) xp *= CONFIG.pack.xpMult;
   xp *= quickFightXp(s, b); // 天赋「一气呵成」

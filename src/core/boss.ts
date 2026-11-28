@@ -6,7 +6,7 @@ import { LINA_NAME_Q, linaQuestions } from '../data/lina';
 import { usesDu, weberQuestions } from '../data/weber';
 import { identifyQuestion } from './identify';
 import { boss3Questions, makeBoard, refreshTimeQuestion, type Board } from '../data/boss3';
-import { CONFIG } from './config';
+import { CONFIG, levelGapMult } from './config';
 import { LATER_BOSS } from '../data/bossesLater';
 import { normalize } from './grading';
 import { pick, shuffle, type Rng } from './rng';
@@ -122,10 +122,20 @@ export function noRepeat(queue: BossQuestion[], lastId: string): BossQuestion[] 
 }
 
 /** 1.0.12 试玩 20: a boss pays its full XP and gold on the first kill and on the first kill of each day; a replay the
- *  same day pays half (about what the same minutes in the field pay), never nothing. `dayN` counts today's kills. */
+ *  same day pays half (about what the same minutes in the field pay), never nothing. `dayN` counts today's kills.
+ *  Lucas 2026-11-28「按推荐」: a replay (any kill after the very first) of a boss more than BOSS_REPLAY_GAP levels below
+ *  you also takes the field's level-gap share (levelGapMult: ×0.2 at 11–20 below, nothing past 20), XP and gold alike,
+ *  still never under 10 — a Lv180 player re-fighting bosses 1–19 each day got ~26k XP in ~2 h. First kills unchanged. */
 export const BOSS_REPLAY_SHARE = 0.5;
-export function bossPay(base: number, first: boolean, dayN: number): number {
-  return first || dayN <= 1 ? base : Math.max(10, Math.round((base * BOSS_REPLAY_SHARE) / 10) * 10);
+export const BOSS_REPLAY_GAP = 10;
+/** Levels of the region 1–3 bosses (无名的邻居 at CONFIG.boss.minLevel, 吞秤者 Lv18, 晚点之王 Lv28); 4–20 in LATER_BOSS. */
+export const EARLY_BOSS_LEVEL = { 1: 8, 2: 18, 3: 28 } as const;
+export function bossPay(base: number, first: boolean, dayN: number, playerLevel?: number, bossLevel?: number): number {
+  const share = first || dayN <= 1 ? 1 : BOSS_REPLAY_SHARE;
+  const far = !first && playerLevel !== undefined && bossLevel !== undefined && playerLevel - bossLevel > BOSS_REPLAY_GAP;
+  const gap = far ? levelGapMult(playerLevel, bossLevel) : 1;
+  if (share === 1 && gap === 1) return base;
+  return Math.max(10, Math.round((base * share * gap) / 10) * 10);
 }
 
 export interface BossVerdict {

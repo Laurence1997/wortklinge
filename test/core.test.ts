@@ -1798,3 +1798,12 @@ describe('副词缀白名单 and 誊写 (2026-11-24)', () => {
     expect(b.monster.broken).toBe(CONFIG.armor.breakHits + 1); // 5 − the hit itself
   });
 });
+
+describe('1.0.12 B2 pace', () => {
+  it('121–200 need ×0.8 of the base curve (161–200: Lucas 2026-11-28「按推荐」); 120 unchanged', () => {
+    expect(xpToNext(121)).toBe(Math.round(1.25 * Math.pow(121, 0.3) * 1000 * 0.8));
+    expect(xpToNext(160)).toBe(Math.round(1.25 * Math.pow(160, 0.3) * 1000 * 0.8));
+    expect(xpToNext(120)).toBe(Math.round(1.25 * Math.pow(120, 0.3) * 1000));
+    expect(xpToNext(161)).toBe(Math.round(1.25 * Math.pow(161, 0.3) * 1000 * 0.8));
+  });
+});

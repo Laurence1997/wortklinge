@@ -21,7 +21,7 @@ import type { Look } from '../core/look';
 // The game controller: owns the save, runs battles and tutorials, and glues the
 // Phaser world to the DOM interface. Game rules live in src/core and stay pure.
 
-import { answerBoss, bossPay, startBoss, type BossFight } from '../core/boss';
+import { answerBoss, bossPay, EARLY_BOSS_LEVEL, startBoss, type BossFight } from '../core/boss';
 import { bonfireRefill, grantStarter, tabletHeal, useItem, CONSUMABLE, count as itemCount, buyConsumable, type Consumable } from '../core/items';
 import { alignPairs, canHint, hintOf, ITEM_TURN, linkPack, phraseCards, startPhraseBattle, makeQuestion, monsterStats, pickHint, resetClassFx, resolveTurn, restorePresumed, rollSaying, shoutLine, startBattle, type Battle, type Question, type TurnReport, type Tutorial } from '../core/combat';
 import { CONFIG, xpToNext } from '../core/config';
@@ -42,6 +42,7 @@ import { atLeastHalfShare, countAnswer, flushSkill, gapZh, instantGuiming, kindO
 import { dailyBoard, dailyKill, dailyText } from '../core/dailies';
 import { identify, socketItems, unidentifiedItems } from '../core/identify';
 import { pickSpawns, zoneMinLevel, zoneWords } from '../core/spawn';
+import { c1Field } from '../core/c1';
 import {
   addXp,
   gearTier,
@@ -682,7 +683,7 @@ export class Controller {
     } else if (m.elite && !tutorial) {
       // 场景精英 (9 级): part 1 of 3 (认 → 用 → 写), one word of its scene each.
       this.entity = m;
-      this.battle = this.eliteBattle(m.elite, 0);
+      this.battle = this.eliteBattle(m.elite, 0, undefined, c1Field(s, m.zone, m.node));
       if (!s.flags.eliteTaught) {
         s.flags.eliteTaught = true;
         say([
@@ -697,7 +698,7 @@ export class Controller {
       this.battle = startPhraseBattle(s, m.phrase, this.rng, m.zone);
     } else {
       this.entity = m;
-      this.battle = startBattle(s, m.word, this.rng, { isEcho: m.isEcho, tutorial, trial: opts.trial, rare: m.rare, challenge: m.challenge, struct: opts.struct || m.red });
+      this.battle = startBattle(s, m.word, this.rng, { isEcho: m.isEcho, tutorial, trial: opts.trial, rare: m.rare, challenge: m.challenge, struct: opts.struct || m.red, c1: c1Field(s, m.zone, m.node) });
       // 斩杀: a word being verified shouts no half sentence (it could show its letters).
       // 试玩 #22/#81: a 复数怪 (its stance is always die) and a grammar-dungeon fight (every question asks the floor's rule) shout none either.
       if (!tutorial && !opts.trial && !this.battle.verify && !this.battle.pluralMon && !this.gramRun) {
@@ -792,8 +793,8 @@ export class Controller {
   }
 
   /** 场景精英: the battle for one part. Never rusty, plural or cursed; hits ×1.2; statuses and hints carry over. */
-  private eliteBattle(pick: ElitePick, seg: number, prev?: Battle): Battle {
-    const b = startBattle(this.state, WORD_BY_ID[pick.words[seg]], this.rng, { elite: true });
+  private eliteBattle(pick: ElitePick, seg: number, prev?: Battle, c1 = false): Battle {
+    const b = startBattle(this.state, WORD_BY_ID[pick.words[seg]], this.rng, { elite: true, c1 });
     b.elite = { scene: pick.scene, words: pick.words, seg, review: pick.review };
     // 挑战怪 in the 3rd part (rev 342): same elite level, but ×1.75 XP and the quick 斩杀 if written unseen.
     if (pick.challengeSeg === seg) b.challenge = true;
@@ -813,7 +814,7 @@ export class Controller {
     const m = this.entity;
     if (!b?.elite || b.outcome !== 'win' || !m?.elite || b.elite.seg >= b.elite.words.length - 1) return false;
     this.settleKill(b, m, true, true);
-    const nb = this.eliteBattle(m.elite, b.elite.seg + 1, b);
+    const nb = this.eliteBattle(m.elite, b.elite.seg + 1, b, !!b.c1);
     this.battle = nb;
     this.pack = [nb];
     this.packEntities = [m];
@@ -834,7 +835,7 @@ export class Controller {
     if (art && this.pack[0].kind === 'new') {
       const mates = this.scene.monsters.filter((o) => o !== m && !o.isEcho && !o.scripted && !o.rare && !o.phrase && !o.elite && o.zone === m.zone && o.word.id !== m.word.id && isArticleWord(art, o.word) && kindOf(s, o.word) === 'new');
       for (const o of mates.slice(0, ARTICLE_B2_CFG.packMax - 1)) {
-        const ob = startBattle(s, o.word, this.rng, {});
+        const ob = startBattle(s, o.word, this.rng, { c1: c1Field(s, o.zone, o.node) });
         // 试玩 #86: the pack shares one question counter, so no two members ask the same content question.
         ob.notice = this.pack[0].notice!.id === art.id ? this.pack[0].notice : { id: art.id, i: this.pack.length };
         ob.directOffer = false;
@@ -870,7 +871,7 @@ export class Controller {
     const tut = firstPack ? 'packCharge' : null;
     const lead = this.pack[0];
     for (const o of picked.slice(0, max - 1)) {
-      const ob = startBattle(s, o.word, this.rng, { tutorial: tut, challenge: o.challenge });
+      const ob = startBattle(s, o.word, this.rng, { tutorial: tut, challenge: o.challenge, c1: c1Field(s, o.zone, o.node) });
       // 文章群怪 (81): the whole pack carries the lead's article, each asking from the next question.
       if (lead.notice && noticeById(lead.notice.id)?.kind === 'article') (ob.notice = lead.notice), (ob.mirror = undefined); // 试玩 #86: one shared question counter
       // A same-article pair stays a pair: a crowd (复数怪, always die) pairs with a crowd, a single with a single.
@@ -1236,6 +1237,7 @@ export class Controller {
           this.speak(fullForm(b.word));
         }
         if (res.card) this.achieve('card1');
+        if (b.c1Article) toast(`文章「${noticeById(b.notice!.id)?.title ?? ''}」的题全答对了：这一只按新词 ×1.75 算经验（每篇一次）`, 'gold');
         if (stageOf(s, b.word) >= 2) this.achieve('half1');
         // 剧情片段 (节奏表 20–25 分): from Lv2 the first kill drops the neighbour's note.
         if (s.level >= 2 && !s.flags.note_neighbour && !b.phrase) this.findNote('neighbour');
@@ -3190,8 +3192,8 @@ export class Controller {
     const first = !s.flags.boss3Kills;
     s.flags.boss3Kills = ((s.flags.boss3Kills as number) ?? 0) + 1;
     const chest = this.bossChest('boss3', first);
-    const xp = bossPay(CONFIG.boss3.xp, first, s.flags.boss3DayN as number);
-    const gold = bossPay(CONFIG.boss3.gold, first, s.flags.boss3DayN as number);
+    const xp = bossPay(CONFIG.boss3.xp, first, s.flags.boss3DayN as number, s.level, EARLY_BOSS_LEVEL[3]);
+    const gold = bossPay(CONFIG.boss3.gold, first, s.flags.boss3DayN as number, s.level, EARLY_BOSS_LEVEL[3]);
     const lv = addXp(s, xp);
     s.gold += gold;
     this.questFire('boss3');
@@ -3247,8 +3249,8 @@ export class Controller {
     const first = !s.flags.boss2Kills;
     s.flags.boss2Kills = ((s.flags.boss2Kills as number) ?? 0) + 1;
     const chest = this.bossChest('boss2', first);
-    const xp = bossPay(CONFIG.boss2.xp, first, s.flags.boss2DayN as number);
-    const gold = bossPay(CONFIG.boss2.gold, first, s.flags.boss2DayN as number);
+    const xp = bossPay(CONFIG.boss2.xp, first, s.flags.boss2DayN as number, s.level, EARLY_BOSS_LEVEL[2]);
+    const gold = bossPay(CONFIG.boss2.gold, first, s.flags.boss2DayN as number, s.level, EARLY_BOSS_LEVEL[2]);
     const lv = addXp(s, xp);
     s.gold += gold;
     this.questFire('boss2');
@@ -3364,8 +3366,8 @@ export class Controller {
     const first = !s.flags[`boss${r}Kills`];
     s.flags[`boss${r}Kills`] = ((s.flags[`boss${r}Kills`] as number) ?? 0) + 1;
     const chest = this.bossChest(`boss${r}`, first);
-    const xp = bossPay(laterBossXp(b.level), first, s.flags[`boss${r}DayN`] as number);
-    const gold = bossPay(laterBossGold(b.level), first, s.flags[`boss${r}DayN`] as number);
+    const xp = bossPay(laterBossXp(b.level), first, s.flags[`boss${r}DayN`] as number, s.level, b.level);
+    const gold = bossPay(laterBossGold(b.level), first, s.flags[`boss${r}DayN`] as number, s.level, b.level);
     const lv = addXp(s, xp);
     s.gold += gold;
     if (chest) this.chestQueue.push({ kind: chest, ilvl: s.level });
@@ -3526,8 +3528,8 @@ export class Controller {
       s.flags.bossKills = ((s.flags.bossKills as number) ?? 0) + 1;
       const chest = this.bossChest('boss', first);
       const dailyFirst = chest === 'gold';
-      const xp = bossPay(CONFIG.xp.boss, first, s.flags.bossDayN as number);
-      const gold = bossPay(120, first, s.flags.bossDayN as number);
+      const xp = bossPay(CONFIG.xp.boss, first, s.flags.bossDayN as number, s.level, EARLY_BOSS_LEVEL[1]);
+      const gold = bossPay(120, first, s.flags.bossDayN as number, s.level, EARLY_BOSS_LEVEL[1]);
       const lv = addXp(s, xp);
       s.gold += gold;
       // 金箱 (first kill only): ≥1 purple and an orange. Then an iron chest for the day's first 3 kills.
