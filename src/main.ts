@@ -19,7 +19,7 @@ import { claimTab, hasStoredLogin, setTakeoverFlush } from './net/tabLock';
 import { loadPassages } from './data/passages';
 import { loadArticlesB1, loadArticlesB2, loadArticlesC1 } from './data/articlesB2';
 
-const VERSION = '1.0.10';
+const VERSION = '1.0.11';
 setReportVersion(VERSION);
 // 审查 B3: the dev menu (+1 级 …) only on localhost or a dev build, never on the live site.
 const dev = new URLSearchParams(location.search).has('dev') && (import.meta.env.DEV || ['localhost', '127.0.0.1'].includes(location.hostname));
