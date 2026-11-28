@@ -23,6 +23,7 @@ import { GRAM_DUNGEON } from '../core/gram/dungeons';
 import { $, bar, clear, h, isTyping, umlautButtons } from './dom';
 import { reportButton } from './report';
 import { logLine } from './gamelog';
+import { dialogOpen } from './feedback';
 import { canListen, lastConfidence, listenOnce, listening, stopHold, stopListening } from './listen';
 import { isRecording, judgePair, playRecording, pronReady, startRecording, stopRecording } from './phoneme';
 import { ECHO_RETRIES, echoVerdict, listenSide, notePron } from '../core/pron';
@@ -61,6 +62,8 @@ export class BattleUI {
   private castStart = 0;
   private castLen = 0;
   private rtLoop = 0;
+  /** 1.0.11 试玩 15: when the cast loop last ran (performance.now()); held time is added back to the cast. */
+  private rtLast = 0;
   private lastValue = '';
   /** 齐鸣 (rev 234): one box per same-stance mate, sent after the target's answer joined with |. */
   private mateBoxes: HTMLInputElement[] = [];
@@ -407,7 +410,7 @@ export class BattleUI {
     window.clearTimeout(this.autoTimer);
     if (this.rtOn) {
       // 即时战: an interrupted cast restarts with its next move; the next question comes after the global cooldown
-      // (a wrong choice answer staggers you longer). Time keeps running meanwhile.
+      // (a wrong choice answer staggers you longer). Time keeps running meanwhile: the cooldown is the cost.
       if (this.b && this.b.intent !== intentBefore) this.startCast();
       this.autoTimer = window.setTimeout(() => this.continue(), this.ctrl.fightOver() ? 1600 : gcdMs(this.ctrl.state, this.question, this.report.correct));
       return;
@@ -543,6 +546,7 @@ export class BattleUI {
     this.ctrl.realtime = this.rtOn;
     if (!this.rtOn) return;
     this.startCast();
+    this.rtLast = performance.now();
     this.rtLoop = window.setInterval(() => this.rtStep(), 100);
   }
 
@@ -555,14 +559,32 @@ export class BattleUI {
     return Math.max(0, this.castStart + this.castLen - performance.now());
   }
 
+  /** 1.0.11 试玩 15: the cast waits while a long text or a listening passage is answered, while a dialog or panel is
+   *  open and while the tab is hidden. The feedback after an answer is not held: in 即时战 it lasts exactly the global
+   *  cooldown / the 2 s stagger of a wrong choice (REALTIME.gcd / stagger), and that time is meant to cost. */
+  private castHeld(): boolean {
+    if (this.phase === 'answer' && longRead(this.question)) return true;
+    if (dialogOpen()) return true;
+    if (typeof document === 'undefined') return false;
+    if (document.visibilityState === 'hidden') return true;
+    const modal = document.getElementById('modal');
+    return !!modal && !modal.hidden;
+  }
+
   private rtStep(): void {
     if (!this.rtOn || !this.ctrl.battle || this.ctrl.fightOver()) return;
+    // A held cast keeps its time; a long gap between steps (a throttled background tab) counts as held too.
+    const now = performance.now();
+    const dt = Math.max(0, now - (this.rtLast || now));
+    this.rtLast = now;
+    const held = this.castHeld();
+    this.castStart += held ? dt : Math.max(0, dt - 250);
     const left = this.castLeft();
     const bar = document.getElementById('rt-cast');
     if (bar) bar.style.width = `${Math.round((100 * left) / this.castLen)}%`;
     const lab = document.getElementById('rt-cast-label');
-    if (lab) lab.textContent = `${(left / 1000).toFixed(1)} 秒`;
-    if (left > 0) return;
+    if (lab) lab.textContent = `${(left / 1000).toFixed(1)} 秒${held ? '（暂停）' : ''}`;
+    if (held || left > 0) return;
     const target = this.b;
     const from = target.log.length;
     const r = this.ctrl.tick();
@@ -654,6 +676,8 @@ export class BattleUI {
   /** Keyboard: A/S/D/F/R to pick a move, 1–3 for options, Enter to continue, Esc to change move. */
   onKey(e: KeyboardEvent): boolean {
     if ($('battle').hidden) return false;
+    // 1.0.11 试玩 9: a panel on top gets the keys (Esc closes it); the fight waits behind it.
+    if (!$('modal').hidden) return false;
     // Any text box (墨水风暴 forms, ult frame, 齐鸣 mates), not only the main one: Z/V/S are letters there.
     const typing = isTyping();
     if (!typing && e.key === 'Enter' && this.phase === 'choose' && this.b.cutReady && !this.b.outcome) {
@@ -752,6 +776,8 @@ export class BattleUI {
     // Keep what the player typed when the panel re-renders (e.g. after 看中文).
     const keep = this.phase === 'answer' && this.renderedQ === this.question ? this.input?.value : undefined;
     this.pending = keep;
+    // 1.0.11 试玩 13: the same for every box (墨水风暴, 终结技, 齐鸣) and the one that had the focus.
+    const kept = keep !== undefined ? keepInputs($('battle')) : null;
     const s = this.ctrl.state;
     const b = this.b;
     const taught = b.direct ? false : this.phase !== 'result' ? teachPhase(b) : !!b.phaseTaught && b.phaseTaught === b.turn && b.phase === phaseOf(b); // a pack's next target is taught too
@@ -1008,7 +1034,8 @@ export class BattleUI {
     const gramTag = gr ? h('div.small', { style: 'color:var(--gold, #ffcf4a);font-weight:700' }, `${GRAM_DUNGEON.name[gr.kind]} · ${gr.floor.label} · 第 ${gr.i + 1}/${gr.words.length} 场`) : '';
     clear(el).append(gramTag, h('div.b-top', monEl, intent, me), stance, teach, movesEl, q, blog);
     blog.scrollTop = blog.scrollHeight;
-    if (this.input && this.phase === 'answer') window.setTimeout(() => (this.mateBoxes[0] ?? this.input)?.focus(), 0);
+    const again = kept ? restoreInputs(el, kept) : null;
+    if (this.input && this.phase === 'answer') window.setTimeout(() => (again ? again() : (this.mateBoxes[0] ?? this.input)?.focus()), 0);
   }
 
   private pending: string | undefined;
@@ -1132,7 +1159,7 @@ export class BattleUI {
       const prev = this.lastValue.split('|').slice(1);
       const rows = qq.mates.map((id, i) => {
         const mw = WORD_BY_ID[id];
-        const box = h('input', { type: 'text', autocomplete: 'off', autocapitalize: 'off', spellcheck: 'false', placeholder: 'der / die / das + 名词', disabled: this.phase !== 'answer' }) as HTMLInputElement;
+        const box = h('input', { type: 'text', autocomplete: 'off', autocapitalize: 'off', spellcheck: 'false', placeholder: 'der / die / das + 名词', disabled: this.phase !== 'answer', 'data-k': `mate${i}` }) as HTMLInputElement;
         if (this.phase === 'result') box.value = prev[i] ?? '';
         box.addEventListener('keydown', (e) => {
           if (e.key !== 'Enter') return;
@@ -1170,7 +1197,7 @@ export class BattleUI {
       // 墨水风暴 (rev 234): one box per form, in order; Enter moves on, the last one sends "a|b|c".
       const prev = this.lastValue.split('|');
       const boxes = qq.boxes.map((label, i) => {
-        const box = h('input', { type: 'text', autocomplete: 'off', autocapitalize: 'off', spellcheck: 'false', placeholder: label, disabled: this.phase !== 'answer' }) as HTMLInputElement;
+        const box = h('input', { type: 'text', autocomplete: 'off', autocapitalize: 'off', spellcheck: 'false', placeholder: label, disabled: this.phase !== 'answer', 'data-k': `box${i}` }) as HTMLInputElement;
         if (this.phase === 'result') box.value = prev[i] ?? '';
         return box;
       });
@@ -1191,9 +1218,9 @@ export class BattleUI {
       );
     } else if (qq.ult) {
       // 终极技能: the frame with two blanks, one box each; sent as "a|b".
-      const box = () => h('input', { type: 'text', autocomplete: 'off', autocapitalize: 'off', spellcheck: 'false', placeholder: '填空', disabled: this.phase !== 'answer' }) as HTMLInputElement;
-      const a = box();
-      const c = box();
+      const box = (k: string) => h('input', { type: 'text', autocomplete: 'off', autocapitalize: 'off', spellcheck: 'false', placeholder: '填空', disabled: this.phase !== 'answer', 'data-k': k }) as HTMLInputElement;
+      const a = box('ultA');
+      const c = box('ultC');
       if (this.phase === 'result') [a.value, c.value = ''] = this.lastValue.split('|');
       const send = () => this.submit(`${a.value}|${c.value}`);
       a.addEventListener('keydown', (e) => {
@@ -1225,6 +1252,7 @@ export class BattleUI {
         spellcheck: 'false',
         placeholder: qq.whisper ?? (qq.withArticle ? 'der / die / das + 名词' : ''),
         disabled: this.phase !== 'answer',
+        'data-k': 'main',
       }) as HTMLInputElement;
       if (this.pending !== undefined) input.value = this.pending;
       if (this.phase === 'result') input.value = qq.mates?.length ? this.lastValue.split('|')[0] : this.lastValue;
@@ -1288,6 +1316,54 @@ function nameGlyph(b: Battle, hide = false): string {
   if (b.phrase) return `${b.phrase.a} …`;
   if (b.word.erode || hide) return Array.from({ length: Math.max(3, Math.min(9, b.word.de.length)) }, () => GLITCH[Math.floor(Math.random() * GLITCH.length)]).join('');
   return plateZh(b.word) + (b.pluralMon ? ' · 复数' : '');
+}
+
+/** 1.0.11 试玩 13: what was typed in each answer box (by data-k) and which box had the focus, with its caret. */
+export interface KeptInputs {
+  values: Record<string, string>;
+  focus: { k: string; start: number | null; end: number | null } | null;
+}
+
+type BoxRoot = Pick<ParentNode, 'querySelectorAll'>;
+
+export function keepInputs(root: BoxRoot | null, active: Element | null = typeof document === 'undefined' ? null : document.activeElement): KeptInputs {
+  const out: KeptInputs = { values: {}, focus: null };
+  if (!root) return out;
+  for (const box of Array.from(root.querySelectorAll<HTMLInputElement>('input[data-k]'))) {
+    const k = box.dataset.k!;
+    out.values[k] = box.value;
+    if (box === active) out.focus = { k, start: box.selectionStart, end: box.selectionEnd };
+  }
+  return out;
+}
+
+/** Puts kept values back into the new boxes; returns how to give the focus back (null when no box had it). */
+export function restoreInputs(root: BoxRoot, kept: KeptInputs): (() => void) | null {
+  let focusBox: HTMLInputElement | null = null;
+  for (const box of Array.from(root.querySelectorAll<HTMLInputElement>('input[data-k]'))) {
+    const k = box.dataset.k!;
+    if (kept.values[k] !== undefined && !box.disabled) box.value = kept.values[k];
+    if (kept.focus?.k === k) focusBox = box;
+  }
+  const f = kept.focus;
+  if (!focusBox || !f) return null;
+  const box = focusBox;
+  return () => {
+    box.focus();
+    if (f.start !== null) {
+      try {
+        box.setSelectionRange(f.start, f.end ?? f.start);
+      } catch {
+        /* not a text box */
+      }
+    }
+  };
+}
+
+/** 1.0.11 试玩 15: a question with a text to read (告示 / 信件 / 文章) or a passage to listen to. */
+export function longRead(q: Question | null | undefined): boolean {
+  if (!q?.gram) return false;
+  return !!q.gram.passage || ((q.gram.sys === 'listen' || q.gram.sys === 'blind') && !!q.listen);
 }
 
 /** The question on screen asks the meaning (pick the Chinese, listen and pick, 回音听辨, Chinese options). */
