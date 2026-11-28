@@ -1,3 +1,4 @@
+import { rulesBoard } from './rulesBoard';
 import { loadPron, MODEL_MB, pronForget, pronStatus } from './phoneme';
 import { icon, SLOT_TILE, portrait } from './icons';
 import { CONFIG, xpToNext } from '../core/config';
@@ -49,7 +50,7 @@ import { checkJournal, type JournalHint } from '../core/journal';
 import { ensureShop, price, refreshCost, sellPrice, SLOT_NOUN } from '../core/shop';
 import { buyPattern, saidPrice, saidSellPrice, SELL_PATTERN } from '../core/shopTalk';
 
-export type PanelName = 'hero' | 'talents' | 'quests' | 'codex' | 'words' | 'data' | 'account' | 'settings' | 'help' | 'shop' | 'chest' | 'quiz' | 'screen' | 'bigmap' | 'diary' | 'ask' | 'exam' | 'journal' | 'place' | 'letter' | 'gram';
+export type PanelName = 'hero' | 'talents' | 'quests' | 'codex' | 'words' | 'data' | 'account' | 'settings' | 'help' | 'shop' | 'chest' | 'quiz' | 'screen' | 'bigmap' | 'diary' | 'ask' | 'exam' | 'journal' | 'place' | 'letter' | 'gram' | 'rules';
 
 export class Panels {
   open: PanelName | null = null;
@@ -69,6 +70,14 @@ export class Panels {
   }
 
   private bigmap: HTMLElement | null = null;
+  /** 告示牌「德语小规律」: which section opens (the board at 余烬营地 opens der/die/das; the menu tab keeps the last). */
+  private rulesStart: { kind: 'gender' | 'sound'; page?: string } = { kind: 'gender' };
+
+  /** 告示牌 (Lucas 2026-11-28): der/die/das and pronunciation rules. */
+  showRules(kind: 'gender' | 'sound' = 'gender'): void {
+    this.rulesStart = { kind };
+    this.show('rules');
+  }
 
   /** 大地图 (0.5): the body comes from the scene map. */
   showBigMap(body: HTMLElement): void {
@@ -296,13 +305,13 @@ export class Panels {
       if (this.saying !== null) window.setTimeout(() => (el.querySelector('input.buy-line') as HTMLInputElement | null)?.focus(), 0);
       return;
     }
-    const titles: Record<Exclude<PanelName, 'shop' | 'chest' | 'quiz' | 'screen' | 'bigmap' | 'diary' | 'ask' | 'exam' | 'journal' | 'place' | 'letter' | 'gram'>, string> = { hero: '角色与装备', talents: '技能与天赋', quests: '任务', codex: '图鉴', words: '单词本', data: '数据与存档', account: '账号与排行', settings: '设置', help: '怎么玩' };
+    const titles: Record<Exclude<PanelName, 'shop' | 'chest' | 'quiz' | 'screen' | 'bigmap' | 'diary' | 'ask' | 'exam' | 'journal' | 'place' | 'letter' | 'gram'>, string> = { hero: '角色与装备', talents: '技能与天赋', quests: '任务', codex: '图鉴', words: '单词本', rules: '规律', data: '数据与存档', account: '账号与排行', settings: '设置', help: '怎么玩' };
     const tabs = h('div.tabs');
     (Object.keys(titles) as Array<Exclude<PanelName, 'shop' | 'chest' | 'quiz' | 'screen' | 'bigmap' | 'diary' | 'ask' | 'exam' | 'journal' | 'place' | 'letter' | 'gram'>>).forEach((k) =>
       tabs.append(h(`button.btn${this.open === k ? '.on' : ''}`, { onclick: () => this.show(k) }, titles[k])),
     );
     panel.append(h('h2', h('span', titles[this.open as Exclude<PanelName, 'shop' | 'chest' | 'quiz' | 'screen' | 'bigmap' | 'diary' | 'ask' | 'exam' | 'journal' | 'place' | 'letter' | 'gram'>]), h('button.btn.ghost', { onclick: () => this.close() }, '关闭 Esc')), tabs);
-    const body = { gram: () => h('div'), letter: () => h('div'), journal: () => h('div'), exam: () => h('div'), ask: () => h('div'), diary: () => h('div'), bigmap: () => h('div'), shop: () => h('div'), chest: () => h('div'), quiz: () => h('div'), place: () => h('div'), screen: () => h('div'), hero: () => this.hero(), talents: () => this.talents(), quests: () => this.questsBody(), codex: () => this.codex(), words: () => this.wordbook(), data: () => this.data(), account: () => this.account(), settings: () => this.settings(), help: () => this.help() }[this.open]();
+    const body = { gram: () => h('div'), letter: () => h('div'), journal: () => h('div'), exam: () => h('div'), ask: () => h('div'), diary: () => h('div'), bigmap: () => h('div'), shop: () => h('div'), chest: () => h('div'), quiz: () => h('div'), place: () => h('div'), screen: () => h('div'), hero: () => this.hero(), talents: () => this.talents(), quests: () => this.questsBody(), codex: () => this.codex(), words: () => this.wordbook(), rules: () => rulesBoard(this.rulesStart), data: () => this.data(), account: () => this.account(), settings: () => this.settings(), help: () => this.help() }[this.open]();
     panel.append(body);
     clear(el).append(panel);
     if (keepTop) panel.scrollTop = keepTop;
@@ -1747,6 +1756,7 @@ export class Panels {
       ['面板', 'C 角色和装备 · B 图鉴 · N 单词本 · T 天赋 · J 任务 · H 这页帮助 · Esc 关闭'],
       ['词性三相', '名词怪出手前先选相：1 der · 2 die · 3 das（对这只怪一直有效，随时可以点按钮换）。选对：护甲降一档、回 1 点资源、附带元素；6 级起选错：护甲翻倍、破甲清零。复数怪一律 die'],
       ['战斗', 'A 攻击 · Q 铭刻 · E 齐鸣（只打同相的怪）· F 终结技（言灵满了才出现）· R / G / T / Y 技能（出战栏里的技能，冷却制）· H 吃药片（回血，不占回合）· 群怪时 Tab 换目标 · 答题时 Esc 换招式；答题时 W 低语（用一张纸条给提示，打字时按 ?）；1/2/3 选答案；打字题按 Enter 交卷；结果会自动进下一题（Enter 跳过等待）；Z 看中文；V 再听；S 读出来（5 级起可选：答对后跟着读那句德语，读得像每场多给一次经验，读不好不扣东西；没有麦克风就不显示）'],
+      ['德语小规律', '余烬营地的告示牌，或面板顶上的「规律」页：der/die/das 怎么猜、德语怎么读，例词点一下能听。战斗里选错冠词时，如果这个词归哪条规律，也会顺带提醒'],
       ['变音字母', '点 ä ö ü ß 按钮，或者写 ae oe ue ss（算对，但会提示正确拼法）'],
       ['新词', '第一次见：先出一道选择题教你（同时显示整个词、中文和发音），2 级起下一题就默写。打完还没写过它的，下一场第一题就默写。会的词可以点「我认识它」直接叫名，写对直接永久斩杀'],
       ['归名', '一个词就是一只怪。一般打败它 3 次（认、用、写；打完它几分钟后在原场景重生，一天里就能归名），最后一下要默写带冠词的全名，它才变回原样。第一场就写对、没答错也没用提示，打 2 次就够'],

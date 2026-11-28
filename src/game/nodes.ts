@@ -342,6 +342,8 @@ export class NodeNav {
     };
     const things: HTMLElement[] = [];
     if (sc.bonfire) things.push(h('button.btn', { onclick: ia('bonfire') }, '🔥 篝火休息'));
+    // 告示牌 (Lucas 2026-11-28): der/die/das and pronunciation rules at the spawn camp (also in the menu's 「规律」 tab).
+    if (sc.id === 'r1-camp') things.push(h('button.btn', { onclick: () => this.w.ctrl.panels.showRules() }, '📜 告示牌：德语小规律'));
     if (sc.id === 'r3-hide' && this.s.level >= DUNGEON.from) things.push(h('button.btn.primary', { disabled: busy, onclick: () => this.w.ctrl.enterDungeon() }, '🚪 进入零号站台（规则表地下城）'));
     // 语法秘境 (0.7–0.8): entered from a region's camp.
     if (sc.type === 'camp' && sc.bonfire && this.s.level >= RIFT.from) things.push(h('button.btn', { disabled: busy, onclick: () => this.w.ctrl.enterRift() }, '🌀 裂隙（白板 roguelite）'));

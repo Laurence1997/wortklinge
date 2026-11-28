@@ -1,11 +1,13 @@
 import { monsterArt, monsterIcon, heroIcon } from './icons';
+import { genderHint } from '../core/genderRules';
+import type { Word } from '../core/types';
 import { DEFAULT_LOOK } from '../core/look';
 import type { Battle, Question, TurnReport } from '../core/combat';
 import { count as itemCount, itemsOpen, tabletHeal } from '../core/items';
 import { CHARM, equippedCharms } from '../core/charms';
 import { listenRate } from '../core/listening';
 import { bestHeard, lineLeaks, plateZh, castMs, gcdMs, realtimeOn, voiceOpen } from '../core/combat';
-import { availableMoves, chorusMates, canHint, comboTier, effArmor, moveReady, poolReady, needsPhase, phaseOf, resName, stancesFor, teachPhase, readTarget, readRecall, readShown, phaseWrongWhy } from '../core/combat';
+import { availableMoves, chorusMates, canHint, comboTier, effArmor, moveReady, poolReady, needsPhase, phaseOf, resName, stancesFor, teachPhase, readTarget, readRecall, readShown, phaseWrongWhy, stanceRuleNote } from '../core/combat';
 import { articleSlip, clarity, shadowOk } from '../core/shadow';
 import { has } from '../core/unlocks';
 import type { Stance } from '../core/cloze';
@@ -1005,7 +1007,7 @@ export class BattleUI {
               { style: 'color:var(--gold, #ffcf4a)' },
               b.perfekt
                 ? `  新词：${w.de} · ${w.zh}　完成时用 ${b.phase}，相已替你选好，记住它`
-                : `  新词：${fullForm(w)} · ${w.zh}　第一次见，相已替你选好${b.phase !== w.art ? `（这句要 ${b.phase}）` : ''}，记住它`,
+                : `  新词：${fullForm(w)} · ${w.zh}　第一次见，相已替你选好${b.phase !== w.art ? `（这句要 ${b.phase}）` : ''}，记住它${taughtRule(w)}`,
             )
           : b.pluralMon
             ? h('span.small', { style: 'color:var(--gold, #ffcf4a)' }, this.phase === 'answer' && this.question?.type === 'pickZh' ? '  复数怪 → 一律选 die' : `  这是一群「${w.zh}」（复数怪）→ 一律选 die`)
@@ -1290,6 +1292,8 @@ export class BattleUI {
       if (qq.echo) fb.append(h('span', `  ${qq.echo.target}（${qq.echo.zhT}） · ${qq.echo.partner}（${qq.echo.zhP}）`));
       if (r.phase === 'right') fb.append(h('span', `  ${this.b.phase} 相 · 弱点`));
       if (r.phase === 'wrong') fb.append(h('span', `  ${this.b.phase} 相被抵抗：${phaseWrongWhy(this.b)}`));
+      // 词性规律 (2026-11-28): the rule this noun falls under, after a stance that missed its gender.
+      if ((r.phase === 'wrong' || r.phase === 'soft') && stanceRuleNote(this.b)) fb.append(h('span.note.gender-hint', stanceRuleNote(this.b)));
       if (r.element) fb.append(h('span', `  元素：${ELEMENT_ZH[r.element]}`));
       for (const n of r.verdict.notes) fb.append(h('span.note', n));
       if (r.readRight) fb.append(h('span.note', '读懂了它：连击 +1'));
@@ -1370,4 +1374,11 @@ export function longRead(q: Question | null | undefined): boolean {
 function asksMeaning(q: Question | null | undefined): boolean {
   if (!q || q.teach) return false;
   return q.type === 'pickZh' || (!!q.echo && !q.echo.say) || !!q.options?.some((o) => /[\u4e00-\u9fff]/.test(o));
+}
+
+/** 词性规律 on the 先教后考 turn (2026-11-28): the rule the new noun follows, so the first article comes with a reason.
+ *  An exception is left to the wrong-pick feedback, so the first sight of a word is not a warning. */
+function taughtRule(w: Word): string {
+  const g = genderHint(w);
+  return g && g.follows ? `　${g.text}` : '';
 }

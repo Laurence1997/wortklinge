@@ -763,3 +763,25 @@ svg.gm-path { display: block; width: 100%; height: auto; max-height: 420px; }
 .gm-ch b { font-size: 16px; }
 .gm-go { display: flex; justify-content: flex-end; }
 @media (max-width: 900px) { .gm-towers { grid-template-columns: 1fr; } }
+
+/* 告示牌「德语小规律」 (2026-11-28): der/die/das and pronunciation pages; every example is a play button. */
+.rules-board { display: flex; flex-direction: column; gap: 10px; }
+.rules-board .rb-kinds { align-items: center; gap: 8px; }
+.rules-board .rb-tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.rules-board .rb-tabs .btn.on { border-color: var(--red); color: var(--ink); font-weight: 600; }
+#modal .rules-board .rb-page h3 { margin: 6px 0 4px; font-size: 19px; color: var(--ink); }
+.rules-board .rb-intro { margin: 0 0 8px; line-height: 1.6; color: var(--ink); }
+.rules-board .rb-item { border: 1px solid var(--line); border-radius: 4px; padding: 9px 12px; margin-bottom: 8px; background: rgba(127, 127, 127, 0.04); }
+.rules-board .rb-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; font-size: 15px; }
+.rules-board .rb-stat { font-size: 12px; color: var(--good); border: 1px solid currentColor; border-radius: 10px; padding: 0 7px; }
+.rules-board .rb-body { margin-top: 4px; line-height: 1.6; }
+.rules-board .rb-ex { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.rules-board .rb-word { display: inline-flex; align-items: baseline; gap: 6px; padding: 3px 9px; border: 1px solid var(--line-hi); border-radius: 3px; background: transparent; color: var(--ink); cursor: pointer; font-size: 15px; }
+.rules-board .rb-word:hover { border-color: var(--red); }
+.rules-board .rb-word::before { content: '🔊'; font-size: 11px; opacity: .7; }
+.rules-board .rb-de { font-weight: 600; }
+.rules-board .rb-zh { font-size: 13px; color: var(--ink); opacity: .8; }
+.rules-board .rb-exc { margin-top: 6px; line-height: 1.6; }
+.rules-board .rb-exc-tag { display: inline-block; font-size: 12px; color: var(--bad); border: 1px solid currentColor; border-radius: 3px; padding: 0 5px; margin-right: 6px; }
+.rules-board .rb-nav { justify-content: space-between; }
+.gender-hint { color: var(--gold); }
