@@ -1283,7 +1283,7 @@ export class BattleUI {
     }
     if (this.phase === 'result' && r) {
       const fb = h(`div.feedback.${r.correct ? 'ok' : 'no'}`);
-      const head = qq.item ? '吃了药片' : r.correct ? (r.crit ? (r.newSpell ? '新言灵！暴击！' : '暴击！') : r.parried ? '躲开了' : '答对了') : '答错了';
+      const head = qq.item ? '吃了药片' : r.correct ? (r.crit ? (r.newSpell ? '初识暴击！' : '暴击！') : r.parried ? '躲开了' : '答对了') : '答错了';
       fb.append(h('b', head));
       if (qq.item && r.monsterDamage) fb.append(h('span', `  它趁机出手：${r.monsterDamage} 伤害`));
       if (r.correct && this.b.word && (qq.type === 'article' || qq.type === 'typed')) fb.append(h('span', `  ${fullFormLong(this.b.word)} · ${this.b.word.zh}`));

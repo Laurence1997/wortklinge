@@ -40,12 +40,14 @@ export interface Line {
   text: string;
 }
 
-let dialogQueue: Array<{ lines: Line[]; done?: () => void; choices?: Array<{ label: string; act: () => void }> }> = [];
+/** `disabled` (试玩 95): shown greyed out and not clickable, so a choice that can't be taken yet still says why. */
+export type Choice = { label: string; act: () => void; disabled?: boolean };
+let dialogQueue: Array<{ lines: Line[]; done?: () => void; choices?: Choice[] }> = [];
 let current: (typeof dialogQueue)[number] | null = null;
 let idx = 0;
 
 /** Show a sequence of lines. German in 「…」 is highlighted. Enter / Space / click to continue. */
-export function say(lines: Line[], done?: () => void, choices?: Array<{ label: string; act: () => void }>): void {
+export function say(lines: Line[], done?: () => void, choices?: Choice[]): void {
   if (!lines.length) return void done?.(); // 审核 1.0.10: an empty dialog would never close and freeze input
   dialogQueue.push({ lines, done, choices });
   if (!current) next();
@@ -64,7 +66,9 @@ function next() {
 function render() {
   const el = $('dialog');
   if (!current) return;
-  const line = current.lines[idx];
+  // 「系统：…」 narration in story data shows under 系统 once, not as 系统 / 系统：… or a boss name / 系统：… (试玩 79).
+  const raw = current.lines[idx];
+  const line = /^系统[：:]/.test(raw.text ?? '') ? { who: '系统', text: raw.text.replace(/^系统[：:]\s*/, '') } : raw;
   const last = idx === current.lines.length - 1;
   const text = h('div.text');
   text.innerHTML = (line.text ?? '')
@@ -77,9 +81,11 @@ function render() {
     current.choices.forEach((c, i) =>
       ch.append(
         h(
-          'button.btn' + (i === 0 ? '.primary' : ''),
+          'button.btn' + (i === 0 && !c.disabled ? '.primary' : ''),
           {
+            disabled: !!c.disabled,
             onclick: () => {
+              if (c.disabled) return;
               const cur = current;
               next();
               c.act();

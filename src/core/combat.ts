@@ -418,6 +418,9 @@ export interface Battle {
   /** 认得 / 会写 earned on this word this fight, not yet written to the wordbook (new words join it on the kill). */
   readOk?: number;
   writeOk?: number;
+  /** 对 / 错 on a word not yet in the wordbook (its first fight), written on the kill like readOk (试玩 74). */
+  rightN?: number;
+  wrongN?: number;
   /** 归名 (2026-11-24): a cloze on this word was answered right in this fight (用). */
   usedOk?: boolean;
   /** 复习怪 (relapsed, or a 归名 word 2 gaps overdue): your level, ×1.5 XP, an extra shard. A learning respawn is not one. */
@@ -1700,7 +1703,7 @@ export function startPhraseBattle(s: GameState, id: string, rng: Rng, zone: Word
 export function sayingQuestion(s: GameState, say: SayLine, rng: Rng): Question {
   const prompt = `接句怪：它喊出上半句，接上下半句（答对必暴击）· ${say.zh}`;
   const focus = `「${say.a} …」`;
-  if (s.level >= SAYING_CFG.typedFrom) return { type: 'saying', prompt: prompt + '，打字', focus, answer: say.b, say };
+  if (s.level >= SAYING_CFG.typedFrom) return { type: 'saying', prompt: prompt.replace(/[。.！!？?]$/, '') + '，打字', focus, answer: say.b, say };
   // Wrong endings come from other words' sentences, so the right one is the one that carries this word.
   const pool = say.cardId ? SAYINGS.map((o) => o.b) : Object.keys(EXAMPLES).flatMap((id) => (WORD_BY_ID[id] ? exampleSplits(WORD_BY_ID[id]).map((p) => p.b) : []));
   const others = shuffle(rng, pool.filter((o) => sayKey(o) !== sayKey(say.b))).slice(0, 2);
@@ -2581,7 +2584,7 @@ export function resolveTurn(
           }
         }
 
-        const tag = (judged ? '冠词审判！' : '') + (crit ? (newSpell ? '新言灵！暴击 ' : '暴击 ') : '');
+        const tag = (judged ? '冠词审判！' : '') + (crit ? (newSpell ? '初识暴击 ' : '暴击 ') : '');
         const el = element ? `（${ELEMENT_ZH[element]}）` : '';
         log.push({ text: `${tag}你造成 ${playerDamage} 点伤害${el}。`, tone: crit ? 'crit' : 'good' });
       }

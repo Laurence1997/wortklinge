@@ -8,7 +8,7 @@ import { addGearKill, addXp, dayKey, now, type GameState, type LevelUpResult } f
 import { contextDue, stageOf } from './srs';
 import type { Rng } from './rng';
 import type { ZoneId } from './types';
-import { WORD_BY_ID } from '../data/words';
+import { fullForm, WORD_BY_ID } from '../data/words';
 import { SCENES } from '../data/world';
 import { ZONES } from '../game/map';
 
@@ -93,7 +93,9 @@ export function dailyText(d: Daily): string {
   const sc = d.scene ? SCENES.find((x) => x.id === d.scene) : null;
   if (d.kind === 'kill') return `在${z?.zh ?? '野外'}打倒 ${d.need} 只怪`;
   if (d.kind === 'review') return `答对 ${d.need} 道语境复习题`;
-  return `把「${sc?.zh ?? '某个场景'}」的 ${(d.words ?? []).map((id) => WORD_BY_ID[id]?.zh ?? id).join('、')} 推进到半名`;
+  // German names, not the full Chinese glosses glued together (试玩 82: 「…。、…。」 didn't read).
+  const ws = (d.words ?? []).map((id) => (WORD_BY_ID[id] ? fullForm(WORD_BY_ID[id]) : id));
+  return `把「${sc?.zh ?? '某个场景'}」里的 ${ws.join('、')} 推进到半名`;
 }
 
 export interface DailyPay {

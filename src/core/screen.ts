@@ -15,7 +15,8 @@ import type { Word } from './types';
 import { hasArticleQuestion, posTag, WORDS } from '../data/words';
 import { HOME_SCENE, SCENE_BY_ID, type SceneDef } from '../data/world';
 
-export type ScreenScope = '1' | '2' | '3' | 'all';
+/** A region number ('1', '9' …), everything, or only the 推定会 words (试玩 44). */
+export type ScreenScope = `${number}` | 'all' | 'placed';
 export const SCREEN = { fromLevel: 2 };
 
 const HOME = HOME_SCENE; // own groups + 蚀变 groups (src/data/world.ts)
@@ -39,7 +40,8 @@ export function screenSave(s: GameState): ScreenSave {
   return s.screen;
 }
 
-const inScope = (w: Word, scope: ScreenScope) => scope === 'all' || String(w.region ?? 1) === scope;
+const inScope = (s: GameState, w: Word, scope: ScreenScope) =>
+  scope === 'all' || (scope === 'placed' ? !!s.words[w.id]?.placed && !s.words[w.id]?.retired : String(w.region ?? 1) === scope);
 
 /** 2026-11-23 Lucas: a learned word is one the HUD counts as 归名 (retired, or 归名 and not due), so the summary
  *  line and the HUD agree and the examiner never asks a word you already know. A 归名 word that comes due counts
@@ -49,7 +51,7 @@ const learned = (s: GameState, w: Word) => stageOf(s, w) === 3 && !s.words[w.id]
 /** Words this scope can still ask: everything but learned, tutorial and chest words. */
 export function screenPool(s: GameState, scope: ScreenScope): Word[] {
   // 句型怪 are learned in the field only (审核 1.0.9 H2): the examiner can't ask a pattern from its Chinese.
-  return WORDS.filter((w) => inScope(w, scope) && !w.tutorial && w.family !== 'truhe' && !isPattern(w) && !learned(s, w) && !s.words[w.id]?.pend);
+  return WORDS.filter((w) => inScope(s, w, scope) && !w.tutorial && w.family !== 'truhe' && !isPattern(w) && !learned(s, w) && !s.words[w.id]?.pend);
 }
 
 /** Words of a region still to learn (not 归名), for the summary line. */

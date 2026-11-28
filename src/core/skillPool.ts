@@ -31,7 +31,7 @@ export const POOL: Record<PoolId, PoolSkill> = {
   colloc: { id: 'colloc', zh: '搭配', lv: 41, cd: 4, asks: '这个词的固定搭配（warten auf）', effect: '伤害 ×1.6，写对算「会用」。没有搭配的词不能放' },
   seal: { id: 'seal', zh: '格之封印', lv: 61, cd: 6, asks: '把这个词放进要变格或变位的短句', effect: '伤害 ×1.4，写对破甲 3 下（同难题）；对精英和首领怪也有效' },
   dictate: { id: 'dictate', zh: '听写', lv: 81, cd: 4, asks: '听它喊出例句，打出被挖掉的词，不给中文', effect: '伤害 ×1.3' },
-  saying: { id: 'saying', zh: '短句', lv: 3, cd: 0, asks: '打出带上的那张短句卡的整句', effect: '每场喊一次，效果看卡（单词本里选卡）；33 级起不占回合' },
+  saying: { id: 'saying', zh: '短句', lv: 3, cd: 0, asks: '打出这场抽到的那张短句卡的整句', effect: '每场喊一次，效果看卡（每场从收到的卡里轮换）；33 级起不占回合' },
   slang: { id: 'slang', zh: '俚语', lv: 50, cd: 0, asks: '在对的场合打出带上的那条俚语', effect: '每场喊一次，场合对才生效，用错有反噬（单词本里选）；不占回合' },
 };
 

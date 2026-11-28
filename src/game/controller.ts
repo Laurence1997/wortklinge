@@ -15,8 +15,8 @@ import { ADV, adventurerById, adventurerPrompt, adventurerScene, GREET, notePkPa
 import { TICK_TURN } from '../core/combat';
 import { loadPron, pronCached } from '../ui/phoneme';
 import { icon, setRestored, SLOT_TILE } from '../ui/icons';
-import { answerPlacement, applyPlacement, backfillPlacementKit, PLACE_KIT_TIER, canPlaceAgain, estimatePicks, pickBoard, placeAgainIn, regionFor, startFromPicks, startPlacement, stopPlacement, type PickBoard, type PlaceRun } from '../core/placement';
-import { answerScreen, claimScene, SCREEN, startScreen, type ScreenRun, type ScreenScope } from '../core/screen';
+import { answerPlacement, applyPlacement, backfillPlacementKit, PLACE, PLACE_KIT_TIER, canPlaceAgain, estimatePicks, pickBoard, placeAgainIn, regionFor, startFromPicks, startPlacement, stopPlacement, type PickBoard, type PlaceRun } from '../core/placement';
+import { answerScreen, claimScene, SCREEN, screenPool, startScreen, type ScreenRun, type ScreenScope } from '../core/screen';
 import type { Look } from '../core/look';
 // The game controller: owns the save, runs battles and tutorials, and glues the
 // Phaser world to the DOM interface. Game rules live in src/core and stay pure.
@@ -38,7 +38,7 @@ import { makeItem, slotsAt, QUALITY_ZH, rollQuality, SLOT_ZH } from '../core/loo
 import { applyLoss, applyWin, lossTutorialDue, postFightHeal } from '../core/outcomes';
 import { defaultRng, type Rng } from '../core/rng';
 import { gradeLines } from '../core/aiVerdict';
-import { atLeastHalfShare, flushSkill, gapZh, instantGuiming, kindOf, recordAnswer, reviewedByWriting, stageOf, writingCounts } from '../core/srs';
+import { atLeastHalfShare, countAnswer, flushSkill, gapZh, instantGuiming, kindOf, recordAnswer, reviewedByWriting, stageOf, writingCounts } from '../core/srs';
 import { dailyBoard, dailyKill, dailyText } from '../core/dailies';
 import { identify, socketItems, unidentifiedItems } from '../core/identify';
 import { pickSpawns, zoneMinLevel, zoneWords } from '../core/spawn';
@@ -62,7 +62,7 @@ import {
 import { shadowScore } from '../core/shadow';
 import { noteEliteWin, type ElitePick } from '../core/elite';
 import type { Move, Quality, Slot, Word, ZoneId } from '../core/types';
-import { has, UNLOCK, UNLOCK_TEXT } from '../core/unlocks';
+import { has, UNLOCK, UNLOCK_TEXT, unlockHead } from '../core/unlocks';
 import { checkJournal, JOURNAL_KEEP, JOURNAL_WORDS, JOURNAL_XP_SHARE, journalWords, usesWord, type JournalEntry } from '../core/journal';
 import { BOSS } from '../data/boss';
 import { BOSS2 } from '../data/boss2';
@@ -494,7 +494,9 @@ export class Controller {
     if (!quiet) this.milestone(`lv${level}`);
     if (!quiet) {
       sfx.levelUp();
-      banner(`Lv ${level}`, (UNLOCK_TEXT[level] ?? [])[0] ?? '');
+      // The unlocks themselves are read in the dialog right after; the banner only counts them (试玩 75).
+      const n = (UNLOCK_TEXT[level] ?? []).length;
+      banner(`Lv ${level}`, n ? `${n} 项新能力` : '');
     }
     if (level === CHARM.slangFrom) this.grantOwedSlang();
     const unlocked = UNLOCK_TEXT[level] ?? [];
@@ -509,7 +511,7 @@ export class Controller {
           else if (s.bag.length < CONFIG.loot.bagSize) s.bag.push(g);
           lines.push(
             { who: HILDE, text: '拿着。站台上捡的，镜片裂了一片，还能用。' },
-            { who: SYS, text: `【眼镜】${g.name}已经戴上：怪蓄力的那一下砸到你身上会轻 ${Math.round(g.main * 100)}%。下一只蓄大招的怪，看看伤害。` },
+            { who: SYS, text: `【眼镜】${g.name}已经戴上：答错时挨的那一下会轻 ${Math.round(g.main * 100)}%。` },
           );
         }
         break;
@@ -529,16 +531,12 @@ export class Controller {
         lines.push({ who: HILDE, text: this.scene.nodes ? '累了就回营地坐坐。打散的东西会再长出来。牙少一点。' : '累了就回来坐（E）。打散的东西会再长出来。牙少一点。' });
         lines.push({ who: SYS, text: `【装备】下一只怪会掉东西。C 打开角色，穿上。打得越多，碎片越多，攒够 40 片装备升一档${gearTier(s) ? `。你一路打来已经攒够了：现在是第 ${gearTier(s)} 档，伤害更高，同级的怪少挨一下` : ''}` });
         s.flags.teachRest = true;
+        if (!quiet) s.flags.taughtGear = true; // the line above already says C (试玩 48: no second 【装备】 popup on the drop)
         break;
       case 4:
         // 入学测试 jumps past Lv4 skip the scripted loss (1.0.11 试玩).
         if (!quiet || s.level <= 4) s.flags.pendingLoss = true;
         s.flags.teachSkills = true;
-        lines.push(
-          { who: SYS, text: '【铭刻 Q】下一题难一级，答对伤害 ×1.5，答错丢 1 点言灵。不限次数' },
-          { who: SYS, text: '【低语 W】看到题后卡住了，按 W（打字时按 ?）用一张低语纸条要提示：选择题去掉一个错选项，打字题给首字母。那题不算会写，也不能归名' },
-          { who: SYS, text: '【言灵】打中弱点、答对打字题都会攒言灵，最多 5 点' },
-        );
         break;
       case 5:
         s.flags.teachFinisher = true;
@@ -547,9 +545,6 @@ export class Controller {
           { who: HILDE, text: '「Ich möchte einen Tee.」听见了？der 到了这里变成 einen。die 变 eine，das 变 ein。' },
           { who: SYS, text: '【终结技 F】言灵攒满后，对任何怪看中文写整句：吃的喝的 Ich möchte，地方 Wo ist，人 Ich habe。写对破甲。下一场你的言灵是满的，试一下' },
         );
-        break;
-      case 6:
-        lines.push({ who: SYS, text: '【元素】选对相附带元素：der 冰 · die 火 · das 毒' });
         break;
       case 8:
         lines.push({ who: HILDE, text: `东边那扇门后面，住着个「邻居」。这片街区的名字你叫回四成，它才肯开门。` });
@@ -1080,7 +1075,7 @@ export class Controller {
     }
     // 直接叫名 missed: no penalty, so it isn't counted as a wrong answer either.
     const free = (!!q.directName && !r.correct) || !!q.chain; // 格位连锁 is a bonus, not a record on the word
-    if (!free) recordAnswer(s, b.word, r.correct);
+    if (!free) countAnswer(s, b.word, r.correct, b);
     flushSkill(s, b.word, b);
     // 场景精英 ③ 造句 (rev 459): from level 10 a logged-in player's sentence also goes to the AI teacher. The rule check
     // already decided the hit; when the AI finds a real mistake the rule missed, the word gets a slip (shorter review gap).
@@ -1170,7 +1165,7 @@ export class Controller {
         banner('归名', 'das Brot · 面包');
         say([
           { who: SYS, text: '牙一颗颗掉下来。它又是一块面包了。' },
-          { who: SYS, text: '【归名】这次是借你的。以后要在不同的三天各打败它一次，最后一下默写全名' },
+          { who: SYS, text: '【归名】这次是借你的。以后一个词要打败 3 次（认、用、写；打完几分钟后它会在原地重生，一天里就能打完），最后一下默写全名' },
           { who: HILDE, text: '……真叫回来了。东边回声巷，这种东西到处都是。去吧。火我守着。' },
         ], () => {
           const target = regionFor(s.level);
@@ -1252,6 +1247,15 @@ export class Controller {
     const ents = this.packEntities;
     const target = this.battle!;
     const m = this.entity!;
+    // 「新招：试试 Q / W」 shows in the first 3 fights after Lv4, not until you press Q or W (试玩 53 / 65).
+    if (s.flags.teachSkills && !target.tutorial) {
+      const n = ((s.flags.teachSkillsN as number) || 0) + 1;
+      if (n < 3) s.flags.teachSkillsN = n;
+      else {
+        delete s.flags.teachSkills;
+        delete s.flags.teachSkillsN;
+      }
+    }
     this.battleUI.close();
     setBattleMusic(false);
     this.battle = null;
@@ -1513,6 +1517,7 @@ export class Controller {
     const open = () => {
       openShop(s, this.rng, now(s));
       this.panels.saying = null;
+      this.panels.shopMsg = null;
       this.panels.show('shop');
     };
     const unid = unidentifiedItems(s);
@@ -1721,8 +1726,8 @@ export class Controller {
       s.flags.gretaMet = true;
       lines.push(
         { who: GRETA, text: '营地来的？Hilde 说过你。在这儿光会叫名字，活不久。' },
-        { who: GRETA, text: '拿着：墨水风暴，一口气写出它的几种样子；稳住，先答一道简单的，稳了再说。两招都问眼前那只怪自己的词。' },
-        { who: SYS, text: `【技能池】墨水风暴、稳住进了你的技能栏（战斗里按 R / G）。技能不花资源，用完冷却几回合。30 级多一格、61 级再多一格；以后到级还会拿到拆词、搭配、格之封印、听写。按 T 看技能和天赋。` },
+        { who: GRETA, text: '你技能栏里那两招会用吗？墨水风暴，一口气写出它的几种样子；稳住，先答一道简单的，稳了再说。两招都问眼前那只怪自己的词。' },
+        { who: SYS, text: `【技能池】墨水风暴、稳住 10 级起就在你的技能栏里（战斗里按 R / G）。技能不花资源，用完冷却几回合。30 级多一格、61 级再多一格；以后到级还会拿到拆词、搭配、格之封印、听写。按 T 看技能和天赋。` },
       );
       this.renderMenu();
     }
@@ -1824,7 +1829,7 @@ export class Controller {
     if (written >= 0.7 && !s.flags[`moveOn${region}`]) {
       s.flags[`moveOn${region}`] = true;
       lines.push({ who: region === 1 ? HILDE : '守火人', text: `这片的名字你写得出七成了（${Math.round(written * 100)}%）。这里的东西认得你了，不会再扑上来。往更深的野外走走，或者去找考官。` });
-      lines.push({ who: SYS, text: '【分级考核】主城考官那里每天可以考一次：测你会到哪一级，会的直接跳过，等级只往上调' });
+      lines.push({ who: SYS, text: `【分级考核】主城考官那里可以考：测你会到哪一级，会的直接跳过，等级只往上调。考过一次后，再归名或斩杀 ${PLACE.retakeAfter} 个词就能再考` });
     }
     // 篝火日记 (Lv16+, 2026-11-22): once a day, write a few sentences with words fought today.
     const jw = this.journalOffer();
@@ -1876,18 +1881,18 @@ export class Controller {
     if (s.level < SCREEN.fromLevel)
       return say([{ who: '考官', text: `「Noch nicht.」筛选 ${SCREEN.fromLevel} 级再来。不过你要是以前学过德语，可以先考分级考核。` }], undefined, [
         ...(trial ? [{ label: trial.label, act: () => this.stageExam(trial.stage) }] : []),
-        ...(canPlaceAgain(s) ? [{ label: '分级考核（测你会到哪一级）', act: () => this.openPlacement(true) }] : [{ label: `分级考核（再归名或斩杀 ${placeAgainIn(s)} 个词就能再考）`, act: () => {} }]),
+        ...(canPlaceAgain(s) ? [{ label: '分级考核（测你会到哪一级）', act: () => this.openPlacement(true) }] : [{ label: `分级考核（再归名或斩杀 ${placeAgainIn(s)} 个词就能再考）`, act: () => {}, disabled: true }]),
         { label: '先不了', act: () => {} },
       ]);
-    void region;
     const intro = !s.flags.screenIntro;
     s.flags.screenIntro = true;
-    const scopes: Array<{ label: string; scope: ScreenScope }> = [
-      { label: '筛第 1 区', scope: '1' },
-      { label: '筛第 2 区', scope: '2' },
-      { label: '筛第 3 区', scope: '3' },
-      { label: '全部筛一遍', scope: 'all' },
-    ];
+    // 试玩 44: the regions around where you are (1–3 early on, then the current one and the two before it), plus
+    // 推定会 only when the placement test left some.
+    const hi = Math.max(3, region);
+    const scopes: Array<{ label: string; scope: ScreenScope }> = [];
+    for (let r = hi - 2; r <= hi; r++) scopes.push({ label: r === region && region > 3 ? `筛第 ${r} 区（这里）` : `筛第 ${r} 区`, scope: `${r}` });
+    if (screenPool(s, 'placed').length) scopes.push({ label: '只筛推定会的词', scope: 'placed' });
+    scopes.push({ label: '全部筛一遍', scope: 'all' });
     say([
       intro
         ? { who: '考官', text: '「Was kannst du schon?」你会的词先写给我，就不用在野外再打一遍。' }
@@ -1899,7 +1904,7 @@ export class Controller {
       ...(trial ? [{ label: trial.label, act: () => this.stageExam(trial.stage) }] : []),
       ...((s.level >= BREAK.from || BREAK_EARLY) && !s.flags.a1Passed ? [{ label: s.level >= BREAK.from ? 'A1 突破试炼' : 'A1 突破试炼（提前考）', act: () => this.breakExam() }] : []),
       ...((s.level >= BREAK.from || BREAK_EARLY) && s.flags.a1Passed && !s.flags.a1Grammar ? [{ label: '补考语法', act: () => this.grammarRetake() }] : []),
-      ...(canPlaceAgain(s) ? [{ label: '分级考核（测你会到哪一级）', act: () => this.openPlacement(true) }] : [{ label: `分级考核（再归名或斩杀 ${placeAgainIn(s)} 个词就能再考）`, act: () => {} }]),
+      ...(canPlaceAgain(s) ? [{ label: '分级考核（测你会到哪一级）', act: () => this.openPlacement(true) }] : [{ label: `分级考核（再归名或斩杀 ${placeAgainIn(s)} 个词就能再考）`, act: () => {}, disabled: true }]),
       { label: '先不了', act: () => {} },
     ]);
   }
@@ -2027,7 +2032,7 @@ export class Controller {
     if (!o?.gained.length) return next();
     banner(`Lv ${o.level}`, '分级入场');
     sfx.levelUp();
-    const heads = o.gained.map((l) => ((UNLOCK_TEXT[l] ?? [])[0] ? `${l} 级 ${(UNLOCK_TEXT[l] ?? [])[0].split(/[：:，,]/)[0]}` : '')).filter(Boolean);
+    const heads = o.gained.map((l) => ((UNLOCK_TEXT[l] ?? [])[0] ? `${l} 级 ${unlockHead((UNLOCK_TEXT[l] ?? [])[0])}` : '')).filter(Boolean);
     const lines: Line[] = [{ who: SYS, text: `【新能力 · 跳到 ${o.level} 级】这一路的功能都开了，每样第一次出现时只给一行提示。按 H 能看怎么玩。之前各区没归名的词照常出怪，按你的等级给经验；标「推定会」的怪点「我认识它」写对一次就斩杀。营地篝火随时能传送到第 ${o.region} 区。` }];
     if (o.region > 1) lines.push({ who: SYS, text: `入学礼：第 ${o.region} 区的碎片按一路打过来的进度记上，换上一套 ${PLACE_KIT_TIER} 档装备，补了金币，药片装满。之后靠碎片在篝火换更高档。` });
     const tLeft = talentPoints(s) - spent(s);
