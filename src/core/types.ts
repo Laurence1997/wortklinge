@@ -129,6 +129,8 @@ export interface WordProgress {
   placed?: number;
   /** A context review was answered wrong: back in the field as a 半名 review monster (复发中). */
   lapsed?: boolean;
+  /** 入学测试缺口 (1.0.12): `lapsed` was set by the placement test, not by forgetting; the first 归名 is no relapse. */
+  gap?: boolean;
   /** Before 归名: a wrong answer or a 低语 on it (a clean 归名 skips the review schedule, rev 51). */
   flaw?: boolean;
   /** Before 归名: how many answers on it were wrong (sets the first review gap: 1 → 3 days, 2+ → 1 day). */

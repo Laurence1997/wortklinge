@@ -765,7 +765,7 @@ export class Controller {
     }
     if (b0.directOffer && this.pack.length === 1) {
       b0.directOffer = false;
-      say([{ who: SYS, text: '一个没见过的名字扑了过来。你本来就认识它吗？' }], undefined, [
+      say([{ who: SYS, text: b0.presumed ? '一个「推定会」的词扑了过来（入学测试推定你会它）。你真的认识它吗？' : '一个没见过的名字扑了过来。你本来就认识它吗？' }], undefined, [
         { label: '我认识它（直接叫名：不看提示写出来，写对就能斩杀）', act: () => ((b0.direct = true), this.battleUI.open()) },
         { label: '不认识，开始学', act: () => (delete b0.presumedEntry, this.battleUI.open()) }, // declined: a missed word (#92)
       ]);
@@ -2076,7 +2076,7 @@ export class Controller {
   }
 
   placeStop(run: PlaceRun): void {
-    stopPlacement(run);
+    stopPlacement(run, this.state, this.rng);
     this.keepPlaceRun(run);
   }
 

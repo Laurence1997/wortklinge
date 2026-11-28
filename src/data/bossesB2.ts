@@ -129,6 +129,13 @@ const DEBATE = (rng: Rng): BossQuestion[] => {
 // ---- 14 · 铸币场 · 贪婪 Gier (persuade: wenn … dann / zwar … aber; charts; sein + zu, -bar; genitive prepositions) --------
 
 const CHART_ITEMS = ['Der Brotpreis', 'Die Miete', 'Der Umsatz', 'Der Strompreis'];
+/** Realistic sizes for the chart (1.0.12 试玩: a rent of 5 € read oddly): the small step numbers times a scale. */
+const CHART_SCALE: Record<string, { k: number; per: string }> = {
+  'Der Brotpreis': { k: 1, per: '' },
+  'Die Miete': { k: 100, per: ' / Monat' },
+  'Der Umsatz': { k: 100, per: ' / Tag' },
+  'Der Strompreis': { k: 10, per: ' / Monat' },
+};
 const ZU: Array<{ pass: string; acc: string; model: string }> = [
   { pass: 'Das Formular muss ausgefüllt werden.', acc: 'das formular ist (?:noch |sofort |bis \\w+ )?auszufuellen', model: 'Das Formular ist auszufüllen.' },
   { pass: 'Die Rechnung muss bezahlt werden.', acc: 'die rechnung ist (?:noch |sofort |bis \\w+ )?zu bezahlen', model: 'Die Rechnung ist zu bezahlen.' },
@@ -152,12 +159,14 @@ const GEN: Array<{ prep: string; noun: string; acc: string; model: string; ask: 
 
 const GREED = (rng: Rng): BossQuestion[] => {
   const item = pick(rng, CHART_ITEMS);
-  const a = pick(rng, [2, 3, 4, 5]);
-  const d = pick(rng, [1, 2, 3]);
+  const sc = CHART_SCALE[item] ?? { k: 1, per: '' };
+  const a0 = pick(rng, [2, 3, 4, 5]);
+  const d0 = pick(rng, [1, 2, 3]);
   const up = rng() < 0.6;
-  const b = up ? a + d : Math.max(1, a - d);
+  const a = a0 * sc.k;
+  const b = (up ? a0 + d0 : Math.max(1, a0 - d0)) * sc.k;
   const diff = Math.abs(b - a);
-  const num = (n: number) => `(?:${n}|${normalize(['null', 'eins', 'zwei', 'drei', 'vier', 'fuenf', 'sechs', 'sieben', 'acht'][n] ?? String(n))}|${normalize(['', 'einen', 'zwei', 'drei'][n] ?? String(n))})`;
+  const num = (n: number) => `(?:${n}|${normalize(['null', 'eins', 'zwei', 'drei', 'vier', 'fuenf', 'sechs', 'sieben', 'acht'][n] ?? String(n))}|${normalize(['', 'einen', 'zwei', 'drei'][n] ?? String(n))}${n === 100 ? '|hundert|einhundert' : ''})`;
   const verb = up ? '(?:gestiegen|steigt|stieg|erhoeht|zugenommen|gewachsen|wuchs)' : '(?:gesunken|sinkt|sank|gefallen|faellt|fiel|abgenommen|zurueckgegangen)';
   const zu = pick(rng, ZU);
   const bar = pick(rng, BAR);
@@ -165,7 +174,7 @@ const GREED = (rng: Rng): BossQuestion[] => {
   const first = [
     q('chart', [`Sieh dir die Zahlen an. Wie hat sich ${item.replace(/^Der |^Die /, (m) => m.toLowerCase())} entwickelt?`], `看图表说变化（${up ? 'steigen' : 'sinken'} um = 变了多少，auf = 变到多少）`,
       [`${verb}.*(?:um ${num(diff)}|auf ${num(b)})`, `(?:um ${num(diff)}|auf ${num(b)}) (?:euro )?${verb}`], `${item} ist um ${diff} Euro auf ${b} Euro ${up ? 'gestiegen' : 'gesunken'}.`, {
-        visual: `${item}: 2020 → ${a} € · 2025 → ${b} €`,
+        visual: `${item}: 2020 → ${a} €${sc.per} · 2025 → ${b} €${sc.per}`,
         traps: [[new RegExp(`um ${num(b)}(?: |$)`), `um 是变了多少（${diff}），auf 是变到多少（${b}）。`]],
       }),
     q('wenn', ['Ich nehme alles. Warum sollte ich dir etwas lassen?', 'Alles gehört mir. Gib mir einen Grund, loszulassen.'], '用条件句说服它（Wenn …, dann …）',

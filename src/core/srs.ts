@@ -328,7 +328,8 @@ export function recordKill(s: GameState, w: Word, typedFinal: boolean, slipped: 
     p.due = t + respawn;
     return { kind, from, to: 2, guiming: false, needsTypedFinal: !typedFinal };
   }
-  if (relapsed) p.relapse += 1;
+  if (relapsed && !p.gap) p.relapse += 1;
+  delete p.gap;
   setGuiming(p, t, !relapsed && !p.flaw && !p.hinted, relapsed);
   return { kind, from, to: 3, guiming: true, needsTypedFinal: false };
 }

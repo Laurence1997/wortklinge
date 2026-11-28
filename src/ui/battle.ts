@@ -84,6 +84,9 @@ export class BattleUI {
   /** 1.0.12 试玩 107: the line the monster said for the question just answered; the result screen keeps showing it
    *  (the monster's next line comes with the next turn), so 「它刚才念的是」 matches the line on top. */
   private answeredLine: { b: Battle; intent: Battle['intent'] } | null = null;
+  /** The answered monster as it stood when the answer went in (stance, line), for the result line: after the
+   *  answer the target may be dead (this.b is the next monster) or already on its next line. */
+  private answeredAs: Battle | null = null;
   /** 跟读: the German sentence just read aloud after a right answer, and the last attempt's feedback. */
   private shadowText = '';
   private readMsg = '';
@@ -272,6 +275,7 @@ export class BattleUI {
   setPhase(p: Stance): void {
     if (this.phase === 'result' || !needsPhase(this.b)) return;
     this.b.phase = p;
+    this.stanceMsg = '';
     const ready = this.moves().filter((m) => moveReady(this.ctrl.state, this.b, m));
     if (this.phase === 'choose' && ready.length === 1) this.choose(ready[0]);
     else this.render();
@@ -327,6 +331,7 @@ export class BattleUI {
     this.report = r.report;
     this.question = { type: 'steady', prompt: '喊出短句', focus: r.res.text, item: true };
     this.move = 'item';
+    this.answeredAs = null;
     this.answeredLine = null; // 1.0.12 试玩 107: no line was answered; show its current one
     this.phase = 'result';
     this.lastValue = '';
@@ -427,6 +432,8 @@ export class BattleUI {
     const voiced = this.b.intent;
     const target = this.b;
     const logFrom = target.log.length;
+    this.answeredAs = { ...target };
+    this.stanceMsg = '';
     this.report = this.ctrl.answer(this.move, this.question, value);
     // 德语释义: a miss on the monster's own word opens its Chinese for the rest of the fight (free).
     if (!this.report.correct && !this.question.review) this.zhOpen.add(target.word.id);
@@ -655,13 +662,17 @@ export class BattleUI {
     if (held || left > 0) return;
     const target = this.b;
     const from = target.log.length;
+    const heldStance = this.phase === 'answer' ? target.phase : undefined;
     const r = this.ctrl.tick();
     if (!r) return;
+    // The new line asks for another case and the stance was cleared: say so, so the open answer is not sent without one.
+    if (heldStance && !target.phase && !target.outcome && this.phase === 'answer') this.stanceMsg = '  它出手后换了一句话，格变了，刚才选的相已清空：先点一下重新选相，再交答案';
     for (const l of target.log.slice(from)) logLine(`  ${l.text}`, l.tone === 'good' ? 'good' : l.tone === 'bad' ? 'bad' : l.tone === 'crit' ? 'gold' : 'info');
     if (this.ctrl.fightOver()) {
       this.report = r;
       this.question = { type: 'steady', prompt: '它出手了', focus: '', item: true, tick: true };
       this.answeredLine = null;
+      this.answeredAs = null;
       this.phase = 'result';
       this.render();
       window.clearTimeout(this.autoTimer);
@@ -673,6 +684,8 @@ export class BattleUI {
   }
 
   private voiceMsg = '';
+  /** 即时战: a cast landed while a question was open and its new line cleared the stance (another case). */
+  private stanceMsg = '';
 
   /** 开口作答: hold to speak; the best heard version is sent as the answer (spoken = 认得, never 会写). */
   async voiceAnswer(): Promise<void> {
@@ -890,7 +903,7 @@ export class BattleUI {
     const fam = FAMILIES[w.family];
     const mon = h(
       'div.b-mon',
-      h('div.fam', h('span', `${fam.zh} · Lv ${m.lvl}`), h('span', STAGE_ZH[b.stage])),
+      h('div.fam', h('span', `${fam.zh} · Lv ${m.lvl}`), h('span', b.presumed && b.stage === 0 ? '推定会' : STAGE_ZH[b.stage])),
       monsterIcon(monsterArt(b, this.ctrl.dungeon?.left === 1), 5, false, 'mon-icon', this.ctrl.dungeon?.left !== 1 && !!this.ctrl.scene?.bright),
       // 1.0.10 (Lucas: 字体不清晰): no blurred glow on the plate; a garbled plate is crisp symbols that jitter.
       h(
@@ -906,7 +919,7 @@ export class BattleUI {
           : '',
       h(
         'div',
-        b.rusty ? h('span.tag.due', '锈名 · 久拖的遗忘之物') : b.kind === 'due' ? h('span.tag.due', '遗忘之物') : b.kind === 'new' ? h('span.tag', '新怪') : h('span.tag', '影子'),
+        b.rusty ? h('span.tag.due', '锈名 · 久拖的遗忘之物') : b.kind === 'due' ? h('span.tag.due', '遗忘之物') : b.presumed ? h('span.tag', { title: '入学测试推定你会这个词：叫出它的名字就算确认' }, '推定会') : b.kind === 'new' ? h('span.tag', '新怪') : h('span.tag', '影子'),
         b.isEcho ? h('span.tag.echo', '带着你的回响') : '',
         b.saying && !b.sayingDone ? h('span.tag.echo', '接句怪') : '',
         b.pluralMon ? h('span.tag.echo', '复数怪 · 一群') : '',
@@ -1127,6 +1140,7 @@ export class BattleUI {
                 ? b.intent.caseArt ? '  选句子空里那个冠词：照句中形式选，可能是 ein/eine、den/dem，不一定是词典里的 der/die/das' : `  ${nameStanceTip(s, b)}`
                 : s.level <= 5 ? (s.level >= 4 ? '  选对护甲降一档、回言灵；6 级前选错不罚' : '  选对护甲降一档；6 级前选错不罚') : '  选对护甲降一档、回资源；选错护甲翻倍',
         ),
+        this.stanceMsg && this.phase === 'answer' && !b.phase ? h('span.small', { style: 'color:var(--gold, #ffcf4a)' }, this.stanceMsg) : '',
       );
     }
 
@@ -1417,12 +1431,13 @@ export class BattleUI {
       const head = qq.tick ? '它出手了' : qq.item ? '喊出了短句' : r.correct ? (r.crit ? (r.newSpell ? '初识暴击！' : '暴击！') : r.parried ? '躲开了' : '答对了') : '答错了';
       fb.append(h('b', head));
       if (qq.item && r.monsterDamage) fb.append(h('span', qq.tick ? `  你受到 ${r.monsterDamage} 伤害` : `  它趁机出手：${r.monsterDamage} 伤害`));
-      if (r.correct && this.b.word && (qq.type === 'article' || qq.type === 'typed')) fb.append(h('span', `  ${fullFormLong(this.b.word)} · ${this.b.word.zh}`));
+      const ab = this.answeredAs ?? this.b;
+      if (r.correct && ab.word && (qq.type === 'article' || qq.type === 'typed')) fb.append(h('span', `  ${fullFormLong(ab.word)} · ${ab.word.zh}`));
       if (qq.echo) fb.append(h('span', `  ${qq.echo.target}（${qq.echo.zhT}） · ${qq.echo.partner}（${qq.echo.zhP}）`));
-      if (r.phase === 'right') fb.append(h('span', `  ${this.b.phase} 相 · 弱点`));
-      if (r.phase === 'wrong') fb.append(h('span', `  ${this.b.phase} 相被抵抗：${phaseWrongWhy(this.b)}`));
+      if (r.phase === 'right') fb.append(h('span', `  ${ab.phase ?? ''} 相 · 弱点`));
+      if (r.phase === 'wrong') fb.append(h('span', `  ${ab.phase ? `${ab.phase} 相被抵抗` : '没选相，被抵抗'}：${phaseWrongWhy(ab)}`));
       // 词性规律 (2026-11-28): the rule this noun falls under, after a stance that missed its gender.
-      if ((r.phase === 'wrong' || r.phase === 'soft') && stanceRuleNote(this.b)) fb.append(h('span.note.gender-hint', stanceRuleNote(this.b)));
+      if ((r.phase === 'wrong' || r.phase === 'soft') && stanceRuleNote(ab)) fb.append(h('span.note.gender-hint', stanceRuleNote(ab)));
       if (r.element) fb.append(h('span', `  元素：${ELEMENT_ZH[r.element]}`));
       for (const n of r.verdict.notes) fb.append(h('span.note', n));
       if (r.readRight) fb.append(h('span.note', '读懂了它：连击 +1'));
