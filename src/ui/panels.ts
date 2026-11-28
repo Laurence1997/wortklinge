@@ -23,7 +23,7 @@ import { fullForm, fullFormLong, genderOf, reflNote, hasArticleQuestion, WORD_BY
 import type { Controller } from '../game/controller';
 import { $, autoGrow, clear, h, umlautButtons } from './dom';
 import { BREAK, examParts, examPassed, PART_ZH, type Exam } from '../core/breakthrough';
-import { pendingScenes, regionLeft, type ScreenRun } from '../core/screen';
+import { pendingScenes, regionLeft, screenPool, type ScreenRun } from '../core/screen';
 import { bandRange, levelFor, PLACE, regionFor, topPassed, type PickBoard, type PlaceRun } from '../core/placement';
 import { CHEST_ZH, type ChestKind } from '../core/chest';
 import { playChest } from './chestFx';
@@ -380,8 +380,8 @@ export class Panels {
             'div.acts',
             h('button.btn', { disabled: tooHigh, title: tooHigh ? `需要 ${requiredLevel(it)} 级` : '', onclick: () => this.ctrl.equip(it.id) }, '穿上'),
             this.dropAsk === it.id
-              ? h('button.btn.danger', { title: '丢掉就找不回来了', onclick: () => ((this.dropAsk = null), this.ctrl.discard(it.id)) }, '确定丢弃')
-              : h('button.btn.ghost', { onclick: () => ((this.dropAsk = it.id), this.render()) }, '丢弃'),
+              ? h('button.btn.danger', { title: '丢掉就找不回来了', onclick: () => { if (Date.now() - this.dropAt < 400) return; this.dropAsk = null; this.ctrl.discard(it.id); } }, '确定丢弃')
+              : h('button.btn.ghost', { onclick: () => ((this.dropAsk = it.id), (this.dropAt = Date.now()), this.render()) }, '丢弃'),
           ),
         ),
       );
@@ -979,6 +979,7 @@ export class Panels {
     }
     const summary = () => {
       const lines: Array<HTMLElement | string> = [];
+      if (run.scope === 'placed') lines.push(h('p', `推定会的词还剩 ${screenPool(s, 'placed').length} 个没确认。`));
       const regions = run.scope === 'all' ? Array.from({ length: Math.max(3, s.region ?? 1) }, (_, i) => i + 1) : [run.scope === 'placed' ? (s.region ?? 1) : Number(run.scope)];
       for (const r of regions) {
         const x = regionLeft(s, r);
@@ -1081,6 +1082,8 @@ export class Panels {
   saying: string | null = null;
   /** The bag item whose 「丢弃」 was clicked once: a second click on 「确定丢弃」 deletes it (试玩 30). */
   dropAsk: string | null = null;
+  /** When 「丢弃」 was clicked: a double click doesn't count as the confirm. */
+  private dropAt = 0;
   shopMsg: { text: string; tone: 'ok' | 'no' } | null = null;
 
   private toggleSay(key: string): void {
@@ -1767,12 +1770,12 @@ export class Panels {
   }
 }
 
-/** 篝火日记 draft key: the day's given words. */
 /** A hint that already ends in ?/!/. gets no extra 「。」 (Könnten Sie … geben?。, 试玩 80). */
 function endZh(t: string): string {
   return /[。.！!？?]$/.test(t) ? t + ' ' : t + '。';
 }
 
+/** 篝火日记 draft key: the day's given words. */
 function journalKey(words: Word[]): string {
   return words.map((w) => w.id).join(',');
 }
